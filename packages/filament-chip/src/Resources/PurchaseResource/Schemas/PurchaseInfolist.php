@@ -207,10 +207,10 @@ final class PurchaseInfolist
                         ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES))
                         ->visible(fn (Purchase $record): bool => filled($record->payment ?? []))
                         ->columnSpanFull(),
-                    TextEntry::make('transaction_data')
+                    TextEntry::make('payment_method')
                         ->label('Transaction Data JSON')
                         ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES))
-                        ->visible(fn (Purchase $record): bool => filled($record->transaction_data ?? []))
+                        ->visible(fn (Purchase $record): bool => filled($record->payment_method))
                         ->columnSpanFull(),
                 ])
                 ->collapsible()

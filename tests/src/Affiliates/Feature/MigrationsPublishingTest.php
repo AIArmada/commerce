@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schema;
 
 describe('Affiliates migrations', function (): void {
     test('are auto-run by default', function (): void {
@@ -19,6 +20,10 @@ describe('Affiliates migrations', function (): void {
 
         expect(property_exists($package, 'runsMigrations'))->toBeTrue();
         expect($package->runsMigrations)->toBeTrue();
+    });
+
+    test('does not create unsupported per-affiliate api credentials', function (): void {
+        expect(Schema::hasColumn(config('affiliates.database.tables.affiliates', 'affiliates'), 'api_token'))->toBeFalse();
     });
 
     test('registers expected console commands', function (): void {

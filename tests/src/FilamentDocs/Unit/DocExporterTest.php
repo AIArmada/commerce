@@ -20,13 +20,13 @@ it('exports formatted column values for a doc record', function (): void {
             'name' => 'Acme Inc',
             'email' => 'billing@acme.test',
         ],
-        'total' => 123.45,
+        'total_minor' => 12_345,
         'currency' => 'MYR',
     ]);
 
     DocPayment::create([
         'doc_id' => $doc->id,
-        'amount' => 23.45,
+        'amount_minor' => 2_345,
         'currency' => $doc->currency,
         'payment_method' => 'cash',
         'reference' => 'PAY-1',
@@ -43,12 +43,12 @@ it('exports formatted column values for a doc record', function (): void {
         'status',
         'customer_name',
         'customer_email',
-        'paid_amount',
+        'paid_minor',
     ], '');
 
     $exporter = new DocExporter($export, $columnMap, []);
 
-    $doc->loadSum('payments as paid_amount', 'amount');
+    $doc->loadSum('payments as paid_minor', 'amount_minor');
     $values = $exporter($doc);
 
     expect($values)->toHaveCount(count($columnMap));
@@ -57,7 +57,7 @@ it('exports formatted column values for a doc record', function (): void {
     expect($values[2])->toBe(DocStatus::labelFor(Paid::class, $doc));
     expect($values[3])->toBe('Acme Inc');
     expect($values[4])->toBe('billing@acme.test');
-    expect((float) $values[5])->toBe(23.45);
+    expect($values[5])->toBe('23.45 MYR');
 });
 
 it('preloads paid_amount via modifyQuery to avoid N+1', function (): void {
@@ -67,7 +67,7 @@ it('preloads paid_amount via modifyQuery to avoid N+1', function (): void {
 
     DocPayment::create([
         'doc_id' => $doc->id,
-        'amount' => 23.45,
+        'amount_minor' => 2_345,
         'currency' => $doc->currency,
         'payment_method' => 'cash',
         'reference' => 'PAY-1',
@@ -80,7 +80,7 @@ it('preloads paid_amount via modifyQuery to avoid N+1', function (): void {
         ->whereKey($doc->id)
         ->firstOrFail();
 
-    expect((float) $docWithAggregate->paid_amount)->toBe(23.45);
+    expect((int) $docWithAggregate->paid_minor)->toBe(2_345);
 });
 
 it('exports zero paid amount when no payments exist', function (): void {
@@ -95,14 +95,14 @@ it('exports zero paid amount when no payments exist', function (): void {
     $export = new Export;
 
     $columnMap = [
-        'paid_amount' => '',
+        'paid_minor' => '',
     ];
 
     $exporter = new DocExporter($export, $columnMap, []);
 
     $values = $exporter($docWithAggregate);
 
-    expect((float) $values[0])->toBe(0.0);
+    expect($values[0])->toBe('0.00 MYR');
 });
 
 it('builds completed notification body for successful and failed rows', function (): void {

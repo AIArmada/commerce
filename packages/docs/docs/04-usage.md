@@ -21,7 +21,7 @@ $document = $docService->create(DocData::from([
             'name' => 'Web Development Service',
             'description' => 'Custom website development',
             'quantity' => 1,
-            'price' => 2500.00,
+            'unit_price_minor' => 250_000,
         ],
     ],
     'customer_data' => [
@@ -72,7 +72,7 @@ $document = $docService->create(DocData::from([
     'doc_type' => 'invoice',
     'template_slug' => 'modern-invoice',
     'items' => [
-        ['name' => 'Web Development Service', 'quantity' => 1, 'price' => 2500.00],
+        ['name' => 'Web Development Service', 'quantity' => 1, 'unit_price_minor' => 250_000],
     ],
     'customer_data' => [
         'name' => 'John Doe',
@@ -90,11 +90,11 @@ The package automatically calculates totals:
 $document = $docService->create(DocData::from([
     'doc_type' => 'invoice',
     'items' => [
-        ['name' => 'Item 1', 'quantity' => 2, 'price' => 100],  // $200
-        ['name' => 'Item 2', 'quantity' => 1, 'price' => 150],  // $150
+        ['name' => 'Item 1', 'quantity' => 2, 'unit_price_minor' => 10_000],  // $200
+        ['name' => 'Item 2', 'quantity' => 1, 'unit_price_minor' => 15_000],  // $150
     ],
-    'tax_rate' => 0.06,           // 6% tax
-    'discount_amount' => 25,      // $25 discount
+    'tax_rate_basis_points' => 600,           // 6% tax
+    'discount_amount_minor' => 2_500,      // $25 discount
 ]));
 
 // Automatically calculated:
@@ -156,7 +156,7 @@ use AIArmada\Docs\Services\DocService;
 
 $payment = app(DocService::class)->recordPayment($document, [
     'status' => DocPaymentStatus::Paid,
-    'amount' => 100.00,
+    'amount_minor' => 10_000,
     'currency' => 'MYR',
     'payment_method' => 'bank_transfer',
     'reference' => 'PAY-123',

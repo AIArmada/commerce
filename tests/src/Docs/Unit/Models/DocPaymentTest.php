@@ -12,7 +12,7 @@ it('casts payment status to the DocPaymentStatus enum', function (): void {
     $payment = DocPayment::query()->create([
         'doc_id' => $doc->id,
         'status' => DocPaymentStatus::Paid,
-        'amount' => 100,
+        'amount_minor' => 100,
         'currency' => 'MYR',
         'payment_method' => 'cash',
         'paid_at' => now(),
@@ -27,7 +27,7 @@ it('rejects unsupported payment statuses', function (): void {
     expect(fn (): DocPayment => DocPayment::query()->create([
         'doc_id' => $doc->id,
         'status' => 'settled_elsewhere',
-        'amount' => 100,
+        'amount_minor' => 100,
         'currency' => 'MYR',
         'payment_method' => 'cash',
         'paid_at' => now(),

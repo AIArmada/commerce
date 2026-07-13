@@ -74,13 +74,15 @@ final class DocService implements DocServiceInterface
             app(DocRenderService::class)->validateDocPayload($template, $data->body, $data->items);
         }
 
-        // Calculate totals (use provided values if available, otherwise calculate)
-        $calculatedSubtotal = $this->calculateSubtotal($data->items);
-        $subtotal = $data->subtotal ?? $calculatedSubtotal;
-        $effectiveTaxRate = $data->taxRate ?? (float) config('docs.defaults.tax_rate', 0);
-        $taxAmount = $data->taxAmount ?? ($subtotal * $effectiveTaxRate);
-        $discountAmount = $data->discountAmount ?? 0;
-        $total = $data->total ?? ($subtotal + $taxAmount - $discountAmount);
+        $currency = mb_strtoupper($data->currency ?? (string) $this->resolveDefault($docType, 'currency', 'MYR'));
+        $calculatedSubtotalMinor = $this->calculateSubtotalMinor($data->items, $currency);
+        $subtotalMinor = $data->subtotalMinor ?? $calculatedSubtotalMinor;
+        $taxRateBasisPoints = $data->taxRateBasisPoints ?? (int) config('docs.defaults.tax_rate_basis_points', 0);
+        $this->assertBasisPoints($taxRateBasisPoints);
+        $taxAmountMinor = $data->taxAmountMinor ?? $this->applyBasisPoints($subtotalMinor, $taxRateBasisPoints);
+        $discountAmountMinor = $data->discountAmountMinor ?? 0;
+        $totalMinor = $data->totalMinor ?? max(0, $subtotalMinor + $taxAmountMinor - $discountAmountMinor);
+        $this->assertNonNegativeAmounts($subtotalMinor, $taxAmountMinor, $discountAmountMinor, $totalMinor);
 
         // Merge metadata with pdf options (if provided)
         $metadata = $data->metadata ?? [];
@@ -114,11 +116,11 @@ final class DocService implements DocServiceInterface
             'status' => $statusClass,
             'issue_date' => $data->issueDate ?? CarbonImmutable::now(),
             'due_date' => $dueDate,
-            'subtotal' => $subtotal,
-            'tax_amount' => $taxAmount,
-            'discount_amount' => $discountAmount,
-            'total' => $total,
-            'currency' => $data->currency ?? (string) $this->resolveDefault($docType, 'currency', 'MYR'),
+            'subtotal_minor' => $subtotalMinor,
+            'tax_amount_minor' => $taxAmountMinor,
+            'discount_amount_minor' => $discountAmountMinor,
+            'total_minor' => $totalMinor,
+            'currency' => $currency,
             'body' => $data->body,
             'notes' => $data->notes,
             'terms' => $data->terms,
@@ -169,7 +171,11 @@ final class DocService implements DocServiceInterface
 
             // Calculate totals if items provided
             if (isset($data['items'])) {
-                $totals = $this->calculateTotals($data['items'], $data['discount_amount'] ?? 0);
+                $totals = $this->calculateTotals(
+                    $data['items'],
+                    (int) ($data['discount_amount_minor'] ?? 0),
+                    isset($data['currency']) ? (string) $data['currency'] : null
+                );
                 $docData = array_merge($docData, $totals);
             }
 
@@ -234,7 +240,8 @@ final class DocService implements DocServiceInterface
             if (isset($data['items'])) {
                 $totals = $this->calculateTotals(
                     $data['items'],
-                    (float) ($data['discount_amount'] ?? $doc->discount_amount)
+                    (int) ($data['discount_amount_minor'] ?? $doc->discount_amount_minor),
+                    isset($data['currency']) ? (string) $data['currency'] : $doc->currency
                 );
                 $data = array_merge($data, $totals);
             }
@@ -296,35 +303,58 @@ final class DocService implements DocServiceInterface
     public function recordPayment(Doc $doc, array $paymentData): DocPayment
     {
         return DB::transaction(function () use ($doc, $paymentData): DocPayment {
-            $payment = $doc->payments()->make(array_merge($paymentData, [
+            $lockedDoc = Doc::query()
+                ->withoutOwnerScope()
+                ->whereKey($doc->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $paymentCurrency = mb_strtoupper((string) ($paymentData['currency'] ?? $lockedDoc->currency));
+
+            if ($paymentCurrency !== mb_strtoupper($lockedDoc->currency)) {
+                throw new InvalidArgumentException('Payment currency must match the document currency.');
+            }
+
+            if (! isset($paymentData['amount_minor']) || ! is_int($paymentData['amount_minor']) || $paymentData['amount_minor'] <= 0) {
+                throw new InvalidArgumentException('Payment amount_minor must be a positive integer.');
+            }
+
+            $totalPaidBefore = (int) $lockedDoc->payments()->sum('amount_minor');
+            $remainingMinor = $lockedDoc->total_minor - $totalPaidBefore;
+
+            if ($paymentData['amount_minor'] > $remainingMinor) {
+                throw new InvalidArgumentException('Payment amount_minor cannot exceed the outstanding document balance.');
+            }
+
+            $payment = $lockedDoc->payments()->make(array_merge($paymentData, [
                 'paid_at' => $paymentData['paid_at'] ?? CarbonImmutable::now(),
-                'currency' => $paymentData['currency'] ?? $doc->currency,
+                'currency' => $paymentCurrency,
             ]));
 
             if (config('docs.owner.enabled', false)) {
-                $payment->owner_type = $doc->owner_type;
-                $payment->owner_id = $doc->owner_id;
+                $payment->owner_type = $lockedDoc->owner_type;
+                $payment->owner_id = $lockedDoc->owner_id;
             }
 
             $payment->save();
 
             // Update document status based on payments
-            $totalPaid = $doc->payments()->sum('amount');
-            $docTotal = (float) $doc->total;
+            $totalPaid = $totalPaidBefore + $payment->amount_minor;
+            $docTotal = $lockedDoc->total_minor;
 
-            if ($totalPaid >= $docTotal) {
-                $doc->markAsPaid("Payment recorded: {$payment->amount}");
+            if ($totalPaid === $docTotal) {
+                $lockedDoc->markAsPaid("Payment recorded: {$payment->amount_minor} {$payment->currency} minor units");
             } elseif ($totalPaid > 0) {
-                $doc->update(['status' => PartiallyPaid::class]);
-                $statusHistory = $doc->statusHistories()->make([
+                $lockedDoc->update(['status' => PartiallyPaid::class]);
+                $statusHistory = $lockedDoc->statusHistories()->make([
                     'status' => PartiallyPaid::class,
-                    'notes' => "Partial payment recorded: {$payment->amount}",
+                    'notes' => "Partial payment recorded: {$payment->amount_minor} {$payment->currency} minor units",
                     'created_at' => CarbonImmutable::now(),
                 ]);
 
                 if (config('docs.owner.enabled', false)) {
-                    $statusHistory->owner_type = $doc->owner_type;
-                    $statusHistory->owner_id = $doc->owner_id;
+                    $statusHistory->owner_type = $lockedDoc->owner_type;
+                    $statusHistory->owner_id = $lockedDoc->owner_id;
                 }
 
                 $statusHistory->save();
@@ -449,51 +479,99 @@ final class DocService implements DocServiceInterface
     }
 
     /**
-     * Calculate document totals from items.
+     * Calculate document totals from minor-unit item values.
+     *
+     * Every item must use integer `quantity`, `unit_price_minor`, and optional
+     * `tax_amount_minor`. Legacy major-unit aliases are rejected.
      *
      * @param  array<int, array<string, mixed>>  $items
-     * @return array{subtotal: float, tax_amount: float, total: float}
+     * @return array{subtotal_minor: int, tax_amount_minor: int, total_minor: int}
      */
-    public function calculateTotals(array $items, float $discountAmount = 0): array
+    public function calculateTotals(array $items, int $discountAmountMinor = 0, ?string $currency = null): array
     {
-        $subtotal = 0;
-        $taxAmount = 0;
-
-        foreach ($items as $item) {
-            $qty = (float) ($item['quantity'] ?? 1);
-            // Support both 'price' and 'unit_price' keys
-            $price = (float) ($item['unit_price'] ?? $item['price'] ?? 0);
-            $itemTax = (float) ($item['tax_amount'] ?? 0);
-
-            $subtotal += $qty * $price;
-            $taxAmount += $itemTax;
+        if ($discountAmountMinor < 0) {
+            throw new InvalidArgumentException('discount_amount_minor must not be negative.');
         }
 
-        $total = $subtotal + $taxAmount - $discountAmount;
+        $currency = $currency !== null ? mb_strtoupper($currency) : null;
+        $subtotalMinor = 0;
+        $taxAmountMinor = 0;
+
+        foreach ($items as $index => $item) {
+            $this->assertMinorUnitItem($item, $index, $currency);
+
+            $quantity = (int) ($item['quantity'] ?? 1);
+            $unitPriceMinor = (int) $item['unit_price_minor'];
+            $itemTaxMinor = (int) ($item['tax_amount_minor'] ?? 0);
+
+            $subtotalMinor += $quantity * $unitPriceMinor;
+            $taxAmountMinor += $itemTaxMinor;
+        }
 
         return [
-            'subtotal' => round($subtotal, 2),
-            'tax_amount' => round($taxAmount, 2),
-            'total' => round(max(0, $total), 2),
+            'subtotal_minor' => $subtotalMinor,
+            'tax_amount_minor' => $taxAmountMinor,
+            'total_minor' => max(0, $subtotalMinor + $taxAmountMinor - $discountAmountMinor),
         ];
     }
 
-    /**
-     * Calculate subtotal from items (simple sum).
-     *
-     * @param  array<int, array<string, mixed>>  $items
-     */
-    protected function calculateSubtotal(array $items): float
+    /** @param array<int, array<string, mixed>> $items */
+    protected function calculateSubtotalMinor(array $items, string $currency): int
     {
-        $subtotal = 0;
+        return $this->calculateTotals($items, 0, $currency)['subtotal_minor'];
+    }
 
-        foreach ($items as $item) {
-            $quantity = $item['quantity'] ?? 1;
-            $price = $item['price'] ?? $item['unit_price'] ?? 0;
-            $subtotal += $quantity * $price;
+    /** @param array<string, mixed> $item */
+    private function assertMinorUnitItem(array $item, int $index, ?string $currency): void
+    {
+        foreach (['price', 'unit_price', 'tax_amount'] as $legacyKey) {
+            if (array_key_exists($legacyKey, $item)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Document item %d uses removed major-unit field `%s`; use the corresponding `*_minor` integer field.',
+                    $index,
+                    $legacyKey,
+                ));
+            }
         }
 
-        return $subtotal;
+        $quantity = $item['quantity'] ?? 1;
+
+        if (! is_int($quantity) || $quantity <= 0) {
+            throw new InvalidArgumentException(sprintf('Document item %d quantity must be a positive integer.', $index));
+        }
+
+        if (! array_key_exists('unit_price_minor', $item) || ! is_int($item['unit_price_minor']) || $item['unit_price_minor'] < 0) {
+            throw new InvalidArgumentException(sprintf('Document item %d unit_price_minor must be a non-negative integer.', $index));
+        }
+
+        if (isset($item['tax_amount_minor']) && (! is_int($item['tax_amount_minor']) || $item['tax_amount_minor'] < 0)) {
+            throw new InvalidArgumentException(sprintf('Document item %d tax_amount_minor must be a non-negative integer.', $index));
+        }
+
+        if (isset($item['currency']) && $currency !== null && mb_strtoupper((string) $item['currency']) !== $currency) {
+            throw new InvalidArgumentException(sprintf('Document item %d currency does not match document currency.', $index));
+        }
+    }
+
+    private function applyBasisPoints(int $amountMinor, int $basisPoints): int
+    {
+        return intdiv(($amountMinor * $basisPoints) + 5_000, 10_000);
+    }
+
+    private function assertBasisPoints(int $basisPoints): void
+    {
+        if ($basisPoints < 0 || $basisPoints > 100_000) {
+            throw new InvalidArgumentException('tax_rate_basis_points must be between 0 and 100000.');
+        }
+    }
+
+    private function assertNonNegativeAmounts(int ...$amounts): void
+    {
+        foreach ($amounts as $amount) {
+            if ($amount < 0) {
+                throw new InvalidArgumentException('Document monetary amounts must be non-negative minor-unit integers.');
+            }
+        }
     }
 
     protected function resolveStorageDisk(string $docType): string

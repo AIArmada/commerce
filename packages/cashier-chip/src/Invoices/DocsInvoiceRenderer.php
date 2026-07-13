@@ -29,7 +29,7 @@ class DocsInvoiceRenderer implements InvoiceRenderer
             'issue_date' => $invoice->date(),
             'due_date' => $invoice->dueDate(),
             'items' => $this->mapLineItems($invoice),
-            'total' => $invoice->rawTotal() / 100,
+            'total_minor' => $invoice->rawTotal(),
             'currency' => $invoice->currency(),
             'customer_data' => [
                 'name' => $invoice->customerName(),
@@ -68,8 +68,7 @@ class DocsInvoiceRenderer implements InvoiceRenderer
                 'name' => $item->description(),
                 'description' => $item->description(),
                 'quantity' => $item->quantity(),
-                'price' => $item->unitPrice() / 100,
-                'total' => $item->total() / 100,
+                'unit_price_minor' => $item->unitPrice(),
             ];
         })->toArray();
     }

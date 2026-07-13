@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Services;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\RichContentRendererInterface;
 use AIArmada\Docs\DataObjects\ShareLinkData;
@@ -238,7 +239,7 @@ final class DocRenderService
         $label = e((string) ($data['label'] ?? Str::headline((string) $doc->doc_type)));
         $docNumber = e((string) $doc->doc_number);
         $currency = e((string) $doc->currency);
-        $total = $this->money((float) $doc->total);
+        $total = $this->money($doc->total_minor, $doc->currency);
 
         return <<<HTML
         <section class="doc-block doc-header">
@@ -336,10 +337,10 @@ final class DocRenderService
 
         $title = e((string) ($data['label'] ?? 'Items'));
         $rows = collect($items)
-            ->map(function (array $item) use ($currency): string {
-                $quantity = (float) ($item['quantity'] ?? 1);
-                $price = (float) ($item['price'] ?? $item['unit_price'] ?? 0);
-                $lineTotal = $quantity * $price;
+            ->map(function (array $item) use ($currency, $doc): string {
+                $quantity = (int) ($item['quantity'] ?? 1);
+                $unitPriceMinor = (int) ($item['unit_price_minor'] ?? 0);
+                $lineTotalMinor = $quantity * $unitPriceMinor;
                 $name = e((string) ($item['name'] ?? $item['description'] ?? 'Item'));
                 $description = filled($item['description'] ?? null) && isset($item['name'])
                     ? '<small>' . e((string) $item['description']) . '</small>'
@@ -349,8 +350,8 @@ final class DocRenderService
                 <tr>
                     <td><strong>{$name}</strong>{$description}</td>
                     <td class="doc-number">{$quantity}</td>
-                    <td class="doc-number">{$currency} {$this->money($price)}</td>
-                    <td class="doc-number">{$currency} {$this->money($lineTotal)}</td>
+                    <td class="doc-number">{$currency} {$this->money($unitPriceMinor, (string) $doc->currency)}</td>
+                    <td class="doc-number">{$currency} {$this->money($lineTotalMinor, (string) $doc->currency)}</td>
                 </tr>
                 HTML;
             })
@@ -383,10 +384,10 @@ final class DocRenderService
         <section class="doc-block doc-totals">
             <h2>{$title}</h2>
             <dl>
-                <div><dt>Subtotal</dt><dd>{$currency} {$this->money((float) $doc->subtotal)}</dd></div>
-                <div><dt>Tax</dt><dd>{$currency} {$this->money((float) $doc->tax_amount)}</dd></div>
-                <div><dt>Discount</dt><dd>{$currency} {$this->money((float) $doc->discount_amount)}</dd></div>
-                <div class="doc-grand-total"><dt>Total</dt><dd>{$currency} {$this->money((float) $doc->total)}</dd></div>
+                <div><dt>Subtotal</dt><dd>{$currency} {$this->money($doc->subtotal_minor, $doc->currency)}</dd></div>
+                <div><dt>Tax</dt><dd>{$currency} {$this->money($doc->tax_amount_minor, $doc->currency)}</dd></div>
+                <div><dt>Discount</dt><dd>{$currency} {$this->money($doc->discount_amount_minor, $doc->currency)}</dd></div>
+                <div class="doc-grand-total"><dt>Total</dt><dd>{$currency} {$this->money($doc->total_minor, $doc->currency)}</dd></div>
             </dl>
         </section>
         HTML;
@@ -510,8 +511,8 @@ final class DocRenderService
         return Str::limit($sanitized, 120, '') . '.pdf';
     }
 
-    private function money(float $amount): string
+    private function money(int $amountMinor, string $currency): string
     {
-        return number_format($amount, 2);
+        return MoneyFormatter::decimalFromMinor($amountMinor, $currency);
     }
 }

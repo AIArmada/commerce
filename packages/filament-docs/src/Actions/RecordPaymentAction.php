@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Actions;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\Overdue;
@@ -47,9 +48,9 @@ final class RecordPaymentAction
         ], true);
     }
 
-    private static function getTotalPaid(Doc $record): float
+    private static function getTotalPaid(Doc $record): int
     {
-        return (float) $record->payments()->sum('amount');
+        return (int) $record->payments()->sum('amount_minor');
     }
 
     /**
@@ -57,17 +58,19 @@ final class RecordPaymentAction
      */
     private static function getFormSchema(Doc $record): array
     {
-        $remaining = (float) $record->total - self::getTotalPaid($record);
+        $remainingMinor = $record->total_minor - self::getTotalPaid($record);
 
         return [
-            TextInput::make('amount')
-                ->label('Payment Amount')
+            TextInput::make('amount_minor')
+                ->label('Payment Amount (minor units)')
                 ->required()
                 ->numeric()
-                ->prefix($record->currency)
-                ->default($remaining)
-                ->maxValue($remaining)
-                ->helperText("Outstanding: {$record->currency} " . number_format($remaining, 2, '.', ',')),
+                ->minValue(1)
+                ->step(1)
+                ->default($remainingMinor)
+                ->maxValue($remainingMinor)
+                ->dehydrateStateUsing(static fn (mixed $state): int => (int) $state)
+                ->helperText('Outstanding: ' . MoneyFormatter::formatMinor($remainingMinor, $record->currency)),
 
             Select::make('payment_method')
                 ->label('Payment Method')
@@ -101,23 +104,29 @@ final class RecordPaymentAction
      */
     private static function recordPayment(Doc $record, array $data): void
     {
-        $amount = (float) $data['amount'];
-        $remaining = (float) $record->total - self::getTotalPaid($record);
+        $amountMinor = $data['amount_minor'];
+        $remainingMinor = $record->total_minor - self::getTotalPaid($record);
 
-        if ($amount <= 0) {
+        if (! is_int($amountMinor)) {
             throw ValidationException::withMessages([
-                'amount' => __('Payment amount must be greater than 0.'),
+                'amount_minor' => __('Payment amount must be an integer number of minor units.'),
             ]);
         }
 
-        if ($amount > $remaining) {
+        if ($amountMinor <= 0) {
             throw ValidationException::withMessages([
-                'amount' => __('Payment amount cannot exceed the outstanding balance.'),
+                'amount_minor' => __('Payment amount must be greater than 0.'),
+            ]);
+        }
+
+        if ($amountMinor > $remainingMinor) {
+            throw ValidationException::withMessages([
+                'amount_minor' => __('Payment amount cannot exceed the outstanding balance.'),
             ]);
         }
 
         app(DocService::class)->recordPayment($record, [
-            'amount' => $amount,
+            'amount_minor' => $amountMinor,
             'currency' => $record->currency,
             'payment_method' => $data['payment_method'],
             'reference' => $data['reference'] ?? null,
@@ -127,7 +136,7 @@ final class RecordPaymentAction
 
         Notification::make()
             ->title('Payment Recorded')
-            ->body("{$record->currency} " . number_format($amount, 2) . ' payment recorded successfully.')
+            ->body(MoneyFormatter::formatMinor($amountMinor, $record->currency) . ' payment recorded successfully.')
             ->success()
             ->send();
     }

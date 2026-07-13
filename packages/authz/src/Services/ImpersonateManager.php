@@ -116,125 +116,70 @@ class ImpersonateManager
             return false;
         }
 
-        $guardName = $guardName ?? $this->getDefaultGuard();
-        $currentGuard = $this->getCurrentAuthGuardName();
+        $targetGuardName = $guardName ?? $this->getDefaultGuard();
+        $sourceGuardName = $this->getCurrentAuthGuardName();
 
-        if ($currentGuard === null) {
+        if ($sourceGuardName === null) {
             return false;
         }
 
         try {
-            session()->put(self::SESSION_KEY, $from->getAuthIdentifier());
-            session()->put(self::SESSION_GUARD, $currentGuard);
-            session()->put(self::SESSION_GUARD_USING, $guardName);
-            session()->forget(self::SESSION_BACK_TO);
-
-            if ($backTo !== null) {
-                // Sanitize the back-to URL: only allow same-host absolute URLs
-                // or relative paths. Reject external hostnames to prevent open redirect
-                // via a controlled Referer header stored in the session.
-                session()->put(self::SESSION_BACK_TO, $this->sanitizeBackToUrl($backTo));
-            }
-
-            // Use quietLogout/quietLogin if available (custom guard), otherwise fallback
-            $guard = $this->app['auth']->guard($currentGuard);
-
-            if (method_exists($guard, 'quietLogout')) {
-                $guard->quietLogout();
-            }
-
-            $targetGuard = $this->app['auth']->guard($guardName);
-
-            if (method_exists($targetGuard, 'quietLogin')) {
-                $targetGuard->quietLogin($to);
-            } else {
-                // Fallback: login without firing events
-                $targetGuard->setUser($to);
-                session()->put($this->getAuthSessionKey($guardName), $to->getAuthIdentifier());
-            }
-
-            // Update password hash in session to prevent AuthenticateSession middleware
-            // from logging out the impersonated user (it validates password hash)
-            $this->updatePasswordHashInSession($to, $guardName);
-
+            $this->writeImpersonationState($from, $sourceGuardName, $targetGuardName, $backTo);
+            $this->switchIdentity($sourceGuardName, $targetGuardName, $to);
+            $this->app['events']->dispatch(new TakeImpersonation($from, $to));
+            $this->rotateSessionId();
             session()->save();
-
-        } catch (Throwable $e) {
-            $this->restoreUser($from, $currentGuard);
-            session()->forget('password_hash_' . $guardName);
+        } catch (Throwable $exception) {
+            $this->restoreUser($from, $sourceGuardName);
+            session()->forget('password_hash_' . $targetGuardName);
             $this->clear();
             session()->save();
-
-            report($e);
+            report($exception);
 
             return false;
         }
 
-        $this->app['events']->dispatch(new TakeImpersonation($from, $to));
-
         return true;
     }
 
-    /**
-     * Leave the current impersonation.
-     */
     public function leave(): bool
     {
         if (! $this->isImpersonating()) {
             return false;
         }
 
+        $impersonatedGuardName = $this->getImpersonatorGuardUsingName();
+        $impersonatorGuardName = $this->getImpersonatorGuardName();
+        $impersonatorId = $this->getImpersonatorId();
+        $backTo = $this->getBackTo();
+
+        if ($impersonatedGuardName === null || $impersonatorGuardName === null || $impersonatorId === null) {
+            $this->clear();
+
+            return false;
+        }
+
+        $impersonated = $this->app['auth']->guard($impersonatedGuardName)->user();
+        $impersonator = $this->findUserById($impersonatorId, $impersonatorGuardName);
+
+        if ($impersonated === null || $impersonator === null) {
+            $this->clear();
+
+            return false;
+        }
+
         try {
-            $impersonatedGuardName = $this->getImpersonatorGuardUsingName();
-            $impersonatorGuardName = $this->getImpersonatorGuardName();
-
-            if ($impersonatedGuardName === null || $impersonatorGuardName === null) {
-                $this->clear();
-
-                return false;
-            }
-
-            $impersonated = $this->app['auth']->guard($impersonatedGuardName)->user();
-            $impersonator = $this->getImpersonator();
-
-            if ($impersonator === null) {
-                $this->clear();
-
-                return false;
-            }
-
-            $currentGuard = $this->app['auth']->guard($impersonatedGuardName);
-            $impersonatorGuard = $this->app['auth']->guard($impersonatorGuardName);
-
-            // Use quiet methods if available
-            if (method_exists($currentGuard, 'quietLogout')) {
-                $currentGuard->quietLogout();
-            }
-
-            if (method_exists($impersonatorGuard, 'quietLogin')) {
-                $impersonatorGuard->quietLogin($impersonator);
-            } else {
-                // Fallback
-                $impersonatorGuard->setUser($impersonator);
-                session()->put($this->getAuthSessionKey($impersonatorGuardName), $impersonator->getAuthIdentifier());
-            }
-
-            $this->updatePasswordHashInSession($impersonator, $impersonatorGuardName);
+            $this->switchIdentity($impersonatedGuardName, $impersonatorGuardName, $impersonator);
+            $this->app['events']->dispatch(new LeaveImpersonation($impersonator, $impersonated));
+            $this->clear();
             session()->forget('password_hash_' . $impersonatedGuardName);
-
-            $this->clear();
-
+            $this->rotateSessionId();
             session()->save();
-
-            if ($impersonated !== null) {
-                $this->app['events']->dispatch(new LeaveImpersonation($impersonator, $impersonated));
-            }
-
-        } catch (Throwable $e) {
-            $this->clear();
+        } catch (Throwable $exception) {
+            $this->restoreUser($impersonated, $impersonatedGuardName);
+            $this->writeImpersonationState($impersonator, $impersonatorGuardName, $impersonatedGuardName, $backTo);
             session()->save();
-
-            report($e);
+            report($exception);
 
             return false;
         }
@@ -313,6 +258,50 @@ class ImpersonateManager
      * Accepts relative paths (e.g. /admin) and absolute same-host URLs.
      * Rejects any URL pointing to a different host.
      */
+    private function writeImpersonationState(
+        Authenticatable $impersonator,
+        string $sourceGuardName,
+        string $targetGuardName,
+        ?string $backTo,
+    ): void {
+        session()->put(self::SESSION_KEY, $impersonator->getAuthIdentifier());
+        session()->put(self::SESSION_GUARD, $sourceGuardName);
+        session()->put(self::SESSION_GUARD_USING, $targetGuardName);
+        session()->forget(self::SESSION_BACK_TO);
+
+        if ($backTo !== null) {
+            session()->put(self::SESSION_BACK_TO, $this->sanitizeBackToUrl($backTo));
+        }
+    }
+
+    private function switchIdentity(string $sourceGuardName, string $targetGuardName, Authenticatable $target): void
+    {
+        $sourceGuard = $this->app['auth']->guard($sourceGuardName);
+
+        if (method_exists($sourceGuard, 'quietLogout')) {
+            $sourceGuard->quietLogout();
+        } else {
+            $sourceGuard->logout();
+        }
+
+        $targetGuard = $this->app['auth']->guard($targetGuardName);
+
+        if (method_exists($targetGuard, 'quietLogin')) {
+            $targetGuard->quietLogin($target);
+        } else {
+            $targetGuard->setUser($target);
+            session()->put($this->getAuthSessionKey($targetGuardName), $target->getAuthIdentifier());
+        }
+
+        $this->updatePasswordHashInSession($target, $targetGuardName);
+    }
+
+    private function rotateSessionId(): void
+    {
+        session()->migrate(true);
+        session()->regenerateToken();
+    }
+
     private function sanitizeBackToUrl(string $url): string
     {
         if ($url === '') {

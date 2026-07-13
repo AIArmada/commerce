@@ -23,7 +23,7 @@ return new class extends Migration
                 $table->nullableUuidMorphs('owner');
                 $table->string('status', 50)->default('paid');
                 $table->foreignUuid('doc_id');
-                $table->decimal('amount', 15, 2);
+                $table->unsignedBigInteger('amount_minor');
                 $table->string('currency', 3)->default('MYR');
                 $table->string('payment_method');
                 $table->string('reference')->nullable();
@@ -52,10 +52,11 @@ return new class extends Migration
                 $table->text('body');
                 $table->boolean('is_active')->default(true);
                 $table->nullableUuidMorphs('owner');
+                $table->string('owner_scope', 64)->default('global');
                 $table->timestampsTz();
 
                 $table->index(['doc_type', 'trigger'], $emailTemplatesTable . '_type_trigger_index');
-                $table->unique(['owner_type', 'owner_id', 'slug'], $emailTemplatesTable . '_owner_slug_unique');
+                $table->unique(['owner_scope', 'slug'], $emailTemplatesTable . '_owner_slug_unique');
             });
         }
 

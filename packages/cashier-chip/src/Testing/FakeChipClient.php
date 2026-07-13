@@ -111,6 +111,16 @@ class FakeChipClient
 
     public function createPurchase(array $data): array
     {
+        $idempotencyKey = $data['idempotency_key'] ?? null;
+
+        if (is_string($idempotencyKey) && $idempotencyKey !== '') {
+            foreach ($this->purchases as $purchase) {
+                if (($purchase['idempotency_key'] ?? null) === $idempotencyKey) {
+                    return $purchase;
+                }
+            }
+        }
+
         $id = 'pur_' . Str::random(20);
 
         $purchase = array_merge([

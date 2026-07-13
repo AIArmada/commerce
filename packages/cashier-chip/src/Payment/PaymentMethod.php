@@ -49,7 +49,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
         if ($recurringToken instanceof StoredPaymentMethod) {
             $this->storedPaymentMethod = $recurringToken;
             $this->recurringToken = [
-                'id' => $recurringToken->recurring_token,
+                'id' => $recurringToken->recurringToken(),
                 'type' => $recurringToken->type,
                 'brand' => $recurringToken->brand,
                 'last_4' => $recurringToken->last_four,
@@ -78,7 +78,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      */
     public function id(): ?string
     {
-        return $this->storedPaymentMethod?->recurring_token
+        return $this->storedPaymentMethod?->recurringToken()
             ?? $this->recurringToken['id']
             ?? $this->recurringToken['recurring_token']
             ?? null;
@@ -213,7 +213,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     {
         if ($this->storedPaymentMethod instanceof StoredPaymentMethod) {
             return [
-                'id' => $this->storedPaymentMethod->recurring_token,
+                'id' => $this->storedPaymentMethod->recurringToken(),
                 'type' => $this->storedPaymentMethod->type,
                 'brand' => $this->storedPaymentMethod->brand,
                 'last_4' => $this->storedPaymentMethod->last_four,
@@ -230,7 +230,12 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      */
     public function toArray(): array
     {
-        return $this->asChipRecurringToken();
+        return [
+            'type' => $this->type(),
+            'brand' => $this->brand(),
+            'last_4' => $this->lastFour(),
+            'is_default' => $this->isDefault(),
+        ];
     }
 
     /**

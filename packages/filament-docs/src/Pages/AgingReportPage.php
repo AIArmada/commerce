@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Overdue;
@@ -145,9 +146,9 @@ final class AgingReportPage extends Page implements HasTable
                     })
                     ->badge(),
 
-                TextColumn::make('total')
+                TextColumn::make('total_minor')
                     ->label('Amount')
-                    ->money(fn (Doc $record): string => $record->currency)
+                    ->formatStateUsing(fn (int|string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                     ->sortable(),
 
                 TextColumn::make('status')
@@ -193,13 +194,13 @@ final class AgingReportPage extends Page implements HasTable
     /**
      * Get aging summary data for the header cards.
      *
-     * @return array<string, array{count: int, amount: float}>
+     * @return array<string, array{count: int, amount_minor: int}>
      */
     public function getAgingSummary(): array
     {
         /** @var \Illuminate\Database\Eloquent\Collection<int, \AIArmada\Docs\Models\Doc> $docs */
         $docs = OwnerUiScope::apply(Doc::query(), includeGlobal: false)
-            ->select(['id', 'due_date', 'total'])
+            ->select(['id', 'due_date', 'total_minor'])
             ->whereIn('status', [
                 DocStatus::normalize(Pending::class),
                 DocStatus::normalize(Sent::class),
@@ -210,11 +211,11 @@ final class AgingReportPage extends Page implements HasTable
             ->get();
 
         $summary = [
-            'current' => ['count' => 0, 'amount' => 0],
-            '1-30' => ['count' => 0, 'amount' => 0],
-            '31-60' => ['count' => 0, 'amount' => 0],
-            '61-90' => ['count' => 0, 'amount' => 0],
-            '90+' => ['count' => 0, 'amount' => 0],
+            'current' => ['count' => 0, 'amount_minor' => 0],
+            '1-30' => ['count' => 0, 'amount_minor' => 0],
+            '31-60' => ['count' => 0, 'amount_minor' => 0],
+            '61-90' => ['count' => 0, 'amount_minor' => 0],
+            '90+' => ['count' => 0, 'amount_minor' => 0],
         ];
 
         foreach ($docs as $doc) {
@@ -230,7 +231,7 @@ final class AgingReportPage extends Page implements HasTable
             };
 
             $summary[$bucket]['count']++;
-            $summary[$bucket]['amount'] += (float) $doc->total;
+            $summary[$bucket]['amount_minor'] += $doc->total_minor;
         }
 
         return $summary;

@@ -71,7 +71,7 @@
             @endif
 
             <dt>Total</dt>
-            <dd>{{ $doc->currency }} {{ number_format((float) $doc->total, 2) }}</dd>
+            <dd>{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinorWithCode($doc->total_minor, $doc->currency) }}</dd>
         </dl>
     </div>
 

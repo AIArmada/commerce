@@ -37,7 +37,7 @@ The package uses a dedicated `docs_` prefix by default. Table names can still be
 ```php
 'defaults' => [
     'currency' => env('DOCS_CURRENCY', 'MYR'),
-    'tax_rate' => env('DOCS_TAX_RATE', 0),
+    'tax_rate_basis_points' => env('DOCS_TAX_RATE_BASIS_POINTS', 0),
     'due_days' => env('DOCS_DUE_DAYS', 30),
 ],
 ```

@@ -44,10 +44,10 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonImmutable|null $cancelled_at
  * @property CarbonImmutable|null $refunded_at
  * @property CarbonImmutable|null $overdue_at
- * @property string $subtotal
- * @property string $tax_amount
- * @property string $discount_amount
- * @property string $total
+ * @property int $subtotal_minor
+ * @property int $tax_amount_minor
+ * @property int $discount_amount_minor
+ * @property int $total_minor
  * @property string $currency
  * @property array<string, mixed>|null $body
  * @property string|null $notes
@@ -95,10 +95,10 @@ final class Doc extends Model implements Auditable
         'cancelled_at',
         'refunded_at',
         'overdue_at',
-        'subtotal',
-        'tax_amount',
-        'discount_amount',
-        'total',
+        'subtotal_minor',
+        'tax_amount_minor',
+        'discount_amount_minor',
+        'total_minor',
         'currency',
         'body',
         'notes',
@@ -329,10 +329,10 @@ final class Doc extends Model implements Auditable
             'cancelled_at' => 'immutable_datetime',
             'refunded_at' => 'immutable_datetime',
             'overdue_at' => 'immutable_datetime',
-            'subtotal' => 'decimal:2',
-            'tax_amount' => 'decimal:2',
-            'discount_amount' => 'decimal:2',
-            'total' => 'decimal:2',
+            'subtotal_minor' => 'integer',
+            'tax_amount_minor' => 'integer',
+            'discount_amount_minor' => 'integer',
+            'total_minor' => 'integer',
             'body' => 'array',
             'customer_data' => 'array',
             'company_data' => 'array',

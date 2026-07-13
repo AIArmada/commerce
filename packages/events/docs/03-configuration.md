@@ -205,3 +205,20 @@ Auto-detects commerce packages. When related packages are installed, integration
 ```
 
 The welcome notification is sent when a registration is approved.
+
+## Change-notice delivery
+
+```php
+'change_notices' => [
+    'audience_resolver' => null,
+    'notification_dispatcher' => null,
+    'channels' => ['mail'],
+    'delivery' => [
+        'max_attempts' => 5,
+        'lease_seconds' => 120,
+        'backoff_seconds' => [10, 30, 120, 300],
+    ],
+],
+```
+
+The default dispatcher currently has a concrete adapter for `mail` only. Enabling another channel without installing a replacement `EventChangeNoticeNotificationDispatcher` marks the batch failed with `MISSING_NOTIFICATION_ADAPTER`; it never reports a false success.

@@ -16,7 +16,6 @@ return new class extends Migration
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('code', 64)->unique();
-            $table->string('api_token', 64)->nullable()->unique();
             $table->string('name', 120);
             $table->text('description')->nullable();
             $table->string('status', 32)->default('draft')->index();

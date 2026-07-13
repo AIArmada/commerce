@@ -61,6 +61,9 @@ final class CommunicationSuppression extends Model
         'metadata',
     ];
 
+    /** @var list<string> */
+    protected $hidden = ['destination_hash', 'metadata'];
+
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 
     public function getTable(): string

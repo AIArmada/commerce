@@ -64,14 +64,14 @@ test('doc resource navigation badges count pending and overdue documents', funct
             'doc_type' => 'invoice',
             'status' => $status,
             'issue_date' => now(),
-            'subtotal' => 100,
-            'tax_amount' => 0,
-            'discount_amount' => 0,
-            'total' => 100,
+            'subtotal_minor' => 100,
+            'tax_amount_minor' => 0,
+            'discount_amount_minor' => 0,
+            'total_minor' => 100,
             'currency' => 'MYR',
             'customer_data' => ['name' => 'Acme Customer'],
             'company_data' => ['name' => 'Commerce Demo'],
-            'items' => [['name' => 'Demo Item', 'quantity' => 1, 'price' => 100]],
+            'items' => [['name' => 'Demo Item', 'quantity' => 1, 'unit_price_minor' => 100]],
         ]);
     };
 

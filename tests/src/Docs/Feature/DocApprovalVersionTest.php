@@ -132,8 +132,8 @@ describe('DocApproval', function (): void {
 describe('DocVersion', function (): void {
     test('it can create document version', function (): void {
         $doc = Doc::factory()->create([
-            'items' => [['name' => 'Item 1', 'quantity' => 1, 'price' => 100]],
-            'total' => 100,
+            'items' => [['name' => 'Item 1', 'quantity' => 1, 'unit_price_minor' => 100]],
+            'total_minor' => 100,
         ]);
 
         $version = DocVersion::create([
@@ -141,7 +141,7 @@ describe('DocVersion', function (): void {
             'version_number' => 1,
             'snapshot' => [
                 'items' => $doc->items,
-                'total' => $doc->total,
+                'total_minor' => $doc->total_minor,
                 'status' => $doc->status->getValue(),
             ],
             'changed_by' => 'user-1',
@@ -182,11 +182,11 @@ describe('DocVersion', function (): void {
     test('version stores document snapshot', function (): void {
         $doc = Doc::factory()->create([
             'items' => [
-                ['name' => 'Product A', 'quantity' => 2, 'price' => 50],
-                ['name' => 'Product B', 'quantity' => 1, 'price' => 100],
+                ['name' => 'Product A', 'quantity' => 2, 'unit_price_minor' => 50],
+                ['name' => 'Product B', 'quantity' => 1, 'unit_price_minor' => 100],
             ],
-            'subtotal' => 200,
-            'total' => 200,
+            'subtotal_minor' => 200,
+            'total_minor' => 200,
         ]);
 
         $version = DocVersion::create([
@@ -194,14 +194,14 @@ describe('DocVersion', function (): void {
             'version_number' => 1,
             'snapshot' => [
                 'items' => $doc->items,
-                'subtotal' => $doc->subtotal,
-                'total' => $doc->total,
+                'subtotal_minor' => $doc->subtotal_minor,
+                'total_minor' => $doc->total_minor,
             ],
             'changed_by' => 'user-1',
         ]);
 
         expect($version->snapshot['items'])->toHaveCount(2)
-            ->and($version->snapshot['total'])->toBe('200.00');
+            ->and($version->snapshot['total_minor'])->toBe(200);
     });
 
     test('version belongs to doc', function (): void {

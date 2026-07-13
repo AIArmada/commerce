@@ -90,3 +90,9 @@ Status values stored in the database are unchanged. Allowed transitions are defi
 ### `DefaultEventRegistrationScopeResolver` TypeError on explicit mode
 
 When a session or occurrence has an explicit `pricing_mode` or `registration_mode` column value, the model cast may already return the enum instance. The resolver handles both cases (raw string and pre-cast enum). If you see `TypeError: ::from()` in the stack trace, ensure your package version includes the `instanceof` guard added in this feature.
+
+## A notification batch remains processing
+
+Inspect its delivery rows. `processing` with a fresh `leased_at` means a worker owns the attempt. A stale lease is reclaimable by a later job. `failed` is retryable; `dead` exhausted its automatic attempts and requires an explicit operator retry. Error storage is intentionally limited to `last_error_code`; raw transport exceptions are not persisted.
+
+If the batch has `MISSING_NOTIFICATION_ADAPTER`, either restrict `events.change_notices.channels` to `mail` or bind a dispatcher that implements every enabled channel.

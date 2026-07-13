@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
@@ -113,9 +114,9 @@ final class PendingApprovalsPage extends Page implements HasTable
                     ->label(__('Recipient'))
                     ->searchable(),
 
-                TextColumn::make('doc.total')
+                TextColumn::make('doc.total_minor')
                     ->label(__('Total'))
-                    ->money(fn (DocApproval $record): string => $record->doc->currency ?? 'MYR')
+                    ->formatStateUsing(fn (int|string $state, DocApproval $record): string => MoneyFormatter::formatMinor((int) $state, $record->doc->currency ?? 'MYR'))
                     ->sortable(),
 
                 TextColumn::make('requestedBy.name')

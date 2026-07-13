@@ -74,18 +74,18 @@ describe('DocWorkflow', function (): void {
             'doc_type' => DocType::Invoice,
             'is_active' => true,
             'rules' => [
-                'total' => ['operator' => '>', 'value' => 1000],
+                'total_minor' => ['operator' => '>', 'value' => 1000],
             ],
         ]);
 
         $lowValueDoc = Doc::factory()->create([
             'doc_type' => DocType::Invoice->value,
-            'total' => 500,
+            'total_minor' => 500,
         ]);
 
         $highValueDoc = Doc::factory()->create([
             'doc_type' => DocType::Invoice->value,
-            'total' => 2000,
+            'total_minor' => 2000,
         ]);
 
         expect($workflow->appliesTo($lowValueDoc))->toBeFalse()
@@ -239,12 +239,12 @@ describe('DocWorkflowStep', function (): void {
             'order' => 1,
             'action_type' => DocWorkflowStep::ACTION_APPROVAL,
             'conditions' => [
-                'total' => ['operator' => '>=', 'value' => 5000],
+                'total_minor' => ['operator' => '>=', 'value' => 5000],
             ],
         ]);
 
-        $lowValueDoc = Doc::factory()->create(['total' => 1000]);
-        $highValueDoc = Doc::factory()->create(['total' => 10000]);
+        $lowValueDoc = Doc::factory()->create(['total_minor' => 1000]);
+        $highValueDoc = Doc::factory()->create(['total_minor' => 10000]);
 
         expect($step->conditionsMet($lowValueDoc))->toBeFalse()
             ->and($step->conditionsMet($highValueDoc))->toBeTrue();

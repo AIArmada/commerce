@@ -8,13 +8,13 @@ use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use DateTimeInterface;
-use Exception;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
-/**
- * PayPal Payouts API processor.
- */
 final class PayPalProcessor implements PayoutProcessorInterface
 {
     private string $clientId;
@@ -27,8 +27,8 @@ final class PayPalProcessor implements PayoutProcessorInterface
 
     public function __construct()
     {
-        $this->clientId = config('affiliates.payouts.paypal.client_id', '');
-        $this->clientSecret = config('affiliates.payouts.paypal.client_secret', '');
+        $this->clientId = (string) config('affiliates.payouts.paypal.client_id', '');
+        $this->clientSecret = (string) config('affiliates.payouts.paypal.client_secret', '');
         $this->apiUrl = config('affiliates.payouts.paypal.sandbox', true)
             ? 'https://api-m.sandbox.paypal.com'
             : 'https://api-m.paypal.com';
@@ -36,122 +36,112 @@ final class PayPalProcessor implements PayoutProcessorInterface
 
     public function process(AffiliatePayout $payout): PayoutResult
     {
-        if (empty($this->clientId) || empty($this->clientSecret)) {
-            return PayoutResult::failure('PayPal credentials not configured', 'PAYPAL_NOT_CONFIGURED');
+        if ($this->clientId === '' || $this->clientSecret === '') {
+            return PayoutResult::failure('PayPal is not configured.', 'PAYPAL_NOT_CONFIGURED');
         }
 
+        $operation = $payout->operation;
         $affiliate = $payout->affiliate;
 
-        if (! $affiliate) {
-            return PayoutResult::failure('Payout owner is not an affiliate', 'INVALID_PAYOUT_OWNER');
+        if ($operation === null || $affiliate === null) {
+            return PayoutResult::failure('The payout operation is invalid.', 'INVALID_PAYOUT_OPERATION');
         }
 
-        $payoutMethod = $affiliate->payoutMethods()
-            ->where('type', 'paypal')
-            ->where('is_default', true)
-            ->first();
+        $method = $affiliate->payoutMethods()->where('type', 'paypal')->where('is_default', true)->first();
+        $email = is_array($method?->details) ? ($method->details['email'] ?? null) : null;
 
-        if (! $payoutMethod) {
-            return PayoutResult::failure('No PayPal account configured', 'NO_PAYPAL_ACCOUNT');
+        if (! is_string($email) || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            return PayoutResult::failure('The PayPal payout destination is invalid.', 'INVALID_PAYPAL_ACCOUNT');
         }
 
-        $paypalEmail = $payoutMethod->details['email'] ?? null;
+        $netAmount = $payout->total_minor - $this->getFees($payout->total_minor, $payout->currency);
 
-        if (! $paypalEmail) {
-            return PayoutResult::failure('PayPal email missing', 'INVALID_PAYPAL_ACCOUNT');
+        if ($netAmount <= 0) {
+            return PayoutResult::failure('The payout amount does not cover provider fees.', 'NON_POSITIVE_NET_AMOUNT');
         }
+
+        $token = $this->getAccessToken();
+
+        if ($token === null) {
+            return PayoutResult::unknown('PAYPAL_AUTH_OUTCOME_UNKNOWN');
+        }
+
+        $providerOperationId = mb_substr(hash('sha256', $operation->id), 0, 30);
 
         try {
-            $token = $this->getAccessToken();
-
-            if (! $token) {
-                return PayoutResult::failure('Failed to authenticate with PayPal', 'PAYPAL_AUTH_FAILED');
-            }
-
-            $netAmount = $payout->amount_minor - $this->getFees($payout->amount_minor, $payout->currency);
-
-            $response = Http::withToken($token)
-                ->post("{$this->apiUrl}/v1/payments/payouts", [
-                    'sender_batch_header' => [
-                        'sender_batch_id' => $payout->id,
-                        'email_subject' => 'You have a payout!',
+            $response = $this->request()->withToken($token)->post("{$this->apiUrl}/v1/payments/payouts", [
+                'sender_batch_header' => [
+                    'sender_batch_id' => $providerOperationId,
+                    'email_subject' => 'You have a payout',
+                ],
+                'items' => [[
+                    'recipient_type' => 'EMAIL',
+                    'amount' => [
+                        'value' => number_format($netAmount / 100, 2, '.', ''),
+                        'currency' => mb_strtoupper($payout->currency),
                     ],
-                    'items' => [
-                        [
-                            'recipient_type' => 'EMAIL',
-                            'amount' => [
-                                'value' => number_format($netAmount / 100, 2, '.', ''),
-                                'currency' => mb_strtoupper($payout->currency),
-                            ],
-                            'sender_item_id' => $payout->id,
-                            'receiver' => $paypalEmail,
-                        ],
-                    ],
-                ]);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                $batchId = $data['batch_header']['payout_batch_id'] ?? null;
-
-                return PayoutResult::success(
-                    externalReference: $batchId,
-                    metadata: ['payout_batch_id' => $batchId]
-                );
-            }
-
-            $error = $response->json();
-
-            return PayoutResult::failure(
-                reason: $error['message'] ?? 'PayPal payout failed',
-                code: $error['name'] ?? 'PAYPAL_ERROR'
-            );
-        } catch (Exception $e) {
-            Log::error('PayPal payout error', [
-                'payout_id' => $payout->id,
-                'error' => $e->getMessage(),
+                    'sender_item_id' => $providerOperationId,
+                    'receiver' => $email,
+                ]],
             ]);
 
-            return PayoutResult::failure($e->getMessage(), 'PAYPAL_EXCEPTION');
+            $batchId = $response->json('batch_header.payout_batch_id');
+
+            if ($response->successful() && is_string($batchId) && $batchId !== '') {
+                return PayoutResult::pending($batchId, ['provider' => 'paypal']);
+            }
+
+            return $this->classifyFailure($response);
+        } catch (ConnectionException) {
+            return PayoutResult::unknown('PAYPAL_CONNECTION_OUTCOME_UNKNOWN');
+        } catch (Throwable $throwable) {
+            Log::error('PayPal payout submission failed unexpectedly.', [
+                'payout_id' => $payout->id,
+                'exception' => $throwable::class,
+            ]);
+
+            return PayoutResult::unknown('PAYPAL_SUBMISSION_OUTCOME_UNKNOWN');
         }
     }
 
     public function getStatus(AffiliatePayout $payout): string
     {
-        $currentStatus = $payout->status->getValue();
+        if (! is_string($payout->external_reference) || $payout->external_reference === '') {
+            return 'unknown';
+        }
 
-        if (empty($payout->external_reference)) {
-            return $currentStatus;
+        $token = $this->getAccessToken();
+
+        if ($token === null) {
+            return 'unknown';
         }
 
         try {
-            $token = $this->getAccessToken();
-
-            if (! $token) {
-                return $currentStatus;
-            }
-
-            $response = Http::withToken($token)
+            $response = $this->request(attempts: 1)->withToken($token)
                 ->get("{$this->apiUrl}/v1/payments/payouts/{$payout->external_reference}");
 
-            if ($response->successful()) {
-                $data = $response->json();
-                $batchStatus = $data['batch_header']['batch_status'] ?? null;
-
-                return match ($batchStatus) {
-                    'SUCCESS' => 'completed',
-                    'PENDING', 'PROCESSING' => 'processing',
-                    'DENIED', 'CANCELED' => 'failed',
-                    default => $currentStatus,
-                };
+            if ($response->status() === 404) {
+                return 'not_found';
             }
-        } catch (Exception $e) {
-            Log::warning('Failed to get PayPal payout status', [
-                'payout_id' => $payout->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
 
-        return $currentStatus;
+            if (! $response->successful()) {
+                return 'unknown';
+            }
+
+            return match ((string) $response->json('batch_header.batch_status')) {
+                'SUCCESS' => 'completed',
+                'PENDING', 'PROCESSING', 'NEW' => 'processing',
+                'DENIED', 'CANCELED' => 'failed',
+                default => 'unknown',
+            };
+        } catch (Throwable $throwable) {
+            Log::warning('PayPal payout reconciliation request failed.', [
+                'payout_id' => $payout->id,
+                'exception' => $throwable::class,
+            ]);
+
+            return 'unknown';
+        }
     }
 
     public function cancel(AffiliatePayout $payout): bool
@@ -161,7 +151,7 @@ final class PayPalProcessor implements PayoutProcessorInterface
 
     public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
     {
-        return now();
+        return now()->addDays(1);
     }
 
     public function getFees(int $amountMinor, string $currency): int
@@ -171,15 +161,13 @@ final class PayPalProcessor implements PayoutProcessorInterface
 
     public function validateDetails(array $details): array
     {
-        $errors = [];
+        $email = $details['email'] ?? null;
 
-        if (empty($details['email'])) {
-            $errors['email'] = 'PayPal email is required';
-        } elseif (! filter_var($details['email'], FILTER_VALIDATE_EMAIL)) {
-            $errors['email'] = 'Invalid email format';
+        if (! is_string($email) || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            return ['email' => 'A valid PayPal email is required'];
         }
 
-        return $errors;
+        return [];
     }
 
     public function getIdentifier(): string
@@ -189,26 +177,48 @@ final class PayPalProcessor implements PayoutProcessorInterface
 
     private function getAccessToken(): ?string
     {
-        if ($this->accessToken) {
+        if ($this->accessToken !== null) {
             return $this->accessToken;
         }
 
         try {
-            $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
+            $response = $this->request()->withBasicAuth($this->clientId, $this->clientSecret)
                 ->asForm()
-                ->post("{$this->apiUrl}/v1/oauth2/token", [
-                    'grant_type' => 'client_credentials',
-                ]);
+                ->post("{$this->apiUrl}/v1/oauth2/token", ['grant_type' => 'client_credentials']);
 
-            if ($response->successful()) {
-                $this->accessToken = $response->json('access_token');
+            $token = $response->successful() ? $response->json('access_token') : null;
 
-                return $this->accessToken;
+            if (is_string($token) && $token !== '') {
+                return $this->accessToken = $token;
             }
-        } catch (Exception $e) {
-            Log::error('PayPal OAuth error', ['error' => $e->getMessage()]);
+        } catch (Throwable $throwable) {
+            Log::warning('PayPal OAuth request failed.', ['exception' => $throwable::class]);
         }
 
         return null;
+    }
+
+    private function request(?int $attempts = null): PendingRequest
+    {
+        $attempts ??= max(1, (int) config('affiliates.payouts.transport.attempts', 2));
+
+        return Http::connectTimeout(max(1, (int) config('affiliates.payouts.transport.connect_timeout_seconds', 3)))
+            ->timeout(max(1, (int) config('affiliates.payouts.transport.timeout_seconds', 15)))
+            ->retry($attempts, max(0, (int) config('affiliates.payouts.transport.retry_delay_milliseconds', 100)), throw: false);
+    }
+
+    private function classifyFailure(Response $response): PayoutResult
+    {
+        $providerCode = $response->json('name');
+
+        if (in_array($response->status(), [408, 409, 425, 429], true) || $response->serverError() || $providerCode === 'DUPLICATE_REQUEST_ID') {
+            return PayoutResult::unknown('PAYPAL_HTTP_OUTCOME_UNKNOWN');
+        }
+
+        $safeCode = is_string($providerCode) && preg_match('/^[A-Za-z0-9_.-]{1,48}$/', $providerCode) === 1
+            ? 'PAYPAL_' . mb_strtoupper($providerCode)
+            : 'PAYPAL_REQUEST_REJECTED';
+
+        return PayoutResult::failure('PayPal rejected the payout request.', $safeCode);
     }
 }

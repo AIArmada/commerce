@@ -1,0 +1,216 @@
+=== raw html calls ===
+packages/filament-orders/src/Resources/OrderResource/Schemas/OrderInfolist.php:72:                            return new HtmlString(nl2br(e($record->billingAddress->getFormatted())));
+packages/filament-orders/src/Resources/OrderResource/Schemas/OrderInfolist.php:75:                        ->html(),
+packages/filament-orders/src/Resources/OrderResource/Schemas/OrderInfolist.php:84:                            return new HtmlString(nl2br(e($record->shippingAddress->getFormatted())));
+packages/filament-orders/src/Resources/OrderResource/Schemas/OrderInfolist.php:87:                        ->html(),
+packages/vouchers/src/Filament/Extensions/CartVoucherActions.php:246:                        ->content(new HtmlString('
+packages/filament-authz/src/Resources/UserResource/Pages/ViewUser.php:86:                        ->html(),
+packages/filament-events/src/Pages/NotificationCenter.php:96:                            return new HtmlString('<p class="text-sm text-gray-500">No delivery records yet.</p>');
+packages/filament-events/src/Pages/NotificationCenter.php:112:                        return new HtmlString($html);
+packages/filament-events/src/Pages/EventPublicPreview.php:56:                        Infolists\Components\TextEntry::make('description')->html(),
+packages/filament-authz/src/Resources/PermissionResource.php:309:        return new HtmlString('<ul class="list-disc list-inside space-y-1">' . $list . '</ul>' . $suffix);
+packages/filament-engagement/src/Resources/SubscriptionResource.php:121:                            ->html(),
+packages/filament-engagement/src/Resources/SubscriptionResource.php:127:                        ->html(),
+packages/filament-events/src/Resources/EventChangeLogResource.php:84:                    ->html()
+packages/filament-events/src/Resources/EventChangeLogResource.php:88:                    ->html()
+packages/filament-engagement/src/Resources/ResponseResource.php:118:                        ->html(),
+packages/filament-engagement/src/Resources/ReminderResource.php:129:                        ->html(),
+packages/filament-engagement/src/Resources/ReactionResource.php:107:                        ->html(),
+packages/filament-engagement/src/Resources/FollowResource.php:142:                    ->html()
+packages/filament-engagement/src/Resources/BookmarkResource.php:131:                    ->html()
+packages/filament-engagement/src/Resources/BookmarkCollectionResource.php:125:                    ->html()
+packages/filament-docs/src/Rendering/FilamentRichContentRenderer.php:21:            return new HtmlString('');
+packages/filament-docs/src/Rendering/FilamentRichContentRenderer.php:43:        return new HtmlString($renderer->toHtml());
+tests/src/AffiliateNetwork/Unit/Models/AffiliateOfferCreativeModelTest.php:64:            $creative = AffiliateOfferCreative::factory()->html()->forOffer($this->offer)->create();
+packages/docs/resources/views/documents/show.blade.php:208:        {!! $content !!}
+packages/docs/resources/views/emails/document.blade.php:57:        {!! nl2br(e($body)) !!}
+packages/docs/src/Rendering/TiptapJsonRenderer.php:21:            return new HtmlString('');
+packages/docs/src/Rendering/TiptapJsonRenderer.php:24:        return new HtmlString($this->renderNode($content, $mergeTags));
+packages/docs/src/Services/DocRenderService.php:48:        return new HtmlString(view('docs::documents.show', [
+packages/docs/src/Services/DocRenderService.php:52:            'content' => new HtmlString($content),
+=== owner morph declarations ===
+packages/products/database/migrations/2001_01_01_000013_create_product_attribute_sets_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/signals/database/migrations/2001_01_01_000011_create_signals_interaction_rules_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/products/database/migrations/2001_01_01_000012_create_product_attribute_values_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/signals/database/migrations/2001_01_01_000010_create_signals_goals_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/seating/database/migrations/2000_01_01_000005_create_seat_allocations_table.php:17:            $table->nullableMorphs('owner');
+packages/signals/database/migrations/2001_01_01_000009_create_signals_alert_logs_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/products/database/migrations/2001_01_01_000011_create_product_attributes_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/promotions/database/migrations/2000_12_01_000001_create_promotions_table.php:17:            $table->nullableMorphs('owner');
+packages/seating/database/migrations/2000_01_01_000004_create_seat_holds_table.php:18:            $table->nullableMorphs('owner');
+packages/products/database/migrations/2001_01_01_000010_create_product_attribute_groups_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/signals/database/migrations/2001_01_01_000008_create_signals_alert_rules_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/seating/database/migrations/2000_01_01_000003_create_seats_table.php:17:            $table->nullableMorphs('owner');
+packages/moderation/database/migrations/2000_01_01_000002_create_moderation_actions_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/products/database/migrations/2001_01_01_000008_create_product_collections_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/signals/database/migrations/2001_01_01_000007_create_signals_saved_reports_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/seating/database/migrations/2000_01_01_000002_create_seat_sections_table.php:17:            $table->nullableMorphs('owner');
+packages/moderation/database/migrations/2000_01_01_000001_create_moderation_blocks_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/signals/database/migrations/2001_01_01_000006_create_signals_segments_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/shipping/database/migrations/2001_02_01_000007_create_shipping_return_authorizations_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/products/database/migrations/2001_01_01_000006_create_product_categories_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/seating/database/migrations/2000_01_01_000001_create_seat_maps_table.php:18:            $table->nullableMorphs('owner');
+packages/signals/database/migrations/2001_01_01_000005_create_signals_daily_metrics_table.php:16:            $table->nullableUuidMorphs('owner');
+packages/shipping/database/migrations/2001_02_01_000005_create_shipping_zones_table.php:18:            $table->nullableUuidMorphs('owner');
+packages/products/database/migrations/2001_01_01_000004_create_product_variants_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/signals/database/migrations/2001_01_01_000004_create_signals_events_table.php:20:            $table->nullableUuidMorphs('owner');
+packages/products/database/migrations/2001_01_01_000003_create_product_option_values_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/signals/database/migrations/2001_01_01_000003_create_signals_sessions_table.php:20:            $table->nullableUuidMorphs('owner');
+packages/vouchers/database/migrations/2001_04_01_000003_create_voucher_wallets_table.php:24:            $table->nullableUuidMorphs('owner');
+packages/vouchers/database/migrations/2001_04_01_000003_create_voucher_wallets_table.php:33:            // Note: nullableUuidMorphs('owner') already creates index on ['owner_type', 'owner_id']
+packages/signals/database/migrations/2001_01_01_000002_create_signals_identities_table.php:18:            $table->nullableUuidMorphs('owner');
+packages/products/database/migrations/2001_01_01_000002_create_product_options_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/shipping/database/migrations/2001_02_01_000001_create_shipments_table.php:20:            $table->nullableUuidMorphs('owner');
+packages/engagement/database/migrations/2000_06_01_000010_create_engagement_shares_table.php:38:            $table->nullableUuidMorphs('owner');
+packages/signals/database/migrations/2001_01_01_000001_create_signals_tracked_properties_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/products/database/migrations/2001_01_01_000001_create_products_table.php:18:            $table->nullableUuidMorphs('owner');
+packages/vouchers/database/migrations/2001_04_01_000001_create_vouchers_table.php:23:            $table->nullableUuidMorphs('owner');
+packages/vouchers/database/migrations/2001_04_01_000001_create_vouchers_table.php:77:            // Note: nullableUuidMorphs('owner') already creates index on ['owner_type', 'owner_id']
+packages/engagement/database/migrations/2000_06_01_000009_create_engagement_counters_table.php:28:            $table->nullableUuidMorphs('owner');
+packages/tax/database/migrations/2001_03_01_000004_create_tax_exemptions_table.php:15:            $table->nullableMorphs('owner');
+packages/engagement/database/migrations/2000_06_01_000008_create_engagement_reminders_table.php:41:            $table->nullableUuidMorphs('owner');
+packages/tax/database/migrations/2001_03_01_000003_create_tax_rates_table.php:15:            $table->nullableMorphs('owner');
+packages/feedback/database/migrations/2000_01_01_000001_create_feedback_tables.php:28:            $table->nullableMorphs('owner');
+packages/feedback/database/migrations/2000_01_01_000001_create_feedback_tables.php:63:            $table->nullableMorphs('owner');
+packages/feedback/database/migrations/2000_01_01_000001_create_feedback_tables.php:82:            $table->nullableMorphs('owner');
+packages/feedback/database/migrations/2000_01_01_000001_create_feedback_tables.php:113:            $table->nullableMorphs('owner');
+packages/feedback/database/migrations/2000_01_01_000001_create_feedback_tables.php:132:            $table->nullableMorphs('owner');
+packages/feedback/database/migrations/2000_01_01_000001_create_feedback_tables.php:167:            $table->nullableMorphs('owner');
+packages/feedback/database/migrations/2000_01_01_000001_create_feedback_tables.php:194:            $table->nullableMorphs('owner');
+packages/feedback/database/migrations/2000_01_01_000001_create_feedback_tables.php:221:            $table->nullableMorphs('owner');
+packages/feedback/database/migrations/2000_01_01_000001_create_feedback_tables.php:244:            $table->nullableMorphs('owner');
+packages/engagement/database/migrations/2000_06_01_000007_create_engagement_subscriptions_table.php:37:            $table->nullableUuidMorphs('owner');
+packages/tax/database/migrations/2001_03_01_000002_create_tax_classes_table.php:15:            $table->nullableMorphs('owner');
+packages/engagement/database/migrations/2000_06_01_000006_create_engagement_reactions_table.php:33:            $table->nullableUuidMorphs('owner');
+packages/tax/database/migrations/2001_03_01_000001_create_tax_zones_table.php:17:            $table->nullableMorphs('owner');
+packages/membership/database/migrations/2000_01_01_000002_create_membership_invitations_table.php:18:            $table->nullableUuidMorphs('owner');
+packages/engagement/database/migrations/2000_06_01_000005_create_engagement_responses_table.php:36:            $table->nullableUuidMorphs('owner');
+packages/membership/database/migrations/2000_01_01_000001_create_membership_applications_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/engagement/database/migrations/2000_06_01_000004_create_engagement_bookmark_collection_items_table.php:28:            $table->nullableUuidMorphs('owner');
+packages/pricing/database/migrations/2000_12_01_000003_create_price_tiers_table.php:33:            $table->nullableMorphs('owner');
+packages/engagement/database/migrations/2000_06_01_000003_create_engagement_bookmark_collections_table.php:21:            $table->nullableUuidMorphs('owner');
+packages/pricing/database/migrations/2000_12_01_000002_create_prices_table.php:33:            $table->nullableMorphs('owner');
+packages/engagement/database/migrations/2000_06_01_000002_create_engagement_bookmarks_table.php:34:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000019_create_communication_destinations_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/pricing/database/migrations/2000_12_01_000001_create_price_lists_table.php:32:            $table->nullableMorphs('owner');
+packages/engagement/database/migrations/2000_06_01_000001_create_engagement_follows_table.php:36:            $table->nullableUuidMorphs('owner');
+packages/ticketing/database/migrations/2000_01_01_000004_create_passes_table.php:34:            $table->nullableMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000016_create_communication_notification_inboxes_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000015_create_communication_tracking_tokens_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/filament-cart/database/migrations/2000_08_01_000001_create_cart_snapshots_table.php:26:            $table->nullableUuidMorphs('owner');
+packages/growth/database/migrations/2001_02_01_000003_create_growth_assignments_table.php:21:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000014_create_communication_references_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000013_create_communication_attachments_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/growth/database/migrations/2001_02_01_000002_create_growth_variants_table.php:18:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000012_create_communication_suppressions_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000006_create_communication_deliveries_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/growth/database/migrations/2001_02_01_000001_create_growth_experiments_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000011_create_communication_preferences_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/cart/database/migrations/2000_02_01_000002_create_cart_conditions_table.php:53:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000010_create_communication_template_versions_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000005_create_communication_contents_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/cart/database/migrations/2000_02_01_000001_create_carts_table.php:24:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000009_create_communication_templates_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/customers/database/migrations/2000_05_01_000007_create_customer_notes_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000004_create_communication_recipients_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000008_create_communication_events_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000003_create_communications_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/customers/database/migrations/2000_05_01_000005_create_customer_groups_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000007_create_communication_attempts_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000002_create_communication_threads_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/customers/database/migrations/2000_05_01_000003_create_customer_segments_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/jnt/database/migrations/2000_10_01_000005_add_jnt_webhook_columns_to_webhook_calls_table.php:50:                $table->nullableMorphs('owner');
+packages/communications/database/migrations/2000_01_01_000001_create_communication_batches_table.php:17:            $table->nullableUuidMorphs('owner');
+packages/customers/database/migrations/2000_05_01_000002_create_customer_addresses_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/customers/database/migrations/2000_05_01_000001_create_customers_table.php:19:            $table->nullableUuidMorphs('owner');
+packages/jnt/database/migrations/2000_10_01_000004_create_jnt_tracking_events_table.php:60:            $table->nullableMorphs('owner');
+packages/jnt/database/migrations/2000_10_01_000003_create_jnt_order_parcels_table.php:29:            $table->nullableMorphs('owner');
+packages/contacting/database/migrations/2000_01_01_000003_create_contact_social_profiles_table.php:23:            $table->nullableUuidMorphs('owner');
+packages/affiliate-network/database/migrations/2000_01_01_000002_create_affiliate_network_offer_categories_table.php:17:            $table->nullableMorphs('owner');
+packages/jnt/database/migrations/2000_10_01_000002_create_jnt_order_items_table.php:30:            $table->nullableMorphs('owner');
+packages/contacting/database/migrations/2000_01_01_000002_create_contact_snapshots_table.php:23:            $table->nullableUuidMorphs('owner');
+packages/affiliate-network/database/migrations/2000_01_01_000001_create_affiliate_network_sites_table.php:18:            $table->nullableMorphs('owner');
+packages/jnt/database/migrations/2000_10_01_000001_create_jnt_orders_table.php:65:            $table->nullableMorphs('owner');
+packages/checkout/database/migrations/2024_01_01_000001_create_checkout_sessions_table.php:27:            $table->nullableUuidMorphs('owner');
+packages/contacting/database/migrations/2000_01_01_000001_create_contact_methods_table.php:23:            $table->nullableUuidMorphs('owner');
+packages/chip/database/migrations/2000_04_01_000005_create_chip_clients_table.php:60:            $table->nullableMorphs('owner');
+packages/chip/database/migrations/2026_05_28_000001_create_chip_customers_table.php:25:            $table->nullableUuidMorphs('owner');
+packages/chip/database/migrations/2000_04_01_000002_create_chip_payments_table.php:44:            $table->nullableMorphs('owner');
+packages/chip/database/migrations/2000_04_01_000009_create_chip_company_statements_table.php:36:            $table->nullableMorphs('owner');
+packages/chip/database/migrations/2000_04_01_000004_create_chip_bank_accounts_table.php:45:            $table->nullableMorphs('owner');
+packages/chip/database/migrations/2000_04_01_000001_create_chip_purchases_table.php:122:            $table->nullableMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000004_create_doc_extended_tables.php:23:                $table->nullableUuidMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000004_create_doc_extended_tables.php:54:                $table->nullableUuidMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000004_create_doc_extended_tables.php:67:                $table->nullableUuidMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000004_create_doc_extended_tables.php:97:                $table->nullableUuidMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000004_create_doc_extended_tables.php:118:                $table->nullableUuidMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000004_create_doc_extended_tables.php:141:                $table->nullableUuidMorphs('owner');
+packages/chip/database/migrations/2000_04_01_000003_add_chip_webhook_columns_to_webhook_calls_table.php:109:                $table->nullableMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000002_create_docs_tables.php:25:            $table->nullableUuidMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000002_create_docs_tables.php:43:            $table->nullableUuidMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000002_create_docs_tables.php:80:            $table->nullableUuidMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000002_create_docs_tables.php:97:            $table->nullableUuidMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000001_create_doc_workflows_table.php:23:            $table->nullableUuidMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000001_create_doc_workflows_table.php:36:            $table->nullableUuidMorphs('owner');
+packages/chip/database/migrations/2000_04_01_000008_create_chip_send_webhooks_table.php:33:            $table->nullableMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000003_create_doc_sequences_tables.php:31:            $table->nullableUuidMorphs('owner');
+packages/docs/database/migrations/2000_06_01_000003_create_doc_sequences_tables.php:40:            $table->nullableUuidMorphs('owner');
+packages/events/database/migrations/2000_01_01_000069_create_event_headcount_logs_table.php:23:            $table->nullableUuidMorphs('owner');
+packages/chip/database/migrations/2000_04_01_000007_create_chip_send_limits_table.php:40:            $table->nullableMorphs('owner');
+packages/events/database/migrations/2000_01_01_000068_create_event_walk_ins_table.php:22:            $table->nullableUuidMorphs('owner');
+packages/orders/database/migrations/2000_11_01_000006_create_order_notes_table.php:21:            $table->nullableUuidMorphs('owner');
+packages/chip/database/migrations/2000_04_01_000006_create_chip_send_instructions_table.php:40:            $table->nullableMorphs('owner');
+packages/orders/database/migrations/2000_11_01_000001_create_orders_table.php:22:            $table->nullableUuidMorphs('owner');
+packages/orders/database/migrations/2000_11_01_000004_create_order_payments_table.php:32:            $table->nullableUuidMorphs('owner');
+packages/orders/database/migrations/2000_11_01_000003_create_order_addresses_table.php:40:            $table->nullableUuidMorphs('owner');
+packages/orders/database/migrations/2000_11_01_000005_create_order_refunds_table.php:34:            $table->nullableUuidMorphs('owner');
+packages/orders/database/migrations/2000_11_01_000002_create_order_items_table.php:40:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000014_create_inventory_reorder_suggestions_table.php:40:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000013_create_inventory_supplier_leadtimes_table.php:37:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000009_create_inventory_standard_costs_table.php:29:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000006_create_inventory_serials_table.php:61:            $table->nullableUuidMorphs('owner');
+packages/cashier-chip/database/migrations/2000_03_01_000003_create_chip_payment_methods_table.php:25:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000001_create_inventory_locations_table.php:40:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000005_create_inventory_batches_table.php:52:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000007_create_inventory_serial_history_table.php:43:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000004_create_inventory_allocations_table.php:25:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000002_create_inventory_levels_table.php:35:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000003_create_inventory_movements_table.php:29:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000012_create_inventory_demand_history_table.php:30:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000008_create_inventory_cost_layers_table.php:31:            $table->nullableUuidMorphs('owner');
+packages/cashier-chip/database/migrations/2000_03_01_000001_create_chip_subscriptions_table.php:26:                $table->nullableUuidMorphs('owner');
+packages/cashier-chip/database/migrations/2000_03_01_000001_create_chip_subscriptions_table.php:64:                $table->nullableUuidMorphs('owner');
+packages/cashier-chip/database/migrations/2000_03_01_000002_create_chip_subscription_items_table.php:27:            $table->nullableUuidMorphs('owner');
+packages/affiliates/database/migrations/2000_01_01_000026_create_affiliate_commission_templates_table.php:25:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000010_create_inventory_valuation_snapshots_table.php:32:            $table->nullableUuidMorphs('owner');
+packages/inventory/database/migrations/2000_09_01_000011_create_inventory_backorders_table.php:36:            $table->nullableUuidMorphs('owner');
+packages/affiliates/database/migrations/2000_01_01_000006_create_affiliate_touchpoints_table.php:25:            $table->nullableUuidMorphs('owner');
+packages/affiliates/database/migrations/2000_01_01_000015_create_affiliate_programs_table.php:32:            $table->nullableUuidMorphs('owner');
+packages/affiliates/database/migrations/2000_01_01_000003_create_affiliate_conversions_table.php:36:            $table->nullableUuidMorphs('owner');
+packages/affiliates/database/migrations/2000_01_01_000024_create_affiliate_training_tables.php:31:            $table->nullableUuidMorphs('owner');
+packages/affiliates/database/migrations/2000_01_01_000010_create_affiliate_daily_stats_table.php:20:            $table->nullableUuidMorphs('owner');
+packages/affiliates/database/migrations/2000_01_01_000004_create_affiliate_payouts_table.php:25:            $table->nullableUuidMorphs('owner');
+packages/affiliates/database/migrations/2000_01_01_000001_create_affiliates_table.php:34:            $table->nullableUuidMorphs('owner');
+packages/affiliates/database/migrations/2000_01_01_000002_create_affiliate_attributions_table.php:38:            $table->nullableUuidMorphs('owner');
+packages/affiliates/database/migrations/2000_01_01_000008_create_affiliate_network_table.php:21:            $table->nullableUuidMorphs('owner');
+packages/affiliates/database/migrations/2000_01_01_000007_create_affiliate_ranks_table.php:25:            $table->nullableUuidMorphs('owner');
+=== cache remember keys ===
+packages/filament-orders/src/Widgets/OrderStatusDistributionWidget.php:53:        $countsByStatus = Cache::remember($cacheKey, now()->addSeconds(30), function () use ($includeGlobal): array {
+packages/filament-orders/src/Widgets/OrderStatsWidget.php:53:        $computed = Cache::remember($cacheKey, $now->addSeconds(15), function () use ($baseQuery, $today, $yesterday, $thisMonth, $lastMonthStart, $lastMonthEnd): array {
+packages/vouchers/src/Services/VoucherService.php:291:        Cache::put($cacheKey, [
+packages/vouchers/src/Services/VoucherService.php:307:        Cache::put($sessionsKey, array_values($sessionIds), $ttl);
+packages/cart/src/Support/LoginMigrationIdentifierResolver.php:74:            Cache::put(
+packages/filament-jnt/src/Widgets/JntStatsWidget.php:21:        $stats = Cache::remember(
+packages/filament-jnt/src/Support/NavigationBadgeHelper.php:30:        $count = Cache::remember($cacheKey, CarbonImmutable::now()->addSeconds(30), static fn (): int => $query->count());
+packages/affiliates/src/Rules/ClickVelocityRule.php:53:        Cache::put($cacheKey, $currentCount + 1, now()->addHour());
+packages/chip/src/Services/WebhookService.php:112:        return Cache::remember(
+packages/filament-inventory/src/Services/InventoryStatsAggregator.php:226:        $cached = Cache::remember(
+packages/commerce-support/src/Support/OwnerSignedDownload.php:35:        Cache::put(
+packages/commerce-support/src/Support/OwnerCache.php:30: * OwnerCache::put($owner, 'user.preferences', $preferences, now()->addHour());
+packages/filament-docs/src/Resources/DocResource.php:136:        return OwnerCache::remember(
+packages/filament-signals/src/Resources/SignalInteractionRuleResource/Pages/ListSignalInteractionRules.php:481:        OwnerCache::put($this->scanPreviewOwner(), $this->scanPreviewLogicalKey(), [
+packages/filament-cashier/src/Pages/GatewayManagement.php:181:                OwnerCache::put(
+packages/filament-shipping/src/Pages/FulfillmentQueue.php:91:        $count = Cache::remember($cacheKey, CarbonImmutable::now()->addSeconds(15), function () use ($owner, $includeGlobal): int {
+packages/filament-shipping/src/Pages/FulfillmentQueue.php:118:        $urgentCount = Cache::remember($cacheKey, CarbonImmutable::now()->addSeconds(15), function () use ($owner, $includeGlobal): int {
+packages/filament-shipping/src/Actions/PrintLabelAction.php:68:                        Cache::put($cacheKey, [
+packages/filament-shipping/src/Actions/PrintLabelAction.php:182:                            Cache::put($cacheKey, [

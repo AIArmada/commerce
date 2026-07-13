@@ -1,0 +1,42 @@
+/mnt/data/commerce3/packages/filament-engagement/src/Resources/SubscriptionResource.php:121:                            ->html(),
+/mnt/data/commerce3/packages/filament-engagement/src/Resources/SubscriptionResource.php:127:                        ->html(),
+/mnt/data/commerce3/packages/vouchers/src/Filament/Extensions/CartVoucherActions.php:20:use Illuminate\Support\HtmlString;
+/mnt/data/commerce3/packages/vouchers/src/Filament/Extensions/CartVoucherActions.php:246:                        ->content(new HtmlString('
+/mnt/data/commerce3/packages/filament-engagement/src/Resources/ResponseResource.php:118:                        ->html(),
+/mnt/data/commerce3/packages/filament-engagement/src/Resources/ReminderResource.php:129:                        ->html(),
+/mnt/data/commerce3/packages/filament-engagement/src/Resources/ReactionResource.php:107:                        ->html(),
+/mnt/data/commerce3/packages/filament-engagement/src/Resources/FollowResource.php:142:                    ->html()
+/mnt/data/commerce3/packages/filament-engagement/src/Resources/BookmarkResource.php:131:                    ->html()
+/mnt/data/commerce3/packages/filament-engagement/src/Resources/BookmarkCollectionResource.php:125:                    ->html()
+/mnt/data/commerce3/packages/filament-docs/src/Rendering/FilamentRichContentRenderer.php:10:use Illuminate\Support\HtmlString;
+/mnt/data/commerce3/packages/filament-docs/src/Rendering/FilamentRichContentRenderer.php:18:    public function render(?array $content, array $mergeTags = []): HtmlString
+/mnt/data/commerce3/packages/filament-docs/src/Rendering/FilamentRichContentRenderer.php:21:            return new HtmlString('');
+/mnt/data/commerce3/packages/filament-docs/src/Rendering/FilamentRichContentRenderer.php:43:        return new HtmlString($renderer->toHtml());
+/mnt/data/commerce3/packages/filament-orders/src/Resources/OrderResource/Schemas/OrderInfolist.php:10:use Illuminate\Support\HtmlString;
+/mnt/data/commerce3/packages/filament-orders/src/Resources/OrderResource/Schemas/OrderInfolist.php:67:                        ->getStateUsing(function (Order $record): ?HtmlString {
+/mnt/data/commerce3/packages/filament-orders/src/Resources/OrderResource/Schemas/OrderInfolist.php:72:                            return new HtmlString(nl2br(e($record->billingAddress->getFormatted())));
+/mnt/data/commerce3/packages/filament-orders/src/Resources/OrderResource/Schemas/OrderInfolist.php:75:                        ->html(),
+/mnt/data/commerce3/packages/filament-orders/src/Resources/OrderResource/Schemas/OrderInfolist.php:79:                        ->getStateUsing(function (Order $record): ?HtmlString {
+/mnt/data/commerce3/packages/filament-orders/src/Resources/OrderResource/Schemas/OrderInfolist.php:84:                            return new HtmlString(nl2br(e($record->shippingAddress->getFormatted())));
+/mnt/data/commerce3/packages/filament-orders/src/Resources/OrderResource/Schemas/OrderInfolist.php:87:                        ->html(),
+/mnt/data/commerce3/packages/filament-authz/src/Resources/UserResource/Pages/ViewUser.php:86:                        ->html(),
+/mnt/data/commerce3/packages/filament-authz/src/Resources/PermissionResource.php:28:use Illuminate\Support\HtmlString;
+/mnt/data/commerce3/packages/filament-authz/src/Resources/PermissionResource.php:309:        return new HtmlString('<ul class="list-disc list-inside space-y-1">' . $list . '</ul>' . $suffix);
+/mnt/data/commerce3/packages/docs/src/Services/DocRenderService.php:21:use Illuminate\Support\HtmlString;
+/mnt/data/commerce3/packages/docs/src/Services/DocRenderService.php:34:    public function renderHtml(Doc $doc, RenderAudience $audience): HtmlString
+/mnt/data/commerce3/packages/docs/src/Services/DocRenderService.php:48:        return new HtmlString(view('docs::documents.show', [
+/mnt/data/commerce3/packages/docs/src/Services/DocRenderService.php:52:            'content' => new HtmlString($content),
+/mnt/data/commerce3/packages/docs/src/Rendering/TiptapJsonRenderer.php:9:use Illuminate\Support\HtmlString;
+/mnt/data/commerce3/packages/docs/src/Rendering/TiptapJsonRenderer.php:18:    public function render(?array $content, array $mergeTags = []): HtmlString
+/mnt/data/commerce3/packages/docs/src/Rendering/TiptapJsonRenderer.php:21:            return new HtmlString('');
+/mnt/data/commerce3/packages/docs/src/Rendering/TiptapJsonRenderer.php:24:        return new HtmlString($this->renderNode($content, $mergeTags));
+/mnt/data/commerce3/packages/docs/src/Contracts/RichContentRendererInterface.php:7:use Illuminate\Support\HtmlString;
+/mnt/data/commerce3/packages/docs/src/Contracts/RichContentRendererInterface.php:15:    public function render(?array $content, array $mergeTags = []): HtmlString;
+/mnt/data/commerce3/packages/docs/resources/views/emails/document.blade.php:57:        {!! nl2br(e($body)) !!}
+/mnt/data/commerce3/packages/docs/resources/views/documents/show.blade.php:208:        {!! $content !!}
+/mnt/data/commerce3/packages/filament-events/src/Resources/EventChangeLogResource.php:84:                    ->html()
+/mnt/data/commerce3/packages/filament-events/src/Resources/EventChangeLogResource.php:88:                    ->html()
+/mnt/data/commerce3/packages/filament-events/src/Pages/NotificationCenter.php:26:use Illuminate\Support\HtmlString;
+/mnt/data/commerce3/packages/filament-events/src/Pages/NotificationCenter.php:96:                            return new HtmlString('<p class="text-sm text-gray-500">No delivery records yet.</p>');
+/mnt/data/commerce3/packages/filament-events/src/Pages/NotificationCenter.php:112:                        return new HtmlString($html);
+/mnt/data/commerce3/packages/filament-events/src/Pages/EventPublicPreview.php:56:                        Infolists\Components\TextEntry::make('description')->html(),

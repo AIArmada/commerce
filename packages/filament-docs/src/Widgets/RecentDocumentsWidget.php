@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Widgets;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\FilamentDocs\Resources\DocResource;
@@ -47,9 +48,9 @@ final class RecentDocumentsWidget extends BaseWidget
                     ->label('Customer')
                     ->default('-'),
 
-                TextColumn::make('total')
+                TextColumn::make('total_minor')
                     ->label('Total')
-                    ->money(fn (Doc $record): string => $record->currency)
+                    ->formatStateUsing(fn (int|string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                     ->sortable(),
 
                 TextColumn::make('status')

@@ -186,7 +186,7 @@ class SubscriptionBuilderIntegrationTest extends CashierChipTestCase
         $subscription = $user->newSubscription('default', 'price_monthly_100')
             ->create('tok_recurring_123');
 
-        $this->assertEquals('tok_recurring_123', $subscription->recurring_token);
+        $this->assertEquals('tok_recurring_123', $subscription->recurringToken());
     }
 
     public function test_add_creates_subscription_without_charge(): void
@@ -250,7 +250,7 @@ class SubscriptionBuilderIntegrationTest extends CashierChipTestCase
         $this->assertEquals('premium', $subscription->type);
         $this->assertEquals('month', $subscription->billing_interval);
         $this->assertTrue($subscription->onTrial());
-        $this->assertEquals('tok_test_123', $subscription->recurring_token);
+        $this->assertEquals('tok_test_123', $subscription->recurringToken());
     }
 
     public function test_creates_subscription_items(): void

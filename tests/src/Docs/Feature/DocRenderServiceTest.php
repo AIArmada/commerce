@@ -72,7 +72,7 @@ it('rejects document body when the selected template has no body slot', function
     expect(fn (): mixed => app(DocRenderService::class)->validateDocPayload(
         $template,
         ['type' => 'doc', 'content' => []],
-        [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
+        [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
     ))->toThrow(ValidationException::class);
 });
 

@@ -199,7 +199,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_recurring_token()
     {
-        $subscription = $this->makeTrustedSubscription(['recurring_token' => 'tok_123']);
+        $subscription = (new Subscription)->assignRecurringToken('test-recurring-token-123');
         $this->assertEquals('tok_123', $subscription->recurringToken());
 
         $subscription = new Subscription;

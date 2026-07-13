@@ -29,3 +29,12 @@ family: growth-and-incentives
 - Owns models, actions, services, events, calculations, and persistence rules.
 - If admin UI changes too, audit `filament-affiliates`.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
+
+
+## Payout operation boundary
+
+Scheduled payout creation is an atomic database claim represented by `AffiliatePayoutOperation`. The claim transaction locks the affiliate balance, rechecks holds and pending/processing payouts, reserves only approved unlinked commission value, and never calls an external payment provider.
+
+## Public API authentication boundary
+
+The optional built-in API token is a single application-level middleware secret from `affiliates.api.token`. It is not stored on `Affiliate`, is not a per-affiliate credential, and must not be exposed in affiliate resources or admin UI.

@@ -63,7 +63,6 @@ final class MassAssignmentTest extends CashierChipTestCase
         $paymentMethod = new StoredPaymentMethod([
             'billable_type' => 'user',
             'billable_id' => 'user-123',
-            'recurring_token' => 'token_123',
             'type' => 'card',
             'owner_type' => 'tenant',
             'owner_id' => 'tenant-123',
@@ -71,7 +70,8 @@ final class MassAssignmentTest extends CashierChipTestCase
 
         $this->assertSame('user', $paymentMethod->billable_type);
         $this->assertSame('user-123', $paymentMethod->billable_id);
-        $this->assertSame('token_123', $paymentMethod->recurring_token);
+        $this->assertNull($paymentMethod->getAttribute('recurring_token'));
+        $this->assertNotContains('recurring_token', $paymentMethod->getFillable());
         $this->assertSame('card', $paymentMethod->type);
         $this->assertNull($paymentMethod->owner_type);
         $this->assertNull($paymentMethod->owner_id);

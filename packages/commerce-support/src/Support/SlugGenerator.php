@@ -47,12 +47,12 @@ final class SlugGenerator
         $suffix = 1;
 
         while (self::slugExists($model::class, $slug, $model->exists ? (string) $model->getKey() : null)) {
-            $suffixValue = '-'.$suffix;
+            $suffixValue = '-' . $suffix;
             $slug = Str::limit(
                 $baseSlug,
                 max(1, $maxLength - mb_strlen($suffixValue)),
                 '',
-            ).$suffixValue;
+            ) . $suffixValue;
             $suffix++;
         }
 

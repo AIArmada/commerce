@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Enums;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
 
 enum DocMergeTag: string
@@ -54,10 +55,10 @@ enum DocMergeTag: string
             self::CustomerEmail->value => (string) data_get($doc->customer_data, 'email', ''),
             self::CompanyName->value => (string) data_get($doc->company_data, 'name', config('docs.company.name', '')),
             self::Currency->value => (string) $doc->currency,
-            self::Subtotal->value => number_format((float) $doc->subtotal, 2),
-            self::TaxAmount->value => number_format((float) $doc->tax_amount, 2),
-            self::DiscountAmount->value => number_format((float) $doc->discount_amount, 2),
-            self::Total->value => number_format((float) $doc->total, 2),
+            self::Subtotal->value => MoneyFormatter::decimalFromMinor($doc->subtotal_minor, $doc->currency),
+            self::TaxAmount->value => MoneyFormatter::decimalFromMinor($doc->tax_amount_minor, $doc->currency),
+            self::DiscountAmount->value => MoneyFormatter::decimalFromMinor($doc->discount_amount_minor, $doc->currency),
+            self::Total->value => MoneyFormatter::decimalFromMinor($doc->total_minor, $doc->currency),
             self::IssueDate->value => $doc->issue_date?->format('d M Y') ?? '',
             self::DueDate->value => $doc->due_date?->format('d M Y') ?? '',
         ];

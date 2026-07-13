@@ -280,8 +280,8 @@ test('doc casts status to state', function (): void {
 
 test('doc casts items to array', function (): void {
     $items = [
-        ['name' => 'Item 1', 'quantity' => 2, 'price' => 100],
-        ['name' => 'Item 2', 'quantity' => 1, 'price' => 50],
+        ['name' => 'Item 1', 'quantity' => 2, 'unit_price_minor' => 100],
+        ['name' => 'Item 2', 'quantity' => 1, 'unit_price_minor' => 50],
     ];
 
     $doc = Doc::factory()->create(['items' => $items]);

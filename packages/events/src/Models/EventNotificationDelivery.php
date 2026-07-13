@@ -20,9 +20,14 @@ use Illuminate\Support\Carbon;
  * @property string $recipient_id
  * @property string $channel
  * @property string $status
+ * @property int $attempt_count
+ * @property int $max_attempts
+ * @property CarbonImmutable|null $leased_at
+ * @property CarbonImmutable|null $last_attempt_at
  * @property CarbonImmutable|null $sent_at
  * @property CarbonImmutable|null $failed_at
- * @property string|null $error_message
+ * @property CarbonImmutable|null $dead_at
+ * @property string|null $last_error_code
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -36,7 +41,8 @@ final class EventNotificationDelivery extends Model
         'event_notification_batch_id',
         'recipient_type', 'recipient_id',
         'channel', 'status',
-        'sent_at', 'failed_at', 'error_message',
+        'attempt_count', 'max_attempts', 'leased_at', 'last_attempt_at',
+        'sent_at', 'failed_at', 'dead_at', 'last_error_code',
         'metadata',
     ];
 
@@ -48,8 +54,13 @@ final class EventNotificationDelivery extends Model
     protected function casts(): array
     {
         return [
+            'attempt_count' => 'integer',
+            'max_attempts' => 'integer',
+            'leased_at' => 'immutable_datetime',
+            'last_attempt_at' => 'immutable_datetime',
             'sent_at' => 'immutable_datetime',
             'failed_at' => 'immutable_datetime',
+            'dead_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
     }

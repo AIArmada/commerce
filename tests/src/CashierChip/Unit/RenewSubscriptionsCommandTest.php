@@ -81,7 +81,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
 
         $result = $this->processRenewals();
 
-        $this->assertSame(['renewed' => 1, 'failed' => 0], $result);
+        $this->assertSame(['renewed' => 1, 'failed' => 0, 'unknown' => 0, 'skipped' => 0], $result);
 
         Event::assertDispatched(SubscriptionRenewed::class);
         Event::assertNotDispatched(SubscriptionRenewalFailed::class);
@@ -109,7 +109,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
 
         $result = $this->processRenewals();
 
-        $this->assertSame(['renewed' => 0, 'failed' => 1], $result);
+        $this->assertSame(['renewed' => 0, 'failed' => 1, 'unknown' => 0, 'skipped' => 0], $result);
 
         $subscription->refresh();
 
@@ -144,7 +144,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
 
         $result = $this->processRenewals();
 
-        $this->assertSame(['renewed' => 0, 'failed' => 1], $result);
+        $this->assertSame(['renewed' => 0, 'failed' => 1, 'unknown' => 0, 'skipped' => 0], $result);
 
         $subscription->refresh();
 
@@ -155,7 +155,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
     }
 
     /**
-     * @return array{renewed: int, failed: int}
+     * @return array{renewed: int, failed: int, unknown: int, skipped: int}
      */
     private function processRenewals(bool $dryRun = false, int $graceHours = 0): array
     {
@@ -168,7 +168,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
 
         $method = new ReflectionMethod($command, 'processRenewals');
 
-        /** @var array{renewed: int, failed: int} $result */
+        /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
         $result = $method->invoke($command, $dryRun, $graceHours);
 
         return $result;

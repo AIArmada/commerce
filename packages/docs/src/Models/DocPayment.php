@@ -22,7 +22,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $id
  * @property string $doc_id
  * @property DocPaymentStatus $status
- * @property string $amount
+ * @property int $amount_minor
  * @property string $currency
  * @property string $payment_method
  * @property string|null $reference
@@ -49,7 +49,7 @@ final class DocPayment extends Model implements Auditable
     protected $fillable = [
         'doc_id',
         'status',
-        'amount',
+        'amount_minor',
         'currency',
         'payment_method',
         'reference',
@@ -105,7 +105,7 @@ final class DocPayment extends Model implements Auditable
     {
         return [
             'status' => DocPaymentStatus::class,
-            'amount' => 'decimal:2',
+            'amount_minor' => 'integer',
             'paid_at' => 'immutable_datetime',
             'refunded_at' => 'immutable_datetime',
             'metadata' => 'array',

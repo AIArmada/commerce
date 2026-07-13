@@ -4,176 +4,89 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Console\Commands;
 
+use AIArmada\Affiliates\Actions\Payouts\ClaimScheduledPayout;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
+use Throwable;
 
 final class ProcessScheduledPayoutsCommand extends Command
 {
-    protected $signature = 'affiliates:process-payouts 
-        {--dry-run : Show what would be processed without making changes}
+    protected $signature = 'affiliates:process-payouts
+        {--dry-run : Show what would be processed without reserving balances}
         {--affiliate= : Process payouts for a specific affiliate ID}
         {--min-amount= : Minimum amount threshold in minor units}';
 
-    protected $description = 'Process scheduled payouts for affiliates';
+    protected $description = 'Atomically claim scheduled affiliate payout operations';
+
+    public function __construct(private readonly ClaimScheduledPayout $claimScheduledPayout)
+    {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
-        $dryRun = $this->option('dry-run');
-        $affiliateId = $this->option('affiliate');
-        $minAmount = $this->option('min-amount') ?? config('affiliates.payouts.minimum_amount', 5000);
-
-        $this->info('Processing scheduled payouts...');
-
-        if ($dryRun) {
-            $this->warn('Running in dry-run mode - no changes will be made.');
-        }
+        $dryRun = (bool) $this->option('dry-run');
+        $affiliateId = is_string($this->option('affiliate')) ? $this->option('affiliate') : null;
+        $minimum = (int) ($this->option('min-amount') ?? config('affiliates.payouts.minimum_amount', 5000));
 
         $runner = new OwnerBatchRunner(
             Affiliate::class,
             ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
         );
-
-        $result = $runner->run(fn (): array => $this->processScoped($dryRun, $affiliateId, (int) $minAmount))
+        $summary = $runner->run(fn (): array => $this->processScoped($affiliateId, $minimum, $dryRun))
             ?? ['processed' => 0, 'skipped' => 0, 'errors' => 0];
 
-        $this->outputSummary($result['processed'], $result['skipped'], $result['errors']);
+        $this->info("Processed: {$summary['processed']}");
+        $this->info("Skipped: {$summary['skipped']}");
 
-        return $result['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+        if ($summary['errors'] > 0) {
+            $this->error("Errors: {$summary['errors']}");
+        }
+
+        return $summary['errors'] === 0 ? self::SUCCESS : self::FAILURE;
     }
 
-    /**
-     * @return array{processed: int, skipped: int, errors: int}
-     */
-    private function processScoped(bool $dryRun, ?string $affiliateId, int $minAmount): array
+    /** @return array{processed:int,skipped:int,errors:int} */
+    private function processScoped(?string $affiliateId, int $minimum, bool $dryRun): array
     {
-        $processed = 0;
-        $skipped = 0;
-        $errors = 0;
-
         $query = Affiliate::query()
             ->where('status', AffiliateStatus::normalize(Active::class))
-            ->whereHas('balance', function ($q) use ($minAmount): void {
-                $q->where('available_minor', '>=', $minAmount);
+            ->whereHas('balance', static function ($query) use ($minimum): void {
+                $query->where('available_minor', '>=', $minimum);
             });
 
-        if ($affiliateId) {
-            $query->where('id', $affiliateId);
+        if ($affiliateId !== null && $affiliateId !== '') {
+            $query->whereKey($affiliateId);
         }
 
-        $affiliates = $query->with('balance')->get();
+        $summary = ['processed' => 0, 'skipped' => 0, 'errors' => 0];
 
-        $this->output->progressStart($affiliates->count());
+        $query->select('id')->orderBy('id')->chunkById(100, function ($affiliates) use ($minimum, $dryRun, &$summary): void {
+            foreach ($affiliates as $affiliate) {
+                if ($dryRun) {
+                    if ($this->claimScheduledPayout->isEligibleSnapshot((string) $affiliate->id, $minimum)) {
+                        $summary['processed']++;
+                        $this->line("Would atomically claim payout for affiliate {$affiliate->id}");
+                    } else {
+                        $summary['skipped']++;
+                    }
 
-        foreach ($affiliates as $affiliate) {
-            try {
-                $result = $this->processAffiliate($affiliate, $minAmount, $dryRun);
-
-                if ($result === 'processed') {
-                    $processed++;
-                } else {
-                    $skipped++;
+                    continue;
                 }
-            } catch (Exception $e) {
-                $errors++;
-                $this->error("Error processing affiliate {$affiliate->id}: {$e->getMessage()}");
+
+                try {
+                    $operation = $this->claimScheduledPayout->handle((string) $affiliate->id, $minimum);
+                    $operation === null ? ++$summary['skipped'] : ++$summary['processed'];
+                } catch (Throwable) {
+                    $summary['errors']++;
+                    $this->error("Payout claim failed for affiliate {$affiliate->id}.");
+                }
             }
+        }, 'id');
 
-            $this->output->progressAdvance();
-        }
-
-        $this->output->progressFinish();
-
-        return [
-            'processed' => $processed,
-            'skipped' => $skipped,
-            'errors' => $errors,
-        ];
-    }
-
-    private function outputSummary(int $processed, int $skipped, int $errors): void
-    {
-        $this->info("Processed: {$processed}");
-        $this->info("Skipped: {$skipped}");
-
-        if ($errors > 0) {
-            $this->error("Errors: {$errors}");
-        }
-    }
-
-    private function processAffiliate(Affiliate $affiliate, int $minAmount, bool $dryRun): string
-    {
-        $balance = $affiliate->balance;
-
-        if (! $balance || $balance->available_minor < $minAmount) {
-            return 'skipped';
-        }
-
-        // Check for holds
-        $hasHold = $affiliate->payoutHolds()
-            ->where(function ($q): void {
-                $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
-            })
-            ->exists();
-
-        if ($hasHold) {
-            return 'skipped';
-        }
-
-        // Check for pending payouts
-        $hasPendingPayout = $affiliate->payouts()
-            ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
-            ->exists();
-
-        if ($hasPendingPayout) {
-            return 'skipped';
-        }
-
-        if ($dryRun) {
-            $this->line("Would create payout for affiliate {$affiliate->id}: {$balance->available_minor} {$balance->currency}");
-
-            return 'processed';
-        }
-
-        // Create payout
-        DB::transaction(function () use ($affiliate, $balance): void {
-            $payout = AffiliatePayout::create([
-                'reference' => 'PAY-' . mb_strtoupper(bin2hex(random_bytes(8))),
-                'payee_type' => $affiliate->getMorphClass(),
-                'payee_id' => $affiliate->id,
-                'owner_type' => $affiliate->owner_type,
-                'owner_id' => $affiliate->owner_id,
-                'total_minor' => $balance->available_minor,
-                'currency' => $balance->currency,
-                'status' => PendingPayout::value(),
-                'scheduled_at' => now(),
-            ]);
-
-            // Deduct from balance
-            $balance->decrement('available_minor', $payout->total_minor);
-
-            // Link approved conversions
-            $affiliate->conversions()
-                ->where('status', ApprovedConversion::value())
-                ->whereNull('affiliate_payout_id')
-                ->update(['affiliate_payout_id' => $payout->id]);
-
-            // Create audit event
-            $payout->events()->create([
-                'to_status' => PendingPayout::value(),
-                'notes' => 'Payout created via scheduled processing',
-            ]);
-        });
-
-        return 'processed';
+        return $summary;
     }
 }

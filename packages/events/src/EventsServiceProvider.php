@@ -90,7 +90,6 @@ use AIArmada\Events\Resolvers\DefaultEventOrderItemFulfillmentResolver;
 use AIArmada\Events\Resolvers\DefaultEventReferenceResolver;
 use AIArmada\Events\Resolvers\DefaultEventRegistrationScopeResolver;
 use AIArmada\Events\Resolvers\DefaultEventSearchPayloadResolver;
-use AIArmada\Events\Resolvers\NullEventChangeNoticeNotificationDispatcher;
 use AIArmada\Events\Resolvers\NullEventCheckoutIntentResolver;
 use AIArmada\Events\Resolvers\NullEventOrderItemFulfillmentResolver;
 use AIArmada\Events\Resolvers\NullEventScheduleResolver;
@@ -101,6 +100,7 @@ use AIArmada\Events\Services\DefaultEventLifecycleWorkflow;
 use AIArmada\Events\Services\DefaultEventModerationWorkflow;
 use AIArmada\Events\Services\EloquentEventSearchEngine;
 use AIArmada\Events\Services\EventMetadataSyncService;
+use AIArmada\Events\Services\EventNotificationDispatcher;
 use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Services\EventSearchDocumentBuilder;
 use AIArmada\Events\Services\RegistrationService;
@@ -449,7 +449,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $dispatcher = config('events.change_notices.notification_dispatcher');
 
         if ($dispatcher === null) {
-            return NullEventChangeNoticeNotificationDispatcher::class;
+            return EventNotificationDispatcher::class;
         }
 
         if (is_string($dispatcher) && is_a($dispatcher, EventChangeNoticeNotificationDispatcher::class, true)) {

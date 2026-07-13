@@ -59,12 +59,12 @@ test('it can create a doc', function (): void {
             [
                 'name' => 'Product A',
                 'quantity' => 2,
-                'price' => 100.00,
+                'unit_price_minor' => 100,
             ],
             [
                 'name' => 'Product B',
                 'quantity' => 1,
-                'price' => 50.00,
+                'unit_price_minor' => 50,
             ],
         ],
         'customer_data' => [
@@ -78,8 +78,8 @@ test('it can create a doc', function (): void {
         ->and($doc->doc_number)->toBeString()
         ->and($doc->doc_type)->toBe('invoice')
         ->and($doc->status->equals(Draft::class))->toBeTrue()
-        ->and($doc->subtotal)->toBe('250.00')
-        ->and($doc->total)->toBe('250.00')
+        ->and($doc->subtotal_minor)->toBe(250)
+        ->and($doc->total_minor)->toBe(250)
         ->and($doc->items)->toBeArray()->toHaveCount(2);
 });
 
@@ -88,24 +88,24 @@ test('it calculates totals correctly', function (): void {
 
     $doc = $service->create(DocData::from([
         'items' => [
-            ['name' => 'Item 1', 'quantity' => 2, 'price' => 50.00],
-            ['name' => 'Item 2', 'quantity' => 3, 'price' => 30.00],
+            ['name' => 'Item 1', 'quantity' => 2, 'unit_price_minor' => 50],
+            ['name' => 'Item 2', 'quantity' => 3, 'unit_price_minor' => 30],
         ],
-        'tax_rate' => 0.06,
-        'discount_amount' => 10.00,
+        'tax_rate_basis_points' => 600,
+        'discount_amount_minor' => 10,
     ]));
 
-    expect($doc->subtotal)->toBe('190.00')
-        ->and($doc->tax_amount)->toBe('11.40')
-        ->and($doc->discount_amount)->toBe('10.00')
-        ->and($doc->total)->toBe('191.40');
+    expect($doc->subtotal_minor)->toBe(190)
+        ->and($doc->tax_amount_minor)->toBe(11)
+        ->and($doc->discount_amount_minor)->toBe(10)
+        ->and($doc->total_minor)->toBe(191);
 });
 
 test('it can update doc status', function (): void {
     $service = app(DocService::class);
 
     $doc = $service->create(DocData::from([
-        'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
+        'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
     ]));
 
     expect($doc->status->equals(Draft::class))->toBeTrue();
@@ -126,7 +126,7 @@ test('it can mark doc as paid', function (): void {
     $service = app(DocService::class);
 
     $doc = $service->create(DocData::from([
-        'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
+        'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
     ]));
 
     expect($doc->isPaid())->toBeFalse();
@@ -143,7 +143,7 @@ test('it can check if doc is overdue', function (): void {
     $service = app(DocService::class);
 
     $doc = $service->create(DocData::from([
-        'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
+        'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
         'due_date' => now()->subDay(),
     ]));
 
@@ -165,7 +165,7 @@ test('it uses default template when none specified', function (): void {
     $service = app(DocService::class);
 
     $doc = $service->create(DocData::from([
-        'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
+        'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
     ]));
 
     expect($doc->template)->not->toBeNull()
@@ -185,7 +185,7 @@ test('it can use custom template', function (): void {
 
     $doc = $service->create(DocData::from([
         'doc_template_id' => $template->id,
-        'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
+        'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
     ]));
 
     expect($doc->template)->not->toBeNull()
@@ -204,7 +204,7 @@ test('it rejects templates from a different document type', function (): void {
     expect(fn (): Doc => app(DocService::class)->create(DocData::from([
         'doc_type' => 'invoice',
         'doc_template_id' => $template->id,
-        'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
+        'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
     ])))->toThrow(ValidationException::class);
 });
 
@@ -246,7 +246,7 @@ test('it honors owner auto-assign on create config', function (): void {
                 [
                     'name' => 'Owner Config Item',
                     'quantity' => 1,
-                    'price' => 100.00,
+                    'unit_price_minor' => 100,
                 ],
             ],
             'customer_data' => [

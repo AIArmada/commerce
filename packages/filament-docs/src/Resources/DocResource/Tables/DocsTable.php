@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\Tables;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\Cancelled;
@@ -72,9 +73,9 @@ final class DocsTable
                     ->searchable()
                     ->limit(30),
 
-                TextColumn::make('total')
+                TextColumn::make('total_minor')
                     ->label('Total')
-                    ->money(fn (Doc $record): string => $record->currency)
+                    ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                     ->sortable()
                     ->alignEnd(),
 

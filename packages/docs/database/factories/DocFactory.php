@@ -29,18 +29,18 @@ final class DocFactory extends Factory
             [
                 'name' => $this->faker->words(3, true),
                 'quantity' => $this->faker->numberBetween(1, 10),
-                'price' => $this->faker->randomFloat(2, 10, 500),
+                'unit_price_minor' => $this->faker->numberBetween(1_000, 50_000),
             ],
             [
                 'name' => $this->faker->words(3, true),
                 'quantity' => $this->faker->numberBetween(1, 5),
-                'price' => $this->faker->randomFloat(2, 50, 1000),
+                'unit_price_minor' => $this->faker->numberBetween(5_000, 100_000),
             ],
         ];
 
-        $subtotal = collect($items)->sum(fn ($item) => $item['quantity'] * $item['price']);
-        $taxAmount = $subtotal * 0.06;
-        $total = $subtotal + $taxAmount;
+        $subtotalMinor = (int) collect($items)->sum(fn (array $item): int => $item['quantity'] * $item['unit_price_minor']);
+        $taxAmountMinor = intdiv(($subtotalMinor * 600) + 5_000, 10_000);
+        $totalMinor = $subtotalMinor + $taxAmountMinor;
 
         return [
             'doc_number' => mb_strtoupper($this->faker->bothify('???-####-####')),
@@ -48,10 +48,10 @@ final class DocFactory extends Factory
             'status' => Draft::class,
             'issue_date' => now(),
             'due_date' => now()->addDays(30),
-            'subtotal' => $subtotal,
-            'tax_amount' => $taxAmount,
-            'discount_amount' => 0,
-            'total' => $total,
+            'subtotal_minor' => $subtotalMinor,
+            'tax_amount_minor' => $taxAmountMinor,
+            'discount_amount_minor' => 0,
+            'total_minor' => $totalMinor,
             'currency' => 'MYR',
             'body' => null,
             'items' => $items,
@@ -138,12 +138,12 @@ final class DocFactory extends Factory
         ]);
     }
 
-    public function highValue(float $amount = 10000): static
+    public function highValue(int $amountMinor = 1_000_000): static
     {
         return $this->state(fn (array $attributes) => [
-            'subtotal' => $amount,
-            'tax_amount' => $amount * 0.06,
-            'total' => $amount * 1.06,
+            'subtotal_minor' => $amountMinor,
+            'tax_amount_minor' => intdiv(($amountMinor * 600) + 5_000, 10_000),
+            'total_minor' => $amountMinor + intdiv(($amountMinor * 600) + 5_000, 10_000),
         ]);
     }
 }

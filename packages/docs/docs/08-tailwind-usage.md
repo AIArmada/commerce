@@ -121,9 +121,9 @@ module.exports = {
         <tr>
             <td class="py-4 text-sm">{{ $item['name'] }}</td>
             <td class="py-4 text-right text-sm">{{ $item['quantity'] }}</td>
-            <td class="py-4 text-right text-sm">{{ number_format($item['price'], 2) }}</td>
+            <td class="py-4 text-right text-sm">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::decimalFromMinor($item['unit_price_minor'], $doc->currency) }}</td>
             <td class="py-4 text-right text-sm font-medium">
-                {{ number_format($item['quantity'] * $item['price'], 2) }}
+                {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::decimalFromMinor($item['quantity'] * $item['unit_price_minor'], $doc->currency) }}
             </td>
         </tr>
         @endforeach

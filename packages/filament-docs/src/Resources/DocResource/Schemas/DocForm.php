@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Enums\DocMergeTag;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Models\Doc;
@@ -26,6 +27,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 final class DocForm
@@ -203,10 +205,12 @@ final class DocForm
                                             ->minValue(1)
                                             ->required(),
 
-                                        TextInput::make('price')
-                                            ->label('Unit Price')
+                                        TextInput::make('unit_price_minor')
+                                            ->label('Unit Price (minor units)')
                                             ->numeric()
-                                            ->prefix(fn (Get $get): string => $get('../../currency') ?? config('docs.defaults.currency', 'MYR'))
+                                            ->minValue(0)
+                                            ->step(1)
+                                            ->dehydrateStateUsing(static fn (mixed $state): int => (int) $state)
                                             ->required(),
                                     ]),
 
@@ -219,7 +223,7 @@ final class DocForm
                             ->cloneable()
                             ->reorderable()
                             ->itemLabel(fn (array $state, Get $get): string => ($state['name'] ?? 'New Item') .
-                                (isset($state['quantity'], $state['price']) ? ' - ' . $state['quantity'] . ' × ' . ($get('currency') ?? config('docs.defaults.currency', 'MYR')) . ' ' . number_format((float) $state['price'], 2) : ''))
+                                (isset($state['quantity'], $state['unit_price_minor']) ? ' - ' . $state['quantity'] . ' × ' . ($get('currency') ?? config('docs.defaults.currency', 'MYR')) . ' ' . MoneyFormatter::formatMinor((int) $state['unit_price_minor'], (string) ($get('currency') ?? config('docs.defaults.currency', 'MYR'))) : ''))
                             ->columnSpanFull()
                             ->defaultItems(0),
                     ])
@@ -229,28 +233,36 @@ final class DocForm
                     ->schema([
                         Grid::make(4)
                             ->schema([
-                                TextInput::make('subtotal')
-                                    ->label('Subtotal')
+                                TextInput::make('subtotal_minor')
+                                    ->label('Subtotal (minor units)')
                                     ->numeric()
-                                    ->prefix(fn (Get $get): string => $get('currency') ?? config('docs.defaults.currency', 'MYR'))
+                                    ->minValue(0)
+                                    ->step(1)
+                                    ->dehydrateStateUsing(static fn (mixed $state): ?int => blank($state) ? null : (int) $state)
                                     ->helperText('Auto-calculated if empty'),
 
-                                TextInput::make('tax_amount')
-                                    ->label('Tax Amount')
+                                TextInput::make('tax_amount_minor')
+                                    ->label('Tax Amount (minor units)')
                                     ->numeric()
-                                    ->prefix(fn (Get $get): string => $get('currency') ?? config('docs.defaults.currency', 'MYR'))
+                                    ->minValue(0)
+                                    ->step(1)
+                                    ->dehydrateStateUsing(static fn (mixed $state): ?int => blank($state) ? null : (int) $state)
                                     ->helperText('Auto-calculated if empty'),
 
-                                TextInput::make('discount_amount')
-                                    ->label('Discount')
+                                TextInput::make('discount_amount_minor')
+                                    ->label('Discount (minor units)')
                                     ->numeric()
-                                    ->prefix(fn (Get $get): string => $get('currency') ?? config('docs.defaults.currency', 'MYR'))
+                                    ->minValue(0)
+                                    ->step(1)
+                                    ->dehydrateStateUsing(static fn (mixed $state): ?int => blank($state) ? null : (int) $state)
                                     ->default(0),
 
-                                TextInput::make('total')
-                                    ->label('Total')
+                                TextInput::make('total_minor')
+                                    ->label('Total (minor units)')
                                     ->numeric()
-                                    ->prefix(fn (Get $get): string => $get('currency') ?? config('docs.defaults.currency', 'MYR'))
+                                    ->minValue(0)
+                                    ->step(1)
+                                    ->dehydrateStateUsing(static fn (mixed $state): ?int => blank($state) ? null : (int) $state)
                                     ->helperText('Auto-calculated if empty'),
                             ]),
                     ])
@@ -303,14 +315,14 @@ final class DocForm
         $docType = $get('doc_type') ?: $record?->doc_type;
 
         if (is_string($templateId) && $templateId !== '') {
-            /** @var \Illuminate\Database\Eloquent\Builder<\AIArmada\Docs\Models\DocTemplate> $query */
+            /** @var Builder<DocTemplate> $query */
             $query = OwnerUiScope::apply(DocTemplate::query(), includeGlobal: false);
 
             if (is_string($docType) && $docType !== '') {
                 $query->where('doc_type', $docType);
             }
 
-            /** @var \AIArmada\Docs\Models\DocTemplate|null */
+            /** @var DocTemplate|null */
             return $query->find($templateId);
         }
 
@@ -322,12 +334,12 @@ final class DocForm
             return null;
         }
 
-        /** @var \Illuminate\Database\Eloquent\Builder<\AIArmada\Docs\Models\DocTemplate> $query */
+        /** @var Builder<DocTemplate> $query */
         $query = OwnerUiScope::apply(DocTemplate::query(), includeGlobal: false)
             ->where('doc_type', $docType)
             ->where('is_default', true);
 
-        /** @var \AIArmada\Docs\Models\DocTemplate|null */
+        /** @var DocTemplate|null */
         return $query->first();
     }
 }

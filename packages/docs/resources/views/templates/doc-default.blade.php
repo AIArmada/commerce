@@ -128,8 +128,8 @@
                             @endif
                         </td>
                         <td class="py-3 text-right text-sm text-gray-900">{{ $item['quantity'] ?? 1 }}</td>
-                        <td class="py-3 text-right text-sm text-gray-900">{{ $doc->currency }} {{ number_format($item['price'] ?? 0, 2) }}</td>
-                        <td class="py-3 text-right text-sm font-medium text-gray-900">{{ $doc->currency }} {{ number_format(($item['quantity'] ?? 1) * ($item['price'] ?? 0), 2) }}</td>
+                        <td class="py-3 text-right text-sm text-gray-900">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinorWithCode((int) ($item['unit_price_minor'] ?? 0), $doc->currency) }}</td>
+                        <td class="py-3 text-right text-sm font-medium text-gray-900">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinorWithCode((int) ($item['quantity'] ?? 1) * (int) ($item['unit_price_minor'] ?? 0), $doc->currency) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -142,23 +142,23 @@
                 <div class="space-y-2">
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600">Subtotal:</span>
-                        <span class="text-gray-900">{{ $doc->currency }} {{ number_format($doc->subtotal, 2) }}</span>
+                        <span class="text-gray-900">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinorWithCode($doc->subtotal_minor, $doc->currency) }}</span>
                     </div>
-                    @if($doc->tax_amount > 0)
+                    @if($doc->tax_amount_minor > 0)
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600">Tax:</span>
-                        <span class="text-gray-900">{{ $doc->currency }} {{ number_format($doc->tax_amount, 2) }}</span>
+                        <span class="text-gray-900">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinorWithCode($doc->tax_amount_minor, $doc->currency) }}</span>
                     </div>
                     @endif
-                    @if($doc->discount_amount > 0)
+                    @if($doc->discount_amount_minor > 0)
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600">Discount:</span>
-                        <span class="text-gray-900">-{{ $doc->currency }} {{ number_format($doc->discount_amount, 2) }}</span>
+                        <span class="text-gray-900">-{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinorWithCode($doc->discount_amount_minor, $doc->currency) }}</span>
                     </div>
                     @endif
                     <div class="flex justify-between border-t-2 border-gray-900 pt-2 text-lg font-bold">
                         <span class="text-gray-900">Total:</span>
-                        <span class="text-gray-900">{{ $doc->currency }} {{ number_format($doc->total, 2) }}</span>
+                        <span class="text-gray-900">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinorWithCode($doc->total_minor, $doc->currency) }}</span>
                     </div>
                 </div>
             </div>

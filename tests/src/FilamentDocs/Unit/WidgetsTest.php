@@ -29,7 +29,7 @@ function filamentDocs_invokeMethod(object $instance, string $methodName, array $
 
 it('builds DocStatsWidget stats and formatting', function (): void {
     Doc::factory()->count(2)->create(['status' => Draft::class]);
-    Doc::factory()->create(['status' => Paid::class, 'total' => 100, 'paid_at' => now()]);
+    Doc::factory()->create(['status' => Paid::class, 'total_minor' => 100, 'paid_at' => now()]);
 
     $widget = app(DocStatsWidget::class);
 
@@ -52,7 +52,7 @@ it('builds RevenueChartWidget data, options, and type', function (): void {
     Doc::factory()->create([
         'status' => Paid::class,
         'paid_at' => now(),
-        'total' => 100,
+        'total_minor' => 100,
     ]);
 
     $widget = app(RevenueChartWidget::class);
@@ -100,12 +100,12 @@ it('prevents cross-tenant metric leakage in Filament Docs widgets', function ():
     // Owner A data
     $createDocForOwner($ownerA, ['status' => Draft::class]);
     $createDocForOwner($ownerA, ['status' => Draft::class]);
-    $createDocForOwner($ownerA, ['status' => Paid::class, 'paid_at' => now(), 'total' => 100]);
-    $createDocForOwner($ownerA, ['status' => Overdue::class, 'total' => 50]);
+    $createDocForOwner($ownerA, ['status' => Paid::class, 'paid_at' => now(), 'total_minor' => 100]);
+    $createDocForOwner($ownerA, ['status' => Overdue::class, 'total_minor' => 50]);
 
     // Owner B data (must never be included when scoped to Owner A)
     $createDocForOwner($ownerB, ['status' => Draft::class]);
-    $createDocForOwner($ownerB, ['status' => Paid::class, 'paid_at' => now(), 'total' => 999]);
+    $createDocForOwner($ownerB, ['status' => Paid::class, 'paid_at' => now(), 'total_minor' => 999]);
     $createDocForOwner($ownerB, ['status' => Cancelled::class]);
 
     OwnerContext::withOwner($ownerA, function (): void {
@@ -120,8 +120,8 @@ it('prevents cross-tenant metric leakage in Filament Docs widgets', function ():
         expect($stats[4]->getValue())->toBe(1);
 
         // Revenue must be owner-scoped (paid total = 100; overdue outstanding = 50)
-        expect($stats[3]->getDescription())->toBe('MYR 100.00');
-        expect($stats[4]->getDescription())->toBe('MYR 50.00 outstanding');
+        expect($stats[3]->getDescription())->toBe('MYR 100');
+        expect($stats[4]->getDescription())->toBe('MYR 50 outstanding');
 
         $statusWidget = app(StatusBreakdownWidget::class);
         $statusData = filamentDocs_invokeMethod($statusWidget, 'getData');
@@ -136,6 +136,6 @@ it('prevents cross-tenant metric leakage in Filament Docs widgets', function ():
 
         expect($revenueData['labels'])->toHaveCount(30);
         expect($revenueData['datasets'][0]['data'])->toHaveCount(30);
-        expect((float) end($revenueData['datasets'][0]['data']))->toBe(100.0);
+        expect((float) end($revenueData['datasets'][0]['data']))->toBe(100);
     });
 });

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->bigInteger('available_minor')->default(0);
             $table->bigInteger('lifetime_earnings_minor')->default(0);
             $table->bigInteger('minimum_payout_minor');
+            $table->unsignedBigInteger('payout_sequence')->default(0);
             $table->timestampsTz();
         });
     }

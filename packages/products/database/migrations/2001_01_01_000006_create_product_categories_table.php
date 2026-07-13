@@ -17,9 +17,11 @@ return new class extends Migration
 
             // Owner (for multi-tenancy)
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
 
             // Parent for hierarchy
             $table->foreignUuid('parent_id')->nullable();
+            $table->string('parent_scope', 36)->default('root');
 
             $table->string('name');
             $table->string('slug');
@@ -42,7 +44,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             // Unique slug per parent
-            $table->unique(['owner_type', 'owner_id', 'parent_id', 'slug']);
+            $table->unique(['owner_scope', 'parent_scope', 'slug']);
             $table->index('parent_id');
             $table->index('status');
             $table->index('hidden_at');

@@ -43,7 +43,7 @@ use AIArmada\Docs\Services\DocService;
 $doc = app(DocService::class)->create(DocData::from([
     'doc_type' => 'invoice',
     'items' => [
-        ['name' => 'Consulting', 'quantity' => 10, 'price' => 150],
+        ['name' => 'Consulting', 'quantity' => 10, 'unit_price_minor' => 15_000],
     ],
     'customer_data' => [
         'name' => 'Acme Corp',

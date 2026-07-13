@@ -103,14 +103,14 @@ final class DocInfolist
                                         TextEntry::make('quantity')
                                             ->label('Qty'),
 
-                                        TextEntry::make('price')
+                                        TextEntry::make('unit_price_minor')
                                             ->label('Price')
-                                            ->money(fn ($record): string => $record->currency ?? 'MYR'),
+                                            ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency)),
 
                                         TextEntry::make('line_total')
                                             ->label('Total')
-                                            ->getStateUsing(fn (array $state): float => ($state['quantity'] ?? 1) * ($state['price'] ?? 0))
-                                            ->money(fn ($record): string => $record->currency ?? 'MYR'),
+                                            ->getStateUsing(fn (array $state): int => (int) ($state['quantity'] ?? 1) * (int) ($state['unit_price_minor'] ?? 0))
+                                            ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency)),
                                     ]),
 
                                 TextEntry::make('description')
@@ -125,21 +125,21 @@ final class DocInfolist
                     ->schema([
                         Grid::make(4)
                             ->schema([
-                                TextEntry::make('subtotal')
+                                TextEntry::make('subtotal_minor')
                                     ->label('Subtotal')
-                                    ->money(fn ($record): string => $record->currency),
+                                    ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency)),
 
-                                TextEntry::make('tax_amount')
+                                TextEntry::make('tax_amount_minor')
                                     ->label('Tax')
-                                    ->money(fn ($record): string => $record->currency),
+                                    ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency)),
 
-                                TextEntry::make('discount_amount')
+                                TextEntry::make('discount_amount_minor')
                                     ->label('Discount')
-                                    ->money(fn ($record): string => $record->currency),
+                                    ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency)),
 
-                                TextEntry::make('total')
+                                TextEntry::make('total_minor')
                                     ->label('Total')
-                                    ->money(fn ($record): string => $record->currency)
+                                    ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                                     ->weight('bold')
                                     ->size('lg'),
                             ]),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Widgets;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Paid;
@@ -34,14 +35,15 @@ final class RevenueChartWidget extends ChartWidget
         $totalsByDate = OwnerUiScope::apply(Doc::query(), includeGlobal: false)
             ->where('status', DocStatus::normalize(Paid::class))
             ->whereBetween('paid_at', [$startDate, $today->endOfDay()])
-            ->selectRaw('DATE(paid_at) as paid_date, SUM(total) as total_sum')
+            ->selectRaw('DATE(paid_at) as paid_date, SUM(total_minor) as total_minor_sum')
             ->groupBy('paid_date')
-            ->pluck('total_sum', 'paid_date')
-            ->map(fn (mixed $value): float => (float) $value)
+            ->pluck('total_minor_sum', 'paid_date')
+            ->map(fn (mixed $value): int => (int) $value)
             ->all();
 
+        $currency = (string) config('docs.defaults.currency', 'MYR');
         $data = array_map(
-            static fn (string $date): float => (float) ($totalsByDate[$date] ?? 0),
+            static fn (string $date): string => MoneyFormatter::decimalFromMinor((int) ($totalsByDate[$date] ?? 0), $currency),
             $dates,
         );
 

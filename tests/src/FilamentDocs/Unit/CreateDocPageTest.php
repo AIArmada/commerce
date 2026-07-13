@@ -26,7 +26,7 @@ it('delegates document creation to DocService and defaults generate_pdf from con
     $doc = $method->invoke($page, [
         'doc_type' => 'invoice',
         'items' => [
-            ['name' => 'Test Item', 'quantity' => 1, 'price' => 100],
+            ['name' => 'Test Item', 'quantity' => 1, 'unit_price_minor' => 100],
         ],
         'customer_data' => ['name' => 'Test Customer'],
     ]);
@@ -52,7 +52,7 @@ it('uses config value for auto_generate_pdf when not explicitly set', function (
     $doc = $method->invoke($page, [
         'doc_type' => 'receipt',
         'items' => [
-            ['name' => 'Test Item', 'quantity' => 1, 'price' => 50],
+            ['name' => 'Test Item', 'quantity' => 1, 'unit_price_minor' => 50],
         ],
         'customer_data' => ['name' => 'Another Customer'],
     ]);

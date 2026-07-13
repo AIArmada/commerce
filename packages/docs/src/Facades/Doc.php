@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static string downloadPdf(\AIArmada\Docs\Models\Doc $doc)
  * @method static void markAsSent(\AIArmada\Docs\Models\Doc $doc, ?string $notes = null)
  * @method static void updateStatus(\AIArmada\Docs\Models\Doc $doc, DocStatus|string $status, ?string $notes = null)
- * @method static array calculateTotals(array $items, float $discountAmount = 0)
+ * @method static array calculateTotals(array $items, int $discountAmountMinor = 0, ?string $currency = null)
  *
  * @see DocService
  */

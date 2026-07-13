@@ -85,13 +85,19 @@ final class CreateChipSubscription
                 'next_billing_at' => $nextBillingAt,
                 'billing_interval' => $builder->getBillingInterval(),
                 'billing_interval_count' => $builder->getBillingIntervalCount(),
-                'recurring_token' => $recurringToken ?? $owner->defaultPaymentMethod()?->id(),
                 'ends_at' => null,
                 'coupon_id' => $couponId,
                 'coupon_discount' => $couponDiscount,
                 'coupon_duration' => $couponDuration,
                 'coupon_applied_at' => $couponId ? Carbon::now() : null,
             ]);
+
+            $effectiveRecurringToken = $recurringToken ?? $owner->defaultPaymentMethod()?->id();
+
+            if (is_string($effectiveRecurringToken) && $effectiveRecurringToken !== '') {
+                $subscription->assignRecurringToken($effectiveRecurringToken);
+            }
+
             $subscription->save();
             $subscription->setRelation('billable', $owner);
 

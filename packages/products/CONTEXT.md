@@ -26,3 +26,8 @@ family: catalog-and-identity
 - Owns models, actions, services, events, calculations, and persistence rules.
 - If admin UI changes too, audit `filament-products`.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
+
+
+## Owner-scoped uniqueness
+
+Global and tenant-owned records use a non-null canonical `owner_scope` key for unique business identifiers. Global rows use `global`; owned rows use a stable SHA-256 value derived from the owner morph and primary key. Nullable owner columns are not part of unique constraints, callers cannot mass-assign the scope key, and model saves recompute it from the effective owner tuple. A business key may be reused by different owners but not duplicated globally or within one owner.

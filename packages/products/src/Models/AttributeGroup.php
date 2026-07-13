@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Products\Concerns\IsAttributeEntity;
 use AIArmada\Products\Enums\Visibility;
 use Carbon\CarbonImmutable;
@@ -45,6 +46,7 @@ class AttributeGroup extends Model implements Auditable
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
+    use HasOwnerScopeKey;
     use HasUuids;
     use IsAttributeEntity;
     use LogsCommerceActivity;

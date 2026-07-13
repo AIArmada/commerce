@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Widgets;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
@@ -28,11 +29,11 @@ final class DocStatsWidget extends BaseWidget
         $paidCount = (clone $docs)->where('status', DocStatus::normalize(Paid::class))->count();
         $overdueCount = (clone $docs)->where('status', DocStatus::normalize(Overdue::class))->count();
 
-        $totalRevenue = (clone $docs)->where('status', DocStatus::normalize(Paid::class))->sum('total');
+        $totalRevenue = (clone $docs)->where('status', DocStatus::normalize(Paid::class))->sum('total_minor');
 
         $pendingRevenue = (clone $docs)
             ->whereIn('status', [DocStatus::normalize(Pending::class), DocStatus::normalize(Sent::class), DocStatus::normalize(Overdue::class)])
-            ->sum('total');
+            ->sum('total_minor');
 
         return [
             Stat::make('Total Documents', $totalDocs)
@@ -67,10 +68,8 @@ final class DocStatsWidget extends BaseWidget
         return 5;
     }
 
-    private function formatCurrency(string | float $amount): string
+    private function formatCurrency(int|string $amountMinor): string
     {
-        $currency = config('docs.defaults.currency', 'MYR');
-
-        return $currency . ' ' . number_format((float) $amount, 2, '.', ',');
+        return MoneyFormatter::formatMinor((int) $amountMinor, (string) config('docs.defaults.currency', 'MYR'));
     }
 }

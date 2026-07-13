@@ -70,9 +70,9 @@ it('accepts event payloads and creates identity and session records', function (
     ]);
     $property->assignOwner($owner)->save();
 
-    $response = $this->postJson('/api/signals/collect/event', [
+    $response = $this->postJson('/api/signals/collect/browser-event', [
         'write_key' => 'event-write-key',
-        'event_name' => 'purchase_completed',
+        'event_name' => 'checkout_progressed',
         'event_category' => 'conversion',
         'external_id' => 'customer-456',
         'email' => 'buyer@example.com',
@@ -84,9 +84,7 @@ it('accepts event payloads and creates identity and session records', function (
         'utm_campaign' => 'spring-sale',
         'utm_content' => 'hero-banner',
         'utm_term' => 'spring deals',
-        'revenue_minor' => 9900,
         'properties' => [
-            'order_number' => 'ORD-1001',
             'items_count' => 3,
             'first_order' => true,
             'checkout' => [
@@ -97,9 +95,9 @@ it('accepts event payloads and creates identity and session records', function (
 
     $response->assertAccepted()->assertJsonPath('data.tracked_property_id', $property->id);
 
-    $followUpResponse = $this->postJson('/api/signals/collect/event', [
+    $followUpResponse = $this->postJson('/api/signals/collect/browser-event', [
         'write_key' => 'event-write-key',
-        'event_name' => 'checkout_progressed',
+        'event_name' => 'product.viewed',
         'event_category' => 'conversion',
         'external_id' => 'customer-456',
         'session_identifier' => 'sess-abc',
@@ -136,9 +134,8 @@ it('accepts event payloads and creates identity and session records', function (
         ->and($followUpEvent?->term)->toBe('spring deals')
         ->and($followUpEvent?->referrer)->toBe('https://google.com')
         ->and($session?->bounced_at)->toBeNull()
-        ->and($event?->revenue_minor)->toBe(9900)
+        ->and($event?->revenue_minor)->toBe(0)
         ->and($event?->property_types)->toMatchArray([
-            'order_number' => 'string',
             'items_count' => 'number',
             'first_order' => 'boolean',
             'checkout' => [
@@ -147,7 +144,7 @@ it('accepts event payloads and creates identity and session records', function (
         ]);
 });
 
-it('deduplicates event payloads by idempotency key per tracked property', function (): void {
+it('records repeated browser events without accepting client-controlled idempotency keys', function (): void {
     /** @var User $owner */
     $owner = User::query()->create([
         'name' => 'Idempotent Owner',
@@ -167,19 +164,18 @@ it('deduplicates event payloads by idempotency key per tracked property', functi
         'write_key' => 'idempotent-write-key',
         'event_name' => 'cart.snapshot.synced',
         'event_category' => 'cart',
-        'idempotency_key' => 'snapshot-1',
         'properties' => [
             'cart_total_minor' => 12000,
         ],
     ];
 
-    $first = $this->postJson('/api/signals/collect/event', $payload);
-    $second = $this->postJson('/api/signals/collect/event', $payload);
+    $first = $this->postJson('/api/signals/collect/browser-event', $payload);
+    $second = $this->postJson('/api/signals/collect/browser-event', $payload);
 
     $first->assertAccepted();
     $second->assertAccepted();
 
-    expect(SignalEvent::query()->withoutOwnerScope()->where('tracked_property_id', $property->id)->count())->toBe(1);
+    expect(SignalEvent::query()->withoutOwnerScope()->where('tracked_property_id', $property->id)->count())->toBe(2);
 });
 
 it('filters raw PII and non-allowlisted properties from event payloads', function (): void {
@@ -198,7 +194,7 @@ it('filters raw PII and non-allowlisted properties from event payloads', functio
         'write_key' => 'privacy-write-key',
     ]);
 
-    $response = $this->postJson('/api/signals/collect/event', [
+    $response = $this->postJson('/api/signals/collect/browser-event', [
         'write_key' => 'privacy-write-key',
         'event_name' => 'cart.high_value.detected',
         'event_category' => 'cart',
@@ -241,7 +237,7 @@ it('queues alert evaluation when on-ingest evaluation is explicitly enabled', fu
         'write_key' => 'queued-alert-write-key',
     ]);
 
-    $response = $this->postJson('/api/signals/collect/event', [
+    $response = $this->postJson('/api/signals/collect/browser-event', [
         'write_key' => 'queued-alert-write-key',
         'event_name' => 'cart.abandoned',
         'event_category' => 'cart',
@@ -281,7 +277,7 @@ it('queues reverse geocoding with explicit owner payload context', function (): 
         'write_key' => 'geo-write-key',
     ]);
 
-    $this->postJson('/api/signals/collect/event', [
+    $this->postJson('/api/signals/collect/browser-event', [
         'write_key' => 'geo-write-key',
         'event_name' => 'page_view',
         'event_category' => 'page_view',

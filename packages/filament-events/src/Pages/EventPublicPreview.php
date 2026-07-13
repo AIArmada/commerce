@@ -53,7 +53,7 @@ final class EventPublicPreview extends Page
                     ->schema([
                         Infolists\Components\TextEntry::make('title')->size('lg'),
                         Infolists\Components\TextEntry::make('summary'),
-                        Infolists\Components\TextEntry::make('description')->html(),
+                        Infolists\Components\TextEntry::make('description'),
                         Infolists\Components\TextEntry::make('status')->badge(),
                         Infolists\Components\TextEntry::make('delivery_mode')->badge(),
                     ]),

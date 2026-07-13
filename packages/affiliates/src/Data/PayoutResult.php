@@ -10,14 +10,14 @@ use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
- * Result of a payout operation.
+ * Result of a payout provider operation.
  */
 #[MapInputName(SnakeCaseMapper::class)]
 #[MapOutputName(SnakeCaseMapper::class)]
 class PayoutResult extends Data
 {
     /**
-     * @param  array<string, mixed>  $metadata
+     * @param  array<string, scalar|null>  $metadata
      */
     public function __construct(
         public readonly bool $success,
@@ -27,36 +27,30 @@ class PayoutResult extends Data
         public readonly array $metadata = [],
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $metadata
-     */
+    /** @param array<string, scalar|null> $metadata */
     public static function success(string $externalReference, array $metadata = []): self
     {
-        return new self(
-            success: true,
-            externalReference: $externalReference,
-            metadata: $metadata
-        );
+        return new self(true, $externalReference, metadata: array_merge($metadata, ['status' => 'completed']));
     }
 
-    public static function failure(string $reason, ?string $code = null): self
+    public static function failure(string $reason = 'The payout provider rejected the request.', ?string $code = null): self
     {
-        return new self(
-            success: false,
-            failureReason: $reason,
-            failureCode: $code
-        );
+        return new self(false, failureReason: $reason, failureCode: $code ?? 'PROVIDER_REJECTED', metadata: ['status' => 'failed']);
     }
 
-    /**
-     * @param  array<string, mixed>  $metadata
-     */
+    /** @param array<string, scalar|null> $metadata */
     public static function pending(string $externalReference, array $metadata = []): self
     {
+        return new self(true, $externalReference, metadata: array_merge($metadata, ['status' => 'pending']));
+    }
+
+    public static function unknown(?string $code = null): self
+    {
         return new self(
-            success: true,
-            externalReference: $externalReference,
-            metadata: array_merge($metadata, ['status' => 'pending'])
+            false,
+            failureReason: 'The provider outcome is unknown and requires reconciliation.',
+            failureCode: $code ?? 'PROVIDER_OUTCOME_UNKNOWN',
+            metadata: ['status' => 'unknown'],
         );
     }
 
@@ -67,15 +61,16 @@ class PayoutResult extends Data
 
     public function isPending(): bool
     {
-        return $this->success && ($this->metadata['status'] ?? null) === 'pending';
+        return $this->getStatus() === 'pending';
+    }
+
+    public function isUnknown(): bool
+    {
+        return $this->getStatus() === 'unknown';
     }
 
     public function getStatus(): string
     {
-        if (! $this->success) {
-            return 'failed';
-        }
-
-        return $this->metadata['status'] ?? 'completed';
+        return (string) ($this->metadata['status'] ?? ($this->success ? 'completed' : 'failed'));
     }
 }

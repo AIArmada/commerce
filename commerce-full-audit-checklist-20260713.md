@@ -1,0 +1,498 @@
+# Commerce Full Audit Execution Checklist — New Findings Only
+
+> YAML is authoritative. Checkboxes are a human view only. Do not claim work from this file without updating YAML.
+
+## Start rules
+
+- [ ] Previous tracker is available and current.
+- [ ] Validator passes with `--prior-tracker`.
+- [ ] Current `depends_on` and cross-tracker `prior_dependencies` are all `done`.
+- [ ] One agent owns one task and one branch/worktree.
+- [ ] Exact source paths do not overlap active work.
+- [ ] No backward-compatibility or legacy code will be added.
+- [ ] The agent has read the HTML finding, YAML task, AGENTS.md, package CONTEXT.md, README, callers, migrations, and tests.
+
+## Wave 0
+
+- [ ] **COORD-001 — Register this audit beside the prior handoff and validate exclusive ownership**
+  - Finding: `Governance`
+  - New-tracker dependencies: none
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Previous handoff tracker path is recorded.
+    - [ ] Validator reports no active path overlap.
+    - [ ] Every claimed task has one owner and branch.
+    - [ ] No repository source file is edited by this task.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **BASE-002 — Confirm immutable audit baseline and package coverage**
+  - Finding: `Governance`
+  - New-tracker dependencies: `COORD-001`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Archive SHA-256 equals d39f095b9e76f262bf69dcf140757c94a68cd74d8dad2e36f18a42b305804dfa.
+    - [ ] All 63 packages are represented in coverage.
+    - [ ] All PHP syntax remains clean or exact regressions are recorded.
+    - [ ] Dynamic Pest/PHPStan limitations are referenced to the prior environment task, not reopened as a new finding.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+
+## Wave 1
+
+- [ ] **SEC-100 — Define the credential ciphertext/fingerprint contract**
+  - Finding: `NF-02`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] One approved contract covers both packages.
+    - [ ] Encryption and fingerprint keys are separated.
+    - [ ] No plaintext fallback or compatibility accessor is permitted.
+    - [ ] Migration disposition for existing credentials is explicit.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **NET-110 — Define the pinned public HTTP target and transport contract**
+  - Finding: `NF-04`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Validation and connection use the same selected IP.
+    - [ ] Mixed/private/link-local/loopback/metadata ranges are rejected.
+    - [ ] Redirect behavior is explicit.
+    - [ ] The seam has production and deterministic test adapters.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **OWN-120 — Define database-portable global uniqueness scope keys**
+  - Finding: `NF-15`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Global and owner-specific uniqueness semantics are unambiguous.
+    - [ ] Callers cannot forge inconsistent scope keys.
+    - [ ] PostgreSQL, MySQL, and SQLite behavior is covered.
+    - [ ] No nullable-owner unique index remains as the enforcement mechanism.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+
+## Wave 2
+
+- [ ] **SEC-201 — Protect Cashier CHIP recurring tokens**
+  - Finding: `NF-02`
+  - New-tracker dependencies: `SEC-100`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] No `recurring_token` plaintext column remains.
+    - [ ] Equality and uniqueness use fingerprint only.
+    - [ ] Ciphertext is hidden and authenticated.
+    - [ ] Tampering/wrong-key/serialization/log tests pass.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **SEC-202 — Protect CHIP purchase, client, and bank secrets**
+  - Finding: `NF-02`
+  - New-tracker dependencies: `SEC-100`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] No reusable token/account identifier is stored in plaintext.
+    - [ ] No sensitive attribute appears in model arrays/JSON.
+    - [ ] Provider payload retention is minimized and documented.
+    - [ ] Factories/tests contain no real-looking reusable credentials.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **SEC-210 — Replace Communications CBC with versioned authenticated protection**
+  - Finding: `NF-03`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Tampering, truncation, wrong key, and unknown version fail closed.
+    - [ ] Encryption and fingerprint keys are distinct.
+    - [ ] Sensitive fields are hidden from serialization.
+    - [ ] No AES-CBC destination code remains.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **SEC-220 — Rotate sessions on impersonation take and leave**
+  - Finding: `NF-13`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Session ID changes on take and leave.
+    - [ ] Old session ID is invalidated.
+    - [ ] Cross-guard and fallback paths share guarantees.
+    - [ ] Nested, rollback, event-failure, and back-url tests pass.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **SEC-230 — Eliminate stored XSS in Event preview**
+  - Finding: `NF-12`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Script, event handler, javascript URL, SVG, and malformed markup payloads cannot execute.
+    - [ ] Allowed formatting is explicitly tested if rich text remains.
+    - [ ] Plain-text installations require no sanitizer.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **SEC-240 — Split public Signals browser events from trusted server outcomes**
+  - Finding: `NF-07`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Public write key cannot submit trusted revenue/outcome fields.
+    - [ ] Both endpoints have explicit rate and payload limits.
+    - [ ] Origin/Referer is not authentication.
+    - [ ] Spoof, oversize, replay, and valid trusted tests pass.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **SEC-250 — Add required dependency vulnerability auditing**
+  - Finding: `NF-16`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] A vulnerable locked dependency fails CI.
+    - [ ] Scheduled audit exists.
+    - [ ] No `continue-on-error` or silent allow-failure is used.
+    - [ ] Security exception process is documented.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **SEC-260 — Remove plaintext Membership invitation mode**
+  - Finding: `NF-19`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] No configuration can store plaintext invitations.
+    - [ ] Raw token is available only at issuance.
+    - [ ] Lookup remains constant-time/hash based.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **COR-270 — Implement real Event notification dispatch and truthful status**
+  - Finding: `NF-18`
+  - New-tracker dependencies: `BASE-002`, `SEC-230`
+  - Prior-tracker dependencies: `EVT-103`
+  - Acceptance:
+    - [ ] Missing enabled adapter fails clearly.
+    - [ ] UI never writes sent status directly.
+    - [ ] Zero/partial/all delivery outcomes are correct.
+    - [ ] Retries are idempotent and observable.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **PAY-301 — Make affiliate payout creation an atomic claimed operation**
+  - Finding: `NF-05`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Two concurrent workers create at most one payout operation.
+    - [ ] Balance cannot go negative or be reserved twice.
+    - [ ] Hold/pending checks are transactionally current.
+    - [ ] Large data sets are chunked.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **PAY-310 — Introduce idempotent CHIP renewal attempts**
+  - Finding: `NF-06`
+  - New-tracker dependencies: `SEC-201`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Concurrent runs charge once per period.
+    - [ ] No remote call occurs inside DB transaction.
+    - [ ] Timeout-after-commit is unknown, not PastDue.
+    - [ ] Stale leases recover without duplicate charge.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **REL-330 — Replace synchronous Signals alert fan-out with delivery jobs**
+  - Finding: `NF-08`
+  - New-tracker dependencies: `SEC-240`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] 500/timeout are failed attempts.
+    - [ ] Partial fan-out is represented per destination.
+    - [ ] Duplicate jobs are idempotent.
+    - [ ] Ingestion never waits for network delivery.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **NET-340 — Implement validated and pinned HTTP targets**
+  - Finding: `NF-04`
+  - New-tracker dependencies: `NET-110`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Public-then-private rebinding test is blocked.
+    - [ ] IPv4/IPv6 private/link-local/loopback/metadata ranges are blocked.
+    - [ ] TLS hostname validation remains active.
+    - [ ] No consumer can use a validated URL without pinned transport.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **DATA-350 — Convert Docs money to integer minor units**
+  - Finding: `NF-14`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] No decimal monetary column or float money field remains.
+    - [ ] Partial/full payment status uses exact integer comparisons.
+    - [ ] Multiple currency exponent tests pass.
+    - [ ] No compatibility accessors or dual fields remain.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **DATA-360 — Enforce global uniqueness in Products**
+  - Finding: `NF-15`
+  - New-tracker dependencies: `OWN-120`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Duplicate global slug/SKU/code is rejected.
+    - [ ] Same value across different owners is allowed.
+    - [ ] Owner reassignment updates scope key safely.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **QOL-370 — Delete the no-op Promotion eligibility command**
+  - Finding: `NF-10`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: `DSC-501`
+  - Acceptance:
+    - [ ] Command is removed or performs a real approved materialization.
+    - [ ] No success message exists without measured work.
+    - [ ] No compatibility alias remains.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **QOL-371 — Replace random Growth assignment repair with canonical deterministic allocation**
+  - Finding: `NF-11`
+  - New-tracker dependencies: `BASE-002`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Repeated repair is stable.
+    - [ ] Weights/status/audience/owner rules match normal assignment.
+    - [ ] No `inRandomOrder()` remains.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+
+## Wave 3
+
+- [ ] **PAY-302 — Make Stripe and PayPal payout adapters idempotent and reconcilable**
+  - Finding: `NF-05`
+  - New-tracker dependencies: `PAY-301`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Timeout after accepted request cannot produce duplicate payout.
+    - [ ] Raw provider/exception messages are not exposed.
+    - [ ] Unknown status is durable and reconcilable.
+    - [ ] Reversals are idempotent.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **REL-320 — Replace inline Affiliate webhooks with durable deliveries**
+  - Finding: `NF-09`
+  - New-tracker dependencies: `PAY-302`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] HTTP 500 is not success.
+    - [ ] Retries reuse event ID/signature payload.
+    - [ ] Duplicate jobs do not duplicate logical delivery.
+    - [ ] Originating business workflow is not blocked by endpoint latency.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **NET-341 — Migrate Affiliate URL consumers to pinned transport**
+  - Finding: `NF-04`
+  - New-tracker dependencies: `NET-340`, `REL-320`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Both consumers connect only to validated IP.
+    - [ ] Rebinding and mixed-answer tests pass.
+    - [ ] Timeout/status behavior remains explicit.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **DATA-361 — Enforce global uniqueness in Signals**
+  - Finding: `NF-15`
+  - New-tracker dependencies: `OWN-120`, `SEC-240`, `REL-330`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Global duplicate slugs are rejected.
+    - [ ] Per-owner duplicates are isolated.
+    - [ ] All owner-auto-assignment paths set the key.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **DATA-362 — Enforce global uniqueness in Docs, Customers, and Shipping**
+  - Finding: `NF-15`
+  - New-tracker dependencies: `OWN-120`, `DATA-350`
+  - Prior-tracker dependencies: `SHP-601`
+  - Acceptance:
+    - [ ] Global duplicates are rejected in all three packages.
+    - [ ] Different owners may reuse values.
+    - [ ] Global lookup is deterministic.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **CFG-400 — Make JSON column resolution config-only and validated**
+  - Finding: `NF-01`
+  - New-tracker dependencies: `NET-340`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] No direct JSON-type environment read remains.
+    - [ ] Invalid/missing config behavior is explicit.
+    - [ ] Config cache behavior is testable.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+
+## Wave 4
+
+- [ ] **NET-342 — Migrate Signals URL consumers to pinned transport**
+  - Finding: `NF-04`
+  - New-tracker dependencies: `NET-340`, `REL-330`, `DATA-361`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Both consumers pin validated IP.
+    - [ ] Private/mixed/rebinding destinations are rejected.
+    - [ ] No raw `Http::...($untrustedUrl)` remains in these paths.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **QOL-372 — Remove unused Affiliate plaintext api_token schema**
+  - Finding: `NF-17`
+  - New-tracker dependencies: `NET-341`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] No affiliate `api_token` column/property/UI remains.
+    - [ ] Middleware behavior is unchanged and tested.
+    - [ ] Docs no longer imply per-affiliate API credentials.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **CFG-411 — Add package-owned JSON type configuration to general package cohort**
+  - Finding: `NF-01`
+  - New-tracker dependencies: `CFG-400`, `DATA-360`, `DATA-362`, `QOL-371`, `QOL-370`, `SEC-260`, `NET-341`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Every cohort package owns the key.
+    - [ ] All migration helpers resolve through config.
+    - [ ] Invalid values fail before migration SQL.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+
+## Wave 5
+
+- [ ] **CFG-412 — Add package-owned JSON type configuration to changed package cohort**
+  - Finding: `NF-01`
+  - New-tracker dependencies: `CFG-400`, `SEC-201`, `SEC-202`, `SEC-210`, `SEC-240`, `COR-270`, `PAY-301`, `PAY-302`, `PAY-310`, `REL-320`, `REL-330`, `NET-341`, `NET-342`, `DATA-350`, `DATA-361`, `DATA-362`, `QOL-370`, `QOL-371`, `QOL-372`
+  - Prior-tracker dependencies: `DSC-501`
+  - Acceptance:
+    - [ ] Every cohort package owns the key.
+    - [ ] No config edits from earlier tasks are overwritten.
+    - [ ] Package-specific defaults are documented.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+- [ ] **INT-500 — Run cross-finding security and failure-mode integration tests**
+  - Finding: `Integration`
+  - New-tracker dependencies: `SEC-201`, `SEC-202`, `SEC-210`, `SEC-220`, `SEC-230`, `SEC-240`, `SEC-250`, `SEC-260`, `COR-270`, `PAY-302`, `PAY-310`, `NET-341`, `NET-342`, `DATA-360`, `DATA-361`, `DATA-362`, `CFG-411`, `CFG-412`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] No old columns/config flags/commands/classes remain.
+    - [ ] Concurrency and timeout-after-commit scenarios pass.
+    - [ ] Sensitive serialization tests pass.
+    - [ ] Prior architecture tests remain green after merging both workboards.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded
+
+## Wave 6
+
+- [ ] **QC-520 — Final full-repository verification and handoff closure**
+  - Finding: `Quality`
+  - New-tracker dependencies: `INT-500`
+  - Prior-tracker dependencies: none
+  - Acceptance:
+    - [ ] Both trackers report no active overlap.
+    - [ ] All configured verification commands pass.
+    - [ ] No excluded prior finding was reimplemented or contradicted.
+    - [ ] All done tasks contain evidence and reviewer approval.
+    - [ ] All 63 packages remain represented in coverage.
+  - Evidence:
+    - [ ] Commit SHA recorded
+    - [ ] Targeted tests recorded
+    - [ ] Static analysis/style recorded
+    - [ ] Independent reviewer recorded

@@ -133,7 +133,7 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
         $defaultMethod = Cashier::paymentMethodStore()->defaultForBillable($this);
 
         if ($defaultMethod !== null) {
-            Cashier::paymentMethodStore()->setDefaultForBillable($this, $defaultMethod->recurring_token);
+            Cashier::paymentMethodStore()->setDefaultForBillable($this, $defaultMethod->recurringToken());
         }
 
         return $this;

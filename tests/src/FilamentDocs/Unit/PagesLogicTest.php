@@ -19,30 +19,30 @@ it('computes an aging summary across buckets', function (): void {
     Doc::factory()->create([
         'status' => Sent::class,
         'due_date' => now()->addDays(1),
-        'total' => 100,
+        'total_minor' => 100,
     ]);
 
     Doc::factory()->create([
         'status' => Overdue::class,
         'due_date' => now()->subDays(10),
-        'total' => 200,
+        'total_minor' => 200,
     ]);
 
     Doc::factory()->create([
         'status' => Pending::class,
         'due_date' => now()->subDays(40),
-        'total' => 300,
+        'total_minor' => 300,
     ]);
 
     $page = app(AgingReportPage::class);
     $summary = $page->getAgingSummary();
 
     expect($summary['current']['count'])->toBe(1);
-    expect((float) $summary['current']['amount'])->toBe(100.0);
+    expect((float) $summary['current']['amount_minor'])->toBe(100);
     expect($summary['1-30']['count'])->toBe(1);
-    expect((float) $summary['1-30']['amount'])->toBe(200.0);
+    expect((float) $summary['1-30']['amount_minor'])->toBe(200);
     expect($summary['31-60']['count'])->toBe(1);
-    expect((float) $summary['31-60']['amount'])->toBe(300.0);
+    expect((float) $summary['31-60']['amount_minor'])->toBe(300);
 });
 
 it('scopes the aging summary to the current owner', function (): void {
@@ -64,19 +64,19 @@ it('scopes the aging summary to the current owner', function (): void {
     OwnerContext::withOwner($ownerA, fn (): Doc => Doc::factory()->create([
         'status' => Sent::class,
         'due_date' => now()->addDay(),
-        'total' => 100,
+        'total_minor' => 100,
     ]));
 
     OwnerContext::withOwner($ownerB, fn (): Doc => Doc::factory()->create([
         'status' => Sent::class,
         'due_date' => now()->addDay(),
-        'total' => 900,
+        'total_minor' => 900,
     ]));
 
     $summary = OwnerContext::withOwner($ownerA, fn (): array => app(AgingReportPage::class)->getAgingSummary());
 
     expect($summary['current']['count'])->toBe(1);
-    expect((float) $summary['current']['amount'])->toBe(100.0);
+    expect((float) $summary['current']['amount_minor'])->toBe(100);
 });
 
 it('counts pending approvals for the current user', function (): void {

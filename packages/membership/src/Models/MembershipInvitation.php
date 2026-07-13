@@ -115,10 +115,6 @@ class MembershipInvitation extends Model
 
     public static function tokenForStorage(string $token): string
     {
-        if (! config('membership.invitations.hash_tokens', true)) {
-            return $token;
-        }
-
         return hash('sha256', $token);
     }
 

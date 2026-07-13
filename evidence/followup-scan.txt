@@ -1,0 +1,3914 @@
+=== owner tuple unique indexes ===
+packages/shipping/database/migrations/2001_02_01_000005_create_shipping_zones_table.php:38:            $table->unique(['owner_type', 'owner_id', 'code'], $tableName . '_owner_code_unique');
+packages/customers/database/migrations/2000_05_01_000003_create_customer_segments_table.php:44:            $table->unique(['owner_type', 'owner_id', 'slug'], 'customers_segments_owner_slug_unique');
+packages/products/database/migrations/2001_01_01_000013_create_product_attribute_sets_table.php:27:            $table->unique(['owner_type', 'owner_id', 'code']);
+packages/products/database/migrations/2001_01_01_000011_create_product_attributes_table.php:49:            $table->unique(['owner_type', 'owner_id', 'code']);
+packages/products/database/migrations/2001_01_01_000010_create_product_attribute_groups_table.php:28:            $table->unique(['owner_type', 'owner_id', 'code']);
+packages/products/database/migrations/2001_01_01_000008_create_product_collections_table.php:51:            $table->unique(['owner_type', 'owner_id', 'slug']);
+packages/signals/database/migrations/2001_01_01_000010_create_signals_goals_table.php:29:            $table->unique(['owner_type', 'owner_id', 'slug']);
+packages/products/database/migrations/2001_01_01_000006_create_product_categories_table.php:45:            $table->unique(['owner_type', 'owner_id', 'parent_id', 'slug']);
+packages/products/database/migrations/2001_01_01_000004_create_product_variants_table.php:49:            $table->unique(['owner_type', 'owner_id', 'sku']);
+packages/signals/database/migrations/2001_01_01_000007_create_signals_saved_reports_table.php:30:            $table->unique(['owner_type', 'owner_id', 'slug']);
+packages/signals/database/migrations/2001_01_01_000006_create_signals_segments_table.php:26:            $table->unique(['owner_type', 'owner_id', 'slug']);
+packages/products/database/migrations/2001_01_01_000001_create_products_table.php:71:            $table->unique(['owner_type', 'owner_id', 'slug']);
+packages/products/database/migrations/2001_01_01_000001_create_products_table.php:72:            $table->unique(['owner_type', 'owner_id', 'sku']);
+packages/docs/database/migrations/2000_06_01_000004_create_doc_extended_tables.php:58:                $table->unique(['owner_type', 'owner_id', 'slug'], $emailTemplatesTable . '_owner_slug_unique');
+packages/docs/database/migrations/2000_06_01_000002_create_docs_tables.php:37:            $table->unique(['owner_type', 'owner_id', 'slug'], $templatesTable . '_owner_slug_unique');
+=== raw html/render surfaces ===
+=== dependency scanning workflows ===
+.github/CODEOWNERS
+# Code Owners for AIArmada Commerce
+# 
+# These owners will be automatically requested for review when PRs are opened.
+# 
+# Learn more: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @aiarmada/commerce-core
+
+# Meta-package and root configuration
+/composer.json @aiarmada/commerce-core
+/monorepo-builder.php @aiarmada/commerce-core
+/.github/ @aiarmada/commerce-core
+
+# Documentation
+/docs/ @aiarmada/commerce-core
+/README.md @aiarmada/commerce-core
+/CONTRIBUTING.md @aiarmada/commerce-core
+
+# Package: Commerce Support (core utilities)
+/packages/commerce-support/ @aiarmada/commerce-core
+
+# Package: CSuite
+/packages/csuite/ @aiarmada/commerce-core
+
+# Package: Cart
+/packages/cart/ @aiarmada/commerce-core
+/packages/filament-cart/ @aiarmada/commerce-core
+
+# Package: Cashier
+/packages/cashier/ @aiarmada/commerce-core
+/packages/cashier-chip/ @aiarmada/commerce-core
+
+# Package: CHIP (Payments)
+/packages/chip/ @aiarmada/commerce-core
+/packages/filament-chip/ @aiarmada/commerce-core
+
+# Package: Vouchers
+/packages/vouchers/ @aiarmada/commerce-core
+/packages/filament-vouchers/ @aiarmada/commerce-core
+
+# Package: Affiliates
+/packages/affiliates/ @aiarmada/commerce-core
+/packages/filament-affiliates/ @aiarmada/commerce-core
+
+# Package: JNT (Shipping)
+/packages/jnt/ @aiarmada/commerce-core
+/packages/filament-jnt/ @aiarmada/commerce-core
+
+# Package: Permissions
+/packages/filament-permissions/ @aiarmada/commerce-core
+
+# Package: Docs
+/packages/docs/ @aiarmada/commerce-core
+/packages/filament-docs/ @aiarmada/commerce-core
+
+# Workflows and CI/CD
+/.github/workflows/ @aiarmada/commerce-core
+
+# Tests
+/tests/ @aiarmada/commerce-core
+
+# Configuration files
+/phpstan.neon @aiarmada/commerce-core
+/pint.json @aiarmada/commerce-core
+/rector.php @aiarmada/commerce-core
+/phpunit.xml @aiarmada/commerce-core
+/.xml/ @aiarmada/commerce-core
+.github/ISSUE_TEMPLATE/bug_report.yml
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us resolve the issue.
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package is affected?
+      description: Select the package where you encountered the bug
+      options:
+        - aiarmada/commerce (meta-package)
+        - aiarmada/cart
+        - aiarmada/chip
+        - aiarmada/vouchers
+        - aiarmada/jnt
+        - aiarmada/docs
+        - aiarmada/filament-cart
+        - aiarmada/filament-chip
+        - aiarmada/filament-vouchers
+        - aiarmada/commerce-support
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: When I try to add an item to cart with a negative quantity...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Install package with `composer require aiarmada/cart`
+        2. Configure cart storage driver to 'database'
+        3. Call `Cart::add('prod-001', 'Product', 10, -5)`
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+      placeholder: Should validate quantity and throw ValidationException
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened
+      placeholder: Saves item with negative quantity, breaks total calculation
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Sample
+      description: Minimal code sample to reproduce the issue
+      render: php
+      placeholder: |
+        use AIArmada\Cart\Facades\Cart;
+        
+        Cart::add('prod-001', 'Product', 10, -5);
+        // Expected: ValidationException
+        // Actual: Saves with negative quantity
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Messages / Logs
+      description: Relevant error messages or log excerpts
+      render: shell
+      placeholder: |
+        [2025-11-01 10:30:45] production.ERROR: ...
+
+  - type: dropdown
+    id: php-version
+    attributes:
+      label: PHP Version
+      description: Which PHP version are you using?
+      options:
+        - 8.4
+        - 8.3
+        - 8.2
+        - Other (please specify below)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: laravel-version
+    attributes:
+      label: Laravel Version
+      description: Which Laravel version are you using?
+      options:
+        - 12.x
+        - 11.x
+        - Other (please specify below)
+    validations:
+      required: true
+
+  - type: input
+    id: package-version
+    attributes:
+      label: Package Version
+      description: Which version of the affected package are you using?
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: filament-version
+    attributes:
+      label: Filament Version (if applicable)
+      description: If using a Filament plugin, which version?
+      options:
+        - Not using Filament
+        - 4.x
+        - 3.x
+        - Other
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: Any other relevant environment details
+      placeholder: |
+        - OS: Ubuntu 22.04
+        - Database: PostgreSQL 15
+        - Cache driver: Redis
+        - Queue driver: Redis
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or information
+      placeholder: This started happening after upgrading from 0.0.9 to 0.1.0
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have provided all requested information
+          required: true
+        - label: I am using a supported version of PHP (^8.4)
+          required: true
+        - label: I am using a supported version of Laravel (^13.0)
+          required: true
+.github/ISSUE_TEMPLATE/config.yml
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/aiarmada/commerce/discussions
+    about: Ask questions, share ideas, and connect with the community
+  - name: 💼 Commercial Support
+    url: mailto:info@aiarmada.com
+    about: Contact us for commercial support, consulting, or custom development
+  - name: 🔒 Security Issues
+    url: mailto:security@aiarmada.com
+    about: Report security vulnerabilities privately (do not open public issues)
+.github/ISSUE_TEMPLATE/documentation.yml
+name: 📚 Documentation
+description: Report issues with documentation or suggest improvements
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation!
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package's documentation?
+      description: Select the package this relates to
+      options:
+        - aiarmada/commerce (meta-package)
+        - aiarmada/cart
+        - aiarmada/chip
+        - aiarmada/vouchers
+        - aiarmada/jnt
+        - aiarmada/docs
+        - aiarmada/filament-cart
+        - aiarmada/filament-chip
+        - aiarmada/filament-vouchers
+        - aiarmada/commerce-support
+        - General/Ecosystem docs
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Documentation Issue Type
+      description: What kind of documentation issue is this?
+      options:
+        - Missing documentation
+        - Incorrect/outdated information
+        - Typo or formatting issue
+        - Unclear explanation
+        - Code example doesn't work
+        - Missing code example
+        - Suggestion for improvement
+        - Translation issue
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Link or path to the affected documentation
+      placeholder: "packages/cart/README.md line 145 or https://github.com/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current Documentation
+      description: What does the current documentation say? (copy/paste or quote)
+      render: markdown
+      placeholder: |
+        > Cart::add() accepts 4 parameters: id, name, price, quantity
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What's the issue?
+      description: Explain what's wrong or missing
+      placeholder: |
+        The documentation doesn't mention the optional 5th parameter for attributes,
+        which is essential for storing variant information like size/color.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested
+    attributes:
+      label: Suggested Improvement
+      description: How should it be corrected or improved?
+      render: markdown
+      placeholder: |
+        Should be:
+        > Cart::add() accepts 5 parameters: id, name, price, quantity, and optional attributes array.
+        
+        With example:
+        ```php
+        Cart::add('prod-001', 'T-Shirt', 29.99, 2, [
+            'size' => 'L',
+            'color' => 'Blue'
+        ]);
+        ```
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information or screenshots
+      placeholder: |
+        This caused confusion for several users in Issue #123
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have checked the latest version of the documentation
+          required: true
+        - label: I have searched existing issues
+          required: true
+.github/ISSUE_TEMPLATE/feature_request.yml
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please provide as much detail as possible.
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package would this feature affect?
+      description: Select the package(s) this feature request relates to
+      multiple: true
+      options:
+        - aiarmada/commerce (meta-package)
+        - aiarmada/cart
+        - aiarmada/chip
+        - aiarmada/vouchers
+        - aiarmada/jnt
+        - aiarmada/docs
+        - aiarmada/filament-cart
+        - aiarmada/filament-chip
+        - aiarmada/filament-vouchers
+        - aiarmada/commerce-support
+        - New package
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      description: A clear description of the problem you're trying to solve
+      placeholder: I'm always frustrated when I need to manually calculate shipping for multiple items...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you'd like
+      description: A clear and concise description of what you want to happen
+      placeholder: |
+        Add a method `Cart::calculateShipping()` that:
+        1. Groups items by warehouse location
+        2. Calculates weight per location
+        3. Integrates with shipping provider APIs
+        4. Returns total shipping cost
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe alternatives you've considered
+      description: Other solutions or workarounds you've thought about
+      placeholder: Currently using a custom service class that manually queries items and calls shipping API...
+
+  - type: textarea
+    id: api-proposal
+    attributes:
+      label: Proposed API / Code Example
+      description: How would you like to use this feature?
+      render: php
+      placeholder: |
+        use AIArmada\Cart\Facades\Cart;
+        
+        $shipping = Cart::calculateShipping([
+            'provider' => 'jnt',
+            'service' => 'express',
+            'destination' => '10000',
+        ]);
+        
+        Cart::applyCondition([
+            'name' => 'shipping',
+            'type' => 'shipping',
+            'target' => 'total',
+            'value' => $shipping->getAmount(),
+        ]);
+
+  - type: dropdown
+    id: breaking
+    attributes:
+      label: Would this be a breaking change?
+      description: Does this require changes to existing code?
+      options:
+        - "No - Backward compatible"
+        - "Yes - Breaking change"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: willing-to-contribute
+    attributes:
+      label: Are you willing to contribute?
+      description: Would you like to submit a pull request for this feature?
+      options:
+        - "Yes, I can submit a PR"
+        - "Yes, but I need guidance"
+        - "No, just suggesting"
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case / Business Value
+      description: Who would benefit from this feature and how?
+      placeholder: |
+        - E-commerce stores with multiple warehouses
+        - Businesses shipping to different regions
+        - Reduces manual shipping calculation errors
+        - Improves checkout experience
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, mockups, or references
+      placeholder: |
+        Similar feature in package X: https://...
+        Shopify does this by: ...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: This feature aligns with the package's scope and philosophy
+          required: true
+        - label: I have considered backward compatibility
+          required: true
+.github/copilot-instructions.md
+# Commerce Custom Guidelines
+
+## Config
+```
+# Config Guidelines
+
+All configuration options must be actively used or implemented in the codebase.
+
+## Standard Config Order
+
+Config files MUST follow this section order:
+
+### Core Package Configs
+1. Database - Tables, prefixes, JSON column types
+2. Credentials/API - Keys, secrets, environment
+3. Defaults - Currency, tax rates, default values
+4. Features/Behavior - Core feature toggles
+5. Integrations - Other package integrations
+6. HTTP - Timeouts, retries
+7. Webhooks - Webhook configuration
+8. Cache - Caching settings
+9. Logging - Logging configuration
+
+### Filament Package Configs
+1. Navigation - Group, sort order
+2. Tables - Polling, formats
+3. Features - Feature toggles
+4. Resources - Resource-specific settings
+
+## Rules
+- If a config key is defined but not referenced anywhere, remove it.
+- Publish only necessary configs via `php artisan vendor:publish`.
+- Keep `config/*.php` files minimal and purposeful.
+- Packages with JSON columns in migrations MUST have `json_column_type` config.
+- Use compact section headers (single line description only).
+- Group related settings under nested arrays.
+- Prefer opinionated defaults over excessive configuration.
+- Remove redundant env() wrappers for non-sensitive hardcoded values.
+
+## Comment Style
+Use compact Laravel-style section headers. Inline comments only for non-obvious values.
+
+## Verification
+Search codebase for config key usage:
+```bash
+grep -r "config('package.key')" src/ packages/*/src/
+```
+If no matches, remove the config.
+
+## Comment Style
+Use compact Laravel-style section headers. Inline comments only for non-obvious values.
+
+## Verification
+Search codebase for config key usage:
+```bash
+grep -r "config('package.key')" src/ packages/*/src/
+```
+If no matches, remove the config.
+```
+## Database
+```
+# Database Guidelines
+
+## Primary Keys
+- All tables must use `uuid('id')->primary()` for primary key.
+
+## Foreign Keys
+- Use `foreignUuid('relation_id')` for foreign key columns.
+- **Do NOT** add `->constrained()`, `->cascadeOnDelete()`, or any DB-level constraints/cascading.
+- Application logic must handle referential integrity and cascades.
+
+## Example Migration
+```php
+Schema::create('orders', function (Blueprint $table) {
+    $table->uuid('id')->primary();
+    $table->foreignUuid('user_id');
+    $table->foreignUuid('cart_id');
+    $table->timestamps();
+});
+```
+
+## Verification
+- Review migrations: no `constrained()` or cascade methods on foreign keys.
+- Ensure Eloquent relations handle cascades (e.g., `cascadeOnDelete()` in models).
+```
+## Models
+```
+## Model Guidelines
+
+**CRITICAL**: Never use database-level foreign key constraints or cascades (`->constrained()`, `->cascadeOnDelete()`). Handle all referential integrity and cascading **in application code only**.
+
+### Required Model Structure
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace {{ $namespace }}\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property string $id
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, {{ $childModel }}> ${{ $childPlural }}
+ */
+class {{ $modelClass }} extends Model
+{
+    use HasUuids;
+
+    protected $fillable = [
+        // List fillable columns matching migration
+    ];
+
+    public function getTable(): string
+    {
+        $tables = config('{{ $configKey }}.database.tables', []);
+        $prefix = config('{{ $configKey }}.database.table_prefix', '{{ $tablePrefix}}_');
+
+        return $tables['{{ $tableKey }}'] ?? $prefix.'{{ $tableName }}';
+    }
+
+    /**
+     * @return HasMany<{{ $childModel }}, $this>
+     */
+    public function {{ $childPlural }}(): HasMany
+    {
+        return $this->hasMany({{ $childModel }}::class, '{{ $foreignKey }}');
+    }
+
+    /**
+     * @return BelongsTo<{{ $parentModel }}, $this>
+     */
+    public function {{ $parentSnake }}(): BelongsTo
+    {
+        return $this->belongsTo({{ $parentModel }}::class, '{{ $foreignKey }}');
+    }
+
+    /**
+     * Application-level cascade delete (NO database constraints!)
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function ({{ $modelClass }} ${{ $modelVar }}): void {
+            ${{ $modelVar }}->{{ $childPlural }}()->delete();
+            // Add other cascades as needed
+            // For nullable FKs: ${{ $modelVar }}->{{ $childPlural }}()->update(['{{ $foreignKey }}' => null]);
+        });
+    }
+
+    protected function casts(): array
+    {
+        return [
+            // Casts for dates, JSON, booleans, enums
+            '{{ $jsonField }}' => 'array',
+            'is_active' => 'boolean',
+            'created_at' => 'datetime',
+        ];
+    }
+```
+
+### Cascade Rules
+
+| Relationship | Delete Action | Example |
+|--------------|---------------|---------|
+| `hasMany` children | `->delete()` | `$order->items()->delete();` |
+| Nullable FK children | `->update(['fk' => null])` | `$order->webhookLogs()->update(['order_id' => null]);` |
+
+### Verification Checklist
+- ✅ `HasUuids` trait
+- ✅ `getTable()` from config (no hardcoded names)
+- ✅ `booted()` with cascade deletes
+- ✅ **NO** `protected $table` property
+- ✅ PHPDoc `@property` annotations
+- ✅ Type-safe relations with generics
+- ✅ PHPStan level 6 compliant
+
+**Migration**: Use `foreignUuid('order_id')` **without** `->constrained()` or cascades.
+```
+## Docs
+```
+# Documentation Guidelines (Filament-Style)
+
+Docs are stored as markdown in the main repo, with a separate site that builds them.
+
+## File Structure
+
+### Naming Convention
+- Use numbered prefixes for ordering: `01-overview.md`, `02-installation.md`
+- Use lowercase kebab-case: `03-getting-started.md`
+- One topic per file, max ~500 lines
+
+### Required Frontmatter
+Every markdown file MUST start with:
+```yaml
+---
+title: Page Title
+---
+```
+
+### Astro Component Imports (for future docs site)
+Add after frontmatter for rich content:
+```md
+---
+title: Configuration
+---
+import Aside from "@components/Aside.astro"
+
+<Aside variant="warning">
+    Breaking change in v2.0...
+</Aside>
+```
+
+## Package docs/ Structure
+
+Each package must have:
+1. `01-overview.md` - Introduction, features
+.github/pull_request_template.md
+## Description
+
+<!-- Provide a clear and concise description of what this PR does -->
+
+## Related Issue
+
+<!-- Link to the issue this PR addresses. Use "Fixes #123" to auto-close the issue when merged -->
+
+Fixes #
+
+## Type of Change
+
+<!-- Check all that apply -->
+
+- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
+- [ ] ✨ New feature (non-breaking change which adds functionality)
+- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] 📚 Documentation update
+- [ ] 🎨 Code style update (formatting, renaming)
+- [ ] ♻️ Refactoring (no functional changes)
+- [ ] ⚡ Performance improvement
+- [ ] ✅ Test update
+- [ ] 🔧 Configuration change
+- [ ] 🏗️ Infrastructure change
+
+## Affected Packages
+
+<!-- Check all packages affected by this PR -->
+
+- [ ] aiarmada/commerce (meta-package)
+- [ ] aiarmada/cart
+- [ ] aiarmada/chip
+- [ ] aiarmada/vouchers
+- [ ] aiarmada/jnt
+- [ ] aiarmada/docs
+- [ ] aiarmada/filament-cart
+- [ ] aiarmada/filament-chip
+- [ ] aiarmada/filament-vouchers
+- [ ] aiarmada/commerce-support
+
+## Changes Made
+
+<!-- Describe the changes in detail. Use bullet points for multiple changes -->
+
+- 
+- 
+- 
+
+## Testing
+
+<!-- Describe the tests you ran and how reviewers can reproduce -->
+
+### Test Coverage
+
+- [ ] Unit tests added/updated
+- [ ] Feature tests added/updated
+- [ ] Browser tests added/updated (for Filament plugins)
+- [ ] Manual testing completed
+
+### How to Test
+
+```bash
+# Commands to test this change
+composer test
+# or
+vendor/bin/pest --filter=TestName
+```
+
+## Screenshots (if applicable)
+
+<!-- Add screenshots for UI changes -->
+
+## Code Quality Checklist
+
+- [ ] Code follows the project's coding standards (run `composer format`)
+- [ ] Code passes static analysis (run `composer phpstan`)
+- [ ] Code passes Rector checks (run `composer rector-dry`)
+- [ ] All tests pass (run `composer test`)
+- [ ] Documentation has been updated (README, CHANGELOG, inline docs)
+- [ ] No breaking changes, or breaking changes are documented
+- [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
+
+## Breaking Changes
+
+<!-- If this is a breaking change, describe the impact and migration path -->
+
+### Migration Guide
+
+```php
+// Before (old code)
+
+
+// After (new code)
+
+```
+
+## Additional Notes
+
+<!-- Any additional information, considerations, or context -->
+
+## Checklist for Maintainers
+
+<!-- For maintainer use only -->
+
+- [ ] Reviewed code changes
+- [ ] Checked test coverage
+- [ ] Verified documentation updates
+- [ ] Confirmed no breaking changes (or properly documented)
+- [ ] Updated CHANGELOG.md
+- [ ] Assigned appropriate labels
+- [ ] Milestone set (if applicable)
+.github/skills/cashier-stripe-development/SKILL.md
+---
+name: cashier-stripe-development
+description: "Handles Laravel Cashier Stripe integration including subscriptions, webhooks, Stripe Checkout, invoices, charges, refunds, trials, coupons, metered billing, and payment failure handling. Triggered when a user mentions Cashier, Billable, IncompletePayment, stripe_id, newSubscription, Stripe subscriptions, or billing. Also applies when setting up webhooks, handling SCA/3DS payment failures, testing with Stripe test cards, or troubleshooting incomplete subscriptions, CSRF webhook errors, or migration publish issues."
+license: MIT
+metadata:
+  author: laravel
+---
+
+# Cashier Stripe Development
+
+## Documentation
+
+Use `search-docs` for detailed Cashier patterns and documentation covering subscriptions, webhooks, Stripe Checkout, invoices, payment methods, and testing.
+
+For deeper guidance on specific topics, read the relevant reference file before implementing:
+
+- `references/subscriptions.md` covers subscription creation, status checks, swapping, trials, quantities, and multiple products
+- `references/webhooks.md` covers webhook setup, custom handlers, CSRF exclusion, and local development with the Stripe CLI
+- `references/testing.md` covers Stripe test cards, payment method tokens, and feature test patterns
+
+## Basic Usage
+
+### Installation
+
+```bash
+php artisan vendor:publish --tag="cashier-migrations"
+php artisan migrate
+php artisan vendor:publish --tag="cashier-config"
+```
+
+### Environment Variables
+
+```
+STRIPE_KEY=pk_test_...
+STRIPE_SECRET=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+CASHIER_CURRENCY=usd
+CASHIER_CURRENCY_LOCALE=en_US
+```
+
+### Billable Model
+
+<!-- Add Billable Trait -->
+```php
+use Laravel\Cashier\Billable;
+
+class User extends Authenticatable
+{
+    use Billable;
+}
+```
+
+For a non-User model, register it in a service provider:
+
+<!-- Custom Billable Model -->
+```php
+// In AppServiceProvider::boot()
+Cashier::useCustomerModel(Team::class);
+```
+
+### Creating a Subscription
+
+<!-- Create Subscription -->
+```php
+use Laravel\Cashier\Exceptions\IncompletePayment;
+
+try {
+    $user->newSubscription('default', 'price_xxxx')->create($paymentMethodId);
+} catch (IncompletePayment $e) {
+    return redirect()->route('cashier.payment', [$e->payment->id, 'redirect' => route('home')]);
+}
+```
+
+Always wrap subscription creation in a try/catch for `IncompletePayment`. When a card requires 3DS authentication, Cashier throws this exception. The `cashier.payment` route is auto-registered and handles the confirmation flow.
+
+## Verification
+
+1. Run migrations and confirm `stripe_id`, `pm_type`, `pm_last_four`, and `trial_ends_at` columns exist on the billable model table
+2. Test the webhook endpoint with `stripe listen --forward-to localhost/stripe/webhook` if you use the default path, or swap `stripe` for your configured `CASHIER_PATH`
+3. Confirm `$user->subscribed('default')` returns the expected value for active and incomplete subscriptions
+
+## Common Pitfalls
+
+- The migration publish tag is `cashier-migrations`, not `cashier`. Running `migrate` before publishing results in missing columns and tables.
+- `CASHIER_CURRENCY` must be set explicitly. It defaults to USD, which silently breaks non-US apps.
+- The Stripe CLI generates its own webhook signing secret. It is different from the Dashboard endpoint secret. Using the wrong one causes signature verification failures.
+- The webhook route must be excluded from CSRF verification using your configured `cashier.path`. If you change `CASHIER_PATH` from `stripe` to `billing`, exclude `billing/*`, not `stripe/*`.
+- `canceled()` returns true as soon as `cancel()` is called, but the user still has access during the grace period. Use `ended()` to confirm access is fully revoked.
+- `subscribed()` returns true during the grace period even though the subscription is canceled.
+- `subscribed()` returns false for `incomplete` and `past_due` subscriptions by default.
+- Prices cannot be swapped and quantity cannot be updated while a subscription has an incomplete payment.
+- When extending `WebhookController`, call `Cashier::ignoreRoutes()` in a service provider and re-register both `cashier.payment` and `cashier.webhook` under the configured `cashier.path`.
+- Use `Cashier::useCustomerModel()` in a service provider to set a custom billable model. There is no `CASHIER_MODEL` env var.
+- `trial_ends_at` is a local database column synced via webhooks. It will be stale if webhooks are not configured in production.
+- In MySQL, the `stripe_id` column must use `utf8_bin` collation to avoid case-sensitivity issues.
+- `noProrate()` has no effect when combined with `swapAndInvoice()`. That method always prorates.
+- Methods like `withPromotionCode()` require the Stripe API ID such as `promo_xxxx`, not the customer-facing code. Use `findPromotionCode()` to resolve a code to its ID.
+- Always use `search-docs` for the latest Cashier documentation rather than relying on this skill alone.
+.github/skills/debugging-output-and-previewing-html-using-ray/SKILL.md
+---
+name: debugging-output-and-previewing-html-using-ray
+description: Use when user says "send to Ray," "show in Ray," "debug in Ray," "log to Ray," "display in Ray," or wants to visualize data, debug output, or show diagrams in the Ray desktop application.
+metadata:
+  author: Spatie
+  tags:
+    - debugging
+    - logging
+    - visualization
+    - ray
+---
+
+# Ray Skill
+
+## Overview
+
+Ray is Spatie's desktop debugging application for developers. Send data directly to Ray by making HTTP requests to its local server.
+
+This can be useful for debugging applications, or to preview design, logos, or other visual content. 
+
+This is what the `ray()` PHP function does under the hood.
+
+## Connection Details
+
+| Setting | Default | Environment Variable |
+|---------|---------|---------------------|
+| Host | `localhost` | `RAY_HOST` |
+| Port | `23517` | `RAY_PORT` |
+| URL | `http://localhost:23517/` | - |
+
+## Request Format
+
+**Method:** POST
+**Content-Type:** `application/json`
+**User-Agent:** `Ray 1.0`
+
+### Basic Request Structure
+
+```json
+{
+  "uuid": "unique-identifier-for-this-ray-instance",
+  "payloads": [
+    {
+      "type": "log",
+      "content": { },
+      "origin": {
+        "file": "/path/to/file.php",
+        "line_number": 42,
+        "hostname": "my-machine"
+      }
+    }
+  ],
+  "meta": {
+    "ray_package_version": "1.0.0"
+  }
+}
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `uuid` | string | Unique identifier for this Ray instance. Reuse the same UUID to update an existing entry. |
+| `payloads` | array | Array of payload objects to send |
+| `meta` | object | Optional metadata (ray_package_version, project_name, php_version) |
+
+### Origin Object
+
+Every payload includes origin information:
+
+```json
+{
+  "file": "/Users/dev/project/app/Controller.php",
+  "line_number": 42,
+  "hostname": "dev-machine"
+}
+```
+
+## Payload Types
+
+### Log (Send Values)
+
+```json
+{
+  "type": "log",
+  "content": {
+    "values": ["Hello World", 42, {"key": "value"}]
+  },
+  "origin": { "file": "test.php", "line_number": 1, "hostname": "localhost" }
+}
+```
+
+### Custom (HTML/Text Content)
+
+```json
+{
+  "type": "custom",
+  "content": {
+    "content": "<h1>HTML Content</h1><p>With formatting</p>",
+    "label": "My Label"
+  },
+  "origin": { "file": "test.php", "line_number": 1, "hostname": "localhost" }
+}
+```
+
+### Table
+
+```json
+{
+  "type": "table",
+  "content": {
+    "values": {"name": "John", "email": "john@example.com", "age": 30},
+    "label": "User Data"
+  },
+  "origin": { "file": "test.php", "line_number": 1, "hostname": "localhost" }
+}
+```
+
+### Color
+
+Set the color of the preceding log entry:
+
+```json
+{
+  "type": "color",
+  "content": {
+    "color": "green"
+  },
+  "origin": { "file": "test.php", "line_number": 1, "hostname": "localhost" }
+}
+```
+
+**Available colors:** `green`, `orange`, `red`, `purple`, `blue`, `gray`
+
+### Screen Color
+
+Set the background color of the screen:
+
+```json
+{
+  "type": "screen_color",
+  "content": {
+    "color": "green"
+  },
+  "origin": { "file": "test.php", "line_number": 1, "hostname": "localhost" }
+}
+```
+
+### Label
+
+Add a label to the entry:
+
+```json
+{
+  "type": "label",
+  "content": {
+    "label": "Important"
+  },
+  "origin": { "file": "test.php", "line_number": 1, "hostname": "localhost" }
+}
+```
+
+### Size
+
+Set the size of the entry:
+
+```json
+{
+  "type": "size",
+  "content": {
+    "size": "lg"
+  },
+  "origin": { "file": "test.php", "line_number": 1, "hostname": "localhost" }
+}
+```
+
+**Available sizes:** `sm`, `lg`
+
+### Notify (Desktop Notification)
+
+```json
+{
+  "type": "notify",
+  "content": {
+    "value": "Task completed!"
+  },
+  "origin": { "file": "test.php", "line_number": 1, "hostname": "localhost" }
+}
+```
+
+### New Screen
+
+```json
+{
+  "type": "new_screen",
+  "content": {
+    "name": "Debug Session"
+  },
+  "origin": { "file": "test.php", "line_number": 1, "hostname": "localhost" }
+}
+```
+
+### Measure (Timing)
+
+```json
+{
+  "type": "measure",
+  "content": {
+    "name": "my-timer",
+    "is_new_timer": true,
+    "total_time": 0,
+    "time_since_last_call": 0,
+    "max_memory_usage_during_total_time": 0,
+    "max_memory_usage_since_last_call": 0
+  },
+  "origin": { "file": "test.php", "line_number": 1, "hostname": "localhost" }
+}
+```
+
+For subsequent measurements, set `is_new_timer: false` and provide actual timing values.
+.github/skills/laravel-actions/SKILL.md
+---
+name: laravel-actions
+description: Build, refactor, and troubleshoot Laravel Actions using lorisleiva/laravel-actions. Use when implementing reusable action classes (object/controller/job/listener/command), converting service classes/controllers/jobs into actions, orchestrating workflows via faked actions, or debugging action entrypoints and wiring.
+---
+
+# Laravel Actions or `lorisleiva/laravel-actions`
+
+## Overview
+
+Use this skill to implement or update actions based on `lorisleiva/laravel-actions` with consistent structure and predictable testing patterns.
+
+## Quick Workflow
+
+1. Confirm the package is installed with `composer show lorisleiva/laravel-actions`.
+2. Create or edit an action class that uses `Lorisleiva\Actions\Concerns\AsAction`.
+3. Implement `handle(...)` with the core business logic first.
+4. Add adapter methods only when needed for the requested entrypoint:
+   - `asController` (+ route/invokable controller usage)
+   - `asJob` (+ dispatch)
+   - `asListener` (+ event listener wiring)
+   - `asCommand` (+ command signature/description)
+5. Add or update tests for the chosen entrypoint.
+6. When tests need isolation, use action fakes (`MyAction::fake()`) and assertions (`MyAction::assertDispatched()`).
+
+## Base Action Pattern
+
+Use this minimal skeleton and expand only what is needed.
+
+```php
+<?php
+
+namespace App\Actions;
+
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class PublishArticle
+{
+    use AsAction;
+
+    public function handle(int $articleId): bool
+    {
+        return true;
+    }
+}
+```
+
+## Project Conventions
+
+- Place action classes in `App\Actions` unless an existing domain sub-namespace is already used.
+- Use descriptive `VerbNoun` naming (e.g. `PublishArticle`, `SyncVehicleTaxStatus`).
+- Keep domain/business logic in `handle(...)`; keep transport and framework concerns in adapter methods (`asController`, `asJob`, `asListener`, `asCommand`).
+- Prefer explicit parameter and return types in all action methods.
+- Prefer PHPDoc for complex data contracts (e.g. array shapes), not inline comments.
+
+### When to Use an Action
+
+- Use an Action when the same use-case needs multiple entrypoints (HTTP, queue, event, CLI) or benefits from first-class orchestration/faking.
+- Keep a plain service class when logic is local, single-entrypoint, and unlikely to be reused as an Action.
+
+## Entrypoint Patterns
+
+### Run as Object
+
+- (prefer method) Use static helper from the trait: `PublishArticle::run($id)`.
+- Use make and call handle: `PublishArticle::make()->handle($id)`.
+- Call with dependency injection: `app(PublishArticle::class)->handle($id)`.
+
+### Run as Controller
+
+- Use route to class (invokable style), e.g. `Route::post('/articles/{id}/publish', PublishArticle::class)`.
+- Add `asController(...)` for HTTP-specific adaptation and return a response.
+- Add request validation (`rules()` or custom validator hooks) when input comes from HTTP.
+
+### Run as Job
+
+- Dispatch with `PublishArticle::dispatch($id)`.
+- Use `asJob(...)` only for queue-specific behavior; keep domain logic in `handle(...)`.
+- In this project, job Actions often define additional queue lifecycle methods and job properties for retries, uniqueness, and timing control.
+
+#### Project Pattern: Job Action with Extra Methods
+
+```php
+<?php
+
+namespace App\Actions\Demo;
+
+use App\Models\Demo;
+use DateTime;
+use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Decorators\JobDecorator;
+
+class GetDemoData
+{
+    use AsAction;
+
+    public int $jobTries = 3;
+
+    public int $jobMaxExceptions = 3;
+
+    public function getJobRetryUntil(): DateTime
+    {
+        return now()->addMinutes(30);
+    }
+
+    public function getJobBackoff(): array
+    {
+        return [60, 120];
+    }
+
+    public function getJobUniqueId(Demo $demo): string
+    {
+        return $demo->id;
+    }
+
+    public function handle(Demo $demo): void
+    {
+        // Core business logic.
+    }
+
+    public function asJob(JobDecorator $job, Demo $demo): void
+    {
+        // Queue-specific orchestration and retry behavior.
+        $this->handle($demo);
+    }
+}
+```
+
+Use these members only when needed:
+
+- `$jobTries`: max attempts for the queued execution.
+- `$jobMaxExceptions`: max unhandled exceptions before failing.
+- `getJobRetryUntil()`: absolute retry deadline.
+- `getJobBackoff()`: retry delay strategy per attempt.
+- `getJobUniqueId(...)`: deduplication key for unique jobs.
+- `asJob(JobDecorator $job, ...)`: access attempt metadata and queue-only branching.
+
+### Run as Listener
+
+- Register the action class as listener in `EventServiceProvider`.
+- Use `asListener(EventName $event)` and delegate to `handle(...)`.
+
+### Run as Command
+
+- Define `$commandSignature` and `$commandDescription` properties.
+- Implement `asCommand(Command $command)` and keep console IO in this method only.
+- Import `Command` with `use Illuminate\Console\Command;`.
+
+## Testing Guidance
+
+Use a two-layer strategy:
+
+1. `handle(...)` tests for business correctness.
+2. entrypoint tests (`asController`, `asJob`, `asListener`, `asCommand`) for wiring/orchestration.
+
+### Deep Dive: `AsFake` methods (2.x)
+
+Reference: https://www.laravelactions.com/2.x/as-fake.html
+
+Use these methods intentionally based on what you want to prove.
+
+#### `mock()`
+
+- Replaces the action with a full mock.
+- Best when you need strict expectations and argument assertions.
+
+```php
+PublishArticle::mock()
+    ->shouldReceive('handle')
+    ->once()
+    ->with(42)
+    ->andReturnTrue();
+```
+
+#### `partialMock()`
+
+- Replaces the action with a partial mock.
+- Best when you want to keep most real behavior but stub one expensive/internal method.
+
+```php
+PublishArticle::partialMock()
+    ->shouldReceive('fetchRemoteData')
+    ->once()
+    ->andReturn(['ok' => true]);
+```
+
+#### `spy()`
+
+- Replaces the action with a spy.
+- Best for post-execution verification ("was called with X") without predefining all expectations.
+
+```php
+$spy = PublishArticle::spy()->allows('handle')->andReturnTrue();
+
+// execute code that triggers the action...
+
+$spy->shouldHaveReceived('handle')->with(42);
+```
+
+#### `shouldRun()`
+
+- Shortcut for `mock()->shouldReceive('handle')`.
+- Best for compact orchestration assertions.
+
+```php
+PublishArticle::shouldRun()->once()->with(42)->andReturnTrue();
+```
+
+#### `shouldNotRun()`
+
+- Shortcut for `mock()->shouldNotReceive('handle')`.
+- Best for guard-clause tests and branch coverage.
+
+```php
+PublishArticle::shouldNotRun();
+```
+
+#### `allowToRun()`
+
+- Shortcut for spy + allowing `handle`.
+- Best when you want execution to proceed but still assert interaction.
+.github/skills/laravel-best-practices/SKILL.md
+---
+name: laravel-best-practices
+description: "Apply this skill whenever writing, reviewing, or refactoring Laravel PHP code. This includes creating or modifying controllers, models, migrations, form requests, policies, jobs, scheduled commands, service classes, and Eloquent queries. Triggers for N+1 and query performance issues, caching strategies, authorization and security patterns, validation, error handling, queue and job configuration, route definitions, and architectural decisions. Also use for Laravel code reviews and refactoring existing Laravel code to follow best practices. Covers any task involving Laravel backend PHP code patterns."
+license: MIT
+metadata:
+  author: laravel
+---
+
+# Laravel Best Practices
+
+Best practices for Laravel, prioritized by impact. Each rule teaches what to do and why. For exact API syntax, verify with `search-docs`.
+
+## Consistency First
+
+Before applying any rule, check what the application already does. Laravel offers multiple valid approaches — the best choice is the one the codebase already uses, even if another pattern would be theoretically better. Inconsistency is worse than a suboptimal pattern.
+
+Check sibling files, related controllers, models, or tests for established patterns. If one exists, follow it — don't introduce a second way. These rules are defaults for when no pattern exists yet, not overrides.
+
+## Quick Reference
+
+### 1. Database Performance → `rules/db-performance.md`
+
+- Eager load with `with()` to prevent N+1 queries
+- Enable `Model::preventLazyLoading()` in development
+- Select only needed columns, avoid `SELECT *`
+- `chunk()` / `chunkById()` for large datasets
+- Index columns used in `WHERE`, `ORDER BY`, `JOIN`
+- `withCount()` instead of loading relations to count
+- `cursor()` for memory-efficient read-only iteration
+- Never query in Blade templates
+
+### 2. Advanced Query Patterns → `rules/advanced-queries.md`
+
+- `addSelect()` subqueries over eager-loading entire has-many for a single value
+- Dynamic relationships via subquery FK + `belongsTo`
+- Conditional aggregates (`CASE WHEN` in `selectRaw`) over multiple count queries
+- `setRelation()` to prevent circular N+1 queries
+- `whereIn` + `pluck()` over `whereHas` for better index usage
+- Two simple queries can beat one complex query
+- Compound indexes matching `orderBy` column order
+- Correlated subqueries in `orderBy` for has-many sorting (avoid joins)
+
+### 3. Security → `rules/security.md`
+
+- Define `$fillable` or `$guarded` on every model, authorize every action via policies or gates
+- No raw SQL with user input — use Eloquent or query builder
+- `{{ }}` for output escaping, `@csrf` on all POST/PUT/DELETE forms, `throttle` on auth and API routes
+- Validate MIME type, extension, and size for file uploads
+- Never commit `.env`, use `config()` for secrets, `encrypted` cast for sensitive DB fields
+
+### 4. Caching → `rules/caching.md`
+
+- `Cache::remember()` over manual get/put
+- `Cache::flexible()` for stale-while-revalidate on high-traffic data
+- `Cache::memo()` to avoid redundant cache hits within a request
+- Cache tags to invalidate related groups
+- `Cache::add()` for atomic conditional writes
+- `once()` to memoize per-request or per-object lifetime
+- `Cache::lock()` / `lockForUpdate()` for race conditions
+- Failover cache stores in production
+
+### 5. Eloquent Patterns → `rules/eloquent.md`
+
+- Correct relationship types with return type hints
+- Local scopes for reusable query constraints
+- Global scopes sparingly — document their existence
+- Attribute casts in the `casts()` method
+- Cast date columns, use Carbon instances in templates
+- `whereBelongsTo($model)` for cleaner queries
+- Never hardcode table names — use `(new Model)->getTable()` or Eloquent queries
+
+### 6. Validation & Forms → `rules/validation.md`
+
+- Form Request classes, not inline validation
+- Array notation `['required', 'email']` for new code; follow existing convention
+- `$request->validated()` only — never `$request->all()`
+- `Rule::when()` for conditional validation
+- `after()` instead of `withValidator()`
+
+### 7. Configuration → `rules/config.md`
+
+- `env()` only inside config files
+- `App::environment()` or `app()->isProduction()`
+- Config, lang files, and constants over hardcoded text
+
+### 8. Testing Patterns → `rules/testing.md`
+
+- `LazilyRefreshDatabase` over `RefreshDatabase` for speed
+- `assertModelExists()` over raw `assertDatabaseHas()`
+- Factory states and sequences over manual overrides
+- Use fakes (`Event::fake()`, `Exceptions::fake()`, etc.) — but always after factory setup, not before
+- `recycle()` to share relationship instances across factories
+
+### 9. Queue & Job Patterns → `rules/queue-jobs.md`
+
+- `retry_after` must exceed job `timeout`; use exponential backoff `[1, 5, 10]`
+- `ShouldBeUnique` to prevent duplicates; `ShouldBeUniqueUntilProcessing` for early lock release
+- Always implement `failed()`; with `retryUntil()`, set `$tries = 0`
+- `RateLimited` middleware for external API calls; `Bus::batch()` for related jobs
+- Horizon for complex multi-queue scenarios
+
+### 10. Routing & Controllers → `rules/routing.md`
+
+- Implicit route model binding
+- Scoped bindings for nested resources
+- `Route::resource()` or `apiResource()`
+- Methods under 10 lines — extract to actions/services
+- Type-hint Form Requests for auto-validation
+
+### 11. HTTP Client → `rules/http-client.md`
+
+- Explicit `timeout` and `connectTimeout` on every request
+- `retry()` with exponential backoff for external APIs
+- Check response status or use `throw()`
+- `Http::pool()` for concurrent independent requests
+- `Http::fake()` and `preventStrayRequests()` in tests
+
+### 12. Events, Notifications & Mail → `rules/events-notifications.md`, `rules/mail.md`
+
+- Event discovery over manual registration; `event:cache` in production
+- `ShouldDispatchAfterCommit` / `afterCommit()` inside transactions
+- Queue notifications and mailables with `ShouldQueue`
+- On-demand notifications for non-user recipients
+- `HasLocalePreference` on notifiable models
+- `assertQueued()` not `assertSent()` for queued mailables
+- Markdown mailables for transactional emails
+
+### 13. Error Handling → `rules/error-handling.md`
+
+- `report()`/`render()` on exception classes or in `bootstrap/app.php` — follow existing pattern
+- `ShouldntReport` for exceptions that should never log
+- Throttle high-volume exceptions to protect log sinks
+- `dontReportDuplicates()` for multi-catch scenarios
+- Force JSON rendering for API routes
+- Structured context via `context()` on exception classes
+
+### 14. Task Scheduling → `rules/scheduling.md`
+
+- `withoutOverlapping()` on variable-duration tasks
+- `onOneServer()` on multi-server deployments
+- `runInBackground()` for concurrent long tasks
+- `environments()` to restrict to appropriate environments
+- `takeUntilTimeout()` for time-bounded processing
+- Schedule groups for shared configuration
+
+### 15. Architecture → `rules/architecture.md`
+
+- Single-purpose Action classes; dependency injection over `app()` helper
+- Prefer official Laravel packages and follow conventions, don't override defaults
+- Default to `ORDER BY id DESC` or `created_at DESC`; `mb_*` for UTF-8 safety
+- `defer()` for post-response work; `Context` for request-scoped data; `Concurrency::run()` for parallel execution
+
+### 16. Migrations → `rules/migrations.md`
+
+- Generate migrations with `php artisan make:migration`
+- `constrained()` for foreign keys
+- Never modify migrations that have run in production
+- Add indexes in the migration, not as an afterthought
+- Mirror column defaults in model `$attributes`
+- Reversible `down()` by default; forward-fix migrations for intentionally irreversible changes
+- One concern per migration — never mix DDL and DML
+
+### 17. Collections → `rules/collections.md`
+
+- Higher-order messages for simple collection operations
+- `cursor()` vs. `lazy()` — choose based on relationship needs
+- `lazyById()` when updating records while iterating
+- `toQuery()` for bulk operations on collections
+
+### 18. Blade & Views → `rules/blade-views.md`
+
+- `$attributes->merge()` in component templates
+- Blade components over `@include`; `@pushOnce` for per-component scripts
+- View Composers for shared view data
+- `@aware` for deeply nested component props
+
+### 19. Conventions & Style → `rules/style.md`
+
+- Follow Laravel naming conventions for all entities
+- Prefer Laravel helpers (`Str`, `Arr`, `Number`, `Uri`, `Str::of()`, `$request->string()`) over raw PHP functions
+- No JS/CSS in Blade, no HTML in PHP classes
+- Code should be readable; comments only for config files
+
+## How to Apply
+
+Always use a sub-agent to read rule files and explore this skill's content.
+
+1. Identify the file type and select relevant sections (e.g., migration → §16, controller → §1, §3, §5, §6, §10)
+2. Check sibling files for existing patterns — follow those first per Consistency First
+3. Verify API syntax with `search-docs` for the installed Laravel version
+.github/skills/laravel-pdf/SKILL.md
+---
+name: laravel-pdf
+description: Generate PDFs from Blade views or HTML using spatie/laravel-pdf. Covers creating, formatting, saving, downloading, and testing PDFs with the Browsershot, Cloudflare, or DOMPDF driver.
+---
+
+# Laravel PDF
+
+## When to use this skill
+
+Use this skill when the user needs to generate PDFs in a Laravel application using `spatie/laravel-pdf`. This includes creating PDFs from Blade views or HTML, formatting options (margins, orientation, paper size), returning PDFs as downloads or inline responses, saving to disks, testing PDF generation, and configuring drivers.
+
+## Creating PDFs
+
+Create a PDF from a Blade view:
+
+```php
+use Spatie\LaravelPdf\Facades\Pdf;
+
+Pdf::view('pdf.invoice', ['invoice' => $invoice])
+    ->save('/some/directory/invoice.pdf');
+```
+
+Create a PDF from raw HTML:
+
+```php
+Pdf::html('<h1>Hello world</h1>')->save('hello.pdf');
+```
+
+## Returning PDFs from controllers
+
+Use the `pdf()` helper to return a PDF as a response. By default, it is inlined in the browser:
+
+```php
+use function Spatie\LaravelPdf\Support\pdf;
+
+class DownloadInvoiceController
+{
+    public function __invoke(Invoice $invoice)
+    {
+        return pdf()
+            ->view('pdf.invoice', compact('invoice'))
+            ->name('invoice.pdf');
+    }
+}
+```
+
+Force a download:
+
+```php
+return pdf()
+    ->view('pdf.invoice', compact('invoice'))
+    ->name('invoice.pdf')
+    ->download();
+```
+
+## Formatting
+
+### Paper format
+
+```php
+use Spatie\LaravelPdf\Enums\Format;
+
+Pdf::view('pdf.invoice', $data)
+    ->format(Format::A4)
+    ->save('invoice.pdf');
+```
+
+### Orientation
+
+```php
+Pdf::view('pdf.invoice', $data)
+    ->landscape()
+    ->save('invoice.pdf');
+```
+
+### Margins
+
+```php
+Pdf::view('pdf.invoice', $data)
+    ->margins(top: 15, right: 10, bottom: 15, left: 10, unit: 'mm')
+    ->save('invoice.pdf');
+```
+
+### Custom paper size
+
+```php
+Pdf::view('pdf.receipt', $data)
+    ->paperSize(57, 500, 'mm')
+    ->save('receipt.pdf');
+```
+
+### Headers and footers
+
+```php
+Pdf::view('pdf.invoice', $data)
+    ->headerView('pdf.header', ['company' => $company])
+    ->footerView('pdf.footer')
+    ->save('invoice.pdf');
+```
+
+Or with raw HTML:
+
+```php
+Pdf::view('pdf.invoice', $data)
+    ->headerHtml('<div>Header</div>')
+    ->footerHtml('<div>Footer</div>')
+    ->save('invoice.pdf');
+```
+
+Inside footer/header views, use `@pageNumber` and `@totalPages` Blade directives. Use `@inlinedImage($path)` to embed images.
+
+### Conditional formatting
+
+```php
+Pdf::view('pdf.invoice', $data)
+    ->format('a4')
+    ->when($invoice->isLandscape(), fn ($pdf) => $pdf->landscape())
+    ->save('invoice.pdf');
+```
+
+## Saving to disks
+
+```php
+Pdf::view('invoice')
+    ->disk('s3')
+    ->save('invoices/invoice.pdf');
+```
+
+## Base64
+
+```php
+$base64 = Pdf::view('pdf.invoice', $data)->base64();
+```
+
+## Setting defaults
+
+In a service provider:
+
+```php
+use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\LaravelPdf\Enums\Format;
+
+Pdf::default()
+    ->format(Format::A4)
+    ->headerView('pdf.header');
+```
+
+## Drivers
+
+The package supports three drivers: `browsershot` (default), `cloudflare`, and `dompdf`.
+
+Set the driver via `LARAVEL_PDF_DRIVER` env variable or in `config/laravel-pdf.php`.
+
+### Browsershot driver
+
+Requires `spatie/browsershot` to be installed separately:
+
+```bash
+composer require spatie/browsershot
+```
+
+Customize the Browsershot instance per PDF:
+
+```php
+use Spatie\Browsershot\Browsershot;
+
+Pdf::view('pdf.invoice', $data)
+    ->withBrowsershot(function (Browsershot $browsershot) {
+        $browsershot->scale(0.5);
+    })
+    ->save('invoice.pdf');
+```
+
+### Cloudflare driver
+
+Uses Cloudflare's Browser Rendering API. No Node.js or Chrome binary needed.
+
+```env
+LARAVEL_PDF_DRIVER=cloudflare
+CLOUDFLARE_API_TOKEN=your-api-token
+CLOUDFLARE_ACCOUNT_ID=your-account-id
+```
+
+The Cloudflare driver does not support `withBrowsershot()`, `onLambda()`, or PNG output.
+
+### DOMPDF driver
+
+Pure PHP PDF generation. No external binaries required.
+
+```bash
+composer require dompdf/dompdf
+```
+
+```env
+LARAVEL_PDF_DRIVER=dompdf
+```
+
+DOMPDF supports CSS 2.1 and some CSS 3, but not flexbox or grid. Headers/footers are prepended/appended to the body (not repeated on every page). The `withBrowsershot()` and `onLambda()` methods have no effect.
+
+Switch driver per PDF:
+
+```php
+Pdf::view('pdf.invoice', $data)
+    ->driver('dompdf')
+    ->save('invoice.pdf');
+```
+
+### Chrome driver
+
+Requires `chrome-php/chrome` and a local Chrome/Chromium binary.
+
+```bash
+composer require chrome-php/chrome
+```
+
+```env
+LARAVEL_PDF_DRIVER=chrome
+```
+
+The Chrome driver does not support `tagged`, `withBrowsershot()`, `onLambda()`, or PNG output.
+.github/skills/laravel-permission-development/SKILL.md
+---
+name: laravel-permission-development
+description: Build and work with Spatie Laravel Permission features, including roles, permissions, middleware, policies, teams, and Blade directives.
+---
+
+# Laravel Permission Development
+
+## When to use this skill
+
+Use this skill when working with authorization, roles, permissions, access control, middleware guards, or Blade permission directives using spatie/laravel-permission.
+
+## Core Concepts
+
+- **Users have Roles, Roles have Permissions, Apps check Permissions** (not Roles).
+- Direct permissions on users are an anti-pattern; assign permissions to roles instead.
+- Use `$user->can('permission-name')` for all authorization checks (supports Super Admin via Gate).
+- The `HasRoles` trait (which includes `HasPermissions`) is added to User models.
+
+## Setup
+
+Add the `HasRoles` trait to your User model:
+
+```php
+use Spatie\Permission\Traits\HasRoles;
+
+class User extends Authenticatable
+{
+    use HasRoles;
+}
+```
+
+## Creating Roles and Permissions
+
+```php
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+
+$role = Role::create(['name' => 'writer']);
+$permission = Permission::create(['name' => 'edit articles']);
+
+// findOrCreate is idempotent (safe for seeders)
+$role = Role::findOrCreate('writer', 'web');
+$permission = Permission::findOrCreate('edit articles', 'web');
+```
+
+## Assigning Roles and Permissions
+
+```php
+// Assign roles to users
+$user->assignRole('writer');
+$user->assignRole('writer', 'admin');
+$user->assignRole(['writer', 'admin']);
+$user->syncRoles(['writer', 'admin']); // replaces all
+$user->removeRole('writer');
+
+// Assign permissions to roles (preferred)
+$role->givePermissionTo('edit articles');
+$role->givePermissionTo(['edit articles', 'delete articles']);
+$role->syncPermissions(['edit articles', 'delete articles']);
+$role->revokePermissionTo('edit articles');
+
+// Reverse assignment
+$permission->assignRole('writer');
+$permission->syncRoles(['writer', 'editor']);
+$permission->removeRole('writer');
+```
+
+## Checking Roles and Permissions
+
+```php
+// Permission checks (preferred - supports Super Admin via Gate)
+$user->can('edit articles');
+$user->canAny(['edit articles', 'delete articles']);
+
+// Direct package methods (bypass Gate, no Super Admin support)
+$user->hasPermissionTo('edit articles');
+$user->hasAnyPermission(['edit articles', 'publish articles']);
+$user->hasAllPermissions(['edit articles', 'publish articles']);
+$user->hasDirectPermission('edit articles');
+
+// Role checks
+$user->hasRole('writer');
+$user->hasAnyRole(['writer', 'editor']);
+$user->hasAllRoles(['writer', 'editor']);
+$user->hasExactRoles(['writer', 'editor']);
+
+// Get assigned roles and permissions
+$user->getRoleNames();           // Collection of role name strings
+$user->getPermissionNames();     // Collection of permission name strings
+$user->getDirectPermissions();   // Direct permissions only
+$user->getPermissionsViaRoles(); // Inherited via roles
+$user->getAllPermissions();      // Both direct and inherited
+```
+
+## Query Scopes
+
+```php
+$users = User::role('writer')->get();
+$users = User::withoutRole('writer')->get();
+$users = User::permission('edit articles')->get();
+$users = User::withoutPermission('edit articles')->get();
+```
+
+## Middleware
+
+Register middleware aliases in `bootstrap/app.php`:
+
+```php
+->withMiddleware(function (Middleware $middleware) {
+    $middleware->alias([
+        'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+        'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+        'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+    ]);
+})
+```
+
+Use in routes (pipe `|` for OR logic):
+
+```php
+Route::middleware(['permission:edit articles'])->group(function () { ... });
+Route::middleware(['role:manager|writer'])->group(function () { ... });
+Route::middleware(['role_or_permission:manager|edit articles'])->group(function () { ... });
+
+// With specific guard
+Route::middleware(['role:manager,api'])->group(function () { ... });
+```
+
+For single permissions, Laravel's built-in `can` middleware also works:
+
+```php
+Route::middleware(['can:edit articles'])->group(function () { ... });
+```
+
+## Blade Directives
+
+Prefer `@can` (permission-based) over `@role` (role-based):
+
+```blade
+@can('edit articles')
+    {{-- User can edit articles (supports Super Admin) --}}
+@endcan
+
+@canany(['edit articles', 'delete articles'])
+    {{-- User can do at least one --}}
+@endcanany
+
+@role('admin')
+    {{-- Only use for super-admin type checks --}}
+@endrole
+
+@hasanyrole('writer|admin')
+    {{-- Has writer or admin --}}
+@endhasanyrole
+```
+
+## Super Admin
+
+Use `Gate::before` in `AppServiceProvider::boot()`:
+
+```php
+use Illuminate\Support\Facades\Gate;
+
+public function boot(): void
+{
+    Gate::before(function ($user, $ability) {
+        return $user->hasRole('Super Admin') ? true : null;
+    });
+}
+```
+
+This makes `$user->can()` and `@can` always return true for Super Admins. Must return `null` (not `false`) to allow normal checks for other users.
+
+## Policies
+
+Use `$user->can()` inside policy methods to check permissions:
+
+```php
+class PostPolicy
+{
+    public function update(User $user, Post $post): bool
+    {
+        if ($user->can('edit all posts')) {
+            return true;
+        }
+
+        return $user->can('edit own posts') && $user->id === $post->user_id;
+    }
+}
+```
+
+## Enums
+
+```php
+enum RolesEnum: string
+{
+    case WRITER = 'writer';
+    case EDITOR = 'editor';
+}
+
+enum PermissionsEnum: string
+{
+    case EDIT_POSTS = 'edit posts';
+    case DELETE_POSTS = 'delete posts';
+}
+
+// Creation requires ->value
+Permission::findOrCreate(PermissionsEnum::EDIT_POSTS->value, 'web');
+
+// Most methods accept enums directly
+$user->assignRole(RolesEnum::WRITER);
+$user->hasRole(RolesEnum::WRITER);
+$role->givePermissionTo(PermissionsEnum::EDIT_POSTS);
+$user->hasPermissionTo(PermissionsEnum::EDIT_POSTS);
+```
+
+## Seeding
+
+Always flush the permission cache when seeding:
+
+.github/skills/medialibrary-development/SKILL.md
+---
+name: medialibrary-development
+description: Build and work with spatie/laravel-medialibrary features including associating files with Eloquent models, defining media collections and conversions, generating responsive images, and retrieving media URLs and paths.
+license: MIT
+metadata:
+  author: Spatie
+---
+
+# Media Library Development
+
+## Overview
+
+Use spatie/laravel-medialibrary to associate files with Eloquent models. Supports image/video conversions, responsive images, multiple collections, and various storage disks.
+
+## When to Activate
+
+- Activate when working with file uploads, media attachments, or image processing in Laravel.
+- Activate when code references `HasMedia`, `InteractsWithMedia`, the `Media` model, or media collections/conversions.
+- Activate when the user wants to add, retrieve, convert, or manage files attached to Eloquent models.
+
+## Scope
+
+- In scope: media uploads, collections, conversions, responsive images, custom properties, file retrieval, path/URL generation.
+- Out of scope: general file storage without Eloquent association, non-Laravel frameworks.
+
+## Workflow
+
+1. Identify the task (model setup, adding media, defining conversions, retrieving files, etc.).
+2. Read `references/medialibrary-guide.md` and focus on the relevant section.
+3. Apply the patterns from the reference, keeping code minimal and Laravel-native.
+
+## Core Concepts
+
+### Model Setup
+
+Every model that should have media must implement `HasMedia` and use the `InteractsWithMedia` trait:
+
+```php
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+
+class BlogPost extends Model implements HasMedia
+{
+    use InteractsWithMedia;
+}
+```
+
+### Adding Media
+
+```php
+$blogPost->addMedia($file)->toMediaCollection('images');
+$blogPost->addMediaFromUrl($url)->toMediaCollection('images');
+$blogPost->addMediaFromRequest('file')->toMediaCollection('images');
+```
+
+### Defining Collections
+
+```php
+public function registerMediaCollections(): void
+{
+    $this->addMediaCollection('avatar')->singleFile();
+    $this->addMediaCollection('downloads')->useDisk('s3');
+}
+```
+
+### Defining Conversions
+
+```php
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\Image\Enums\Fit;
+
+public function registerMediaConversions(?Media $media = null): void
+{
+    $this->addMediaConversion('thumb')
+        ->fit(Fit::Contain, 300, 300)
+        ->nonQueued();
+}
+```
+
+### Retrieving Media
+
+```php
+$url = $model->getFirstMediaUrl('images');
+$thumbUrl = $model->getFirstMediaUrl('images', 'thumb');
+$allMedia = $model->getMedia('images');
+```
+
+## Do and Don't
+
+Do:
+- Always implement the `HasMedia` interface alongside the `InteractsWithMedia` trait.
+- Use `?Media $media = null` as the parameter for `registerMediaConversions()`.
+- Call `->toMediaCollection()` to finalize adding media.
+- Use `->nonQueued()` for conversions that should run synchronously.
+- Use `->singleFile()` on collections that should only hold one file.
+- Use `Spatie\Image\Enums\Fit` enum values for fit methods.
+
+Don't:
+- Don't forget to run `php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="medialibrary-migrations"` before migrating.
+- Don't use `env()` for disk configuration; use `config()` or set it in `config/media-library.php`.
+- Don't call `addMedia()` without calling `toMediaCollection()` — the media won't be saved.
+- Don't reference conversion names that aren't registered in `registerMediaConversions()`.
+
+## References
+
+- `references/medialibrary-guide.md`
+.github/skills/pest-testing/SKILL.md
+---
+name: pest-testing
+description: "Use this skill for Pest PHP testing in Laravel projects only. Trigger whenever any test is being written, edited, fixed, or refactored — including fixing tests that broke after a code change, adding assertions, converting PHPUnit to Pest, adding datasets, and TDD workflows. Always activate when the user asks how to write something in Pest, mentions test files or directories (tests/Feature, tests/Unit, tests/Browser), or needs browser testing, smoke testing multiple pages for JS errors, or architecture tests. Covers: test()/it()/expect() syntax, datasets, mocking, browser testing (visit/click/fill), smoke testing, arch(), Livewire component tests, RefreshDatabase, and all Pest 4 features. Do not use for factories, seeders, migrations, controllers, models, or non-test PHP code."
+license: MIT
+metadata:
+  author: laravel
+---
+
+# Pest Testing 4
+
+## Documentation
+
+Use `search-docs` for detailed Pest 4 patterns and documentation.
+
+## Basic Usage
+
+### Creating Tests
+
+All tests must be written using Pest. Use `php artisan make:test --pest {name}`.
+
+The `{name}` argument should include only the path and test name, but should not include the test suite.
+- Incorrect: `php artisan make:test --pest Feature/SomeFeatureTest` will generate `tests/Feature/Feature/SomeFeatureTest.php`
+- Correct: `php artisan make:test --pest SomeControllerTest` will generate `tests/Feature/SomeControllerTest.php`
+- Incorrect: `php artisan make:test --pest --unit Unit/SomeServiceTest` will generate `tests/Unit/Unit/SomeServiceTest.php`
+- Correct: `php artisan make:test --pest --unit SomeServiceTest` will generate `tests/Unit/SomeServiceTest.php`
+
+### Test Organization
+
+- Unit/Feature tests: `tests/Feature` and `tests/Unit` directories.
+- Browser tests: `tests/Browser/` directory.
+- Do NOT remove tests without approval - these are core application code.
+
+### Basic Test Structure
+
+Pest supports both `test()` and `it()` functions. Before writing new tests, check existing test files in the same directory to match the project's convention. Use `test()` if existing tests use `test()`, or `it()` if they use `it()`.
+
+<!-- Basic Pest Test Example -->
+```php
+it('is true', function () {
+    expect(true)->toBeTrue();
+});
+```
+
+### Running Tests
+
+- Run minimal tests with filter before finalizing: `php artisan test --compact --filter=testName`.
+- Run all tests: `php artisan test --compact`.
+- Run file: `php artisan test --compact tests/Feature/ExampleTest.php`.
+
+## Assertions
+
+Use specific assertions (`assertSuccessful()`, `assertNotFound()`) instead of `assertStatus()`:
+
+<!-- Pest Response Assertion -->
+```php
+it('returns all', function () {
+    $this->postJson('/api/docs', [])->assertSuccessful();
+});
+```
+
+| Use | Instead of |
+|-----|------------|
+| `assertSuccessful()` | `assertStatus(200)` |
+| `assertNotFound()` | `assertStatus(404)` |
+| `assertForbidden()` | `assertStatus(403)` |
+
+## Mocking
+
+Import mock function before use: `use function Pest\Laravel\mock;`
+
+## Datasets
+
+Use datasets for repetitive tests (validation rules, etc.):
+
+<!-- Pest Dataset Example -->
+```php
+it('has emails', function (string $email) {
+    expect($email)->not->toBeEmpty();
+})->with([
+    'james' => 'james@laravel.com',
+    'taylor' => 'taylor@laravel.com',
+]);
+```
+
+## Pest 4 Features
+
+| Feature | Purpose |
+|---------|---------|
+| Browser Testing | Full integration tests in real browsers |
+| Smoke Testing | Validate multiple pages quickly |
+| Visual Regression | Compare screenshots for visual changes |
+| Test Sharding | Parallel CI runs |
+| Architecture Testing | Enforce code conventions |
+
+### Browser Test Example
+
+Browser tests run in real browsers for full integration testing:
+
+- Browser tests live in `tests/Browser/`.
+- Use Laravel features like `Event::fake()`, `assertAuthenticated()`, and model factories.
+- Use `RefreshDatabase` for clean state per test.
+- Interact with page: click, type, scroll, select, submit, drag-and-drop, touch gestures.
+- Test on multiple browsers (Chrome, Firefox, Safari) if requested.
+- Test on different devices/viewports (iPhone 14 Pro, tablets) if requested.
+- Switch color schemes (light/dark mode) when appropriate.
+- Take screenshots or pause tests for debugging.
+
+<!-- Pest Browser Test Example -->
+```php
+it('may reset the password', function () {
+    Notification::fake();
+
+    $this->actingAs(User::factory()->create());
+
+    $page = visit('/sign-in');
+
+    $page->assertSee('Sign In')
+        ->assertNoJavaScriptErrors()
+        ->click('Forgot Password?')
+        ->fill('email', 'nuno@laravel.com')
+        ->click('Send Reset Link')
+        ->assertSee('We have emailed your password reset link!');
+
+    Notification::assertSent(ResetPassword::class);
+});
+```
+
+### Smoke Testing
+
+Quickly validate multiple pages have no JavaScript errors:
+
+<!-- Pest Smoke Testing Example -->
+```php
+$pages = visit(['/', '/about', '/contact']);
+
+$pages->assertNoJavaScriptErrors()->assertNoConsoleLogs();
+```
+
+### Visual Regression Testing
+
+Capture and compare screenshots to detect visual changes.
+
+### Test Sharding
+
+Split tests across parallel processes for faster CI runs.
+
+### Architecture Testing
+
+Pest 4 includes architecture testing (from Pest 3):
+
+<!-- Architecture Test Example -->
+```php
+arch('controllers')
+    ->expect('App\Http\Controllers')
+    ->toExtendNothing()
+    ->toHaveSuffix('Controller');
+```
+
+## Common Pitfalls
+
+- Not importing `use function Pest\Laravel\mock;` before using mock
+- Using `assertStatus(200)` instead of `assertSuccessful()`
+- Forgetting datasets for repetitive validation tests
+- Deleting tests without approval
+- Forgetting `assertNoJavaScriptErrors()` in browser tests
+- Prefixing `Feature/` or `Unit/` in `{name}` when using `make:test`
+.github/skills/sluggable-development/SKILL.md
+---
+name: sluggable-development
+description: "Use when making a field on an Eloquent model sluggable, generating the migration for a slug column, switching to self-healing URLs, or resolving a model from its slug in a route. Trigger when the request mentions slugs, permalinks, the spatie/laravel-sluggable package, the HasSlug or HasTranslatableSlug trait, the #[Sluggable] attribute, SlugOptions, findBySlug, self-healing URLs, or stale slug redirects in a Laravel project. Covers choosing between the attribute and the trait, generating unique slugs, configuring separator/length/language/scope/uniqueness, preventing slug overwrites, translatable slugs via spatie/laravel-translatable, route model binding through the slug column, self-healing route keys, customizing the 308 redirect through the SelfHealing facade, and overriding the default actions via config/sluggable.php. Do not use for one-off URL-safe strings, signed URLs, or Laravel's built-in Str::slug helper when the result is not stored on a model."
+license: MIT
+metadata:
+  author: spatie
+---
+
+# Sluggable development
+
+Use this skill when adding slug generation to an Eloquent model with `spatie/laravel-sluggable`. The package writes a slug into a configurable column whenever the model is created or updated, keeps slugs unique, and can turn the resulting route key into a self-healing URL that tolerates slug changes.
+
+## Picking a configuration style
+
+- **`#[Sluggable]` attribute**: place it on the class. A wildcard Eloquent event listener in the package's service provider picks it up. Use this for most models.
+- **`HasSlug` trait + `getSlugOptions()`**: use when you need any of these features (callables for `generateSlugsFrom`, closures for `extraScope` or `skipGenerateWhen`, custom suffix generators, translatable slugs, `findBySlug()`, or self-healing URLs).
+
+If both are present on a model, the trait wins and the attribute is ignored.
+
+## Making a field sluggable with the attribute
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Spatie\Sluggable\Attributes\Sluggable;
+
+#[Sluggable(from: 'title', to: 'slug')]
+class Post extends Model
+{
+}
+```
+
+Creating a model now writes the slug into the configured column.
+
+```php
+$post = Post::create(['title' => 'Hello World']);
+$post->slug; // "hello-world"
+```
+
+Supported attribute arguments:
+
+| Argument | Default | Purpose |
+| --- | --- | --- |
+| `from` | `'name'` | Source column, or array of columns joined with the separator. |
+| `to` | `'slug'` | Destination column. |
+| `separator` | `'-'` | Separator passed to `Str::slug`. |
+| `language` | `'en'` | Language map used by `Str::slug`. |
+| `maxLength` | `250` | Truncates the slug before uniqueness resolution. |
+| `unique` | `true` | Appends a numeric suffix on collisions. |
+| `onCreate` | `true` | Generate when the model is created. |
+| `onUpdate` | `true` | Regenerate when the model is updated. |
+| `preventOverwrite` | `false` | Do not regenerate when the destination column is already filled. |
+| `selfHealing` | `false` | Turn the route key into `slug-id`. Requires the `HasSlug` trait on the same class. |
+| `selfHealingSeparator` | `'-'` | Separator placed between slug and identifier. |
+
+## Making a field sluggable with the trait
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
+
+class Post extends Model
+{
+    use HasSlug;
+
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom('title')
+            ->saveSlugsTo('slug');
+    }
+}
+```
+
+Chainable options that are not expressible as attribute arguments:
+
+```php
+SlugOptions::create()
+    ->generateSlugsFrom(fn (Post $post) => "{$post->author->name} {$post->title}")
+    ->saveSlugsTo('slug')
+    ->extraScope(fn ($query) => $query->where('tenant_id', $this->tenant_id))
+    ->skipGenerateWhen(fn () => $this->state === 'draft')
+    ->usingSuffixGenerator(fn (string $slug, int $iteration) => bin2hex(random_bytes(4)))
+    ->startSlugSuffixFrom(2)
+    ->useSuffixOnFirstOccurrence()
+    ->allowDuplicateSlugs();
+```
+
+## Generating the migration
+
+The model's table needs a column that matches the destination configured through `to` (attribute) or `saveSlugsTo()` (trait).
+
+```bash
+php artisan make:migration add_slug_to_posts_table
+```
+
+Then in the migration:
+
+```php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('posts', function (Blueprint $table) {
+            $table->string('slug')->nullable()->after('title');
+            $table->unique('slug');
+        });
+    }
+};
+```
+
+For a new table, include the slug column in the `create` call instead. Use `->nullable()` when backfilling existing rows so the migration does not fail on the first run, then drop the nullability in a follow-up once every row has a slug.
+
+For translatable slugs the column must hold JSON: use `$table->json('slug')` instead of `string`.
+
+## Using the slug in routes
+
+Standard implicit route model binding works once you point the route parameter at the slug column.
+
+```php
+Route::get('/posts/{post:slug}', fn (Post $post) => $post);
+```
+
+Override `getRouteKeyName()` on the model to drop the explicit `:slug`:
+
+```php
+public function getRouteKeyName(): string
+{
+    return 'slug';
+}
+```
+
+The route definition then needs no `:slug` hint.
+
+```php
+Route::get('/posts/{post}', fn (Post $post) => $post);
+```
+
+## Finding a model by slug
+
+The trait exposes `findBySlug()`:
+
+```php
+$post = Post::findBySlug('my-post');
+Post::findBySlug('my-post', ['id', 'slug', 'title']);
+Post::findBySlug('my-post', ['*'], fn ($query) => $query->where('published', true));
+```
+
+`findBySlug()` is only available on models that use the trait. Models configured solely through the attribute have to query the slug column directly.
+
+## Self-healing URLs
+
+A self-healing URL combines the slug with the primary key (`hello-world-5`). The slug portion can change freely without breaking existing links: stale slugs trigger a `308` redirect to the canonical URL, missing identifiers return `404`. The feature requires the trait because it overrides `getRouteKey()` and `resolveRouteBinding()`.
+
+```php
+public function getSlugOptions(): SlugOptions
+{
+    return SlugOptions::create()
+        ->generateSlugsFrom('title')
+        ->saveSlugsTo('slug')
+        ->selfHealing();
+}
+```
+
+The route key now includes the primary key, and stale slugs redirect.
+
+```php
+$post = Post::create(['title' => 'Hello World']);
+$post->getRouteKey(); // "hello-world-5"
+
+// GET /posts/hello-world-5   → 200 OK
+// GET /posts/outdated-slug-5 → 308 redirect to /posts/hello-world-5
+// GET /posts/hello-world-99  → 404 when id 99 does not exist
+```
+
+Setting `selfHealing: true` on the attribute without the trait throws `SelfHealingRequiresTrait` at resolve time.
+
+Customize the separator when slugs can end with numbers preceded by a hyphen:
+
+```php
+->selfHealing(separator: '--'); // route key: "hello-world--5"
+```
+
+### Customizing the redirect
+
+Register a closure through the `SelfHealing` facade in a service provider's `boot()`:
+
+```php
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Spatie\Sluggable\Facades\SelfHealing;
+
+SelfHealing::onStaleSelfHealingUrl(function (Model $model, string $staleRouteKey, Request $request) {
+    return redirect()->route('posts.show', $model, status: 302);
+});
+```
+
+The default behavior is a `308` redirect to the canonical URL.
+
+## Translatable slugs
+
+For per-locale slugs, combine `HasTranslatableSlug` with `spatie/laravel-translatable` and store the slug column as JSON.
+
+```php
+use Spatie\Sluggable\HasTranslatableSlug;
+use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
+
+class Article extends Model
+{
+    use HasTranslations;
+    use HasTranslatableSlug;
+.github/skills/spatie-javascript/SKILL.md
+---
+name: spatie-javascript
+description: Apply Spatie's JavaScript coding standards for any task that creates, edits, reviews, refactors, or formats JavaScript or TypeScript code; use for variable declarations, comparisons, functions, destructuring, and Prettier configuration to align with Spatie's JS conventions.
+license: MIT
+metadata:
+  author: Spatie
+---
+
+# Spatie JavaScript Guidelines
+
+## Overview
+
+Apply Spatie's JavaScript coding standards to keep JS/TS code consistent and readable.
+
+## When to Activate
+
+- Activate this skill for any JavaScript or TypeScript coding work.
+- Activate this skill when working on `.js`, `.ts`, `.jsx`, `.tsx`, or `.vue` files.
+- Activate this skill when configuring Prettier or ESLint for a project.
+
+## Scope
+
+- In scope: JavaScript, TypeScript, Vue single-file components, Prettier/ESLint configuration.
+- Out of scope: PHP, Laravel, CSS-only files, server configuration.
+
+## Prettier Configuration
+
+- Indentation: 4 spaces (via `.editorconfig`, not Prettier default of 2)
+- Print width: 120 characters (not Prettier default of 80)
+- Quote style: single quotes
+
+## Variable Declarations
+
+- Prefer `const` over `let`. Only use `let` when a variable will be reassigned.
+- Never use `var`.
+- Reassigning object properties is fine with `const` — the reference is not reassigned.
+
+## Variable Names
+
+- Don't abbreviate variable names in multi-line functions. Use full, descriptive names.
+- Exception: single-line arrow functions where context is obvious.
+
+```javascript
+// Good — full names in multi-line functions
+function saveUserSession(userSession) {
+    // ...
+}
+
+// Acceptable — short name in single-line arrow
+userSessions.forEach(s => saveUserSession(s));
+```
+
+## Comparisons
+
+- Always use `===` (strict equality). Never use `==`.
+- If unsure of the type, cast it first:
+
+```javascript
+const number = parseInt(input);
+
+if (number === 5) {
+    // ...
+}
+```
+
+## Functions
+
+### Function Declarations
+
+- Use the `function` keyword for named functions to clearly signal it's a function.
+
+### Arrow Functions
+
+- Use for terse, single-line operations.
+- Use for anonymous callbacks.
+- Use in higher-order functions when it improves readability.
+- Don't use arrow functions when you need `this` context (e.g., jQuery event handlers).
+
+### Object Methods
+
+- Use shorthand method syntax:
+
+```javascript
+// Good
+const obj = {
+    handleClick(event) {
+        // ...
+    },
+};
+
+// Avoid
+const obj = {
+    handleClick: function(event) {
+        // ...
+    },
+};
+```
+
+## Destructuring
+
+- Prefer destructuring over manual property/index access:
+
+```javascript
+// Good
+const [hours, minutes] = '12:00'.split(':');
+
+// Good — configuration objects with defaults
+function createUser({ name, email, role = 'member' }) {
+    // ...
+}
+
+// Avoid
+const parts = '12:00'.split(':');
+const hours = parts[0];
+const minutes = parts[1];
+```
+
+---
+
+Source: https://spatie.be/guidelines/javascript
+.github/skills/spatie-laravel-php/SKILL.md
+---
+name: spatie-laravel-php
+description: Apply Spatie's Laravel and PHP coding standards for any task that creates, edits, reviews, refactors, or formats Laravel/PHP code or Blade templates; use for controllers, Eloquent models, routes, config, validation, migrations, tests, and related files to align with Laravel conventions and PSR-12.
+license: MIT
+metadata:
+  author: Spatie
+---
+
+# Spatie Laravel & PHP Guidelines
+
+## Overview
+
+Apply Spatie's Laravel and PHP guidelines to keep code style consistent and Laravel-native.
+
+## When to Activate
+
+- Activate this skill for any Laravel or PHP coding work, even if the user does not explicitly mention Spatie.
+- Activate this skill when asked to generate, edit, format, refactor, review, or align Laravel/PHP code.
+- Activate this skill when working on `.php` or `.blade.php` files, routes, controllers, models, config, validation, migrations, or tests.
+
+## Scope
+
+- In scope: `.php`, `.blade.php`, Laravel conventions (routes, controllers, config, validation, migrations, tests).
+- Out of scope: JS/TS, CSS, infrastructure, database schema design, non-Laravel frameworks.
+
+## Workflow
+
+1. Identify the artifact (controller, route, config, model, Blade, test, etc.).
+2. Read `references/spatie-laravel-php-guidelines.md` and focus on the relevant sections.
+3. Apply the core Laravel principle first, then PHP standards, then section-specific rules.
+4. If a rule conflicts with existing project conventions, follow Laravel conventions and keep changes consistent.
+
+## Core Rules (Summary)
+
+- Follow Laravel conventions first.
+- Follow PSR-1, PSR-2, and PSR-12.
+- Prefer typed properties and explicit return types (including `void`).
+- Use short nullable syntax like `?string`.
+- Use constructor property promotion when all properties can be promoted.
+- One trait per line with separate `use` statements.
+- Prefer early returns and avoid `else` when possible.
+- Always use curly braces for control structures.
+- Use string interpolation over concatenation.
+- Happy path last: handle error conditions first.
+
+## Do and Don't
+
+Do:
+- Use kebab-case URLs, camelCase route names, and camelCase route parameters.
+- Use tuple notation for routes: `[Controller::class, 'method']`.
+- Use plural resource names for controllers (`PostsController`).
+- Use array notation for validation rules.
+- Use `config()` helper and avoid `env()` outside config files.
+- Add service configs to `config/services.php`, not new files.
+- Use `__()` for translations instead of `@lang`.
+- Use PascalCase for enum values.
+
+Don't:
+- Add docblocks when full type hints already exist.
+- Use fully qualified classnames in docblocks.
+- Use `final` or `readonly` by default.
+- Use `else` when early returns work.
+- Add spaces after Blade control structures.
+- Write down methods in migrations, only up methods.
+
+## Examples
+
+```php
+// Happy path last with early returns
+if (! $user) {
+    return null;
+}
+
+if (! $user->isActive()) {
+    return null;
+}
+
+// Process active user...
+
+// Short ternary
+$name = $isFoo ? 'foo' : 'bar';
+
+// Constructor property promotion
+class MyClass {
+    public function __construct(
+        protected string $firstArgument,
+        protected string $secondArgument,
+    ) {}
+}
+```
+
+```blade
+@if($condition)
+    Something
+@endif
+```
+
+## References
+
+- `references/spatie-laravel-php-guidelines.md`
+.github/skills/spatie-security/SKILL.md
+---
+name: spatie-security
+description: Apply Spatie's security guidelines when configuring applications, databases, or servers, or when reviewing code for security concerns; use for SSL setup, CSRF protection, password hashing, database permissions, and server hardening.
+license: MIT
+metadata:
+  author: Spatie
+---
+
+# Spatie Security Guidelines
+
+## Overview
+
+Apply Spatie's security best practices when building, configuring, or reviewing applications and infrastructure.
+
+## When to Activate
+
+- Activate this skill when configuring application security (authentication, authorization, forms).
+- Activate this skill when setting up or reviewing database configurations.
+- Activate this skill when configuring servers or reviewing infrastructure.
+- Activate this skill when reviewing code for security vulnerabilities.
+
+## Scope
+
+- In scope: Application security, database security, server configuration, credential management.
+- Out of scope: Code style, business logic, UI/UX design.
+
+## Application Security
+
+- Transmit all HTTP traffic over SSL.
+- Use CSRF tokens in all forms.
+- Use appropriate HTTP methods for significant actions: `DELETE`, `POST`, `PUT` — never `GET`.
+- Add automated authorization tests to verify only authorized users can access restricted functionality.
+
+## Database Security
+
+- Hash all stored passwords.
+- Encrypt API keys stored in databases.
+- Use separate database users per database with appropriate read/write permissions.
+- Restrict database access to whitelisted hosts only (webserver and developer machines).
+
+## Server Security
+
+- Keep NGINX, PHP, Ubuntu, and similar software up to date.
+- Use SSH with private key authentication; disable password authentication.
+- Install and enable `unattended-upgrades` for automatic security updates.
+- Configure firewalls to permit only necessary traffic (typically ports 22 and 443).
+- Manage all servers through Ansible for rapid patching and access revocation.
+
+## Credential Management
+
+- Store all passwords in a password manager (e.g. 1Password).
+- Ensure each password is unique; no reuse.
+- Enable two-factor authentication when available.
+- Protect all private keys with passwords.
+
+## General
+
+- Use backups (e.g. BackBlaze) and test them periodically.
+- Enable FileVault (full-disk encryption) on all Macs.
+- Never use public services like Pastebin for sensitive code or data.
+- Install browser extensions only from official stores; minimize usage.
+
+---
+
+Source: https://spatie.be/guidelines/security
+.github/skills/spatie-version-control/SKILL.md
+---
+name: spatie-version-control
+description: Apply Spatie's version control conventions when creating commits, branches, pull requests, or managing Git repositories; use for naming repos, writing commit messages, choosing branch strategies, and merging code.
+license: MIT
+metadata:
+  author: Spatie
+---
+
+# Spatie Version Control Guidelines
+
+## Overview
+
+Apply Spatie's Git and version control conventions for consistent repository management.
+
+## When to Activate
+
+- Activate this skill when creating commits, branches, or pull requests.
+- Activate this skill when naming new repositories.
+- Activate this skill when deciding on branching or merging strategies.
+
+## Scope
+
+- In scope: Git operations, repository naming, branch naming, commit messages, merge strategies.
+- Out of scope: Code style, deployment pipelines, CI/CD configuration.
+
+## Repository Naming
+
+### Site source code
+
+Use the main domain name in lowercase, without `www`:
+- Good: `spatie.be`
+- Bad: `https://www.spatie.be`, `www.spatie.be`, `Spatie.be`
+
+### Subdomains
+
+Include the subdomain in the repo name:
+- Good: `guidelines.spatie.be`
+- Bad: `spatie.be-guidelines`
+
+### Packages and other projects
+
+Use kebab-case:
+- Good: `laravel-backup`, `spoon`
+- Bad: `LaravelBackup`, `Spoon`
+
+## Branches
+
+### Initial development
+
+- Maintain `main` and `develop` branches.
+- Commit through `develop`, not directly to `main`.
+- Feature branches are optional; if used, branch from `develop`.
+
+### Live projects
+
+- Delete the `develop` branch.
+- All commits to `main` must come through feature branches.
+- Prefer squashing commits on merge.
+
+### Branch naming
+
+- Use lowercase letters and hyphens only.
+- Good: `feature-mailchimp`, `fix-deliverycosts`, `updates-june-2016`
+- Bad: `feature/mailchimp`, `random-things`, `develop`
+
+## Commits
+
+### Message format
+
+- Always use **present tense**.
+- Good: `Update deps`, `Fix vat calculation in delivery costs`
+- Bad: `wip`, `commit`, `a lot`, `solid`
+
+### Granularity
+
+- Prefer small, focused commits over large ones.
+- Use `git add -p` for interactive staging to create granular commits.
+
+## Merging
+
+- Rebase regularly to reduce merge conflicts.
+- For deploying feature branches: use `git merge <branch> --squash`.
+- If push is denied: use `git rebase` (not merge).
+
+## Pull Requests
+
+- Optional but useful for peer review, merge validation, and historical reference.
+
+---
+
+Source: https://spatie.be/guidelines/version-control
+.github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      php: ${{ steps.filter.outputs.php }}
+      tests: ${{ steps.filter.outputs.tests }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            php:
+              - '**/*.php'
+              - 'composer.json'
+              - 'composer.lock'
+              - 'pint.json'
+              - 'rector.php'
+              - 'phpstan.neon'
+            tests:
+              - '**/*.php'
+              - 'composer.json'
+              - 'composer.lock'
+              - 'phpunit.xml'
+              - 'tests/**'
+              - 'packages/*/tests/**'
+
+  rector:
+    name: Rector (check)
+    needs: changes
+    if: needs.changes.outputs.php == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-rector-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-rector-
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Check Rector (dry-run)
+        run: vendor/bin/rector --dry-run --no-progress-bar
+
+  pint:
+    name: Pint (check)
+    needs: changes
+    if: needs.changes.outputs.php == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-pint-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-pint-
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Check Pint (test)
+        run: vendor/bin/pint --test
+
+  phpstan:
+    name: PHPStan
+    needs: changes
+    if: needs.changes.outputs.php == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-phpstan-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-phpstan-
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run PHPStan
+        run: composer test:phpstan
+
+  tests:
+    needs: changes
+    if: needs.changes.outputs.tests == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: commerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: commerce_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    name: Pest (PHP 8.4) - Shard ${{ matrix.shard }}/20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run tests (Pest)
+        run: vendor/bin/pest --colors=always --parallel --shard=${{ matrix.shard }}/20
+
+  ci:
+    name: CI
+    needs: [changes, rector, pint, phpstan, tests]
+    if: always()
+.github/workflows/fix-code-style.yml
+name: fix-code-style
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - '**/*.php'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'pint.json'
+      - 'rector.php'
+      - '.github/workflows/fix-code-style.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - '**/*.php'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'pint.json'
+      - 'rector.php'
+      - '.github/workflows/fix-code-style.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  fix-code-style:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+    env:
+      TARGET_REF: ${{ github.head_ref || github.ref_name }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.TARGET_REF }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          extensions: mbstring, pdo, pgsql, json
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Pint (fix)
+        run: vendor/bin/pint
+
+      - name: Run Rector (fix)
+        run: vendor/bin/rector --no-progress-bar
+
+      - name: Commit changes (if any)
+        run: |
+          if git diff --quiet; then
+            echo "No code style changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          git commit -m "chore(style): apply Pint and Rector"
+          git push origin HEAD:${TARGET_REF}
+
+  # Note: check-pint and check-rector jobs removed - now handled by ci.yml
+.github/workflows/maintenance.yml
+name: maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Which maintenance task to run"
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - tests
+          - phpstan
+          - rector
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    if: ${{ github.event.inputs.task == 'all' || github.event.inputs.task == 'tests' }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: commerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: commerce_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    name: Pest (manual) - Shard ${{ matrix.shard }}/20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run tests (Pest)
+        run: vendor/bin/pest --colors=always --parallel --shard=${{ matrix.shard }}/20
+
+  phpstan:
+    if: ${{ github.event.inputs.task == 'all' || github.event.inputs.task == 'phpstan' }}
+    runs-on: ubuntu-latest
+    name: PHPStan (manual)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-phpstan-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-phpstan-
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run PHPStan
+        run: composer test:phpstan
+
+  rector:
+    if: ${{ github.event.inputs.task == 'all' || github.event.inputs.task == 'rector' }}
+    runs-on: ubuntu-latest
+    name: Rector (manual) - dry-run
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-rector-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-rector-
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Rector (dry-run)
+        run: vendor/bin/rector --dry-run --no-progress-bar
+.github/workflows/monorepo-split-on-push.yml
+name: Monorepo Split on Push
+
+on:
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - '**'
+
+jobs:
+  changed-packages:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.changed.outputs.packages }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed packages
+        id: changed
+        run: |
+          BEFORE="${{ github.event.before }}"
+          EMPTY_TREE="4b825dc642cb6eb9a060e54bf8996b6b8c3d1e8"
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE="$EMPTY_TREE"
+          fi
+
+          PACKAGES=$(git diff --name-only "$BEFORE" HEAD \
+            | grep '^packages/[^/]\+/' \
+            | cut -d'/' -f2 \
+            | sort -u \
+            | jq -R -s -c 'split("\n")[:-1]')
+
+          echo "packages=$PACKAGES" >> "$GITHUB_OUTPUT"
+          echo "Changed packages: $PACKAGES"
+
+  split:
+    needs: changed-packages
+    if: ${{ needs.changed-packages.outputs.packages != '[]' && needs.changed-packages.outputs.packages != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.changed-packages.outputs.packages) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Monorepo Split → ${{ matrix.package }}
+        uses: danharrin/monorepo-split-github-action@v2.4.4
+        with:
+          package_directory: packages/${{ matrix.package }}
+          repository_organization: AIArmada
+          repository_name: ${{ matrix.package }}
+          branch: main
+          user_name: AIArmada Bot
+          user_email: bot@aiarmada.com
+        env:
+          PAT: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Instant Packagist Update
+        env:
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+          PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME }}
+        run: |
+          sleep 12
+
+          if [[ -z "$PACKAGIST_USERNAME" ]]; then
+            echo "::error::PACKAGIST_USERNAME is not set. Add it as a repository or organization variable."
+            exit 1
+          fi
+
+          if [[ -z "$PACKAGIST_TOKEN" ]]; then
+            echo "::error::PACKAGIST_TOKEN is not set. Add it as a repository or organization secret."
+            exit 1
+          fi
+
+          echo "Triggering Packagist update for aiarmada/${{ matrix.package }}"
+
+          curl --fail-with-body --silent --show-error -X POST \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"repository\":{\"url\":\"https://github.com/AIArmada/${{ matrix.package }}\"}}"
+.github/workflows/monorepo-split.yml
+name: Monorepo Split + Instant Packagist
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'         # allows v1.0.0 and v1.0.0-rc1
+
+jobs:
+  split-and-publish:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - addressing
+          - affiliate-network
+          - affiliates
+          - authz
+          - cart
+          - cashier
+          - cashier-chip
+          - checkout
+          - chip
+          - commerce-support
+          - communications
+          - contacting
+          - csuite
+          - customers
+          - docs
+          - engagement
+          - events
+          - feedback
+          - filament-addressing
+          - filament-affiliate-network
+          - filament-affiliates
+          - filament-authz
+          - filament-cart
+          - filament-cashier
+          - filament-cashier-chip
+          - filament-chip
+          - filament-commerce-support
+          - filament-communications
+          - filament-contacting
+          - filament-customers
+          - filament-docs
+          - filament-engagement
+          - filament-events
+          - filament-feedback
+          - filament-growth
+          - filament-inventory
+          - filament-jnt
+          - filament-orders
+          - filament-pricing
+          - filament-products
+          - filament-promotions
+          - filament-seating
+          - filament-shipping
+          - filament-signals
+          - filament-tax
+          - filament-ticketing
+          - filament-vouchers
+          - growth
+          - inventory
+          - jnt
+          - membership
+          - moderation
+          - orders
+          - pricing
+          - products
+          - promotions
+          - references
+          - seating
+          - shipping
+          - signals
+          - tax
+          - ticketing
+          - vouchers
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get current tag
+        id: tag
+        run: echo "value=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Monorepo Split → ${{ matrix.package }}
+        uses: danharrin/monorepo-split-github-action@v2.4.4
+        with:
+          package_directory: packages/${{ matrix.package }}
+          repository_organization: AIArmada
+          repository_name: ${{ matrix.package }}
+          branch: main
+          tag: ${{ steps.tag.outputs.value }}
+          user_name: AIArmada Bot
+          user_email: bot@aiarmada.com
+        env:
+          PAT: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Instant Packagist Update
+        env:
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+          PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME }}
+        run: |
+          sleep 12
+
+          if [[ -z "$PACKAGIST_USERNAME" ]]; then
+            echo "::error::PACKAGIST_USERNAME is not set. Add it as a repository or organization variable."
+            exit 1
+          fi
+
+          if [[ -z "$PACKAGIST_TOKEN" ]]; then
+            echo "::error::PACKAGIST_TOKEN is not set. Add it as a repository or organization secret."
+            exit 1
+          fi
+
+          echo "Triggering Packagist update for aiarmada/${{ matrix.package }}"
+
+          curl --fail-with-body --silent --show-error -X POST \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"repository\":{\"url\":\"https://github.com/AIArmada/${{ matrix.package }}\"}}".github/workflows/phpstan.yml
+name: phpstan
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  phpstan:
+    runs-on: ubuntu-latest
+    name: PHPStan (manual)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Cache dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.composer/cache/files
+          key: phpstan-composer-${{ hashFiles('**/composer.lock') }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          extensions: intl, mbstring, pdo, pgsql, json
+          coverage: none
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --memory-limit=1G --error-format=github
+.github/workflows/rector.yml
+name: rector
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  rector:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [8.4]
+    name: P${{ matrix.php }} - Rector
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Cache dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.composer/cache/files
+          key: rector-php-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: intl, mbstring, pdo, pgsql, json
+          coverage: none
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Rector (dry-run)
+        run: vendor/bin/rector --dry-run --no-progress-bar
+.github/workflows/release.yml
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+        type: string
+      release_type:
+        description: 'Release type'
+        required: true
+        type: choice
+        default: 'patch'
+        options:
+          - major
+          - minor
+          - patch
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          extensions: dom, curl, libxml, mbstring, zip
+          coverage: none
+      
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+      
+      - name: Configure git
+        run: |
+          git config user.name "AIArmada Bot"
+          git config user.email "bot@aiarmada.com"
+      
+      - name: Validate version
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be in format X.Y.Z"
+            exit 1
+          fi
+      
+      - name: Update CHANGELOG.md
+        run: |
+          # Move Unreleased to new version
+          VERSION="${{ inputs.version }}"
+          DATE=$(date +%Y-%m-%d)
+          
+          # Create new version section
+          sed -i.bak "s/## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] - $DATE/" CHANGELOG.md
+          rm CHANGELOG.md.bak
+          
+          # Commit changelog
+          git add CHANGELOG.md
+          git commit -m "chore: update CHANGELOG for v$VERSION" || true
+      
+      - name: Run MonorepoBuilder release
+        run: |
+          # Update package versions and dependencies
+          vendor/bin/monorepo-builder release ${{ inputs.version }} --ansi
+      
+      - name: Create and push tag
+        run: |
+          VERSION="${{ inputs.version }}"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin main
+          git push origin "v$VERSION"
+      
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          VERSION="${{ inputs.version }}"
+          
+          # Extract changelog for this version
+          NOTES=$(awk "/## \[$VERSION\]/,/## \[/" CHANGELOG.md | sed '1d;$d')
+          
+          # Save to output
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ inputs.version }}
+          name: v${{ inputs.version }}
+          body: ${{ steps.release-notes.outputs.notes }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+      
+      - name: Bump to next dev version
+        run: |
+          # Let monorepo-builder handle next dev version
+          vendor/bin/monorepo-builder bump-interdependency "dev-main"
+          
+          git add .
+          git commit -m "chore: bump to next dev version" || true
+          git push origin main
+.github/workflows/test-coverage.yml
+name: test-coverage
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: commerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: commerce_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    name: Test Coverage
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          extensions: intl, mbstring, pdo, pgsql, json
+          coverage: xdebug
+
+      - name: Cache dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.composer/cache/files
+          key: coverage-composer-${{ hashFiles('**/composer.lock') }}
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run tests with coverage
+        run: vendor/bin/pest --coverage --coverage-clover=coverage.xml --min=80
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v6
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+.github/workflows/tests.yml
+name: tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: commerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: commerce_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    name: Pest (manual) - Shard ${{ matrix.shard }}/20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Cache dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.composer/cache/files
+          key: dependencies-composer-${{ hashFiles('**/composer.lock') }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          extensions: intl, mbstring, pdo, pgsql, json
+          coverage: none
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Execute tests
+        run: vendor/bin/pest --colors=always --parallel --shard=${{ matrix.shard }}/20

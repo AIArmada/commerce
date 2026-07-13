@@ -15,6 +15,7 @@ return new class extends Migration
         Schema::create(config('affiliates.database.tables.payouts', 'affiliate_payouts'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('reference')->unique();
+            $table->uuid('affiliate_payout_operation_id')->nullable()->unique();
             $table->string('status', 32)->default('draft')->index();
             $table->unsignedBigInteger('total_minor')->default(0);
             $table->unsignedInteger('conversion_count')->default(0);

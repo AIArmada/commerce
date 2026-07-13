@@ -13,13 +13,7 @@ return new class extends Migration
         $jsonColumnType = commerce_json_column_type('feedback', 'jsonb');
 
         $addJsonColumn = function (Blueprint $table, string $column) use ($jsonColumnType): void {
-            if ($jsonColumnType === 'jsonb') {
-                $table->jsonb($column)->nullable();
-
-                return;
-            }
-
-            $table->json($column)->nullable();
+            $table->{$jsonColumnType}($column)->nullable();
         };
 
         // feedback_forms

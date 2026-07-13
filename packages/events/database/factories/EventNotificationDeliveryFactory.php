@@ -17,7 +17,7 @@ final class EventNotificationDeliveryFactory extends Factory
     public function definition(): array
     {
         return [
-            'channel' => 'email',
+            'channel' => 'mail',
             'status' => 'pending',
         ];
     }

@@ -18,12 +18,19 @@ return new class extends Migration
             $table->string('recipient_type')->index();
             $table->uuid('recipient_id')->index();
             $table->string('channel');
-            $table->string('status')->index();
+            $table->string('status')->default('pending')->index();
+            $table->unsignedSmallInteger('attempt_count')->default(0);
+            $table->unsignedSmallInteger('max_attempts')->default(5);
+            $table->timestampTz('leased_at')->nullable();
+            $table->timestampTz('last_attempt_at')->nullable();
             $table->timestampTz('sent_at')->nullable();
             $table->timestampTz('failed_at')->nullable();
-            $table->text('error_message')->nullable();
+            $table->timestampTz('dead_at')->nullable();
+            $table->string('last_error_code', 64)->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
+
+            $table->unique(['event_notification_batch_id', 'recipient_type', 'recipient_id', 'channel'], 'event_notification_delivery_unique');
         });
     }
 };

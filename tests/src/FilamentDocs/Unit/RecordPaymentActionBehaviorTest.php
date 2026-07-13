@@ -15,14 +15,14 @@ uses(TestCase::class);
 it('records a payment and updates document status', function (): void {
     $doc = Doc::factory()->create([
         'status' => Sent::class,
-        'total' => 100,
+        'total_minor' => 100,
         'currency' => 'MYR',
     ]);
 
     $method = new ReflectionMethod(RecordPaymentAction::class, 'recordPayment');
 
     $method->invoke(null, $doc, [
-        'amount' => 25,
+        'amount_minor' => 25,
         'payment_method' => 'cash',
         'reference' => 'PAY-001',
         'paid_at' => now(),
@@ -35,7 +35,7 @@ it('records a payment and updates document status', function (): void {
     expect(DocPayment::query()->where('doc_id', $doc->id)->count())->toBe(1);
 
     $method->invoke(null, $doc, [
-        'amount' => 75,
+        'amount_minor' => 75,
         'payment_method' => 'cash',
         'reference' => 'PAY-002',
         'paid_at' => now(),

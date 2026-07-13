@@ -1,0 +1,24 @@
+/mnt/data/commerce3/packages/communications/src/Support/DestinationProtectorService.php:12:    public function encrypt(string $destination): string
+/mnt/data/commerce3/packages/communications/src/Support/DestinationProtectorService.php:17:        $encrypted = openssl_encrypt($destination, 'aes-256-cbc', $key, 0, $iv);
+/mnt/data/commerce3/packages/communications/src/Support/DestinationProtectorService.php:22:    public function decrypt(string $ciphertext): string
+/mnt/data/commerce3/packages/communications/src/Support/DestinationProtectorService.php:31:        return openssl_decrypt($encrypted, 'aes-256-cbc', $key, 0, $iv);
+/mnt/data/commerce3/packages/communications/src/Support/DestinationProtectorService.php:36:        return hash_hmac('sha256', $destination, $this->key());
+/mnt/data/commerce3/packages/communications/src/Contracts/DestinationProtector.php:9:    public function encrypt(string $destination): string;
+/mnt/data/commerce3/packages/communications/src/Contracts/DestinationProtector.php:11:    public function decrypt(string $ciphertext): string;
+/mnt/data/commerce3/packages/communications/src/Services/NotifiableDestinationResolver.php:53:            ciphertext: $this->protector->encrypt($destination),
+/mnt/data/commerce3/packages/communications/src/Services/CommunicationDestinationResolver.php:81:            ciphertext: $this->protector->encrypt($destination),
+/mnt/data/commerce3/packages/communications/src/Http/Middleware/VerifyWebhookSignature.php:38:        $expected = hash_hmac('sha256', $request->getContent(), $secret);
+/mnt/data/commerce3/packages/commerce-support/src/Webhooks/CommerceSignatureValidator.php:92:        return hash_hmac($this->getHashAlgorithm(), $payload, $secret);
+/mnt/data/commerce3/packages/filament-authz/src/Resources/UserResource.php:248:                        return Hash::make($state);
+/mnt/data/commerce3/packages/authz/src/Console/Commands/SuperAdminCommand.php:181:        $user->setAttribute('password', Hash::make($password));
+/mnt/data/commerce3/packages/affiliates/src/Support/Webhooks/WebhookDispatcher.php:71:        return hash_hmac('sha256', json_encode($body, JSON_THROW_ON_ERROR), $secret);
+/mnt/data/commerce3/packages/affiliates/src/Support/Links/AffiliateLinkGenerator.php:86:        return hash_hmac('sha256', json_encode($payload, JSON_THROW_ON_ERROR), $key);
+/mnt/data/commerce3/packages/affiliates/src/Actions/Affiliates/TrackAffiliateVisit.php:150:            $decrypted = decrypt($cookieValue);
+/mnt/data/commerce3/packages/affiliates/src/Actions/Affiliates/TouchAffiliateAttribution.php:88:            $decrypted = decrypt($cookieValue);
+/mnt/data/commerce3/packages/affiliates/src/Models/AffiliatePayoutMethod.php:57:        'details' => 'encrypted:array',
+/mnt/data/commerce3/packages/affiliates/src/Services/AffiliateService.php:225:            $decryptedCookieValue = Crypt::decryptString($cookieValue);
+/mnt/data/commerce3/packages/affiliates/src/Actions/Affiliates/AttachAffiliateToCart.php:273:            $decryptedCookieValue = decrypt($cookieValue);
+/mnt/data/commerce3/packages/chip/src/Clients/ChipSendClient.php:115:        return hash_hmac('sha256', (string) $epoch, $this->apiSecret);
+/mnt/data/commerce3/packages/affiliates/src/Actions/Affiliates/AttachAffiliateFromCookie.php:52:            $decryptedCookieValue = decrypt($cookieValue);
+/mnt/data/commerce3/packages/docs/src/Services/DocEmailService.php:286:        return Crypt::encryptString($payload);
+/mnt/data/commerce3/packages/docs/src/Services/DocEmailService.php:297:            $payload = Crypt::decryptString($token);

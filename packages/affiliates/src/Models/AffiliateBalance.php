@@ -22,6 +22,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $available_minor
  * @property int $lifetime_earnings_minor
  * @property int $minimum_payout_minor
+ * @property int $payout_sequence
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
@@ -40,6 +41,7 @@ class AffiliateBalance extends Model implements Auditable
         'available_minor',
         'lifetime_earnings_minor',
         'minimum_payout_minor',
+        'payout_sequence',
     ];
 
     public function getTable(): string
@@ -109,6 +111,7 @@ class AffiliateBalance extends Model implements Auditable
             'available_minor' => 'integer',
             'lifetime_earnings_minor' => 'integer',
             'minimum_payout_minor' => 'integer',
+            'payout_sequence' => 'integer',
         ];
     }
 

@@ -1,0 +1,70 @@
+packages/signals/src/Services/SignalAlertDispatcher.php:166:        Http::withoutRedirecting()->post($url, $this->webhookPayload($rule, $log, $message));
+packages/signals/src/Services/SignalAlertDispatcher.php:182:        Http::withoutRedirecting()->post($url, [
+packages/signals/src/Services/Geocoders/NominatimGeocoder.php:22:            $response = Http::withHeaders(['User-Agent' => $userAgent])
+packages/filament-signals/src/Support/InteractionRuleScanner.php:204:        $response = Http::withoutRedirecting()
+packages/jnt/src/Services/JntExpressService.php:88:        $response = $this->getClient()->post('/api/order/addOrder', $orderData);
+packages/jnt/src/Services/JntExpressService.php:98:        $response = $this->getClient()->post('/api/order/getOrders', [
+packages/jnt/src/Services/JntExpressService.php:151:        $response = $this->getClient()->post('/api/order/cancelOrder', $payload);
+packages/jnt/src/Services/JntExpressService.php:175:        $response = $this->getClient()->post('/api/order/printOrder', $payload);
+packages/jnt/src/Services/JntExpressService.php:199:        $response = $this->getClient()->post('/api/logistics/trace', $payload);
+packages/jnt/src/Http/JntClient.php:47:            $response = Http::timeout($this->config['http']['timeout'] ?? 30)
+packages/jnt/src/Http/JntClient.php:70:                    $response = Http::timeout($this->config['http']['timeout'] ?? 30)
+packages/jnt/src/Console/Commands/Webhooks/WebhookTestCommand.php:44:            $response = Http::withHeaders(['digest' => $signature])
+packages/jnt/src/Console/Commands/Orders/ConfigCheckCommand.php:175:            $response = Http::timeout(5)->get($baseUrl);
+packages/jnt/src/Console/Commands/Health/HealthCheckCommand.php:181:        $response = Http::timeout(5)->get($baseUrl);
+packages/chip/src/Testing/WebhookSimulator.php:306:        return Http::timeout($this->timeout)
+packages/chip/src/Services/WebhookService.php:143:                        $response = app(ChipCollectClient::class)->get('public_key/');
+packages/chip/src/Services/Collect/WebhooksApi.php:16:            fn () => $this->client->post('webhooks/', $data),
+packages/chip/src/Services/Collect/WebhooksApi.php:28:            fn () => $this->client->get("webhooks/{$webhookId}/"),
+packages/chip/src/Services/Collect/WebhooksApi.php:41:            fn () => $this->client->put("webhooks/{$webhookId}/", $data),
+packages/chip/src/Services/Collect/WebhooksApi.php:50:            fn () => $this->client->delete("webhooks/{$webhookId}/"),
+packages/chip/src/Services/Collect/WebhooksApi.php:66:            fn () => $this->client->get($endpoint),
+packages/chip/src/Services/Collect/PurchasesApi.php:37:            fn () => $this->client->post('purchases/', $data),
+packages/chip/src/Services/Collect/PurchasesApi.php:48:            fn () => $this->client->get("purchases/{$purchaseId}/"),
+packages/chip/src/Services/Collect/PurchasesApi.php:59:            fn () => $this->client->post("purchases/{$purchaseId}/cancel/"),
+packages/chip/src/Services/Collect/PurchasesApi.php:75:            fn () => $this->client->post("purchases/{$purchaseId}/refund/", $payload),
+packages/chip/src/Services/Collect/PurchasesApi.php:90:            fn () => $this->client->post("purchases/{$purchaseId}/charge/", [
+packages/chip/src/Services/Collect/PurchasesApi.php:108:            fn () => $this->client->post("purchases/{$purchaseId}/capture/", $payload),
+packages/chip/src/Services/Collect/PurchasesApi.php:119:            fn () => $this->client->post("purchases/{$purchaseId}/release/"),
+packages/chip/src/Services/Collect/PurchasesApi.php:135:            fn () => $this->client->post("purchases/{$purchaseId}/mark_as_paid/", $payload),
+packages/chip/src/Services/Collect/PurchasesApi.php:146:            fn () => $this->client->post("purchases/{$purchaseId}/resend_invoice/"),
+packages/chip/src/Services/Collect/PurchasesApi.php:157:            fn () => $this->client->post("purchases/{$purchaseId}/delete_recurring_token/"),
+packages/chip/src/Services/Collect/PurchasesApi.php:247:            fn () => $this->client->get('public_key/'),
+packages/chip/src/Services/Collect/PurchasesApi.php:264:            fn () => $this->client->get($endpoint),
+packages/chip/src/Services/Collect/ClientsApi.php:17:            fn () => $this->client->post('clients/', $data),
+packages/chip/src/Services/Collect/ClientsApi.php:28:            fn () => $this->client->get("clients/{$clientId}/"),
+packages/chip/src/Services/Collect/ClientsApi.php:46:            fn () => $this->client->get($endpoint),
+packages/chip/src/Services/Collect/ClientsApi.php:58:            fn () => $this->client->put("clients/{$clientId}/", $data),
+packages/chip/src/Services/Collect/ClientsApi.php:72:            fn () => $this->client->patch("clients/{$clientId}/", $data),
+packages/chip/src/Services/Collect/ClientsApi.php:83:            fn () => $this->client->delete("clients/{$clientId}/"),
+packages/chip/src/Services/Collect/ClientsApi.php:95:            fn () => $this->client->get("clients/{$clientId}/recurring_tokens/"),
+packages/chip/src/Services/Collect/ClientsApi.php:107:            fn () => $this->client->get("clients/{$clientId}/recurring_tokens/{$tokenId}/"),
+packages/chip/src/Services/Collect/ClientsApi.php:116:            fn () => $this->client->delete("clients/{$clientId}/recurring_tokens/{$tokenId}/"),
+packages/chip/src/Services/Collect/AccountApi.php:15:            fn () => $this->client->get('account/balance/'),
+packages/chip/src/Services/Collect/AccountApi.php:30:            fn () => $this->client->get($endpoint),
+packages/chip/src/Services/Collect/AccountApi.php:46:            fn () => $this->client->get($endpoint),
+packages/chip/src/Services/Collect/AccountApi.php:58:            fn () => $this->client->get("company_statements/{$statementId}/"),
+packages/chip/src/Services/Collect/AccountApi.php:70:            fn () => $this->client->post("company_statements/{$statementId}/cancel/"),
+packages/affiliates/src/Support/Webhooks/WebhookDispatcher.php:53:            Http::withoutRedirecting()
+packages/affiliate-network/src/Support/SiteContentFetcher.php:42:                $response = Http::withoutRedirecting()
+packages/chip/src/Health/ChipGatewayCheck.php:62:            $response = Http::timeout($this->timeout)
+packages/affiliates/src/Services/Payouts/StripeConnectProcessor.php:57:            $response = Http::withBasicAuth($this->apiKey, '')
+packages/affiliates/src/Services/Payouts/StripeConnectProcessor.php:59:                ->post("{$this->apiUrl}/transfers", [
+packages/affiliates/src/Services/Payouts/StripeConnectProcessor.php:104:            $response = Http::withBasicAuth($this->apiKey, '')
+packages/affiliates/src/Services/Payouts/StripeConnectProcessor.php:105:                ->get("{$this->apiUrl}/transfers/{$payout->external_reference}");
+packages/affiliates/src/Services/Payouts/StripeConnectProcessor.php:127:            $response = Http::withBasicAuth($this->apiKey, '')
+packages/affiliates/src/Services/Payouts/StripeConnectProcessor.php:129:                ->post("{$this->apiUrl}/transfers/{$payout->external_reference}/reversals");
+packages/affiliates/src/Services/Payouts/PayPalProcessor.php:73:            $response = Http::withToken($token)
+packages/affiliates/src/Services/Payouts/PayPalProcessor.php:74:                ->post("{$this->apiUrl}/v1/payments/payouts", [
+packages/affiliates/src/Services/Payouts/PayPalProcessor.php:133:            $response = Http::withToken($token)
+packages/affiliates/src/Services/Payouts/PayPalProcessor.php:134:                ->get("{$this->apiUrl}/v1/payments/payouts/{$payout->external_reference}");
+packages/affiliates/src/Services/Payouts/PayPalProcessor.php:197:            $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
+packages/affiliates/src/Services/Payouts/PayPalProcessor.php:199:                ->post("{$this->apiUrl}/v1/oauth2/token", [
+packages/chip/src/Clients/Http/BaseHttpClient.php:12:use Illuminate\Http\Client\PendingRequest;
+packages/chip/src/Clients/Http/BaseHttpClient.php:347:    protected function httpWithHeaders(array $headers): PendingRequest
+packages/chip/src/Clients/Http/BaseHttpClient.php:349:        return Http::withHeaders($headers);
+packages/chip/src/Clients/ChipSendClient.php:106:        return Http::withHeaders(array_merge($this->defaultHeaders(), $defaultHeaders, $headers))
+packages/chip/src/Clients/ChipCollectClient.php:37:            $response = Http::withHeaders([
+packages/chip/src/Clients/ChipCollectClient.php:42:            ])->timeout($this->timeout)->get($url);
+packages/chip/src/Clients/ChipCollectClient.php:110:        return Http::withHeaders(array_merge($this->defaultHeaders(), $defaultHeaders, $headers))
+packages/commerce-support/src/Health/CommerceHealthCheck.php:24: *         $response = Http::get('https://gate.chip-in.asia/health');

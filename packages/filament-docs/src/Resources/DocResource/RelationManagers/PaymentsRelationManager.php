@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
 use Carbon\CarbonImmutable;
@@ -33,10 +34,13 @@ final class PaymentsRelationManager extends RelationManager
     {
         return $schema
             ->schema([
-                TextInput::make('amount')
+                TextInput::make('amount_minor')
+                    ->label('Amount (minor units)')
                     ->required()
                     ->numeric()
-                    ->prefix(fn () => config('docs.defaults.currency', 'MYR')),
+                    ->minValue(1)
+                    ->step(1)
+                    ->dehydrateStateUsing(static fn (mixed $state): int => (int) $state),
 
                 Select::make('payment_method')
                     ->options(config('docs.payment_methods', [
@@ -69,8 +73,8 @@ final class PaymentsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('reference')
             ->columns([
-                TextColumn::make('amount')
-                    ->money(fn ($record) => $record->currency)
+                TextColumn::make('amount_minor')
+                    ->formatStateUsing(fn (int | string $state, DocPayment $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                     ->sortable(),
 
                 TextColumn::make('payment_method')
@@ -139,9 +143,9 @@ final class PaymentsRelationManager extends RelationManager
     {
         $doc = $this->getOwnerDoc();
 
-        if (! array_key_exists('amount', $data)) {
+        if (! array_key_exists('amount_minor', $data) || ! is_int($data['amount_minor']) || $data['amount_minor'] <= 0) {
             throw ValidationException::withMessages([
-                'amount' => __('Payment amount is required.'),
+                'amount_minor' => __('Payment amount is required.'),
             ]);
         }
 

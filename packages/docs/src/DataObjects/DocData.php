@@ -6,6 +6,7 @@ namespace AIArmada\Docs\DataObjects;
 
 use AIArmada\Docs\States\DocStatus;
 use DateTimeInterface;
+use InvalidArgumentException;
 
 final class DocData
 {
@@ -28,11 +29,11 @@ final class DocData
         public readonly ?DateTimeInterface $issueDate = null,
         public readonly ?DateTimeInterface $dueDate = null,
         public readonly array $items = [],
-        public readonly ?float $subtotal = null,
-        public readonly ?float $total = null,
-        public readonly ?float $taxRate = null,
-        public readonly ?float $taxAmount = null,
-        public readonly ?float $discountAmount = null,
+        public readonly ?int $subtotalMinor = null,
+        public readonly ?int $totalMinor = null,
+        public readonly ?int $taxRateBasisPoints = null,
+        public readonly ?int $taxAmountMinor = null,
+        public readonly ?int $discountAmountMinor = null,
         public readonly ?string $currency = null,
         public readonly ?string $notes = null,
         public readonly ?string $terms = null,
@@ -49,6 +50,21 @@ final class DocData
      */
     public static function from(array $data): self
     {
+        foreach (['subtotal', 'total', 'tax_rate', 'tax_amount', 'discount_amount'] as $legacyKey) {
+            if (array_key_exists($legacyKey, $data)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Removed major-unit document field `%s` is not accepted; provide the corresponding minor-unit integer field.',
+                    $legacyKey,
+                ));
+            }
+        }
+
+        foreach (['subtotal_minor', 'total_minor', 'tax_rate_basis_points', 'tax_amount_minor', 'discount_amount_minor'] as $integerKey) {
+            if (array_key_exists($integerKey, $data) && $data[$integerKey] !== null && ! is_int($data[$integerKey])) {
+                throw new InvalidArgumentException(sprintf('Document field `%s` must be an integer.', $integerKey));
+            }
+        }
+
         return new self(
             docNumber: $data['doc_number'] ?? null,
             docType: $data['doc_type'] ?? 'invoice',
@@ -60,11 +76,11 @@ final class DocData
             issueDate: $data['issue_date'] ?? null,
             dueDate: $data['due_date'] ?? null,
             items: $data['items'] ?? [],
-            subtotal: $data['subtotal'] ?? null,
-            total: $data['total'] ?? null,
-            taxRate: $data['tax_rate'] ?? null,
-            taxAmount: $data['tax_amount'] ?? null,
-            discountAmount: $data['discount_amount'] ?? null,
+            subtotalMinor: $data['subtotal_minor'] ?? null,
+            totalMinor: $data['total_minor'] ?? null,
+            taxRateBasisPoints: $data['tax_rate_basis_points'] ?? null,
+            taxAmountMinor: $data['tax_amount_minor'] ?? null,
+            discountAmountMinor: $data['discount_amount_minor'] ?? null,
             currency: $data['currency'] ?? null,
             notes: $data['notes'] ?? null,
             terms: $data['terms'] ?? null,

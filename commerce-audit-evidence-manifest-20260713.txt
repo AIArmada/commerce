@@ -1,0 +1,33 @@
+Commerce full audit evidence manifest
+Date: 2026-07-13
+Archive SHA-256: d39f095b9e76f262bf69dcf140757c94a68cd74d8dad2e36f18a42b305804dfa
+
+Coverage
+- 63 package directories
+- 5,053 package files inventoried
+- 3,766 package PHP source files (~345k lines)
+- 1,370 central test files (~237k lines)
+- 5,759 PHP files linted; no syntax errors
+- 19 admitted new findings
+- 34 execution tasks
+- 12 prior root-cause exclusions
+
+Bundled evidence files
+- evidence/php-lint-all.txt
+- evidence/package-inventory.csv
+- evidence/package-risk.txt
+- evidence/routes-expanded.txt
+- evidence/http-all.txt
+- evidence/raw-sql.txt
+- evidence/crypto.txt
+- evidence/sensitive-models.txt
+- evidence/raw-html.txt
+- evidence/unbounded-commands.txt
+- evidence/rule-violations.txt
+- evidence/decimal-money.txt
+- evidence/followup-scan.txt
+- evidence/render-owner-cache.txt
+- evidence/token-ci-evidence.txt
+
+Verification limitation
+Pest and PHPStan could not execute in the supplied runtime because required PHP extensions were missing. That environment defect is already assigned in the previous handoff and is excluded from the new findings queue. Agents must not mark implementation tasks done until the previous environment task restores the configured verification commands.

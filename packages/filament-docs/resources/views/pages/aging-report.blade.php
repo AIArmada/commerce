@@ -12,7 +12,7 @@
                 </div>
                 <div class="text-sm text-gray-500">Current</div>
                 <div class="text-lg font-semibold">
-                    {{ $currency }} {{ number_format($summary['current']['amount'], 2) }}
+                    {{ $currency }} {{ number_format($summary['current']['amount_minor'], 2) }}
                 </div>
             </div>
         </x-filament::section>
@@ -24,7 +24,7 @@
                 </div>
                 <div class="text-sm text-gray-500">1-30 Days</div>
                 <div class="text-lg font-semibold">
-                    {{ $currency }} {{ number_format($summary['1-30']['amount'], 2) }}
+                    {{ $currency }} {{ number_format($summary['1-30']['amount_minor'], 2) }}
                 </div>
             </div>
         </x-filament::section>
@@ -36,7 +36,7 @@
                 </div>
                 <div class="text-sm text-gray-500">31-60 Days</div>
                 <div class="text-lg font-semibold">
-                    {{ $currency }} {{ number_format($summary['31-60']['amount'], 2) }}
+                    {{ $currency }} {{ number_format($summary['31-60']['amount_minor'], 2) }}
                 </div>
             </div>
         </x-filament::section>
@@ -48,7 +48,7 @@
                 </div>
                 <div class="text-sm text-gray-500">61-90 Days</div>
                 <div class="text-lg font-semibold">
-                    {{ $currency }} {{ number_format($summary['61-90']['amount'], 2) }}
+                    {{ $currency }} {{ number_format($summary['61-90']['amount_minor'], 2) }}
                 </div>
             </div>
         </x-filament::section>
@@ -60,7 +60,7 @@
                 </div>
                 <div class="text-sm text-gray-500">90+ Days</div>
                 <div class="text-lg font-semibold">
-                    {{ $currency }} {{ number_format($summary['90+']['amount'], 2) }}
+                    {{ $currency }} {{ number_format($summary['90+']['amount_minor'], 2) }}
                 </div>
             </div>
         </x-filament::section>

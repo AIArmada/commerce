@@ -9,8 +9,8 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventNotificationDelivery;
+use AIArmada\Events\Services\EventNotificationDispatcher;
 use BackedEnum;
-use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -49,7 +49,7 @@ final class NotificationCenter extends Page implements HasTable
                 TextColumn::make('title')->label('Subject')->searchable(),
                 TextColumn::make('audience_scope')->badge(),
                 TextColumn::make('status')->badge()->colors([
-                    'warning' => 'pending',
+                    'warning' => ['pending', 'processing', 'partial'],
                     'success' => 'sent',
                     'danger' => 'failed',
                     'gray' => 'cancelled',
@@ -59,7 +59,7 @@ final class NotificationCenter extends Page implements HasTable
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options(['pending' => 'Pending', 'sent' => 'Sent', 'failed' => 'Failed', 'cancelled' => 'Cancelled']),
+                    ->options(['pending' => 'Pending', 'processing' => 'Processing', 'partial' => 'Partial', 'sent' => 'Sent', 'failed' => 'Failed', 'cancelled' => 'Cancelled']),
             ])
             ->actions([
                 Action::make('send')
@@ -69,9 +69,9 @@ final class NotificationCenter extends Page implements HasTable
                     ->action(function (EventNotificationBatch $record): void {
                         OwnerWriteGuard::findOrFailForOwner(Event::class, $record->event_id);
 
-                        $record->update(['status' => 'sent', 'sent_at' => CarbonImmutable::now()]);
+                        app(EventNotificationDispatcher::class)->dispatch($record);
                     })
-                    ->visible(fn (EventNotificationBatch $record) => $record->status === 'pending'),
+                    ->visible(fn (EventNotificationBatch $record) => in_array($record->status, ['pending', 'failed', 'partial'], true)),
                 Action::make('cancel')
                     ->label('Cancel')
                     ->icon('heroicon-o-x-circle')
@@ -80,7 +80,7 @@ final class NotificationCenter extends Page implements HasTable
                     ->action(function (EventNotificationBatch $record): void {
                         OwnerWriteGuard::findOrFailForOwner(Event::class, $record->event_id);
 
-                        $record->update(['status' => 'cancelled', 'cancelled_at' => CarbonImmutable::now()]);
+                        app(EventNotificationDispatcher::class)->cancel($record);
                     })
                     ->visible(fn (EventNotificationBatch $record) => $record->status === 'pending'),
                 Action::make('viewDeliveries')
@@ -142,12 +142,7 @@ final class NotificationCenter extends Page implements HasTable
                 ->action(function (array $data): void {
                     OwnerWriteGuard::findOrFailForOwner(Event::class, $data['event_id']);
 
-                    EventNotificationBatch::query()->create([
-                        'event_id' => $data['event_id'],
-                        'title' => $data['title'],
-                        'audience_scope' => $data['audience_scope'],
-                        'status' => 'pending',
-                    ]);
+                    app(EventNotificationDispatcher::class)->createBatch($data);
                 }),
         ];
     }

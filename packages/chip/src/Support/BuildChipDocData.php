@@ -35,10 +35,10 @@ final class BuildChipDocData
             status: DocStatus::fromString(Paid::class),
             issueDate: now(),
             dueDate: null,
-            subtotal: $amount / 100,
-            taxAmount: 0,
-            discountAmount: 0,
-            total: $amount / 100,
+            subtotalMinor: $amount,
+            taxAmountMinor: 0,
+            discountAmountMinor: 0,
+            totalMinor: $amount,
             currency: $currency,
             customerData: $customerData,
             items: $items,
@@ -99,18 +99,17 @@ final class BuildChipDocData
             status: DocStatus::fromString(Refunded::class),
             issueDate: now(),
             dueDate: null,
-            subtotal: $amount / 100,
-            taxAmount: 0,
-            discountAmount: 0,
-            total: $amount / 100,
+            subtotalMinor: $amount,
+            taxAmountMinor: 0,
+            discountAmountMinor: 0,
+            totalMinor: $amount,
             currency: $currency,
             customerData: $customerData,
             items: [
                 [
                     'description' => $description,
                     'quantity' => 1,
-                    'price' => $amount / 100,
-                    'total' => $amount / 100,
+                    'unit_price_minor' => $amount,
                 ],
             ],
             notes: $notes,
@@ -154,8 +153,7 @@ final class BuildChipDocData
                     'name' => Arr::get($purchaseData, 'description', 'Payment'),
                     'description' => Arr::get($purchaseData, 'description', 'Payment'),
                     'quantity' => 1,
-                    'price' => $amount / 100,
-                    'total' => $amount / 100,
+                    'unit_price_minor' => $amount,
                 ],
             ];
         }
@@ -165,9 +163,8 @@ final class BuildChipDocData
         foreach ($products as $product) {
             $items[] = [
                 'description' => Arr::get($product, 'name', 'Product'),
-                'quantity' => Arr::get($product, 'quantity', 1),
-                'price' => Arr::get($product, 'price', 0) / 100,
-                'total' => (Arr::get($product, 'price', 0) * Arr::get($product, 'quantity', 1)) / 100,
+                'quantity' => (int) Arr::get($product, 'quantity', 1),
+                'unit_price_minor' => (int) Arr::get($product, 'price', 0),
             ];
         }
 

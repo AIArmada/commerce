@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Exports;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use Filament\Actions\Exports\ExportColumn;
@@ -21,7 +22,7 @@ final class DocExporter extends Exporter
      */
     public static function modifyQuery(Builder $query): Builder
     {
-        return $query->withSum('payments as paid_amount', 'amount');
+        return $query->withSum('payments as paid_minor', 'amount_minor');
     }
 
     /**
@@ -58,21 +59,25 @@ final class DocExporter extends Exporter
             ExportColumn::make('currency')
                 ->label('Currency'),
 
-            ExportColumn::make('subtotal')
-                ->label('Subtotal'),
+            ExportColumn::make('subtotal_minor')
+                ->label('Subtotal')
+                ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinorWithCode((int) $state, $record->currency)),
 
-            ExportColumn::make('tax_amount')
-                ->label('Tax'),
+            ExportColumn::make('tax_amount_minor')
+                ->label('Tax')
+                ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinorWithCode((int) $state, $record->currency)),
 
-            ExportColumn::make('discount_amount')
-                ->label('Discount'),
+            ExportColumn::make('discount_amount_minor')
+                ->label('Discount')
+                ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinorWithCode((int) $state, $record->currency)),
 
-            ExportColumn::make('total')
-                ->label('Total'),
+            ExportColumn::make('total_minor')
+                ->label('Total')
+                ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinorWithCode((int) $state, $record->currency)),
 
-            ExportColumn::make('paid_amount')
+            ExportColumn::make('paid_minor')
                 ->label('Paid Amount')
-                ->state(fn (Doc $record): float => (float) ($record->paid_amount ?? 0.0)),
+                ->state(fn (Doc $record): string => MoneyFormatter::formatMinorWithCode((int) ($record->paid_minor ?? 0), $record->currency)),
 
             ExportColumn::make('notes')
                 ->label('Notes'),

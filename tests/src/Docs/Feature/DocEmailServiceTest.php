@@ -33,7 +33,7 @@ test('it can send document email', function (): void {
         'doc_type' => DocType::Invoice->value,
         'doc_number' => 'INV-2024-001',
         'status' => Pending::class,
-        'total' => 1000.00,
+        'total_minor' => 1000,
         'currency' => 'MYR',
     ]);
 

@@ -91,9 +91,9 @@ interface DocServiceInterface
      * Calculate document totals from items.
      *
      * @param  array<int, array<string, mixed>>  $items
-     * @return array{subtotal: float, tax_amount: float, total: float}
+     * @return array{subtotal_minor: int, tax_amount_minor: int, total_minor: int}
      */
-    public function calculateTotals(array $items, float $discountAmount = 0): array;
+    public function calculateTotals(array $items, int $discountAmountMinor = 0, ?string $currency = null): array;
 
     /**
      * Resolve the storage disk for a document type.

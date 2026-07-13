@@ -32,10 +32,10 @@ return new class extends Migration
             $table->date('issue_date');
             $table->date('due_date')->nullable();
             $table->timestamp('paid_at')->nullable();
-            $table->decimal('subtotal', 15, 2)->default(0);
-            $table->decimal('tax_amount', 15, 2)->default(0);
-            $table->decimal('discount_amount', 15, 2)->default(0);
-            $table->decimal('total', 15, 2)->default(0);
+            $table->unsignedBigInteger('subtotal_minor')->default(0);
+            $table->unsignedBigInteger('tax_amount_minor')->default(0);
+            $table->unsignedBigInteger('discount_amount_minor')->default(0);
+            $table->unsignedBigInteger('total_minor')->default(0);
             $table->string('currency', 3)->default('MYR');
             $table->text('notes')->nullable();
             $table->text('terms')->nullable();

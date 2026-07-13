@@ -8,13 +8,13 @@ use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use DateTimeInterface;
-use Exception;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
-/**
- * Stripe Connect payout processor.
- */
 final class StripeConnectProcessor implements PayoutProcessorInterface
 {
     private string $apiKey;
@@ -23,116 +23,145 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
 
     public function __construct()
     {
-        $this->apiKey = config('affiliates.payouts.stripe.secret_key', '');
+        $this->apiKey = (string) config('affiliates.payouts.stripe.secret_key', '');
     }
 
     public function process(AffiliatePayout $payout): PayoutResult
     {
-        if (empty($this->apiKey)) {
-            return PayoutResult::failure('Stripe API key not configured', 'STRIPE_NOT_CONFIGURED');
+        if ($this->apiKey === '') {
+            return PayoutResult::failure('Stripe is not configured.', 'STRIPE_NOT_CONFIGURED');
         }
 
+        $operation = $payout->operation;
         $affiliate = $payout->affiliate;
 
-        if (! $affiliate) {
-            return PayoutResult::failure('Payout payee is not an affiliate', 'INVALID_PAYOUT_OWNER');
+        if ($operation === null || $affiliate === null) {
+            return PayoutResult::failure('The payout operation is invalid.', 'INVALID_PAYOUT_OPERATION');
         }
 
-        $payoutMethod = $affiliate->payoutMethods()
-            ->where('type', 'stripe_connect')
-            ->where('is_default', true)
-            ->first();
+        $method = $affiliate->payoutMethods()->where('type', 'stripe_connect')->where('is_default', true)->first();
+        $accountId = is_array($method?->details) ? ($method->details['stripe_account_id'] ?? null) : null;
 
-        if (! $payoutMethod) {
-            return PayoutResult::failure('No Stripe Connect account configured', 'NO_STRIPE_ACCOUNT');
+        if (! is_string($accountId) || ! str_starts_with($accountId, 'acct_')) {
+            return PayoutResult::failure('The Stripe payout destination is invalid.', 'INVALID_STRIPE_ACCOUNT');
         }
 
-        $stripeAccountId = $payoutMethod->details['stripe_account_id'] ?? null;
+        $netAmount = $payout->total_minor - $this->getFees($payout->total_minor, $payout->currency);
 
-        if (! $stripeAccountId) {
-            return PayoutResult::failure('Stripe account ID missing', 'INVALID_STRIPE_ACCOUNT');
+        if ($netAmount <= 0) {
+            return PayoutResult::failure('The payout amount does not cover provider fees.', 'NON_POSITIVE_NET_AMOUNT');
         }
 
         try {
-            $response = Http::withBasicAuth($this->apiKey, '')
+            $response = $this->request()
+                ->withHeaders(['Idempotency-Key' => $operation->id])
                 ->asForm()
                 ->post("{$this->apiUrl}/transfers", [
-                    'amount' => $payout->amount_minor - $this->getFees($payout->amount_minor, $payout->currency),
+                    'amount' => $netAmount,
                     'currency' => mb_strtolower($payout->currency),
-                    'destination' => $stripeAccountId,
-                    'transfer_group' => $payout->batch_id ?? $payout->id,
+                    'destination' => $accountId,
+                    'transfer_group' => $operation->id,
                     'metadata' => [
                         'payout_id' => $payout->id,
-                        'affiliate_id' => $payout->payee_id,
+                        'operation_id' => $operation->id,
                     ],
                 ]);
 
-            if ($response->successful()) {
-                $data = $response->json();
-
-                return PayoutResult::success(
-                    externalReference: $data['id'],
-                    metadata: ['transfer_id' => $data['id']]
-                );
+            if ($response->successful() && is_string($response->json('id'))) {
+                return PayoutResult::success((string) $response->json('id'), ['provider' => 'stripe']);
             }
 
-            $error = $response->json();
-
-            return PayoutResult::failure(
-                reason: $error['error']['message'] ?? 'Stripe transfer failed',
-                code: $error['error']['code'] ?? 'STRIPE_ERROR'
-            );
-        } catch (Exception $e) {
-            Log::error('Stripe payout error', [
+            return $this->classifyFailure($response);
+        } catch (ConnectionException) {
+            return PayoutResult::unknown('STRIPE_CONNECTION_OUTCOME_UNKNOWN');
+        } catch (Throwable $throwable) {
+            Log::error('Stripe payout submission failed unexpectedly.', [
                 'payout_id' => $payout->id,
-                'error' => $e->getMessage(),
+                'exception' => $throwable::class,
             ]);
 
-            return PayoutResult::failure($e->getMessage(), 'STRIPE_EXCEPTION');
+            return PayoutResult::unknown('STRIPE_SUBMISSION_OUTCOME_UNKNOWN');
         }
     }
 
     public function getStatus(AffiliatePayout $payout): string
     {
-        $currentStatus = $payout->status->getValue();
-
-        if (empty($payout->external_reference) || empty($this->apiKey)) {
-            return $currentStatus;
+        if ($this->apiKey === '') {
+            return 'unknown';
         }
 
         try {
-            $response = Http::withBasicAuth($this->apiKey, '')
-                ->get("{$this->apiUrl}/transfers/{$payout->external_reference}");
+            if (is_string($payout->external_reference) && $payout->external_reference !== '') {
+                $response = $this->request(attempts: 1)->get("{$this->apiUrl}/transfers/{$payout->external_reference}");
 
-            if ($response->successful()) {
+                return $response->successful() ? 'completed' : ($response->status() === 404 ? 'not_found' : 'unknown');
+            }
+
+            $operation = $payout->operation;
+
+            if ($operation === null) {
+                return 'unknown';
+            }
+
+            $response = $this->request(attempts: 1)->get("{$this->apiUrl}/transfers", [
+                'transfer_group' => $operation->id,
+                'limit' => 1,
+            ]);
+
+            if (! $response->successful()) {
+                return 'unknown';
+            }
+
+            $reference = $response->json('data.0.id');
+
+            if (is_string($reference) && $reference !== '') {
+                $operation->forceFill(['provider_reference' => $reference])->save();
+                $payout->external_reference = $reference;
+                $payout->save();
+
                 return 'completed';
             }
-        } catch (Exception $e) {
-            Log::warning('Failed to get Stripe transfer status', [
-                'payout_id' => $payout->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
 
-        return $currentStatus;
+            return 'not_found';
+        } catch (Throwable $throwable) {
+            Log::warning('Stripe payout reconciliation request failed.', [
+                'payout_id' => $payout->id,
+                'exception' => $throwable::class,
+            ]);
+
+            return 'unknown';
+        }
     }
 
     public function cancel(AffiliatePayout $payout): bool
     {
-        if (empty($payout->external_reference) || empty($this->apiKey)) {
+        $operation = $payout->operation;
+
+        if ($operation === null || $this->apiKey === '' || ! is_string($payout->external_reference) || $payout->external_reference === '') {
             return false;
         }
 
+        if ($operation->status === 'reversed') {
+            return true;
+        }
+
         try {
-            $response = Http::withBasicAuth($this->apiKey, '')
+            $response = $this->request()
+                ->withHeaders(['Idempotency-Key' => $operation->id . ':reversal'])
                 ->asForm()
                 ->post("{$this->apiUrl}/transfers/{$payout->external_reference}/reversals");
 
-            return $response->successful();
-        } catch (Exception $e) {
-            Log::error('Failed to cancel Stripe transfer', [
+            if (! $response->successful()) {
+                return false;
+            }
+
+            $operation->forceFill(['status' => 'reversed', 'completed_at' => now()])->save();
+
+            return true;
+        } catch (Throwable $throwable) {
+            Log::warning('Stripe payout reversal outcome is unknown.', [
                 'payout_id' => $payout->id,
-                'error' => $e->getMessage(),
+                'exception' => $throwable::class,
             ]);
 
             return false;
@@ -146,27 +175,46 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
 
     public function getFees(int $amountMinor, string $currency): int
     {
-        $percentFee = (int) ceil($amountMinor * 0.0025);
-        $flatFee = 25;
-
-        return $percentFee + $flatFee;
+        return (int) ceil($amountMinor * 0.0025) + 25;
     }
 
     public function validateDetails(array $details): array
     {
-        $errors = [];
+        $accountId = $details['stripe_account_id'] ?? null;
 
-        if (empty($details['stripe_account_id'])) {
-            $errors['stripe_account_id'] = 'Stripe account ID is required';
-        } elseif (! str_starts_with($details['stripe_account_id'], 'acct_')) {
-            $errors['stripe_account_id'] = 'Invalid Stripe account ID format';
+        if (! is_string($accountId) || ! str_starts_with($accountId, 'acct_')) {
+            return ['stripe_account_id' => 'A valid Stripe account ID is required'];
         }
 
-        return $errors;
+        return [];
     }
 
     public function getIdentifier(): string
     {
         return 'stripe_connect';
+    }
+
+    private function request(?int $attempts = null): PendingRequest
+    {
+        $attempts ??= max(1, (int) config('affiliates.payouts.transport.attempts', 2));
+
+        return Http::withBasicAuth($this->apiKey, '')
+            ->connectTimeout(max(1, (int) config('affiliates.payouts.transport.connect_timeout_seconds', 3)))
+            ->timeout(max(1, (int) config('affiliates.payouts.transport.timeout_seconds', 15)))
+            ->retry($attempts, max(0, (int) config('affiliates.payouts.transport.retry_delay_milliseconds', 100)), throw: false);
+    }
+
+    private function classifyFailure(Response $response): PayoutResult
+    {
+        if (in_array($response->status(), [408, 409, 425, 429], true) || $response->serverError()) {
+            return PayoutResult::unknown('STRIPE_HTTP_OUTCOME_UNKNOWN');
+        }
+
+        $providerCode = $response->json('error.code');
+        $safeCode = is_string($providerCode) && preg_match('/^[A-Za-z0-9_.-]{1,48}$/', $providerCode) === 1
+            ? 'STRIPE_' . mb_strtoupper($providerCode)
+            : 'STRIPE_REQUEST_REJECTED';
+
+        return PayoutResult::failure('Stripe rejected the payout request.', $safeCode);
     }
 }

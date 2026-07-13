@@ -592,3 +592,25 @@ $sessionDocument = $builder->buildForSession($session);
 The generated payload includes the target content, the current `metadata` snapshot for that target, and relation-backed facets for audiences and classifications when those sync flags are enabled.
 
 Set `events.search.queue_indexing=true` to queue rebuilds instead of writing them synchronously. If you need to disable automatic indexing entirely, bind `events.search.indexer` to `AIArmada\Events\Resolvers\NullEventSearchIndexer`.
+
+## Dispatching an event change notice
+
+Create, send, retry, and cancel batches through the dispatcher so delivery rows remain the source of truth:
+
+```php
+use AIArmada\Events\Services\EventNotificationDispatcher;
+
+$dispatcher = app(EventNotificationDispatcher::class);
+$batch = $dispatcher->createBatch([
+    'event_id' => $event->id,
+    'title' => 'Schedule changed',
+    'message' => 'The event now starts at 10:00.',
+    'audience_scope' => 'registrants',
+    'channels' => ['mail'],
+]);
+
+$dispatcher->dispatch($batch);
+// $dispatcher->cancel($batch);
+```
+
+Dispatch is idempotent for the tuple `(batch, recipient type, recipient id, channel)`. A manual retry resets only terminal failed deliveries; already-sent deliveries are never resent.

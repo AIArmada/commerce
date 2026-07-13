@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Support;
 
+use AIArmada\CommerceSupport\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use DOMDocument;
 use DOMElement;
 use DOMNodeList;
 use DOMXPath;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 final class InteractionRuleScanner
@@ -18,6 +18,7 @@ final class InteractionRuleScanner
     public function __construct(
         private readonly Filesystem $filesystem,
         private readonly PublicHttpUrlGuard $urlGuard,
+        private readonly PinnedHttpClient $httpClient,
     ) {}
 
     /**
@@ -199,12 +200,14 @@ final class InteractionRuleScanner
 
     private function fetchHtml(string $pageUrl): ?string
     {
-        $this->urlGuard->assertAllowed($pageUrl);
-
-        $response = Http::withoutRedirecting()
-            ->timeout(15)
-            ->withHeaders(['Accept' => 'text/html'])
-            ->get($pageUrl);
+        $target = $this->urlGuard->validate($pageUrl);
+        $response = $this->httpClient->send(
+            method: 'GET',
+            target: $target,
+            headers: ['Accept' => 'text/html'],
+            connectTimeout: 3,
+            timeout: 15,
+        );
 
         if (! $response->successful()) {
             return null;

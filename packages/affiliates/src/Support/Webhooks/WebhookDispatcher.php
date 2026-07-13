@@ -4,70 +4,81 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support\Webhooks;
 
-use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
+use AIArmada\Affiliates\Jobs\DispatchAffiliateWebhook;
+use AIArmada\Affiliates\Models\AffiliateWebhookDelivery;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use JsonException;
 
 class WebhookDispatcher
 {
-    public function __construct(
-        private readonly PublicHttpUrlGuard $urlGuard = new PublicHttpUrlGuard,
-    ) {}
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function dispatch(string $type, array $payload): void
     {
         if (! (bool) config('affiliates.events.dispatch_webhooks', false)) {
             return;
         }
 
-        $endpoints = Arr::wrap(config("affiliates.webhooks.endpoints.{$type}", []));
-        $headers = (array) config('affiliates.webhooks.headers', []);
+        $eventId = (string) Str::uuid();
+        $body = [
+            'type' => $type,
+            'id' => $eventId,
+            'data' => $payload,
+            'sent_at' => now()->toIso8601String(),
+        ];
+        $bodyJson = $this->encode($body);
         $secret = config('affiliates.webhooks.signature_secret');
+        $signature = is_string($secret) && $secret !== '' ? hash_hmac('sha256', $bodyJson, $secret) : null;
+        $headers = array_filter(
+            (array) config('affiliates.webhooks.headers', []),
+            static fn (mixed $value, string | int $key): bool => is_string($key) && is_scalar($value),
+            ARRAY_FILTER_USE_BOTH,
+        );
+        $owner = OwnerContext::resolve();
+        $seen = [];
 
-        if (! is_string($secret) || $secret === '') {
-            $secret = $headers['X-Affiliates-Signature'] ?? config('affiliates.webhooks.headers.X-Affiliates-Signature');
-        }
+        foreach (Arr::wrap(config("affiliates.webhooks.endpoints.{$type}", [])) as $configuredEndpoint) {
+            $endpoint = mb_trim((string) $configuredEndpoint);
+            $parts = parse_url($endpoint);
 
-        unset($headers['X-Affiliates-Signature']);
-
-        foreach ($endpoints as $url) {
-            $trimmed = mb_trim((string) $url);
-
-            if ($trimmed === '' || ! $this->urlGuard->isAllowed($trimmed)) {
+            if ($endpoint === '' || ! is_array($parts) || ! in_array(mb_strtolower((string) ($parts['scheme'] ?? '')), ['http', 'https'], true)) {
                 continue;
             }
 
-            $body = [
-                'type' => $type,
-                'id' => (string) Str::uuid(),
-                'data' => $payload,
-                'sent_at' => now()->toIso8601String(),
-            ];
+            $destinationKey = hash('sha256', mb_strtolower($endpoint));
 
-            $signature = $this->sign($body, is_string($secret) ? $secret : null);
+            if (isset($seen[$destinationKey])) {
+                continue;
+            }
 
-            Http::withoutRedirecting()
-                ->withHeaders(array_merge($headers, [
-                    'X-Affiliates-Webhook-Signature' => $signature ?? '',
-                ]))
-                ->asJson()
-                ->post($trimmed, $body);
+            $seen[$destinationKey] = true;
+            $delivery = AffiliateWebhookDelivery::query()->create([
+                'event_id' => $eventId,
+                'event_type' => $type,
+                'destination_key' => $destinationKey,
+                'endpoint' => $endpoint,
+                'headers' => $headers,
+                'body_json' => $bodyJson,
+                'signature' => $signature,
+                'status' => 'pending',
+                'max_attempts' => max(1, (int) config('affiliates.webhooks.delivery.max_attempts', 5)),
+                'available_at' => now(),
+                'owner_type' => $owner?->getMorphClass(),
+                'owner_id' => $owner?->getKey(),
+            ]);
+
+            DispatchAffiliateWebhook::dispatch($delivery->id)->afterCommit();
         }
     }
 
-    /**
-     * @param  array<string, mixed>  $body
-     */
-    private function sign(array $body, ?string $secret): ?string
+    /** @param array<string, mixed> $body */
+    private function encode(array $body): string
     {
-        if (! is_string($secret) || $secret === '') {
-            return null;
+        try {
+            return json_encode($body, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        } catch (JsonException $exception) {
+            throw new JsonException('Affiliate webhook payload could not be encoded.', previous: $exception);
         }
-
-        return hash_hmac('sha256', json_encode($body, JSON_THROW_ON_ERROR), $secret);
     }
 }

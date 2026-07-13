@@ -43,3 +43,28 @@ it('fails closed when DNS resolution throws', function (): void {
     expect(fn () => $guard->assertAllowed('https://example.com/hooks'))
         ->toThrow(InvalidArgumentException::class, 'could not be resolved safely');
 });
+
+
+it('rejects a hostname when any DNS answer is non-public', function (): void {
+    $guard = new PublicHttpUrlGuard(static fn (string $host): array => ['93.184.216.34', '172.16.0.10']);
+
+    expect(fn () => $guard->validate('https://mixed.example/hooks'))
+        ->toThrow(InvalidArgumentException::class, 'resolve exclusively to public IP addresses');
+});
+
+it('returns a normalized target pinned to a validated public address', function (): void {
+    $target = (new PublicHttpUrlGuard(static fn (string $host): array => ['93.184.216.34']))
+        ->validate(' HTTPS://Example.COM/hooks?x=1 ');
+
+    expect($target->url)->toBe('https://example.com/hooks?x=1')
+        ->and($target->addresses)->toBe(['93.184.216.34'])
+        ->and($target->curlResolveEntry())->toBe('example.com:443:93.184.216.34');
+});
+
+test('formats IPv6 pinned addresses for CURLOPT_RESOLVE', function (): void {
+    $target = (new PublicHttpUrlGuard(static fn (string $host): array => ['2606:2800:220:1:248:1893:25c8:1946']))
+        ->validate('https://example.com/webhook');
+
+    expect($target->selectedIp)->toBe('2606:2800:220:1:248:1893:25c8:1946')
+        ->and($target->curlResolveEntry())->toBe('example.com:443:[2606:2800:220:1:248:1893:25c8:1946]');
+});

@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -24,6 +25,7 @@ use Spatie\ModelStates\HasStates;
 /**
  * @property string $id
  * @property string $reference
+ * @property string|null $affiliate_payout_operation_id
  * @property PayoutStatus $status
  * @property int $total_minor
  * @property int $conversion_count
@@ -63,6 +65,7 @@ class AffiliatePayout extends Model implements Auditable
 
     protected $fillable = [
         'reference',
+        'affiliate_payout_operation_id',
         'status',
         'total_minor',
         'amount_minor',
@@ -133,6 +136,12 @@ class AffiliatePayout extends Model implements Auditable
     public function events(): HasMany
     {
         return $this->hasMany(AffiliatePayoutEvent::class, 'affiliate_payout_id')->latest();
+    }
+
+    /** @return BelongsTo<AffiliatePayoutOperation, $this> */
+    public function operation(): BelongsTo
+    {
+        return $this->belongsTo(AffiliatePayoutOperation::class, 'affiliate_payout_operation_id');
     }
 
     protected static function booted(): void

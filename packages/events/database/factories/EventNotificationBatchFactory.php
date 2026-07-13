@@ -19,9 +19,9 @@ final class EventNotificationBatchFactory extends Factory
     {
         return [
             'event_id' => Event::factory(),
-            'audience_scope' => 'all_registrants',
+            'audience_scope' => 'registrants',
             'title' => $this->faker->sentence(4),
-            'status' => 'draft',
+            'status' => 'pending',
         ];
     }
 }

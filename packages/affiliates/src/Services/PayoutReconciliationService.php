@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CancelledPayout;
 use AIArmada\Affiliates\States\CompletedPayout;
@@ -16,95 +18,144 @@ use AIArmada\Affiliates\States\ProcessingPayout;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Service for reconciling payouts with external payment systems.
- */
 final class PayoutReconciliationService
 {
-    /**
-     * Reconcile a payout with external system status.
-     */
+    /** @param array<string, mixed> $externalData */
     public function reconcilePayout(AffiliatePayout $payout, string $externalStatus, array $externalData = []): bool
     {
         $statusClass = $this->mapExternalStatus($externalStatus);
 
-        if ($statusClass === null || $payout->status->equals($statusClass)) {
+        if ($statusClass === null) {
             return false;
         }
 
-        DB::transaction(function () use ($payout, $statusClass, $externalData): void {
-            $metadata = array_merge($payout->metadata ?? [], [
+        $changed = DB::transaction(function () use ($payout, $statusClass, $externalData): bool {
+            $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->find($payout->id);
+
+            if (! $locked instanceof AffiliatePayout || $locked->status->equals($statusClass)) {
+                return false;
+            }
+
+            $fromStatus = $locked->status->getValue();
+            $reference = isset($externalData['reference']) && is_string($externalData['reference'])
+                ? mb_trim($externalData['reference'])
+                : null;
+            $providerStatus = isset($externalData['status']) && is_string($externalData['status'])
+                ? mb_substr($externalData['status'], 0, 64)
+                : mb_strtolower($externalStatus);
+            $newStatus = PayoutStatus::fromString($statusClass, $locked);
+            $metadata = array_merge($locked->metadata ?? [], array_filter([
                 'reconciled_at' => now()->toIso8601String(),
-                'external_data' => $externalData,
-            ]);
+                'provider_status' => $providerStatus,
+                'external_reference' => $reference,
+            ], static fn (mixed $value): bool => $value !== null && $value !== ''));
 
-            if (isset($externalData['reference']) && is_string($externalData['reference']) && $externalData['reference'] !== '') {
-                $metadata['external_reference'] = $externalData['reference'];
-            }
-
-            $newStatus = PayoutStatus::fromString($statusClass, $payout);
-
-            $payout->update([
+            $locked->forceFill([
                 'status' => $statusClass,
-                'paid_at' => $newStatus->equals(CompletedPayout::class) ? now() : $payout->paid_at,
+                'paid_at' => $newStatus->equals(CompletedPayout::class) ? now() : $locked->paid_at,
+                'failed_at' => $newStatus->equals(FailedPayout::class) ? now() : $locked->failed_at,
+                'cancelled_at' => $newStatus->equals(CancelledPayout::class) ? now() : $locked->cancelled_at,
                 'metadata' => $metadata,
-            ]);
+            ])->save();
 
-            // Create audit event
-            $payout->events()->create([
-                'to_status' => $newStatus->getValue(),
-                'notes' => 'Status updated via reconciliation',
-                'metadata' => $externalData,
-            ]);
-
-            // If failed, return commission to balance
-            if ($newStatus->equals(FailedPayout::class)) {
-                $this->returnCommissionToBalance($payout);
+            if ($locked->operation instanceof AffiliatePayoutOperation) {
+                $locked->operation->forceFill([
+                    'status' => match (true) {
+                        $newStatus->equals(CompletedPayout::class) => 'completed',
+                        $newStatus->equals(FailedPayout::class) => 'failed',
+                        $newStatus->equals(CancelledPayout::class) => 'cancelled',
+                        default => 'submitted',
+                    },
+                    'provider_reference' => $reference ?: $locked->operation->provider_reference,
+                    'last_error_code' => $newStatus->equals(FailedPayout::class) ? 'PROVIDER_RECONCILED_FAILURE' : null,
+                    'completed_at' => $newStatus->equals(CompletedPayout::class) || $newStatus->equals(FailedPayout::class) || $newStatus->equals(CancelledPayout::class) ? now() : null,
+                    'lease_expires_at' => null,
+                ])->save();
             }
-        });
 
-        return true;
+            $locked->events()->create([
+                'from_status' => $fromStatus,
+                'to_status' => $newStatus->getValue(),
+                'notes' => 'Provider status reconciled to ' . $newStatus->getValue(),
+                'metadata' => ['provider_status' => $providerStatus],
+            ]);
+
+            return true;
+        }, attempts: 3);
+
+        if ($changed && in_array($statusClass, [FailedPayout::class, CancelledPayout::class], true)) {
+            $this->releaseReservedFunds($payout);
+        }
+
+        return $changed;
     }
 
-    /**
-     * Get payouts needing reconciliation.
-     */
+    public function releaseReservedFunds(AffiliatePayout $payout): bool
+    {
+        return DB::transaction(function () use ($payout): bool {
+            $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->find($payout->id);
+            $operation = $locked?->operation;
+
+            if (! $locked instanceof AffiliatePayout
+                || ! $operation instanceof AffiliatePayoutOperation
+                || $operation->payout_sequence === null
+                || $operation->funds_released_at !== null) {
+                return false;
+            }
+
+            $balance = AffiliateBalance::query()
+                ->where('affiliate_id', $operation->affiliate_id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $balance instanceof AffiliateBalance) {
+                return false;
+            }
+
+            $balance->increment('available_minor', $operation->amount_minor);
+            $locked->conversions()->update([
+                'status' => ApprovedConversion::value(),
+                'affiliate_payout_id' => null,
+            ]);
+            $operation->forceFill(['funds_released_at' => now()])->save();
+
+            return true;
+        }, attempts: 3);
+    }
+
+    /** @return Collection<int, AffiliatePayout> */
     public function getPayoutsNeedingReconciliation(): Collection
     {
         return AffiliatePayout::query()
             ->whereIn('status', [ProcessingPayout::value(), PendingPayout::value()])
-            ->whereNotNull('metadata->external_reference')
-            ->where('updated_at', '<=', now()->subHours(1))
+            ->whereHas('operation', static function ($query): void {
+                $query->whereIn('status', ['submitting', 'submitted', 'unknown']);
+            })
+            ->where('updated_at', '<=', now()->subMinutes(5))
             ->get();
     }
 
-    /**
-     * Generate reconciliation report.
-     */
+    /** @return array<string, mixed> */
     public function generateReport(?string $startDate = null, ?string $endDate = null): array
     {
         $query = AffiliatePayout::query();
 
-        if ($startDate) {
+        if ($startDate !== null) {
             $query->where('created_at', '>=', $startDate);
         }
 
-        if ($endDate) {
+        if ($endDate !== null) {
             $query->where('created_at', '<=', $endDate);
         }
 
         $payouts = $query->get();
-
-        $byStatus = $payouts->groupBy(fn ($p) => $p->status->getValue())->map->count();
-        $totalAmount = $payouts->sum('amount_minor');
-        $completedAmount = $payouts->filter(fn ($p) => $p->status->equals(CompletedPayout::class))->sum('amount_minor');
-        $failedAmount = $payouts->filter(fn ($p) => $p->status->equals(FailedPayout::class))->sum('amount_minor');
+        $byStatus = $payouts->groupBy(fn (AffiliatePayout $item): string => $item->status->getValue())->map->count();
+        $totalAmount = (int) $payouts->sum('total_minor');
+        $completedAmount = (int) $payouts->filter(fn (AffiliatePayout $item): bool => $item->status->equals(CompletedPayout::class))->sum('total_minor');
+        $failedAmount = (int) $payouts->filter(fn (AffiliatePayout $item): bool => $item->status->equals(FailedPayout::class))->sum('total_minor');
 
         return [
-            'period' => [
-                'start' => $startDate,
-                'end' => $endDate,
-            ],
+            'period' => ['start' => $startDate, 'end' => $endDate],
             'summary' => [
                 'total_payouts' => $payouts->count(),
                 'total_amount_minor' => $totalAmount,
@@ -117,37 +168,22 @@ final class PayoutReconciliationService
         ];
     }
 
-    /**
-     * Find balance discrepancies for an affiliate.
-     */
+    /** @return array<string, int|string|bool> */
     public function auditAffiliateBalance(Affiliate $affiliate): array
     {
-        $balance = $affiliate->balance;
-
-        // Calculate expected balance from conversions
-        $approvedCommissions = $affiliate->conversions()
-            ->where('status', ApprovedConversion::value())
-            ->sum('commission_minor');
-
-        $paidOut = $affiliate->payouts()
-            ->where('status', CompletedPayout::value())
-            ->sum('total_minor');
-
-        $pendingPayouts = $affiliate->payouts()
-            ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
-            ->sum('total_minor');
-
+        $approvedCommissions = (int) $affiliate->conversions()->where('status', ApprovedConversion::value())->sum('commission_minor');
+        $paidOut = (int) $affiliate->payouts()->where('status', CompletedPayout::value())->sum('total_minor');
+        $pendingPayouts = (int) $affiliate->payouts()->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])->sum('total_minor');
         $expectedAvailable = $approvedCommissions - $paidOut - $pendingPayouts;
-        $actualAvailable = $balance?->available_minor ?? 0;
-
+        $actualAvailable = $affiliate->balance?->available_minor ?? 0;
         $discrepancy = $expectedAvailable - $actualAvailable;
 
         return [
-            'affiliate_id' => $affiliate->id,
+            'affiliate_id' => (string) $affiliate->id,
             'expected_available_minor' => $expectedAvailable,
             'actual_available_minor' => $actualAvailable,
             'discrepancy_minor' => $discrepancy,
-            'has_discrepancy' => abs($discrepancy) > 0,
+            'has_discrepancy' => $discrepancy !== 0,
             'approved_commissions_minor' => $approvedCommissions,
             'paid_out_minor' => $paidOut,
             'pending_payouts_minor' => $pendingPayouts,
@@ -166,35 +202,20 @@ final class PayoutReconciliationService
         };
     }
 
-    private function returnCommissionToBalance(AffiliatePayout $payout): void
-    {
-        $affiliate = $payout->affiliate;
-        $balance = $affiliate?->balance;
-
-        if ($balance && $payout->amount_minor) {
-            $balance->increment('available_minor', (int) $payout->amount_minor);
-        }
-
-        // Update linked conversions back to approved status
-        $payout->conversions()->update([
-            'status' => ApprovedConversion::value(),
-            'affiliate_payout_id' => null,
-        ]);
-    }
-
+    /** @return list<array<string, int|string>> */
     private function findDiscrepancies(Collection $payouts): array
     {
         $discrepancies = [];
 
         foreach ($payouts as $payout) {
-            $linkedAmount = $payout->conversions()->sum('commission_minor');
+            $linkedAmount = (int) $payout->conversions()->sum('commission_minor');
 
-            if ($linkedAmount !== $payout->amount_minor) {
+            if ($linkedAmount !== $payout->total_minor) {
                 $discrepancies[] = [
-                    'payout_id' => $payout->id,
-                    'payout_amount_minor' => $payout->amount_minor,
+                    'payout_id' => (string) $payout->id,
+                    'payout_amount_minor' => $payout->total_minor,
                     'linked_commissions_minor' => $linkedAmount,
-                    'difference_minor' => $payout->amount_minor - $linkedAmount,
+                    'difference_minor' => $payout->total_minor - $linkedAmount,
                 ];
             }
         }

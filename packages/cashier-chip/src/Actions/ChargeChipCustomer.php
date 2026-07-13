@@ -70,6 +70,10 @@ final class ChargeChipCustomer
             $builder->reference($options['reference']);
         }
 
+        if (isset($options['idempotency_key']) && is_string($options['idempotency_key']) && $options['idempotency_key'] !== '') {
+            $builder->idempotencyKey($options['idempotency_key']);
+        }
+
         if ($metadata !== []) {
             $builder->metadata($metadata);
         }

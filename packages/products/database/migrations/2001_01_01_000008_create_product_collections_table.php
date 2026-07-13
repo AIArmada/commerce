@@ -17,6 +17,7 @@ return new class extends Migration
 
             // Owner (for multi-tenancy)
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
 
             $table->string('name');
             $table->string('slug');
@@ -48,7 +49,7 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->unique(['owner_type', 'owner_id', 'slug']);
+            $table->unique(['owner_scope', 'slug']);
 
             $table->index('status');
             $table->index('hidden_at');
