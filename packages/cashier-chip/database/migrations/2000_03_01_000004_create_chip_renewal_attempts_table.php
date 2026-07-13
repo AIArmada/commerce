@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tableName = config('cashier-chip.database.tables.renewal_attempts', 'chip_renewal_attempts');
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->uuid('subscription_id');
             $table->string('status')->default('claimed')->index();
