@@ -266,7 +266,7 @@ Event::listen(PaymentCompleted::class, function (PaymentCompleted $event): void 
     $session = $event->session;
 
     if ($session->status instanceof AwaitingPayment) {
-        Checkout::processStep($session, 'create_order');
+        app(\AIArmada\Checkout\Contracts\CheckoutServiceInterface::class)->processCheckout($session);
     }
 });
 ```
