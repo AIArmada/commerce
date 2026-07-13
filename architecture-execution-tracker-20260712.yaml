@@ -1306,7 +1306,7 @@ tasks:
   wave: 2
   candidate: Candidate 02
   title: Implement durable, retry-safe Order intake
-  status: claimed
+  status: done
   severity: high
   owner: opencode
   branch: ord-221-order-intake
@@ -1365,14 +1365,14 @@ tasks:
   deliverables:
   - Implementation and interface-level tests.
   - 'Same-pass documentation: packages/orders/docs/04-usage.md, packages/orders/docs/06-api-reference.md.'
-  notes: []
+    notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
-    commit: null
-    tests: null
-    static_analysis: null
-    docs_updated: null
+    decision_record: docs/architecture-execution/design-order-intake.md
+    scope_manifest: 'Exact file manifest (11 files): migration new, exception new, Order model updated, CreateOrder/CreateOrderFromCart updated, OrderServiceInterface/OrderService updated, CreateOrderStep updated, OrderIntakeTest new, TestCase inline schema updated, docs updated'
+    commit: 10f6310c5
+    tests: 'OrderIntakeTest: 6 passed (11 assertions); OrderTransitionsTest: 6 passed; CancelOrderTest: 2 passed — 14 total, 49 assertions'
+    static_analysis: 'phpstan --level=6 packages/orders/src + packages/checkout/src -> OK'
+    docs_updated: packages/orders/docs/04-usage.md (Durable Intake Identity section)
     reviewer: null
     review_notes: null
 - id: INV-321
