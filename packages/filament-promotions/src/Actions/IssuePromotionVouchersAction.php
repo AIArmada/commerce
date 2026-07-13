@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Promotions\Actions\IssueVouchersFromPromotion;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Promotions\Support\PromotionsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -85,7 +84,7 @@ final class IssuePromotionVouchersAction extends Action
 
     private function resolvePromotion(Promotion $record): Promotion
     {
-        if (! PromotionsOwnerScope::isEnabled()) {
+        if (! config('promotions.owner.enabled', true)) {
             return $record;
         }
 
@@ -93,7 +92,7 @@ final class IssuePromotionVouchersAction extends Action
         $promotion = OwnerWriteGuard::findOrFailForOwner(
             Promotion::class,
             (string) $record->getKey(),
-            PromotionsOwnerScope::resolveOwner(),
+            OwnerContext::resolve(),
             includeGlobal: false,
             message: 'Promotion is not accessible in the current owner scope.',
         );

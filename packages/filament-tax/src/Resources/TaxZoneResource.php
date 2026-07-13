@@ -9,7 +9,6 @@ use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers;
 use AIArmada\FilamentTax\Resources\TaxZoneResource\Schemas\TaxZoneForm;
 use AIArmada\FilamentTax\Resources\TaxZoneResource\Tables\TaxZonesTable;
 use AIArmada\Tax\Models\TaxZone;
-use AIArmada\Tax\Support\TaxOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -42,11 +41,11 @@ final class TaxZoneResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = TaxOwnerScope::applyToOwnedQuery(parent::getEloquentQuery());
+        $query = parent::getEloquentQuery();
 
         /** @phpstan-ignore return.type (template type not preserved through helper) */
         return $query->withCount([
-            'rates as rates_count' => fn (Builder $builder) => TaxOwnerScope::applyToOwnedQuery($builder),
+            'rates as rates_count' => fn (Builder $builder) => $builder,
         ]);
     }
 

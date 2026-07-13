@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Widgets;
 
 use AIArmada\Tax\Models\TaxZone;
-use AIArmada\Tax\Support\TaxOwnerScope;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 
 final class ZoneCoverageWidget extends Widget
@@ -29,17 +26,8 @@ final class ZoneCoverageWidget extends Widget
         /** @var Builder<TaxZone> $query */
         $query = TaxZone::query();
 
-        $zones = TaxOwnerScope::applyToOwnedQuery($query)
-            ->with([
-                'rates' => function ($query): void {
-                    /** @var Builder<Model> $builder */
-                    $builder = $query instanceof Relation
-                        ? $query->getQuery()
-                        : $query;
-
-                    TaxOwnerScope::applyToOwnedQuery($builder);
-                },
-            ])
+        $zones = $query
+            ->with('rates')
             ->active()
             ->orderBy('priority', 'desc')
             ->limit(50)

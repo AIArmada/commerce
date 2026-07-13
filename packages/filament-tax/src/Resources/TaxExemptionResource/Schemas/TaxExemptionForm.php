@@ -9,7 +9,6 @@ use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
 use AIArmada\Tax\States\TaxExemptionState\RejectedState;
 use AIArmada\Tax\States\TaxExemptionState\TaxExemptionState;
-use AIArmada\Tax\Support\TaxOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -59,10 +58,6 @@ final class TaxExemptionForm
                                         /** @var Builder<Model> $query */
                                         $query = $type::query();
 
-                                        if (in_array(HasOwner::class, class_uses_recursive($type), true)) {
-                                            $query = TaxOwnerScope::applyToOwnedQuery($query);
-                                        }
-
                                         if ($type === 'AIArmada\\Customers\\Models\\Customer') {
                                             return $query
                                                 ->where(function (Builder $builder) use ($search): void {
@@ -109,10 +104,6 @@ final class TaxExemptionForm
                                         /** @var Builder<Model> $query */
                                         $query = $type::query();
 
-                                        if (in_array(HasOwner::class, class_uses_recursive($type), true)) {
-                                            $query = TaxOwnerScope::applyToOwnedQuery($query);
-                                        }
-
                                         $record = $query->whereKey($value)->first();
 
                                         if (! $record) {
@@ -131,7 +122,7 @@ final class TaxExemptionForm
                                     ->relationship(
                                         'taxZone',
                                         'name',
-                                        modifyQueryUsing: fn (Builder $query): Builder => TaxOwnerScope::applyToOwnedQuery($query),
+                                        modifyQueryUsing: fn (Builder $query): Builder => $query,
                                     )
                                     ->searchable()
                                     ->preload()

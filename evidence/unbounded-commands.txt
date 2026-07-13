@@ -1,0 +1,978 @@
+### packages/promotions/src/Console/Commands/RecomputePromotionEligibilityCommand.php
+     1	<?php
+     2	
+     3	declare(strict_types=1);
+     4	
+     5	namespace AIArmada\Promotions\Console\Commands;
+     6	
+     7	use AIArmada\Promotions\Models\Promotion;
+     8	use Illuminate\Console\Command;
+     9	
+    10	final class RecomputePromotionEligibilityCommand extends Command
+    11	{
+    12	    protected $signature = 'promotions:recompute-eligibility
+    13	        {--dry-run : Preview promotions without making changes}';
+    14	
+    15	    protected $description = 'Recompute eligibility for all active promotions';
+    16	
+    17	    public function handle(): int
+    18	    {
+    19	        $promotions = Promotion::query()
+    20	            ->where('is_active', true)
+    21	            ->get();
+    22	
+    23	        if ($promotions->isEmpty()) {
+    24	            $this->info('No active promotions found.');
+    25	
+    26	            return self::SUCCESS;
+    27	        }
+    28	
+    29	        $this->info("Found {$promotions->count()} active promotion(s).");
+    30	
+    31	        foreach ($promotions as $promotion) {
+    32	            $this->line(" - [{$promotion->id}] {$promotion->name}");
+    33	        }
+    34	
+    35	        $this->info('Eligibility recomputation complete.');
+    36	
+    37	        return self::SUCCESS;
+    38	    }
+    39	}
+### packages/promotions/src/Console/Commands/DeactivateExpiredPromotionsCommand.php
+     1	<?php
+     2	
+     3	declare(strict_types=1);
+     4	
+     5	namespace AIArmada\Promotions\Console\Commands;
+     6	
+     7	use AIArmada\Promotions\Actions\DeactivatePromotion;
+     8	use AIArmada\Promotions\Models\Promotion;
+     9	use Illuminate\Console\Command;
+    10	use Illuminate\Support\Carbon;
+    11	
+    12	final class DeactivateExpiredPromotionsCommand extends Command
+    13	{
+    14	    protected $signature = 'promotions:deactivate-expired
+    15	        {--dry-run : Preview which promotions would be deactivated without making changes}';
+    16	
+    17	    protected $description = 'Deactivate all expired promotions';
+    18	
+    19	    public function handle(DeactivatePromotion $deactivatePromotion): int
+    20	    {
+    21	        $now = Carbon::now();
+    22	
+    23	        $expired = Promotion::query()
+    24	            ->where('is_active', true)
+    25	            ->where('ends_at', '<=', $now)
+    26	            ->get();
+    27	
+    28	        if ($expired->isEmpty()) {
+    29	            $this->info('No expired promotions found.');
+    30	
+    31	            return self::SUCCESS;
+    32	        }
+    33	
+    34	        $this->info("Found {$expired->count()} expired promotion(s).");
+    35	
+    36	        foreach ($expired as $promotion) {
+    37	            $this->line(" - [{$promotion->id}] {$promotion->name}");
+    38	
+    39	            if (! (bool) $this->option('dry-run')) {
+    40	                $deactivatePromotion->handle($promotion);
+    41	            }
+    42	        }
+    43	
+    44	        if ((bool) $this->option('dry-run')) {
+    45	            $this->warn('Dry-run mode: no promotions were actually deactivated.');
+    46	        } else {
+    47	            $this->info("Deactivated {$expired->count()} expired promotion(s).");
+    48	        }
+    49	
+    50	        return self::SUCCESS;
+    51	    }
+    52	}
+### packages/cashier-chip/src/Console/RenewSubscriptionsCommand.php
+     1	<?php
+     2	
+     3	declare(strict_types=1);
+     4	
+     5	namespace AIArmada\CashierChip\Console;
+     6	
+     7	use AIArmada\CashierChip\Billing\Cashier;
+     8	use AIArmada\CashierChip\Contracts\BillableContract;
+     9	use AIArmada\CashierChip\Enums\SubscriptionStatus;
+    10	use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
+    11	use AIArmada\CashierChip\Events\SubscriptionRenewed;
+    12	use AIArmada\CashierChip\Subscription\Subscription;
+    13	use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+    14	use Illuminate\Console\Command;
+    15	use Illuminate\Database\Eloquent\Model;
+    16	use Illuminate\Support\Facades\DB;
+    17	use Illuminate\Support\Facades\Log;
+    18	use RuntimeException;
+    19	use Throwable;
+    20	
+    21	class RenewSubscriptionsCommand extends Command
+    22	{
+    23	    protected $signature = 'cashier-chip:renew-subscriptions 
+    24	                            {--dry-run : Show what would be renewed without actually charging}
+    25	                            {--grace-hours=0 : Hours of grace period before considering subscription due}';
+    26	
+    27	    protected $description = 'Process CHIP subscription renewals by charging recurring tokens';
+    28	
+    29	    public function handle(): int
+    30	    {
+    31	        $dryRun = $this->option('dry-run');
+    32	        $graceHours = (int) $this->option('grace-hours');
+    33	
+    34	        $this->info('Processing CHIP subscription renewals...');
+    35	
+    36	        if ($dryRun) {
+    37	            $this->warn('DRY RUN MODE - No charges will be made');
+    38	        }
+    39	
+    40	        /** @var array{renewed: int, failed: int}|null $result */
+    41	        $result = $this->batchRunner()->run(
+    42	            fn (): array => $this->processRenewals((bool) $dryRun, $graceHours)
+    43	        );
+    44	
+    45	        $result = $result ?? ['renewed' => 0, 'failed' => 0];
+    46	
+    47	        $this->newLine();
+    48	        $this->info("Renewal complete: {$result['renewed']} renewed, {$result['failed']} failed.");
+    49	
+    50	        return $result['failed'] > 0 ? self::FAILURE : self::SUCCESS;
+    51	    }
+    52	
+    53	    private function batchRunner(): OwnerBatchRunner
+    54	    {
+    55	        return new OwnerBatchRunner(Subscription::class, [
+    56	            'enabled' => 'cashier-chip.features.owner.enabled',
+    57	            'include_global' => 'cashier-chip.features.owner.include_global',
+    58	        ]);
+    59	    }
+    60	
+    61	    protected function processRenewals(bool $dryRun, int $graceHours): array
+    62	    {
+    63	        $dueDate = now()->subHours($graceHours);
+    64	
+    65	        $query = Subscription::withoutGlobalScopes();
+    66	        $query = (new Subscription)->scopeForOwner($query);
+    67	
+    68	        $subscriptions = $query
+    69	            ->whereActive()
+    70	            ->whereNotNull('next_billing_at')
+    71	            ->where('next_billing_at', '<=', $dueDate)
+    72	            ->with('billable')
+    73	            ->get();
+    74	
+    75	        if ($subscriptions->isEmpty()) {
+    76	            $this->info('No subscriptions due for renewal.');
+    77	
+    78	            return [
+    79	                'renewed' => 0,
+    80	                'failed' => 0,
+    81	            ];
+    82	        }
+    83	
+    84	        $this->info("Found {$subscriptions->count()} subscription(s) due for renewal.");
+    85	
+    86	        $renewed = 0;
+    87	        $failed = 0;
+    88	
+    89	        foreach ($subscriptions as $subscription) {
+    90	            $billable = $subscription->billable;
+    91	
+    92	            if (! $billable) {
+    93	                $this->warn("Subscription {$subscription->id} has no billable subject, skipping.");
+    94	
+    95	                continue;
+    96	            }
+    97	
+    98	            /** @var Model&BillableContract $billable */
+    99	            $this->line("Processing: {$subscription->type} for {$billable->chipEmail()}");
+   100	
+   101	            if ($dryRun) {
+   102	                $this->info('  → Would charge: ' . $this->formatAmount($subscription));
+   103	                $renewed++;
+   104	
+   105	                continue;
+   106	            }
+   107	
+   108	            try {
+   109	                $payment = DB::transaction(function () use ($subscription) {
+   110	                    $payment = $this->chargeSubscription($subscription);
+   111	
+   112	                    if ($payment && $payment->isSucceeded()) {
+   113	                        $subscription->forceFill([
+   114	                            'chip_status' => SubscriptionStatus::Active,
+   115	                            'next_billing_at' => now()->add(
+   116	                                $subscription->billing_interval ?? 'month',
+   117	                                $subscription->billing_interval_count ?? 1
+   118	                            ),
+   119	                            'renewed_at' => now(),
+   120	                        ])->save();
+   121	                    }
+   122	
+   123	                    return $payment;
+   124	                });
+   125	
+   126	                if ($payment && $payment->isSucceeded()) {
+   127	                    $this->info('  ✓ Renewed successfully');
+   128	                    $renewed++;
+   129	
+   130	                    SubscriptionRenewed::dispatch($subscription, $payment);
+   131	                } else {
+   132	                    $this->error('  ✗ Payment requires action or is pending');
+   133	                    $this->markAsPastDue($subscription);
+   134	                    $failed++;
+   135	                }
+   136	            } catch (Throwable $e) {
+   137	                $this->error("  ✗ Failed: {$e->getMessage()}");
+   138	                Log::error('Subscription renewal failed', [
+   139	                    'subscription_id' => $subscription->id,
+   140	                    'error' => $e->getMessage(),
+   141	                ]);
+   142	
+   143	                $this->markAsPastDue($subscription);
+   144	                $failed++;
+   145	
+   146	                SubscriptionRenewalFailed::dispatch($subscription, $e->getMessage());
+   147	            }
+   148	        }
+   149	
+   150	        return [
+   151	            'renewed' => $renewed,
+   152	            'failed' => $failed,
+   153	        ];
+   154	    }
+   155	
+   156	    protected function chargeSubscription(Subscription $subscription): mixed
+   157	    {
+   158	        $billable = $subscription->billable;
+   159	
+   160	        if (! $billable) {
+   161	            throw new RuntimeException('Subscription has no billable subject');
+   162	        }
+   163	
+   164	        /** @var Model&BillableContract $billable */
+   165	        $recurringTokenId = $billable->defaultPaymentMethod()?->id();
+   166	
+   167	        if (! $recurringTokenId) {
+   168	            throw new RuntimeException('No payment method available for renewal');
+   169	        }
+   170	
+   171	        $amount = $subscription->calculateSubscriptionAmount();
+   172	
+   173	        if ($amount <= 0) {
+   174	            throw new RuntimeException('Invalid subscription amount');
+   175	        }
+   176	
+   177	        return $billable->charge($amount, $recurringTokenId, [
+   178	            'product_name' => "Subscription: {$subscription->type}",
+   179	            'reference' => "Subscription {$subscription->type} - Renewal {$subscription->next_billing_at?->format('Y-m-d')}",
+   180	            'metadata' => [
+   181	                'subscription_id' => $subscription->id,
+   182	                'subscription_type' => $subscription->type,
+   183	                'renewal' => true,
+   184	            ],
+   185	        ]);
+   186	    }
+   187	
+   188	    protected function markAsPastDue(Subscription $subscription): void
+   189	    {
+   190	        $subscription->forceFill([
+   191	            'chip_status' => SubscriptionStatus::PastDue,
+   192	            'past_due_at' => now(),
+   193	        ])->save();
+   194	    }
+   195	
+   196	    protected function formatAmount(Subscription $subscription): string
+   197	    {
+   198	        $amount = $subscription->calculateSubscriptionAmount();
+   199	        $billable = $subscription->billable;
+   200	        $currency = $billable instanceof BillableContract ? $billable->preferredCurrency() : 'MYR';
+   201	
+   202	        return Cashier::formatAmount($amount, $currency);
+   203	    }
+   204	}
+### packages/affiliates/src/Console/Commands/ProcessScheduledPayoutsCommand.php
+     1	<?php
+     2	
+     3	declare(strict_types=1);
+     4	
+     5	namespace AIArmada\Affiliates\Console\Commands;
+     6	
+     7	use AIArmada\Affiliates\Models\Affiliate;
+     8	use AIArmada\Affiliates\Models\AffiliatePayout;
+     9	use AIArmada\Affiliates\States\Active;
+    10	use AIArmada\Affiliates\States\AffiliateStatus;
+    11	use AIArmada\Affiliates\States\ApprovedConversion;
+    12	use AIArmada\Affiliates\States\PendingPayout;
+    13	use AIArmada\Affiliates\States\ProcessingPayout;
+    14	use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+    15	use Exception;
+    16	use Illuminate\Console\Command;
+    17	use Illuminate\Support\Facades\DB;
+    18	
+    19	final class ProcessScheduledPayoutsCommand extends Command
+    20	{
+    21	    protected $signature = 'affiliates:process-payouts 
+    22	        {--dry-run : Show what would be processed without making changes}
+    23	        {--affiliate= : Process payouts for a specific affiliate ID}
+    24	        {--min-amount= : Minimum amount threshold in minor units}';
+    25	
+    26	    protected $description = 'Process scheduled payouts for affiliates';
+    27	
+    28	    public function handle(): int
+    29	    {
+    30	        $dryRun = $this->option('dry-run');
+    31	        $affiliateId = $this->option('affiliate');
+    32	        $minAmount = $this->option('min-amount') ?? config('affiliates.payouts.minimum_amount', 5000);
+    33	
+    34	        $this->info('Processing scheduled payouts...');
+    35	
+    36	        if ($dryRun) {
+    37	            $this->warn('Running in dry-run mode - no changes will be made.');
+    38	        }
+    39	
+    40	        $runner = new OwnerBatchRunner(
+    41	            Affiliate::class,
+    42	            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
+    43	        );
+    44	
+    45	        $result = $runner->run(fn (): array => $this->processScoped($dryRun, $affiliateId, (int) $minAmount))
+    46	            ?? ['processed' => 0, 'skipped' => 0, 'errors' => 0];
+    47	
+    48	        $this->outputSummary($result['processed'], $result['skipped'], $result['errors']);
+    49	
+    50	        return $result['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    51	    }
+    52	
+    53	    /**
+    54	     * @return array{processed: int, skipped: int, errors: int}
+    55	     */
+    56	    private function processScoped(bool $dryRun, ?string $affiliateId, int $minAmount): array
+    57	    {
+    58	        $processed = 0;
+    59	        $skipped = 0;
+    60	        $errors = 0;
+    61	
+    62	        $query = Affiliate::query()
+    63	            ->where('status', AffiliateStatus::normalize(Active::class))
+    64	            ->whereHas('balance', function ($q) use ($minAmount): void {
+    65	                $q->where('available_minor', '>=', $minAmount);
+    66	            });
+    67	
+    68	        if ($affiliateId) {
+    69	            $query->where('id', $affiliateId);
+    70	        }
+    71	
+    72	        $affiliates = $query->with('balance')->get();
+    73	
+    74	        $this->output->progressStart($affiliates->count());
+    75	
+    76	        foreach ($affiliates as $affiliate) {
+    77	            try {
+    78	                $result = $this->processAffiliate($affiliate, $minAmount, $dryRun);
+    79	
+    80	                if ($result === 'processed') {
+    81	                    $processed++;
+    82	                } else {
+    83	                    $skipped++;
+    84	                }
+    85	            } catch (Exception $e) {
+    86	                $errors++;
+    87	                $this->error("Error processing affiliate {$affiliate->id}: {$e->getMessage()}");
+    88	            }
+    89	
+    90	            $this->output->progressAdvance();
+    91	        }
+    92	
+    93	        $this->output->progressFinish();
+    94	
+    95	        return [
+    96	            'processed' => $processed,
+    97	            'skipped' => $skipped,
+    98	            'errors' => $errors,
+    99	        ];
+   100	    }
+   101	
+   102	    private function outputSummary(int $processed, int $skipped, int $errors): void
+   103	    {
+   104	        $this->info("Processed: {$processed}");
+   105	        $this->info("Skipped: {$skipped}");
+   106	
+   107	        if ($errors > 0) {
+   108	            $this->error("Errors: {$errors}");
+   109	        }
+   110	    }
+   111	
+   112	    private function processAffiliate(Affiliate $affiliate, int $minAmount, bool $dryRun): string
+   113	    {
+   114	        $balance = $affiliate->balance;
+   115	
+   116	        if (! $balance || $balance->available_minor < $minAmount) {
+   117	            return 'skipped';
+   118	        }
+   119	
+   120	        // Check for holds
+   121	        $hasHold = $affiliate->payoutHolds()
+   122	            ->where(function ($q): void {
+   123	                $q->whereNull('expires_at')
+   124	                    ->orWhere('expires_at', '>', now());
+   125	            })
+   126	            ->exists();
+   127	
+   128	        if ($hasHold) {
+   129	            return 'skipped';
+   130	        }
+   131	
+   132	        // Check for pending payouts
+   133	        $hasPendingPayout = $affiliate->payouts()
+   134	            ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
+   135	            ->exists();
+   136	
+   137	        if ($hasPendingPayout) {
+   138	            return 'skipped';
+   139	        }
+   140	
+   141	        if ($dryRun) {
+   142	            $this->line("Would create payout for affiliate {$affiliate->id}: {$balance->available_minor} {$balance->currency}");
+   143	
+   144	            return 'processed';
+   145	        }
+   146	
+   147	        // Create payout
+   148	        DB::transaction(function () use ($affiliate, $balance): void {
+   149	            $payout = AffiliatePayout::create([
+   150	                'reference' => 'PAY-' . mb_strtoupper(bin2hex(random_bytes(8))),
+   151	                'payee_type' => $affiliate->getMorphClass(),
+   152	                'payee_id' => $affiliate->id,
+   153	                'owner_type' => $affiliate->owner_type,
+   154	                'owner_id' => $affiliate->owner_id,
+   155	                'total_minor' => $balance->available_minor,
+   156	                'currency' => $balance->currency,
+   157	                'status' => PendingPayout::value(),
+   158	                'scheduled_at' => now(),
+   159	            ]);
+   160	
+   161	            // Deduct from balance
+   162	            $balance->decrement('available_minor', $payout->total_minor);
+   163	
+   164	            // Link approved conversions
+   165	            $affiliate->conversions()
+   166	                ->where('status', ApprovedConversion::value())
+   167	                ->whereNull('affiliate_payout_id')
+   168	                ->update(['affiliate_payout_id' => $payout->id]);
+   169	
+   170	            // Create audit event
+   171	            $payout->events()->create([
+   172	                'to_status' => PendingPayout::value(),
+   173	                'notes' => 'Payout created via scheduled processing',
+   174	            ]);
+   175	        });
+   176	
+   177	        return 'processed';
+   178	    }
+   179	}
+### packages/customers/src/Console/Commands/RebuildSegmentsCommand.php
+     1	<?php
+     2	
+     3	declare(strict_types=1);
+     4	
+     5	namespace AIArmada\Customers\Console\Commands;
+     6	
+     7	use AIArmada\CommerceSupport\Support\OwnerContext;
+     8	use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+     9	use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+    10	use AIArmada\Customers\Models\Segment;
+    11	use AIArmada\Customers\Services\SegmentationService;
+    12	use Illuminate\Console\Command;
+    13	use Illuminate\Database\Eloquent\Model;
+    14	
+    15	/**
+    16	 * Artisan command to rebuild automatic customer segments.
+    17	 *
+    18	 * Usage:
+    19	 *   php artisan customers:rebuild-segments          # Rebuild all segments
+    20	 *   php artisan customers:rebuild-segments --segment=uuid  # Rebuild specific segment
+    21	 */
+    22	class RebuildSegmentsCommand extends Command
+    23	{
+    24	    protected $signature = 'customers:rebuild-segments
+    25	                            {--segment= : Specific segment UUID to rebuild}
+    26	                            {--owner-type= : Owner morph type (from morph map) for scoping}
+    27	                            {--owner-id= : Owner ID for scoping}
+    28	                            {--all-owners : Rebuild segments for every distinct owner (and global)}
+    29	                            {--dry-run : Show what would be done without making changes}';
+    30	
+    31	    protected $description = 'Rebuild automatic customer segment memberships';
+    32	
+    33	    public function handle(SegmentationService $service): int
+    34	    {
+    35	        $segmentId = $this->option('segment');
+    36	        $dryRun = $this->option('dry-run');
+    37	        $allOwners = (bool) $this->option('all-owners');
+    38	
+    39	        $owner = $this->resolveOwnerFromContextOrOptions();
+    40	
+    41	        if ($dryRun) {
+    42	            $this->components->warn('Running in dry-run mode. No changes will be made.');
+    43	        }
+    44	
+    45	        return OwnerContext::withOwner($owner, function () use ($segmentId, $service, $dryRun, $owner, $allOwners): int {
+    46	            if ($segmentId) {
+    47	                return $this->rebuildSingleSegment($service, $segmentId, $dryRun, $owner);
+    48	            }
+    49	
+    50	            return $this->rebuildAllSegments($service, $dryRun, $owner, $allOwners);
+    51	        });
+    52	    }
+    53	
+    54	    protected function rebuildSingleSegment(SegmentationService $service, string $segmentId, bool $dryRun, ?Model $owner): int
+    55	    {
+    56	        $segment = Segment::find($segmentId);
+    57	
+    58	        if (! $segment) {
+    59	            $this->components->error("Segment with ID '{$segmentId}' not found.");
+    60	
+    61	            return self::FAILURE;
+    62	        }
+    63	
+    64	        if (! $segment->is_automatic) {
+    65	            $this->components->warn("Segment '{$segment->name}' is manual and cannot be rebuilt automatically.");
+    66	
+    67	            return self::SUCCESS;
+    68	        }
+    69	
+    70	        if ($owner === null && $segment->owner_type !== null && $segment->owner_id !== null) {
+    71	            $this->components->error('Refusing to rebuild an owner-scoped segment without an owner context.');
+    72	            $this->components->warn('Pass --owner-type and --owner-id, or use --all-owners.');
+    73	
+    74	            return self::FAILURE;
+    75	        }
+    76	
+    77	        if ($owner !== null && ! $segment->belongsToOwner($owner)) {
+    78	            $this->components->error('Refusing to rebuild a segment outside the resolved owner context.');
+    79	
+    80	            return self::FAILURE;
+    81	        }
+    82	
+    83	        $this->components->info("Rebuilding segment: {$segment->name}");
+    84	
+    85	        if ($dryRun) {
+    86	            $matchCount = $segment->getMatchingCustomers()->count();
+    87	            $currentCount = $segment->customers()->count();
+    88	            $this->components->twoColumnDetail($segment->name, "{$matchCount} matching (currently {$currentCount})");
+    89	
+    90	            return self::SUCCESS;
+    91	        }
+    92	
+    93	        $count = $service->rebuildSegment($segment);
+    94	        $this->components->twoColumnDetail($segment->name, "{$count} customers");
+    95	        $this->components->success('Segment rebuilt successfully.');
+    96	
+    97	        return self::SUCCESS;
+    98	    }
+    99	
+   100	    protected function rebuildAllSegments(SegmentationService $service, bool $dryRun, ?Model $owner, bool $allOwners): int
+   101	    {
+   102	        if ($allOwners) {
+   103	            return $this->rebuildAllOwners($service, $dryRun);
+   104	        }
+   105	
+   106	        $segments = Segment::query()
+   107	            ->active()
+   108	            ->automatic()
+   109	            ->forOwner($owner, includeGlobal: false)
+   110	            ->get();
+   111	
+   112	        if ($segments->isEmpty()) {
+   113	            $this->components->info('No automatic segments found.');
+   114	
+   115	            return self::SUCCESS;
+   116	        }
+   117	
+   118	        $this->components->info("Rebuilding {$segments->count()} automatic segments...");
+   119	
+   120	        $results = [];
+   121	
+   122	        foreach ($segments as $segment) {
+   123	            if ($dryRun) {
+   124	                $matchCount = $segment->getMatchingCustomers()->count();
+   125	                $currentCount = $segment->customers()->count();
+   126	                $results[$segment->name] = "{$matchCount} matching (currently {$currentCount})";
+   127	            } else {
+   128	                $count = $service->rebuildSegment($segment);
+   129	                $results[$segment->name] = "{$count} customers";
+   130	            }
+   131	        }
+   132	
+   133	        $this->newLine();
+   134	        $this->components->bulletList(
+   135	            collect($results)->map(fn ($count, $name) => "{$name}: {$count}")->toArray()
+   136	        );
+   137	        $this->newLine();
+   138	
+   139	        if (! $dryRun) {
+   140	            $this->components->success('All segments rebuilt successfully.');
+   141	        }
+   142	
+   143	        return self::SUCCESS;
+   144	    }
+   145	
+   146	    private function rebuildAllOwners(SegmentationService $service, bool $dryRun): int
+   147	    {
+   148	        $columns = OwnerTupleColumns::forModelClass(Segment::class);
+   149	
+   150	        $owners = Segment::query()
+   151	            ->withoutOwnerScope()
+   152	            ->active()
+   153	            ->automatic()
+   154	            ->select([
+   155	                $columns->ownerTypeColumn . ' as owner_type',
+   156	                $columns->ownerIdColumn . ' as owner_id',
+   157	            ])
+   158	            ->distinct()
+   159	            ->get();
+   160	
+   161	        if ($owners->isEmpty()) {
+   162	            $this->components->info('No automatic segments found.');
+   163	
+   164	            return self::SUCCESS;
+   165	        }
+   166	
+   167	        $results = [];
+   168	
+   169	        foreach ($owners as $row) {
+   170	            $tuple = OwnerTupleParser::fromRow($row, new OwnerTupleColumns);
+   171	            $owner = $tuple->toOwnerModel();
+   172	
+   173	            /** @var string|null $ownerType */
+   174	            $ownerType = $tuple->owner_type;
+   175	            /** @var string|int|null $ownerId */
+   176	            $ownerId = $tuple->owner_id;
+   177	
+   178	            $label = $this->ownerLabel($ownerType, $ownerId);
+   179	
+   180	            $result = OwnerContext::withOwner($owner, function () use ($service, $dryRun, $owner): int {
+   181	                if ($dryRun) {
+   182	                    return Segment::query()
+   183	                        ->active()
+   184	                        ->automatic()
+   185	                        ->forOwner($owner, includeGlobal: false)
+   186	                        ->count();
+   187	                }
+   188	
+   189	                $rebuilt = $service->rebuildAllSegments($owner);
+   190	
+   191	                return array_sum($rebuilt);
+   192	            });
+   193	
+   194	            $results[$label] = $dryRun ? "{$result} segment(s)" : (string) $result;
+   195	        }
+   196	
+   197	        $this->newLine();
+   198	        $this->components->bulletList(
+   199	            collect($results)->map(fn ($count, $name) => "{$name}: {$count}")->toArray()
+   200	        );
+   201	        $this->newLine();
+   202	
+   203	        if (! $dryRun) {
+   204	            $this->components->success('All segments rebuilt successfully.');
+   205	        }
+   206	
+   207	        return self::SUCCESS;
+   208	    }
+   209	
+   210	    private function resolveOwnerFromContextOrOptions(): ?Model
+   211	    {
+   212	        $owner = OwnerContext::resolve();
+   213	        if ($owner !== null) {
+   214	            return $owner;
+   215	        }
+   216	
+   217	        $ownerType = $this->option('owner-type');
+   218	        $ownerId = $this->option('owner-id');
+   219	
+   220	        if (! $ownerType || ! $ownerId) {
+   221	            return null;
+   222	        }
+   223	
+   224	        return $this->resolveOwnerFromTypeAndId((string) $ownerType, (string) $ownerId);
+   225	    }
+   226	
+   227	    private function resolveOwnerFromTypeAndId(string $ownerType, string $ownerId): ?Model
+   228	    {
+   229	        return OwnerContext::fromTypeAndId($ownerType, $ownerId);
+   230	    }
+   231	
+   232	    private function ownerLabel(?string $ownerType, string | int | null $ownerId): string
+   233	    {
+   234	        if ($ownerType === null || $ownerId === null) {
+   235	            return 'global';
+   236	        }
+   237	
+   238	        return "{$ownerType}:{$ownerId}";
+   239	    }
+   240	}
+### packages/events/src/Console/Commands/FinalizeEventOrdersCommand.php
+     1	<?php
+     2	
+     3	declare(strict_types=1);
+     4	
+     5	namespace AIArmada\Events\Console\Commands;
+     6	
+     7	use AIArmada\Events\Actions\FinalizeOccurredEventOrdersAction;
+     8	use AIArmada\Events\Models\EventOccurrence;
+     9	use Illuminate\Console\Command;
+    10	
+    11	final class FinalizeEventOrdersCommand extends Command
+    12	{
+    13	    protected $signature = 'events:finalize-orders
+    14	        {--occurrence= : The occurrence ID to finalize}
+    15	        {--dry-run : Perform a dry run without making changes}';
+    16	
+    17	    protected $description = 'Finalize orders for completed event occurrences';
+    18	
+    19	    public function handle(FinalizeOccurredEventOrdersAction $action): int
+    20	    {
+    21	        $occurrenceId = $this->option('occurrence');
+    22	        $dryRun = (bool) $this->option('dry-run');
+    23	
+    24	        $query = EventOccurrence::query()->where('status', EventOccurrence::COMPLETED);
+    25	
+    26	        if ($occurrenceId !== null) {
+    27	            $query->whereKey($occurrenceId);
+    28	        }
+    29	
+    30	        $occurrences = $query->get();
+    31	
+    32	        if ($occurrences->isEmpty()) {
+    33	            $this->info('No completed occurrences found.');
+    34	
+    35	            return self::SUCCESS;
+    36	        }
+    37	
+    38	        $this->info(sprintf('Found %d completed occurrence(s).', $occurrences->count()));
+    39	
+    40	        foreach ($occurrences as $occurrence) {
+    41	            if ($dryRun) {
+    42	                $this->line(sprintf('[DRY RUN] Would finalize orders for occurrence %s', $occurrence->getKey()));
+    43	
+    44	                continue;
+    45	            }
+    46	
+    47	            $action->handle($occurrence);
+    48	
+    49	            $this->line(sprintf('Finalized orders for occurrence %s', $occurrence->getKey()));
+    50	        }
+    51	
+    52	        return self::SUCCESS;
+    53	    }
+    54	}
+### packages/growth/src/Console/Commands/RecomputeExperimentAssignmentsCommand.php
+     1	<?php
+     2	
+     3	declare(strict_types=1);
+     4	
+     5	namespace AIArmada\Growth\Console\Commands;
+     6	
+     7	use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+     8	use AIArmada\Growth\Models\Assignment;
+     9	use Illuminate\Console\Command;
+    10	use Illuminate\Support\Facades\Log;
+    11	
+    12	final class RecomputeExperimentAssignmentsCommand extends Command
+    13	{
+    14	    protected $signature = 'growth:recompute-assignments
+    15	                          {--dry-run : Dry run without persisting changes}';
+    16	
+    17	    protected $description = 'Recompute experiment assignments per owner';
+    18	
+    19	    public function handle(): int
+    20	    {
+    21	        $dryRun = (bool) $this->option('dry-run');
+    22	
+    23	        $this->info($dryRun ? 'DRY RUN: Recomputing experiment assignments...' : 'Recomputing experiment assignments...');
+    24	
+    25	        $runner = new OwnerBatchRunner(Assignment::class, [
+    26	            'enabled' => 'commerce-support.owner.enabled',
+    27	        ]);
+    28	
+    29	        $total = $runner->forEach(function () use ($dryRun): array {
+    30	            $assignments = Assignment::query()
+    31	                ->whereNull('variant_id')
+    32	                ->orWhere('variant_id', '')
+    33	                ->get();
+    34	
+    35	            $recomputed = 0;
+    36	
+    37	            foreach ($assignments as $assignment) {
+    38	                if (! $dryRun) {
+    39	                    $experiment = $assignment->experiment;
+    40	                    if ($experiment !== null && $experiment->variants()->exists()) {
+    41	                        $variant = $experiment->variants()->inRandomOrder()->first();
+    42	                        if ($variant !== null) {
+    43	                            $assignment->update(['variant_id' => $variant->id]);
+    44	                        }
+    45	                    }
+    46	                }
+    47	
+    48	                $recomputed++;
+    49	            }
+    50	
+    51	            return ['recomputed' => $recomputed];
+    52	        });
+    53	
+    54	        $totalRecomputed = collect($total)->sum('recomputed');
+    55	
+    56	        $this->info("Total assignments processed: {$totalRecomputed}");
+    57	
+    58	        Log::info('Experiment assignments recomputed', [
+    59	            'total' => $totalRecomputed,
+    60	            'dry_run' => $dryRun,
+    61	        ]);
+    62	
+    63	        return self::SUCCESS;
+    64	    }
+    65	}
+### packages/growth/src/Console/Commands/ArchiveExperimentsCommand.php
+     1	<?php
+     2	
+     3	declare(strict_types=1);
+     4	
+     5	namespace AIArmada\Growth\Console\Commands;
+     6	
+     7	use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+     8	use AIArmada\Growth\Enums\ExperimentStatus;
+     9	use AIArmada\Growth\Models\Experiment;
+    10	use Carbon\CarbonImmutable;
+    11	use Illuminate\Console\Command;
+    12	use Illuminate\Support\Facades\Log;
+    13	
+    14	final class ArchiveExperimentsCommand extends Command
+    15	{
+    16	    protected $signature = 'growth:archive-experiments
+    17	                          {--older-than=90 : Archive experiments inactive for N days}
+    18	                          {--dry-run : Dry run without persisting changes}';
+    19	
+    20	    protected $description = 'Archive experiments that have been inactive beyond the threshold';
+    21	
+    22	    public function handle(): int
+    23	    {
+    24	        $dryRun = (bool) $this->option('dry-run');
+    25	        $olderThanDays = (int) $this->option('older-than');
+    26	        $threshold = CarbonImmutable::now()->subDays($olderThanDays);
+    27	
+    28	        $this->info($dryRun ? 'DRY RUN: Archiving experiments...' : 'Archiving experiments...');
+    29	        $this->line("Threshold: {$threshold->toDateString()}");
+    30	
+    31	        $runner = new OwnerBatchRunner(Experiment::class, [
+    32	            'enabled' => 'commerce-support.owner.enabled',
+    33	        ]);
+    34	
+    35	        $total = $runner->forEach(function () use ($threshold, $dryRun): array {
+    36	            $experiments = Experiment::query()
+    37	                ->whereIn('status', [
+    38	                    ExperimentStatus::Concluded->value,
+    39	                ])
+    40	                ->where('updated_at', '<', $threshold)
+    41	                ->get();
+    42	
+    43	            $archived = 0;
+    44	
+    45	            foreach ($experiments as $experiment) {
+    46	                if (! $dryRun) {
+    47	                    $experiment->update([
+    48	                        'status' => ExperimentStatus::Archived,
+    49	                        'archived_at' => CarbonImmutable::now(),
+    50	                    ]);
+    51	                }
+    52	
+    53	                $archived++;
+    54	            }
+    55	
+    56	            return ['archived' => $archived];
+    57	        });
+    58	
+    59	        $totalArchived = collect($total)->sum('archived');
+    60	
+    61	        $this->info("Experiments archived: {$totalArchived}");
+    62	
+    63	        Log::info('Experiments archived', [
+    64	            'total' => $totalArchived,
+    65	            'older_than_days' => $olderThanDays,
+    66	            'dry_run' => $dryRun,
+    67	        ]);
+    68	
+    69	        return self::SUCCESS;
+    70	    }
+    71	}
+### packages/affiliate-network/src/Console/Commands/ArchiveExpiredOffersCommand.php
+     1	<?php
+     2	
+     3	declare(strict_types=1);
+     4	
+     5	namespace AIArmada\AffiliateNetwork\Console\Commands;
+     6	
+     7	use AIArmada\AffiliateNetwork\Enums\OfferStatus;
+     8	use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+     9	use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+    10	use Carbon\CarbonImmutable;
+    11	use Illuminate\Console\Command;
+    12	use Illuminate\Support\Facades\Log;
+    13	
+    14	final class ArchiveExpiredOffersCommand extends Command
+    15	{
+    16	    protected $signature = 'affiliate-network:archive-expired
+    17	                          {--older-than=90 : Archive offers ended N days ago}
+    18	                          {--dry-run : Dry run without persisting changes}';
+    19	
+    20	    protected $description = 'Archive expired affiliate network offers';
+    21	
+    22	    public function handle(): int
+    23	    {
+    24	        $dryRun = (bool) $this->option('dry-run');
+    25	        $olderThanDays = (int) $this->option('older-than');
+    26	        $threshold = CarbonImmutable::now()->subDays($olderThanDays);
+    27	
+    28	        $this->info($dryRun ? 'DRY RUN: Archiving expired offers...' : 'Archiving expired offers...');
+    29	
+    30	        $runner = new OwnerBatchRunner(AffiliateOffer::class, [
+    31	            'enabled' => 'affiliate-network.owner.enabled',
+    32	        ]);
+    33	
+    34	        $total = $runner->forEach(function () use ($threshold, $dryRun): array {
+    35	            $expired = AffiliateOffer::query()
+    36	                ->where('ends_at', '<', $threshold)
+    37	                ->where('status', OfferStatus::Published)
+    38	                ->get();
+    39	
+    40	            $archived = 0;
+    41	
+    42	            foreach ($expired as $offer) {
+    43	                if (! $dryRun) {
+    44	                    $offer->update(['status' => OfferStatus::Archived]);
+    45	                }
+    46	
+    47	                $archived++;
+    48	            }
+    49	
+    50	            return ['archived' => $archived];
+    51	        });
+    52	
+    53	        $totalArchived = collect($total)->sum('archived');
+    54	
+    55	        $this->info("Offers archived: {$totalArchived}");
+    56	
+    57	        Log::info('Expired offers archived', [
+    58	            'total' => $totalArchived,
+    59	            'older_than_days' => $olderThanDays,
+    60	            'dry_run' => $dryRun,
+    61	        ]);
+    62	
+    63	        return self::SUCCESS;
+    64	    }
+    65	}

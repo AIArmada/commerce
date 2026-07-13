@@ -6,7 +6,6 @@ namespace AIArmada\FilamentTax\Resources\TaxRateResource\Tables;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Tax\Models\TaxRate;
-use AIArmada\Tax\Support\TaxOwnerScope;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -87,7 +86,7 @@ final class TaxRatesTable
                     ->relationship(
                         'zone',
                         'name',
-                        fn (Builder $query): Builder => TaxOwnerScope::applyToOwnedQuery($query),
+                        fn (Builder $query): Builder => $query,
                     ),
 
                 SelectFilter::make('tax_class')

@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Promotions\Actions\IssueVouchersFromPromotion;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Promotions\Support\PromotionsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -91,7 +90,7 @@ final class IssuePromotionVouchersFromListAction extends Action
      */
     private static function promotionOptions(): array
     {
-        return PromotionsOwnerScope::applyToOwnedQuery(Promotion::query())
+        return Promotion::query()
             ->orderBy('name')
             ->get(['id', 'name', 'code'])
             ->mapWithKeys(static fn (Promotion $promotion): array => [
@@ -111,7 +110,7 @@ final class IssuePromotionVouchersFromListAction extends Action
 
     private function resolvePromotion(string $promotionId): Promotion
     {
-        if (! PromotionsOwnerScope::isEnabled()) {
+        if (! config('promotions.owner.enabled', true)) {
             $promotion = Promotion::query()->find($promotionId);
 
             if (! $promotion instanceof Promotion) {
@@ -125,7 +124,7 @@ final class IssuePromotionVouchersFromListAction extends Action
         $promotion = OwnerWriteGuard::findOrFailForOwner(
             Promotion::class,
             $promotionId,
-            PromotionsOwnerScope::resolveOwner(),
+            OwnerContext::resolve(),
             includeGlobal: false,
             message: 'Promotion is not accessible in the current owner scope.',
         );

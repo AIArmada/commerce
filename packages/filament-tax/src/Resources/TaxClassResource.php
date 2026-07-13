@@ -8,7 +8,6 @@ use AIArmada\FilamentTax\Resources\TaxClassResource\Pages;
 use AIArmada\FilamentTax\Resources\TaxClassResource\Schemas\TaxClassForm;
 use AIArmada\FilamentTax\Resources\TaxClassResource\Tables\TaxClassesTable;
 use AIArmada\Tax\Models\TaxClass;
-use AIArmada\Tax\Support\TaxOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -42,7 +41,7 @@ final class TaxClassResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @phpstan-ignore return.type (template type not preserved through helper) */
-        return TaxOwnerScope::applyToOwnedQuery(parent::getEloquentQuery());
+        return parent::getEloquentQuery();
     }
 
     public static function form(Schema $schema): Schema

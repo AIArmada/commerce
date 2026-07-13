@@ -14,7 +14,6 @@ use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionFor
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionInfolist;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Tables\PromotionsTable;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Promotions\Support\PromotionsOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -127,10 +126,7 @@ final class PromotionResource extends Resource
         /** @var Builder<Promotion> $query */
         $query = parent::getEloquentQuery();
 
-        /** @var Builder<Promotion> $scoped */
-        $scoped = PromotionsOwnerScope::applyToOwnedQuery($query);
-
-        return $scoped;
+        return $query;
     }
 
     public static function getNavigationBadgeColor(): string

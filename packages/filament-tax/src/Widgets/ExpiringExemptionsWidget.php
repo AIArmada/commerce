@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Widgets;
 
 use AIArmada\Tax\Models\TaxExemption;
-use AIArmada\Tax\Support\TaxOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -57,7 +56,7 @@ final class ExpiringExemptionsWidget extends BaseWidget
     {
         $now = CarbonImmutable::now();
 
-        return TaxOwnerScope::applyToOwnedQuery(TaxExemption::query())
+        return TaxExemption::query()
             ->whereNotNull('expires_at')
             ->where('expires_at', '<=', $now->addDays(30))
             ->where('expires_at', '>=', $now)

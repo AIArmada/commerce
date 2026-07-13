@@ -7,7 +7,6 @@ namespace AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers;
 use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\RatesRelationManager\Schemas\RatesForm;
 use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\RatesRelationManager\Tables\RatesTable;
 use AIArmada\Tax\Models\TaxRate;
-use AIArmada\Tax\Support\TaxOwnerScope;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -32,7 +31,7 @@ final class RatesRelationManager extends RelationManager
         /** @var Builder<TaxRate> $query */
         $query = parent::getTableQuery();
 
-        return TaxOwnerScope::applyToOwnedQuery($query);
+        return $query;
     }
 
     public function table(Table $table): Table

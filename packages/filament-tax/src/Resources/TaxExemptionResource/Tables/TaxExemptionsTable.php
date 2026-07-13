@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentTax\Actions\DownloadTaxExemptionCertificateAction;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\States\TaxExemptionState\TaxExemptionState;
-use AIArmada\Tax\Support\TaxOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -107,7 +106,7 @@ final class TaxExemptionsTable
                     ->relationship(
                         'taxZone',
                         'name',
-                        fn (Builder $query): Builder => TaxOwnerScope::applyToOwnedQuery($query),
+                        fn (Builder $query): Builder => $query,
                     ),
 
                 SelectFilter::make('status')

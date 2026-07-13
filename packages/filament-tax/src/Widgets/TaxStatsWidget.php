@@ -8,7 +8,6 @@ use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
-use AIArmada\Tax\Support\TaxOwnerScope;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
@@ -48,7 +47,7 @@ final class TaxStatsWidget extends BaseWidget
 
     /**
      * Fetch all stats in a single optimized query.
-     * All queries are scoped by owner via TaxOwnerScope to prevent cross-tenant data leakage.
+     * All queries are scoped by owner via OwnerScope to prevent cross-tenant data leakage.
      *
      * @return array{zones: int, rates: int, classes: int, exemptions: int}
      */
@@ -57,19 +56,19 @@ final class TaxStatsWidget extends BaseWidget
         $now = now();
 
         // All queries scoped by owner to ensure multitenancy safety
-        $zoneCount = TaxOwnerScope::applyToOwnedQuery(TaxZone::query())
+        $zoneCount = TaxZone::query()
             ->where('is_active', 1)
             ->count();
 
-        $rateCount = TaxOwnerScope::applyToOwnedQuery(TaxRate::query())
+        $rateCount = TaxRate::query()
             ->where('is_active', 1)
             ->count();
 
-        $classCount = TaxOwnerScope::applyToOwnedQuery(TaxClass::query())
+        $classCount = TaxClass::query()
             ->where('is_active', 1)
             ->count();
 
-        $exemptionCount = TaxOwnerScope::applyToOwnedQuery(TaxExemption::query())
+        $exemptionCount = TaxExemption::query()
             ->where('status', 'approved')
             ->where(function (Builder $builder) use ($now): void {
                 $builder
