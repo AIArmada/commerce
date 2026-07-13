@@ -7,9 +7,9 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
@@ -72,8 +72,8 @@ it('processes a payout via the record action', function (): void {
 
     $payout->refresh();
 
-    expect($payout->status)->toBeInstanceOf(CompletedPayout::class)
-        ->and($payout->paid_at)->not->toBeNull()
+    expect($payout->status)->toBeInstanceOf(ProcessingPayout::class)
+        ->and($payout->paid_at)->toBeNull()
         ->and($payout->external_reference)->not->toBeNull();
 
     expect($payout->events()->count())->toBeGreaterThanOrEqual(1);
@@ -127,8 +127,8 @@ it('processes a payout when user only has affiliate.payout permission', function
 
     $payout->refresh();
 
-    expect($payout->status)->toBeInstanceOf(CompletedPayout::class)
-        ->and($payout->paid_at)->not->toBeNull()
+    expect($payout->status)->toBeInstanceOf(ProcessingPayout::class)
+        ->and($payout->paid_at)->toBeNull()
         ->and($payout->external_reference)->not->toBeNull();
 });
 
@@ -291,7 +291,7 @@ it('executes batch processing bulk action', function (): void {
     $payoutA->refresh();
     $payoutB->refresh();
 
-    expect($payoutA->status)->toBeInstanceOf(CompletedPayout::class)
+    expect($payoutA->status)->toBeInstanceOf(ProcessingPayout::class)
         ->and($payoutB->status)->toBeInstanceOf(FailedPayout::class);
 });
 

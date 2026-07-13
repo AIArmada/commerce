@@ -38,11 +38,11 @@ it('computes an aging summary across buckets', function (): void {
     $summary = $page->getAgingSummary();
 
     expect($summary['current']['count'])->toBe(1);
-    expect((float) $summary['current']['amount_minor'])->toBe(100);
+    expect($summary['current']['amount_minor'])->toBe(100);
     expect($summary['1-30']['count'])->toBe(1);
-    expect((float) $summary['1-30']['amount_minor'])->toBe(200);
+    expect($summary['1-30']['amount_minor'])->toBe(200);
     expect($summary['31-60']['count'])->toBe(1);
-    expect((float) $summary['31-60']['amount_minor'])->toBe(300);
+    expect($summary['31-60']['amount_minor'])->toBe(300);
 });
 
 it('scopes the aging summary to the current owner', function (): void {
@@ -76,7 +76,7 @@ it('scopes the aging summary to the current owner', function (): void {
     $summary = OwnerContext::withOwner($ownerA, fn (): array => app(AgingReportPage::class)->getAgingSummary());
 
     expect($summary['current']['count'])->toBe(1);
-    expect((float) $summary['current']['amount_minor'])->toBe(100);
+    expect($summary['current']['amount_minor'])->toBe(100);
 });
 
 it('counts pending approvals for the current user', function (): void {

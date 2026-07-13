@@ -67,6 +67,6 @@ test('keeps unique slug suffixes within configured maximum length', function ():
 
     $slug = SlugGenerator::generate($reference, 'title', maxLength: 12);
 
-    expect($slug)->toStartWith('a-very-long-')
+    expect($slug)->toBe('a-very-lon-1')
         ->and(mb_strlen($slug))->toBeLessThanOrEqual(12);
 });

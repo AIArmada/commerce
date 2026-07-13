@@ -35,7 +35,7 @@ return new class extends Migration
 
             $table->index('is_default', $templatesTable . '_is_default_index');
             $table->index('doc_type', $templatesTable . '_doc_type_index');
-            $table->unique(['owner_type', 'owner_id', 'slug'], $templatesTable . '_owner_slug_unique');
+            $table->unique(['owner_scope', 'slug'], $templatesTable . '_owner_slug_unique');
         });
 
         Schema::create($docsTable, function (Blueprint $table) use ($docsTable): void {

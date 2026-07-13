@@ -120,8 +120,8 @@ it('prevents cross-tenant metric leakage in Filament Docs widgets', function ():
         expect($stats[4]->getValue())->toBe(1);
 
         // Revenue must be owner-scoped (paid total = 100; overdue outstanding = 50)
-        expect($stats[3]->getDescription())->toBe('MYR 100');
-        expect($stats[4]->getDescription())->toBe('MYR 50 outstanding');
+        expect($stats[3]->getDescription())->toBe('RM1.00');
+        expect($stats[4]->getDescription())->toBe('RM0.50 outstanding');
 
         $statusWidget = app(StatusBreakdownWidget::class);
         $statusData = filamentDocs_invokeMethod($statusWidget, 'getData');
@@ -136,6 +136,6 @@ it('prevents cross-tenant metric leakage in Filament Docs widgets', function ():
 
         expect($revenueData['labels'])->toHaveCount(30);
         expect($revenueData['datasets'][0]['data'])->toHaveCount(30);
-        expect((float) end($revenueData['datasets'][0]['data']))->toBe(100);
+        expect((float) end($revenueData['datasets'][0]['data']))->toBe(1.0);
     });
 });

@@ -880,11 +880,12 @@ abstract class TestCase extends Orchestra
         Schema::create('products', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->text('description')->nullable();
             $table->text('short_description')->nullable();
-            $table->string('sku')->nullable()->unique();
+            $table->string('sku')->nullable();
             $table->string('barcode')->nullable();
             $table->string('type')->default('simple');
             $table->string('status')->default('draft');
@@ -911,12 +912,16 @@ abstract class TestCase extends Orchestra
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
+            $table->unique(['owner_scope', 'slug']);
+            $table->unique(['owner_scope', 'sku']);
         });
 
         Schema::create('product_categories', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->text('description')->nullable();
             $table->uuid('parent_id')->nullable();
             $table->integer('position')->default(0);
@@ -929,17 +934,19 @@ abstract class TestCase extends Orchestra
             $table->string('meta_title')->nullable();
             $table->text('meta_description')->nullable();
             $table->json('metadata')->nullable();
-            $table->nullableUuidMorphs('owner');
+            $table->string('parent_scope', 64)->default('root');
             $table->timestamps();
             $table->softDeletes();
+            $table->unique(['owner_scope', 'parent_scope', 'slug']);
             $table->index(['is_visible', 'position']);
         });
 
         Schema::create('product_collections', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->text('description')->nullable();
             $table->string('type')->default('manual');
             $table->json('conditions')->nullable();
@@ -958,6 +965,7 @@ abstract class TestCase extends Orchestra
         Schema::create('product_options', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
             $table->uuid('product_id');
             $table->string('name');
             $table->string('display_name')->nullable();
@@ -973,6 +981,7 @@ abstract class TestCase extends Orchestra
         Schema::create('product_option_values', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
             $table->uuid('option_id');
             $table->string('name');
             $table->unsignedInteger('position')->default(0);
@@ -985,6 +994,7 @@ abstract class TestCase extends Orchestra
         Schema::create('product_variants', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
             $table->uuid('product_id');
             $table->string('name')->nullable();
             $table->string('sku')->nullable()->index();
@@ -1033,18 +1043,21 @@ abstract class TestCase extends Orchestra
         Schema::create('product_attribute_groups', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
             $table->string('name');
-            $table->string('code')->unique();
+            $table->string('code');
             $table->text('description')->nullable();
             $table->unsignedInteger('position')->default(0);
             $table->boolean('is_visible')->default(true);
             $table->timestamps();
+            $table->unique(['owner_scope', 'code']);
         });
 
         Schema::create('product_attributes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
-            $table->string('code')->unique();
+            $table->string('owner_scope', 64)->default('global');
+            $table->string('code');
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('type')->default('text');
@@ -1062,11 +1075,13 @@ abstract class TestCase extends Orchestra
             $table->string('help_text')->nullable();
             $table->text('default_value')->nullable();
             $table->timestamps();
+            $table->unique(['owner_scope', 'code']);
         });
 
         Schema::create('product_attribute_values', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
             $table->foreignUuid('attribute_id');
             $table->uuidMorphs('attributable');
             $table->text('value')->nullable();
@@ -1078,12 +1093,14 @@ abstract class TestCase extends Orchestra
         Schema::create('product_attribute_sets', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
             $table->string('name');
-            $table->string('code')->unique();
+            $table->string('code');
             $table->text('description')->nullable();
             $table->boolean('is_default')->default(false);
             $table->unsignedInteger('position')->default(0);
             $table->timestamps();
+            $table->unique(['owner_scope', 'code']);
         });
 
         // Attribute pivot tables

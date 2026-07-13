@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Actions;
 
 use AIArmada\Affiliates\Data\PayoutResult;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
@@ -29,8 +30,31 @@ final class ProcessAffiliatePayout
             $claim = DB::transaction(function () use ($payout): array {
                 $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->find($payout->id);
 
-                if (! $locked instanceof AffiliatePayout || ! $locked->operation instanceof AffiliatePayoutOperation) {
+                if (! $locked instanceof AffiliatePayout) {
                     return ['error' => PayoutResult::failure('The payout operation is missing.', 'MISSING_PAYOUT_OPERATION')];
+                }
+
+                if (! $locked->operation instanceof AffiliatePayoutOperation) {
+                    $affiliate = $locked->affiliate;
+
+                    if (! $affiliate instanceof Affiliate) {
+                        return ['error' => PayoutResult::failure('The payout affiliate is missing.', 'MISSING_PAYOUT_AFFILIATE')];
+                    }
+
+                    $operation = AffiliatePayoutOperation::query()->create([
+                        'affiliate_id' => $affiliate->id,
+                        'affiliate_payout_id' => $locked->id,
+                        'operation_key' => 'legacy:' . $locked->id,
+                        'status' => 'claimed',
+                        'amount_minor' => $locked->total_minor,
+                        'currency' => mb_strtoupper($locked->currency),
+                        'claimed_at' => now(),
+                        'owner_type' => $locked->owner_type ?? $affiliate->owner_type,
+                        'owner_id' => $locked->owner_id ?? $affiliate->owner_id,
+                    ]);
+
+                    $locked->forceFill(['affiliate_payout_operation_id' => $operation->id])->save();
+                    $locked->setRelation('operation', $operation);
                 }
 
                 if ($locked->status->equals(CompletedPayout::class)) {
@@ -46,6 +70,11 @@ final class ProcessAffiliatePayout
                 if ($method === null) {
                     $locked->forceFill(['status' => FailedPayout::class, 'failed_at' => now()])->save();
                     $locked->operation->forceFill(['status' => 'failed', 'last_error_code' => 'NO_DEFAULT_PAYOUT_METHOD'])->save();
+                    $locked->events()->create([
+                        'from_status' => PendingPayout::value(),
+                        'to_status' => FailedPayout::value(),
+                        'notes' => 'No default payout method is configured.',
+                    ]);
 
                     return ['error' => PayoutResult::failure('No default payout method is configured.', 'NO_DEFAULT_PAYOUT_METHOD'), 'release' => true];
                 }

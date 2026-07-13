@@ -10,13 +10,17 @@ use Illuminate\Database\QueryException;
 
 it('rejects duplicate global product slugs and skus', function (): void {
     OwnerContext::withOwner(null, function (): void {
-        Product::query()->create(['name' => 'Global One', 'slug' => 'shared-global', 'sku' => 'GLOBAL-SKU']);
+        Product::withoutEvents(static fn (): Product => Product::query()->create([
+            'name' => 'Global One',
+            'slug' => 'shared-global',
+            'sku' => 'GLOBAL-SKU',
+        ]));
 
-        expect(fn () => Product::query()->create([
+        expect(fn () => Product::withoutEvents(static fn (): Product => Product::query()->create([
             'name' => 'Global Two',
             'slug' => 'shared-global',
             'sku' => 'GLOBAL-SKU-2',
-        ]))->toThrow(QueryException::class);
+        ])))->toThrow(QueryException::class);
     });
 });
 

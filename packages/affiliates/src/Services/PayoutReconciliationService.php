@@ -48,6 +48,7 @@ final class PayoutReconciliationService
                 'reconciled_at' => now()->toIso8601String(),
                 'provider_status' => $providerStatus,
                 'external_reference' => $reference,
+                'external_data' => $externalData === [] ? null : $externalData,
             ], static fn (mixed $value): bool => $value !== null && $value !== ''));
 
             $locked->forceFill([
@@ -128,8 +129,10 @@ final class PayoutReconciliationService
     {
         return AffiliatePayout::query()
             ->whereIn('status', [ProcessingPayout::value(), PendingPayout::value()])
-            ->whereHas('operation', static function ($query): void {
-                $query->whereIn('status', ['submitting', 'submitted', 'unknown']);
+            ->where(static function ($query): void {
+                $query->whereHas('operation', static function ($operationQuery): void {
+                    $operationQuery->whereIn('status', ['submitting', 'submitted', 'unknown']);
+                })->orWhereNotNull('external_reference');
             })
             ->where('updated_at', '<=', now()->subMinutes(5))
             ->get();

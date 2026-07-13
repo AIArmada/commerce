@@ -80,7 +80,7 @@ it('records HTTP 500 as a failed attempt and duplicate successful jobs are idemp
     $delivery = SignalAlertDelivery::query()->withoutOwnerScope()->where('signal_alert_log_id', $log->id)->firstOrFail();
     $job = new DispatchSignalAlertDelivery($delivery->id, $delivery->owner_type, $delivery->owner_id);
 
-    Http::fake(['*' => Http::response([], 500)]);
+    Http::fakeSequence()->push([], 500)->push([], 204);
     expect(fn () => $job->handle())->toThrow(RuntimeException::class);
 
     $delivery->refresh();
@@ -88,14 +88,13 @@ it('records HTTP 500 as a failed attempt and duplicate successful jobs are idemp
         ->and($delivery->response_status)->toBeNull()
         ->and($delivery->last_error_code)->toBe('http_500');
 
-    Http::fake(['*' => Http::response([], 204)]);
     $job->handle();
     $job->handle();
 
     $delivery->refresh();
     expect($delivery->status)->toBe('sent')
         ->and($delivery->attempt_count)->toBe(2);
-    Http::assertSentCount(1);
+    Http::assertSentCount(2);
 });
 
 it('represents partial destination success independently', function (): void {

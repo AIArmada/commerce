@@ -7,8 +7,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
@@ -70,8 +70,8 @@ it('processes a payout via the queue widget action', function (): void {
 
     $payout->refresh();
 
-    expect($payout->status)->toBeInstanceOf(CompletedPayout::class)
-        ->and($payout->paid_at)->not->toBeNull()
+    expect($payout->status)->toBeInstanceOf(ProcessingPayout::class)
+        ->and($payout->paid_at)->toBeNull()
         ->and($payout->external_reference)->not->toBeNull();
 
     expect($payout->events()->count())->toBeGreaterThanOrEqual(1);

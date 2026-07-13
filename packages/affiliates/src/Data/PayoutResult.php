@@ -30,12 +30,12 @@ class PayoutResult extends Data
     /** @param array<string, scalar|null> $metadata */
     public static function success(string $externalReference, array $metadata = []): self
     {
-        return new self(true, $externalReference, metadata: array_merge($metadata, ['status' => 'completed']));
+        return new self(true, $externalReference, metadata: $metadata);
     }
 
     public static function failure(string $reason = 'The payout provider rejected the request.', ?string $code = null): self
     {
-        return new self(false, failureReason: $reason, failureCode: $code ?? 'PROVIDER_REJECTED', metadata: ['status' => 'failed']);
+        return new self(false, failureReason: $reason, failureCode: $code);
     }
 
     /** @param array<string, scalar|null> $metadata */
