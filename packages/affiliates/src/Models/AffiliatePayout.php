@@ -42,7 +42,7 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read int $amount_minor Alias for total_minor
- * @property-read string|null $external_reference From metadata
+ * @property string|null $external_reference From metadata
  * @property-read string|null $notes From metadata
  * @property-read Affiliate|null $affiliate Alias for payee when payee is an Affiliate
  * @property-read Model|null $payee
@@ -215,7 +215,7 @@ class AffiliatePayout extends Model implements Auditable
     /**
      * Get external reference from metadata.
      *
-     * @return Attribute<string|null, never>
+     * @return Attribute<string|null, mixed>
      */
     protected function externalReference(): Attribute
     {

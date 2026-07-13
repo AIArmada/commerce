@@ -95,7 +95,7 @@ final class CreateChipSubscription
             $effectiveRecurringToken = $recurringToken ?? $owner->defaultPaymentMethod()?->id();
 
             if (is_string($effectiveRecurringToken) && $effectiveRecurringToken !== '') {
-                $subscription->assignRecurringToken($effectiveRecurringToken);
+                $subscription->setRecurringToken($effectiveRecurringToken);
             }
 
             $subscription->save();

@@ -52,6 +52,9 @@ class RenewalAttempt extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Subscription, $this>
+     */
     public function subscription(): BelongsTo
     {
         return $this->belongsTo(Subscription::class, 'subscription_id');

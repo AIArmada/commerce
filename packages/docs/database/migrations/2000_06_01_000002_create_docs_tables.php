@@ -23,6 +23,7 @@ return new class extends Migration
             $jsonType = (string) commerce_json_column_type('docs', 'jsonb');
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope', 64)->default('global');
             $table->string('name');
             $table->string('slug');
             $table->text('description')->nullable();
@@ -53,10 +54,10 @@ return new class extends Migration
             $table->timestampTz('cancelled_at')->nullable();
             $table->timestampTz('refunded_at')->nullable();
             $table->timestampTz('overdue_at')->nullable();
-            $table->decimal('subtotal', 15, 2)->default(0);
-            $table->decimal('tax_amount', 15, 2)->default(0);
-            $table->decimal('discount_amount', 15, 2)->default(0);
-            $table->decimal('total', 15, 2)->default(0);
+            $table->integer('subtotal_minor')->default(0);
+            $table->integer('tax_amount_minor')->default(0);
+            $table->integer('discount_amount_minor')->default(0);
+            $table->integer('total_minor')->default(0);
             $table->string('currency', 3)->default('MYR');
             $table->{$jsonType}('body')->nullable();
             $table->text('notes')->nullable();

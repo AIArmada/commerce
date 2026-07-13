@@ -29,7 +29,7 @@ final class PayoutReconciliationService
             return false;
         }
 
-        $changed = DB::transaction(function () use ($payout, $statusClass, $externalData): bool {
+        $changed = DB::transaction(function () use ($payout, $statusClass, $externalData, $externalStatus): bool {
             $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->find($payout->id);
 
             if (! $locked instanceof AffiliatePayout || $locked->status->equals($statusClass)) {

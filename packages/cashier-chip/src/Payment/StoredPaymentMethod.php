@@ -28,6 +28,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 final class StoredPaymentMethod extends Model
 {
+    public function recurringToken(): string
+    {
+        return $this->recurring_token;
+    }
+
     use HasOwner {
         scopeForOwner as private scopeForOwnerUsingTrait;
     }

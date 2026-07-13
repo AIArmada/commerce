@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Docs\Models\Doc;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;

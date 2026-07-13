@@ -9,7 +9,30 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $affiliate_id
+ * @property string|null $affiliate_payout_id
+ * @property string $operation_key
+ * @property string $status
+ * @property int $amount_minor
+ * @property string $currency
+ * @property int|null $payout_sequence
+ * @property string|null $provider_reference
+ * @property string|null $last_error_code
+ * @property Carbon $claimed_at
+ * @property Carbon|null $lease_expires_at
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $funds_released_at
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Affiliate|null $affiliate
+ * @property-read AffiliatePayout|null $payout
+ */
 final class AffiliatePayoutOperation extends Model
 {
     use HasOwner;
