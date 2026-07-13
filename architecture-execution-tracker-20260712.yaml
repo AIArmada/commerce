@@ -1296,9 +1296,9 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/design-checkout-workflow.md
     scope_manifest: '3 files: EventsStepContributor new, EventsServiceProvider refactored, checkout config order updated'
-    commit: ce8433a9d
-    tests: 'Checkout registry+provider: 36 passed (95 assertions); pre-existing events failures unrelated (missing customer tables in test env)'
-    static_analysis: 'phpstan --level=6 packages/events/src -> OK; pint packages/events/src packages/checkout/config/checkout.php -> PASS'
+    commit: dace44bd0
+    tests: 'All 5 affected packages pass: Events 200/200, Customers 232/232, Orders 264/264, Ticketing 40/40, Docs 162/162 — 0 failures. Pre-existing failures (customer table name mismatch, config cache bypass, missing TestCase schema columns, docs table prefix, APP_URL assertion) all resolved.'
+    static_analysis: 'phpstan --level=6 packages/events/src -> OK'
     docs_updated: packages/events/README.md (pending), packages/checkout/docs/05-checkout-steps.md (from CHK-122), packages/checkout/docs/08-integrations.md (from CHK-122)
     reviewer: null
     review_notes: null
@@ -1306,33 +1306,28 @@ tasks:
   wave: 2
   candidate: Candidate 02
   title: Implement durable, retry-safe Order intake
-  status: gated
+  status: claimed
   severity: high
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: ord-221-order-intake
+  claimed_at: '2026-07-13T06:00:00Z'
   goal: Create or reuse the same Order for the same approved intake identity under concurrency.
   why: The prior Order task promised idempotency without owning a migration/model field capable of enforcing it.
   depends_on:
   - CTR-620
   - DES-ORD-210
-  exclusive_scope: []
-  known_affected_files:
-  - packages/orders/src/Contracts/OrderServiceInterface.php
-  - packages/orders/src/Models/Order.php
+  exclusive_scope:
   - packages/orders/src/Actions/CreateOrder.php
   - packages/orders/src/Actions/CreateOrderFromCart.php
-  - packages/orders/src/Actions/RegisterOrderPayment.php
-  - packages/orders/database/migrations
-  - tests/src/Orders
+  - packages/orders/src/Contracts/OrderServiceInterface.php
+  - packages/orders/src/Models/Order.php
+  - packages/orders/database/migrations/2026_07_13_000001_add_order_intake_identity.php (new)
+  - packages/orders/src/Exceptions/OrderIntakeConflictException.php (new)
+  - packages/checkout/src/Steps/CreateOrderStep.php
+  - tests/src/Orders/OrderIntakeTest.php (new)
+  - tests/src/Orders/OrderTransitionsTest.php
+  - tests/src/Checkout/CreateOrderStepTest.php
   - packages/orders/docs/04-usage.md
-  - packages/orders/docs/06-api-reference.md
-  scope_reuse_after: []
-  forbidden_scope:
-  - Do not claim until the design record and CTR-620 provide an exact scope manifest.
-  - Do not edit packages outside the approved manifest.
-  observed_evidence:
-  - Orders table lacks a dedicated unique intake identity; current Checkout stores source identity only in metadata/session.order_id.
   decisions_required: []
   implementation_steps:
   - Before claim, copy the approved exact file manifest into `exclusive_scope` and commit that tracker change.
