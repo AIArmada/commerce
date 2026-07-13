@@ -112,15 +112,17 @@ final class VouchersAdapter implements DiscountProvider
 
     /**
      * Release a voucher reservation.
+     *
+     * @param  string|null  $sessionId  When provided, only releases that session's reservation
      */
-    public function releaseVoucher(string $code): void
+    public function releaseVoucher(string $code, ?string $sessionId = null): void
     {
         if (! interface_exists(VoucherServiceInterface::class)) {
             return;
         }
 
         $voucherService = app(VoucherServiceInterface::class);
-        $voucherService->release($code);
+        $voucherService->release($code, $sessionId);
     }
 
     /**
@@ -277,11 +279,13 @@ final class VouchersAdapter implements DiscountProvider
 
     public function release(CheckoutSession $session, array $commitments): void
     {
+        $sessionId = (string) $session->getKey();
+
         foreach ($commitments as $commitment) {
             $code = $commitment->reservationToken;
 
             if ($code !== '') {
-                $this->releaseVoucher($code);
+                $this->releaseVoucher($code, $sessionId);
             }
         }
     }
