@@ -9,7 +9,6 @@ use AIArmada\Shipping\Data\LabelData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\ShipmentOperationStatus;
 use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
-use AIArmada\Shipping\Exceptions\ShipmentCreationFailedException;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShipmentOperation;
 use AIArmada\Shipping\ShippingManager;

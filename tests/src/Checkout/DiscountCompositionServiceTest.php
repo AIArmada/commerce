@@ -21,17 +21,30 @@ function mockSession(int $subtotal = 10000): CheckoutSession
 it('allocates proposals within cap and caps total at eligible subtotal', function (): void {
     $session = mockSession(10000);
 
-    $provider = new class implements DiscountProvider {
+    $provider = new class implements DiscountProvider
+    {
         public int $callCount = 0;
-        public function providerKey(): string { return 'test'; }
-        public function evaluate(CheckoutSession $s, array $d): array {
+
+        public function providerKey(): string
+        {
+            return 'test';
+        }
+
+        public function evaluate(CheckoutSession $s, array $d): array
+        {
             $this->callCount++;
+
             return [
                 new DiscountProposal('test', 'a', 6000, priority: 10),
                 new DiscountProposal('test', 'b', 6000, priority: 5),
             ];
         }
-        public function commit(CheckoutSession $s, array $a): array { return []; }
+
+        public function commit(CheckoutSession $s, array $a): array
+        {
+            return [];
+        }
+
         public function release(CheckoutSession $s, array $c): void {}
     };
 
@@ -47,21 +60,43 @@ it('allocates proposals within cap and caps total at eligible subtotal', functio
 it('deterministic allocation by priority, provider key, candidate key', function (): void {
     $session = mockSession(5000);
 
-    $providerA = new class implements DiscountProvider {
-        public function providerKey(): string { return 'aaa'; }
-        public function evaluate(CheckoutSession $s, array $d): array {
+    $providerA = new class implements DiscountProvider
+    {
+        public function providerKey(): string
+        {
+            return 'aaa';
+        }
+
+        public function evaluate(CheckoutSession $s, array $d): array
+        {
             return [new DiscountProposal('aaa', 'x', 3000, priority: 0)];
         }
-        public function commit(CheckoutSession $s, array $a): array { return []; }
+
+        public function commit(CheckoutSession $s, array $a): array
+        {
+            return [];
+        }
+
         public function release(CheckoutSession $s, array $c): void {}
     };
 
-    $providerB = new class implements DiscountProvider {
-        public function providerKey(): string { return 'bbb'; }
-        public function evaluate(CheckoutSession $s, array $d): array {
+    $providerB = new class implements DiscountProvider
+    {
+        public function providerKey(): string
+        {
+            return 'bbb';
+        }
+
+        public function evaluate(CheckoutSession $s, array $d): array
+        {
             return [new DiscountProposal('bbb', 'y', 3000, priority: 10)];
         }
-        public function commit(CheckoutSession $s, array $a): array { return []; }
+
+        public function commit(CheckoutSession $s, array $a): array
+        {
+            return [];
+        }
+
         public function release(CheckoutSession $s, array $c): void {}
     };
 
@@ -76,12 +111,23 @@ it('deterministic allocation by priority, provider key, candidate key', function
 it('zero subtotal produces no allocations', function (): void {
     $session = mockSession(0);
 
-    $provider = new class implements DiscountProvider {
-        public function providerKey(): string { return 'test'; }
-        public function evaluate(CheckoutSession $s, array $d): array {
+    $provider = new class implements DiscountProvider
+    {
+        public function providerKey(): string
+        {
+            return 'test';
+        }
+
+        public function evaluate(CheckoutSession $s, array $d): array
+        {
             return [new DiscountProposal('test', 'a', 5000)];
         }
-        public function commit(CheckoutSession $s, array $a): array { return []; }
+
+        public function commit(CheckoutSession $s, array $a): array
+        {
+            return [];
+        }
+
         public function release(CheckoutSession $s, array $c): void {}
     };
 
@@ -105,18 +151,33 @@ it('no providers returns empty result', function (): void {
 it('commit delegates to providers by accepted proposals', function (): void {
     $session = mockSession();
 
-    $provider = new class implements DiscountProvider {
-        public function providerKey(): string { return 'test'; }
-        public function evaluate(CheckoutSession $s, array $d): array { return []; }
-        public function commit(CheckoutSession $s, array $a): array {
+    $provider = new class implements DiscountProvider
+    {
+        public function providerKey(): string
+        {
+            return 'test';
+        }
+
+        public function evaluate(CheckoutSession $s, array $d): array
+        {
+            return [];
+        }
+
+        public function commit(CheckoutSession $s, array $a): array
+        {
             $commitments = [];
             foreach ($a as $p) {
                 $commitments[$p->candidateKey] = new DiscountCommitment(
-                    'test', $p->candidateKey, $p->requestedAmount, 'tok_' . $p->candidateKey,
+                    'test',
+                    $p->candidateKey,
+                    $p->requestedAmount,
+                    'tok_' . $p->candidateKey,
                 );
             }
+
             return $commitments;
         }
+
         public function release(CheckoutSession $s, array $c): void {}
     };
 
@@ -132,12 +193,27 @@ it('release delegates commitments to providers', function (): void {
     $session = mockSession();
 
     $released = [];
-    $provider = new class($released) implements DiscountProvider {
+    $provider = new class($released) implements DiscountProvider
+    {
         public function __construct(private array &$released) {}
-        public function providerKey(): string { return 'test'; }
-        public function evaluate(CheckoutSession $s, array $d): array { return []; }
-        public function commit(CheckoutSession $s, array $a): array { return []; }
-        public function release(CheckoutSession $s, array $c): void {
+
+        public function providerKey(): string
+        {
+            return 'test';
+        }
+
+        public function evaluate(CheckoutSession $s, array $d): array
+        {
+            return [];
+        }
+
+        public function commit(CheckoutSession $s, array $a): array
+        {
+            return [];
+        }
+
+        public function release(CheckoutSession $s, array $c): void
+        {
             foreach ($c as $commitment) {
                 $this->released[] = $commitment->candidateKey;
             }
@@ -158,21 +234,43 @@ it('release delegates commitments to providers', function (): void {
 it('allocates promotions first then vouchers when both exceed cap', function (): void {
     $session = mockSession(10000);
 
-    $promotionProvider = new class implements DiscountProvider {
-        public function providerKey(): string { return 'promotions'; }
-        public function evaluate(CheckoutSession $s, array $d): array {
+    $promotionProvider = new class implements DiscountProvider
+    {
+        public function providerKey(): string
+        {
+            return 'promotions';
+        }
+
+        public function evaluate(CheckoutSession $s, array $d): array
+        {
             return [new DiscountProposal('promotions', 'promo-1', 8000, priority: 60)];
         }
-        public function commit(CheckoutSession $s, array $a): array { return []; }
+
+        public function commit(CheckoutSession $s, array $a): array
+        {
+            return [];
+        }
+
         public function release(CheckoutSession $s, array $c): void {}
     };
 
-    $voucherProvider = new class implements DiscountProvider {
-        public function providerKey(): string { return 'vouchers'; }
-        public function evaluate(CheckoutSession $s, array $d): array {
+    $voucherProvider = new class implements DiscountProvider
+    {
+        public function providerKey(): string
+        {
+            return 'vouchers';
+        }
+
+        public function evaluate(CheckoutSession $s, array $d): array
+        {
             return [new DiscountProposal('vouchers', 'vc-1', 5000, priority: 50)];
         }
-        public function commit(CheckoutSession $s, array $a): array { return []; }
+
+        public function commit(CheckoutSession $s, array $a): array
+        {
+            return [];
+        }
+
         public function release(CheckoutSession $s, array $c): void {}
     };
 

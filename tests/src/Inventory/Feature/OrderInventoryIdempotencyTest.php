@@ -2,17 +2,20 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Listeners\DeductInventoryFromOrder;
 use AIArmada\Inventory\Listeners\ReleaseInventoryFromOrder;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Models\InventoryOperation;
+use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\InventoryReleaseRequired;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PendingPayment;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 describe('InventoryOperation model', function (): void {
     it('creates an operation with unique order_id + kind', function (): void {
@@ -28,7 +31,7 @@ describe('InventoryOperation model', function (): void {
         expect($op1->status)->toBe(InventoryOperation::STATUS_PENDING);
         expect($op1->completed_at)->toBeNull();
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         InventoryOperation::create([
             'order_id' => $orderId,
@@ -131,14 +134,14 @@ describe('DeductInventoryFromOrder idempotency', function (): void {
             $table->timestamps();
         });
 
-        $item = \AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem::create(['name' => 'Dedup SKU']);
+        $item = InventoryItem::create(['name' => 'Dedup SKU']);
         $location = InventoryLocation::factory()->create([
             'name' => 'WH1',
             'code' => 'WH1',
             'priority' => 100,
         ]);
 
-        $inventoryService = app(\AIArmada\Inventory\Services\InventoryService::class);
+        $inventoryService = app(InventoryService::class);
         $inventoryService->receive($item, $location->id, 10);
 
         $order = Order::create([

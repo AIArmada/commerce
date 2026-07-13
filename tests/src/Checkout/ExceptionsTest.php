@@ -174,12 +174,12 @@ describe('InventoryException', function (): void {
             ->and($exception->context['reason'])->toBe('Timeout');
     });
 
-    it('creates reservation expired exception', function (): void {
-        $exception = InventoryException::reservationExpired('res_789');
+    it('creates reference not found exception', function (): void {
+        $exception = InventoryException::referenceNotFound('res_789');
 
         expect($exception->getMessage())->toContain('res_789')
-            ->and($exception->getMessage())->toContain('expired')
-            ->and($exception->context['reservation_id'])->toBe('res_789');
+            ->and($exception->getMessage())->toContain('not found')
+            ->and($exception->context['reference'])->toBe('res_789');
     });
 
     it('creates release failed exception', function (): void {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Promotions\Models\Promotion;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Tables;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
 use AIArmada\Promotions\Enums\PromotionType;
@@ -129,7 +130,7 @@ final class PromotionsTable
                         OwnerWriteGuard::findOrFailForOwner(
                             Promotion::class,
                             (string) $record->getKey(),
-                            \AIArmada\CommerceSupport\Support\OwnerContext::resolve(),
+                            OwnerContext::resolve(),
                             includeGlobal: false,
                             message: 'Promotion is not accessible in the current owner scope.',
                         );
@@ -143,7 +144,7 @@ final class PromotionsTable
                                 return;
                             }
 
-                            $owner = \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
+                            $owner = OwnerContext::resolve();
 
                             foreach ($records as $record) {
                                 OwnerWriteGuard::findOrFailForOwner(

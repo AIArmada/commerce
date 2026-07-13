@@ -12,7 +12,6 @@ use AIArmada\Jnt\Services\JntTrackingService;
 use AIArmada\Jnt\Shipping\JntShippingDriver;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Enums\DriverCapability;
