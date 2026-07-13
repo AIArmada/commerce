@@ -63,7 +63,7 @@ it('PortalLinks mount initializes targetUrl', function (): void {
     $page = new PortalLinks;
     $page->mount();
 
-    expect($page->targetUrl)->toBe(mb_rtrim(url('/'), '/') . '/');
+    expect($page->targetUrl)->toBe(mb_rtrim((string) config('app.url'), '/') . '/');
 });
 
 it('PortalLinks returns view data', function (): void {

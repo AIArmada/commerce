@@ -487,10 +487,10 @@ it('PortalLinks generates links when affiliate exists', function (): void {
 
     expect($page->getDefaultLink())->toContain($affiliate->code);
 
-    $page->targetUrl = url('/test');
+    $page->targetUrl = mb_rtrim((string) config('app.url'), '/') . '/test';
     $page->generateLink();
 
-    expect($page->generatedLink)->toBe(url('/test') . '?aff=' . $affiliate->code);
+    expect($page->generatedLink)->toBe($page->targetUrl . '?aff=' . $affiliate->code);
 
     $reflection = new ReflectionClass($page);
     $method = $reflection->getMethod('getHeaderActions');
