@@ -10,6 +10,8 @@ use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Enums\GoodsType;
 use AIArmada\Jnt\Enums\TrackingStatus as JntTrackingStatus;
+use AIArmada\Jnt\Exceptions\JntApiException;
+use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use AIArmada\Jnt\Services\JntTrackingService;
@@ -161,6 +163,13 @@ class JntShippingDriver implements ShippingDriverInterface
                 trackingNumber: $trackingNumber,
                 carrierReference: $orderData->orderId,
             );
+        } catch (JntNetworkException $e) {
+            return CarrierOperationResult::unknown($e->getMessage());
+        } catch (JntApiException $e) {
+            return CarrierOperationResult::failed(
+                error: $e->getMessage(),
+                retryable: false,
+            );
         } catch (Throwable $e) {
             return CarrierOperationResult::failed(
                 error: $e->getMessage(),
@@ -196,6 +205,13 @@ class JntShippingDriver implements ShippingDriverInterface
             }
 
             return CarrierOperationResult::failed(error: 'Carrier rejected cancellation');
+        } catch (JntNetworkException $e) {
+            return CarrierOperationResult::unknown($e->getMessage());
+        } catch (JntApiException $e) {
+            return CarrierOperationResult::failed(
+                error: $e->getMessage(),
+                retryable: false,
+            );
         } catch (Throwable $e) {
             return CarrierOperationResult::unknown($e->getMessage());
         }

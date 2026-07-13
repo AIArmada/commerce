@@ -252,7 +252,7 @@ describe('cancelShipment', function (): void {
             ->with('ORDER123', CancellationReason::CUSTOMER_REQUEST, 'JNTTRACK123')
             ->andReturn([]);
 
-        expect($this->driver->cancelShipment('JNTTRACK123'))->toBeTrue();
+        expect($this->driver->cancelShipment('JNTTRACK123')->success)->toBeTrue();
     });
 
     it('falls back to cancelling with tracking number when orderId cannot be resolved', function (): void {
@@ -266,7 +266,7 @@ describe('cancelShipment', function (): void {
             ->with('JNTTRACK123', CancellationReason::CUSTOMER_REQUEST, 'JNTTRACK123')
             ->andReturn([]);
 
-        expect($this->driver->cancelShipment('JNTTRACK123'))->toBeTrue();
+        expect($this->driver->cancelShipment('JNTTRACK123')->success)->toBeTrue();
     });
 
     it('returns false when the API indicates failure', function (): void {
@@ -280,6 +280,6 @@ describe('cancelShipment', function (): void {
             ->with('JNTTRACK123', CancellationReason::CUSTOMER_REQUEST, 'JNTTRACK123')
             ->andReturn(['success' => false]);
 
-        expect($this->driver->cancelShipment('JNTTRACK123'))->toBeFalse();
+        expect($this->driver->cancelShipment('JNTTRACK123')->success)->toBeFalse();
     });
 });
