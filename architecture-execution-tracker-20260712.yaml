@@ -1780,34 +1780,34 @@ tasks:
   wave: 2
   candidate: Candidate 06
   title: Implement durable Shipping operation state and generic carrier outcome semantics
-  status: gated
+  status: claimed
   severity: high
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: shp-621-shipment-operations
+  claimed_at: '2026-07-13T10:00:00Z'
   goal: Record submit/cancel intent and outcome before deriving terminal Shipment state.
   why: Current actions can duplicate remote creation or report local cancellation while carrier outcome is false/unknown.
   depends_on:
   - DES-SHP-610
   - CTR-620
-  exclusive_scope: []
-  known_affected_files:
+  exclusive_scope:
+  - packages/shipping/src/Models/ShipmentOperation.php (new)
+  - packages/shipping/src/Data/CarrierOperationResult.php (new)
+  - packages/shipping/src/Enums/ShipmentOperationStatus.php (new)
+  - packages/shipping/src/Actions/ReconcileShipmentOperation.php (new)
+  - packages/shipping/database/migrations/2026_07_12_000003_create_shipment_operations_table.php (new)
   - packages/shipping/src/Actions/ShipShipment.php
   - packages/shipping/src/Actions/CancelShipment.php
   - packages/shipping/src/Contracts/ShippingDriverInterface.php
   - packages/shipping/src/Models/Shipment.php
-  - packages/shipping/src/Models/ShipmentOperation.php (provisional new)
-  - packages/shipping/database/migrations
-  - packages/shipping/src/States
-  - tests/src/Shipping
+  - packages/shipping/src/Services/ShipmentService.php
+  - packages/jnt/src/Shipping/JntShippingDriver.php
+  - tests/src/Shipping/Feature/ShipmentOperationTest.php (new)
+  - tests/src/Shipping/Feature/ShipShipmentTest.php
+  - tests/src/Shipping/Feature/CancelShipmentTest.php
+  - tests/src/Jnt/Unit/JntShippingDriverTest.php
   - packages/shipping/docs/04-usage.md
-  - packages/shipping/docs/05-custom-drivers.md
-  scope_reuse_after: []
-  forbidden_scope:
-  - Do not claim until the design record and CTR-620 provide an exact scope manifest.
-  - Do not edit packages outside the approved manifest.
-  observed_evidence:
-  - Remote call and local transaction ordering currently loses unknown-outcome evidence.
+  - packages/jnt/docs/04-usage.md
   decisions_required: []
   implementation_steps:
   - Before claim, copy the approved exact file manifest into `exclusive_scope` and commit that tracker change.
