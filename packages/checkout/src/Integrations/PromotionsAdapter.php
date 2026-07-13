@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Integrations;
 
+use AIArmada\Checkout\Contracts\DiscountProvider;
+use AIArmada\Checkout\Data\DiscountCommitment;
+use AIArmada\Checkout\Data\DiscountProposal;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\Promotions\Contracts\PromotionServiceInterface;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Support\Collection;
 
-final class PromotionsAdapter
+final class PromotionsAdapter implements DiscountProvider
 {
     public function __construct(
         private readonly ?DiscountCodeResolver $discountCodeResolver = null,
@@ -146,5 +149,55 @@ final class PromotionsAdapter
     private function discountCodeResolver(): DiscountCodeResolver
     {
         return $this->discountCodeResolver ?? app(DiscountCodeResolver::class);
+    }
+
+    public function providerKey(): string
+    {
+        return 'promotions';
+    }
+
+    public function evaluate(CheckoutSession $session, array $discountData): array
+    {
+        $result = $this->applyEligiblePromotions($session);
+        $proposals = [];
+
+        foreach ($result['applied'] as $applied) {
+            $proposals[] = new DiscountProposal(
+                providerKey: 'promotions',
+                candidateKey: 'promotion:' . ($applied['id'] ?? $applied['promotion_id'] ?? ''),
+                requestedAmount: $applied['discount'] ?? 0,
+                label: $applied['name'] ?? null,
+                code: $applied['code'] ?? null,
+                priority: 60,
+                meta: [
+                    'promotion_id' => $applied['id'] ?? $applied['promotion_id'] ?? null,
+                    'promotion_code' => $applied['code'] ?? null,
+                ],
+            );
+        }
+
+        return $proposals;
+    }
+
+    public function commit(CheckoutSession $session, array $accepted): array
+    {
+        $commitments = [];
+        foreach ($accepted as $proposal) {
+            $key = $proposal->providerKey . ':' . $proposal->candidateKey;
+            $commitments[$key] = new DiscountCommitment(
+                providerKey: 'promotions',
+                candidateKey: $proposal->candidateKey,
+                appliedAmount: $proposal->requestedAmount,
+                reservationToken: $proposal->candidateKey,
+                meta: $proposal->meta,
+            );
+        }
+
+        return $commitments;
+    }
+
+    public function release(CheckoutSession $session, array $commitments): void
+    {
+        // ponytail: promotions have no reservation lifecycle in Wave 1 — noop
     }
 }

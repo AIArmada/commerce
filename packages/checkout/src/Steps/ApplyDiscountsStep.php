@@ -5,18 +5,40 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Steps;
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Checkout\Contracts\DiscountProvider;
+use AIArmada\Checkout\Data\DiscountCommitment;
+use AIArmada\Checkout\Data\DiscountProposal;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Integrations\PromotionsAdapter;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Services\DiscountCompositionService;
 
 final class ApplyDiscountsStep extends AbstractCheckoutStep
 {
+    /** @var array<string, DiscountCommitment>|null */
+    private ?array $activeCommitments = null;
+
     public function __construct(
         private readonly ?PromotionsAdapter $promotionsAdapter = null,
         private readonly ?VouchersAdapter $vouchersAdapter = null,
         private readonly ?CartManagerInterface $cartManager = null,
     ) {}
+
+    private function compositionService(): DiscountCompositionService
+    {
+        $providers = [];
+
+        if ($this->promotionsAdapter instanceof DiscountProvider) {
+            $providers[] = $this->promotionsAdapter;
+        }
+
+        if ($this->vouchersAdapter instanceof DiscountProvider) {
+            $providers[] = $this->vouchersAdapter;
+        }
+
+        return new DiscountCompositionService($providers);
+    }
 
     public function getIdentifier(): string
     {
@@ -28,9 +50,7 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
         return 'Apply Discounts';
     }
 
-    /**
-     * @return array<string>
-     */
+    /** @return array<string> */
     public function getDependencies(): array
     {
         return ['calculate_pricing'];
@@ -38,7 +58,6 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
 
     public function canSkip(CheckoutSession $session): bool
     {
-        // Skip if no discount packages are configured
         $promotionsEnabled = config('checkout.integrations.promotions.enabled', true)
             && $this->promotionsAdapter !== null;
         $vouchersEnabled = config('checkout.integrations.vouchers.enabled', true)
@@ -49,28 +68,20 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
 
     public function handle(CheckoutSession $session): StepResult
     {
-        $discountData = [
-            'promotions' => [],
-            'vouchers' => [],
-            'total_discount' => 0,
-        ];
+        $composition = $this->compositionService();
 
-        $totalDiscount = 0;
+        $discountData = $this->buildDiscountData($session);
+        $result = $composition->evaluate($session, $discountData);
 
-        // Apply automatic promotions
-        if ($this->shouldApplyPromotions()) {
-            $promotionResult = $this->applyPromotions($session);
-            $discountData['promotions'] = $promotionResult['applied'];
-            $totalDiscount += $promotionResult['discount'];
-        }
+        $totalDiscount = $result['totalDiscount'];
+        $allocations = $result['allocations'];
 
-        // Apply vouchers
-        if ($this->shouldApplyVouchers()) {
-            $voucherResult = $this->applyVouchers($session);
-            $discountData['vouchers'] = $voucherResult['applied'];
-            $totalDiscount += $voucherResult['discount'];
-        }
+        $this->activeCommitments = $composition->commit($session, $allocations);
 
+        $discountData['allocations'] = array_map(
+            fn (DiscountProposal $p) => $p->toArray(),
+            $allocations,
+        );
         $discountData['total_discount'] = $totalDiscount;
         $discountData['applied_at'] = now()->toIso8601String();
 
@@ -85,19 +96,16 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
 
         return $this->success('Discounts applied', [
             'total_discount' => $totalDiscount,
-            'promotions_count' => count($discountData['promotions']),
-            'vouchers_count' => count($discountData['vouchers']),
+            'allocations_count' => count($allocations),
         ]);
     }
 
     public function rollback(CheckoutSession $session): void
     {
-        // Release any voucher reservations
-        if ($this->vouchersAdapter !== null) {
-            $discountData = $session->discount_data ?? [];
-            foreach ($discountData['vouchers'] ?? [] as $voucher) {
-                $this->vouchersAdapter->releaseVoucher($voucher['code'] ?? '');
-            }
+        if ($this->activeCommitments !== null && $this->activeCommitments !== []) {
+            $composition = $this->compositionService();
+            $composition->release($session, $this->activeCommitments);
+            $this->activeCommitments = null;
         }
 
         $session->update([
@@ -109,58 +117,18 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
         $session->save();
     }
 
-    private function shouldApplyPromotions(): bool
-    {
-        return config('checkout.integrations.promotions.enabled', true)
-            && config('checkout.integrations.promotions.auto_apply', true)
-            && $this->promotionsAdapter !== null;
-    }
-
-    private function shouldApplyVouchers(): bool
-    {
-        return config('checkout.integrations.vouchers.enabled', true)
-            && $this->vouchersAdapter !== null;
-    }
-
     /**
-     * @return array{applied: array<array<string, mixed>>, discount: int}
+     * @return array<string, mixed>
      */
-    private function applyPromotions(CheckoutSession $session): array
+    private function buildDiscountData(CheckoutSession $session): array
     {
-        if ($this->promotionsAdapter === null) {
-            return ['applied' => [], 'discount' => 0];
-        }
+        $existing = $session->discount_data ?? [];
+        $snapshot = $session->cart_snapshot ?? [];
 
-        return $this->promotionsAdapter->applyEligiblePromotions($session);
-    }
-
-    /**
-     * @return array{applied: array<array<string, mixed>>, discount: int}
-     */
-    private function applyVouchers(CheckoutSession $session): array
-    {
-        if ($this->vouchersAdapter === null) {
-            return ['applied' => [], 'discount' => 0];
-        }
-
-        $discountData = $session->discount_data ?? [];
-        $voucherCodes = $discountData['voucher_codes']
-            ?? data_get($session->cart_snapshot, 'metadata.voucher_codes', []);
-
-        if (! is_array($voucherCodes)) {
-            return ['applied' => [], 'discount' => 0];
-        }
-
-        $voucherCodes = array_values(array_filter(array_map(
-            static fn (mixed $code): ?string => is_string($code) && mb_trim($code) !== '' ? mb_trim($code) : null,
-            $voucherCodes,
-        )));
-
-        if (empty($voucherCodes)) {
-            return ['applied' => [], 'discount' => 0];
-        }
-
-        return $this->vouchersAdapter->applyVouchers($session, $voucherCodes);
+        return [
+            'voucher_codes' => $existing['voucher_codes']
+                ?? data_get($snapshot, 'metadata.voucher_codes', []),
+        ];
     }
 
     private function refreshCartSnapshot(CheckoutSession $session): void
