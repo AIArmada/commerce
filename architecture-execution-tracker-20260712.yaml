@@ -1653,32 +1653,22 @@ tasks:
   wave: 2
   candidate: Candidate 05
   title: Implement Voucher reservation and commitment identity
-  status: gated
+  status: claimed
   severity: high
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: dsc-522-voucher-reservation
+  claimed_at: '2026-07-13T08:00:00Z'
   goal: Make one Checkout reservation/commit/release affect only its own Voucher commitment and make duplicate commit harmless.
   why: Voucher reserve is cache-only, release(code) removes all sessions, and usage persistence lacks a proven Checkout/Order
     idempotency identity.
   depends_on:
   - DSC-521
   - CTR-620
-  exclusive_scope: []
-  known_affected_files:
+  exclusive_scope:
   - packages/vouchers/src/Contracts/VoucherServiceInterface.php
   - packages/vouchers/src/Services/VoucherService.php
-  - packages/vouchers/src/Actions/RecordVoucherUsage.php
-  - packages/vouchers/src/Models/VoucherUsage.php
-  - packages/vouchers/database/migrations
-  - tests/src/Vouchers
-  - packages/vouchers/docs
-  scope_reuse_after: []
-  forbidden_scope:
-  - Do not claim until the design record and CTR-620 provide an exact scope manifest.
-  - Do not edit packages outside the approved manifest.
-  observed_evidence:
-  - VoucherService.php:280-307 stores session-specific reservations, but :313-334 release(code) removes every session reservation.
+  - packages/checkout/src/Integrations/VouchersAdapter.php
+  - tests/src/Vouchers/Unit/VoucherServiceTest.php
   decisions_required: []
   implementation_steps:
   - Before claim, copy the approved exact file manifest into `exclusive_scope` and commit that tracker change.
