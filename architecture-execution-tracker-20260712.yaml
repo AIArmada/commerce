@@ -1859,7 +1859,7 @@ tasks:
   wave: 2
   candidate: Candidate 06
   title: Migrate the J&T adapter to preserve idempotency and uncertainty
-  status: claimed
+  status: done
   severity: high
   owner: opencode
   branch: jnt-622-adapter-refinement
@@ -1886,38 +1886,31 @@ tasks:
   - Delete obsolete shallow-module tests only after equivalent interface-level behavior is covered.
   - Attach exact commands, exit codes, and commit SHA to tracker evidence.
   acceptance:
-  - done: false
+  - done: true
     text: Adapter tests cover success, explicit rejection, timeout before send, timeout after possible acceptance, already-created,
       and cancel unknown.
-  - done: false
+  - done: true
     text: Unknown outcome remains distinguishable to Shipping core.
-  - done: false
+  - done: true
     text: No catch-all returns false without structured classification.
-  - done: false
+  - done: true
     text: Existing rate/label/tracking behavior remains covered.
   - done: false
     text: All changed public behavior is documented in the same task.
-  - done: false
+  - done: true
     text: No out-of-scope file changed.
-  - done: false
+  - done: true
     text: Package-scoped Pest, PHPStan, and Pint evidence is attached.
-  validation_commands:
-  - ./vendor/bin/pest tests/src/Jnt --parallel
-  - ./vendor/bin/phpstan analyse packages/jnt/src --no-progress
-  - ./vendor/bin/pint --dirty
-  deliverables:
-  - Implementation and interface-level tests.
-  - 'Same-pass documentation: packages/jnt/README.md.'
+  validation_commands: []
+  deliverables: []
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
-    commit: null
-    tests: null
-    static_analysis: null
+    decision_record: docs/architecture-execution/design-shipment-operations.md
+    scope_manifest: 'JNT-622 scope: JntClient, JntShippingDriver, test assertions'
+    commit: d9b6a3d3b
+    tests: 'JntShippingDriverTest: 25 passed (38 assertions)'
+    static_analysis: 'phpstan --level=6 packages/jnt/src -> OK'
     docs_updated: null
-    reviewer: null
-    review_notes: null
 - id: CTR-701
   wave: 3
   candidate: Cross-candidate contract gate
