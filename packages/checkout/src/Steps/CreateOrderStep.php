@@ -104,6 +104,8 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 items: $items,
                 billingAddress: $billingData ?: null,
                 shippingAddress: $shippingData ?: null,
+                intakeSource: 'checkout',
+                intakeId: $session->getKey(),
             );
 
             // Persist order_id immediately — before payment confirmation — so retries reuse this order

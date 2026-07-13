@@ -92,6 +92,8 @@ class Order extends Model implements Auditable
 
     protected $fillable = [
         'order_number',
+        'intake_source',
+        'intake_id',
         'status',
         'customer_id',
         'customer_type',

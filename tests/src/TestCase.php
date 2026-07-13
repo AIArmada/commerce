@@ -1280,6 +1280,9 @@ abstract class TestCase extends Orchestra
         Schema::create('orders', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('order_number')->unique();
+            $table->string('intake_source')->nullable();
+            $table->string('intake_id')->nullable();
+            $table->unique(['owner_type', 'owner_id', 'intake_source', 'intake_id'], 'orders_intake_unique');
             $table->string('status', 50)->default('created')->index();
             $table->nullableUuidMorphs('customer');
             $table->nullableUuidMorphs('owner');

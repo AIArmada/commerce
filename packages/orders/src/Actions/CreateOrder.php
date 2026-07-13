@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Orders\Events\OrderCreated;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -19,18 +20,32 @@ final class CreateOrder
      * @param  array<array<string, mixed>>  $items
      * @param  array<string, mixed>|null  $billingAddress
      * @param  array<string, mixed>|null  $shippingAddress
+     * @param  string|null  $intakeSource  Deduplication identity source (e.g. 'checkout', 'api')
+     * @param  string|null  $intakeId  Deduplication identity
      */
     public function execute(
         array $orderData,
         array $items,
         ?array $billingAddress = null,
         ?array $shippingAddress = null,
+        ?string $intakeSource = null,
+        ?string $intakeId = null,
     ): Order {
         $this->assertOwnerBoundaryForCreation();
 
-        return DB::transaction(function () use ($orderData, $items, $billingAddress, $shippingAddress): Order {
+        if ($intakeSource !== null && $intakeId !== null) {
+            $existing = $this->findExistingIntake($intakeSource, $intakeId);
+
+            if ($existing !== null) {
+                return $existing;
+            }
+        }
+
+        return DB::transaction(function () use ($orderData, $items, $billingAddress, $shippingAddress, $intakeSource, $intakeId): Order {
             $order = Order::create([
                 'order_number' => $orderData['order_number'] ?? Order::generateOrderNumber(),
+                'intake_source' => $intakeSource,
+                'intake_id' => $intakeId,
                 'status' => Created::class,
                 'customer_id' => $orderData['customer_id'] ?? null,
                 'customer_type' => $orderData['customer_type'] ?? null,
@@ -126,6 +141,21 @@ final class CreateOrder
             'email' => $addressData['email'] ?? null,
             'metadata' => $addressData['metadata'] ?? null,
         ]);
+    }
+
+    private function findExistingIntake(string $intakeSource, string $intakeId): ?Order
+    {
+        $existing = Order::query()
+            ->withoutGlobalScope(OwnerScope::class)
+            ->where('intake_source', $intakeSource)
+            ->where('intake_id', $intakeId)
+            ->first();
+
+        if ($existing === null) {
+            return null;
+        }
+
+        return $existing->fresh(['items', 'billingAddress', 'shippingAddress']);
     }
 
     private function assertOwnerBoundaryForCreation(): void
