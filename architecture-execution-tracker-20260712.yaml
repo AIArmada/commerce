@@ -1707,11 +1707,11 @@ tasks:
   - 'Same-pass documentation: Affected Vouchers usage and reservation docs.'
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
-    commit: null
-    tests: null
-    static_analysis: null
+    decision_record: docs/architecture-execution/design-combined-discount-policy.md
+    scope_manifest: 'DES-DSC-510 scope: VoucherServiceInterface, VoucherService (session-scoped release), VouchersAdapter (pass session ID), ApplyVoucherToCart/InteractsWithVouchers/StackingPolicy cleanup'
+    commit: 9241d586d
+    tests: 'VoucherServiceTest: 21 passed (50 assertions); pre-existing VoucherValidator errors (2)'
+    static_analysis: 'phpstan --level=6 packages/vouchers/src -> OK (2 pre-existing VoucherValidator errors)'
     docs_updated: null
     reviewer: null
     review_notes: null
@@ -1719,7 +1719,7 @@ tasks:
   wave: 2
   candidate: Candidate 05
   title: Implement Promotion commitment from actual Checkout application data
-  status: claimed
+  status: done
   severity: high
   owner: opencode
   branch: dsc-523-promotion-commitment
@@ -1768,11 +1768,11 @@ tasks:
   - 'Same-pass documentation: Affected Promotions usage/integration docs.'
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
-    commit: null
-    tests: null
-    static_analysis: null
+    decision_record: docs/architecture-execution/design-combined-discount-policy.md
+    scope_manifest: 'DES-DSC-510 scope: MarkPromotionAsUsedOnOrderPlaced (use session discount_data allocations), PromotionsServiceProvider (register listener)'
+    commit: 88cf24f35
+    tests: 'Promotions test suite: 74 passed (125 assertions); PromotionListenersTest: 2 passed'
+    static_analysis: 'phpstan --level=6 packages/promotions/src -> OK'
     docs_updated: null
     reviewer: null
     review_notes: null
