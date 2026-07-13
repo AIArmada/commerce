@@ -1859,29 +1859,21 @@ tasks:
   wave: 2
   candidate: Candidate 06
   title: Migrate the J&T adapter to preserve idempotency and uncertainty
-  status: gated
+  status: claimed
   severity: high
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: jnt-622-adapter-refinement
+  claimed_at: '2026-07-13T11:00:00Z'
   goal: Map J&T responses/exceptions into the approved Shipping port without collapsing unknown outcomes to false.
   why: JntShippingDriver catches all errors and returns generic failed/false results, which removes the information needed
     for safe retry.
   depends_on:
   - SHP-621
-  exclusive_scope: []
-  known_affected_files:
-  - packages/jnt/src/Shipping/JntShippingDriver.php
-  - packages/jnt/src/Services/JntExpressService.php
+  exclusive_scope:
   - packages/jnt/src/Http/JntClient.php
-  - tests/src/Jnt
-  - packages/jnt/README.md
-  scope_reuse_after: []
-  forbidden_scope:
-  - Do not claim until the design record and CTR-620 provide an exact scope manifest.
-  - Do not edit packages outside the approved manifest.
-  observed_evidence:
-  - JntShippingDriver.php:170-175 and :201-203 collapse Throwable to error text/false.
+  - packages/jnt/src/Services/JntExpressService.php
+  - packages/jnt/src/Shipping/JntShippingDriver.php
+  - tests/src/Jnt/Unit/JntShippingDriverTest.php
   decisions_required: []
   implementation_steps:
   - Before claim, copy the approved exact file manifest into `exclusive_scope` and commit that tracker change.
