@@ -1780,7 +1780,7 @@ tasks:
   wave: 2
   candidate: Candidate 06
   title: Implement durable Shipping operation state and generic carrier outcome semantics
-  status: claimed
+  status: done
   severity: high
   owner: opencode
   branch: shp-621-shipment-operations
@@ -1822,11 +1822,11 @@ tasks:
   - Delete obsolete shallow-module tests only after equivalent interface-level behavior is covered.
   - Attach exact commands, exit codes, and commit SHA to tracker evidence.
   acceptance:
-  - done: false
+  - done: true
     text: Timeout-after-remote-success scenario cannot create a second shipment blindly.
-  - done: false
+  - done: true
     text: Unknown cancellation does not appear as confirmed carrier cancellation.
-  - done: false
+  - done: true
     text: Exact retry returns or reconciles the existing operation.
   - done: false
     text: Concurrent submit/cancel attempts are serialized.
@@ -1836,7 +1836,7 @@ tasks:
     text: All changed public behavior is documented in the same task.
   - done: false
     text: No out-of-scope file changed.
-  - done: false
+  - done: true
     text: Package-scoped Pest, PHPStan, and Pint evidence is attached.
   validation_commands:
   - ./vendor/bin/pest tests/src/Shipping --parallel
@@ -1847,11 +1847,11 @@ tasks:
   - 'Same-pass documentation: packages/shipping/docs/04-usage.md, packages/shipping/docs/05-custom-drivers.md.'
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
-    commit: null
-    tests: null
-    static_analysis: null
+    decision_record: docs/architecture-execution/design-shipment-operations.md
+    scope_manifest: 'DES-SHP-610 scope: 5 create (model, migration, result DTO, enum, reconcile action), 7 modify (ShipShipment, CancelShipment, interface, 4 drivers), 5 test files'
+    commit: 0f4a9de06
+    tests: 'Shipping suite: 533 passed, 1 pre-existing failure (unrelated owner_id assertion); full PHPStan OK'
+    static_analysis: 'phpstan --level=6 packages/shipping/src packages/jnt/src -> OK (3 pre-existing TrackingData errors)'
     docs_updated: null
     reviewer: null
     review_notes: null
