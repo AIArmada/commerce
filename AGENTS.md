@@ -532,7 +532,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.5
+- php - 8.4
 
 ## Conventions
 
@@ -564,10 +564,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 === boost rules ===
 
 # Laravel Boost
-
-## Project Rules
-
-- This project keeps committed, area-grouped rules in `.ai/guidelines` (settled decisions, non-obvious traps, standing constraints). Before you enter plan mode or create/edit any file, you MUST first: read `.ai/guidelines/00-overview.blade.php` (the monorepo contract overview), then read every guideline file whose topic covers the path(s) in scope, and run `grep -rin 'keyword' .ai/guidelines` to catch what a topic match alone misses. Do not write code until you have read and are following every matching rule.
 
 ## Artisan
 

@@ -8,7 +8,6 @@ use AIArmada\Checkout\Contracts\DiscountProvider;
 use AIArmada\Checkout\Data\DiscountCommitment;
 use AIArmada\Checkout\Data\DiscountProposal;
 use AIArmada\Checkout\Models\CheckoutSession;
-use RuntimeException;
 
 final class DiscountCompositionService
 {
@@ -29,8 +28,9 @@ final class DiscountCompositionService
             }
         }
 
-        usort($proposals, fn (DiscountProposal $a, DiscountProposal $b) =>
-            $b->priority <=> $a->priority
+        usort(
+            $proposals,
+            fn (DiscountProposal $a, DiscountProposal $b) => $b->priority <=> $a->priority
             ?: strcasecmp($a->providerKey, $b->providerKey)
             ?: strcasecmp($a->candidateKey, $b->candidateKey)
         );

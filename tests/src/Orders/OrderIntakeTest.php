@@ -3,8 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Orders\Actions\CreateOrder;
+use AIArmada\Orders\Events\OrderCreated;
+use AIArmada\Orders\Exceptions\OrderIntakeConflictException;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\Created;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -12,7 +17,7 @@ use Illuminate\Support\Str;
 it('creates order with intake identity', function (): void {
     $order = OwnerContext::withOwner(null, fn () => Order::create([
         'order_number' => 'ORD-INTK-' . uniqid(),
-        'status' => \AIArmada\Orders\States\Created::class,
+        'status' => Created::class,
         'intake_source' => 'checkout',
         'intake_id' => 'sess_abc123',
         'currency' => 'MYR',
@@ -43,7 +48,7 @@ it('exact retry with same intake identity returns existing order', function (): 
 
     expect($order2->id)->toBe($order1->id);
     expect(Order::query()
-        ->withoutGlobalScope(\AIArmada\CommerceSupport\Support\OwnerScope::class)
+        ->withoutGlobalScope(OwnerScope::class)
         ->where('intake_source', 'checkout')
         ->where('intake_id', 'sess_dup_test')
         ->count())->toBe(1);
@@ -117,7 +122,7 @@ it('database unique constraint prevents concurrent duplicate intake', function (
             'grand_total' => 5000,
             'created_at' => now(),
             'updated_at' => now(),
-        ]))->toThrow(\Illuminate\Database\QueryException::class);
+        ]))->toThrow(QueryException::class);
     });
 });
 
@@ -160,7 +165,7 @@ it('throws conflict exception when retry has different customer', function (): v
         items: [['name' => 'Test Item', 'quantity' => 1, 'unit_price' => 5000, 'currency' => 'MYR']],
         intakeSource: 'checkout',
         intakeId: 'test-1',
-    )))->toThrow(AIArmada\Orders\Exceptions\OrderIntakeConflictException::class);
+    )))->toThrow(OrderIntakeConflictException::class);
 });
 
 it('dispatches OrderCreated only once and not on retry', function (): void {
@@ -175,7 +180,7 @@ it('dispatches OrderCreated only once and not on retry', function (): void {
         intakeId: 'sess_event_test',
     ));
 
-    Event::assertDispatched(AIArmada\Orders\Events\OrderCreated::class, 1);
+    Event::assertDispatched(OrderCreated::class, 1);
 
     OwnerContext::withOwner(null, fn () => $createOrder->execute(
         orderData: ['currency' => 'MYR', 'subtotal' => 5000, 'grand_total' => 5000],
@@ -184,5 +189,5 @@ it('dispatches OrderCreated only once and not on retry', function (): void {
         intakeId: 'sess_event_test',
     ));
 
-    Event::assertDispatched(AIArmada\Orders\Events\OrderCreated::class, 1);
+    Event::assertDispatched(OrderCreated::class, 1);
 });

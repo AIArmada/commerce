@@ -20,19 +20,37 @@ function makeStep(string $id, ?string $dependency = null): CheckoutStepInterface
             private readonly ?string $dependency,
         ) {}
 
-        public function getIdentifier(): string { return $this->id; }
+        public function getIdentifier(): string
+        {
+            return $this->id;
+        }
 
-        public function getName(): string { return $this->id; }
+        public function getName(): string
+        {
+            return $this->id;
+        }
 
-        public function validate(CheckoutSession $session): array { return []; }
+        public function validate(CheckoutSession $session): array
+        {
+            return [];
+        }
 
-        public function handle(CheckoutSession $session): StepResult { return StepResult::success($this->id); }
+        public function handle(CheckoutSession $session): StepResult
+        {
+            return StepResult::success($this->id);
+        }
 
-        public function canSkip(CheckoutSession $session): bool { return false; }
+        public function canSkip(CheckoutSession $session): bool
+        {
+            return false;
+        }
 
         public function rollback(CheckoutSession $session): void {}
 
-        public function getDependencies(): array { return $this->dependency !== null ? [$this->dependency] : []; }
+        public function getDependencies(): array
+        {
+            return $this->dependency !== null ? [$this->dependency] : [];
+        }
     };
 }
 
@@ -82,14 +100,39 @@ describe('StepExecutor', function (): void {
 
     it('fails when a step returns failure', function (): void {
         $registry = new CheckoutStepRegistry;
-        $failStep = new class implements CheckoutStepInterface {
-            public function getIdentifier(): string { return 'fail'; }
-            public function getName(): string { return 'fail'; }
-            public function validate(CheckoutSession $session): array { return []; }
-            public function handle(CheckoutSession $session): StepResult { return StepResult::failed('fail', 'oops'); }
-            public function canSkip(CheckoutSession $session): bool { return false; }
+        $failStep = new class implements CheckoutStepInterface
+        {
+            public function getIdentifier(): string
+            {
+                return 'fail';
+            }
+
+            public function getName(): string
+            {
+                return 'fail';
+            }
+
+            public function validate(CheckoutSession $session): array
+            {
+                return [];
+            }
+
+            public function handle(CheckoutSession $session): StepResult
+            {
+                return StepResult::failed('fail', 'oops');
+            }
+
+            public function canSkip(CheckoutSession $session): bool
+            {
+                return false;
+            }
+
             public function rollback(CheckoutSession $session): void {}
-            public function getDependencies(): array { return []; }
+
+            public function getDependencies(): array
+            {
+                return [];
+            }
         };
         $registry->register('fail', $failStep);
 
