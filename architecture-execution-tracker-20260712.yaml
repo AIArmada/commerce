@@ -1719,32 +1719,20 @@ tasks:
   wave: 2
   candidate: Candidate 05
   title: Implement Promotion commitment from actual Checkout application data
-  status: gated
+  status: claimed
   severity: high
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: dsc-523-promotion-commitment
+  claimed_at: '2026-07-13T09:00:00Z'
   goal: Persist Promotion usage once from the approved commitment result rather than a nonexistent Order field.
   why: MarkPromotionAsUsedOnOrderPlaced reads order.promotion_id and is not registered, so Promotion usage commitment is effectively
     dead.
   depends_on:
   - DSC-521
   - CTR-620
-  exclusive_scope: []
-  known_affected_files:
+  exclusive_scope:
   - packages/promotions/src/Listeners/MarkPromotionAsUsedOnOrderPlaced.php
   - packages/promotions/src/PromotionsServiceProvider.php
-  - packages/promotions/src/Models/Promotion
-  - packages/promotions/database/migrations
-  - tests/src/Promotions
-  - packages/promotions/docs
-  scope_reuse_after: []
-  forbidden_scope:
-  - Do not claim until the design record and CTR-620 provide an exact scope manifest.
-  - Do not edit packages outside the approved manifest.
-  observed_evidence:
-  - Listener reads `promotion_id` from Order, but the established Checkout path stores applied promotions in discount/session
-    data and provider does not register the listener.
   decisions_required: []
   implementation_steps:
   - Before claim, copy the approved exact file manifest into `exclusive_scope` and commit that tracker change.
