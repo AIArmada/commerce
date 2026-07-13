@@ -53,6 +53,8 @@ use AIArmada\Shipping\Facades\Shipping;
 use AIArmada\Shipping\ShippingServiceProvider;
 use AIArmada\Signals\SignalsServiceProvider;
 use AIArmada\Ticketing\TicketingServiceProvider;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\VoucherServiceProvider;
 use BackedEnum;
@@ -86,6 +88,7 @@ use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
 use Spatie\LaravelData\Casts\EnumCast;
 use Spatie\LaravelData\LaravelDataServiceProvider;
+use Spatie\LaravelData\Support\Creation\ValidationStrategy;
 use Spatie\LaravelData\Transformers\ArrayableTransformer;
 use Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer;
 use Spatie\LaravelData\Transformers\EnumTransformer;
@@ -218,6 +221,7 @@ abstract class TestCase extends Orchestra
         // Setup the test environment
         $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
         $app['config']->set('app.env', 'testing');
+        $app['config']->set('app.url', 'http://localhost');
         $app['config']->set('database.default', 'testing');
 
         // Remove empty schema dump that would trigger loadSchemaState() to drop the
@@ -398,6 +402,30 @@ abstract class TestCase extends Orchestra
         $app['config']->set('seating.owner.enabled', true);
         $app['config']->set('seating.owner.include_global', false);
         $app['config']->set('seating.owner.auto_assign_on_create', true);
+
+        // Events integrations — these fail when class_exists() evaluates before the service provider loads
+        $app['config']->set('events.integrations.order_model', Order::class);
+        $app['config']->set('events.integrations.order_item_model', OrderItem::class);
+        // Events sync config — not merged by provider when config is cached
+        $app['config']->set('events.sync.attributes_to_metadata', true);
+        $app['config']->set('events.sync.audiences_to_metadata', true);
+        $app['config']->set('events.sync.time_expressions_to_metadata', true);
+        $app['config']->set('events.sync.classifications_to_facets', true);
+        $app['config']->set('events.sync.audiences_to_facets', true);
+        $app['config']->set('events.attribute_sync.always_rebuild', true);
+        // Docs config — not merged by provider when config is cached
+        $app['config']->set('docs.database.table_prefix', '');
+        $app['config']->set('docs.database.tables.doc_templates', 'doc_templates');
+        $app['config']->set('docs.database.tables.docs', 'docs');
+        // Spatie data config — not merged by provider when config is cached
+        $app['config']->set('data.validation_strategy', ValidationStrategy::OnlyRequests->value);
+        // Customers config — not merged by provider when config is cached
+        $app['config']->set('customers.database.tables.customers', 'customers');
+        // Ticketing config — not merged by provider when config is cached
+        $app['config']->set('ticketing.defaults.pass_no_prefix', 'PASS-');
+        $app['config']->set('ticketing.database.tables.passes', 'ticket_passes');
+        $app['config']->set('ticketing.database.tables.pass_holders', 'ticket_pass_holders');
+        $app['config']->set('ticketing.database.tables.pass_transfers', 'ticket_pass_transfers');
 
         // Configure Spatie Permission settings for testing
         $app['config']->set('permission.models.permission', Permission::class);
@@ -1089,8 +1117,9 @@ abstract class TestCase extends Orchestra
         // =========================================================================
         // CUSTOMERS PACKAGE TABLES
         // =========================================================================
-        if (! Schema::hasTable('customers')) {
-            Schema::create('customers', function (Blueprint $table): void {
+        $customersTable = config('customers.database.tables.customers', 'customers');
+        if (! Schema::hasTable($customersTable)) {
+            Schema::create($customersTable, function (Blueprint $table): void {
                 $table->uuid('id')->primary();
                 $table->uuid('user_id')->nullable()->index();
                 $table->string('first_name');
@@ -1100,6 +1129,8 @@ abstract class TestCase extends Orchestra
                 $table->string('company')->nullable();
                 $table->string('status')->default('active');
                 $table->boolean('accepts_marketing')->default(false);
+                $table->timestampTz('marketing_consented_at')->nullable();
+                $table->timestampTz('marketing_revoked_at')->nullable();
                 $table->boolean('is_guest')->default(false)->index();
                 $table->nullableUuidMorphs('owner');
                 $table->json('metadata')->nullable();
@@ -1108,8 +1139,8 @@ abstract class TestCase extends Orchestra
             });
         }
 
-        if (! Schema::hasColumn('customers', 'is_guest')) {
-            Schema::table('customers', function (Blueprint $table): void {
+        if (! Schema::hasColumn($customersTable, 'is_guest')) {
+            Schema::table($customersTable, function (Blueprint $table): void {
                 $table->boolean('is_guest')->default(false)->index();
             });
         }
