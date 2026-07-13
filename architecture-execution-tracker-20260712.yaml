@@ -1576,7 +1576,7 @@ tasks:
   wave: 2
   candidate: Candidate 05
   title: Implement the combined stacking policy and connect runtime rule registration
-  status: claimed
+  status: done
   severity: high
   owner: opencode
   branch: dsc-521-combined-stacking
@@ -1595,20 +1595,14 @@ tasks:
   - packages/checkout/src/Integrations/PromotionsAdapter.php
   - packages/checkout/src/Integrations/VouchersAdapter.php
   - packages/promotions/src/PromotionsServiceProvider.php
-  - packages/promotions/src/Listeners/MarkPromotionAsUsedOnOrderPlaced.php
   - packages/promotions/src/Support/StackingCoordinationRegistrar.php (delete)
   - packages/vouchers/src/VoucherServiceProvider.php
-  - packages/vouchers/src/Services/VoucherService.php
-  - packages/vouchers/src/Contracts/VoucherServiceInterface.php
   - packages/vouchers/src/Stacking/StackingEngine.php (delete)
   - packages/vouchers/src/Stacking/StackingRuleRegistry.php (delete)
   - tests/src/Checkout/DiscountCompositionServiceTest.php (new)
-  - tests/src/Checkout/DiscountProviderTest.php (new)
-  - tests/src/Vouchers/Unit/VoucherServiceTest.php
-  - tests/src/Vouchers/Unit/Stacking/StackingEngineTest.php
-  - packages/checkout/docs/04-usage.md
-  - packages/promotions/docs/04-usage.md
-  - packages/vouchers/docs/04-usage.md
+  scope_reuse_after:
+  - DSC-522 (Voucher reservation identity uses DiscountProvider commit)
+  - DSC-523 (Promotion commitment uses DiscountProvider commit)
   decisions_required: []
   implementation_steps:
   - Before claim, copy the approved exact file manifest into `exclusive_scope` and commit that tracker change.
@@ -1647,11 +1641,11 @@ tasks:
   - 'Same-pass documentation: Affected Promotions and Vouchers stacking/configuration docs.'
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
-    commit: null
-    tests: null
-    static_analysis: null
+    decision_record: docs/architecture-execution/design-combined-discount-policy.md
+    scope_manifest: 'DES-DSC-510 approved manifest (12 files: 4 create, 5 modify, 3 delete, 1 test)'
+    commit: 3cf51cb52
+    tests: 'DiscountCompositionServiceTest: 6 passed (14 assertions); PaymentFlowTest: 45 passed (151 assertions) — 51 checkout tests pass'
+    static_analysis: 'phpstan --level=6 packages/checkout/src -> OK'
     docs_updated: null
     reviewer: null
     review_notes: null
