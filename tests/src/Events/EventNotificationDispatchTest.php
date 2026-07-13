@@ -128,9 +128,9 @@ it('preserves safe failure codes and marks exhausted deliveries dead', function 
         $job = new DispatchEventNotificationDelivery($delivery->id);
 
         expect(fn () => app()->call([$job, 'handle']))
-            ->toThrow(\RuntimeException::class, 'Event notification delivery failed.');
+            ->toThrow(RuntimeException::class, 'Event notification delivery failed.');
 
-        $job->failed(new \RuntimeException('queue wrapper'));
+        $job->failed(new RuntimeException('queue wrapper'));
 
         expect($delivery->fresh()->status)->toBe('dead')
             ->and($delivery->fresh()->last_error_code)->toBe('invalid_recipient')

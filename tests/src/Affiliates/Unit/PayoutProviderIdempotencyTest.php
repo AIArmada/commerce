@@ -91,7 +91,7 @@ test('paypal derives one stable sender batch identity from the operation', funct
     config()->set('affiliates.payouts.paypal.client_id', 'client');
     config()->set('affiliates.payouts.paypal.client_secret', 'secret');
     $payout = createProviderPayout(PayoutMethodType::PayPal, ['email' => 'affiliate@example.test']);
-    $expected = substr(hash('sha256', (string) $payout->operation?->id), 0, 30);
+    $expected = mb_substr(hash('sha256', (string) $payout->operation?->id), 0, 30);
 
     Http::fake([
         'api-m.sandbox.paypal.com/v1/oauth2/token' => Http::response(['access_token' => 'token'], 200),

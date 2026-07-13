@@ -6,8 +6,8 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
-use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Sent;
 
 it('formats minor units using each currency exponent', function (): void {

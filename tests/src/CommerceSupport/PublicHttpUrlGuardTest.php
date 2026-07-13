@@ -44,7 +44,6 @@ it('fails closed when DNS resolution throws', function (): void {
         ->toThrow(InvalidArgumentException::class, 'could not be resolved safely');
 });
 
-
 it('rejects a hostname when any DNS answer is non-public', function (): void {
     $guard = new PublicHttpUrlGuard(static fn (string $host): array => ['93.184.216.34', '172.16.0.10']);
 

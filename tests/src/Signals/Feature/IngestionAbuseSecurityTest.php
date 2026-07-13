@@ -35,7 +35,7 @@ function createSecureSignalsProperty(object $test, string $writeKey, ?string $do
 }
 
 /**
- * @param array<string, mixed> $payload
+ * @param  array<string, mixed>  $payload
  */
 function postSignedSignalsOutcome(object $test, array $payload, string $secret, ?int $timestamp = null, ?string $signature = null): TestResponse
 {
