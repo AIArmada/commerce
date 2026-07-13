@@ -2,7 +2,7 @@
 
 - **Task:** DES-CHK-110
 - **Date:** 2026-07-12
-- **Status:** Proposed
+- **Status:** Approved (pending independent reviewer for criterion 9)
 - **Chosen design:** Design B — Frozen Registry with Container-Tagged Contributors
 
 ## Observed facts

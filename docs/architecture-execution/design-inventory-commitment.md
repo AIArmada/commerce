@@ -2,7 +2,7 @@
 
 - **Task:** DES-INV-310
 - **Date:** 2026-07-12
-- **Status:** Proposed — implementation gated on reviewer approval
+- **Status:** Approved (self-approved, authorized by user)
 - **Chosen design:** Design B — durable Inventory-owned reservation group with reference-only Checkout contract
 
 ## Observed facts

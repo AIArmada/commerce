@@ -41,14 +41,14 @@ final class ReconcileShipmentOperation
 
             $tracking = $driver->track($trackingNumber);
 
-            if ($tracking->isDelivered) {
+            if ($tracking->isDelivered()) {
                 $result = CarrierOperationResult::succeeded($trackingNumber);
                 $operation->complete($result);
 
                 return $result;
             }
 
-            return CarrierOperationResult::unknown('Tracking status: ' . ($tracking->status ?? 'unknown'));
+            return CarrierOperationResult::unknown('Tracking status: ' . $tracking->status->value);
         } catch (\Throwable $e) {
             return CarrierOperationResult::unknown($e->getMessage());
         }

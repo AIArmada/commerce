@@ -6,10 +6,9 @@ namespace AIArmada\Checkout;
 
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\Checkout\Actions\FinalizeCheckoutSession;
+use AIArmada\Checkout\Actions\CheckoutFinalizer;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
-use AIArmada\Checkout\Contracts\MutableStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\StepContributor;
 use AIArmada\Checkout\Exceptions\MissingPaymentGatewayException;
@@ -160,7 +159,7 @@ final class CheckoutServiceProvider extends PackageServiceProvider
             stepRegistry: $app->make(CheckoutStepRegistryInterface::class),
             events: $app->make(Dispatcher::class),
             stepExecutor: $app->make(StepExecutor::class),
-            finalizer: $app->make(FinalizeCheckoutSession::class),
+            finalizer: $app->make(CheckoutFinalizer::class),
             paymentResolver: $app->make(PaymentGatewayResolverInterface::class),
         ));
 
@@ -178,9 +177,7 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         $registry->registerLazy('calculate_shipping', fn () => $this->app->make(CalculateShippingStep::class));
         $registry->registerLazy('process_payment', fn () => $this->app->make(ProcessPaymentStep::class));
         $registry->registerLazy('persist_customer', fn () => $this->app->make(PersistCustomerStep::class));
-        $registry->registerLazy('create_order', fn () => new CreateOrderStep(
-            vouchersAdapter: $this->app->make(Integrations\VouchersAdapter::class),
-        ));
+        $registry->registerLazy('create_order', fn () => $this->app->make(CreateOrderStep::class));
         $registry->registerLazy('dispatch_documents', fn () => $this->app->make(DispatchDocumentGenerationStep::class));
     }
 

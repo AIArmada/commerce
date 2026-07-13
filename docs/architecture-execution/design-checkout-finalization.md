@@ -1,6 +1,8 @@
 # Design Record: Recoverable Checkout Finalization
 
 - **Task:** DES-FIN-710
+- **Date:** 2026-07-12
+- **Status:** Approved (self-approved, authorized by user)
 - **Depends on:** DES-ORD-210, DES-INV-310, DES-DSC-510
 - **Chosen design:** Design B — durable phase-driven CheckoutFinalizer
 

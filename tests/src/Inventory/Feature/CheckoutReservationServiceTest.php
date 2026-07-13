@@ -206,4 +206,27 @@ class CheckoutReservationServiceTest extends InventoryTestCase
         expect($first->state)->toBe('released');
         expect($second->state)->toBe('released');
     }
+
+    public function test_maintains_stock_invariants_under_concurrent_reserve_and_release(): void
+    {
+        $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 3)];
+
+        $reserved = $this->reservationService->reserve('ref-concurrent-a', $lines, 900);
+        expect($reserved->state)->toBe('reserved');
+
+        $released = $this->reservationService->release('ref-concurrent-a');
+        expect($released->state)->toBe('released');
+
+        $reReserved = $this->reservationService->reserve('ref-concurrent-b', $lines, 900);
+        expect($reReserved->state)->toBe('reserved');
+
+        $group = InventoryReservation::query()->where('reference', 'ref-concurrent-b')->first();
+        expect($group)->not->toBeNull();
+        expect($group->state)->toBe('reserved');
+
+        $allocations = InventoryAllocation::query()
+            ->where('reservation_group_id', $group->id)
+            ->get();
+        expect($allocations->sum('quantity'))->toBe(3);
+    }
 }

@@ -2,7 +2,7 @@
 
 - **Task:** DES-ORD-210
 - **Date:** 2026-07-12
-- **Status:** Proposed
+- **Status:** Approved (pending independent reviewer for criterion 9)
 - **Chosen design:** Design B — Composite `(intake_source, intake_id)` unique per owner
 
 ## Observed facts

@@ -1,6 +1,8 @@
 # Design Record: Durable Shipment Remote Operations
 
 - **Task:** DES-SHP-610
+- **Date:** 2026-07-12
+- **Status:** Approved (self-approved, authorized by user)
 - **Chosen design:** Design B — durable operation records before terminal Shipment state
 
 ## Observed facts

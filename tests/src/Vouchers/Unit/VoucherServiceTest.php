@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
+use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherService;
@@ -379,4 +380,61 @@ test('voucher service release clears all reservation cache keys for voucher', fu
     expect(Cache::get("voucher_reservation:{$voucher->id}:session-a"))->toBeNull()
         ->and(Cache::get("voucher_reservation:{$voucher->id}:session-b"))->toBeNull()
         ->and(Cache::get("voucher_reservation_sessions:{$voucher->id}"))->toBeNull();
+});
+
+test('it releases only one session when session id is provided', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'RELEASESNGL',
+        'name' => 'Release Single Session',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+
+    $service->reserve('RELEASESNGL', 'session-a');
+    $service->reserve('RELEASESNGL', 'session-b');
+
+    $service->release('RELEASESNGL', 'session-a');
+
+    expect(Cache::get("voucher_reservation:{$voucher->id}:session-a"))->toBeNull()
+        ->and(Cache::get("voucher_reservation:{$voucher->id}:session-b"))->toBeArray()
+        ->and(Cache::get("voucher_reservation_sessions:{$voucher->id}"))->not->toContain('session-a')
+        ->and(Cache::get("voucher_reservation_sessions:{$voucher->id}"))->toContain('session-b');
+});
+
+test('it creates only one usage on duplicate commit', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'DUPREDEEM',
+        'name' => 'Duplicate Redeem',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'usage_limit' => 1,
+    ]);
+
+    $service = app(VoucherService::class);
+
+    $order = Order::factory()->create([
+        'order_number' => 'ORD-DUP-123',
+        'subtotal' => 10000,
+        'discount_total' => 1000,
+        'grand_total' => 9000,
+        'currency' => 'MYR',
+    ]);
+
+    $service->redeem('dupredeem', (string) $order->id);
+
+    expect(VoucherUsage::where('voucher_id', $voucher->id)->count())->toBe(1);
+
+    try {
+        $service->redeem('dupredeem', (string) $order->id);
+    } catch (VoucherUsageLimitException) {
+        // ponytail: usage_limit blocks duplicate commit
+    }
+
+    expect(VoucherUsage::where('voucher_id', $voucher->id)->count())->toBe(1);
 });

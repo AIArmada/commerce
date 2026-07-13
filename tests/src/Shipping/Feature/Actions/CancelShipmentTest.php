@@ -3,12 +3,16 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Actions\CancelShipment;
+use AIArmada\Shipping\Contracts\ShippingDriverInterface;
+use AIArmada\Shipping\Enums\ShipmentOperationStatus;
 use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Models\ShipmentOperation;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\States\Cancelled;
 use AIArmada\Shipping\States\Pending;
 use AIArmada\Shipping\States\Shipped;
+use RuntimeException;
 
 describe('CancelShipment Action', function (): void {
     it('cancels a cancellable shipment', function (): void {
@@ -59,5 +63,38 @@ describe('CancelShipment Action', function (): void {
 
         expect(fn () => CancelShipment::run($shipment))
             ->toThrow(ShipmentNotCancellableException::class);
+    });
+
+    it('does not mark shipment cancelled when carrier throws unknown', function (): void {
+        $shipment = Shipment::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'reference' => 'TEST-CANCEL-CARRIER-THROW',
+            'carrier_code' => 'null',
+            'tracking_number' => 'TRACK-NOT-CANCELLED',
+            'status' => Pending::class,
+            'origin_address' => ['name' => 'Origin'],
+            'destination_address' => ['name' => 'Dest'],
+        ]);
+
+        $mockDriver = Mockery::mock(ShippingDriverInterface::class);
+        $mockDriver->shouldReceive('cancelShipment')
+            ->with('TRACK-NOT-CANCELLED')
+            ->andThrow(new RuntimeException('Carrier API unavailable'));
+
+        $manager = Mockery::mock(ShippingManager::class);
+        $manager->shouldReceive('driver')->with('null')->andReturn($mockDriver);
+
+        $action = new CancelShipment($manager);
+        $result = $action->handle($shipment, 'Carrier unavailable');
+
+        expect($result->status)->not->toBeInstanceOf(Cancelled::class);
+
+        $operation = ShipmentOperation::where('shipment_id', $shipment->id)
+            ->where('operation_type', 'cancel')
+            ->where('status', ShipmentOperationStatus::Unknown->value)
+            ->first();
+
+        expect($operation)->not->toBeNull();
     });
 });

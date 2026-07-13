@@ -6,6 +6,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
 it('creates order with intake identity', function (): void {
@@ -142,4 +143,46 @@ it('retried intake includes loaded relationships', function (): void {
     expect($order2->relationLoaded('items'))->toBeTrue();
     expect($order2->relationLoaded('billingAddress'))->toBeTrue();
     expect($order2->relationLoaded('shippingAddress'))->toBeTrue();
+});
+
+it('throws conflict exception when retry has different customer', function (): void {
+    $createOrder = new CreateOrder;
+
+    OwnerContext::withOwner(null, fn () => $createOrder->execute(
+        orderData: ['currency' => 'MYR', 'subtotal' => 5000, 'grand_total' => 5000, 'customer_id' => '1'],
+        items: [['name' => 'Test Item', 'quantity' => 1, 'unit_price' => 5000, 'currency' => 'MYR']],
+        intakeSource: 'checkout',
+        intakeId: 'test-1',
+    ));
+
+    expect(fn () => OwnerContext::withOwner(null, fn () => $createOrder->execute(
+        orderData: ['currency' => 'MYR', 'subtotal' => 5000, 'grand_total' => 5000, 'customer_id' => '2'],
+        items: [['name' => 'Test Item', 'quantity' => 1, 'unit_price' => 5000, 'currency' => 'MYR']],
+        intakeSource: 'checkout',
+        intakeId: 'test-1',
+    )))->toThrow(AIArmada\Orders\Exceptions\OrderIntakeConflictException::class);
+});
+
+it('dispatches OrderCreated only once and not on retry', function (): void {
+    Event::fake();
+
+    $createOrder = new CreateOrder;
+
+    OwnerContext::withOwner(null, fn () => $createOrder->execute(
+        orderData: ['currency' => 'MYR', 'subtotal' => 5000, 'grand_total' => 5000],
+        items: [['name' => 'Test Item', 'quantity' => 1, 'unit_price' => 5000, 'currency' => 'MYR']],
+        intakeSource: 'checkout',
+        intakeId: 'sess_event_test',
+    ));
+
+    Event::assertDispatched(AIArmada\Orders\Events\OrderCreated::class, 1);
+
+    OwnerContext::withOwner(null, fn () => $createOrder->execute(
+        orderData: ['currency' => 'MYR', 'subtotal' => 5000, 'grand_total' => 5000],
+        items: [['name' => 'Test Item', 'quantity' => 1, 'unit_price' => 5000, 'currency' => 'MYR']],
+        intakeSource: 'checkout',
+        intakeId: 'sess_event_test',
+    ));
+
+    Event::assertDispatched(AIArmada\Orders\Events\OrderCreated::class, 1);
 });

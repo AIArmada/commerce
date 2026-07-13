@@ -171,7 +171,9 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
             return new ReservationOutcome(reference: $reference, state: 'not_found');
         }
 
-        return $this->outcome($group);
+        $this->expireIfNeeded($group);
+
+        return $this->outcome($group->refresh());
     }
 
     private function outcome(InventoryReservation $group): ReservationOutcome

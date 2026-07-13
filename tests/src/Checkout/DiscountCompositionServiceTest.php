@@ -154,3 +154,35 @@ it('release delegates commitments to providers', function (): void {
 
     expect($released)->toBe(['abc', 'def']);
 });
+
+it('allocates promotions first then vouchers when both exceed cap', function (): void {
+    $session = mockSession(10000);
+
+    $promotionProvider = new class implements DiscountProvider {
+        public function providerKey(): string { return 'promotions'; }
+        public function evaluate(CheckoutSession $s, array $d): array {
+            return [new DiscountProposal('promotions', 'promo-1', 8000, priority: 60)];
+        }
+        public function commit(CheckoutSession $s, array $a): array { return []; }
+        public function release(CheckoutSession $s, array $c): void {}
+    };
+
+    $voucherProvider = new class implements DiscountProvider {
+        public function providerKey(): string { return 'vouchers'; }
+        public function evaluate(CheckoutSession $s, array $d): array {
+            return [new DiscountProposal('vouchers', 'vc-1', 5000, priority: 50)];
+        }
+        public function commit(CheckoutSession $s, array $a): array { return []; }
+        public function release(CheckoutSession $s, array $c): void {}
+    };
+
+    $service = new DiscountCompositionService([$promotionProvider, $voucherProvider]);
+    $result = $service->evaluate($session, []);
+
+    expect($result['totalDiscount'])->toBe(10000);
+    expect($result['allocations'])->toHaveCount(2);
+    expect($result['allocations'][0]->providerKey)->toBe('promotions');
+    expect($result['allocations'][0]->requestedAmount)->toBe(8000);
+    expect($result['allocations'][1]->providerKey)->toBe('vouchers');
+    expect($result['allocations'][1]->requestedAmount)->toBe(2000);
+});

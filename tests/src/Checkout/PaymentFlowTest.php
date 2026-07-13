@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Checkout\Actions\CheckoutFinalizer;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
@@ -11,6 +13,7 @@ use AIArmada\Checkout\Data\CheckoutResult;
 use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
+use AIArmada\Checkout\Events\CheckoutCompleted;
 use AIArmada\Checkout\Http\Controllers\PaymentCallbackController;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
@@ -37,6 +40,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Mockery\Expectation;
 
@@ -599,8 +603,11 @@ describe('CreateOrderStep', function (): void {
         $secondResult = app(CreateOrderStep::class)->handle($session);
 
         expect($secondResult->isSuccessful())->toBeTrue()
-            ->and($session->fresh()->order_id)->toBe($order->id)
-            ->and($session->fresh()->completed_at)->not->toBeNull();
+            ->and($session->fresh()->order_id)->toBe($order->id);
+
+        app(\AIArmada\Checkout\Actions\CheckoutFinalizer::class)->finalize($session->fresh());
+
+        expect($session->fresh()->completed_at)->not->toBeNull();
     });
 
     it('does not commit inventory reservations when payment confirmation fails', function (): void {
@@ -1126,6 +1133,32 @@ describe('CreateOrderStep', function (): void {
 
         expect($step->getDependencies())->toBe(['calculate_pricing', 'process_payment']);
     });
+
+    it('surfaces free order failure instead of logging', function (): void {
+        $orderService = mock(OrderServiceInterface::class);
+        $orderService->shouldReceive('createOrder')
+            ->once()
+            ->andThrow(new RuntimeException('Simulated order creation failure'));
+
+        app()->instance(OrderServiceInterface::class, $orderService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-free-failure',
+            'cart_snapshot' => ['items' => [['name' => 'Free Item', 'quantity' => 1, 'price' => 0]]],
+            'payment_data' => ['type' => 'free_order'],
+            'subtotal' => 0,
+            'grand_total' => 0,
+            'currency' => 'USD',
+        ]);
+        $session->transitionStatus(Processing::class);
+
+        $step = app(CreateOrderStep::class);
+
+        expect(fn () => $step->handle($session))
+            ->toThrow(RuntimeException::class, 'Simulated order creation failure');
+
+        expect($session->fresh()->status instanceof Completed)->toBeFalse();
+    });
 });
 
 describe('CheckoutService', function (): void {
@@ -1291,7 +1324,7 @@ describe('CheckoutService', function (): void {
             stepRegistry: $registry,
             events: app(Dispatcher::class),
             stepExecutor: new \AIArmada\Checkout\Services\StepExecutor($registry, app(Dispatcher::class)),
-            finalizer: new \AIArmada\Checkout\Actions\FinalizeCheckoutSession(app(Dispatcher::class)),
+            finalizer: new \AIArmada\Checkout\Actions\CheckoutFinalizer(app(Dispatcher::class)),
             paymentResolver: null,
         );
 
@@ -1404,7 +1437,7 @@ describe('CheckoutService', function (): void {
             stepRegistry: $registry,
             events: app(Dispatcher::class),
             stepExecutor: new \AIArmada\Checkout\Services\StepExecutor($registry, app(Dispatcher::class)),
-            finalizer: new \AIArmada\Checkout\Actions\FinalizeCheckoutSession(app(Dispatcher::class)),
+            finalizer: new \AIArmada\Checkout\Actions\CheckoutFinalizer(app(Dispatcher::class)),
             paymentResolver: null,
         );
 
@@ -1523,7 +1556,7 @@ describe('CheckoutService', function (): void {
             stepRegistry: $registry,
             events: app(Dispatcher::class),
             stepExecutor: new \AIArmada\Checkout\Services\StepExecutor($registry, app(Dispatcher::class)),
-            finalizer: new \AIArmada\Checkout\Actions\FinalizeCheckoutSession(app(Dispatcher::class)),
+            finalizer: new \AIArmada\Checkout\Actions\CheckoutFinalizer(app(Dispatcher::class)),
             paymentResolver: null,
         );
 
@@ -1547,6 +1580,95 @@ describe('CheckoutService', function (): void {
         expect($result->success)->toBeTrue()
             ->and($tracker->steps)->toBe(['reserve_inventory', 'persist_customer', 'create_order'])
             ->and($session->fresh()->status instanceof Completed)->toBeTrue();
+    });
+
+    it('dispatches CheckoutCompleted exactly once for a completed checkout', function (): void {
+        Event::fake([CheckoutCompleted::class]);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-checkout-completed-once',
+        ]);
+
+        $finalizer = new CheckoutFinalizer(app(Dispatcher::class));
+        $result = $finalizer->finalize($session);
+
+        expect($result->success)->toBeTrue();
+
+        Event::assertDispatched(CheckoutCompleted::class, 1);
+    });
+
+    it('clears cart only after checkout completion', function (): void {
+        $cartManager = mock(CartManagerInterface::class);
+        $cartManager->shouldReceive('getById')->once()->with('test-cart-clear')->andReturnNull();
+
+        $finalizer = new CheckoutFinalizer(app(Dispatcher::class), $cartManager);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-clear',
+        ]);
+
+        $result = $finalizer->finalize($session);
+
+        expect($result->success)->toBeTrue()
+            ->and($session->fresh()->status instanceof Completed)->toBeTrue();
+
+        $failSession = CheckoutSession::create([
+            'cart_id' => 'test-cart-clear-fail',
+            'step_states' => ['fail_step' => 'pending'],
+            'current_step' => 'fail_step',
+        ]);
+
+        $failRegistry = new CheckoutStepRegistry;
+
+        $failRegistry->register('fail_step', new class implements CheckoutStepInterface
+        {
+            public function getIdentifier(): string
+            {
+                return 'fail_step';
+            }
+
+            public function getName(): string
+            {
+                return 'Fail Step';
+            }
+
+            public function validate(CheckoutSession $session): array
+            {
+                return [];
+            }
+
+            public function handle(CheckoutSession $session): StepResult
+            {
+                return StepResult::failed($this->getIdentifier(), 'Step failed intentionally');
+            }
+
+            public function canSkip(CheckoutSession $session): bool
+            {
+                return false;
+            }
+
+            public function rollback(CheckoutSession $session): void {}
+
+            public function getDependencies(): array
+            {
+                return [];
+            }
+        });
+
+        $failRegistry->setOrder(['fail_step']);
+
+        $failService = new CheckoutService(
+            stepRegistry: $failRegistry,
+            events: app(Dispatcher::class),
+            stepExecutor: new \AIArmada\Checkout\Services\StepExecutor($failRegistry, app(Dispatcher::class)),
+            finalizer: new CheckoutFinalizer(app(Dispatcher::class)),
+            paymentResolver: null,
+        );
+
+        $failResult = $failService->processCheckout($failSession);
+
+        expect($failResult->success)->toBeFalse()
+            ->and($failSession->fresh()->status instanceof Completed)->toBeFalse();
     });
 });
 

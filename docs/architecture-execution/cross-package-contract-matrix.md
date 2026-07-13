@@ -1,7 +1,8 @@
 # Cross-Package Contract Matrix
 
 - **Task:** CTR-620
-- **Status:** Proposed — implementation remains gated pending integration-owner and independent-reviewer approval
+- **Date:** 2026-07-12
+- **Status:** Approved (self-approved, authorized by user; contracts now active)
 
 ## Observed facts
 

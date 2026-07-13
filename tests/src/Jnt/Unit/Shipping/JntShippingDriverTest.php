@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 use AIArmada\Jnt\Data\TrackingData as JntTrackingData;
 use AIArmada\Jnt\Enums\CancellationReason;
+use AIArmada\Jnt\Exceptions\JntApiException;
+use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use AIArmada\Jnt\Services\JntTrackingService;
 use AIArmada\Jnt\Shipping\JntShippingDriver;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Data\PackageData;
+use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Enums\DriverCapability;
 
 // ============================================
@@ -238,6 +242,74 @@ describe('validateAddress', function (): void {
     });
 });
 
+describe('createShipment', function (): void {
+    it('returns unknown outcome on network timeout for create shipment', function (): void {
+        $this->jntService->shouldReceive('createOrder')
+            ->once()
+            ->andThrow(new JntNetworkException('Network timeout'));
+
+        $shipment = ShipmentData::from([
+            'reference' => 'REF-TIMEOUT',
+            'carrierCode' => 'jnt',
+            'serviceCode' => 'EZ',
+            'origin' => [
+                'name' => 'Sender',
+                'phone' => '+60123456789',
+                'line1' => '123 Main St',
+                'postcode' => '50000',
+                'country' => 'MYS',
+            ],
+            'destination' => [
+                'name' => 'Receiver',
+                'phone' => '+60198765432',
+                'line1' => '456 Second St',
+                'postcode' => '47810',
+                'country' => 'MYS',
+            ],
+            'items' => [],
+        ]);
+
+        $result = $this->driver->createShipment($shipment);
+
+        expect($result->success)->toBeFalse()
+            ->and($result->outcomeType)->toBe('unknown')
+            ->and($result->retryable)->toBeTrue();
+    });
+
+    it('returns failed outcome on api rejection for create shipment', function (): void {
+        $this->jntService->shouldReceive('createOrder')
+            ->once()
+            ->andThrow(new JntApiException('API rejected the order'));
+
+        $shipment = ShipmentData::from([
+            'reference' => 'REF-REJECT',
+            'carrierCode' => 'jnt',
+            'serviceCode' => 'EZ',
+            'origin' => [
+                'name' => 'Sender',
+                'phone' => '+60123456789',
+                'line1' => '123 Main St',
+                'postcode' => '50000',
+                'country' => 'MYS',
+            ],
+            'destination' => [
+                'name' => 'Receiver',
+                'phone' => '+60198765432',
+                'line1' => '456 Second St',
+                'postcode' => '47810',
+                'country' => 'MYS',
+            ],
+            'items' => [],
+        ]);
+
+        $result = $this->driver->createShipment($shipment);
+
+        expect($result->success)->toBeFalse()
+            ->and($result->retryable)->toBeFalse()
+            ->and($result->outcomeType)->toBe('terminal_error');
+    });
+});
+
 describe('cancelShipment', function (): void {
     it('cancels using resolved orderId when available', function (): void {
         $tracking = JntTrackingData::make(trackingNumber: 'JNTTRACK123', details: [], orderId: 'ORDER123');
@@ -281,5 +353,22 @@ describe('cancelShipment', function (): void {
             ->andReturn(['success' => false]);
 
         expect($this->driver->cancelShipment('JNTTRACK123')->success)->toBeFalse();
+    });
+
+    it('returns unknown outcome on cancel when carrier throws', function (): void {
+        $this->jntService->shouldReceive('trackParcel')
+            ->once()
+            ->with(null, 'JNTTRACK456')
+            ->andThrow(new RuntimeException('Tracking unavailable'));
+
+        $this->jntService->shouldReceive('cancelOrder')
+            ->once()
+            ->with('JNTTRACK456', CancellationReason::CUSTOMER_REQUEST, 'JNTTRACK456')
+            ->andThrow(new JntNetworkException('Network timeout on cancel'));
+
+        $result = $this->driver->cancelShipment('JNTTRACK456');
+
+        expect($result->outcomeType)->toBe('unknown')
+            ->and($result->retryable)->toBeTrue();
     });
 });

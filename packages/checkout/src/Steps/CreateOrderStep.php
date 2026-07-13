@@ -4,14 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Steps;
 
-use AIArmada\Cart\Contracts\CartManagerInterface;
-use AIArmada\Checkout\Actions\CheckoutFinalizer;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
-use AIArmada\Checkout\Integrations\InventoryAdapter;
-use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Support\Facades\Log;
@@ -19,10 +14,6 @@ use Throwable;
 
 final class CreateOrderStep extends AbstractCheckoutStep
 {
-    public function __construct(
-        private readonly ?VouchersAdapter $vouchersAdapter = null,
-    ) {}
-
     public function getIdentifier(): string
     {
         return 'create_order';
@@ -123,8 +114,6 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 ]);
             }
         }
-
-        app(CheckoutFinalizer::class)->finalize($session);
 
         return $this->success('Order created successfully', [
             'order_id' => $order->id,
@@ -279,76 +268,6 @@ final class CreateOrderStep extends AbstractCheckoutStep
         $resolved = mb_trim((string) $value);
 
         return $resolved !== '' ? $resolved : null;
-    }
-
-    private function commitInventoryReservations(CheckoutSession $session): void
-    {
-        if ($session->order_id === null) {
-            return;
-        }
-
-        $pricingData = $session->pricing_data ?? [];
-        $reservation = $pricingData['inventory_reservation'] ?? [];
-
-        if (empty($reservation) || ! isset($reservation['reference'])) {
-            return;
-        }
-
-        if (! interface_exists(CheckoutReservationServiceInterface::class)) {
-            return;
-        }
-
-        $inventoryAdapter = app(InventoryAdapter::class);
-        $inventoryAdapter->commit($reservation['reference'], $session->order_id);
-    }
-
-    private function shouldCommitInventoryReservations(
-        bool $isFreeOrder,
-        bool $paymentConfirmationEnabled,
-        bool $paymentWasConfirmed,
-    ): bool {
-        if ($isFreeOrder) {
-            return true;
-        }
-
-        if (! $paymentConfirmationEnabled) {
-            return true;
-        }
-
-        return $paymentWasConfirmed;
-    }
-
-    private function clearCart(CheckoutSession $session): void
-    {
-        if (! app()->bound(CartManagerInterface::class)) {
-            return;
-        }
-
-        $cartManager = app(CartManagerInterface::class);
-        $cart = $cartManager->getById($session->cart_id);
-
-        if ($cart !== null) {
-            $cart->clear();
-        }
-    }
-
-    private function redeemAppliedVouchers(CheckoutSession $session, string $orderId): void
-    {
-        if ($this->vouchersAdapter === null) {
-            return;
-        }
-
-        $discountData = $session->discount_data ?? [];
-        $voucherCodes = array_values(array_filter(array_map(
-            static fn (array $voucher): ?string => $voucher['code'] ?? null,
-            $discountData['vouchers'] ?? [],
-        )));
-
-        if ($voucherCodes === []) {
-            return;
-        }
-
-        $this->vouchersAdapter->redeemVouchers($voucherCodes, $orderId);
     }
 
     /**

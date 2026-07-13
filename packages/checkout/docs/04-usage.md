@@ -120,10 +120,12 @@ if ($result->success) {
 
 ### Checking Step State
 
-The session model exposes current step state directly:
+The session model exposes current step state:
 
 ```php
 $session->current_step;     // Current step name
+```
+Access step data and statuses directly on the session model after `processCheckout()` returns a `CheckoutResult`.
 
 ## Working with Sessions
 

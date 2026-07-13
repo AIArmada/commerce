@@ -6,6 +6,7 @@ namespace AIArmada\Promotions\Listeners;
 
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Promotions\Models\Promotion;
@@ -21,8 +22,12 @@ final class MarkPromotionAsUsedOnOrderPlaced
             return;
         }
 
+        // ponytail: cross-tenant session lookup — session ID is resolved from
+        // the order's own owner-scoped metadata, so the lookup target is already
+        // bounded to the same owner as the order. Strip owner scope for direct
+        // session lookup since CheckoutSession may be stored as a global record.
         $session = CheckoutSession::query()
-            ->withoutGlobalScope(\AIArmada\CommerceSupport\Support\OwnerScope::class)
+            ->withoutGlobalScope(OwnerScope::class)
             ->find($sessionId);
 
         if ($session === null) {

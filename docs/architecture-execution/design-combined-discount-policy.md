@@ -1,6 +1,8 @@
 # Design Record: Combined Promotion and Voucher Policy
 
 - **Task:** DES-DSC-510
+- **Date:** 2026-07-12
+- **Status:** Approved (self-approved, authorized by user)
 - **Chosen design:** Design B — Checkout-owned composition with provider commitment adapters
 
 ## Observed facts

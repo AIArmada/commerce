@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Services;
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
-use AIArmada\Checkout\Actions\FinalizeCheckoutSession;
+use AIArmada\Checkout\Actions\CheckoutFinalizer;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
@@ -41,7 +41,7 @@ final class CheckoutService implements CheckoutServiceInterface
         private readonly CheckoutStepRegistryInterface $stepRegistry,
         private readonly Dispatcher $events,
         private readonly StepExecutor $stepExecutor,
-        private readonly FinalizeCheckoutSession $finalizer,
+        private readonly CheckoutFinalizer $finalizer,
         private readonly ?PaymentGatewayResolverInterface $paymentResolver = null,
     ) {}
 

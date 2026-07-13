@@ -2,7 +2,7 @@
 
 - **Task:** DES-OWN-410
 - **Date:** 2026-07-12
-- **Status:** Proposed — implementation gated on reviewer approval
+- **Status:** Approved (self-approved, authorized by user)
 - **Chosen design:** Design B — no new OwnerAccessPolicy; reuse `commerce-support` directly and remove only duplicate tuple adapters
 
 ## Observed facts

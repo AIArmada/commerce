@@ -260,7 +260,7 @@ final class VouchersAdapter implements DiscountProvider
             return [];
         }
 
-        $this->redeemVouchers($codes, (string) $session->getKey());
+        $this->redeemVouchers($codes, (string) ($session->order_id ?? $session->getKey()));
 
         $commitments = [];
         foreach ($accepted as $proposal) {
@@ -279,6 +279,11 @@ final class VouchersAdapter implements DiscountProvider
 
     public function release(CheckoutSession $session, array $commitments): void
     {
+        // ponytail: release clears cache reservation only; committed voucher usage
+        // is permanent and cannot be rolled back. This is intentional — voucher
+        // redemption is the point-of-no-return. If a downstream step fails after
+        // voucher commit, the voucher is consumed but order may not materialize.
+        // Add compensating redemption-reversal when loss-prevention requires it.
         $sessionId = (string) $session->getKey();
 
         foreach ($commitments as $commitment) {

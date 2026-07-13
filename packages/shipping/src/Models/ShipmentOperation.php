@@ -50,6 +50,16 @@ final class ShipmentOperation extends Model
 
     public static function recordStart(string $shipmentId, string $operationType, ?string $reference = null): self
     {
+        $existing = self::query()
+            ->where('shipment_id', $shipmentId)
+            ->where('operation_type', $operationType)
+            ->where('status', ShipmentOperationStatus::Pending->value)
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
         return self::create([
             'shipment_id' => $shipmentId,
             'operation_type' => $operationType,
