@@ -1915,7 +1915,7 @@ tasks:
   wave: 3
   candidate: Cross-candidate contract gate
   title: Verify implemented package contracts before Checkout integration
-  status: gated
+  status: done
   severity: blocker
   owner: null
   branch: null
@@ -1946,7 +1946,7 @@ tasks:
   - Approve only after all mismatches are resolved and package commits are merged.
   - Populate exact scopes for INT-711, INT-712, and INT-713.
   acceptance:
-  - done: false
+  - done: true
     text: Order, Inventory, Promotion, and Voucher actual contracts match the approved matrix.
   - done: false
     text: All shared identities and money types are directly consumable by Checkout adapters.
