@@ -45,4 +45,27 @@ final class DiscountProposal
             'meta' => $this->meta,
         ];
     }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $arrays
+     * @return array<int, self>
+     */
+    public static function fromArrays(array $arrays): array
+    {
+        $proposals = [];
+
+        foreach ($arrays as $data) {
+            $proposals[] = new self(
+                providerKey: (string) ($data['provider_key'] ?? ''),
+                candidateKey: (string) ($data['candidate_key'] ?? ''),
+                requestedAmount: (int) ($data['requested_amount'] ?? 0),
+                label: $data['label'] ?? null,
+                code: $data['code'] ?? null,
+                priority: (int) ($data['priority'] ?? 0),
+                meta: (array) ($data['meta'] ?? []),
+            );
+        }
+
+        return $proposals;
+    }
 }

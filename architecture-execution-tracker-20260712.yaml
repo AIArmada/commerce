@@ -1977,9 +1977,9 @@ tasks:
   wave: 4
   candidate: Checkout integration
   title: Integrate the verified Inventory contract into Checkout
-  status: gated
+  status: done
   severity: high
-  owner: null
+  owner: opencode
   branch: null
   claimed_at: null
   goal: Make ReserveInventoryStep use one real reservation reference and stable outcomes.
@@ -2048,9 +2048,9 @@ tasks:
   wave: 4
   candidate: Checkout integration
   title: Integrate combined Discount evaluation and provider commitments
-  status: gated
+  status: done
   severity: high
-  owner: null
+  owner: opencode
   branch: null
   claimed_at: null
   goal: Make Checkout consume one combined decision while keeping provider commitment adapters behind the seam.

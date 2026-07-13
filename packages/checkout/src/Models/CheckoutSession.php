@@ -104,6 +104,8 @@ class CheckoutSession extends Model
         'grand_total',
         'currency',
         'error_message',
+        'finalization_phase',
+        'finalization_error',
         'expires_at',
         'completed_at',
         'cancelled_at',

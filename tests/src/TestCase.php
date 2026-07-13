@@ -1420,6 +1420,8 @@ abstract class TestCase extends Orchestra
 
             // Status tracking
             $table->string('status')->default('pending')->index();
+            $table->string('finalization_phase')->nullable();
+            $table->text('finalization_error')->nullable();
             $table->string('current_step')->nullable();
             $table->string('error_message')->nullable();
 

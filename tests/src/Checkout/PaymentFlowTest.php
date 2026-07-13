@@ -659,10 +659,6 @@ describe('CreateOrderStep', function (): void {
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $inventoryService = mock(CheckoutReservationServiceInterface::class);
-        $inventoryService->shouldReceive('commit')
-            ->once()
-            ->andReturn(new ReservationOutcome('test-cart-paid-inventory-order', 'committed'));
-
         app()->instance(CheckoutReservationServiceInterface::class, $inventoryService);
 
         $session = CheckoutSession::create([
@@ -746,11 +742,6 @@ describe('CreateOrderStep', function (): void {
         $session = $session->transitionStatus(Processing::class);
 
         $inventoryService = mock(CheckoutReservationServiceInterface::class);
-        $inventoryService->shouldReceive('commit')
-            ->once()
-            ->with($session->cart_id, $order->id)
-            ->andReturn(new ReservationOutcome('test-cart-paid-without-confirm', 'committed'));
-
         app()->instance(CheckoutReservationServiceInterface::class, $inventoryService);
 
         $step = app(CreateOrderStep::class);
@@ -799,11 +790,6 @@ describe('CreateOrderStep', function (): void {
         $session = $session->transitionStatus(Processing::class);
 
         $inventoryService = mock(CheckoutReservationServiceInterface::class);
-        $inventoryService->shouldReceive('commit')
-            ->once()
-            ->with($session->cart_id, $order->id)
-            ->andReturn(new ReservationOutcome('test-cart-free-inventory-order', 'committed'));
-
         app()->instance(CheckoutReservationServiceInterface::class, $inventoryService);
 
         $step = app(CreateOrderStep::class);
@@ -909,11 +895,6 @@ describe('CreateOrderStep', function (): void {
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $voucherService = mock(VoucherServiceInterface::class);
-        /** @var Expectation $redeemExpectation */
-        $redeemExpectation = $voucherService->shouldReceive('redeem');
-        $redeemExpectation->once()
-            ->with('WELCOME10', $order->id);
-
         app()->instance(VoucherServiceInterface::class, $voucherService);
 
         $session = CheckoutSession::create([

@@ -5,16 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Steps;
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
-use AIArmada\Checkout\Actions\FinalizeCheckoutSession;
+use AIArmada\Checkout\Actions\CheckoutFinalizer;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Integrations\InventoryAdapter;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Checkout\States\Completed;
-use AIArmada\Checkout\States\Pending;
-use AIArmada\Checkout\States\Processing;
-use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Support\Facades\Log;
@@ -127,34 +124,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
             }
         }
 
-        if ($this->shouldCommitInventoryReservations($isFreeOrder, $paymentConfirmationEnabled, $paymentWasConfirmed)) {
-            $this->commitInventoryReservations($session);
-        }
-
-        $session->update(['completed_at' => now()]);
-
-        $this->redeemAppliedVouchers($session, $order->id);
-
-        if ($session->status->is(Pending::class)) {
-            $session->transitionStatus(Processing::class);
-        }
-
-        if (! $session->status->is(Completed::class)) {
-            $session->transitionStatus(Completed::class);
-        }
-        $this->clearCart($session);
-
-        if ($isFreeOrder) {
-            try {
-                app(FinalizeCheckoutSession::class)->finalize($session);
-            } catch (Throwable $e) {
-                Log::error('Free order fulfillment failed', [
-                    'order_id' => $order->id,
-                    'checkout_session_id' => $session->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        app(CheckoutFinalizer::class)->finalize($session);
 
         return $this->success('Order created successfully', [
             'order_id' => $order->id,
