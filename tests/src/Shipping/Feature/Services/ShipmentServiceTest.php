@@ -6,9 +6,9 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\LabelData;
+use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
-use AIArmada\Shipping\Data\ShipmentResultData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
@@ -301,12 +301,9 @@ describe('ShipmentService', function (): void {
         ]);
 
         // Mock the shipping manager and driver
-        $mockResult = new ShipmentResultData(
-            success: true,
+        $mockResult = CarrierOperationResult::succeeded(
             trackingNumber: 'TRACK123',
             carrierReference: 'CARRIER123',
-            labelUrl: 'https://example.com/label.pdf',
-            rawResponse: ['success' => true]
         );
 
         $mockDriver = Mockery::mock(ShippingDriverInterface::class);
@@ -327,7 +324,6 @@ describe('ShipmentService', function (): void {
         expect($shipped->status)->toBeInstanceOf(Shipped::class);
         expect($shipped->tracking_number)->toBe('TRACK123');
         expect($shipped->carrier_reference)->toBe('CARRIER123');
-        expect($shipped->latestLabel()->url)->toBe('https://example.com/label.pdf');
         expect($shipped->shipped_at)->not->toBeNull();
         expect($shipped->events)->toHaveCount(1);
         expect($shipped->events->first()->description)->toBe('Shipment created with carrier');

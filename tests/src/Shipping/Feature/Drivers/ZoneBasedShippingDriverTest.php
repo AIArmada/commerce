@@ -492,13 +492,12 @@ it('creates shipment with zone tracking number', function (): void {
 
     $result = $this->driver->createShipment($shipmentData);
 
-    expect($result->isSuccessful())->toBeTrue();
+    expect($result->success)->toBeTrue();
     expect($result->trackingNumber)->toStartWith('ZONE-');
-    expect($result->requiresManualFulfillment)->toBeTrue();
 });
 
 it('cancels shipment always returns true', function (): void {
-    expect($this->driver->cancelShipment('ZONE-123ABC'))->toBeTrue();
+    expect($this->driver->cancelShipment('ZONE-123ABC')->success)->toBeTrue();
 });
 
 it('generates label with no content', function (): void {

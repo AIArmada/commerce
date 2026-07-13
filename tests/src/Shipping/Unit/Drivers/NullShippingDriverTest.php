@@ -8,7 +8,7 @@ use AIArmada\Shipping\Data\LabelData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
-use AIArmada\Shipping\Data\ShipmentResultData;
+use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
 use AIArmada\Shipping\Enums\DriverCapability;
@@ -92,15 +92,15 @@ it('creates test shipment successfully', function (): void {
 
     $result = $this->driver->createShipment($shipmentData);
 
-    expect($result)->toBeInstanceOf(ShipmentResultData::class);
-    expect($result->isSuccessful())->toBeTrue();
+    expect($result)->toBeInstanceOf(CarrierOperationResult::class);
+    expect($result->success)->toBeTrue();
     expect($result->trackingNumber)->toStartWith('TEST-');
 });
 
 it('can cancel shipments', function (): void {
     $result = $this->driver->cancelShipment('TEST-123');
 
-    expect($result)->toBeTrue();
+    expect($result->success)->toBeTrue();
 });
 
 it('generates test label', function (): void {

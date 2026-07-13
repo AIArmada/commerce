@@ -10,6 +10,7 @@ use AIArmada\Shipping\Events\ShipmentShipped;
 use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
 use AIArmada\Shipping\Exceptions\ShipmentCreationFailedException;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Models\ShipmentOperation;
 use AIArmada\Shipping\Services\RetryService;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\States\Shipped;
@@ -38,6 +39,12 @@ final class ShipShipment
 
         $driver = $this->shippingManager->driver($shipment->carrier_code);
 
+        $operation = ShipmentOperation::recordStart(
+            (string) $shipment->getKey(),
+            'create',
+            $shipment->reference,
+        );
+
         $result = $this->retry()
             ->attempts(3)
             ->delay(200)
@@ -65,41 +72,23 @@ final class ShipShipment
                 context: "ship:{$shipment->id}"
             );
 
-        if (! $result->isSuccessful()) {
-            throw new ShipmentCreationFailedException($result->error ?? 'Unknown error');
+        $operation->complete($result);
+
+        if (! $result->success && ! $result->alreadyApplied) {
+            throw new ShipmentCreationFailedException($result->error ?? 'Unknown error during carrier shipment creation');
         }
 
-        return DB::transaction(function () use ($shipment, $result, $driver) {
+        return DB::transaction(function () use ($shipment, $result) {
             $shipment = $shipment->status->transitionTo(Shipped::class);
             if (! $shipment instanceof Shipment) {
                 throw new RuntimeException('Failed to update shipment status.');
             }
 
             $shipment->update([
-                'tracking_number' => $result->trackingNumber,
-                'carrier_reference' => $result->carrierReference,
+                'tracking_number' => $result->trackingNumber ?? $shipment->tracking_number,
+                'carrier_reference' => $result->carrierReference ?? $shipment->carrier_reference,
                 'shipped_at' => CarbonImmutable::now(),
             ]);
-
-            if ($result->labelUrl !== null) {
-                $shipment->labels()->create([
-                    'format' => 'unknown',
-                    'url' => $result->labelUrl,
-                    'generated_at' => CarbonImmutable::now(),
-                ]);
-            }
-
-            if ($result->labelUrl === null && $driver->supports(DriverCapability::LabelGeneration)) {
-                try {
-                    $this->labelGenerator()->handle($shipment);
-                } catch (Throwable $e) {
-                    Log::warning('Label generation failed for shipment', [
-                        'shipment_id' => $shipment->id,
-                        'tracking_number' => $shipment->tracking_number,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
 
             $shipment->events()->create([
                 'carrier_event_code' => 'shipped',

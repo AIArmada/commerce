@@ -16,12 +16,12 @@ use AIArmada\Jnt\Services\JntTrackingService;
 use AIArmada\Shipping\Contracts\AddressValidationResult;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Data\LabelData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
-use AIArmada\Shipping\Data\ShipmentResultData;
 use AIArmada\Shipping\Data\ShippingMethodData;
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
@@ -125,7 +125,7 @@ class JntShippingDriver implements ShippingDriverInterface
         ]);
     }
 
-    public function createShipment(ShipmentData $data): ShipmentResultData
+    public function createShipment(ShipmentData $data): CarrierOperationResult
     {
         try {
             $sender = $this->convertToJntAddress($data->origin, 'sender');
@@ -149,33 +149,27 @@ class JntShippingDriver implements ShippingDriverInterface
 
             $trackingNumber = $orderData->trackingNumber;
 
-            // Get label URL
-            $labelUrl = null;
             if ($trackingNumber !== null) {
                 try {
-                    $printResponse = $this->jntService->printOrder(orderId: $data->reference, trackingNumber: $trackingNumber);
-                    $labelUrl = $printResponse['url'] ?? null;
+                    $this->jntService->printOrder(orderId: $data->reference, trackingNumber: $trackingNumber);
                 } catch (Throwable) {
-                    // Label generation may fail, continue without it
+                    // ponytail: label generation may fail, continue without it
                 }
             }
 
-            return new ShipmentResultData(
-                success: true,
+            return CarrierOperationResult::succeeded(
                 trackingNumber: $trackingNumber,
                 carrierReference: $orderData->orderId,
-                labelUrl: $labelUrl,
-                rawResponse: $orderData->toArray(),
             );
         } catch (Throwable $e) {
-            return new ShipmentResultData(
-                success: false,
+            return CarrierOperationResult::failed(
                 error: $e->getMessage(),
+                retryable: true,
             );
         }
     }
 
-    public function cancelShipment(string $trackingNumber): bool
+    public function cancelShipment(string $trackingNumber): CarrierOperationResult
     {
         try {
             $orderId = null;
@@ -184,7 +178,7 @@ class JntShippingDriver implements ShippingDriverInterface
                 $tracking = $this->jntService->trackParcel(null, $trackingNumber);
                 $orderId = $tracking->orderId;
             } catch (Throwable) {
-                // Best-effort: cancellation can still succeed without resolving txlogisticId.
+                // ponytail: best-effort orderId resolution
             }
 
             $response = $this->jntService->cancelOrder(
@@ -193,13 +187,17 @@ class JntShippingDriver implements ShippingDriverInterface
                 trackingNumber: $trackingNumber,
             );
 
-            if (array_key_exists('success', $response)) {
-                return (bool) $response['success'];
+            $success = array_key_exists('success', $response)
+                ? (bool) $response['success']
+                : true;
+
+            if ($success) {
+                return CarrierOperationResult::succeeded();
             }
 
-            return true;
-        } catch (Throwable) {
-            return false;
+            return CarrierOperationResult::failed(error: 'Carrier rejected cancellation');
+        } catch (Throwable $e) {
+            return CarrierOperationResult::unknown($e->getMessage());
         }
     }
 

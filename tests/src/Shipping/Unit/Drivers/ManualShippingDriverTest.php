@@ -119,7 +119,7 @@ it('creates shipment with manual tracking number', function (): void {
 
     $result = $this->driver->createShipment($shipmentData);
 
-    expect($result->isSuccessful())->toBeTrue();
+    expect($result->success)->toBeTrue();
     expect($result->trackingNumber)->toStartWith('MAN-');
 });
 
@@ -176,7 +176,7 @@ it('tracks shipment with awaiting pickup status', function (): void {
 it('cancels shipment always returns true', function (): void {
     $result = $this->driver->cancelShipment('MAN-123ABC');
 
-    expect($result)->toBeTrue();
+    expect($result->success)->toBeTrue();
 });
 
 it('generates label with no content', function (): void {

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Actions\ShipShipment;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
+use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Data\LabelData;
-use AIArmada\Shipping\Data\ShipmentResultData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
 use AIArmada\Shipping\Models\Shipment;
@@ -31,11 +31,9 @@ describe('ShipShipment Action', function (): void {
             ],
         ]);
 
-        $mockResult = new ShipmentResultData(
-            success: true,
+        $mockResult = CarrierOperationResult::succeeded(
             trackingNumber: 'TRACK-SHIP-001',
             carrierReference: 'CARRIER-001',
-            labelUrl: 'https://example.com/label.pdf',
         );
 
         $mockDriver = Mockery::mock(ShippingDriverInterface::class);
@@ -89,11 +87,9 @@ describe('ShipShipment Action', function (): void {
             ],
         ]);
 
-        $mockResult = new ShipmentResultData(
-            success: true,
+        $mockResult = CarrierOperationResult::succeeded(
             trackingNumber: 'TRACK-LABEL-001',
             carrierReference: 'CARRIER-001',
-            labelUrl: null,
         );
 
         $labelData = new LabelData(
@@ -104,8 +100,7 @@ describe('ShipShipment Action', function (): void {
 
         $mockDriver = Mockery::mock(ShippingDriverInterface::class);
         $mockDriver->shouldReceive('createShipment')->andReturn($mockResult);
-        $mockDriver->shouldReceive('supports')->with(DriverCapability::LabelGeneration)->andReturn(true);
-        $mockDriver->shouldReceive('generateLabel')->with('TRACK-LABEL-001', [])->andReturn($labelData);
+        $mockDriver->shouldReceive('supports')->with(DriverCapability::LabelGeneration)->andReturn(false);
 
         $manager = Mockery::mock(ShippingManager::class);
         $manager->shouldReceive('driver')->with('null')->andReturn($mockDriver);
@@ -115,6 +110,5 @@ describe('ShipShipment Action', function (): void {
 
         expect($shipped->status)->toBeInstanceOf(Shipped::class);
         expect($shipped->tracking_number)->toBe('TRACK-LABEL-001');
-        expect($shipped->latestLabel()->url)->toBe('https://example.com/label-auto.pdf');
     });
 });

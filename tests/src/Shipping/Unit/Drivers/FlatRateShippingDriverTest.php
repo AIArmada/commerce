@@ -116,7 +116,7 @@ it('creates shipment with generated tracking number', function (): void {
 
     $result = $this->driver->createShipment($shipmentData);
 
-    expect($result->isSuccessful())->toBeTrue();
+    expect($result->success)->toBeTrue();
     expect($result->trackingNumber)->toStartWith('FLAT-');
 });
 
@@ -168,7 +168,7 @@ it('validates address always returns valid', function (): void {
 it('cancels shipment always returns true', function (): void {
     $result = $this->driver->cancelShipment('FLAT-123ABC');
 
-    expect($result)->toBeTrue();
+    expect($result->success)->toBeTrue();
 });
 
 it('generates label with no content', function (): void {

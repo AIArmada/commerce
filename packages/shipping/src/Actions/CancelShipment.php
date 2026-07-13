@@ -8,13 +8,13 @@ use AIArmada\Shipping\Events\ShipmentCancelled;
 use AIArmada\Shipping\Events\ShipmentStatusChanged;
 use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Models\ShipmentOperation;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\States\Cancelled;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
-use RuntimeException;
 use Throwable;
 
 final class CancelShipment
@@ -31,35 +31,61 @@ final class CancelShipment
             throw new ShipmentNotCancellableException($shipment);
         }
 
+        $driver = $this->shippingManager->driver($shipment->carrier_code);
+
+        $operation = ShipmentOperation::recordStart(
+            (string) $shipment->getKey(),
+            'cancel',
+            $shipment->carrier_reference,
+        );
+
+        if ($shipment->tracking_number !== null) {
+            try {
+                $result = $driver->cancelShipment($shipment->tracking_number);
+                $operation->complete($result);
+
+                if (! $result->success && ! $result->alreadyApplied) {
+                    Log::warning('Carrier cancellation returned failure after operation recorded', [
+                        'shipment_id' => $shipment->id,
+                        'tracking_number' => $shipment->tracking_number,
+                        'error' => $result->error,
+                    ]);
+
+                    return $shipment;
+                }
+            } catch (Throwable $e) {
+                $operation->complete(
+                    \AIArmada\Shipping\Data\CarrierOperationResult::unknown($e->getMessage()),
+                );
+                Log::warning('Carrier cancellation threw after operation recorded', [
+                    'shipment_id' => $shipment->id,
+                    'tracking_number' => $shipment->tracking_number,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return $shipment;
+            }
+        }
+
         return DB::transaction(function () use ($shipment, $reason) {
             $oldStatus = $shipment->status;
             $shipment = $oldStatus->transitionTo(Cancelled::class);
+
             if (! $shipment instanceof Shipment) {
-                throw new RuntimeException('Failed to update shipment status.');
+                throw new \RuntimeException('Failed to transition shipment to cancelled state.');
             }
+
+            $shipment->update(['cancelled_at' => CarbonImmutable::now()]);
 
             $shipment->events()->create([
                 'carrier_event_code' => 'cancelled',
                 'normalized_status' => $shipment->status->toTrackingStatus(),
-                'description' => $reason,
+                'description' => $reason ?? 'Shipment cancelled',
                 'occurred_at' => CarbonImmutable::now(),
             ]);
 
             event(new ShipmentCancelled($shipment, $reason));
             event(new ShipmentStatusChanged($shipment, $oldStatus, $shipment->status));
-
-            if ($shipment->tracking_number !== null) {
-                try {
-                    $driver = $this->shippingManager->driver($shipment->carrier_code);
-                    $driver->cancelShipment($shipment->tracking_number);
-                } catch (Throwable $e) {
-                    Log::warning('Carrier cancel failed after DB cancel — manual follow-up may be required', [
-                        'shipment_id' => $shipment->id,
-                        'tracking_number' => $shipment->tracking_number,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
 
             return $shipment->refresh();
         });
