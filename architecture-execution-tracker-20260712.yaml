@@ -1576,34 +1576,39 @@ tasks:
   wave: 2
   candidate: Candidate 05
   title: Implement the combined stacking policy and connect runtime rule registration
-  status: gated
+  status: claimed
   severity: high
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: dsc-521-combined-stacking
+  claimed_at: '2026-07-13T07:00:00Z'
   goal: Enforce the approved Promotion + Voucher combined policy in the actual evaluation path.
   why: The registrar is a stub and the bound rule registry is not consumed by StackingEngine.
   depends_on:
   - CTR-620
   - DES-DSC-510
-  exclusive_scope: []
-  known_affected_files:
-  - packages/promotions/src/Support/StackingCoordinationRegistrar.php
+  exclusive_scope:
+  - packages/checkout/src/Contracts/DiscountProvider.php (new)
+  - packages/checkout/src/Data/DiscountProposal.php (new)
+  - packages/checkout/src/Data/DiscountCommitment.php (new)
+  - packages/checkout/src/Services/DiscountCompositionService.php (new)
+  - packages/checkout/src/Steps/ApplyDiscountsStep.php
+  - packages/checkout/src/Integrations/PromotionsAdapter.php
+  - packages/checkout/src/Integrations/VouchersAdapter.php
   - packages/promotions/src/PromotionsServiceProvider.php
+  - packages/promotions/src/Listeners/MarkPromotionAsUsedOnOrderPlaced.php
+  - packages/promotions/src/Support/StackingCoordinationRegistrar.php (delete)
   - packages/vouchers/src/VoucherServiceProvider.php
-  - packages/vouchers/src/Stacking/StackingEngine.php
-  - packages/vouchers/src/Stacking/StackingRuleRegistry.php
-  - packages/vouchers/src/Stacking/Contracts
-  - tests/src/Promotions
-  - tests/src/Vouchers
-  - packages/promotions/docs
-  - packages/vouchers/docs
-  scope_reuse_after: []
-  forbidden_scope:
-  - Do not claim until the design record and CTR-620 provide an exact scope manifest.
-  - Do not edit packages outside the approved manifest.
-  observed_evidence:
-  - Current registrar has no executable logic; engine uses private defaults instead of container registry.
+  - packages/vouchers/src/Services/VoucherService.php
+  - packages/vouchers/src/Contracts/VoucherServiceInterface.php
+  - packages/vouchers/src/Stacking/StackingEngine.php (delete)
+  - packages/vouchers/src/Stacking/StackingRuleRegistry.php (delete)
+  - tests/src/Checkout/DiscountCompositionServiceTest.php (new)
+  - tests/src/Checkout/DiscountProviderTest.php (new)
+  - tests/src/Vouchers/Unit/VoucherServiceTest.php
+  - tests/src/Vouchers/Unit/Stacking/StackingEngineTest.php
+  - packages/checkout/docs/04-usage.md
+  - packages/promotions/docs/04-usage.md
+  - packages/vouchers/docs/04-usage.md
   decisions_required: []
   implementation_steps:
   - Before claim, copy the approved exact file manifest into `exclusive_scope` and commit that tracker change.
