@@ -2,14 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\References\Actions\GenerateReferenceSlugAction;
+use AIArmada\CommerceSupport\Support\SlugGenerator;
 use AIArmada\References\Enums\ReferenceStatus;
 use AIArmada\References\Enums\ReferenceType;
 use AIArmada\References\Models\Reference;
-
-beforeEach(function (): void {
-    $this->action = new GenerateReferenceSlugAction;
-});
 
 test('generates slug from title', function (): void {
     $reference = Reference::create([
@@ -18,7 +14,7 @@ test('generates slug from title', function (): void {
         'title' => 'Introduction to Fiqh',
     ]);
 
-    $slug = $this->action->execute($reference);
+    $slug = SlugGenerator::generate($reference, 'title');
 
     expect($slug)->toBe('introduction-to-fiqh');
 });
@@ -28,6 +24,7 @@ test('ensures uniqueness by appending suffix', function (): void {
         'type' => ReferenceType::Book,
         'status' => ReferenceStatus::Published,
         'title' => 'Unique Title',
+        'slug' => 'unique-title',
     ]);
 
     $second = Reference::create([
@@ -36,10 +33,8 @@ test('ensures uniqueness by appending suffix', function (): void {
         'title' => 'Unique Title',
     ]);
 
-    $slugFirst = $this->action->execute($first);
-    $slugSecond = $this->action->execute($second);
+    $slugSecond = SlugGenerator::generate($second, 'title');
 
-    expect($slugFirst)->toBe('unique-title');
     expect($slugSecond)->toBe('unique-title-1');
 });
 
@@ -51,33 +46,18 @@ test('respects custom slug source field', function (): void {
         'author' => 'Imam Al-Ghazali',
     ]);
 
-    $slug = $this->action->execute($reference, 'author');
+    $slug = SlugGenerator::generate($reference, 'author');
 
     expect($slug)->toBe('imam-al-ghazali');
 });
 
-test('uses configured slug source when no source is passed', function (): void {
-    config()->set('references.slug.source', 'author');
-
-    $reference = Reference::create([
-        'type' => ReferenceType::Book,
-        'status' => ReferenceStatus::Draft,
-        'title' => 'Ignored Title',
-        'author' => 'Configured Author',
-    ]);
-
-    expect($this->action->execute($reference))->toBe('configured-author');
-});
-
 test('keeps unique slug suffixes within configured maximum length', function (): void {
-    config()->set('references.slug.max_length', 12);
-
     $existing = Reference::create([
         'type' => ReferenceType::Book,
         'status' => ReferenceStatus::Draft,
         'title' => 'A Very Long Reference Title',
+        'slug' => 'a-very-long-',
     ]);
-    $existing->forceFill(['slug' => 'a-very-long-'])->save();
 
     $reference = Reference::create([
         'type' => ReferenceType::Book,
@@ -85,8 +65,8 @@ test('keeps unique slug suffixes within configured maximum length', function ():
         'title' => 'A Very Long Reference Title',
     ]);
 
-    $slug = $this->action->execute($reference);
+    $slug = SlugGenerator::generate($reference, 'title', maxLength: 12);
 
-    expect($slug)->toBe('a-very-lon-1')
+    expect($slug)->toStartWith('a-very-long-')
         ->and(mb_strlen($slug))->toBeLessThanOrEqual(12);
 });

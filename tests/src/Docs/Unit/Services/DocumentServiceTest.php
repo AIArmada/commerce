@@ -134,7 +134,7 @@ test('can clone a document', function (): void {
     $original = Doc::factory()->create([
         'doc_type' => DocType::Invoice,
         'currency' => 'USD',
-        'items' => [['name' => 'Item 1']],
+        'items' => [['name' => 'Item 1', 'quantity' => 1, 'unit_price_minor' => 100]],
     ]);
 
     $clone = $this->service->clone($original);

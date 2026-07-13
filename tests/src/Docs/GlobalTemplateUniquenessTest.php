@@ -10,11 +10,11 @@ use Illuminate\Database\QueryException;
 it('enforces deterministic global template uniqueness', function (): void {
     OwnerContext::withOwner(null, function (): void {
         DocTemplate::query()->create([
-            'name' => 'Global Invoice', 'slug' => 'global-invoice', 'doc_type' => 'invoice', 'layout' => [],
+            'name' => 'Global Invoice', 'slug' => 'global-invoice', 'doc_type' => 'invoice', 'layout' => [['type' => 'document_header', 'data' => []]],
         ]);
 
         expect(fn () => DocTemplate::query()->create([
-            'name' => 'Duplicate Global Invoice', 'slug' => 'global-invoice', 'doc_type' => 'invoice', 'layout' => [],
+            'name' => 'Duplicate Global Invoice', 'slug' => 'global-invoice', 'doc_type' => 'invoice', 'layout' => [['type' => 'document_header', 'data' => []]],
         ]))->toThrow(QueryException::class);
 
         expect(DocTemplate::query()->globalOnly()->where('slug', 'global-invoice')->sole()->owner_scope)
