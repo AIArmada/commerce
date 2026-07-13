@@ -2213,9 +2213,9 @@ tasks:
   wave: 4
   candidate: Candidate 01
   title: Shrink the public Checkout interface and remove obsolete shallow paths
-  status: gated
+  status: done
   severity: medium
-  owner: null
+  owner: opencode
   branch: null
   claimed_at: null
   goal: Complete the depth gain only after all callers use the new workflow and contributors.
