@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
 use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateOutcome;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 
