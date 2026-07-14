@@ -22,8 +22,7 @@ final class MembershipRoleSyncService
         ?string $teamId = null,
         ?string $subjectClass = null,
         ?string $guardName = null,
-    ): Role
-    {
+    ): Role {
         $name = $role->spatieRoleName();
         $guard = $guardName ?? (string) config('auth.defaults.guard', 'web');
         $registrar = app(PermissionRegistrar::class);

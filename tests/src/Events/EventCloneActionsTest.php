@@ -11,13 +11,12 @@ use AIArmada\Events\Actions\SaveEventTemplateAction;
 use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventTemplateService;
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventInvolvement;
+use AIArmada\Events\Models\EventLocation;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventLocation;
-use AIArmada\Events\Models\EventInvolvement;
-use AIArmada\Events\Models\EventMaterial;
-use AIArmada\Events\Models\EventTemplate;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -411,7 +410,7 @@ it('rejects cross-tenant event writes when cloning', function (): void {
             OwnerContext::withOwner($ownerB, function () use ($event): void {
                 app(CloneEventAction::class)->handle($event);
             });
-        })->toThrow(Illuminate\Auth\Access\AuthorizationException::class);
+        })->toThrow(AuthorizationException::class);
     } finally {
         config()->set('events.features.owner.enabled', $originalOwnerEnabled);
     }
