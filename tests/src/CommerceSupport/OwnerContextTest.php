@@ -232,3 +232,38 @@ it('keeps request owner state isolated per http request instance', function (): 
         app()->instance('request', $originalRequest);
     }
 });
+
+it('does not expose an HTTP owner override to another request without owner state', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Owner Isolated Request',
+        'email' => 'owner-isolated-request@example.com',
+        'password' => 'secret',
+    ]);
+
+    $originalRequest = app('request');
+    $requestA = Request::create('/owner-a');
+    $requestB = Request::create('/owner-b');
+
+    app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
+    try {
+        app()->instance('request', $requestA);
+
+        OwnerContext::withOwner($owner, function () use ($requestA, $requestB): void {
+            app()->instance('request', $requestB);
+
+            expect(OwnerContext::hasOverride())->toBeFalse()
+                ->and(OwnerContext::resolve())->toBeNull();
+
+            app()->instance('request', $requestA);
+        });
+    } finally {
+        app()->instance('request', $originalRequest);
+    }
+});
