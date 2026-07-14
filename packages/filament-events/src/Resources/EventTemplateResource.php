@@ -14,6 +14,7 @@ use BackedEnum;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Hidden;
 use Filament\Infolists\Components\CodeEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -121,8 +122,10 @@ final class EventTemplateResource extends Resource
     {
         return $form
             ->schema([
-                Section::make('Basic Details')
+                    Section::make('Basic Details')
                     ->schema([
+                        Hidden::make('payload')
+                            ->default([]),
                         TextInput::make('name')->required()->maxLength(255),
                         TextInput::make('code')->maxLength(100),
                         Textarea::make('description')->rows(3),
