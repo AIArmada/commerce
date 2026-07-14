@@ -17,7 +17,7 @@ final class AffiliateConversionInfolist
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Reference')
+            Section::make('Cart Integration')
                 ->schema([
                     Grid::make(3)->schema([
                         TextEntry::make('external_reference')
