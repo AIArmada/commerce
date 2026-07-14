@@ -8,8 +8,8 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Events\EventSessionCreated;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Support\Normalization\EventContentNormalizer;
 use AIArmada\Events\Support\ModelResolver;
+use AIArmada\Events\Support\Normalization\EventContentNormalizer;
 use Illuminate\Support\Str;
 
 final class CloneEventSessionAction

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Events\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventSubmission;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;

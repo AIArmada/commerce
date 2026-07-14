@@ -26,6 +26,11 @@ use InvalidArgumentException;
 
 final class DefaultEventCheckInService implements EventCheckInService
 {
+    public function checkIn(array $data): EventAttendance
+    {
+        return $this->checkInWithResult($data)->attendance;
+    }
+
     public function checkInWithResult(array $data): EventCheckInResult
     {
         $event = EventWriteGuard::findOrFail($data['event_id']);

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Conversions;
 
+use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Data\AffiliateConversionData;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;

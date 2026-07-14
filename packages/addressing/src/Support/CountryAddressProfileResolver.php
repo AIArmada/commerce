@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Support;
 
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Models\AddressCountry;
 use Illuminate\Contracts\Container\Container;
 use InvalidArgumentException;
@@ -46,7 +47,7 @@ final class CountryAddressProfileResolver
     }
 
     /**
-     * @return list<\AIArmada\Addressing\Data\AddressLevelDefinition>
+     * @return list<AddressLevelDefinition>
      */
     public function levels(mixed $country): array
     {

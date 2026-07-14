@@ -9,6 +9,8 @@ use AIArmada\Events\Models\EventAttendance;
 
 interface EventCheckInService
 {
+    public function checkIn(array $data): EventAttendance;
+
     public function checkInWithResult(array $data): EventCheckInResult;
 
     public function checkOut(EventAttendance $attendance, mixed $actor = null): void;

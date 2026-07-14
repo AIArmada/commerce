@@ -48,4 +48,5 @@ parameters:
     excludePaths:
         analyseAndScan:
             - vendor
+            - 'packages/*/vendor/*'
             - '*/Testing/*'

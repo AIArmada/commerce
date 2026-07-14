@@ -12,6 +12,7 @@ use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class CreateTrackingLink
@@ -58,7 +59,7 @@ final class CreateTrackingLink
         // duplicate the package's persistence workflow.
         $trackingUrl = Arr::get($attributes, 'tracking_url');
 
-        if (! is_string($trackingUrl) || trim($trackingUrl) === '') {
+        if (! is_string($trackingUrl) || mb_trim($trackingUrl) === '') {
             $trackingUrl = $this->linkGenerator->generate(
                 affiliateCode: $affiliate->code,
                 url: $destinationUrl,
@@ -66,7 +67,7 @@ final class CreateTrackingLink
                 ttlSeconds: is_int(Arr::get($attributes, 'ttl_seconds')) ? Arr::get($attributes, 'ttl_seconds') : null,
             );
         } elseif (! in_array(mb_strtolower((string) parse_url($trackingUrl, PHP_URL_SCHEME)), ['http', 'https'], true)) {
-            throw new \InvalidArgumentException('Tracking URL scheme must be http or https.');
+            throw new InvalidArgumentException('Tracking URL scheme must be http or https.');
         }
 
         return AffiliateLink::query()->create([

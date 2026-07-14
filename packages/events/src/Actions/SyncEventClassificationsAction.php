@@ -44,7 +44,7 @@ final class SyncEventClassificationsAction
                     continue;
                 }
 
-                $name = is_string($value) ? trim($value) : '';
+                $name = is_string($value) ? mb_trim($value) : '';
 
                 if ($name === '') {
                     continue;

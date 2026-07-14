@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
-use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
 
 return [
     'tables' => [

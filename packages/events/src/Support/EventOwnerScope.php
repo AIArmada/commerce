@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Events\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAccessPolicy;
 use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\EventAttendanceLog;

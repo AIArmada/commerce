@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Models;
 
+use AIArmada\Addressing\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use AIArmada\Addressing\Support\ModelResolver;
 
 /**
  * @property string $id

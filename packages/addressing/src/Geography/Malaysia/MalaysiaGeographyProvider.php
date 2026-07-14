@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Geography\Malaysia;
 
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
-use AIArmada\Addressing\Contracts\AddressAreaSource;
+use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 

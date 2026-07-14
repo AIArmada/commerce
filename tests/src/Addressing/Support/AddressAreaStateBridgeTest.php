@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
@@ -29,6 +30,10 @@ it('bridges a state to its level one area and back from a child area', function 
         'slug' => 'kuala-lumpur',
         'source' => 'test',
         'source_id' => Str::uuid()->toString(),
+    ]);
+    AddressAreaStateLink::query()->create([
+        'address_area_id' => $area->id,
+        'state_id' => $state->id,
     ]);
     $district = AddressArea::query()->create([
         'country_id' => $country->id,
