@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\Membership\Enums\MemberRole;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Spatie\Permission\Guard;
 use Spatie\Permission\PermissionRegistrar;
 
 final class MembershipRoleSyncService
@@ -16,10 +17,15 @@ final class MembershipRoleSyncService
     /**
      * @param  class-string<Model>|null  $subjectClass
      */
-    public function ensureExists(MemberRole $role, ?string $teamId = null, ?string $subjectClass = null): Role
+    public function ensureExists(
+        MemberRole $role,
+        ?string $teamId = null,
+        ?string $subjectClass = null,
+        ?string $guardName = null,
+    ): Role
     {
         $name = $role->spatieRoleName();
-        $guard = (string) config('auth.defaults.guard', 'web');
+        $guard = $guardName ?? (string) config('auth.defaults.guard', 'web');
         $registrar = app(PermissionRegistrar::class);
         $attributes = [
             'name' => $name,
@@ -82,10 +88,15 @@ final class MembershipRoleSyncService
         try {
             setPermissionsTeamId($teamId);
 
-            $this->ensureExists($role, $teamId, $subject::class);
+            $spatieRole = $this->ensureExists(
+                role: $role,
+                teamId: $teamId,
+                subjectClass: $subject::class,
+                guardName: Guard::getDefaultName($user),
+            );
 
             /** @phpstan-ignore method.notFound */
-            $user->assignRole($role->spatieRoleName());
+            $user->assignRole($spatieRole);
         } finally {
             setPermissionsTeamId($previousTeamId);
         }

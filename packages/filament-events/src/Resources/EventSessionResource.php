@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Enums\RegistrationMode;
@@ -188,6 +189,15 @@ final class EventSessionResource extends Resource
             ])
             ->actions([
                 ViewAction::make(),
+                Action::make('clone')
+                    ->label('Clone')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->action(function (EventSession $record): void {
+                        $clone = app(EventCloneService::class)->cloneSession($record);
+                        redirect(EventSessionResource::getUrl('edit', ['record' => $clone]));
+                    })
+                    ->requiresConfirmation(),
             ]);
     }
 

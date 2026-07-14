@@ -25,6 +25,7 @@ use AIArmada\Events\Contracts\EventChangeNoticeWorkflow;
 use AIArmada\Events\Contracts\EventCheckInService;
 use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
 use AIArmada\Events\Contracts\EventClassificationResolver;
+use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventDisplayTimezoneResolver;
 use AIArmada\Events\Contracts\EventEngagementManager;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
@@ -36,6 +37,7 @@ use AIArmada\Events\Contracts\EventScheduleResolver;
 use AIArmada\Events\Contracts\EventSearchEngine;
 use AIArmada\Events\Contracts\EventSearchIndexer;
 use AIArmada\Events\Contracts\EventSearchPayloadResolver;
+use AIArmada\Events\Contracts\EventTemplateService;
 use AIArmada\Events\Contracts\EventTranslationProvider;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Events\EventChangeNoticePublished;
@@ -98,10 +100,12 @@ use AIArmada\Events\Services\DefaultEventCheckInService;
 use AIArmada\Events\Services\DefaultEventLifecycleWorkflow;
 use AIArmada\Events\Services\DefaultEventModerationWorkflow;
 use AIArmada\Events\Services\EloquentEventSearchEngine;
+use AIArmada\Events\Services\EventCloneServiceImpl;
 use AIArmada\Events\Services\EventMetadataSyncService;
 use AIArmada\Events\Services\EventNotificationDispatcher;
 use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Services\EventSearchDocumentBuilder;
+use AIArmada\Events\Services\EventTemplateServiceImpl;
 use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Events\Support\EventOwnerScope;
 use AIArmada\Events\Support\EventSubmissionOwnerScope;
@@ -146,6 +150,9 @@ final class EventsServiceProvider extends PackageServiceProvider
 
         $this->app->bind(EventCheckInService::class, DefaultEventCheckInService::class);
         $this->app->bind(RegistrationServiceInterface::class, RegistrationService::class);
+
+        $this->app->singleton(EventCloneService::class, EventCloneServiceImpl::class);
+        $this->app->singleton(EventTemplateService::class, EventTemplateServiceImpl::class);
 
         $this->app->bind(EventEngagementManager::class, NullEventEngagementManager::class);
 

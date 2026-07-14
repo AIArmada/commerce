@@ -74,6 +74,9 @@ final class FilamentEventsPlugin implements Plugin
         if ($e['change_log'] ?? true) {
             $r[] = Resources\EventChangeLogResource::class;
         }
+        if ($e['event_template'] ?? true) {
+            $r[] = Resources\EventTemplateResource::class;
+        }
 
         return $r;
     }

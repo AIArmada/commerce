@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Enums\RegistrationMode;
@@ -169,6 +170,17 @@ final class EventOccurrenceResource extends Resource
             ])
             ->actions([
                 ViewAction::make(),
+                Action::make('clone')
+                    ->label('Clone')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->action(function (EventOccurrence $record): void {
+                        $clone = app(EventCloneService::class)->cloneOccurrence($record, [
+                            'clone_sessions' => false,
+                        ]);
+                        redirect(EventOccurrenceResource::getUrl('edit', ['record' => $clone]));
+                    })
+                    ->requiresConfirmation(),
             ]);
     }
 

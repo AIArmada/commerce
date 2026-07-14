@@ -6,6 +6,7 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventInvolvementFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Events\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -88,7 +89,7 @@ class EventInvolvement extends Model
      */
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Event::class);
+        return $this->belongsTo(ModelResolver::eventClass());
     }
 
     /**
