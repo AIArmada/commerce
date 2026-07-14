@@ -11,10 +11,10 @@ use AIArmada\FilamentEvents\Resources\EventTemplateResource\Pages\EditEventTempl
 use AIArmada\FilamentEvents\Resources\EventTemplateResource\Pages\ListEventTemplates;
 use AIArmada\FilamentEvents\Resources\EventTemplateResource\Pages\ViewEventTemplate;
 use BackedEnum;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Hidden;
 use Filament\Infolists\Components\CodeEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -122,7 +122,7 @@ final class EventTemplateResource extends Resource
     {
         return $form
             ->schema([
-                    Section::make('Basic Details')
+                Section::make('Basic Details')
                     ->schema([
                         Hidden::make('payload')
                             ->default([]),
