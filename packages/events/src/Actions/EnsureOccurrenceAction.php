@@ -7,6 +7,7 @@ namespace AIArmada\Events\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Support\ModelResolver;
 
 final class EnsureOccurrenceAction
 {
@@ -33,10 +34,12 @@ final class EnsureOccurrenceAction
 
     private function resolveEventForWrite(Event $event): Event
     {
-        if (method_exists(Event::class, 'ownerScopeConfig') && ! Event::ownerScopeConfig()->enabled) {
-            return Event::query()->findOrFail($event->id);
+        $eventClass = ModelResolver::eventClass();
+
+        if (method_exists($eventClass, 'ownerScopeConfig') && ! $eventClass::ownerScopeConfig()->enabled) {
+            return $eventClass::query()->findOrFail($event->id);
         }
 
-        return OwnerWriteGuard::findOrFailForOwner(Event::class, $event->id);
+        return OwnerWriteGuard::findOrFailForOwner($eventClass, $event->id);
     }
 }

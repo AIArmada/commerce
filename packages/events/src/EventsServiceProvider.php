@@ -57,7 +57,6 @@ use AIArmada\Events\Listeners\SyncEventOrderCompletionOnRegistrationCheckedIn;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderCanceled;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderPaid;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderRefunded;
-use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventApprovalRequest;
 use AIArmada\Events\Models\EventAttribute;
 use AIArmada\Events\Models\EventAudience;
@@ -107,6 +106,7 @@ use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Events\Support\EventOwnerScope;
 use AIArmada\Events\Support\EventSubmissionOwnerScope;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Events\Support\PolymorphicOwnerScope;
 use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
 use AIArmada\Orders\Events\OrderCanceled;
@@ -134,7 +134,8 @@ final class EventsServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
-        Gate::policy(Event::class, EventPolicy::class);
+        $eventClass = ModelResolver::eventClass();
+        Gate::policy($eventClass, EventPolicy::class);
 
         $this->app->singleton(EventQueryService::class);
         $this->app->singleton(EventMetadataSyncService::class);
@@ -239,6 +240,8 @@ final class EventsServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        $eventClass = ModelResolver::eventClass();
+
         EventSubmissionOwnerScope::register();
         EventOwnerScope::registerDefaults();
         PolymorphicOwnerScope::register(EventApprovalRequest::class, 'approvable');
@@ -252,7 +255,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         PolymorphicOwnerScope::register(EventVerification::class, 'verifiable', 'event_id');
 
         if (config('events.sync.build_search_documents')) {
-            Event::observe(EventObserver::class);
+            $eventClass::observe(EventObserver::class);
             EventOccurrence::observe(EventOccurrenceObserver::class);
             EventSession::observe(EventSessionObserver::class);
         }

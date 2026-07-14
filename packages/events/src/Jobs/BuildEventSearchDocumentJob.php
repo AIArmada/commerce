@@ -11,6 +11,7 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Services\EventSearchDocumentBuilder;
+use AIArmada\Events\Support\ModelResolver;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -81,8 +82,9 @@ final class BuildEventSearchDocumentJob implements OwnerScopedJob, ShouldBeUniqu
             return;
         }
 
+        $eventClass = ModelResolver::eventClass();
         $target = match ($this->targetType) {
-            Event::class => Event::query()->find($this->targetId),
+            $eventClass => $eventClass::query()->find($this->targetId),
             EventOccurrence::class => EventOccurrence::query()->find($this->targetId),
             EventSession::class => EventSession::query()->find($this->targetId),
             default => null,

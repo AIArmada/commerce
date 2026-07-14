@@ -22,6 +22,7 @@ use AIArmada\Events\States\RegistrationStatus\Refunded;
 use AIArmada\Events\States\RegistrationStatus\Rejected;
 use AIArmada\Events\States\RegistrationStatus\Waitlisted;
 use AIArmada\Events\Support\EventWriteGuard;
+use AIArmada\Events\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,8 @@ final class RegistrationService implements RegistrationServiceInterface
         EventWriteGuard::findOrFail($data['event_id']);
 
         $registration = DB::transaction(function () use ($data): EventRegistration {
-            $registration = EventRegistration::create(Arr::except($data, ['items', 'participants', 'answers']));
+            $registrationClass = ModelResolver::registrationClass();
+            $registration = $registrationClass::create(Arr::except($data, ['items', 'participants', 'answers']));
 
             $scopeFields = [
                 'event_id' => $registration->event_id,
@@ -201,7 +203,8 @@ final class RegistrationService implements RegistrationServiceInterface
     {
         EventWriteGuard::findOrFail($orderItemData['event_id']);
 
-        $registration = EventRegistration::create([
+        $registrationClass = ModelResolver::registrationClass();
+        $registration = $registrationClass::create([
             'event_id' => $orderItemData['event_id'],
             'event_occurrence_id' => $orderItemData['event_occurrence_id'] ?? null,
             'event_session_id' => $orderItemData['event_session_id'] ?? null,

@@ -15,7 +15,7 @@ use InvalidArgumentException;
  * Optional orders integration for affiliates.
  *
  * The affiliates core model is reference-neutral. This listener adapts an
- * orders event into the compatibility payload expected by recordConversion().
+ * orders event into the canonical payload expected by recordConversion().
  */
 final readonly class RecordCommissionForOrder
 {

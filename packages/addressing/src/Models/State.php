@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use AIArmada\Addressing\Support\ModelResolver;
 
 /**
  * @property string $id
@@ -48,7 +49,15 @@ class State extends Model
      */
     public function cities(): HasMany
     {
-        return $this->hasMany(City::class, 'state_id');
+        return $this->hasMany(ModelResolver::cityClass(), 'state_id');
+    }
+
+    /**
+     * @return HasMany<AddressAreaStateLink, $this>
+     */
+    public function addressAreaLinks(): HasMany
+    {
+        return $this->hasMany(AddressAreaStateLink::class, 'state_id');
     }
 
     protected function casts(): array

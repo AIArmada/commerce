@@ -72,8 +72,8 @@ final class AffiliateConversionsTable
                     ->icon(Heroicon::OutlinedShoppingCart)
                     ->visible(fn () => app(CartBridge::class)->isAvailable())
                     ->url(fn (AffiliateConversion $record): ?string => app(CartBridge::class)->resolveUrl(
-                        $record->cart_identifier,
-                        $record->cart_instance
+                        $record->subject_identifier,
+                        $record->subject_instance
                     ))
                     ->openUrlInNewTab(),
                 Action::make('voucher')

@@ -53,12 +53,21 @@ final class CreateTrackingLink
             $subjectMetadata = null;
         }
 
-        $trackingUrl = $this->linkGenerator->generate(
-            affiliateCode: $affiliate->code,
-            url: $destinationUrl,
-            params: $params,
-            ttlSeconds: is_int(Arr::get($attributes, 'ttl_seconds')) ? Arr::get($attributes, 'ttl_seconds') : null,
-        );
+        // Some hosts already have a canonical, signed, or otherwise product-specific
+        // tracking URL. Keep link creation reusable without forcing those hosts to
+        // duplicate the package's persistence workflow.
+        $trackingUrl = Arr::get($attributes, 'tracking_url');
+
+        if (! is_string($trackingUrl) || trim($trackingUrl) === '') {
+            $trackingUrl = $this->linkGenerator->generate(
+                affiliateCode: $affiliate->code,
+                url: $destinationUrl,
+                params: $params,
+                ttlSeconds: is_int(Arr::get($attributes, 'ttl_seconds')) ? Arr::get($attributes, 'ttl_seconds') : null,
+            );
+        } elseif (! in_array(mb_strtolower((string) parse_url($trackingUrl, PHP_URL_SCHEME)), ['http', 'https'], true)) {
+            throw new \InvalidArgumentException('Tracking URL scheme must be http or https.');
+        }
 
         return AffiliateLink::query()->create([
             'affiliate_id' => $affiliate->getKey(),

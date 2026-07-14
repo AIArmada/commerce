@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventAttendance;
+use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -17,6 +20,13 @@ $ownerConfig = [
 ];
 
 return [
+
+    /* Model class overrides */
+    'models' => [
+        'event' => Event::class,
+        'registration' => EventRegistration::class,
+        'attendance' => EventAttendance::class,
+    ],
 
     /* Database */
     'database' => [

@@ -61,8 +61,8 @@ describe('AffiliateFraudSignal Model', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-FRAUD-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-FRAUD-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,

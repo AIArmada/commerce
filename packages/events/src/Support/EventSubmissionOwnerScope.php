@@ -28,12 +28,13 @@ final class EventSubmissionOwnerScope implements Scope
             sprintf('%s requires an owner context or explicit global context.', $model::class),
         );
 
-        $event = new Event;
+        $eventClass = ModelResolver::eventClass();
+        $event = new $eventClass;
 
-        $builder->where(function (Builder $query) use ($model, $owner, $event): void {
+        $builder->where(function (Builder $query) use ($model, $owner, $event, $eventClass): void {
             $query->whereIn(
                 $model->qualifyColumn('event_id'),
-                Event::query()->select($event->qualifyColumn($event->getKeyName())),
+                $eventClass::query()->select($event->qualifyColumn($event->getKeyName())),
             )->orWhere(function (Builder $targetQuery) use ($model, $owner): void {
                 $targetQuery->whereNull($model->qualifyColumn('event_id'));
 

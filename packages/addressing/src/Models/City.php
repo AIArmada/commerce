@@ -7,15 +7,16 @@ namespace AIArmada\Addressing\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use AIArmada\Addressing\Support\ModelResolver;
 
 /**
  * @property string $id
- * @property string $state_id
+ * @property string|null $state_id
  * @property string $name
  * @property string|null $postcode
  * @property string|null $label
  * @property array|null $metadata
- * @property-read State $state
+ * @property-read State|null $state
  */
 class City extends Model
 {
@@ -40,7 +41,7 @@ class City extends Model
      */
     public function state(): BelongsTo
     {
-        return $this->belongsTo(State::class, 'state_id');
+        return $this->belongsTo(ModelResolver::stateClass(), 'state_id');
     }
 
     public function country(): BelongsTo

@@ -174,7 +174,9 @@ final class IssueEventRegistrationPassesAction
 
     private function resolveParticipantEmail(EventRegistrationParticipant $participant): ?string
     {
-        $email = $participant->getAttribute('email');
+        $email = $participant->hasAttribute('email')
+            ? $participant->getAttribute('email')
+            : null;
 
         if (is_string($email) && mb_trim($email) !== '') {
             return mb_trim($email);

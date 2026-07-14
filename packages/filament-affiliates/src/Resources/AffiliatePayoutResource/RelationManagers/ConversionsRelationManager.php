@@ -23,8 +23,8 @@ final class ConversionsRelationManager extends RelationManager
                     ->label('Affiliate')
                     ->badge()
                     ->color('primary'),
-                TextColumn::make('order_reference')
-                    ->label('Order')
+                TextColumn::make('external_reference')
+                    ->label('Reference')
                     ->icon(Heroicon::OutlinedReceiptPercent)
                     ->placeholder('—'),
                 TextColumn::make('commission_minor')

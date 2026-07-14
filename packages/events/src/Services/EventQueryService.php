@@ -6,6 +6,7 @@ namespace AIArmada\Events\Services;
 
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -15,12 +16,15 @@ final class EventQueryService
 {
     public function findPublished(): Collection
     {
-        return Event::published()->get();
+        $eventClass = ModelResolver::eventClass();
+
+        return $eventClass::published()->get();
     }
 
     public function findUpcoming(int $limit = 10): Collection
     {
-        $eventTable = (new Event)->getTable();
+        $eventClass = ModelResolver::eventClass();
+        $eventTable = (new $eventClass)->getTable();
         $occurrenceTable = (new EventOccurrence)->getTable();
         $nextOccurrenceSubquery = EventOccurrence::query()
             ->select('starts_at')
@@ -28,7 +32,7 @@ final class EventQueryService
             ->orderBy('starts_at')
             ->limit(1);
 
-        return Event::published()
+        return $eventClass::published()
             ->whereHas('occurrences', function (Builder $query): void {
                 $query->where('starts_at', '>=', CarbonImmutable::now());
             })
@@ -39,11 +43,15 @@ final class EventQueryService
 
     public function findByOwner(Model $owner): Collection
     {
-        return Event::forOwner($owner)->get();
+        $eventClass = ModelResolver::eventClass();
+
+        return $eventClass::forOwner($owner)->get();
     }
 
     public function findBySlug(string $slug): ?Event
     {
-        return Event::where('slug', $slug)->first();
+        $eventClass = ModelResolver::eventClass();
+
+        return $eventClass::where('slug', $slug)->first();
     }
 }

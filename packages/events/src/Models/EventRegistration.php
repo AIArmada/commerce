@@ -10,6 +10,7 @@ use AIArmada\Events\States\RegistrationStatus\Completed;
 use AIArmada\Events\States\RegistrationStatus\Pending;
 use AIArmada\Events\States\RegistrationStatus\RegistrationStatus as RegistrationStatusState;
 use AIArmada\Events\States\RegistrationStatus\Waitlisted;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Ticketing\Models\Pass;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -258,7 +259,7 @@ class EventRegistration extends Model
      */
     public function parentRegistration(): BelongsTo
     {
-        return $this->belongsTo(EventRegistration::class, 'parent_registration_id');
+        return $this->belongsTo(static::class, 'parent_registration_id');
     }
 
     /**
@@ -266,7 +267,7 @@ class EventRegistration extends Model
      */
     public function childRegistrations(): HasMany
     {
-        return $this->hasMany(EventRegistration::class, 'parent_registration_id');
+        return $this->hasMany(static::class, 'parent_registration_id');
     }
 
     /**
@@ -309,7 +310,7 @@ class EventRegistration extends Model
      */
     protected static function eventModelClass(): string
     {
-        return Event::class;
+        return ModelResolver::eventClass();
     }
 
     /**

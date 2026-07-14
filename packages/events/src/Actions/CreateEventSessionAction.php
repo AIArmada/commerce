@@ -10,6 +10,7 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Support\Normalization\EventContentNormalizer;
+use AIArmada\Events\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -90,11 +91,13 @@ final class CreateEventSessionAction
 
     private function resolveEventForWrite(int | string $eventId): Event
     {
-        if (method_exists(Event::class, 'ownerScopeConfig') && ! Event::ownerScopeConfig()->enabled) {
-            return Event::query()->findOrFail($eventId);
+        $eventClass = ModelResolver::eventClass();
+
+        if (method_exists($eventClass, 'ownerScopeConfig') && ! $eventClass::ownerScopeConfig()->enabled) {
+            return $eventClass::query()->findOrFail($eventId);
         }
 
-        return OwnerWriteGuard::findOrFailForOwner(Event::class, $eventId);
+        return OwnerWriteGuard::findOrFailForOwner($eventClass, $eventId);
     }
 
     /**

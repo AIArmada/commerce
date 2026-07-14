@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Services;
 
 use AIArmada\Events\Contracts\EventCheckInService;
+use AIArmada\Events\Data\EventCheckInResult;
 use AIArmada\Events\Events\EventAttendanceCheckedIn;
 use AIArmada\Events\Events\EventAttendanceCheckedOut;
 use AIArmada\Events\Models\Event;
@@ -15,6 +16,7 @@ use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationParticipant;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Support\EventWriteGuard;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Ticketing\Models\Pass;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -24,7 +26,7 @@ use InvalidArgumentException;
 
 final class DefaultEventCheckInService implements EventCheckInService
 {
-    public function checkIn(array $data): EventAttendance
+    public function checkInWithResult(array $data): EventCheckInResult
     {
         $event = EventWriteGuard::findOrFail($data['event_id']);
         $registration = $this->resolveRegistration($event, $data['event_registration_id'] ?? null);
@@ -97,7 +99,8 @@ final class DefaultEventCheckInService implements EventCheckInService
                 return [$existing, false];
             }
 
-            $attendance = EventAttendance::query()->create([
+            $attendanceClass = ModelResolver::attendanceClass();
+            $attendance = $attendanceClass::query()->create([
                 'event_id' => $event->id,
                 'event_occurrence_id' => $occurrence->id,
                 'event_session_id' => $session?->id,
@@ -127,7 +130,7 @@ final class DefaultEventCheckInService implements EventCheckInService
             event(new EventAttendanceCheckedIn($attendance));
         }
 
-        return $attendance;
+        return new EventCheckInResult($attendance, $wasCreated);
     }
 
     private function lockCheckInIdentity(
@@ -151,7 +154,8 @@ final class DefaultEventCheckInService implements EventCheckInService
         }
 
         if ($registration !== null) {
-            EventRegistration::query()
+            $registrationClass = ModelResolver::registrationClass();
+            $registrationClass::query()
                 ->whereKey($registration->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -168,7 +172,8 @@ final class DefaultEventCheckInService implements EventCheckInService
         mixed $attendeeType,
         mixed $attendeeId,
     ): ?EventAttendance {
-        $query = EventAttendance::query()
+        $attendanceClass = ModelResolver::attendanceClass();
+        $query = $attendanceClass::query()
             ->where('event_id', $event->id)
             ->where('event_occurrence_id', $occurrence->id)
             ->where('event_session_id', $session?->id)
@@ -250,7 +255,7 @@ final class DefaultEventCheckInService implements EventCheckInService
             throw new InvalidArgumentException('checkInToSession requires a pass, registration, participant, or null.');
         }
 
-        return $this->checkIn($data);
+        return $this->checkInWithResult($data)->attendance;
     }
 
     public function cancelCheckIn(EventAttendance $attendance, string $reason, mixed $actor = null): void
@@ -325,7 +330,8 @@ final class DefaultEventCheckInService implements EventCheckInService
             return null;
         }
 
-        $registration = EventRegistration::query()
+        $registrationClass = ModelResolver::registrationClass();
+        $registration = $registrationClass::query()
             ->whereKey($registrationId)
             ->where('event_id', $event->id)
             ->first();
@@ -366,13 +372,15 @@ final class DefaultEventCheckInService implements EventCheckInService
             return null;
         }
 
+        $registrationClass = ModelResolver::registrationClass();
+
         $query = Pass::query()
             ->whereKey($passId)
             ->with(['ticketable', 'registration', 'holder']);
 
         if ($registrationId !== null) {
             $query
-                ->where('registration_type', (new EventRegistration)->getMorphClass())
+                ->where('registration_type', (new $registrationClass)->getMorphClass())
                 ->where('registration_id', $registrationId);
         }
 

@@ -6,6 +6,7 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventAttendanceFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Ticketing\Models\Pass;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -78,7 +79,7 @@ class EventAttendance extends Model
      */
     public function registration(): BelongsTo
     {
-        return $this->belongsTo(EventRegistration::class, 'event_registration_id');
+        return $this->belongsTo(ModelResolver::registrationClass(), 'event_registration_id');
     }
 
     /**
@@ -86,7 +87,7 @@ class EventAttendance extends Model
      */
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Event::class);
+        return $this->belongsTo(ModelResolver::eventClass());
     }
 
     /**

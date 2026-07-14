@@ -21,15 +21,11 @@ test('AffiliateConversionData constructor sets properties', function (): void {
         subjectIdentifier: 'event:1',
         subjectInstance: 'share',
         subjectTitleSnapshot: 'Ramadan Night',
-        cartIdentifier: 'cart1',
-        cartInstance: 'instance1',
         voucherCode: 'VOUCHER',
         externalReference: 'OUTCOME123',
-        orderReference: 'ORD123',
         conversionType: 'registration',
         subtotalMinor: 1000,
         valueMinor: 1200,
-        totalMinor: 1200,
         commissionMinor: 120,
         commissionCurrency: 'USD',
         status: ConversionStatus::fromString(ApprovedConversion::class),
@@ -46,15 +42,11 @@ test('AffiliateConversionData constructor sets properties', function (): void {
     expect($data->subjectIdentifier)->toBe('event:1');
     expect($data->subjectInstance)->toBe('share');
     expect($data->subjectTitleSnapshot)->toBe('Ramadan Night');
-    expect($data->cartIdentifier)->toBe('cart1');
-    expect($data->cartInstance)->toBe('instance1');
     expect($data->voucherCode)->toBe('VOUCHER');
     expect($data->externalReference)->toBe('OUTCOME123');
-    expect($data->orderReference)->toBe('ORD123');
     expect($data->conversionType)->toBe('registration');
     expect($data->subtotalMinor)->toBe(1000);
     expect($data->valueMinor)->toBe(1200);
-    expect($data->totalMinor)->toBe(1200);
     expect($data->commissionMinor)->toBe(120);
     expect($data->commissionCurrency)->toBe('USD');
     expect($data->status->equals(ApprovedConversion::class))->toBeTrue();
@@ -104,14 +96,10 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
     expect($data->subjectIdentifier)->toBe('event:1');
     expect($data->subjectInstance)->toBe('share');
     expect($data->subjectTitleSnapshot)->toBe('Ramadan Night');
-    expect($data->cartIdentifier)->toBe('event:1');
-    expect($data->cartInstance)->toBe('share');
     expect($data->voucherCode)->toBe('VOUCHER');
     expect($data->externalReference)->toBe('ORD123');
-    expect($data->orderReference)->toBe('ORD123');
     expect($data->subtotalMinor)->toBe(1000);
     expect($data->valueMinor)->toBe(1200);
-    expect($data->totalMinor)->toBe(1200);
     expect($data->commissionMinor)->toBe(120);
     expect($data->commissionCurrency)->toBe('USD');
     expect($data->conversionType)->toBe('registration');
@@ -132,14 +120,10 @@ test('AffiliateConversionData toArray returns array representation', function ()
         subjectIdentifier: 'event:1',
         subjectInstance: 'share',
         subjectTitleSnapshot: 'Ramadan Night',
-        cartIdentifier: 'cart1',
-        cartInstance: 'instance1',
         voucherCode: 'VOUCHER',
         externalReference: 'OUTCOME123',
-        orderReference: 'ORD123',
         subtotalMinor: 1000,
         valueMinor: 1200,
-        totalMinor: 1200,
         commissionMinor: 120,
         commissionCurrency: 'USD',
         conversionType: 'registration',
@@ -164,15 +148,11 @@ test('AffiliateConversionData toArray returns array representation', function ()
         'subject_identifier' => 'event:1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ramadan Night',
-        'cart_identifier' => 'cart1',
-        'cart_instance' => 'instance1',
         'voucher_code' => 'VOUCHER',
         'external_reference' => 'OUTCOME123',
-        'order_reference' => 'ORD123',
         'conversion_type' => 'registration',
         'subtotal_minor' => 1000,
         'value_minor' => 1200,
-        'total_minor' => 1200,
         'commission_minor' => 120,
         'commission_currency' => 'USD',
         'occurred_at' => $occurredAt->format('c'),
@@ -189,14 +169,10 @@ test('AffiliateConversionData toArray handles null occurredAt', function (): voi
         affiliateCode: 'AFF1',
         subjectIdentifier: 'event:1',
         subjectInstance: 'share',
-        cartIdentifier: 'cart1',
-        cartInstance: 'instance1',
         voucherCode: 'VOUCHER',
         externalReference: 'OUTCOME123',
-        orderReference: 'ORD123',
         subtotalMinor: 1000,
         valueMinor: 1200,
-        totalMinor: 1200,
         commissionMinor: 120,
         commissionCurrency: 'USD',
         conversionType: 'registration',

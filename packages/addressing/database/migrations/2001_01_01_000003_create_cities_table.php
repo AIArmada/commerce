@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('country_id')->index();
-            $table->foreignUuid('state_id')->index();
+            $table->foreignUuid('state_id')->nullable()->index();
             $table->string('name');
             $table->string('postcode')->nullable();
             $table->string('label')->nullable();

@@ -30,8 +30,6 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $subject_identifier
  * @property string|null $subject_instance
  * @property string|null $subject_title_snapshot
- * @property string|null $cart_identifier
- * @property string|null $cart_instance
  * @property string|null $voucher_code
  * @property string|null $external_reference
  * @property string|null $performance_bonus_key
@@ -51,7 +49,6 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $paid_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- * @property-read string|null $order_id
  * @property-read string $currency Alias for commission_currency
  * @property-read Affiliate $affiliate
  * @property-read AffiliateAttribution|null $attribution
@@ -77,8 +74,6 @@ class AffiliateConversion extends Model
         'subject_identifier',
         'subject_instance',
         'subject_title_snapshot',
-        'cart_identifier',
-        'cart_instance',
         'voucher_code',
         'external_reference',
         'performance_bonus_key',

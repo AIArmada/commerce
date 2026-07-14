@@ -14,6 +14,7 @@ use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\EventStatus\EventStatus as EventStatusState;
 use AIArmada\Events\States\EventStatus\Published;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
@@ -452,7 +453,7 @@ class Event extends Model implements HasMedia
 
     protected static function registrationModelClass(): string
     {
-        return EventRegistration::class;
+        return ModelResolver::registrationClass();
     }
 
     public function isPubliclyVisible(): bool

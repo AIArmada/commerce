@@ -105,7 +105,7 @@ final class RecordAffiliateConversion
                 'subject_instance' => $attribution?->subject_instance ?? $cart->instance(),
                 'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot ?? ($metadata['subject_title_snapshot'] ?? null),
                 'voucher_code' => $metadata['voucher_code'] ?? null,
-                'external_reference' => $payload['external_reference'] ?? $payload['order_reference'] ?? null,
+                'external_reference' => $payload['external_reference'] ?? null,
                 'conversion_type' => $payload['conversion_type'] ?? 'purchase',
                 'subtotal_minor' => $subtotalMinor ?? 0,
                 'value_minor' => $portionRevenue,

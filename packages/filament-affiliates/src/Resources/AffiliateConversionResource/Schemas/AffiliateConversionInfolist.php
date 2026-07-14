@@ -34,14 +34,14 @@ final class AffiliateConversionInfolist
                     ]),
                 ]),
 
-            Section::make('Cart Integration')
+            Section::make('Subject')
                 ->schema([
                     Grid::make(2)->schema([
-                        TextEntry::make('cart_identifier')
-                            ->label('Cart Identifier')
+                        TextEntry::make('subject_type')
+                            ->label('Subject Type')
                             ->placeholder('—'),
-                        TextEntry::make('cart_instance')
-                            ->label('Cart Instance')
+                        TextEntry::make('subject_title_snapshot')
+                            ->label('Subject Title')
                             ->placeholder('—'),
                     ]),
                 ])

@@ -64,7 +64,7 @@ final class CheckInConsole extends Page implements HasTable
                             return;
                         }
 
-                        app(EventCheckInService::class)->checkIn([
+                        app(EventCheckInService::class)->checkInWithResult([
                             'event_id' => $registration->event_id,
                             'event_occurrence_id' => $record->occurrence_id ?? $registration->event_occurrence_id,
                             'pass_id' => $record->id,
@@ -139,7 +139,7 @@ final class CheckInConsole extends Page implements HasTable
                 ->action(function (array $data): void {
                     OwnerWriteGuard::findOrFailForOwner(Event::class, $data['event_id']);
 
-                    app(EventCheckInService::class)->checkIn([
+                    app(EventCheckInService::class)->checkInWithResult([
                         'event_id' => $data['event_id'],
                         'attendance_type' => 'walk_in',
                         'check_in_source' => 'admin',

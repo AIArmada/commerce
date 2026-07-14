@@ -6,6 +6,7 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventClassificationFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Events\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -58,7 +59,19 @@ final class EventClassification extends Model
     /** @return BelongsTo<Event, $this> */
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Event::class);
+        return $this->belongsTo(ModelResolver::eventClass());
+    }
+
+    /** @return BelongsTo<EventTaxonomy, $this> */
+    public function taxonomy(): BelongsTo
+    {
+        return $this->belongsTo(EventTaxonomy::class, 'event_taxonomy_id');
+    }
+
+    /** @return BelongsTo<EventTerm, $this> */
+    public function term(): BelongsTo
+    {
+        return $this->belongsTo(EventTerm::class, 'event_term_id');
     }
 
     protected static function newFactory(): EventClassificationFactory

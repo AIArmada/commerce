@@ -172,7 +172,7 @@
                             <table class="fia-portal-table">
                                 <thead>
                                     <tr>
-                                        <th>{{ __('Order') }}</th>
+                                        <th>{{ __('Reference') }}</th>
                                         <th>{{ __('Date') }}</th>
                                         <th class="fia-portal-amount-cell">{{ __('Amount') }}</th>
                                         <th class="fia-portal-status">{{ __('Status') }}</th>
@@ -182,7 +182,7 @@
                                     @foreach ($recentConversions as $conversion)
                                         <tr>
                                             <td>
-                                                <span class="fia-portal-order">{{ $conversion->order_reference ?? '—' }}</span>
+                                                <span class="fia-portal-order">{{ $conversion->external_reference ?? '—' }}</span>
                                             </td>
                                             <td>
                                                 <span class="fia-portal-date">{{ $conversion->occurred_at->format('M j, Y') }}</span>

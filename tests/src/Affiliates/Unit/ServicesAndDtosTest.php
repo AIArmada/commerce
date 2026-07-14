@@ -123,8 +123,8 @@ test('AffiliateConversionData can be created with constructor', function (): voi
         id: 'test-id',
         affiliateId: 'aff-id',
         affiliateCode: 'CONV001',
-        orderReference: 'ORD-12345',
-        totalMinor: 50000,
+        externalReference: 'ORD-12345',
+        valueMinor: 50000,
         commissionMinor: 5000,
         commissionCurrency: 'USD',
         status: ConversionStatus::fromString(ApprovedConversion::class),
@@ -132,7 +132,7 @@ test('AffiliateConversionData can be created with constructor', function (): voi
     );
 
     expect($data)->toBeInstanceOf(AffiliateConversionData::class);
-    expect($data->orderReference)->toBe('ORD-12345');
+    expect($data->externalReference)->toBe('ORD-12345');
 });
 
 // HasAffiliates Trait Tests - basic tests

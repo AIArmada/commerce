@@ -38,23 +38,15 @@ class AffiliateConversionData extends Data
 
     public readonly ?string $subjectTitleSnapshot;
 
-    public readonly ?string $cartIdentifier;
-
-    public readonly ?string $cartInstance;
-
     public readonly ?string $voucherCode;
 
     public readonly ?string $externalReference;
-
-    public readonly ?string $orderReference;
 
     public readonly ?string $conversionType;
 
     public readonly int $subtotalMinor;
 
     public readonly int $valueMinor;
-
-    public readonly int $totalMinor;
 
     public readonly int $commissionMinor;
 
@@ -80,15 +72,11 @@ class AffiliateConversionData extends Data
         string $affiliateCode,
         ?string $subjectIdentifier = null,
         ?string $subjectInstance = null,
-        ?string $cartIdentifier = null,
-        ?string $cartInstance = null,
         ?string $voucherCode = null,
         ?string $externalReference = null,
-        ?string $orderReference = null,
         ?string $conversionType = null,
         int $subtotalMinor = 0,
         int $valueMinor = 0,
-        int $totalMinor = 0,
         int $commissionMinor = 0,
         string $commissionCurrency = 'MYR',
         ?ConversionStatus $status = null,
@@ -99,27 +87,18 @@ class AffiliateConversionData extends Data
         ?string $subjectType = null,
         ?string $subjectTitleSnapshot = null,
     ) {
-        $resolvedSubjectIdentifier = $subjectIdentifier ?? $cartIdentifier;
-        $resolvedSubjectInstance = $subjectInstance ?? $cartInstance;
-        $resolvedExternalReference = $externalReference ?? $orderReference;
-        $resolvedValueMinor = $valueMinor !== 0 || $totalMinor === 0 ? $valueMinor : $totalMinor;
-
         $this->id = $id;
         $this->affiliateId = $affiliateId;
         $this->affiliateCode = $affiliateCode;
         $this->subjectType = $subjectType;
-        $this->subjectIdentifier = $resolvedSubjectIdentifier;
-        $this->subjectInstance = $resolvedSubjectInstance;
+        $this->subjectIdentifier = $subjectIdentifier;
+        $this->subjectInstance = $subjectInstance;
         $this->subjectTitleSnapshot = $subjectTitleSnapshot;
-        $this->cartIdentifier = $cartIdentifier ?? $resolvedSubjectIdentifier;
-        $this->cartInstance = $cartInstance ?? $resolvedSubjectInstance;
         $this->voucherCode = $voucherCode;
-        $this->externalReference = $resolvedExternalReference;
-        $this->orderReference = $orderReference ?? $resolvedExternalReference;
+        $this->externalReference = $externalReference;
         $this->conversionType = $conversionType;
         $this->subtotalMinor = $subtotalMinor;
-        $this->valueMinor = $resolvedValueMinor;
-        $this->totalMinor = $totalMinor !== 0 || $resolvedValueMinor === 0 ? $totalMinor : $resolvedValueMinor;
+        $this->valueMinor = $valueMinor;
         $this->commissionMinor = $commissionMinor;
         $this->commissionCurrency = $commissionCurrency;
         $this->status = $status ?? ConversionStatus::fromString(PendingConversion::class);
@@ -145,14 +124,10 @@ class AffiliateConversionData extends Data
             subjectIdentifier: $conversion->subject_identifier,
             subjectInstance: $conversion->subject_instance,
             subjectTitleSnapshot: $conversion->subject_title_snapshot,
-            cartIdentifier: $conversion->cart_identifier,
-            cartInstance: $conversion->cart_instance,
             voucherCode: $conversion->voucher_code,
             externalReference: $conversion->external_reference,
-            orderReference: $conversion->external_reference,
             subtotalMinor: (int) $conversion->subtotal_minor,
             valueMinor: (int) $conversion->value_minor,
-            totalMinor: (int) ($conversion->value_minor ?: $conversion->subtotal_minor),
             commissionMinor: (int) $conversion->commission_minor,
             commissionCurrency: (string) $conversion->commission_currency,
             conversionType: $conversion->conversion_type,
@@ -174,13 +149,13 @@ class AffiliateConversionData extends Data
         return $this->status->equals(ApprovedConversion::class);
     }
 
+    public function getFormattedValue(): string
+    {
+        return MoneyFormatter::formatMinorWithCode($this->valueMinor, $this->commissionCurrency);
+    }
+
     public function getFormattedCommission(): string
     {
         return MoneyFormatter::formatMinorWithCode($this->commissionMinor, $this->commissionCurrency);
-    }
-
-    public function getFormattedTotal(): string
-    {
-        return MoneyFormatter::formatMinorWithCode($this->totalMinor, $this->commissionCurrency);
     }
 }

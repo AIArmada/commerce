@@ -69,11 +69,12 @@ final class EventOwnerScope implements Scope
         }
 
         if ($this->eventRelation === 'event') {
-            $event = new Event;
+            $eventClass = ModelResolver::eventClass();
+            $event = new $eventClass;
 
             $builder->whereIn(
                 $model->qualifyColumn('event_id'),
-                Event::query()->select($event->qualifyColumn($event->getKeyName())),
+                $eventClass::query()->select($event->qualifyColumn($event->getKeyName())),
             );
 
             return;

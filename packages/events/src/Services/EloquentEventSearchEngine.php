@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Services;
 
 use AIArmada\Events\Contracts\EventSearchEngine;
-use AIArmada\Events\Models\Event;
+use AIArmada\Events\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Collection;
 
 final class EloquentEventSearchEngine implements EventSearchEngine
@@ -19,7 +19,8 @@ final class EloquentEventSearchEngine implements EventSearchEngine
 
     public function search(array $criteria): Collection
     {
-        $query = Event::query();
+        $eventClass = ModelResolver::eventClass();
+        $query = $eventClass::query();
 
         if (! empty($criteria['status'])) {
             $query->where('status', $criteria['status']);

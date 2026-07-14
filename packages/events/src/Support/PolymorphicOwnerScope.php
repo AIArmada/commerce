@@ -66,14 +66,15 @@ final class PolymorphicOwnerScope implements Scope
         );
 
         if ($this->eventIdColumn !== null) {
-            $event = new Event;
+            $eventClass = ModelResolver::eventClass();
+            $event = new $eventClass;
 
-            $builder->where(function (Builder $eventQuery) use ($model, $event): void {
+            $builder->where(function (Builder $eventQuery) use ($model, $event, $eventClass): void {
                 $eventQuery
                     ->whereNull($model->qualifyColumn($this->eventIdColumn))
                     ->orWhereIn(
                         $model->qualifyColumn($this->eventIdColumn),
-                        Event::query()->select(
+                        $eventClass::query()->select(
                             $event->qualifyColumn($event->getKeyName()),
                         ),
                     );
