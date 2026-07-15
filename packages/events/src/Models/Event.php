@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
@@ -189,6 +190,14 @@ class Event extends Model implements HasMedia
     public function occurrences(): HasMany
     {
         return $this->hasMany(EventOccurrence::class);
+    }
+
+    /**
+     * @return HasOne<EventOccurrence, $this>
+     */
+    public function primaryOccurrence(): HasOne
+    {
+        return $this->hasOne(EventOccurrence::class)->orderBy('starts_at');
     }
 
     /**
