@@ -38,6 +38,7 @@ final class EventTaxonomyHierarchyService implements EventTaxonomyHierarchy
         $knownIds = $terms->mapWithKeys(fn (EventTerm $term): array => [(string) $term->getKey() => true]);
         $byParent = $terms->groupBy(function (EventTerm $term) use ($knownIds): string {
             $parentId = $term->parent_id === null ? '' : (string) $term->parent_id;
+
             return $parentId !== '' && $knownIds->has($parentId) ? $parentId : '';
         });
 
@@ -109,6 +110,7 @@ final class EventTaxonomyHierarchyService implements EventTaxonomyHierarchy
                 }
                 $term = $terms->get($parentId);
             }
+
             return true;
         }));
     }
@@ -118,7 +120,7 @@ final class EventTaxonomyHierarchyService implements EventTaxonomyHierarchy
     {
         $nodes = [];
         foreach ($byParent->get($parentId, collect()) as $term) {
-            $path = $prefix === '' ? (string) $term->name : $prefix.' › '.$term->name;
+            $path = $prefix === '' ? (string) $term->name : $prefix . ' › ' . $term->name;
             $nodes[] = [
                 'id' => (string) $term->getKey(),
                 'code' => (string) $term->code,
@@ -128,6 +130,7 @@ final class EventTaxonomyHierarchyService implements EventTaxonomyHierarchy
                 'children' => $this->nodes($byParent, (string) $term->getKey(), $path),
             ];
         }
+
         return $nodes;
     }
 
@@ -143,6 +146,7 @@ final class EventTaxonomyHierarchyService implements EventTaxonomyHierarchy
                 $flat = [...$flat, ...$this->flatten($children)];
             }
         }
+
         return $flat;
     }
 

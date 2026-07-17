@@ -30,4 +30,3 @@ interface EventTaxonomyHierarchy
     /** @param list<mixed> $termIds @return list<string> */
     public function minimalTermIds(string $taxonomyCode, array $termIds, bool $activeOnly = true): array;
 }
-
