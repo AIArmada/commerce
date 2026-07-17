@@ -61,13 +61,17 @@ final class EventTerm extends Model
     /** @return BelongsTo<self, $this> */
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(self::class, 'parent_id');
+        return $this->belongsTo(self::class, 'parent_id')
+            ->where($this->getTable().'.event_taxonomy_id', $this->event_taxonomy_id);
     }
 
     /** @return HasMany<self, $this> */
     public function children(): HasMany
     {
-        return $this->hasMany(self::class, 'parent_id')->orderBy('sort_order')->orderBy('name');
+        return $this->hasMany(self::class, 'parent_id')
+            ->where($this->getTable().'.event_taxonomy_id', $this->event_taxonomy_id)
+            ->orderBy('sort_order')
+            ->orderBy('name');
     }
 
     /** @param Builder<self> $query */

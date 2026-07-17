@@ -24,6 +24,10 @@ final class EventTaxonomyHierarchyService implements EventTaxonomyHierarchy
             return collect();
         }
 
+        if ($activeOnly && ! $taxonomy->is_active) {
+            return collect();
+        }
+
         return EventTerm::query()
             ->where('event_taxonomy_id', $taxonomy->getKey())
             ->when($activeOnly, fn ($query) => $query->where('is_active', true))
@@ -71,8 +75,11 @@ final class EventTaxonomyHierarchyService implements EventTaxonomyHierarchy
         $valid = $this->terms($taxonomyCode, $activeOnly)->keyBy(fn (EventTerm $term): string => (string) $term->getKey());
 
         return array_values(array_unique(array_filter(
-            array_map(strval(...), $termIds),
-            fn (string $id): bool => $valid->has($id),
+            array_map(
+                static fn (mixed $id): ?string => is_scalar($id) ? (string) $id : null,
+                $termIds,
+            ),
+            fn (mixed $id): bool => is_string($id) && $valid->has($id),
         )));
     }
 
