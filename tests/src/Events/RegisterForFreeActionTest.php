@@ -5,11 +5,13 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Actions\RegisterForFreeAction;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
+use AIArmada\Events\Exceptions\EventRegistrationNotAvailableException;
 use AIArmada\Events\Exceptions\NotFreeEventException;
 use AIArmada\Events\Exceptions\OpenDoorRegistrationBlockedException;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\States\OccurrenceStatus\Cancelled;
 
 beforeEach(function (): void {
     config()->set('events.features.free_only.auto_derive_pricing_from_ticket_types', true);
@@ -77,6 +79,19 @@ it('throws for open-door events with block mode', function (): void {
             participants: [['name' => 'Alice', 'is_primary' => true]],
         );
     }))->toThrow(OpenDoorRegistrationBlockedException::class);
+});
+
+it('rejects registration when the occurrence lifecycle is closed', function (): void {
+    expect(fn () => OwnerContext::withOwner(null, function (): void {
+        $event = Event::factory()->free()->published()->create();
+        $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+        $occurrence->status->transitionTo(Cancelled::class);
+
+        app(RegisterForFreeAction::class)->execute(
+            target: $occurrence,
+            participants: [['name' => 'Alice', 'is_primary' => true]],
+        );
+    }))->toThrow(EventRegistrationNotAvailableException::class);
 });
 
 it('creates interested registrations when passes are not issued', function (): void {

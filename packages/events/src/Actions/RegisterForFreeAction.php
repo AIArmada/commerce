@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
+use AIArmada\Events\Contracts\EventRegistrationEligibility;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Enums\OpenDoorMode;
@@ -27,6 +28,7 @@ final class RegisterForFreeAction
 {
     public function __construct(
         private readonly EventRegistrationScopeResolver $scopeResolver,
+        private readonly EventRegistrationEligibility $eligibility,
         private readonly RegistrationServiceInterface $registrations,
     ) {}
 
@@ -42,6 +44,7 @@ final class RegisterForFreeAction
         array $options = [],
     ): Collection {
         $scope = $this->scopeResolver->resolve($target);
+        $this->eligibility->ensureEligible($scope);
         EventWriteGuard::findOrFail($scope->event);
 
         if (! $scope->isFreeOnly() && $scope->pricingMode !== PricingMode::Mixed) {

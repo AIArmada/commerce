@@ -32,6 +32,7 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;
 use AIArmada\Events\Contracts\EventReferenceResolver;
+use AIArmada\Events\Contracts\EventRegistrationEligibility;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\EventScheduleResolver;
 use AIArmada\Events\Contracts\EventSearchEngine;
@@ -89,6 +90,7 @@ use AIArmada\Events\Resolvers\DefaultEventClassificationResolver;
 use AIArmada\Events\Resolvers\DefaultEventDisplayTimezoneResolver;
 use AIArmada\Events\Resolvers\DefaultEventOrderItemFulfillmentResolver;
 use AIArmada\Events\Resolvers\DefaultEventReferenceResolver;
+use AIArmada\Events\Resolvers\DefaultEventRegistrationEligibility;
 use AIArmada\Events\Resolvers\DefaultEventRegistrationScopeResolver;
 use AIArmada\Events\Resolvers\DefaultEventSearchPayloadResolver;
 use AIArmada\Events\Resolvers\NullEventCheckoutIntentResolver;
@@ -177,6 +179,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->bind(EventTranslationProvider::class, NullEventTranslationProvider::class);
 
         $this->app->bind(EventRegistrationScopeResolver::class, DefaultEventRegistrationScopeResolver::class);
+        $this->app->bind(EventRegistrationEligibility::class, DefaultEventRegistrationEligibility::class);
 
         $this->app->singleton(RegisterForFreeAction::class);
         $this->app->singleton(PromoteInterestedToConfirmedAction::class);

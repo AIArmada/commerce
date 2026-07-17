@@ -569,12 +569,19 @@ When a ticket type is created against an `EventOccurrence` or `EventSession`, it
 The package exposes contracts for every major operation. Bind your own implementation to override default behavior:
 
 ```php
+use AIArmada\Events\Contracts\EventRegistrationEligibility;
 use AIArmada\Events\Contracts\EventSearchPayloadResolver;
 
 app()->bind(EventSearchPayloadResolver::class, MySearchResolver::class);
 ```
 
-Available contracts: `RegistrationServiceInterface`, `EventLifecycleWorkflow`, `EventCheckInService`, `EventSearchPayloadResolver`, `EventDisplayTimezoneResolver`, `EventScheduleResolver`, and more.
+Registration actions call `EventRegistrationEligibility` before creating registrations. The default implementation rejects occurrences whose status is not listed in `events.lifecycle.occurrence.registration_accepting_statuses`. Bind a custom implementation when the host application needs additional access, publication, or entitlement rules:
+
+```php
+app()->bind(EventRegistrationEligibility::class, MyRegistrationEligibility::class);
+```
+
+Available contracts: `RegistrationServiceInterface`, `EventLifecycleWorkflow`, `EventCheckInService`, `EventRegistrationEligibility`, `EventSearchPayloadResolver`, `EventDisplayTimezoneResolver`, `EventScheduleResolver`, and more.
 
 ## Search Indexing
 

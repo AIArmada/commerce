@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Events\Contracts\EventRegistrationEligibility;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Enums\PricingMode;
@@ -25,6 +26,7 @@ final class CreateRegistrationsFromOrderAction
     public function __construct(
         private readonly RegistrationServiceInterface $registrationService,
         private readonly EventRegistrationScopeResolver $scopeResolver,
+        private readonly EventRegistrationEligibility $eligibility,
         private readonly ExpandTicketTypeComponentsAction $expandComponents,
     ) {}
 
@@ -35,6 +37,7 @@ final class CreateRegistrationsFromOrderAction
     public function handle(Model $target, mixed $orderItem, array $participants, mixed $purchaser = null): Collection
     {
         $scope = $this->scopeResolver->resolve($target);
+        $this->eligibility->ensureEligible($scope);
 
         $this->resolveWithOwnerGuard($scope->event::class, $scope->event->id);
 
