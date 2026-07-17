@@ -22,6 +22,10 @@ return new class extends Migration
             $table->integer('sort_order')->default(0)->index();
             $table->boolean('is_active')->default(true);
             $table->{$jsonType}('metadata')->nullable();
+            $table->index(
+                ['event_taxonomy_id', 'parent_id', 'sort_order'],
+                'event_terms_taxonomy_parent_sort_index',
+            );
             $table->timestampsTz();
         });
     }

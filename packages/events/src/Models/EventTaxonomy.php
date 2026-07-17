@@ -9,6 +9,7 @@ use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string $id
@@ -44,6 +45,24 @@ final class EventTaxonomy extends Model
             'is_active' => 'boolean',
             'metadata' => 'array',
         ];
+    }
+
+    /** @return HasMany<EventTerm, $this> */
+    public function terms(): HasMany
+    {
+        return $this->hasMany(EventTerm::class, 'event_taxonomy_id')->orderBy('sort_order')->orderBy('name');
+    }
+
+    /** @return HasMany<EventTerm, $this> */
+    public function activeTerms(): HasMany
+    {
+        return $this->terms()->where('is_active', true);
+    }
+
+    /** @return HasMany<EventTerm, $this> */
+    public function rootTerms(): HasMany
+    {
+        return $this->activeTerms()->whereNull('parent_id');
     }
 
     protected static function newFactory(): EventTaxonomyFactory

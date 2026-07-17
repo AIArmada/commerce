@@ -25,6 +25,7 @@ use AIArmada\Events\Contracts\EventChangeNoticeWorkflow;
 use AIArmada\Events\Contracts\EventCheckInService;
 use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
 use AIArmada\Events\Contracts\EventClassificationResolver;
+use AIArmada\Events\Contracts\EventTaxonomyHierarchy;
 use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventDisplayTimezoneResolver;
 use AIArmada\Events\Contracts\EventEngagementManager;
@@ -107,6 +108,7 @@ use AIArmada\Events\Services\EventMetadataSyncService;
 use AIArmada\Events\Services\EventNotificationDispatcher;
 use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Services\EventSearchDocumentBuilder;
+use AIArmada\Events\Services\EventTaxonomyHierarchyService;
 use AIArmada\Events\Services\EventTemplateServiceImpl;
 use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Events\Support\EventOwnerScope;
@@ -167,6 +169,7 @@ final class EventsServiceProvider extends PackageServiceProvider
 
         $this->app->bind(EventDisplayTimezoneResolver::class, $this->displayTimezoneResolverClass());
         $this->app->bind(EventClassificationResolver::class, $this->classificationResolverClass());
+        $this->app->singleton(EventTaxonomyHierarchy::class, EventTaxonomyHierarchyService::class);
         $this->app->bind(EventReferenceResolver::class, $this->referenceResolverClass());
         $this->app->bind(EventScheduleResolver::class, $this->scheduleResolverClass());
         $this->app->bind(EventSearchEngine::class, $this->searchEngineClass());

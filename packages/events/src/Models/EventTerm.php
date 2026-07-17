@@ -9,6 +9,8 @@ use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string $id
@@ -47,6 +49,36 @@ final class EventTerm extends Model
             'is_active' => 'boolean',
             'metadata' => 'array',
         ];
+    }
+
+    /** @return BelongsTo<EventTaxonomy, $this> */
+    public function taxonomy(): BelongsTo
+    {
+        return $this->belongsTo(EventTaxonomy::class, 'event_taxonomy_id');
+    }
+
+    /** @return BelongsTo<self, $this> */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    /** @return HasMany<self, $this> */
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id')->orderBy('sort_order')->orderBy('name');
+    }
+
+    /** @param \Illuminate\Database\Eloquent\Builder<self> $query */
+    public function scopeActive($query): void
+    {
+        $query->where('is_active', true);
+    }
+
+    /** @param \Illuminate\Database\Eloquent\Builder<self> $query */
+    public function scopeRoots($query): void
+    {
+        $query->whereNull('parent_id');
     }
 
     protected static function newFactory(): EventTermFactory
