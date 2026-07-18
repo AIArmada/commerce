@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\CompletedPayout;
@@ -31,9 +32,37 @@ beforeEach(function (): void {
 
     AffiliatePayoutEvent::query()->delete();
     AffiliatePayoutMethod::query()->delete();
+    AffiliatePayoutOperation::query()->delete();
     AffiliatePayout::query()->delete();
     Affiliate::query()->delete();
 });
+
+/** @param array<string, mixed> $attributes */
+function createBulkActionPayout(array $attributes): AffiliatePayout
+{
+    $payout = AffiliatePayout::create($attributes);
+    $affiliate = $payout->payee;
+
+    if (! $affiliate instanceof Affiliate) {
+        throw new RuntimeException('Canonical payout fixture requires an affiliate payee.');
+    }
+
+    $operation = AffiliatePayoutOperation::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'affiliate_payout_id' => $payout->getKey(),
+        'operation_key' => 'test:' . $payout->getKey(),
+        'status' => 'reserved',
+        'amount_minor' => $payout->total_minor,
+        'currency' => $payout->currency,
+        'claimed_at' => now(),
+        'owner_type' => $payout->owner_type,
+        'owner_id' => $payout->owner_id,
+    ]);
+
+    $payout->forceFill(['affiliate_payout_operation_id' => $operation->getKey()])->save();
+
+    return $payout;
+}
 
 it('has correct default name', function (): void {
     expect(BulkPayoutAction::getDefaultName())->toBe('bulk_process_payouts');

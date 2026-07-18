@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
+use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\Affiliates\Services\NetworkService;
 use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\CommerceSupport\Models\Role;
@@ -319,7 +320,6 @@ class PortalRegistration extends FilamentRegister
 
     protected function createAffiliateForUser(Model $user, array $data): Affiliate
     {
-        $registrationService = app(AffiliateRegistrationService::class);
         $owner = $user;
 
         if ((bool) config('affiliates.owner.enabled', false)) {
@@ -343,9 +343,7 @@ class PortalRegistration extends FilamentRegister
         $referrer = null;
 
         if (! empty($data['referral_code'])) {
-            $referrer = Affiliate::query()
-                ->where('code', $data['referral_code'])
-                ->first();
+            $referrer = app(AffiliateLookup::class)->findByCode($data['referral_code']);
         }
 
         if (! $referrer) {
@@ -353,7 +351,7 @@ class PortalRegistration extends FilamentRegister
             $cookieValue = request()->cookie($cookieName) ?? ($_COOKIE[$cookieName] ?? null);
 
             if ($cookieValue) {
-                $referrer = app('affiliates')->findAffiliateByCookie($cookieValue);
+                $referrer = app(AffiliateLookup::class)->findActiveAffiliateByCookie($cookieValue);
             }
         }
 
@@ -361,7 +359,7 @@ class PortalRegistration extends FilamentRegister
             $affiliateData['parent_affiliate_id'] = $referrer->id;
         }
 
-        $affiliate = $registrationService->register($affiliateData, $owner);
+        $affiliate = app(CreateAffiliate::class)->handle($affiliateData, $owner);
 
         if ($referrer) {
             $networkService = app(NetworkService::class);

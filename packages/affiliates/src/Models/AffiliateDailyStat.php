@@ -7,7 +7,6 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonInterface;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,8 +30,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<string, mixed>|null $breakdown
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- * @property-read int $revenue_minor Alias for revenue_cents
- * @property-read int $commission_minor Alias for commission_cents
  * @property-read Affiliate $affiliate
  */
 class AffiliateDailyStat extends Model
@@ -84,29 +81,5 @@ class AffiliateDailyStat extends Model
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
-    }
-
-    /**
-     * Alias for revenue_cents.
-     *
-     * @return Attribute<int, never>
-     */
-    protected function revenueMinor(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->revenue_cents,
-        );
-    }
-
-    /**
-     * Alias for commission_cents.
-     *
-     * @return Attribute<int, never>
-     */
-    protected function commissionMinor(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->commission_cents,
-        );
     }
 }

@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Listeners;
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Vouchers\Events\VoucherApplied;
 
 final class AttachAffiliateFromVoucher
 {
-    public function __construct(private readonly AffiliateService $affiliates) {}
+    public function __construct(
+        private readonly AffiliateLookup $affiliateLookup,
+        private readonly AttachAffiliateToCart $attachAffiliateToCart,
+    ) {}
 
     public function handle(VoucherApplied $event): void
     {
@@ -47,10 +50,10 @@ final class AttachAffiliateFromVoucher
         }
 
         if ($voucher->affiliateId !== null) {
-            $affiliate = $this->affiliates->query()->whereKey($voucher->affiliateId)->first();
+            $affiliate = $this->affiliateLookup->findById($voucher->affiliateId);
 
-            if ($affiliate instanceof Affiliate && $affiliate->isActive()) {
-                $this->affiliates->attachAffiliate($affiliate, $event->cart, $context);
+            if ($affiliate !== null && $affiliate->isActive()) {
+                $this->attachAffiliateToCart->handle($affiliate, $event->cart, $context);
 
                 return;
             }
@@ -60,13 +63,13 @@ final class AttachAffiliateFromVoucher
             return;
         }
 
-        $affiliate = $this->affiliates->findByDefaultVoucherCode($event->voucher->code);
+        $affiliate = $this->affiliateLookup->findByDefaultVoucherCode($event->voucher->code);
 
         if (! $affiliate) {
             return;
         }
 
-        $this->affiliates->attachAffiliate($affiliate, $event->cart, $context);
+        $this->attachAffiliateToCart->handle($affiliate, $event->cart, $context);
     }
 
     private function shouldMatchDefaultVoucherCode(): bool

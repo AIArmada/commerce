@@ -3,8 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\AffiliateRegistrationService;
-use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
@@ -52,39 +50,6 @@ it('returns a closed subheading when registration is disabled', function (): voi
 
 it('creates an affiliate through the registration service during registration handling', function (): void {
     $page = new PortalRegistration;
-
-    $captured = ['payload' => null, 'user' => null];
-
-    app()->instance(AffiliateRegistrationService::class, new class($captured)
-    {
-        /** @var array{payload:mixed, user:mixed} */
-        public array $captured;
-
-        public function __construct(array &$captured)
-        {
-            $this->captured = &$captured;
-        }
-
-        /**
-         * @param  array<string, mixed>  $data
-         */
-        public function register(array $data, $user): Affiliate
-        {
-            $this->captured['payload'] = $data;
-            $this->captured['user'] = $user;
-
-            return Affiliate::create([
-                'code' => 'REG-' . Str::uuid(),
-                'name' => $data['name'],
-                'status' => Active::class,
-                'commission_type' => 'percentage',
-                'commission_rate' => 500,
-                'currency' => 'USD',
-                'owner_type' => $user->getMorphClass(),
-                'owner_id' => (string) $user->getKey(),
-            ]);
-        }
-    });
 
     $reflection = new ReflectionClass($page);
 
@@ -135,38 +100,6 @@ it('uses resolved owner context for registration owner when owner mode is enable
 
     $page = new PortalRegistration;
 
-    $captured = ['owner' => null, 'created_user' => null];
-
-    app()->instance(AffiliateRegistrationService::class, new class($captured)
-    {
-        /** @var array{owner:mixed, created_user:mixed} */
-        public array $captured;
-
-        public function __construct(array &$captured)
-        {
-            $this->captured = &$captured;
-        }
-
-        /**
-         * @param  array<string, mixed>  $data
-         */
-        public function register(array $data, $owner): Affiliate
-        {
-            $this->captured['owner'] = $owner;
-
-            return Affiliate::create([
-                'code' => 'REG-' . Str::uuid(),
-                'name' => $data['name'],
-                'status' => Active::class,
-                'commission_type' => 'percentage',
-                'commission_rate' => 500,
-                'currency' => 'USD',
-                'owner_type' => $owner->getMorphClass(),
-                'owner_id' => (string) $owner->getKey(),
-            ]);
-        }
-    });
-
     $reflection = new ReflectionClass($page);
     $enabled = $reflection->getProperty('registrationEnabled');
     $enabled->setValue($page, true);
@@ -183,10 +116,11 @@ it('uses resolved owner context for registration owner when owner mode is enable
         'website_url' => 'https://example.com',
     ]);
 
+    $affiliate = Affiliate::query()->sole();
+
     expect($createdUser)->toBeInstanceOf(Model::class)
-        ->and($captured['owner'])->not->toBeNull()
-        ->and($captured['owner']->getKey())->toBe($tenantOwner->getKey())
-        ->and($captured['owner']->getKey())->not->toBe($createdUser->getKey());
+        ->and($affiliate->owner_id)->toBe($tenantOwner->getKey())
+        ->and($affiliate->owner_id)->not->toBe($createdUser->getKey());
 });
 
 it('blocks register() and sends a danger notification when disabled', function (): void {

@@ -32,7 +32,7 @@ function createPayoutWithConversions(): AffiliatePayout
 
     $payout = AffiliatePayout::create([
         'reference' => 'PAY-' . Str::uuid(),
-        'amount_minor' => 15000,
+        'total_minor' => 15000,
         'currency' => 'USD',
         'status' => PendingPayout::class,
         'payee_type' => $affiliate->getMorphClass(),
@@ -94,7 +94,7 @@ it('download method returns CSV format (backward compatibility)', function (): v
     $payout = createPayoutWithConversions();
     $service = new PayoutExportService;
 
-    $response = $service->download($payout);
+    $response = $service->downloadCsv($payout);
 
     expect($response)->toBeInstanceOf(StreamedResponse::class)
         ->and($response->headers->get('Content-Type'))->toBe('text/csv');
@@ -188,7 +188,7 @@ it('handles payouts with zero conversions', function (): void {
 
     $payout = AffiliatePayout::create([
         'reference' => 'PAY-EMPTY-' . Str::uuid(),
-        'amount_minor' => 0,
+        'total_minor' => 0,
         'currency' => 'USD',
         'status' => PendingPayout::class,
         'payee_type' => $affiliate->getMorphClass(),

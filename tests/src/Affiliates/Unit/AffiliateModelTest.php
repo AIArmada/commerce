@@ -479,7 +479,7 @@ describe('Affiliate Model - Accessors', function (): void {
         expect($affiliate->email)->toBe('test@example.com');
     });
 
-    test('commissionRateBasisPoints accessor returns commission_rate', function (): void {
+    test('stores commission rate in basis points', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RATE-001',
             'name' => 'Rate Test',
@@ -489,7 +489,7 @@ describe('Affiliate Model - Accessors', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($affiliate->commission_rate_basis_points)->toBe(1500);
+        expect($affiliate->commission_rate)->toBe(1500);
     });
 });
 

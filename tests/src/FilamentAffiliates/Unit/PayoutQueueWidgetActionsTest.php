@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
@@ -17,10 +18,38 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
+    AffiliatePayoutOperation::query()->delete();
     AffiliatePayout::query()->delete();
     AffiliatePayoutMethod::query()->delete();
     Affiliate::query()->delete();
 });
+
+/** @param array<string, mixed> $attributes */
+function createQueueWidgetPayout(array $attributes): AffiliatePayout
+{
+    $payout = AffiliatePayout::create($attributes);
+    $affiliate = $payout->payee;
+
+    if (! $affiliate instanceof Affiliate) {
+        throw new RuntimeException('Canonical payout fixture requires an affiliate payee.');
+    }
+
+    $operation = AffiliatePayoutOperation::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'affiliate_payout_id' => $payout->getKey(),
+        'operation_key' => 'test:' . $payout->getKey(),
+        'status' => 'reserved',
+        'amount_minor' => $payout->total_minor,
+        'currency' => $payout->currency,
+        'claimed_at' => now(),
+        'owner_type' => $payout->owner_type,
+        'owner_id' => $payout->owner_id,
+    ]);
+
+    $payout->forceFill(['affiliate_payout_operation_id' => $operation->getKey()])->save();
+
+    return $payout;
+}
 
 it('processes a payout via the queue widget action', function (): void {
     $user = User::create([
@@ -51,7 +80,7 @@ it('processes a payout via the queue widget action', function (): void {
         'is_default' => true,
     ]);
 
-    $payout = AffiliatePayout::create([
+    $payout = createQueueWidgetPayout([
         'reference' => 'PAY-' . Str::uuid(),
         'status' => PendingPayout::class,
         'total_minor' => 5000,
@@ -103,7 +132,7 @@ it('blocks queue widget payout action when user lacks payout update permission',
         'is_default' => true,
     ]);
 
-    $payout = AffiliatePayout::create([
+    $payout = createQueueWidgetPayout([
         'reference' => 'PAY-' . Str::uuid(),
         'status' => PendingPayout::class,
         'total_minor' => 5000,

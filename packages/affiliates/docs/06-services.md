@@ -40,18 +40,6 @@ The canonical orchestration surface for affiliates is the `Actions` tree. Prefer
 | `CreatePayout::run($conversionIds, $attributes)` | Create a payout batch |
 | `UpdatePayoutStatus::run($payout, $status, $notes, $metadata)` | Update payout status |
 
----
-
-## Legacy Services (Deprecated)
-
-The package also includes specialized services. These are kept as compatibility adapters. **Prefer Actions for new code.**
-
-## AffiliateService
-
-> Deprecated: Prefer individual Actions (`CreateTrackingLink`, `AttachAffiliateToCart`, `TrackAffiliateVisit`, `TouchAffiliateAttribution`, `RecordAffiliateConversion`, etc.). `AffiliateService` is kept as a compatibility facade.
-
-The primary service for affiliate operations.
-
 ## CommissionCalculator
 
 Calculates commissions based on affiliate settings, rules, and tiers.
@@ -82,56 +70,6 @@ $commission = $calculator->calculateForProgram(
 
 // Get applicable volume tier bonus
 $bonus = $calculator->getVolumeTierBonus($affiliate, $periodVolume);
-```
-
-## CommissionMaturityService
-
-> Deprecated: Prefer `Actions/Conversions/ProcessConversionMaturity` and `Actions/Conversions/MatureConversion`.
-> `CommissionMaturityService` is kept as a compatibility adapter until all downstream callers migrate.
-
-Manages the maturity window that promotes qualified conversions into approved, payout-eligible conversions.
-
-```php
-use AIArmada\Affiliates\Services\CommissionMaturityService;
-
-$service = app(CommissionMaturityService::class);
-```
-
-Only conversions in the `Qualified` state are processed by the maturity service.
-
-## AffiliatePayoutService
-
-> Deprecated: Prefer `Actions/Payouts/*` actions. `AffiliatePayoutService` is kept as a compatibility adapter until all downstream callers migrate.
-
-Handles payout batch creation and processing.
-
-```php
-use AIArmada\Affiliates\Services\AffiliatePayoutService;
-
-$service = app(AffiliatePayoutService::class);
-```
-
-### Methods
-
-```php
-// Create payout batch for affiliate
-$payout = $service->createPayout($affiliate, [
-    'method' => PayoutMethodType::PayPal,
-]);
-
-// Process pending payouts
-$service->processPendingPayouts();
-
-// Mark payout as completed
-$service->completePayout($payout, [
-    'transaction_id' => 'TXN-123',
-]);
-
-// Cancel payout
-$service->cancelPayout($payout, 'Reason for cancellation');
-
-// Get eligible conversions for payout
-$conversions = $service->getPayableConversions($affiliate);
 ```
 
 ## PayoutReconciliationService
@@ -265,35 +203,6 @@ $programs = $service->getAvailablePrograms($affiliate);
 
 // Upgrade membership tier
 $service->upgradeTier($membership, $newTier);
-```
-
-## AffiliateRegistrationService
-
-> Deprecated: Prefer `Actions/Affiliates/RegisterAffiliate`. `AffiliateRegistrationService` is kept as a compatibility adapter until all downstream callers migrate.
-
-Handles affiliate self-registration.
-
-```php
-use AIArmada\Affiliates\Services\AffiliateRegistrationService;
-
-$service = app(AffiliateRegistrationService::class);
-```
-
-### Methods
-
-```php
-// Register new affiliate
-$affiliate = $service->register([
-    'name' => 'John Partner',
-    'email' => 'john@partner.com',
-    'website_url' => 'https://partner.com',
-]);
-
-// Approve pending affiliate
-$service->approve($affiliate);
-
-// Reject pending affiliate
-$service->reject($affiliate, 'Reason for rejection');
 ```
 
 ## DailyAggregationService

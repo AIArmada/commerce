@@ -10,7 +10,6 @@ use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Services\AffiliateReportService;
-use AIArmada\Affiliates\Services\CommissionMaturityService;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
@@ -171,12 +170,6 @@ test('AffiliateReportService affiliateSummary returns array', function (): void 
     $summary = $service->affiliateSummary($affiliate->id);
 
     expect($summary)->toBeArray();
-});
-
-// CommissionMaturityService Tests
-test('CommissionMaturityService can be instantiated', function (): void {
-    $service = app(CommissionMaturityService::class);
-    expect($service)->toBeInstanceOf(CommissionMaturityService::class);
 });
 
 // MatureConversion Action Tests

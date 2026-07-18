@@ -29,18 +29,19 @@ if (Cart::hasAffiliate()) {
 }
 ```
 
-### Using the AffiliateService Directly
+### Using Actions Directly
 
 ```php
-use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 
-$service = app(AffiliateService::class);
+$affiliateLookup = app(AffiliateLookup::class);
 
 // Find affiliate by code
-$affiliate = $service->findByCode('PARTNER42');
+$affiliate = $affiliateLookup->findByCode('PARTNER42');
 
 // Attach to cart with context
-$attribution = $service->attachAffiliate($affiliate, $cart, [
+$attribution = AttachAffiliateToCart::run($affiliate, $cart, [
     'source' => 'instagram',
     'campaign' => 'summer-sale',
 ]);
@@ -168,13 +169,11 @@ $order = Order::create([
 ### Direct Recording
 
 ```php
-use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 
-$service = app(AffiliateService::class);
-
-$conversion = $service->recordConversion(
-    affiliate: $affiliate,
-    data: [
+$conversion = RecordAffiliateConversion::run(
+    cart: $cart,
+    payload: [
         'external_reference' => 'ORD-12345',
         'value_minor' => 15000,
         'subtotal_minor' => 14000,

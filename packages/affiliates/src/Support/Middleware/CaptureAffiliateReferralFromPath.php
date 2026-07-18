@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support\Middleware;
 
-use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -12,7 +13,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class CaptureAffiliateReferralFromPath
 {
-    public function __construct(private readonly AffiliateService $affiliates) {}
+    public function __construct(
+        private readonly AffiliateLookup $affiliateLookup,
+        private readonly TrackAffiliateVisit $trackAffiliateVisit,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -24,7 +28,7 @@ final class CaptureAffiliateReferralFromPath
 
         $code = $matches[1];
 
-        $affiliate = $this->affiliates->findByCode($code);
+        $affiliate = $this->affiliateLookup->findByCode($code);
 
         if ($affiliate === null || ! $affiliate->isActive()) {
             return $next($request);
@@ -33,7 +37,7 @@ final class CaptureAffiliateReferralFromPath
         $cookieName = (string) config('affiliates.cookies.name', 'affiliate_session');
         $cookieValue = $request->cookie($cookieName);
         $context = $this->buildContext($request);
-        $attribution = $this->affiliates->trackVisitByCode($code, $context, $cookieValue);
+        $attribution = $this->trackAffiliateVisit->handle($code, $context, $cookieValue);
 
         if ($attribution === null || ! is_string($attribution->cookieValue) || $attribution->cookieValue === '') {
             return $next($request);

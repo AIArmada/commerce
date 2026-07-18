@@ -86,11 +86,10 @@ describe('AffiliateDailyStat Model', function (): void {
             'commission_cents' => 3500,
         ]);
 
-        expect($stat->revenue_minor)->toBe(35000)
-            ->and($stat->revenue_minor)->toBe($stat->revenue_cents);
+        expect($stat->revenue_cents)->toBe(35000);
     });
 
-    it('has commission_minor accessor', function (): void {
+    it('stores commission in cents', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'STAT-COMM-' . uniqid(),
             'name' => 'Test Affiliate',
@@ -110,8 +109,7 @@ describe('AffiliateDailyStat Model', function (): void {
             'commission_cents' => 10000,
         ]);
 
-        expect($stat->commission_minor)->toBe(10000)
-            ->and($stat->commission_minor)->toBe($stat->commission_cents);
+        expect($stat->commission_cents)->toBe(10000);
     });
 
     it('casts date as carbon date', function (): void {

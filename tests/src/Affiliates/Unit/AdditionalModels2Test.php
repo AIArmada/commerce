@@ -294,20 +294,20 @@ test('AffiliateDailyStat has affiliate relationship', function (): void {
     expect($stat->affiliate())->toBeInstanceOf(BelongsTo::class);
 });
 
-test('AffiliateDailyStat revenue_minor alias works', function (): void {
+test('AffiliateDailyStat stores revenue cents', function (): void {
     $stat = new AffiliateDailyStat([
         'revenue_cents' => 50000,
     ]);
 
-    expect($stat->revenue_minor)->toBe(50000);
+    expect($stat->revenue_cents)->toBe(50000);
 });
 
-test('AffiliateDailyStat commission_minor alias works', function (): void {
+test('AffiliateDailyStat stores commission cents', function (): void {
     $stat = new AffiliateDailyStat([
         'commission_cents' => 5000,
     ]);
 
-    expect($stat->commission_minor)->toBe(5000);
+    expect($stat->commission_cents)->toBe(5000);
 });
 
 // AffiliatePayoutMethod Tests

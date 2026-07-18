@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support\Middleware;
 
-use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\Actions\Affiliates\TouchAffiliateAttribution;
+use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -12,7 +13,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class TrackAffiliateCookie
 {
-    public function __construct(private readonly AffiliateService $affiliates) {}
+    public function __construct(
+        private readonly TrackAffiliateVisit $trackAffiliateVisit,
+        private readonly TouchAffiliateAttribution $touchAffiliateAttribution,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -37,10 +41,10 @@ final class TrackAffiliateCookie
         $context = $this->buildContext($request);
 
         if ($affiliateCode) {
-            $attribution = $this->affiliates->trackVisitByCode($affiliateCode, $context, $cookieValue);
+            $attribution = $this->trackAffiliateVisit->handle($affiliateCode, $context, $cookieValue);
             $cookieValue = $attribution?->cookieValue;
         } elseif ($cookieValue) {
-            $this->affiliates->touchCookieAttribution($cookieValue, $context);
+            $this->touchAffiliateAttribution->handle($cookieValue, $context);
         }
 
         if (! $cookieValue) {

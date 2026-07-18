@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
-use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -14,7 +14,7 @@ final class ResolvePublicAffiliateReferralContext
     use AsAction;
 
     public function __construct(
-        private readonly AffiliateService $affiliates,
+        private readonly AffiliateLookup $affiliateLookup,
     ) {}
 
     /**
@@ -71,7 +71,7 @@ final class ResolvePublicAffiliateReferralContext
                 continue;
             }
 
-            $affiliate = $this->affiliates->findByCode($affiliateCode);
+            $affiliate = $this->affiliateLookup->findByCode($affiliateCode);
 
             if ($affiliate === null || ! $affiliate->isActive()) {
                 continue;
@@ -99,7 +99,7 @@ final class ResolvePublicAffiliateReferralContext
             return null;
         }
 
-        $affiliate = $this->affiliates->findAffiliateByCookie($cookieValue);
+        $affiliate = $this->affiliateLookup->findActiveAffiliateByCookie($cookieValue);
 
         if ($affiliate === null || ! $affiliate->isActive()) {
             return null;

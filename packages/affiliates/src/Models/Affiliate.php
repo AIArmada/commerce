@@ -61,7 +61,6 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $updated_at
  * @property-read string|null $contact_email Alias for the primary email contact method
  * @property-read string|null $website_url Alias for the primary website contact method
- * @property-read int $commission_rate_basis_points Alias for commission_rate
  * @property-read Affiliate|null $parent
  * @property-read AffiliateRank|null $rank
  * @property-read Collection<int, Affiliate> $children
@@ -402,18 +401,6 @@ class Affiliate extends Model implements Auditable
             $affiliate->balance()->delete();
             $affiliate->children()->update(['parent_affiliate_id' => null]);
         });
-    }
-
-    /**
-     * Alias for commission_rate.
-     *
-     * @return Attribute<int, never>
-     */
-    protected function commissionRateBasisPoints(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->commission_rate,
-        );
     }
 
     /**

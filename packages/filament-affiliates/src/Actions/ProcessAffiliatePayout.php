@@ -35,26 +35,7 @@ final class ProcessAffiliatePayout
                 }
 
                 if (! $locked->operation instanceof AffiliatePayoutOperation) {
-                    $affiliate = $locked->affiliate;
-
-                    if (! $affiliate instanceof Affiliate) {
-                        return ['error' => PayoutResult::failure('The payout affiliate is missing.', 'MISSING_PAYOUT_AFFILIATE')];
-                    }
-
-                    $operation = AffiliatePayoutOperation::query()->create([
-                        'affiliate_id' => $affiliate->id,
-                        'affiliate_payout_id' => $locked->id,
-                        'operation_key' => 'legacy:' . $locked->id,
-                        'status' => 'claimed',
-                        'amount_minor' => $locked->total_minor,
-                        'currency' => mb_strtoupper($locked->currency),
-                        'claimed_at' => now(),
-                        'owner_type' => $locked->owner_type ?? $affiliate->owner_type,
-                        'owner_id' => $locked->owner_id ?? $affiliate->owner_id,
-                    ]);
-
-                    $locked->forceFill(['affiliate_payout_operation_id' => $operation->id])->save();
-                    $locked->setRelation('operation', $operation);
+                    return ['error' => PayoutResult::failure('The payout operation is missing.', 'MISSING_PAYOUT_OPERATION')];
                 }
 
                 if ($locked->status->equals(CompletedPayout::class)) {
@@ -65,7 +46,13 @@ final class ProcessAffiliatePayout
                     return ['error' => PayoutResult::failure('The payout has already failed.', 'PAYOUT_ALREADY_FAILED')];
                 }
 
-                $method = $locked->affiliate?->payoutMethods()->where('is_default', true)->first();
+                $affiliate = $locked->payee;
+
+                if (! $affiliate instanceof Affiliate) {
+                    return ['error' => PayoutResult::failure('The payout affiliate is missing.', 'MISSING_PAYOUT_AFFILIATE')];
+                }
+
+                $method = $affiliate->payoutMethods()->where('is_default', true)->first();
 
                 if ($method === null) {
                     $locked->forceFill(['status' => FailedPayout::class, 'failed_at' => now()])->save();
@@ -93,7 +80,7 @@ final class ProcessAffiliatePayout
                 ])->save();
 
                 return [
-                    'payout' => $locked->fresh(['operation', 'affiliate']),
+                    'payout' => $locked->fresh(['operation', 'payee']),
                     'processor_type' => $method->type->value,
                     'reconcile' => $needsReconciliation,
                 ];

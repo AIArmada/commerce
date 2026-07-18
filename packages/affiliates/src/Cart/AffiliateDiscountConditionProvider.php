@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Cart;
 
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionApplication;
@@ -30,7 +30,7 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
     private const int PRIORITY = 120;
 
     public function __construct(
-        private AffiliateService $affiliateService
+        private AffiliateLookup $affiliateLookup,
     ) {}
 
     /**
@@ -47,11 +47,13 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
             return [];
         }
 
-        $affiliateData = $this->affiliateService->getAttachedAffiliate($cart);
+        $affiliate = $this->affiliateLookup->findAttachedAttribution($cart)?->affiliate;
 
-        if ($affiliateData === null) {
+        if (! $affiliate instanceof Affiliate) {
             return [];
         }
+
+        $affiliateData = AffiliateData::fromModel($affiliate);
 
         $discount = $this->getAffiliateDiscountFromData($affiliateData);
 
@@ -77,7 +79,7 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
             return false;
         }
 
-        $affiliate = $this->affiliateService->findByCode($affiliateCode);
+        $affiliate = $this->affiliateLookup->findByCode($affiliateCode);
 
         if ($affiliate === null || ! $affiliate->isActive()) {
             return false;

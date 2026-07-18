@@ -100,8 +100,7 @@ describe('AffiliatePayoutEvent Model', function (): void {
             'to_status' => 'processing',
         ]);
 
-        expect($event->status)->toBe('processing')
-            ->and($event->status)->toBe($event->to_status);
+        expect($event->to_status)->toBe('processing');
     });
 
     it('tracks status transitions', function (): void {

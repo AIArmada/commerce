@@ -25,11 +25,9 @@ CSS;
 
         if ($cookieValue) {
             $debugCookie = $cookieValue;
-            $debugAffiliate = app('affiliates')->findAffiliateByCookie($cookieValue);
-
-            $debugAttribution = \AIArmada\Affiliates\Models\AffiliateAttribution::query()
-                ->where('cookie_value', $cookieValue)
-                ->first();
+            $affiliateLookup = app(\AIArmada\Affiliates\Contracts\AffiliateLookup::class);
+            $debugAffiliate = $affiliateLookup->findActiveAffiliateByCookie($cookieValue);
+            $debugAttribution = $affiliateLookup->findActiveAttributionByCookie($cookieValue);
         }
     }
 @endphp

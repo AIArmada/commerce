@@ -2,17 +2,19 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Affiliates\ApproveAffiliate;
+use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
+use AIArmada\Affiliates\Actions\Affiliates\GenerateAffiliateCode;
+use AIArmada\Affiliates\Actions\Affiliates\RejectAffiliate;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\Affiliates\Services\DailyAggregationService;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
@@ -21,47 +23,9 @@ use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Pending;
 use Illuminate\Support\Facades\Event;
 
-// AffiliateRegistrationService Tests
-test('AffiliateRegistrationService can be instantiated', function (): void {
-    $service = app(AffiliateRegistrationService::class);
-
-    expect($service)->toBeInstanceOf(AffiliateRegistrationService::class);
-});
-
-test('AffiliateRegistrationService isRegistrationEnabled returns config value', function (): void {
-    $service = app(AffiliateRegistrationService::class);
-
-    config(['affiliates.registration.enabled' => true]);
-    expect($service->isRegistrationEnabled())->toBeTrue();
-
-    config(['affiliates.registration.enabled' => false]);
-    expect($service->isRegistrationEnabled())->toBeFalse();
-});
-
-test('AffiliateRegistrationService getApprovalMode returns correct mode', function (): void {
-    $service = app(AffiliateRegistrationService::class);
-
-    config(['affiliates.registration.approval_mode' => 'auto']);
-    expect($service->getApprovalMode())->toBe(RegistrationApprovalMode::Auto);
-
-    config(['affiliates.registration.approval_mode' => 'open']);
-    expect($service->getApprovalMode())->toBe(RegistrationApprovalMode::Open);
-
-    config(['affiliates.registration.approval_mode' => 'admin']);
-    expect($service->getApprovalMode())->toBe(RegistrationApprovalMode::Admin);
-});
-
-test('AffiliateRegistrationService getApprovalMode defaults to admin for invalid values', function (): void {
-    $service = app(AffiliateRegistrationService::class);
-
-    config(['affiliates.registration.approval_mode' => 'invalid']);
-    expect($service->getApprovalMode())->toBe(RegistrationApprovalMode::Admin);
-});
-
-test('AffiliateRegistrationService register delegates to CreateAffiliate action', function (): void {
-    $service = app(AffiliateRegistrationService::class);
-
-    $affiliate = $service->register([
+// Affiliate registration action tests
+test('CreateAffiliate creates an affiliate', function (): void {
+    $affiliate = app(CreateAffiliate::class)->handle([
         'code' => 'REG001',
         'name' => 'Registered Affiliate',
         'status' => Active::class,
@@ -74,9 +38,7 @@ test('AffiliateRegistrationService register delegates to CreateAffiliate action'
     expect($affiliate->code)->toBe('REG001');
 });
 
-test('AffiliateRegistrationService approve delegates to ApproveAffiliate action', function (): void {
-    $service = app(AffiliateRegistrationService::class);
-
+test('ApproveAffiliate activates an affiliate', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'APPROVE001',
         'name' => 'Pending Affiliate',
@@ -86,14 +48,12 @@ test('AffiliateRegistrationService approve delegates to ApproveAffiliate action'
         'currency' => 'USD',
     ]);
 
-    $result = $service->approve($affiliate);
+    $result = app(ApproveAffiliate::class)->handle($affiliate);
 
     expect($result->status->equals(Active::class))->toBeTrue();
 });
 
-test('AffiliateRegistrationService reject delegates to RejectAffiliate action', function (): void {
-    $service = app(AffiliateRegistrationService::class);
-
+test('RejectAffiliate disables an affiliate', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'REJECT001',
         'name' => 'Pending Affiliate',
@@ -103,15 +63,13 @@ test('AffiliateRegistrationService reject delegates to RejectAffiliate action', 
         'currency' => 'USD',
     ]);
 
-    $result = $service->reject($affiliate);
+    $result = app(RejectAffiliate::class)->handle($affiliate);
 
     expect($result->status->equals(Disabled::class))->toBeTrue();
 });
 
-test('AffiliateRegistrationService generateCode delegates to GenerateAffiliateCode action', function (): void {
-    $service = app(AffiliateRegistrationService::class);
-
-    $code = $service->generateCode('Test Name');
+test('GenerateAffiliateCode creates a unique code', function (): void {
+    $code = app(GenerateAffiliateCode::class)->handle('Test Name');
 
     expect($code)->toBeString();
     expect(mb_strlen($code))->toBeGreaterThan(0);

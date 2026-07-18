@@ -55,7 +55,7 @@ function createProviderPayout(PayoutMethodType $type, array $details, int $amoun
 
     $operation->forceFill(['affiliate_payout_id' => $payout->id])->save();
 
-    return $payout->fresh(['operation', 'affiliate']);
+    return $payout->fresh(['operation', 'payee']);
 }
 
 test('stripe uses the operation id as the provider idempotency key', function (): void {

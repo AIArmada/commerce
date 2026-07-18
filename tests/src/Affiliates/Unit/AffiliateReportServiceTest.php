@@ -7,7 +7,6 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Services\AffiliateReportService;
-use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Cart\Facades\Cart;
@@ -26,7 +25,7 @@ beforeEach(function (): void {
 });
 
 test('affiliate report service summarizes totals and utm', function (): void {
-    $service = app(AffiliateService::class);
+    $recordAffiliateConversion = app(RecordAffiliateConversion::class);
 
     $cart = app('cart')->getCurrentCart();
     Cart::attachAffiliate($this->affiliate->code, [
@@ -34,12 +33,12 @@ test('affiliate report service summarizes totals and utm', function (): void {
         'campaign' => 'spring',
     ]);
 
-    $service->recordConversion($cart, [
+    $recordAffiliateConversion->handle($cart, [
         'order_reference' => 'RPT-1',
         'subtotal' => 1000,
     ]);
 
-    $service->recordConversion($cart, [
+    $recordAffiliateConversion->handle($cart, [
         'order_reference' => 'RPT-2',
         'subtotal' => 2000,
     ]);
@@ -219,3 +218,4 @@ test('affiliate report service returns top subjects with visits and conversions'
         'commission_minor' => 0,
     ]);
 });
+use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;

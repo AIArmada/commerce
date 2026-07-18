@@ -34,17 +34,6 @@ $payout = CreatePayout::run($conversionIds, [
 UpdatePayoutStatus::run($payout, 'completed', 'Processed successfully');
 ```
 
-### Using the Legacy Service (Deprecated)
-
-```php
-use AIArmada\Affiliates\Services\AffiliatePayoutService;
-
-$service = app(AffiliatePayoutService::class);
-
-// The payout includes all eligible approved conversions
-// that have passed the maturity period
-```
-
 ### Manual Creation
 
 ```php
@@ -176,17 +165,6 @@ $results = ProcessConversionMaturity::run();
 
 // Mature a specific conversion
 $conversion = MatureConversion::run($conversion);
-```
-
-### Using the Legacy Service (Deprecated)
-
-```php
-use AIArmada\Affiliates\Services\CommissionMaturityService;
-
-$service = app(CommissionMaturityService::class);
-
-// Promote qualified conversions that have reached maturity
-$processed = $service->processMaturity();
 ```
 
 Configure in `config/affiliates.php`:

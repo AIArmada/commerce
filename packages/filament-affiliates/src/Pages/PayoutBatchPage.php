@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages;
 
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
@@ -66,16 +67,16 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
             ->query(
                 AffiliatePayout::query()
                     ->where('status', PendingPayout::value())
-                    ->with(['affiliate'])
+                    ->with(['payee'])
                     ->latest()
             )
             ->columns([
-                Tables\Columns\TextColumn::make('affiliate.code')
+                Tables\Columns\TextColumn::make('payee.code')
                     ->label('Affiliate')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('affiliate.name')
+                Tables\Columns\TextColumn::make('payee.name')
                     ->label('Name')
                     ->searchable(),
 
@@ -88,8 +89,13 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                     ->label('Method')
                     ->badge()
                     ->getStateUsing(function (AffiliatePayout $record): string {
-                        $method = $record->affiliate
-                            ?->payoutMethods()
+                        $payee = $record->payee;
+
+                        if (! $payee instanceof Affiliate) {
+                            return '—';
+                        }
+
+                        $method = $payee->payoutMethods()
                             ->where('is_default', true)
                             ->first();
 

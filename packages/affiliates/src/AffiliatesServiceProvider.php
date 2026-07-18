@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates;
 
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
@@ -35,6 +36,7 @@ use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Models\AffiliateTrainingModule;
 use AIArmada\Affiliates\Models\AffiliateTrainingProgress;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Resolvers\DatabaseAffiliateLookup;
 use AIArmada\Affiliates\Rules\ClickVelocityRule;
 use AIArmada\Affiliates\Rules\ConsistencyBonusRule;
 use AIArmada\Affiliates\Rules\ConversionVelocityRule;
@@ -45,12 +47,8 @@ use AIArmada\Affiliates\Rules\GrowthBonusRule;
 use AIArmada\Affiliates\Rules\RecruitmentBonusRule;
 use AIArmada\Affiliates\Rules\SelfReferralRule;
 use AIArmada\Affiliates\Rules\TopPerformerBonusRule;
-use AIArmada\Affiliates\Services\AffiliatePayoutService;
-use AIArmada\Affiliates\Services\AffiliateRegistrationService;
-use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
-use AIArmada\Affiliates\Services\CommissionMaturityService;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\DailyAggregationService;
 use AIArmada\Affiliates\Services\FraudDetectionService;
@@ -103,9 +101,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->app->singleton(CommissionCalculator::class);
-        $this->app->singleton(AffiliateService::class);
-        $this->app->singleton(AffiliatePayoutService::class);
-        $this->app->singleton(AffiliateRegistrationService::class);
+        $this->app->singleton(AffiliateLookup::class, DatabaseAffiliateLookup::class);
         $this->app->singleton(WebhookDispatcher::class);
         $this->app->singleton(AttributionModel::class);
         $this->app->singleton(NetworkService::class);
@@ -115,7 +111,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(PayoutProcessorFactory::class);
         $this->app->singleton(CommissionRuleEngine::class);
         $this->app->singleton(ProgramService::class);
-        $this->app->singleton(CommissionMaturityService::class);
         $this->app->singleton(PayoutReconciliationService::class);
 
         $this->registerAttributionStrategies();
@@ -126,7 +121,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(VoucherIntegrationRegistrar::class);
         $this->app->singleton(AffiliateDiscountConditionProvider::class);
 
-        $this->app->alias(AffiliateService::class, 'affiliates');
     }
 
     public function packageBooted(): void

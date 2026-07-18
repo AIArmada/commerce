@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Http\Controllers;
 
+use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Services\AffiliateReportService;
-use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +17,8 @@ use InvalidArgumentException;
 final class AffiliateApiController extends Controller
 {
     public function __construct(
-        private readonly AffiliateService $affiliates,
+        private readonly AffiliateLookup $affiliateLookup,
+        private readonly CreateTrackingLink $createTrackingLink,
         private readonly AffiliateReportService $reports,
     ) {}
 
@@ -28,7 +30,7 @@ final class AffiliateApiController extends Controller
             return $response;
         }
 
-        $affiliate = $this->affiliates->findByCode($code);
+        $affiliate = $this->affiliateLookup->findByCode($code);
 
         if (! $affiliate) {
             return response()->json(['message' => 'Affiliate not found'], 404);
@@ -45,7 +47,7 @@ final class AffiliateApiController extends Controller
             return $response;
         }
 
-        $affiliate = $this->affiliates->findByCode($code);
+        $affiliate = $this->affiliateLookup->findByCode($code);
 
         if (! $affiliate) {
             return response()->json(['message' => 'Affiliate not found'], 404);
@@ -65,7 +67,7 @@ final class AffiliateApiController extends Controller
         }
 
         try {
-            $link = $this->affiliates->createTrackingLink($affiliate, $url, [
+            $link = $this->createTrackingLink->handle($affiliate, $url, [
                 'params' => $params,
                 'ttl_seconds' => $ttl,
                 'subject_type' => $request->input('subject_type'),
@@ -95,7 +97,7 @@ final class AffiliateApiController extends Controller
             return $response;
         }
 
-        $affiliate = $this->affiliates->findByCode($code);
+        $affiliate = $this->affiliateLookup->findByCode($code);
 
         if (! $affiliate) {
             return response()->json(['message' => 'Affiliate not found'], 404);

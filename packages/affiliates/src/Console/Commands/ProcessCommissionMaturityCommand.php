@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Console\Commands;
 
+use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\CommissionMaturityService;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Illuminate\Console\Command;
 
@@ -17,7 +17,7 @@ final class ProcessCommissionMaturityCommand extends Command
     protected $description = 'Process commission maturity and move to available balance';
 
     public function __construct(
-        private readonly CommissionMaturityService $maturityService
+        private readonly ProcessConversionMaturity $processConversionMaturity,
     ) {
         parent::__construct();
     }
@@ -39,7 +39,7 @@ final class ProcessCommissionMaturityCommand extends Command
             ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
         );
 
-        $matured = $runner->run(fn (): int => $this->maturityService->processMaturity()) ?? 0;
+        $matured = $runner->run(fn (): int => $this->processConversionMaturity->handle()) ?? 0;
 
         $this->info("Matured {$matured} conversions.");
 

@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Cart\Cart;
@@ -49,9 +50,9 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         config(['affiliates.cart.customer_discounts_enabled' => false]);
 
         $cart = createAffiliateTestCart('disabled-feature');
-        $service = app(AffiliateService::class);
+        $lookup = app(AffiliateLookup::class);
 
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toBeEmpty();
@@ -59,9 +60,9 @@ describe('AffiliateDiscountConditionProvider', function (): void {
 
     it('returns empty conditions when no affiliate attached', function (): void {
         $cart = createAffiliateTestCart('no-affiliate-attached');
-        $service = app(AffiliateService::class);
+        $lookup = app(AffiliateLookup::class);
 
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toBeEmpty();
@@ -79,12 +80,12 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         ]);
 
         $cart = createAffiliateTestCart('no-discount-test');
-        $service = app(AffiliateService::class);
+        $lookup = app(AffiliateLookup::class);
 
         // Attach affiliate to cart
-        $service->attachAffiliate($affiliate, $cart);
+        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
 
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toBeEmpty();
@@ -107,10 +108,10 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         ]);
 
         $cart = createAffiliateTestCart('percentage-discount-test');
-        $service = app(AffiliateService::class);
-        $service->attachAffiliate($affiliate, $cart);
+        $lookup = app(AffiliateLookup::class);
+        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
 
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toHaveCount(1);
@@ -137,10 +138,10 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         ]);
 
         $cart = createAffiliateTestCart('fixed-discount-test');
-        $service = app(AffiliateService::class);
-        $service->attachAffiliate($affiliate, $cart);
+        $lookup = app(AffiliateLookup::class);
+        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
 
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toHaveCount(1);
@@ -148,15 +149,15 @@ describe('AffiliateDiscountConditionProvider', function (): void {
     });
 
     it('returns the correct type', function (): void {
-        $service = app(AffiliateService::class);
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $lookup = app(AffiliateLookup::class);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->getType())->toBe('affiliate_discount');
     });
 
     it('returns the correct priority', function (): void {
-        $service = app(AffiliateService::class);
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $lookup = app(AffiliateLookup::class);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->getPriority())->toBe(120);
     });
@@ -166,8 +167,8 @@ describe('AffiliateDiscountConditionProvider', function (): void {
 
         $condition = createTestAffiliateCondition('voucher');
 
-        $service = app(AffiliateService::class);
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $lookup = app(AffiliateLookup::class);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->validate($condition, $cart))->toBeTrue();
     });
@@ -177,8 +178,8 @@ describe('AffiliateDiscountConditionProvider', function (): void {
 
         $condition = createTestAffiliateCondition('affiliate_discount', 'INVALID-NONEXISTENT');
 
-        $service = app(AffiliateService::class);
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $lookup = app(AffiliateLookup::class);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->validate($condition, $cart))->toBeFalse();
     });
@@ -196,8 +197,8 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         $cart = createAffiliateTestCart('inactive-test');
         $condition = createTestAffiliateCondition('affiliate_discount', 'INACTIVE-TEST');
 
-        $service = app(AffiliateService::class);
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $lookup = app(AffiliateLookup::class);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->validate($condition, $cart))->toBeFalse();
     });
@@ -221,8 +222,8 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         $cart = createAffiliateTestCart('valid-active-test');
         $condition = createTestAffiliateCondition('affiliate_discount', 'VALID-DISCOUNT-TEST');
 
-        $service = app(AffiliateService::class);
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $lookup = app(AffiliateLookup::class);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->validate($condition, $cart))->toBeTrue();
     });
@@ -244,10 +245,10 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         ]);
 
         $cart = createAffiliateTestCart('zero-discount-test');
-        $service = app(AffiliateService::class);
-        $service->attachAffiliate($affiliate, $cart);
+        $lookup = app(AffiliateLookup::class);
+        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
 
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toBeEmpty();
@@ -270,10 +271,10 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         ]);
 
         $cart = createAffiliateTestCart('with-attrs-test');
-        $service = app(AffiliateService::class);
-        $service->attachAffiliate($affiliate, $cart);
+        $lookup = app(AffiliateLookup::class);
+        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
 
-        $provider = new AffiliateDiscountConditionProvider($service);
+        $provider = new AffiliateDiscountConditionProvider($lookup);
         $conditions = $provider->getConditionsFor($cart);
 
         $attributes = $conditions[0]->getAttributes();

@@ -3,8 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\PayoutResult;
-use AIArmada\Affiliates\Facades\Affiliate;
-use AIArmada\Affiliates\Services\AffiliateService;
 
 // PayoutResult Tests
 test('PayoutResult can be created with success and external reference', function (): void {
@@ -84,15 +82,4 @@ test('PayoutResult failure without code works', function (): void {
     expect($result->success)->toBeFalse();
     expect($result->failureReason)->toBe('Generic error');
     expect($result->failureCode)->toBeNull();
-});
-
-// Affiliate Facade Tests
-test('Affiliate facade resolves to AffiliateService', function (): void {
-    expect(Affiliate::getFacadeRoot())->toBeInstanceOf(AffiliateService::class);
-});
-
-test('Affiliate facade accessor returns affiliates', function (): void {
-    $accessor = (new ReflectionClass(Affiliate::class))->getMethod('getFacadeAccessor');
-
-    expect($accessor->invoke(null))->toBe('affiliates');
 });

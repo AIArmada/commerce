@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
@@ -59,7 +59,7 @@ test('package resolves public referral context from query parameters', function 
 });
 
 test('package resolves public referral context from encrypted cookies', function (): void {
-    app(AffiliateService::class)->trackVisitByCode($this->affiliate->code, [], 'public-cookie-value');
+    app(TrackAffiliateVisit::class)->handle($this->affiliate->code, [], 'public-cookie-value');
 
     $request = Request::create('/', 'GET');
     $request->cookies->set(

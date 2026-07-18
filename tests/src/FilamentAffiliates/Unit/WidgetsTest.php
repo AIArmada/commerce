@@ -118,7 +118,7 @@ it('PayoutQueueWidget table heading includes pending count', function (): void {
 
     AffiliatePayout::create([
         'reference' => 'PAY-WID-' . Str::uuid(),
-        'amount_minor' => 5000,
+        'total_minor' => 5000,
         'currency' => 'USD',
         'status' => PendingPayout::class,
         'payee_type' => $affiliate->getMorphClass(),

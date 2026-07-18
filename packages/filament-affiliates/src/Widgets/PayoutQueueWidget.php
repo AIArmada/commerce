@@ -33,7 +33,7 @@ final class PayoutQueueWidget extends BaseWidget
         return $table
             ->query(
                 AffiliatePayout::query()
-                    ->with('affiliate')
+                    ->with('payee')
                     ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
                     ->orderBy('scheduled_at')
                     ->limit(10)
@@ -44,7 +44,7 @@ final class PayoutQueueWidget extends BaseWidget
                     ->date()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('affiliate.name')
+                Tables\Columns\TextColumn::make('payee.name')
                     ->label('Affiliate')
                     ->searchable(),
 

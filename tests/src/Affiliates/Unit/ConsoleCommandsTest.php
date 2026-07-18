@@ -92,9 +92,10 @@ test('ExportAffiliatePayoutCommand exports payout to CSV', function (): void {
     ]);
 
     $payout = AffiliatePayout::create([
-        'affiliate_id' => $affiliate->id,
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->id,
         'reference' => 'PAY_20240115_001',
-        'amount_minor' => 10000,
+        'total_minor' => 10000,
         'currency' => 'USD',
         'status' => PendingPayout::class,
     ]);

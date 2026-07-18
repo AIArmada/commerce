@@ -7,7 +7,6 @@ use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Services\AffiliateReportService;
-use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -30,11 +29,13 @@ beforeEach(function (): void {
 
 describe('AffiliateApiController', function (): void {
     test('can be instantiated', function (): void {
-        $affiliateService = app(AffiliateService::class);
+        $affiliateLookup = app(AffiliateLookup::class);
+        $createTrackingLink = app(CreateTrackingLink::class);
         $reportService = app(AffiliateReportService::class);
 
         $controller = new AffiliateApiController(
-            $affiliateService,
+            $affiliateLookup,
+            $createTrackingLink,
             $reportService,
         );
 
@@ -299,3 +300,5 @@ describe('AffiliateApiController class structure', function (): void {
             ->not->toContain("Route::get('{code}/links'");
     });
 });
+use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;

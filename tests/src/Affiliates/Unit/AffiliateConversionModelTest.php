@@ -238,7 +238,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($conversion->currency)->toBe('EUR');
+        expect($conversion->commission_currency)->toBe('EUR');
     });
 
     test('casts status as state', function (): void {

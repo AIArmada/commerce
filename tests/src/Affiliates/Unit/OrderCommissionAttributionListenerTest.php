@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use AIArmada\Orders\Models\Order;
@@ -23,7 +23,7 @@ it('records affiliate conversions when order commission attribution is required'
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AffiliateService::class)->attachToCartByCode($affiliate->code, $cart);
+    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
     $cart->add('order-item-1', 'Order item', 10.00, 1);
 
     $cartId = $cart->getId();
@@ -59,7 +59,7 @@ it('fails closed when an order carries a malformed owner tuple', function (): vo
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AffiliateService::class)->attachToCartByCode($affiliate->code, $cart);
+    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
     $cart->add('order-item-2', 'Order item', 10.00, 1);
 
     $cartId = $cart->getId();

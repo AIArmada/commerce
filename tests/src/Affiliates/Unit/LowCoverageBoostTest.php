@@ -32,7 +32,8 @@ test('AffiliateRankHistory can be created with all fields', function (): void {
     ]);
 
     $history = AffiliateRankHistory::create([
-        'affiliate_id' => $affiliate->id,
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->id,
         'from_rank_id' => null,
         'to_rank_id' => null,
         'reason' => RankQualificationReason::Initial,
@@ -121,7 +122,7 @@ test('AffiliatePayoutEvent can be created', function (): void {
     $payout = AffiliatePayout::create([
         'affiliate_id' => $affiliate->id,
         'reference' => 'PAY-EVENT-001',
-        'amount_minor' => 10000,
+        'total_minor' => 10000,
         'currency' => 'USD',
         'status' => 'pending',
     ]);
@@ -134,7 +135,7 @@ test('AffiliatePayoutEvent can be created', function (): void {
     ]);
 
     expect($event)->toBeInstanceOf(AffiliatePayoutEvent::class);
-    expect($event->status)->toBe('pending'); // status is an accessor for to_status
+    expect($event->to_status)->toBe('pending');
     expect($event->notes)->toBe('Test payout event');
 });
 

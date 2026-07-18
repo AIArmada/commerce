@@ -57,7 +57,6 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $paid_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- * @property-read string $currency Alias for commission_currency
  * @property-read Affiliate $affiliate
  * @property-read AffiliateAttribution|null $attribution
  * @property-read AffiliateLink|null $affiliateLink
@@ -237,18 +236,6 @@ class AffiliateConversion extends Model
         return Attribute::make(
             get: fn (): ?string => $this->attributes['external_reference'] ?? null,
             set: fn (?string $value): ?string => $value,
-        );
-    }
-
-    /**
-     * Alias for commission_currency.
-     *
-     * @return Attribute<string, never>
-     */
-    protected function currency(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->commission_currency,
         );
     }
 

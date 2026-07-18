@@ -12,7 +12,6 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -41,9 +40,7 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $cancelled_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- * @property-read int $amount_minor Alias for total_minor
  * @property string|null $external_reference
- * @property-read Affiliate|null $affiliate Alias for payee when payee is an Affiliate
  * @property-read Model|null $payee
  * @property-read Model|null $owner
  * @property-read Collection<int, AffiliateConversion> $conversions
@@ -67,7 +64,6 @@ class AffiliatePayout extends Model implements Auditable
         'affiliate_payout_operation_id',
         'status',
         'total_minor',
-        'amount_minor',
         'conversion_count',
         'currency',
         'metadata',
@@ -109,16 +105,6 @@ class AffiliatePayout extends Model implements Auditable
     public function payee(): MorphTo
     {
         return $this->morphTo();
-    }
-
-    /**
-     * Alias relation for payee when it is an Affiliate.
-     *
-     * @return MorphTo<Model, $this>
-     */
-    public function affiliate(): MorphTo
-    {
-        return $this->morphTo(__FUNCTION__, 'payee_type', 'payee_id');
     }
 
     /**
@@ -194,20 +180,5 @@ class AffiliatePayout extends Model implements Auditable
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
         return $scoped;
-    }
-
-    /**
-     * Alias for total_minor (for code compatibility).
-     *
-     * @return Attribute<int, never>
-     */
-    protected function amountMinor(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->total_minor,
-            set: fn ($value) => [
-                'total_minor' => max(0, (int) $value),
-            ],
-        );
     }
 }

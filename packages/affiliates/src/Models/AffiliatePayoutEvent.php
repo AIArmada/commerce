@@ -7,7 +7,6 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Carbon\CarbonInterface;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,7 +21,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $notes
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- * @property-read string $status Alias for to_status
  * @property-read AffiliatePayout $payout
  */
 class AffiliatePayoutEvent extends Model implements Auditable
@@ -51,18 +49,6 @@ class AffiliatePayoutEvent extends Model implements Auditable
     public function payout(): BelongsTo
     {
         return $this->belongsTo(AffiliatePayout::class, 'affiliate_payout_id');
-    }
-
-    /**
-     * Alias for to_status.
-     *
-     * @return Attribute<string, never>
-     */
-    protected function status(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->to_status,
-        );
     }
 
     protected function getActivityLogName(): string

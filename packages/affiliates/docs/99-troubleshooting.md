@@ -338,8 +338,8 @@ php artisan tinker
 ```
 
 ```php
-$service = app(AffiliateService::class);
-$affiliate = $service->findByCode('PARTNER42');
+$affiliateLookup = app(\AIArmada\Affiliates\Contracts\AffiliateLookup::class);
+$affiliate = $affiliateLookup->findByCode('PARTNER42');
 $affiliate->toArray();
 ```
 

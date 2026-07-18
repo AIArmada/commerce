@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Cart\Cart;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class AttachAffiliateFromCookie
@@ -16,11 +15,12 @@ final class AttachAffiliateFromCookie
 
     public function __construct(
         private readonly AttachAffiliateToCart $attachAffiliate,
+        private readonly AffiliateLookup $affiliateLookup,
     ) {}
 
     public function handle(Cart $cart, string $cookieValue, array $context = []): ?AffiliateAttributionData
     {
-        $attribution = $this->findAttributionByCookie($cookieValue);
+        $attribution = $this->affiliateLookup->findActiveAttributionByCookie($cookieValue);
 
         if (! $attribution || ! $attribution->affiliate || ! $attribution->affiliate->isActive()) {
             return null;
@@ -38,32 +38,5 @@ final class AttachAffiliateFromCookie
         ], $context);
 
         return $this->attachAffiliate->handle($attribution->affiliate, $cart, $context);
-    }
-
-    private function findAttributionByCookie(?string $cookieValue): ?AffiliateAttribution
-    {
-        if (! is_string($cookieValue) || $cookieValue === '') {
-            return null;
-        }
-
-        $candidates = [$cookieValue];
-
-        try {
-            $decryptedCookieValue = decrypt($cookieValue);
-
-            if ($decryptedCookieValue !== '') {
-                $candidates[] = $decryptedCookieValue;
-            }
-        } catch (DecryptException) {
-        }
-
-        $candidates = array_values(array_unique($candidates));
-
-        return AffiliateAttribution::query()
-            ->with('affiliate')
-            ->whereIn('cookie_value', $candidates)
-            ->active()
-            ->latest('last_cookie_seen_at')
-            ->first();
     }
 }

@@ -143,11 +143,11 @@ describe('AffiliatePayout Model', function (): void {
             'payee_id' => $this->affiliate->id,
         ]);
 
-        expect($payout->affiliate)->toBeInstanceOf(Affiliate::class);
-        expect($payout->affiliate->id)->toBe($this->affiliate->id);
+        expect($payout->payee)->toBeInstanceOf(Affiliate::class);
+        expect($payout->payee->id)->toBe($this->affiliate->id);
     });
 
-    test('amount_minor accessor returns total_minor', function (): void {
+    test('stores payout total in minor units', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-AMT-' . uniqid(),
             'status' => PendingPayout::class,
@@ -158,7 +158,7 @@ describe('AffiliatePayout Model', function (): void {
             'payee_id' => $this->affiliate->id,
         ]);
 
-        expect($payout->amount_minor)->toBe(45000);
+        expect($payout->total_minor)->toBe(45000);
     });
 
     test('external_reference is a native payout field', function (): void {

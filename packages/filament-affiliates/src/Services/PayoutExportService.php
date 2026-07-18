@@ -95,14 +95,6 @@ final class PayoutExportService
         return $this->streamHtml($payout, $data, $filename);
     }
 
-    /**
-     * Legacy method for backward compatibility.
-     */
-    public function download(AffiliatePayout $payout): StreamedResponse
-    {
-        return $this->downloadCsv($payout);
-    }
-
     private function resolveOwnerScopedPayout(AffiliatePayout $payout): AffiliatePayout
     {
         if (! (bool) config('affiliates.owner.enabled', false)) {

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support;
 
-use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateFromCookie;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Traits\HasAffiliates;
 use AIArmada\Cart\Cart;
 
@@ -36,7 +37,7 @@ final class CartWithAffiliates
             return;
         }
 
-        if (app(AffiliateService::class)->attachedAttribution($this->cart) !== null) {
+        if (app(AffiliateLookup::class)->findAttachedAttribution($this->cart) !== null) {
             return;
         }
 
@@ -46,6 +47,6 @@ final class CartWithAffiliates
             return;
         }
 
-        app(AffiliateService::class)->attachAffiliateFromCookie($this->cart, $cookieValue);
+        app(AttachAffiliateFromCookie::class)->handle($this->cart, $cookieValue);
     }
 }

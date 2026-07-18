@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Tables;
 
+use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PayoutStatus;
@@ -76,7 +76,7 @@ final class AffiliatePayoutsTable
             ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
             : AffiliatePayout::findOrFail($record->getKey());
 
-                        app(AffiliatePayoutService::class)->updateStatus($payout, CompletedPayout::value());
+                        app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
                     }),
                 Action::make('queue')
                     ->label('Mark Processing')
@@ -92,7 +92,7 @@ final class AffiliatePayoutsTable
             ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
             : AffiliatePayout::findOrFail($record->getKey());
 
-                        app(AffiliatePayoutService::class)->updateStatus($payout, ProcessingPayout::value());
+                        app(UpdatePayoutStatus::class)->handle($payout, ProcessingPayout::value());
                     }),
                 Action::make('fail')
                     ->label('Mark Failed')
@@ -108,7 +108,7 @@ final class AffiliatePayoutsTable
             ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
             : AffiliatePayout::findOrFail($record->getKey());
 
-                        app(AffiliatePayoutService::class)->updateStatus($payout, FailedPayout::value());
+                        app(UpdatePayoutStatus::class)->handle($payout, FailedPayout::value());
                     }),
                 Action::make('export')
                     ->label('Export CSV')
@@ -122,7 +122,7 @@ final class AffiliatePayoutsTable
             ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
             : AffiliatePayout::findOrFail($record->getKey());
 
-                        return app(PayoutExportService::class)->download($payout);
+                        return app(PayoutExportService::class)->downloadCsv($payout);
                     }),
             ])
             ->bulkActions([]);

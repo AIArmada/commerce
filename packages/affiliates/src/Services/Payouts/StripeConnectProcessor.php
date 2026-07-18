@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Services\Payouts;
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use DateTimeInterface;
 use Illuminate\Http\Client\ConnectionException;
@@ -33,9 +34,9 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
         }
 
         $operation = $payout->operation;
-        $affiliate = $payout->affiliate;
+        $affiliate = $payout->payee;
 
-        if ($operation === null || $affiliate === null) {
+        if ($operation === null || ! $affiliate instanceof Affiliate) {
             return PayoutResult::failure('The payout operation is invalid.', 'INVALID_PAYOUT_OPERATION');
         }
 

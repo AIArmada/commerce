@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Traits;
 
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Actions\Affiliates\DetachAffiliateFromCart;
+use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
-use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\Support\CartWithAffiliates;
 use AIArmada\Cart\Cart;
 
@@ -26,21 +29,25 @@ trait HasAffiliates
             }
         }
 
-        app(AffiliateService::class)->attachToCartByCode($code, $this->getUnderlyingCart(), $context);
+        $affiliate = app(AffiliateLookup::class)->findByCode($code);
+
+        if ($affiliate !== null && $affiliate->isActive()) {
+            app(AttachAffiliateToCart::class)->handle($affiliate, $this->getUnderlyingCart(), $context);
+        }
 
         return $this;
     }
 
     public function detachAffiliate(): self
     {
-        app(AffiliateService::class)->detachFromCart($this->getUnderlyingCart());
+        app(DetachAffiliateFromCart::class)->handle($this->getUnderlyingCart());
 
         return $this;
     }
 
     public function hasAffiliate(): bool
     {
-        return app(AffiliateService::class)->attachedAttribution($this->getUnderlyingCart()) !== null;
+        return app(AffiliateLookup::class)->findAttachedAttribution($this->getUnderlyingCart()) !== null;
     }
 
     /**
@@ -48,12 +55,12 @@ trait HasAffiliates
      */
     public function recordAffiliateConversion(array $payload = []): ?AffiliateConversionData
     {
-        return app(AffiliateService::class)->recordConversion($this->getUnderlyingCart(), $payload);
+        return app(RecordAffiliateConversion::class)->handle($this->getUnderlyingCart(), $payload);
     }
 
     public function getAffiliateMetadata(?string $key = null): mixed
     {
-        $attribution = app(AffiliateService::class)->attachedAttribution($this->getUnderlyingCart());
+        $attribution = app(AffiliateLookup::class)->findAttachedAttribution($this->getUnderlyingCart());
 
         if ($attribution === null) {
             return null;

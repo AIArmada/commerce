@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -20,15 +20,13 @@ final class TrackAffiliateVisit
 {
     use AsAction;
 
+    public function __construct(
+        private readonly AffiliateLookup $affiliateLookup,
+    ) {}
+
     public function handle(string $code, array $context = [], ?string $cookieValue = null): ?AffiliateAttributionData
     {
-        $affiliate = Affiliate::query()
-            ->when(
-                config('affiliates.owner.enabled', false),
-                fn (Builder $q) => $q->forOwner($this->resolveOwner()),
-            )
-            ->where('code', $code)
-            ->first();
+        $affiliate = $this->affiliateLookup->findByCode($code);
 
         if (! $affiliate || ! $affiliate->isActive()) {
             return null;
@@ -61,7 +59,7 @@ final class TrackAffiliateVisit
 
         $payload['cookie_value'] = $cookieValue;
 
-        $attribution = $this->findAttributionByCookie($cookieValue);
+        $attribution = $this->affiliateLookup->findActiveAttributionByCookie($cookieValue);
 
         if ($attribution) {
             $this->fillAttribution($attribution, $payload);
@@ -144,36 +142,6 @@ final class TrackAffiliateVisit
         if ($payload !== []) {
             $attribution->fill($payload);
         }
-    }
-
-    private function findAttributionByCookie(?string $cookieValue): ?AffiliateAttribution
-    {
-        if (! is_string($cookieValue) || $cookieValue === '') {
-            return null;
-        }
-
-        $candidates = [$cookieValue];
-
-        try {
-            $decrypted = decrypt($cookieValue);
-
-            if ($decrypted !== '') {
-                $candidates[] = $decrypted;
-            }
-        } catch (DecryptException) {
-        }
-
-        $candidates = array_values(array_unique($candidates));
-
-        $query = AffiliateAttribution::query()
-            ->with('affiliate')
-            ->whereIn('cookie_value', $candidates)
-            ->active()
-            ->latest('last_cookie_seen_at');
-
-        $this->applyOwnerScope($query);
-
-        return $query->first();
     }
 
     private function applyOwnerScope(Builder $query): Builder

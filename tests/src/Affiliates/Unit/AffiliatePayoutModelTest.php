@@ -100,11 +100,11 @@ describe('AffiliatePayout Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($payout->affiliate)->toBeInstanceOf(Affiliate::class)
-            ->and($payout->affiliate->id)->toBe($this->affiliate->id);
+        expect($payout->payee)->toBeInstanceOf(Affiliate::class)
+            ->and($payout->payee->id)->toBe($this->affiliate->id);
     });
 
-    it('returns amount_minor accessor aliasing total_minor', function (): void {
+    it('stores payout total in minor units', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
@@ -115,7 +115,7 @@ describe('AffiliatePayout Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($payout->amount_minor)->toBe(12345);
+        expect($payout->total_minor)->toBe(12345);
     });
 
     it('stores external_reference as a native payout field', function (): void {

@@ -123,20 +123,16 @@ $affiliates = Affiliate::globalOnly()->get();
 $all = Affiliate::withoutOwnerScope()->get();
 ```
 
-## Cross-Tenant Lookups
+## Owner-Scoped Lookups
 
-Some operations require looking up affiliates across tenants (e.g., validating an affiliate code from a URL):
+Affiliate lookup follows the active owner context:
 
 ```php
-use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 
-$service = app(AffiliateService::class);
+$affiliateLookup = app(AffiliateLookup::class);
 
-// Normal lookup (scoped)
-$affiliate = $service->findByCode('PARTNER42');
-
-// Cross-tenant lookup (for validation only)
-$affiliate = $service->findByCodeWithoutOwnerScope('PARTNER42');
+$affiliate = $affiliateLookup->findByCode('PARTNER42');
 ```
 
 ## Auto-Assignment

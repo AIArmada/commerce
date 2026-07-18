@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Listeners;
 
-use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
@@ -20,7 +20,7 @@ use InvalidArgumentException;
 final readonly class RecordCommissionForOrder
 {
     public function __construct(
-        private AffiliateService $affiliateService,
+        private RecordAffiliateConversion $recordAffiliateConversion,
         private CartManagerInterface $cartManager,
     ) {}
 
@@ -62,7 +62,7 @@ final readonly class RecordCommissionForOrder
                 return;
             }
 
-            $this->affiliateService->recordConversion($cart, [
+            $this->recordAffiliateConversion->handle($cart, [
                 'external_reference' => $reference,
                 'conversion_type' => 'purchase',
                 'subtotal' => $order->subtotal,

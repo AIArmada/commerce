@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Support;
 
+use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
-use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Contracts\CartManagerInterface;
@@ -228,18 +228,18 @@ final class CartIntegrationRegistrar
      */
     private function recordAffiliateConversion(object $cart, PaymentSucceeded $event): void
     {
-        if (! class_exists(AffiliateService::class)) {
+        if (! class_exists(RecordAffiliateConversion::class)) {
             return;
         }
 
-        /** @var AffiliateService $affiliateService */
-        $affiliateService = $this->app->make(AffiliateService::class);
+        /** @var RecordAffiliateConversion $recordAffiliateConversion */
+        $recordAffiliateConversion = $this->app->make(RecordAffiliateConversion::class);
 
         $amount = $event->payment->rawAmount();
         $currency = $event->payment->currency();
 
         /** @var Cart $cart */
-        $affiliateService->recordConversion($cart, [
+        $recordAffiliateConversion->handle($cart, [
             'external_reference' => $this->extractOrderIdFromPayment($event),
             'total' => $amount,
             'commission_currency' => $currency,
