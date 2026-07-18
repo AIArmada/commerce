@@ -86,8 +86,8 @@ it('isolates event-bound child reads and writes by owner', function (): void {
         expect(EventRegistration::query()->pluck('id')->all())->toBe([$registrationA->id])
             ->and(EventAccessPolicy::query()->pluck('id')->all())->toBe([$policyA->id])
             ->and(EventAccessPolicy::query()->whereKey($policyB)->exists())->toBeFalse()
-            ->and(Event::metadataValue('event.name', slug: $eventA->slug))->toBe($eventA->title)
-            ->and(Event::metadataValue('event.name', slug: $eventB->slug))->toBeNull();
+            ->and(Event::query()->where('slug', $eventA->slug)->value('title'))->toBe($eventA->title)
+            ->and(Event::query()->where('slug', $eventB->slug)->exists())->toBeFalse();
 
         expect(fn () => app(RegistrationServiceInterface::class)->cancel($registrationB))
             ->toThrow(AuthorizationException::class);

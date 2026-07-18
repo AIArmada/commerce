@@ -27,6 +27,12 @@ use Illuminate\Support\Carbon;
  * @property bool $is_primary
  * @property CarbonImmutable|null $verified_at
  * @property array|null $metadata
+ * @property string|null $platform
+ * @property string|null $app_version
+ * @property string|null $device_label
+ * @property string|null $locale
+ * @property string|null $timezone
+ * @property CarbonImmutable|null $last_seen_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Model|Eloquent $recipient
@@ -49,6 +55,12 @@ final class CommunicationDestination extends Model
         'is_primary',
         'verified_at',
         'metadata',
+        'platform',
+        'app_version',
+        'device_label',
+        'locale',
+        'timezone',
+        'last_seen_at',
     ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
@@ -64,6 +76,7 @@ final class CommunicationDestination extends Model
             'is_primary' => 'boolean',
             'verified_at' => 'immutable_datetime',
             'metadata' => 'array',
+            'last_seen_at' => 'immutable_datetime',
         ];
     }
 

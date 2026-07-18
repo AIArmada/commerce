@@ -9,7 +9,7 @@ beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
 });
 
-it('keeps display metadata keys tied to the event title', function (): void {
+it('keeps event identity in canonical columns', function (): void {
     OwnerContext::withOwner(null, function (): void {
         $event = Event::factory()->create([
             'title' => 'Alpha',
@@ -20,14 +20,13 @@ it('keeps display metadata keys tied to the event title', function (): void {
             ],
         ]);
 
-        expect($event->metadata('event.name'))->toBe('Alpha');
-        expect(Event::metadataValue('event.name'))->toBe('Alpha');
+        expect($event->title)->toBe('Alpha');
+        expect($event->metadata)->toBe(['event' => ['name' => 'Metadata Alpha']]);
 
         $event->update([
             'title' => 'Beta',
         ]);
 
-        expect($event->fresh()->metadata('event.name'))->toBe('Beta');
-        expect(Event::metadataValue('event.name'))->toBe('Beta');
+        expect($event->fresh()->title)->toBe('Beta');
     });
 });

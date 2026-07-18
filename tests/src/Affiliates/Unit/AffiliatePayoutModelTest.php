@@ -118,7 +118,7 @@ describe('AffiliatePayout Model', function (): void {
         expect($payout->amount_minor)->toBe(12345);
     });
 
-    it('returns external_reference from metadata', function (): void {
+    it('stores external_reference as a native payout field', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
@@ -127,13 +127,13 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
-            'metadata' => ['external_reference' => 'EXT-REF-123'],
+            'external_reference' => 'EXT-REF-123',
         ]);
 
         expect($payout->external_reference)->toBe('EXT-REF-123');
     });
 
-    it('returns null external_reference when not in metadata', function (): void {
+    it('returns null external_reference when not set', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
@@ -145,35 +145,6 @@ describe('AffiliatePayout Model', function (): void {
         ]);
 
         expect($payout->external_reference)->toBeNull();
-    });
-
-    it('returns notes from metadata', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-' . uniqid(),
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-            'status' => PendingPayout::class,
-            'total_minor' => 50000,
-            'conversion_count' => 5,
-            'currency' => 'USD',
-            'metadata' => ['notes' => 'Monthly payout for December'],
-        ]);
-
-        expect($payout->notes)->toBe('Monthly payout for December');
-    });
-
-    it('returns null notes when not in metadata', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-' . uniqid(),
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-            'status' => PendingPayout::class,
-            'total_minor' => 50000,
-            'conversion_count' => 5,
-            'currency' => 'USD',
-        ]);
-
-        expect($payout->notes)->toBeNull();
     });
 
     it('casts metadata as array', function (): void {

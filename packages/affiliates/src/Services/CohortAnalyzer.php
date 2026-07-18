@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
@@ -287,15 +288,13 @@ final class CohortAnalyzer
 
         $affiliatesTable = (new Affiliate)->getTable();
         $conversionsTable = (new AffiliateConversion)->getTable();
-        $driver = ConnectionDriver::name(DB::connection());
-
-        $sourceExpression = $driver === 'sqlite'
-            ? "COALESCE(json_extract(a.metadata, '$.source'), 'direct')"
-            : "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(a.metadata, '$.source')), 'direct')";
+        $attributionsTable = (new AffiliateAttribution)->getTable();
+        $sourceExpression = "COALESCE(aa.source, 'direct')";
         $revenueExpression = 'COALESCE(c.value_minor, 0)';
 
         $query = DB::table("{$affiliatesTable} as a")
             ->leftJoin("{$conversionsTable} as c", 'c.affiliate_id', '=', 'a.id')
+            ->leftJoin("{$attributionsTable} as aa", 'aa.id', '=', 'c.affiliate_attribution_id')
             ->selectRaw("{$sourceExpression} as source")
             ->selectRaw('COUNT(DISTINCT a.id) as total_affiliates')
             ->selectRaw('COUNT(c.id) as total_conversions')
@@ -306,6 +305,7 @@ final class CohortAnalyzer
 
         $this->applyOwnerScopeToQuery($query, 'a.owner_type', 'a.owner_id');
         $this->applyOwnerScopeToQuery($query, 'c.owner_type', 'c.owner_id');
+        $this->applyOwnerScopeToQuery($query, 'aa.owner_type', 'aa.owner_id');
 
         /** @var array<int, object{source: string, total_affiliates: int|string, total_conversions: int|string, with_conversions: int|string, total_revenue: int|string}> $rows */
         $rows = $query->get()->all();

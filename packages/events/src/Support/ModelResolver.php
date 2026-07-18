@@ -7,6 +7,7 @@ namespace AIArmada\Events\Support;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Models\EventSubmission;
 
 /**
  * Resolves host application model subclasses configured for the events package.
@@ -42,6 +43,17 @@ final class ModelResolver
     {
         /** @var class-string<EventAttendance> $modelClass */
         $modelClass = config('events.models.attendance', EventAttendance::class);
+
+        return $modelClass;
+    }
+
+    /**
+     * @return class-string<EventSubmission>
+     */
+    public static function submissionClass(): string
+    {
+        /** @var class-string<EventSubmission> $modelClass */
+        $modelClass = config('events.models.submission', EventSubmission::class);
 
         return $modelClass;
     }

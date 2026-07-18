@@ -18,7 +18,7 @@ Cart::attachAffiliate('PARTNER42', [
     'utm_source' => 'newsletter',
     'landing_url' => url()->current(),
     'subject_type' => 'product',
-    'subject_identifier' => 'SKU-1001',
+    'subject_key' => 'SKU-1001',
     'subject_instance' => 'web',
     'subject_title_snapshot' => 'Pro Plan',
 ]);
@@ -142,10 +142,8 @@ use AIArmada\Cart\Facades\Cart;
 // Record conversion when order is placed
 Cart::recordAffiliateConversion([
     'external_reference' => $order->reference,
-    'order_reference' => $order->reference, // compatibility alias
     'subtotal' => $order->subtotal_minor,
-    'value_minor' => $order->total_minor,
-    'total' => $order->total_minor, // compatibility alias
+    'total' => $order->total_minor,
     'conversion_type' => 'purchase',
 ]);
 ```
@@ -153,8 +151,8 @@ Cart::recordAffiliateConversion([
 ### Orders Integration (Auto Attribution)
 
 When the Orders package is installed, it can emit a commission attribution event on payment.
-The Affiliates package listens for this and records conversions automatically **if** the order
-metadata includes a `cart_id` pointing to the original cart.
+The Affiliates package resolves the normalized attribution for the original cart and records
+conversions automatically.
 
 ```php
 use AIArmada\Orders\Models\Order;
@@ -179,11 +177,10 @@ $conversion = $service->recordConversion(
     data: [
         'external_reference' => 'ORD-12345',
         'value_minor' => 15000,
-        'total_minor' => 15000, // compatibility alias
         'subtotal_minor' => 14000,
         'conversion_type' => 'purchase',
         'subject_type' => 'product',
-        'subject_identifier' => 'SKU-1001',
+        'subject_key' => 'SKU-1001',
         'subject_instance' => 'web',
         'subject_title_snapshot' => 'Pro Plan',
         'metadata' => [
@@ -201,7 +198,7 @@ $link = $service->createTrackingLink($affiliate, 'https://example.com/products/s
     'params' => ['utm_source' => 'affiliate-campaign'],
     'ttl_seconds' => 3600,
     'subject_type' => 'product',
-    'subject_identifier' => 'SKU-1001',
+    'subject_key' => 'SKU-1001',
     'subject_instance' => 'web',
     'subject_title_snapshot' => 'Pro Plan',
     'subject_metadata' => [
@@ -222,7 +219,8 @@ ConversionStatus::Rejected;   // Rejected (fraud, refund, etc.)
 ConversionStatus::Paid;       // Commission paid out
 ```
 
-Use `value_minor` as the canonical neutral revenue field for conversions. `total_minor`, `order_reference`, `cart_identifier`, and `cart_instance` remain compatibility aliases for older cart and order-centric integrations.
+Use `total` and `subtotal` as the conversion amount inputs. The persisted conversion uses
+`value_minor` and `external_reference`; cart identity is resolved from the active attribution.
 
 When the maturity workflow is enabled, conversions typically move from `Pending` into `Qualified`, remain in holding, and then become `Approved` when `affiliates:process-maturity` runs after the configured maturity window.
 

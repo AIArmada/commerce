@@ -126,9 +126,6 @@ Controls which statuses allow registration, check-in, and walk-in. `capacity_blo
 
 ```php
 'sync' => [
-    'attributes_to_metadata' => env('EVENTS_SYNC_ATTRIBUTES_TO_METADATA', true),
-    'audiences_to_metadata' => env('EVENTS_SYNC_AUDIENCES_TO_METADATA', true),
-    'time_expressions_to_metadata' => env('EVENTS_SYNC_TIME_EXPRESSIONS_TO_METADATA', true),
     'classifications_to_facets' => env('EVENTS_SYNC_CLASSIFICATIONS_TO_FACETS', true),
     'audiences_to_facets' => env('EVENTS_SYNC_AUDIENCES_TO_FACETS', true),
     'build_search_documents' => env('EVENTS_SYNC_BUILD_SEARCH_DOCUMENTS', false),
@@ -138,17 +135,14 @@ Controls which statuses allow registration, check-in, and walk-in. `capacity_blo
     'attribute_keys' => null,
     'audience_types' => null,
     'taxonomy_codes' => null,
-    'always_rebuild' => env('EVENTS_ATTRIBUTE_SYNC_ALWAYS_REBUILD', true),
 ],
 ```
 
-These flags control the denormalized metadata projection and the search document rebuild pipeline for events, occurrences, and sessions.
+These flags control the search document rebuild pipeline for events, occurrences, and sessions.
 
-- `attributes_to_metadata`, `audiences_to_metadata`, and `time_expressions_to_metadata` keep the model `metadata` JSON blob in sync with the relation tables for each supported scope.
 - `classifications_to_facets` and `audiences_to_facets` add relation-backed facets to the search document payload.
 - `build_search_documents` enables automatic search document creation and removal for events, occurrences, and sessions. When it is disabled, the observers short-circuit and no documents are written.
 - `attribute_sync.attribute_keys`, `audience_types`, and `taxonomy_codes` let you narrow the synced records. Leave them `null` to sync everything.
-- `always_rebuild` removes stale non-reserved keys from `Event.metadata` when the attribute projection is rebuilt.
 
 ### Resolvers (extensibility seams)
 

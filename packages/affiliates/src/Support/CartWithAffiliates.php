@@ -36,9 +36,7 @@ final class CartWithAffiliates
             return;
         }
 
-        $metadataKey = config('affiliates.cart.metadata_key', 'affiliate');
-
-        if ($this->cart->hasMetadata($metadataKey)) {
+        if (app(AffiliateService::class)->attachedAttribution($this->cart) !== null) {
             return;
         }
 

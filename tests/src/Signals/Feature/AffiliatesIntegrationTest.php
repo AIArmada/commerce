@@ -47,7 +47,7 @@ beforeEach(function (): void {
         $table->uuid('id')->primary();
         $table->foreignUuid('affiliate_id');
         $table->string('affiliate_code');
-        $table->string('subject_identifier')->nullable();
+        $table->string('subject_key')->nullable();
         $table->string('subject_instance')->nullable();
         $table->string('cart_identifier')->nullable()->index();
         $table->string('cart_instance')->default('default');
@@ -73,7 +73,7 @@ beforeEach(function (): void {
         $table->foreignUuid('affiliate_id');
         $table->foreignUuid('affiliate_attribution_id')->nullable();
         $table->string('affiliate_code');
-        $table->string('subject_identifier')->nullable();
+        $table->string('subject_key')->nullable();
         $table->string('subject_instance')->nullable();
         $table->string('voucher_code')->nullable();
         $table->string('external_reference')->nullable();
@@ -133,7 +133,7 @@ it('records an affiliate attributed signal for the matching owner property', fun
     $attribution = AffiliateAttribution::query()->create([
         'affiliate_id' => $affiliate->getKey(),
         'affiliate_code' => $affiliate->code,
-        'subject_identifier' => 'event:ramadan-series',
+        'subject_key' => 'event:ramadan-series',
         'subject_instance' => 'share-link',
         'cart_identifier' => 'share-visit-001',
         'cart_instance' => 'share',
@@ -173,7 +173,7 @@ it('records an affiliate attributed signal for the matching owner property', fun
             'attribution_id' => $attribution->id,
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => 'USTAZ-ALI',
-            'subject_identifier' => 'event:ramadan-series',
+            'subject_key' => 'event:ramadan-series',
             'subject_instance' => 'share-link',
             'cookie_value' => 'cookie-share-001',
             'voucher_code' => 'DAKWAH10',
@@ -222,7 +222,7 @@ it('records an affiliate conversion signal for the matching owner property', fun
     $attribution = AffiliateAttribution::query()->create([
         'affiliate_id' => $affiliate->getKey(),
         'affiliate_code' => $affiliate->code,
-        'subject_identifier' => 'event:weekly-tafsir',
+        'subject_key' => 'event:weekly-tafsir',
         'subject_instance' => 'share-link',
         'cart_identifier' => 'share-conversion-001',
         'cart_instance' => 'share',
@@ -243,7 +243,7 @@ it('records an affiliate conversion signal for the matching owner property', fun
         'affiliate_id' => $affiliate->getKey(),
         'affiliate_attribution_id' => $attribution->getKey(),
         'affiliate_code' => $affiliate->code,
-        'subject_identifier' => 'event:weekly-tafsir',
+        'subject_key' => 'event:weekly-tafsir',
         'subject_instance' => 'share-link',
         'voucher_code' => 'TAFSIR15',
         'external_reference' => 'REG-SHARE-1001',
@@ -280,7 +280,7 @@ it('records an affiliate conversion signal for the matching owner property', fun
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => 'USTAZ-ZAYN',
             'attribution_id' => $attribution->id,
-            'subject_identifier' => 'event:weekly-tafsir',
+            'subject_key' => 'event:weekly-tafsir',
             'subject_instance' => 'share-link',
             'voucher_code' => 'TAFSIR15',
             'external_reference' => 'REG-SHARE-1001',
@@ -346,7 +346,7 @@ it('ignores forged affiliate events that target another owner model id', functio
     $targetAttribution = AffiliateAttribution::query()->create([
         'affiliate_id' => $affiliateA->getKey(),
         'affiliate_code' => $affiliateA->code,
-        'subject_identifier' => 'event:owner-a',
+        'subject_key' => 'event:owner-a',
         'subject_instance' => 'share',
         'cart_identifier' => 'share-a',
         'cart_instance' => 'share',
@@ -360,7 +360,7 @@ it('ignores forged affiliate events that target another owner model id', functio
             id: $targetAttribution->id,
             affiliateId: $affiliateB->id,
             affiliateCode: $affiliateB->code,
-            subjectIdentifier: 'event:owner-b',
+            subjectKey: 'event:owner-b',
             subjectInstance: 'share',
             cartIdentifier: 'share-b',
             cartInstance: 'share',
@@ -375,7 +375,7 @@ it('ignores forged affiliate events that target another owner model id', functio
                 'affiliate_id' => $affiliateA->getKey(),
                 'affiliate_code' => $affiliateA->code,
                 'affiliate_attribution_id' => $targetAttribution->getKey(),
-                'subject_identifier' => 'event:owner-a',
+                'subject_key' => 'event:owner-a',
                 'subject_instance' => 'share',
                 'owner_type' => $ownerA->getMorphClass(),
                 'owner_id' => $ownerA->getKey(),
@@ -383,7 +383,7 @@ it('ignores forged affiliate events that target another owner model id', functio
             ])->id,
             affiliateId: $affiliateB->id,
             affiliateCode: $affiliateB->code,
-            subjectIdentifier: 'event:owner-b',
+            subjectKey: 'event:owner-b',
             subjectInstance: 'share',
             ownerType: $ownerB->getMorphClass(),
             ownerId: (string) $ownerB->getKey(),

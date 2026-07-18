@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Jobs\BuildEventSearchDocumentJob;
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventAttribute;
 use AIArmada\Events\Models\EventAudience;
 use AIArmada\Events\Models\EventClassification;
 use AIArmada\Events\Models\EventOccurrence;
@@ -81,8 +82,11 @@ describe('buildPayload', function (): void {
 
     it('includes facets from event metadata', function (): void {
         $event = createSearchEvent();
-        $event->metadata = ['gender_restriction' => 'male_only'];
-        $event->save();
+        EventAttribute::factory()->create([
+            'event_id' => $event->id,
+            'attribute_key' => 'gender_restriction',
+            'attribute_value' => 'male_only',
+        ]);
 
         $builder = app(EventSearchDocumentBuilder::class);
         $payload = $builder->buildPayload($event);
@@ -91,7 +95,6 @@ describe('buildPayload', function (): void {
     });
 
     it('includes audience facets directly from the audience records', function (): void {
-        config()->set('events.sync.audiences_to_metadata', false);
         config()->set('events.sync.audiences_to_facets', true);
         config()->set('events.attribute_sync.audience_types', ['age_group']);
 
@@ -153,10 +156,6 @@ describe('buildPayloadForOccurrence', function (): void {
 
         $event = createSearchEvent();
         $occurrence = createSearchOccurrence($event, [
-            'metadata' => [
-                'summary' => 'Day one at the mosque',
-                'description' => 'Morning session in Kuala Lumpur',
-            ],
         ]);
 
         EventAudience::query()->create([
@@ -181,8 +180,8 @@ describe('buildPayloadForOccurrence', function (): void {
         $payload = $builder->buildPayloadForOccurrence($occurrence);
 
         expect($payload)->toHaveKey('title', 'Ramadan Lecture Occurrence');
-        expect($payload)->toHaveKey('summary', 'Day one at the mosque');
-        expect($payload)->toHaveKey('body', 'Morning session in Kuala Lumpur');
+        expect($payload)->toHaveKey('summary', null);
+        expect($payload)->toHaveKey('body', null);
         expect($payload)->toHaveKey('document_type', 'occurrence');
         expect($payload)->toHaveKey('searchable_type', $occurrence->getMorphClass());
         expect($payload)->toHaveKey('searchable_id', $occurrence->id);
@@ -190,8 +189,6 @@ describe('buildPayloadForOccurrence', function (): void {
         expect($payload)->toHaveKey('event_occurrence_id', $occurrence->id);
         expect($payload)->toHaveKey('event_session_id', null);
         expect($payload['facets'])->toMatchArray([
-            'summary' => 'Day one at the mosque',
-            'description' => 'Morning session in Kuala Lumpur',
             '_audiences' => [
                 'age_group' => ['adults'],
             ],
@@ -210,10 +207,14 @@ describe('buildPayloadForSession', function (): void {
         config()->set('events.attribute_sync.taxonomy_codes', ['topic']);
 
         $occurrence = createSearchOccurrence();
-        $session = createSearchSession($occurrence, [
-            'metadata' => [
-                'track' => 'main-stage',
-            ],
+        $session = createSearchSession($occurrence);
+
+        EventAttribute::factory()->create([
+            'event_id' => $session->event_id,
+            'event_occurrence_id' => $session->event_occurrence_id,
+            'event_session_id' => $session->id,
+            'attribute_key' => 'track',
+            'attribute_value' => 'main-stage',
         ]);
 
         EventAudience::query()->create([

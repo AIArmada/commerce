@@ -13,6 +13,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -31,10 +32,12 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $sub_id_2
  * @property string|null $sub_id_3
  * @property string|null $subject_type
- * @property string|null $subject_identifier
+ * @property string|null $subject_key
+ * @property string|null $subject_id
  * @property string|null $subject_instance
  * @property string|null $subject_title_snapshot
  * @property array<string, mixed>|null $subject_metadata
+ * @property string|null $origin
  * @property int $clicks
  * @property int $conversions
  * @property CarbonImmutable|null $deactivated_at
@@ -62,10 +65,12 @@ class AffiliateLink extends Model implements Auditable
         'sub_id_2',
         'sub_id_3',
         'subject_type',
-        'subject_identifier',
+        'subject_key',
+        'subject_id',
         'subject_instance',
         'subject_title_snapshot',
         'subject_metadata',
+        'origin',
         'clicks',
         'conversions',
         'deactivated_at',
@@ -85,7 +90,7 @@ class AffiliateLink extends Model implements Auditable
             'sub_id_2',
             'sub_id_3',
             'subject_type',
-            'subject_identifier',
+            'subject_key',
             'subject_instance',
             'subject_title_snapshot',
             'clicks',
@@ -98,6 +103,7 @@ class AffiliateLink extends Model implements Auditable
         'subject_metadata' => 'array',
         'clicks' => 'integer',
         'conversions' => 'integer',
+        'origin' => 'string',
         'deactivated_at' => 'immutable_datetime',
     ];
 
@@ -120,6 +126,30 @@ class AffiliateLink extends Model implements Auditable
     public function program(): BelongsTo
     {
         return $this->belongsTo(AffiliateProgram::class, 'program_id');
+    }
+
+    /**
+     * @return HasMany<AffiliateAttribution, $this>
+     */
+    public function attributions(): HasMany
+    {
+        return $this->hasMany(AffiliateAttribution::class, 'affiliate_link_id');
+    }
+
+    /**
+     * @return HasMany<AffiliateTouchpoint, $this>
+     */
+    public function touchpoints(): HasMany
+    {
+        return $this->hasMany(AffiliateTouchpoint::class, 'affiliate_link_id');
+    }
+
+    /**
+     * @return HasMany<AffiliateConversion, $this>
+     */
+    public function conversions(): HasMany
+    {
+        return $this->hasMany(AffiliateConversion::class, 'affiliate_link_id');
     }
 
     public function incrementClicks(): void

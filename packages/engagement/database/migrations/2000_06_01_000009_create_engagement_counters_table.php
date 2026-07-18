@@ -21,12 +21,15 @@ return new class extends Migration
             $table->string('subject_type')->index();
             $table->uuid('subject_id')->index();
             $table->string('counter_type')->index();
-            $table->string('counter_key')->nullable()->index();
+            $table->string('counter_key')->default('');
             $table->bigInteger('count_value')->default(0);
             $table->timestampTz('recalculated_at')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
+
+            $table->index(['subject_type', 'subject_id', 'counter_type'], 'engagement_counters_lookup_idx');
+            $table->unique(['subject_type', 'subject_id', 'counter_type', 'counter_key'], 'engagement_counters_unique_idx');
         });
     }
 };

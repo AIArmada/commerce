@@ -75,7 +75,7 @@ it('does not leak cross-tenant cart urls by identifier', function (): void {
         AffiliateConversion::create([
             'affiliate_id' => $affiliate->getKey(),
             'affiliate_code' => $affiliate->code,
-            'subject_identifier' => $identifier,
+            'subject_key' => $identifier,
             'subject_instance' => $instance,
             'external_reference' => 'ORDER-' . Str::uuid(),
             'subtotal_minor' => 10000,
@@ -87,7 +87,7 @@ it('does not leak cross-tenant cart urls by identifier', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect(AffiliateConversion::query()->where('subject_identifier', $identifier)->exists())->toBeTrue();
+        expect(AffiliateConversion::query()->where('subject_key', $identifier)->exists())->toBeTrue();
     });
 
     $bridge = new CartBridge;

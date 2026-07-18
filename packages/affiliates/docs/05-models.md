@@ -74,7 +74,7 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 | `affiliate_id` | uuid | The credited affiliate |
 | `affiliate_code` | string | Code used at time of attribution |
 | `subject_type` | string | Neutral subject type (`product`, `order`, etc.) |
-| `subject_identifier` | string | Neutral subject identifier |
+| `subject_key` | string | Canonical subject key |
 | `subject_instance` | string | Neutral subject instance/context |
 | `subject_title_snapshot` | string | Snapshot title for subject at attribution time |
 | `cart_identifier` | string | Cart session identifier |
@@ -100,7 +100,7 @@ $attribution->touchpoints;  // HasMany<AffiliateTouchpoint>
 
 Compatibility aliases are maintained for legacy cart semantics:
 
-- `subject_identifier` <-> `cart_identifier`
+- `subject_key` and `cart_identifier` are stored independently with explicit meaning.
 - `subject_instance` <-> `cart_instance`
 
 ### AffiliateConversion
@@ -119,15 +119,13 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 | `affiliate_attribution_id` | uuid | Source attribution |
 | `affiliate_payout_id` | uuid | Payout batch (if paid) |
 | `subject_type` | string | Neutral subject type |
-| `subject_identifier` | string | Neutral subject identifier |
+| `subject_key` | string | Canonical subject key |
 | `subject_instance` | string | Neutral subject instance/context |
 | `subject_title_snapshot` | string | Snapshot title for subject |
 | `external_reference` | string | Neutral external reference |
-| `order_reference` | string | External order ID |
 | `conversion_type` | string | Conversion category (`purchase`, etc.) |
 | `subtotal_minor` | int | Order subtotal in minor units |
 | `value_minor` | int | Neutral conversion value in minor units |
-| `total_minor` | int | Order total in minor units |
 | `commission_minor` | int | Commission amount in minor units |
 | `commission_currency` | string | Commission currency |
 | `status` | ConversionStatus | Pending, Qualified, Approved, Rejected, Paid |
@@ -142,13 +140,9 @@ $conversion->attribution;  // BelongsTo<AffiliateAttribution>
 $conversion->payout;       // BelongsTo<AffiliatePayout>
 ```
 
-Compatibility aliases are provided:
-
-- `external_reference` <-> `order_reference`
-- `value_minor` <-> `total_minor`
-- `subject_identifier` <-> `cart_identifier`
-- `subject_instance` <-> `cart_instance`
-- `commission_currency` <-> `currency`
+`external_reference`, `value_minor`, `subject_key`, `subject_instance`, and
+`commission_currency` are the canonical conversion fields. Cart identity remains on the
+attribution record and is not copied into conversion metadata.
 
 Balance side effects are handled by the model hooks:
 

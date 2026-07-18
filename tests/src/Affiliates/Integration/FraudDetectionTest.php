@@ -125,7 +125,7 @@ test('fingerprint repeat fraud is detected', function (): void {
             'ip_address' => '192.168.1.1',
             'user_agent' => 'Mozilla/5.0 Test',
             'touched_at' => now()->subHours(rand(1, 12)),
-            'metadata' => ['fingerprint' => $fingerprint],
+            'fingerprint' => $fingerprint,
         ]);
     }
 
@@ -377,7 +377,7 @@ test('multiple fraud signals accumulate to block traffic', function (): void {
             'ip_address' => '192.168.1.1',
             'user_agent' => 'Mozilla/5.0 Bot',
             'touched_at' => now()->subHours(rand(1, 12)),
-            'metadata' => ['fingerprint' => $fingerprint],
+            'fingerprint' => $fingerprint,
         ]);
     }
 

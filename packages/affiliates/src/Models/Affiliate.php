@@ -49,6 +49,8 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $default_voucher_code
  * @property string|null $payout_terms
  * @property string|null $tracking_domain
+ * @property string|null $external_reference_type
+ * @property string|null $external_reference
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
@@ -119,6 +121,8 @@ class Affiliate extends Model implements Auditable
         'default_voucher_code',
         'payout_terms',
         'tracking_domain',
+        'external_reference_type',
+        'external_reference',
         'contact_email',
         'website_url',
         'metadata',
@@ -147,6 +151,8 @@ class Affiliate extends Model implements Auditable
             'default_voucher_code',
             'payout_terms',
             'tracking_domain',
+            'external_reference_type',
+            'external_reference',
             'owner_type',
             'owner_id',
             'activated_at',

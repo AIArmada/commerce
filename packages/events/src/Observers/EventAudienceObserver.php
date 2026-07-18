@@ -9,54 +9,32 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAudience;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Services\EventMetadataSyncService;
 
 final class EventAudienceObserver
 {
     public function __construct(
-        private readonly EventMetadataSyncService $sync,
         private readonly ?EventSearchIndexer $indexer = null,
     ) {}
 
     public function saved(EventAudience $audience): void
     {
-        $targets = $this->resolveTargets($audience);
-
-        if ($targets === []) {
+        if (! config('events.sync.build_search_documents') || $this->indexer === null) {
             return;
         }
 
-        if (config('events.sync.audiences_to_metadata')) {
-            foreach ($targets as $target) {
-                $this->sync->syncAudience($target);
-            }
-        }
-
-        if (config('events.sync.build_search_documents') && $this->indexer !== null) {
-            foreach ($targets as $target) {
-                $this->indexer->index($target);
-            }
+        foreach ($this->resolveTargets($audience) as $target) {
+            $this->indexer->index($target);
         }
     }
 
     public function deleted(EventAudience $audience): void
     {
-        $targets = $this->resolveTargets($audience);
-
-        if ($targets === []) {
+        if (! config('events.sync.build_search_documents') || $this->indexer === null) {
             return;
         }
 
-        if (config('events.sync.audiences_to_metadata')) {
-            foreach ($targets as $target) {
-                $this->sync->syncAudience($target);
-            }
-        }
-
-        if (config('events.sync.build_search_documents') && $this->indexer !== null) {
-            foreach ($targets as $target) {
-                $this->indexer->index($target);
-            }
+        foreach ($this->resolveTargets($audience) as $target) {
+            $this->indexer->index($target);
         }
     }
 

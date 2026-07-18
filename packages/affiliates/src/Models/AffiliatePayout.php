@@ -42,8 +42,7 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read int $amount_minor Alias for total_minor
- * @property string|null $external_reference From metadata
- * @property-read string|null $notes From metadata
+ * @property string|null $external_reference
  * @property-read Affiliate|null $affiliate Alias for payee when payee is an Affiliate
  * @property-read Model|null $payee
  * @property-read Model|null $owner
@@ -209,48 +208,6 @@ class AffiliatePayout extends Model implements Auditable
             set: fn ($value) => [
                 'total_minor' => max(0, (int) $value),
             ],
-        );
-    }
-
-    /**
-     * Get external reference from metadata.
-     *
-     * @return Attribute<string|null, mixed>
-     */
-    protected function externalReference(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->metadata['external_reference'] ?? null,
-            set: function ($value, array $attributes): array {
-                $metadata = $attributes['metadata'] ?? null;
-
-                if (is_string($metadata)) {
-                    $decoded = json_decode($metadata, true);
-                    $metadata = is_array($decoded) ? $decoded : [];
-                }
-
-                $metadata = is_array($metadata) ? $metadata : [];
-
-                if ($value === null || $value === '') {
-                    unset($metadata['external_reference']);
-                } else {
-                    $metadata['external_reference'] = (string) $value;
-                }
-
-                return ['metadata' => $metadata === [] ? null : $this->asJson($metadata)];
-            },
-        );
-    }
-
-    /**
-     * Get notes from metadata.
-     *
-     * @return Attribute<string|null, never>
-     */
-    protected function notes(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->metadata['notes'] ?? null,
         );
     }
 }

@@ -10,7 +10,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
-use AIArmada\Cart\Facades\Cart;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
@@ -49,8 +48,10 @@ function dispatchVoucherApplied(array $metadata): void
 test('affiliate attaches when voucher metadata contains affiliate code', function (): void {
     dispatchVoucherApplied(['affiliate_code' => 'VOUCHER-AFF']);
 
+    $attribution = AffiliateAttribution::firstOrFail();
+
     expect(AffiliateAttribution::count())->toBe(1)
-        ->and(Cart::getAffiliateMetadata('voucher_code'))->toBe('PROMO-1');
+        ->and($attribution->voucher_code)->toBe('PROMO-1');
 });
 
 test('listener ignores vouchers without affiliate metadata', function (): void {
@@ -114,12 +115,14 @@ test('listener preserves affiliate commission and program overrides from voucher
 
     app(AttachAffiliateFromVoucher::class)->handle(new VoucherApplied($cart, $voucher));
 
-    expect(Cart::getAffiliateMetadata('commission_override'))->toBe([
+    $attribution = AffiliateAttribution::firstOrFail();
+
+    expect($attribution->commission_override)->toBe([
         'type' => CommissionType::Fixed->value,
         'value' => 2500,
     ])
-        ->and(Cart::getAffiliateMetadata('affiliate_program_id'))->toBe($program->id)
-        ->and(Cart::getAffiliateMetadata('upline_levels'))->toBe([
+        ->and($attribution->affiliate_program_id)->toBe($program->id)
+        ->and($attribution->upline_levels)->toBe([
             ['level' => 1, 'share' => 0.05],
             ['level' => 2, 'share' => 0.025],
         ]);

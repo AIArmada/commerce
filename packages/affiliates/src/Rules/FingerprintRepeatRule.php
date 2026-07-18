@@ -32,7 +32,7 @@ final class FingerprintRepeatRule implements FraudRule
 
         $existingCount = AffiliateTouchpoint::query()
             ->where('affiliate_id', $affiliate->id)
-            ->where('metadata->fingerprint', $context['fingerprint'])
+            ->where('fingerprint', $context['fingerprint'])
             ->where('touched_at', '>=', now()->subHours(24))
             ->count();
 

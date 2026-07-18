@@ -267,13 +267,6 @@ final class CartCheckoutBuilder
             'cart_items_count' => $this->cart->count(),
         ]);
 
-        // Include affiliate data if present
-        $affiliateData = $this->cart->getMetadata('affiliate');
-        if ($affiliateData) {
-            $metadata['affiliate_id'] = $affiliateData['affiliate_id'] ?? null;
-            $metadata['affiliate_code'] = $affiliateData['affiliate_code'] ?? null;
-        }
-
         $checkoutBuilder->metadata($metadata);
 
         return $checkoutBuilder->create();

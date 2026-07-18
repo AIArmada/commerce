@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -21,13 +20,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $affiliate_id
  * @property string $affiliate_code
  * @property string|null $subject_type
- * @property string|null $subject_identifier
+ * @property string|null $subject_key
+ * @property string|null $subject_id
  * @property string|null $subject_instance
  * @property string|null $subject_title_snapshot
  * @property string|null $cart_identifier
  * @property string $cart_instance
  * @property string|null $cookie_value
  * @property string|null $voucher_code
+ * @property string|null $affiliate_program_id
+ * @property array<string, mixed>|null $commission_override
+ * @property list<array<string, mixed>>|null $upline_levels
  * @property string|null $source
  * @property string|null $medium
  * @property string|null $campaign
@@ -36,8 +39,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $landing_url
  * @property string|null $referrer_url
  * @property string|null $user_agent
+ * @property string|null $affiliate_link_id
+ * @property string|null $attribution_type
+ * @property string|null $visitor_key
+ * @property string|null $channel
+ * @property string|null $origin
+ * @property string|null $sharer_user_id
  * @property string|null $ip_address
  * @property string|null $user_id
+ * @property string|null $fingerprint
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
@@ -48,6 +58,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read Affiliate $affiliate
+ * @property-read AffiliateLink|null $affiliateLink
  * @property-read Collection<int, AffiliateConversion> $conversions
  * @property-read Collection<int, AffiliateTouchpoint> $touchpoints
  */
@@ -65,13 +76,17 @@ class AffiliateAttribution extends Model
         'affiliate_id',
         'affiliate_code',
         'subject_type',
-        'subject_identifier',
+        'subject_key',
+        'subject_id',
         'subject_instance',
         'subject_title_snapshot',
         'cart_identifier',
         'cart_instance',
         'cookie_value',
         'voucher_code',
+        'affiliate_program_id',
+        'commission_override',
+        'upline_levels',
         'source',
         'medium',
         'campaign',
@@ -80,8 +95,15 @@ class AffiliateAttribution extends Model
         'landing_url',
         'referrer_url',
         'user_agent',
+        'affiliate_link_id',
+        'attribution_type',
+        'visitor_key',
+        'channel',
+        'origin',
+        'sharer_user_id',
         'ip_address',
         'user_id',
+        'fingerprint',
         'metadata',
         'owner_type',
         'owner_id',
@@ -93,6 +115,8 @@ class AffiliateAttribution extends Model
 
     protected $casts = [
         'metadata' => 'array',
+        'commission_override' => 'array',
+        'upline_levels' => 'array',
         'first_seen_at' => 'immutable_datetime',
         'last_seen_at' => 'immutable_datetime',
         'last_cookie_seen_at' => 'immutable_datetime',
@@ -105,63 +129,17 @@ class AffiliateAttribution extends Model
     }
 
     /**
-     * Neutral alias for cart_identifier.
-     *
-     * @return Attribute<string|null, string|null>
-     */
-    protected function subjectIdentifier(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): ?string => $this->attributes['subject_identifier'] ?? $this->attributes['cart_identifier'] ?? null,
-            set: fn (?string $value): ?string => $value,
-        );
-    }
-
-    /**
-     * Neutral alias for cart_instance.
-     *
-     * @return Attribute<string|null, string|null>
-     */
-    protected function subjectInstance(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): string => (string) ($this->attributes['subject_instance'] ?? $this->attributes['cart_instance'] ?? 'default'),
-            set: fn (?string $value): ?string => $value,
-        );
-    }
-
-    /**
-     * Compatibility alias for subject_identifier.
-     *
-     * @return Attribute<string|null, string|null>
-     */
-    protected function cartIdentifier(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): ?string => $this->attributes['cart_identifier'] ?? $this->attributes['subject_identifier'] ?? null,
-            set: fn (?string $value): ?string => $value,
-        );
-    }
-
-    /**
-     * Compatibility alias for subject_instance.
-     *
-     * @return Attribute<string|null, string|null>
-     */
-    protected function cartInstance(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): string => (string) ($this->attributes['cart_instance'] ?? $this->attributes['subject_instance'] ?? 'default'),
-            set: fn (?string $value): ?string => $value,
-        );
-    }
-
-    /**
      * @return BelongsTo<Affiliate, $this>
      */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
+    }
+
+    /** @return BelongsTo<AffiliateLink, $this> */
+    public function affiliateLink(): BelongsTo
+    {
+        return $this->belongsTo(AffiliateLink::class, 'affiliate_link_id');
     }
 
     /**

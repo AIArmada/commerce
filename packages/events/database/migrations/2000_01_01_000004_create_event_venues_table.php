@@ -17,6 +17,7 @@ return new class extends Migration
             $table->uuid('parent_venue_id')->nullable()->index();
             $table->string('name');
             $table->string('slug')->nullable();
+            $table->text('description')->nullable();
             $table->string('venue_type')->nullable()->index();
             $table->string('line1')->nullable();
             $table->string('line2')->nullable();

@@ -16,7 +16,7 @@ test('AffiliateAttributionData constructor sets properties', function (): void {
         affiliateId: 'aff1',
         affiliateCode: 'AFF1',
         subjectType: 'event',
-        subjectIdentifier: 'subject1',
+        subjectKey: 'subject1',
         subjectInstance: 'page',
         subjectTitleSnapshot: 'Ramadan Night',
         cartIdentifier: 'cart1',
@@ -36,7 +36,7 @@ test('AffiliateAttributionData constructor sets properties', function (): void {
     expect($data->affiliateId)->toBe('aff1');
     expect($data->affiliateCode)->toBe('AFF1');
     expect($data->subjectType)->toBe('event');
-    expect($data->subjectIdentifier)->toBe('subject1');
+    expect($data->subjectKey)->toBe('subject1');
     expect($data->subjectInstance)->toBe('page');
     expect($data->subjectTitleSnapshot)->toBe('Ramadan Night');
     expect($data->cartIdentifier)->toBe('cart1');
@@ -66,13 +66,16 @@ test('AffiliateAttributionData fromModel creates data from attribution', functio
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => 'AFF1',
         'subject_type' => 'event',
-        'subject_identifier' => 'event:1',
+        'subject_key' => 'event:1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ramadan Night',
         'cart_identifier' => 'cart1',
         'cart_instance' => 'instance1',
         'cookie_value' => 'cookie123',
         'voucher_code' => 'VOUCHER',
+        'affiliate_program_id' => null,
+        'commission_override' => null,
+        'upline_levels' => null,
         'source' => 'google',
         'medium' => 'cpc',
         'campaign' => 'summer',
@@ -88,7 +91,7 @@ test('AffiliateAttributionData fromModel creates data from attribution', functio
     expect($data->affiliateId)->toBe($affiliate->id);
     expect($data->affiliateCode)->toBe('AFF1');
     expect($data->subjectType)->toBe('event');
-    expect($data->subjectIdentifier)->toBe('event:1');
+    expect($data->subjectKey)->toBe('event:1');
     expect($data->subjectInstance)->toBe('share');
     expect($data->subjectTitleSnapshot)->toBe('Ramadan Night');
     expect($data->cartIdentifier)->toBe('cart1');
@@ -111,7 +114,7 @@ test('AffiliateAttributionData toArray returns array representation', function (
         affiliateId: 'aff1',
         affiliateCode: 'AFF1',
         subjectType: 'event',
-        subjectIdentifier: 'subject1',
+        subjectKey: 'subject1',
         subjectInstance: 'page',
         subjectTitleSnapshot: 'Ramadan Night',
         cartIdentifier: 'cart1',
@@ -134,13 +137,16 @@ test('AffiliateAttributionData toArray returns array representation', function (
         'affiliate_id' => 'aff1',
         'affiliate_code' => 'AFF1',
         'subject_type' => 'event',
-        'subject_identifier' => 'subject1',
+        'subject_key' => 'subject1',
         'subject_instance' => 'page',
         'subject_title_snapshot' => 'Ramadan Night',
         'cart_identifier' => 'cart1',
         'cart_instance' => 'instance1',
         'cookie_value' => 'cookie123',
         'voucher_code' => 'VOUCHER',
+        'affiliate_program_id' => null,
+        'commission_override' => null,
+        'upline_levels' => null,
         'source' => 'google',
         'medium' => 'cpc',
         'campaign' => 'summer',
@@ -156,7 +162,7 @@ test('AffiliateAttributionData toArray handles null expiresAt', function (): voi
         id: '1',
         affiliateId: 'aff1',
         affiliateCode: 'AFF1',
-        subjectIdentifier: 'subject1',
+        subjectKey: 'subject1',
         subjectInstance: 'page',
         cartIdentifier: 'cart1',
         cartInstance: 'instance1',

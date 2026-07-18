@@ -7,6 +7,7 @@ namespace AIArmada\Events\Models;
 use AIArmada\Events\Database\Factories\EventSubmissionFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\EventModerationStatus\EventModerationStatus as EventModerationStatusState;
+use AIArmada\Events\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +30,8 @@ use Spatie\ModelStates\HasStates;
  * @property EventModerationStatusState $status
  * @property CarbonImmutable|null $submitted_at
  * @property CarbonImmutable|null $reviewed_at
+ * @property string|null $review_reason
+ * @property string|null $review_notes
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -46,6 +49,7 @@ class EventSubmission extends Model
         'submission_data',
         'status',
         'submitted_at', 'reviewed_at',
+        'review_reason', 'review_notes',
         'metadata',
     ];
 
@@ -86,7 +90,7 @@ class EventSubmission extends Model
      */
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Event::class);
+        return $this->belongsTo(ModelResolver::eventClass());
     }
 
     /**

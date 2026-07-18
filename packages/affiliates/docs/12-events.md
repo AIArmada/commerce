@@ -207,9 +207,7 @@ The package can dispatch webhooks to external endpoints for real-time integratio
             "name": "Partner Name"
         },
         "external_reference": "ORD-12345",
-        "order_reference": "ORD-12345",
         "value_minor": 15000,
-        "total_minor": 15000,
         "commission_minor": 1500,
         "currency": "USD",
         "status": "pending"

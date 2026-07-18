@@ -127,11 +127,11 @@ describe('AffiliateApiController', function (): void {
             $request = Request::create('/api/affiliates/links', 'POST', [
                 'url' => 'https://example.com/products',
                 'subject_type' => 'product',
-                'subject_identifier' => 'product:sku-123',
+                'subject_key' => 'product:sku-123',
+                'subject_id' => 'sku-123',
                 'subject_instance' => 'web',
                 'subject_title_snapshot' => 'SKU 123',
                 'subject_metadata' => [
-                    'subject_id' => 'sku-123',
                     'category' => 'featured',
                 ],
             ]);
@@ -143,10 +143,11 @@ describe('AffiliateApiController', function (): void {
             $link = AffiliateLink::query()->sole();
 
             expect($link->subject_type)->toBe('product')
-                ->and($link->subject_identifier)->toBe('product:sku-123')
+                ->and($link->subject_key)->toBe('product:sku-123')
                 ->and($link->subject_instance)->toBe('web')
                 ->and($link->subject_title_snapshot)->toBe('SKU 123')
-                ->and(data_get($link->subject_metadata, 'subject_id'))->toBe('sku-123');
+                ->and($link->subject_id)->toBe('sku-123')
+                ->and(data_get($link->subject_metadata, 'subject_id'))->toBeNull();
         });
 
         test('generates link with default URL', function (): void {

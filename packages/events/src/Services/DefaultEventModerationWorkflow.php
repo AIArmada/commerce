@@ -30,7 +30,8 @@ final class DefaultEventModerationWorkflow implements EventModerationWorkflow
         $this->guardSubmissionEvent($submission);
 
         $submission->reviewed_at = CarbonImmutable::now();
-        $submission->metadata = $this->mergeReviewMetadata($submission, 'approved', null, $notes);
+        $submission->review_reason = null;
+        $submission->review_notes = $notes;
         $submission->status->transitionTo(Approved::class);
 
         event(new EventSubmissionApproved($submission));
@@ -41,7 +42,8 @@ final class DefaultEventModerationWorkflow implements EventModerationWorkflow
         $this->guardSubmissionEvent($submission);
 
         $submission->reviewed_at = CarbonImmutable::now();
-        $submission->metadata = $this->mergeReviewMetadata($submission, 'rejected', $reason, $notes);
+        $submission->review_reason = $reason;
+        $submission->review_notes = $notes;
         $submission->status->transitionTo(Rejected::class);
 
         event(new EventSubmissionRejected($submission, $reason));
@@ -52,7 +54,8 @@ final class DefaultEventModerationWorkflow implements EventModerationWorkflow
         $this->guardSubmissionEvent($submission);
 
         $submission->reviewed_at = CarbonImmutable::now();
-        $submission->metadata = $this->mergeReviewMetadata($submission, 'changes_requested', $reason, $notes);
+        $submission->review_reason = $reason;
+        $submission->review_notes = $notes;
         $submission->status->transitionTo(ChangesRequested::class);
     }
 
@@ -63,21 +66,5 @@ final class DefaultEventModerationWorkflow implements EventModerationWorkflow
         }
 
         EventWriteGuard::findOrFail($submission->event_id);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function mergeReviewMetadata(EventSubmission $submission, string $status, ?string $reason, ?string $notes): array
-    {
-        $metadata = $submission->metadata ?? [];
-        $metadata['review'] = array_filter([
-            'status' => $status,
-            'reason' => $reason,
-            'notes' => $notes,
-            'reviewed_at' => CarbonImmutable::now()->toIso8601String(),
-        ], static fn (mixed $value): bool => $value !== null);
-
-        return $metadata;
     }
 }

@@ -17,7 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $affiliate_id
  * @property string $affiliate_code
  * @property string|null $subject_type
- * @property string|null $subject_identifier
+ * @property string|null $subject_key
+ * @property string|null $subject_id
  * @property string|null $subject_instance
  * @property string|null $subject_title_snapshot
  * @property string|null $source
@@ -25,10 +26,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $campaign
  * @property string|null $term
  * @property string|null $content
+ * @property string|null $affiliate_link_id
+ * @property string|null $touchpoint_type
+ * @property string|null $interaction_type
+ * @property string|null $visitor_key
+ * @property string|null $channel
+ * @property string|null $origin
+ * @property string|null $url
+ * @property string|null $referrer_url
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property string|null $ip_address
  * @property string|null $user_agent
+ * @property string|null $fingerprint
  * @property array<string, mixed>|null $metadata
  * @property CarbonInterface|null $touched_at
  * @property CarbonInterface|null $created_at
@@ -49,7 +59,8 @@ class AffiliateTouchpoint extends Model
         'affiliate_id',
         'affiliate_code',
         'subject_type',
-        'subject_identifier',
+        'subject_key',
+        'subject_id',
         'subject_instance',
         'subject_title_snapshot',
         'source',
@@ -57,10 +68,19 @@ class AffiliateTouchpoint extends Model
         'campaign',
         'term',
         'content',
+        'affiliate_link_id',
+        'touchpoint_type',
+        'interaction_type',
+        'visitor_key',
+        'channel',
+        'origin',
+        'url',
+        'referrer_url',
         'owner_type',
         'owner_id',
         'ip_address',
         'user_agent',
+        'fingerprint',
         'metadata',
         'touched_at',
     ];

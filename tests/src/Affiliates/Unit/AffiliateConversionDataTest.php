@@ -18,7 +18,7 @@ test('AffiliateConversionData constructor sets properties', function (): void {
         affiliateId: 'aff1',
         affiliateCode: 'AFF1',
         subjectType: 'event',
-        subjectIdentifier: 'event:1',
+        subjectKey: 'event:1',
         subjectInstance: 'share',
         subjectTitleSnapshot: 'Ramadan Night',
         voucherCode: 'VOUCHER',
@@ -39,7 +39,7 @@ test('AffiliateConversionData constructor sets properties', function (): void {
     expect($data->affiliateId)->toBe('aff1');
     expect($data->affiliateCode)->toBe('AFF1');
     expect($data->subjectType)->toBe('event');
-    expect($data->subjectIdentifier)->toBe('event:1');
+    expect($data->subjectKey)->toBe('event:1');
     expect($data->subjectInstance)->toBe('share');
     expect($data->subjectTitleSnapshot)->toBe('Ramadan Night');
     expect($data->voucherCode)->toBe('VOUCHER');
@@ -70,7 +70,7 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => 'AFF1',
         'subject_type' => 'event',
-        'subject_identifier' => 'event:1',
+        'subject_key' => 'event:1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ramadan Night',
         'voucher_code' => 'VOUCHER',
@@ -93,7 +93,7 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
     expect($data->affiliateId)->toBe($affiliate->id);
     expect($data->affiliateCode)->toBe('AFF1');
     expect($data->subjectType)->toBe('event');
-    expect($data->subjectIdentifier)->toBe('event:1');
+    expect($data->subjectKey)->toBe('event:1');
     expect($data->subjectInstance)->toBe('share');
     expect($data->subjectTitleSnapshot)->toBe('Ramadan Night');
     expect($data->voucherCode)->toBe('VOUCHER');
@@ -117,7 +117,7 @@ test('AffiliateConversionData toArray returns array representation', function ()
         affiliateId: 'aff1',
         affiliateCode: 'AFF1',
         subjectType: 'event',
-        subjectIdentifier: 'event:1',
+        subjectKey: 'event:1',
         subjectInstance: 'share',
         subjectTitleSnapshot: 'Ramadan Night',
         voucherCode: 'VOUCHER',
@@ -145,10 +145,12 @@ test('AffiliateConversionData toArray returns array representation', function ()
         'affiliate_id' => 'aff1',
         'affiliate_code' => 'AFF1',
         'subject_type' => 'event',
-        'subject_identifier' => 'event:1',
+        'subject_key' => 'event:1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ramadan Night',
         'voucher_code' => 'VOUCHER',
+        'affiliate_program_id' => null,
+        'upline_levels' => null,
         'external_reference' => 'OUTCOME123',
         'conversion_type' => 'registration',
         'subtotal_minor' => 1000,
@@ -167,7 +169,7 @@ test('AffiliateConversionData toArray handles null occurredAt', function (): voi
         id: '1',
         affiliateId: 'aff1',
         affiliateCode: 'AFF1',
-        subjectIdentifier: 'event:1',
+        subjectKey: 'event:1',
         subjectInstance: 'share',
         voucherCode: 'VOUCHER',
         externalReference: 'OUTCOME123',

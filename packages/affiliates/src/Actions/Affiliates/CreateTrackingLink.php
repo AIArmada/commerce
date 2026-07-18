@@ -52,6 +52,8 @@ final class CreateTrackingLink
 
         if (! is_array($subjectMetadata)) {
             $subjectMetadata = null;
+        } else {
+            $subjectMetadata = $this->sanitizeSubjectMetadata($subjectMetadata);
         }
 
         // Some hosts already have a canonical, signed, or otherwise product-specific
@@ -82,11 +84,27 @@ final class CreateTrackingLink
             'sub_id_2' => Arr::get($attributes, 'sub_id_2'),
             'sub_id_3' => Arr::get($attributes, 'sub_id_3'),
             'subject_type' => Arr::get($attributes, 'subject_type'),
-            'subject_identifier' => Arr::get($attributes, 'subject_identifier'),
+            'subject_key' => Arr::get($attributes, 'subject_key'),
+            'subject_id' => Arr::get($attributes, 'subject_id'),
             'subject_instance' => Arr::get($attributes, 'subject_instance'),
             'subject_title_snapshot' => Str::limit((string) Arr::get($attributes, 'subject_title_snapshot', ''), 200, ''),
             'subject_metadata' => $subjectMetadata,
+            'origin' => Arr::get($attributes, 'origin'),
             'deactivated_at' => Arr::get($attributes, 'deactivated_at'),
         ]);
+    }
+
+    /** @param array<string, mixed> $metadata */
+    private function sanitizeSubjectMetadata(array $metadata): ?array
+    {
+        $promotedKeys = [
+            'affiliate_id', 'affiliate_code', 'affiliate_attribution_id',
+            'subject_type', 'subject_key', 'subject_id', 'subject_instance',
+            'subject_title_snapshot', 'origin', 'voucher_code', 'program_id',
+        ];
+
+        $metadata = Arr::except($metadata, $promotedKeys);
+
+        return $metadata === [] ? null : $metadata;
     }
 }

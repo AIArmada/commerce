@@ -40,7 +40,7 @@ trait HasAffiliates
 
     public function hasAffiliate(): bool
     {
-        return $this->getUnderlyingCart()->hasMetadata(config('affiliates.cart.metadata_key', 'affiliate'));
+        return app(AffiliateService::class)->attachedAttribution($this->getUnderlyingCart()) !== null;
     }
 
     /**
@@ -53,7 +53,13 @@ trait HasAffiliates
 
     public function getAffiliateMetadata(?string $key = null): mixed
     {
-        $metadata = $this->getUnderlyingCart()->getMetadata(config('affiliates.cart.metadata_key', 'affiliate'));
+        $attribution = app(AffiliateService::class)->attachedAttribution($this->getUnderlyingCart());
+
+        if ($attribution === null) {
+            return null;
+        }
+
+        $metadata = $attribution->metadata ?? [];
 
         if ($key === null) {
             return $metadata;

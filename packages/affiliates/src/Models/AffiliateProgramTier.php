@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -107,10 +108,8 @@ class AffiliateProgramTier extends Model implements Auditable
     {
         return $affiliate->conversions()
             ->where(function ($query) use ($program): void {
-                $query->where('metadata->program_id', $program->id)
-                    ->orWhereHas('attribution', function ($attributionQuery) use ($program): void {
-                        $attributionQuery->where('metadata->program_id', $program->id);
-                    });
+                $query->whereHas('affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $program->id))
+                    ->orWhereHas('attribution.affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $program->id));
             });
     }
 

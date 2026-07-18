@@ -74,7 +74,6 @@ use AIArmada\Events\Models\EventRecurrenceRule;
 use AIArmada\Events\Models\EventReport;
 use AIArmada\Events\Models\EventRevision;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTimeExpression;
 use AIArmada\Events\Models\EventVerification;
 use AIArmada\Events\Notifications\EventWelcomeNotification;
 use AIArmada\Events\Observers\EventAttributeObserver;
@@ -83,7 +82,6 @@ use AIArmada\Events\Observers\EventClassificationObserver;
 use AIArmada\Events\Observers\EventObserver;
 use AIArmada\Events\Observers\EventOccurrenceObserver;
 use AIArmada\Events\Observers\EventSessionObserver;
-use AIArmada\Events\Observers\EventTimeExpressionObserver;
 use AIArmada\Events\Policies\EventPolicy;
 use AIArmada\Events\Resolvers\DefaultEventChangeNoticeAudienceResolver;
 use AIArmada\Events\Resolvers\DefaultEventCheckoutIntentResolver;
@@ -104,7 +102,6 @@ use AIArmada\Events\Services\DefaultEventLifecycleWorkflow;
 use AIArmada\Events\Services\DefaultEventModerationWorkflow;
 use AIArmada\Events\Services\EloquentEventSearchEngine;
 use AIArmada\Events\Services\EventCloneServiceImpl;
-use AIArmada\Events\Services\EventMetadataSyncService;
 use AIArmada\Events\Services\EventNotificationDispatcher;
 use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Services\EventSearchDocumentBuilder;
@@ -146,7 +143,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         Gate::policy($eventClass, EventPolicy::class);
 
         $this->app->singleton(EventQueryService::class);
-        $this->app->singleton(EventMetadataSyncService::class);
+
         $this->app->singleton(RegistrationService::class);
         $this->app->singleton(EventChangeNoticeWorkflow::class, DefaultEventChangeNoticeWorkflow::class);
         $this->app->singleton(EventModerationWorkflow::class, DefaultEventModerationWorkflow::class);
@@ -273,16 +270,9 @@ final class EventsServiceProvider extends PackageServiceProvider
             EventSession::observe(EventSessionObserver::class);
         }
 
-        if (config('events.sync.attributes_to_metadata')) {
+        if (config('events.sync.build_search_documents')) {
             EventAttribute::observe(EventAttributeObserver::class);
-        }
-
-        if (config('events.sync.audiences_to_metadata') || config('events.sync.audiences_to_facets')) {
             EventAudience::observe(EventAudienceObserver::class);
-        }
-
-        if (config('events.sync.time_expressions_to_metadata')) {
-            EventTimeExpression::observe(EventTimeExpressionObserver::class);
         }
 
         if (config('events.sync.classifications_to_facets')) {

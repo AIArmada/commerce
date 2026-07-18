@@ -32,7 +32,7 @@ title: Public API
   "ttl": 3600,
   "params": {"utm_campaign": "spring-launch"},
   "subject_type": "product",
-  "subject_identifier": "SKU-1001",
+  "subject_key": "SKU-1001",
   "subject_instance": "web",
   "subject_title_snapshot": "Pro Plan",
   "subject_metadata": {"category": "subscriptions"}
@@ -46,7 +46,7 @@ Success response:
   "id": "uuid",
   "link": "https://example.com/products/sku-1001?aff=PARTNER42...",
   "subject_type": "product",
-  "subject_identifier": "SKU-1001"
+  "subject_key": "SKU-1001"
 }
 ```
 

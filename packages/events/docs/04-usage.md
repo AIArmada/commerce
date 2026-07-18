@@ -596,7 +596,7 @@ $occurrenceDocument = $builder->buildForOccurrence($occurrence);
 $sessionDocument = $builder->buildForSession($session);
 ```
 
-The generated payload includes the target content, the current `metadata` snapshot for that target, and relation-backed facets for audiences and classifications when those sync flags are enabled.
+The generated payload includes the target content and relation-backed facets for audiences and classifications when those sync flags are enabled. Opaque metadata is included only as diagnostic context and is never used as a source for promoted fields.
 
 Set `events.search.queue_indexing=true` to queue rebuilds instead of writing them synchronously. If you need to disable automatic indexing entirely, bind `events.search.indexer` to `AIArmada\Events\Resolvers\NullEventSearchIndexer`.
 

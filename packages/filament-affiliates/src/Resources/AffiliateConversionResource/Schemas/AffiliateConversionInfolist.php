@@ -25,7 +25,7 @@ final class AffiliateConversionInfolist
                             ->placeholder('—')
                             ->weight(FontWeight::SemiBold)
                             ->copyable(),
-                        TextEntry::make('subject_identifier')
+                        TextEntry::make('subject_key')
                             ->label('Subject Identifier')
                             ->placeholder('—'),
                         TextEntry::make('subject_instance')

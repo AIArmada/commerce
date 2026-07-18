@@ -15,12 +15,14 @@ return new class extends Migration
         Schema::create(config('events.database.tables.event_occurrences', 'event_occurrences'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->uuid('event_id')->index();
+            $table->index(['event_id', 'starts_at']);
             $table->string('title')->nullable();
             $table->string('slug')->nullable();
             $table->timestampTz('starts_at')->nullable()->index();
             $table->timestampTz('ends_at')->nullable();
             $table->string('timezone')->nullable();
             $table->string('status')->index();
+            $table->index(['event_id', 'status', 'starts_at']);
             $table->string('visibility')->index();
             $table->string('delivery_mode')->nullable()->index();
             $table->integer('capacity')->nullable();

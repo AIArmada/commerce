@@ -78,18 +78,14 @@ The package is configured via `config/affiliates.php`. This document reflects th
 
 ```php
 'cart' => [
-    'metadata_key' => env('AFFILIATES_CART_METADATA_KEY', 'affiliate'),
     'register_manager_proxy' => env('AFFILIATES_CART_PROXY', true),
-    'persist_metadata' => env('AFFILIATES_CART_PERSIST_METADATA', true),
     'customer_discounts_enabled' => env('AFFILIATES_CUSTOMER_DISCOUNTS_ENABLED', false),
 ],
 ```
 
 | Key | Description |
 |-----|-------------|
-| `metadata_key` | Key for storing affiliate data in cart metadata |
 | `register_manager_proxy` | Register fluent Cart facade helpers |
-| `persist_metadata` | Store affiliate metadata on cart persistence |
 | `customer_discounts_enabled` | Enable affiliate-based customer discounts |
 
 ## Cookie Tracking
@@ -353,7 +349,7 @@ The package is configured via `config/affiliates.php`. This document reflects th
     "ttl": 3600,
     "params": {"utm_campaign": "spring-launch"},
     "subject_type": "product",
-    "subject_identifier": "SKU-1001",
+    "subject_key": "SKU-1001",
     "subject_instance": "web",
     "subject_title_snapshot": "Pro Plan",
     "subject_metadata": {"category": "subscriptions"}

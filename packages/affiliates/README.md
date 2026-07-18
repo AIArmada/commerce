@@ -52,14 +52,14 @@ Cart::hasAffiliate(); // true
 
 Cart::recordAffiliateConversion([
     'external_reference' => 'SO-100234',
-    'order_reference' => 'SO-100234', // compatibility alias
     'subtotal' => $order->subtotal_minor, // optional
     'value_minor' => $order->total_minor,
-    'total' => $order->total_minor, // compatibility alias
+    'total' => $order->total_minor,
 ]);
 ```
 
-All metadata lives under a configurable key (defaults to `affiliate`) so normalized cart snapshots and third-party systems can read attribution context without any additional joins.
+Attribution is stored in normalized affiliate tables keyed by the cart identifier and
+instance; cart metadata is not used as an attribution store.
 
 ### Voucher bridge
 
@@ -123,7 +123,6 @@ Key options exposed via `config/affiliates.php`:
 
 - `table_names` – override table names per tenant or schema layout.
 - `owner` – plug in a resolver to scope queries per marketplace merchant.
-- `cart.metadata_key` – customize the metadata key stored on carts.
 - `integrations.vouchers.metadata_keys` – control which metadata paths are inspected for affiliate codes.
 - `tracking.block_self_referral` – prevent owners/tenants from crediting their own affiliate code when they are the active owner.
 - `cookies.require_consent` / `cookies.consent_cookie` – gate tracking behind explicit consent.

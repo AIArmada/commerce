@@ -45,11 +45,9 @@ final class RegistrationService implements RegistrationServiceInterface
 
             if (isset($data['participants'])) {
                 foreach ($data['participants'] as $participantData) {
-                    $extraFields = Arr::only($participantData, ['email', 'phone', 'company', 'is_purchaser']);
                     $participantFields = array_merge(
                         Arr::except($participantData, ['email', 'phone', 'company', 'is_purchaser']),
                         $scopeFields,
-                        ['metadata' => array_filter(['contact' => $extraFields])],
                     );
                     $participant = $registration->participants()->create($participantFields);
 

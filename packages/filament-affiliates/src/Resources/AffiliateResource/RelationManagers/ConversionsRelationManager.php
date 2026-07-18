@@ -65,7 +65,7 @@ final class ConversionsRelationManager extends RelationManager
                     ->icon(Heroicon::OutlinedShoppingCart)
                     ->visible(fn () => app(CartBridge::class)->isAvailable())
                     ->url(fn (AffiliateConversion $record): ?string => app(CartBridge::class)->resolveUrl(
-                        $record->subject_identifier,
+                        $record->subject_key,
                         $record->subject_instance
                     ))
                     ->openUrlInNewTab(),

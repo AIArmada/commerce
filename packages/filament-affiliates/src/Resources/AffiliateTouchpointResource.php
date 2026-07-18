@@ -93,7 +93,7 @@ final class AffiliateTouchpointResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('subject_identifier')
+                Tables\Columns\TextColumn::make('subject_key')
                     ->label('Subject')
                     ->searchable(),
 
@@ -127,7 +127,7 @@ final class AffiliateTouchpointResource extends Resource
                 ->schema([
                     TextEntry::make('affiliate.code')
                         ->label('Affiliate'),
-                    TextEntry::make('subject_identifier')
+                    TextEntry::make('subject_key')
                         ->label('Subject'),
                     TextEntry::make('source')
                         ->placeholder('—'),

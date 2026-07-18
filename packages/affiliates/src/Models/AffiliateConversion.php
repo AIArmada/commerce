@@ -26,11 +26,15 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $affiliate_attribution_id
  * @property string|null $affiliate_payout_id
  * @property string $affiliate_code
+ * @property string|null $affiliate_program_id
  * @property string|null $subject_type
- * @property string|null $subject_identifier
+ * @property string|null $subject_key
+ * @property string|null $subject_id
  * @property string|null $subject_instance
  * @property string|null $subject_title_snapshot
  * @property string|null $voucher_code
+ * @property array<string, mixed>|null $commission_override
+ * @property list<array<string, mixed>>|null $upline_levels
  * @property string|null $external_reference
  * @property string|null $performance_bonus_key
  * @property string|null $conversion_type
@@ -39,6 +43,10 @@ use Spatie\ModelStates\HasStates;
  * @property int $commission_minor
  * @property string $commission_currency
  * @property ConversionStatus $status
+ * @property string|null $affiliate_link_id
+ * @property string|null $sharer_user_id
+ * @property string|null $actor_user_id
+ * @property string|null $origin
  * @property string|null $channel
  * @property string|null $owner_type
  * @property string|null $owner_id
@@ -52,6 +60,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read string $currency Alias for commission_currency
  * @property-read Affiliate $affiliate
  * @property-read AffiliateAttribution|null $attribution
+ * @property-read AffiliateLink|null $affiliateLink
  * @property-read AffiliatePayout|null $payout
  */
 class AffiliateConversion extends Model
@@ -70,11 +79,15 @@ class AffiliateConversion extends Model
         'affiliate_code',
         'affiliate_attribution_id',
         'affiliate_payout_id',
+        'affiliate_program_id',
         'subject_type',
-        'subject_identifier',
+        'subject_key',
+        'subject_id',
         'subject_instance',
         'subject_title_snapshot',
         'voucher_code',
+        'commission_override',
+        'upline_levels',
         'external_reference',
         'performance_bonus_key',
         'conversion_type',
@@ -82,6 +95,10 @@ class AffiliateConversion extends Model
         'value_minor',
         'commission_minor',
         'commission_currency',
+        'affiliate_link_id',
+        'sharer_user_id',
+        'actor_user_id',
+        'origin',
         'status',
         'channel',
         'metadata',
@@ -112,6 +129,12 @@ class AffiliateConversion extends Model
     public function attribution(): BelongsTo
     {
         return $this->belongsTo(AffiliateAttribution::class, 'affiliate_attribution_id');
+    }
+
+    /** @return BelongsTo<AffiliateLink, $this> */
+    public function affiliateLink(): BelongsTo
+    {
+        return $this->belongsTo(AffiliateLink::class, 'affiliate_link_id');
     }
 
     /**
@@ -236,6 +259,8 @@ class AffiliateConversion extends Model
     {
         return [
             'metadata' => 'array',
+            'commission_override' => 'array',
+            'upline_levels' => 'array',
             'occurred_at' => 'immutable_datetime',
             'approved_at' => 'immutable_datetime',
             'rejected_at' => 'immutable_datetime',

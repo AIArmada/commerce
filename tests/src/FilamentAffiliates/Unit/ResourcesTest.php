@@ -153,7 +153,7 @@ it('AffiliateConversionResource is explicitly non-CRUD', function (): void {
         'affiliate_id' => $affiliate->getKey(),
         'affiliate_code' => $affiliate->code,
         'external_reference' => 'ORDER-' . Str::uuid(),
-        'subject_identifier' => 'checkout:' . Str::uuid(),
+        'subject_key' => 'checkout:' . Str::uuid(),
         'status' => PendingConversion::class,
         'occurred_at' => now(),
         'subtotal_minor' => 10000,

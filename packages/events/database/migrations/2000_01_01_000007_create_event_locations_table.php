@@ -18,6 +18,7 @@ return new class extends Migration
             $table->uuid('event_occurrence_id')->nullable()->index();
             $table->uuid('event_session_id')->nullable()->index();
             $table->index(['event_id', 'event_occurrence_id', 'event_session_id']);
+            $table->index(['event_id', 'location_role', 'sort_order']);
             $table->string('location_role')->index();
             $table->string('locationable_type')->nullable()->index();
             $table->uuid('locationable_id')->nullable()->index();

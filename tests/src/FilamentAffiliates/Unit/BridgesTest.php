@@ -133,7 +133,7 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
     AffiliateConversion::create([
         'affiliate_id' => $affiliateB->getKey(),
         'affiliate_code' => $affiliateB->code,
-        'subject_identifier' => $cart->identifier,
+        'subject_key' => $cart->identifier,
         'subject_instance' => $cart->instance,
         'external_reference' => 'ORDER-B-1',
         'value_minor' => 10000,
@@ -171,7 +171,7 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
     AffiliateConversion::create([
         'affiliate_id' => $affiliateA->getKey(),
         'affiliate_code' => $affiliateA->code,
-        'subject_identifier' => $cart->identifier,
+        'subject_key' => $cart->identifier,
         'subject_instance' => $cart->instance,
         'external_reference' => 'ORDER-A-1',
         'value_minor' => 10000,

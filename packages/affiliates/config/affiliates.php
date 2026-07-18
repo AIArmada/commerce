@@ -101,15 +101,13 @@ return [
     | Cart Integration
     |--------------------------------------------------------------------------
     |
-    | Configure how cart metadata is stored and whether the package should
-    | decorate the cart manager automatically.
+    | Configure whether the package should decorate the cart manager
+    | automatically. Affiliate attribution is stored in normalized tables.
     |
     */
 
     'cart' => [
-        'metadata_key' => env('AFFILIATES_CART_METADATA_KEY', 'affiliate'),
         'register_manager_proxy' => env('AFFILIATES_CART_PROXY', true),
-        'persist_metadata' => env('AFFILIATES_CART_PERSIST_METADATA', true),
         // Enable affiliate customer discounts as cart conditions
         'customer_discounts_enabled' => env('AFFILIATES_CUSTOMER_DISCOUNTS_ENABLED', false),
     ],

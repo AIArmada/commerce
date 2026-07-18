@@ -13,7 +13,7 @@ family: growth-and-incentives
 - Role: Affiliate attribution, commissions, payouts, fraud detection, and analytics.
 - Search first: `src/Models`, `src/Actions`, `src/Services`, `src/Events`, `config`, `docs`
 - Related: `filament-affiliates`, `affiliate-network`, `vouchers`, `cart`
-- Conversion records prefer neutral fields like `value_minor`, `external_reference`, and `subject_identifier`; cart and order names remain compatibility aliases.
+- Conversion records use canonical fields like `value_minor`, `external_reference`, `subject_key`, and native subject/attribution columns.
 - Commission maturity promotes `Qualified` conversions into `Approved` and releases funds from `holding_minor` into `available_minor`.
 - Performance leaderboards and bonuses use approved revenue with explicit owner-scoped query-builder paths.
 

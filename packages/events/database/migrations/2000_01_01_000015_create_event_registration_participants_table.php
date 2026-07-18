@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->string('relationship_to_registrant')->nullable();
             $table->boolean('is_primary')->default(false)->index();
+            $table->boolean('is_purchaser')->default(false)->index();
             $table->integer('age')->nullable();
             $table->string('gender')->nullable()->index();
             $table->string('status')->index();

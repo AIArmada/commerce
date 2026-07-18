@@ -36,22 +36,22 @@ beforeEach(function (): void {
     ]);
 });
 
-test('cart metadata and attribution are created when attaching an affiliate code', function (): void {
+test('native attribution is created when attaching an affiliate code', function (): void {
     Cart::attachAffiliate($this->affiliate->code, [
         'source' => 'newsletter',
         'utm_campaign' => 'spring',
     ]);
 
-    $metadata = Cart::getMetadata('affiliate');
+    $attribution = AffiliateAttribution::firstOrFail();
 
-    expect($metadata)
-        ->toBeArray()
-        ->and($metadata['affiliate_code'])->toBe($this->affiliate->code)
-        ->and($metadata['source'])->toBe('newsletter')
-        ->and(AffiliateAttribution::count())->toBe(1);
+    expect($attribution->affiliate_code)->toBe($this->affiliate->code)
+        ->and($attribution->source)->toBe('newsletter')
+        ->and($attribution->campaign)->toBe('spring')
+        ->and(AffiliateAttribution::count())->toBe(1)
+        ->and(Cart::hasMetadata('affiliate'))->toBeFalse();
 });
 
-test('affiliate conversions are recorded using cart metadata', function (): void {
+test('affiliate conversions are recorded using native attribution', function (): void {
     Cart::attachAffiliate($this->affiliate->code);
 
     $conversion = Cart::recordAffiliateConversion([
@@ -74,7 +74,7 @@ test('affiliate conversions are recorded using cart metadata', function (): void
 test('subject fields propagate through attribution touchpoint and conversion records', function (): void {
     Cart::attachAffiliate($this->affiliate->code, [
         'subject_type' => 'event',
-        'subject_identifier' => 'event:ramadan-1',
+        'subject_key' => 'event:ramadan-1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ramadan Night',
     ]);
@@ -90,25 +90,25 @@ test('subject fields propagate through attribution touchpoint and conversion rec
     $conversion = AffiliateConversion::query()->firstOrFail();
 
     expect($attribution->subject_type)->toBe('event')
-        ->and($attribution->subject_identifier)->toBe('event:ramadan-1')
+        ->and($attribution->subject_key)->toBe('event:ramadan-1')
         ->and($attribution->subject_instance)->toBe('share')
         ->and($attribution->subject_title_snapshot)->toBe('Ramadan Night');
 
     expect($touchpoint->subject_type)->toBe('event')
-        ->and($touchpoint->subject_identifier)->toBe('event:ramadan-1')
+        ->and($touchpoint->subject_key)->toBe('event:ramadan-1')
         ->and($touchpoint->subject_instance)->toBe('share')
         ->and($touchpoint->subject_title_snapshot)->toBe('Ramadan Night');
 
     expect($conversion->subject_type)->toBe('event')
-        ->and($conversion->subject_identifier)->toBe('event:ramadan-1')
+        ->and($conversion->subject_key)->toBe('event:ramadan-1')
         ->and($conversion->subject_instance)->toBe('share')
         ->and($conversion->subject_title_snapshot)->toBe('Ramadan Night');
 });
 
-test('affiliate metadata helpers expose and clear attachment state', function (): void {
+test('affiliate attachment helpers expose and clear native attribution state', function (): void {
     Cart::attachAffiliate($this->affiliate->code);
 
-    expect(Cart::getAffiliateMetadata('affiliate_code'))->toBe($this->affiliate->code);
+    expect(Cart::getAffiliateMetadata('affiliate_code'))->toBeNull();
 
     $service = app(AffiliateService::class);
     $cart = app('cart')->getCurrentCart();
@@ -167,10 +167,10 @@ test('middleware captures affiliate visits via cookies', function (): void {
     expect($attribution)
         ->not()->toBeNull()
         ->and($attribution->cookie_value)->not()->toBeNull()
-        ->and($attribution->subject_identifier)->toBeNull();
+        ->and($attribution->subject_key)->toBeNull();
 });
 
-test('cart metadata hydrates from affiliate cookie automatically', function (): void {
+test('cart hydrates from affiliate cookie automatically', function (): void {
     $cookieName = config('affiliates.cookies.name', 'affiliate_session');
     $request = Request::create('/landing?aff=' . $this->affiliate->code, 'GET');
 
@@ -190,11 +190,14 @@ test('cart metadata hydrates from affiliate cookie automatically', function (): 
 
     $cart = app('cart')->getCurrentCart();
 
-    $metadata = $cart->getMetadata('affiliate');
+    $attribution = AffiliateAttribution::query()
+        ->where('cart_identifier', $cart->getIdentifier())
+        ->first();
 
-    expect($metadata)
-        ->toBeArray()
-        ->and($metadata['affiliate_code'])->toBe($this->affiliate->code);
+    expect($attribution)
+        ->not->toBeNull()
+        ->and($attribution->affiliate_code)->toBe($this->affiliate->code)
+        ->and($cart->hasMetadata('affiliate'))->toBeFalse();
 });
 
 test('affiliate cookies honor owner scoping', function (): void {
@@ -245,7 +248,10 @@ test('affiliate cookies honor owner scoping', function (): void {
     app()->instance('request', $nextRequest);
 
     $cartWithOwner = app('cart')->getCurrentCart();
-    expect($cartWithOwner->getMetadata('affiliate')['affiliate_code'] ?? null)->toBe($affiliate->code);
+    expect(AffiliateAttribution::query()
+        ->where('cart_identifier', $cartWithOwner->getIdentifier())
+        ->where('affiliate_code', $affiliate->code)
+        ->exists())->toBeTrue();
 });
 
 test('self referral is blocked when owner matches current owner', function (): void {

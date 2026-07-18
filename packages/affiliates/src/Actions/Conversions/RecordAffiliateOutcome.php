@@ -57,15 +57,26 @@ final class RecordAffiliateOutcome
             $metadata = [];
         }
 
+        $metadata = Arr::except($metadata, [
+            'affiliate_id', 'affiliate_code', 'affiliate_attribution_id',
+            'subject_type', 'subject_key', 'subject_id', 'subject_instance',
+            'subject_title_snapshot', 'origin', 'voucher_code', 'program_id',
+        ]);
+
         $conversion = AffiliateConversion::query()->create([
             'affiliate_id' => $affiliate->getKey(),
             'affiliate_attribution_id' => $attribution->getKey(),
+            'affiliate_program_id' => Arr::get($payload, 'affiliate_program_id', $attribution->affiliate_program_id),
             'affiliate_code' => $affiliate->code,
             'subject_type' => Arr::get($payload, 'subject_type', $attribution->subject_type),
-            'subject_identifier' => Arr::get($payload, 'subject_identifier', $attribution->subject_identifier),
+            'subject_key' => Arr::get($payload, 'subject_key', $attribution->subject_key),
             'subject_instance' => Arr::get($payload, 'subject_instance', $attribution->subject_instance),
             'subject_title_snapshot' => Arr::get($payload, 'subject_title_snapshot', $attribution->subject_title_snapshot),
+            'subject_id' => Arr::get($payload, 'subject_id', $attribution->subject_id),
+            'affiliate_link_id' => Arr::get($payload, 'affiliate_link_id', $attribution->affiliate_link_id),
             'external_reference' => $externalReference,
+            'commission_override' => Arr::get($payload, 'commission_override', $attribution->commission_override),
+            'upline_levels' => Arr::get($payload, 'upline_levels', $attribution->upline_levels),
             'conversion_type' => $conversionType,
             'subtotal_minor' => (int) Arr::get($payload, 'subtotal_minor', 0),
             'value_minor' => (int) Arr::get($payload, 'value_minor', 0),
@@ -73,6 +84,9 @@ final class RecordAffiliateOutcome
             'commission_currency' => (string) Arr::get($payload, 'commission_currency', config('affiliates.currency.default', 'USD')),
             'status' => Arr::get($payload, 'status', config('affiliates.commissions.default_status', 'pending')),
             'channel' => Arr::get($payload, 'channel'),
+            'origin' => Arr::get($payload, 'origin', $attribution->origin),
+            'sharer_user_id' => Arr::get($payload, 'sharer_user_id', $attribution->sharer_user_id),
+            'actor_user_id' => Arr::get($payload, 'actor_user_id'),
             'metadata' => $metadata,
             'occurred_at' => Arr::get($payload, 'occurred_at', now()),
             'approved_at' => Arr::get($payload, 'approved_at'),

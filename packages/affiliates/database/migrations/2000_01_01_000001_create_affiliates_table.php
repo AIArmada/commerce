@@ -30,6 +30,8 @@ return new class extends Migration
             $table->string('default_voucher_code', 64)->nullable();
             $table->string('payout_terms')->nullable();
             $table->string('tracking_domain')->nullable();
+            $table->string('external_reference_type', 64)->nullable();
+            $table->string('external_reference', 160)->nullable();
             $table->nullableUuidMorphs('owner');
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampTz('activated_at')->nullable();
@@ -37,6 +39,7 @@ return new class extends Migration
             $table->timestampTz('paused_at')->nullable();
             $table->timestampsTz();
             $table->index(['status', 'activated_at'], 'affiliates_active_idx');
+            $table->unique(['external_reference_type', 'external_reference'], 'affiliates_external_ref_unique_idx');
         });
     }
 

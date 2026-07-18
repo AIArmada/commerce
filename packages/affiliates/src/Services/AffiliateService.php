@@ -156,33 +156,36 @@ final class AffiliateService
 
     public function detachFromCart(Cart $cart): void
     {
-        $cart->removeMetadata((string) config('affiliates.cart.metadata_key', 'affiliate'));
+        $attribution = $this->attachedAttribution($cart);
+
+        if ($attribution === null) {
+            return;
+        }
+
+        // Preserve attribution history while making the current cart attachment
+        // inactive for subsequent conversion resolution.
+        $attribution->expires_at = now();
+        $attribution->save();
     }
 
     public function getAttachedAffiliate(Cart $cart): ?AffiliateData
     {
-        $payload = $cart->getMetadata((string) config('affiliates.cart.metadata_key', 'affiliate'));
+        $attribution = $this->attachedAttribution($cart);
 
-        if (! is_array($payload)) {
-            return null;
-        }
+        return $attribution?->affiliate instanceof Affiliate
+            ? AffiliateData::fromModel($attribution->affiliate)
+            : null;
+    }
 
-        $affiliate = null;
-
-        if (isset($payload['affiliate_id'])) {
-            /** @var Affiliate|null $affiliate */
-            $affiliate = $this->query()->find($payload['affiliate_id']);
-        }
-
-        if (! $affiliate && isset($payload['affiliate_code'])) {
-            $affiliate = $this->findByCode((string) $payload['affiliate_code']);
-        }
-
-        if (! $affiliate) {
-            return null;
-        }
-
-        return AffiliateData::fromModel($affiliate);
+    public function attachedAttribution(Cart $cart): ?AffiliateAttribution
+    {
+        return AffiliateAttribution::query()
+            ->where('cart_identifier', $cart->getIdentifier())
+            ->where('cart_instance', $cart->instance())
+            ->active()
+            ->latest('last_seen_at')
+            ->latest('id')
+            ->first();
     }
 
     /**

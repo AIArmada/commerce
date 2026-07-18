@@ -232,13 +232,6 @@ final class CartIntegrationRegistrar
             return;
         }
 
-        $affiliateMetadata = $cart->getMetadata('affiliate') ?? [];
-        $affiliateId = $affiliateMetadata['affiliate_id'] ?? null;
-
-        if (! $affiliateId) {
-            return;
-        }
-
         /** @var AffiliateService $affiliateService */
         $affiliateService = $this->app->make(AffiliateService::class);
 
@@ -247,7 +240,7 @@ final class CartIntegrationRegistrar
 
         /** @var Cart $cart */
         $affiliateService->recordConversion($cart, [
-            'order_reference' => $this->extractOrderIdFromPayment($event),
+            'external_reference' => $this->extractOrderIdFromPayment($event),
             'total' => $amount,
             'commission_currency' => $currency,
             'metadata' => [

@@ -336,7 +336,7 @@ describe('AffiliateConversion Model', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'subject_identifier' => 'event:123',
+            'subject_key' => 'event:123',
             'subject_instance' => 'share',
             'external_reference' => 'REG-123',
             'conversion_type' => 'registration',
@@ -347,7 +347,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($conversion->subject_identifier)->toBe('event:123')
+        expect($conversion->subject_key)->toBe('event:123')
             ->and($conversion->subject_instance)->toBe('share')
             ->and($conversion->external_reference)->toBe('REG-123')
             ->and($conversion->conversion_type)->toBe('registration')

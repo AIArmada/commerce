@@ -118,7 +118,7 @@ it('conversion resource schemas use neutral reference fields', function (): void
 
     expect($infolistSource)
         ->toContain("TextEntry::make('external_reference')")
-        ->toContain("TextEntry::make('subject_identifier')")
+        ->toContain("TextEntry::make('subject_key')")
         ->toContain("Section::make('Cart Integration')")
         ->and($tableSource)
         ->toContain("TextColumn::make('external_reference')")

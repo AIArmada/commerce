@@ -9,58 +9,32 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAttribute;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Services\EventMetadataSyncService;
 
 final class EventAttributeObserver
 {
     public function __construct(
-        private readonly EventMetadataSyncService $sync,
         private readonly ?EventSearchIndexer $indexer = null,
     ) {}
 
     public function saved(EventAttribute $attribute): void
     {
-        if (! config('events.sync.attributes_to_metadata')) {
+        if (! config('events.sync.build_search_documents') || $this->indexer === null) {
             return;
         }
 
-        $targets = $this->resolveTargets($attribute);
-
-        if ($targets === []) {
-            return;
-        }
-
-        foreach ($targets as $target) {
-            $this->sync->syncAttribute($target);
-        }
-
-        if (config('events.sync.build_search_documents') && $this->indexer !== null) {
-            foreach ($targets as $target) {
-                $this->indexer->index($target);
-            }
+        foreach ($this->resolveTargets($attribute) as $target) {
+            $this->indexer->index($target);
         }
     }
 
     public function deleted(EventAttribute $attribute): void
     {
-        if (! config('events.sync.attributes_to_metadata')) {
+        if (! config('events.sync.build_search_documents') || $this->indexer === null) {
             return;
         }
 
-        $targets = $this->resolveTargets($attribute);
-
-        if ($targets === []) {
-            return;
-        }
-
-        foreach ($targets as $target) {
-            $this->sync->syncAttribute($target);
-        }
-
-        if (config('events.sync.build_search_documents') && $this->indexer !== null) {
-            foreach ($targets as $target) {
-                $this->indexer->index($target);
-            }
+        foreach ($this->resolveTargets($attribute) as $target) {
+            $this->indexer->index($target);
         }
     }
 

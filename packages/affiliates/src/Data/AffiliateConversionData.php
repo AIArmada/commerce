@@ -32,13 +32,18 @@ class AffiliateConversionData extends Data
 
     public readonly ?string $subjectType;
 
-    public readonly ?string $subjectIdentifier;
+    public readonly ?string $subjectKey;
 
     public readonly ?string $subjectInstance;
 
     public readonly ?string $subjectTitleSnapshot;
 
     public readonly ?string $voucherCode;
+
+    public readonly ?string $affiliateProgramId;
+
+    /** @var list<array<string, mixed>>|null */
+    public readonly ?array $uplineLevels;
 
     public readonly ?string $externalReference;
 
@@ -70,9 +75,11 @@ class AffiliateConversionData extends Data
         string $id,
         string $affiliateId,
         string $affiliateCode,
-        ?string $subjectIdentifier = null,
+        ?string $subjectKey = null,
         ?string $subjectInstance = null,
         ?string $voucherCode = null,
+        ?string $affiliateProgramId = null,
+        ?array $uplineLevels = null,
         ?string $externalReference = null,
         ?string $conversionType = null,
         int $subtotalMinor = 0,
@@ -91,10 +98,12 @@ class AffiliateConversionData extends Data
         $this->affiliateId = $affiliateId;
         $this->affiliateCode = $affiliateCode;
         $this->subjectType = $subjectType;
-        $this->subjectIdentifier = $subjectIdentifier;
+        $this->subjectKey = $subjectKey;
         $this->subjectInstance = $subjectInstance;
         $this->subjectTitleSnapshot = $subjectTitleSnapshot;
         $this->voucherCode = $voucherCode;
+        $this->affiliateProgramId = $affiliateProgramId;
+        $this->uplineLevels = $uplineLevels;
         $this->externalReference = $externalReference;
         $this->conversionType = $conversionType;
         $this->subtotalMinor = $subtotalMinor;
@@ -121,10 +130,12 @@ class AffiliateConversionData extends Data
             affiliateId: (string) $conversion->affiliate_id,
             affiliateCode: (string) $conversion->affiliate_code,
             subjectType: $conversion->subject_type,
-            subjectIdentifier: $conversion->subject_identifier,
+            subjectKey: $conversion->subject_key,
             subjectInstance: $conversion->subject_instance,
             subjectTitleSnapshot: $conversion->subject_title_snapshot,
             voucherCode: $conversion->voucher_code,
+            affiliateProgramId: $conversion->affiliate_program_id,
+            uplineLevels: $conversion->upline_levels,
             externalReference: $conversion->external_reference,
             subtotalMinor: (int) $conversion->subtotal_minor,
             valueMinor: (int) $conversion->value_minor,

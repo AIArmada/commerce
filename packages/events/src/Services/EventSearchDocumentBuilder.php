@@ -8,6 +8,7 @@ use AIArmada\Events\Contracts\EventSearchIndexer;
 use AIArmada\Events\Contracts\EventSearchPayloadResolver;
 use AIArmada\Events\Jobs\BuildEventSearchDocumentJob;
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventAttribute;
 use AIArmada\Events\Models\EventAudience;
 use AIArmada\Events\Models\EventClassification;
 use AIArmada\Events\Models\EventOccurrence;
@@ -252,7 +253,7 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
             return $target->summary;
         }
 
-        return $this->metadataString($target->metadata, 'summary');
+        return null;
     }
 
     private function resolveBodyForTarget(Event | EventOccurrence | EventSession $target): ?string
@@ -265,19 +266,17 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
             return $target->description;
         }
 
-        return $this->metadataString($target->metadata, 'description');
+        return null;
     }
 
     private function buildFacets(Event | EventOccurrence | EventSession $target): array
     {
-        $facets = $target->metadata ?? [];
+        $facets = $this->buildAttributeFacets($target);
 
         if (config('events.sync.audiences_to_facets')) {
             $audiences = $this->buildAudienceFacets($target);
 
-            if ($audiences === []) {
-                unset($facets['_audiences']);
-            } else {
+            if ($audiences !== []) {
                 $facets['_audiences'] = $audiences;
             }
         }
@@ -285,10 +284,33 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
         if (config('events.sync.classifications_to_facets')) {
             $classifications = $this->buildClassificationFacets($target);
 
-            if ($classifications === []) {
-                unset($facets['_classifications']);
-            } else {
+            if ($classifications !== []) {
                 $facets['_classifications'] = $classifications;
+            }
+        }
+
+        return $facets;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildAttributeFacets(Event | EventOccurrence | EventSession $target): array
+    {
+        $whitelist = config('events.attribute_sync.attribute_keys');
+
+        /** @var Collection<int, EventAttribute> $attributes */
+        $attributes = $this->attributeFacetQuery($target)
+            ->when($whitelist !== null, fn ($query) => $query->whereIn('attribute_key', $whitelist))
+            ->get(['attribute_key', 'attribute_value', 'attribute_value_json']);
+
+        $facets = [];
+
+        foreach ($attributes as $attribute) {
+            $value = $attribute->attribute_value_json ?? $attribute->attribute_value;
+
+            if ($value !== null) {
+                $facets[$attribute->attribute_key] = $value;
             }
         }
 
@@ -375,23 +397,27 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
         return $grouped;
     }
 
-    private function metadataString(mixed $metadata, string $key): ?string
-    {
-        if (! is_array($metadata)) {
-            return null;
-        }
-
-        $value = $metadata[$key] ?? null;
-
-        return is_string($value) ? $value : null;
-    }
-
     private function audienceFacetQuery(Event | EventOccurrence | EventSession $target): Builder
     {
         return match (true) {
             $target instanceof Event => EventAudience::where('event_id', $target->id),
             $target instanceof EventOccurrence => EventAudience::where('event_occurrence_id', $target->id),
             $target instanceof EventSession => EventAudience::where('event_session_id', $target->id),
+        };
+    }
+
+    /**
+     * @return Builder<EventAttribute>
+     */
+    private function attributeFacetQuery(Event | EventOccurrence | EventSession $target): Builder
+    {
+        return match (true) {
+            $target instanceof Event => EventAttribute::where('event_id', $target->id)
+                ->whereNull('event_occurrence_id')
+                ->whereNull('event_session_id'),
+            $target instanceof EventOccurrence => EventAttribute::where('event_occurrence_id', $target->id)
+                ->whereNull('event_session_id'),
+            $target instanceof EventSession => EventAttribute::where('event_session_id', $target->id),
         };
     }
 

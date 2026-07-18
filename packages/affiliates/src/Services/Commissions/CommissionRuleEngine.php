@@ -145,10 +145,8 @@ final class CommissionRuleEngine
         if ($programId) {
             $volumeQuery->where(function (Builder $query) use ($programId): void {
                 $query
-                    ->where('metadata->program_id', $programId)
-                    ->orWhereHas('attribution', function (Builder $attributionQuery) use ($programId): void {
-                        $attributionQuery->where('metadata->program_id', $programId);
-                    });
+                    ->whereHas('affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $programId))
+                    ->orWhereHas('attribution.affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $programId));
             });
         }
 

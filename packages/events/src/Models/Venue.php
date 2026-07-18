@@ -27,6 +27,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string $name
  * @property string $slug
  * @property string $venue_type
+ * @property string|null $description
  * @property string|null $line1
  * @property string|null $line2
  * @property string|null $city
@@ -68,7 +69,7 @@ class Venue extends Model implements HasMedia
 
     protected $fillable = [
         'parent_venue_id',
-        'name', 'slug', 'venue_type',
+        'name', 'slug', 'venue_type', 'description',
         'line1', 'line2',
         'city', 'state', 'postcode', 'country_code', 'country',
         'latitude', 'longitude',

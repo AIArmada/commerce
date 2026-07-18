@@ -99,7 +99,8 @@ final class TrackAffiliateVisit
             'affiliate_id' => $affiliate->getKey(),
             'affiliate_code' => $affiliate->code,
             'subject_type' => $subjectType,
-            'subject_identifier' => $context['subject_identifier'] ?? null,
+            'subject_key' => $context['subject_key'] ?? null,
+            'subject_id' => $context['subject_id'] ?? null,
             'subject_instance' => $context['subject_instance'] ?? 'default',
             'subject_title_snapshot' => $subjectTitleSnapshot,
             'cart_identifier' => $context['cart_identifier'] ?? null,
@@ -116,7 +117,14 @@ final class TrackAffiliateVisit
             'user_agent' => $context['user_agent'] ?? null,
             'ip_address' => $context['ip_address'] ?? null,
             'user_id' => $context['user_id'] ?? $this->resolveUserId(),
-            'metadata' => $context['metadata'] ?? [],
+            'visitor_key' => $context['visitor_key'] ?? null,
+            'channel' => $context['channel'] ?? null,
+            'origin' => $context['origin'] ?? null,
+            'affiliate_link_id' => $context['affiliate_link_id'] ?? null,
+            'attribution_type' => $context['attribution_type'] ?? null,
+            'sharer_user_id' => $context['sharer_user_id'] ?? null,
+            'fingerprint' => $this->resolveFingerprint($context),
+            'metadata' => $this->mergeMetadata($context),
             'owner_type' => $affiliate->owner_type,
             'owner_id' => $affiliate->owner_id,
             'expires_at' => $expiresAt,
@@ -274,7 +282,7 @@ final class TrackAffiliateVisit
 
         $query = AffiliateAttribution::query()
             ->where('affiliate_id', $affiliate->getKey())
-            ->where('metadata->fingerprint', $fingerprint)
+            ->where('fingerprint', $fingerprint)
             ->active();
 
         $this->applyOwnerScope($query);
@@ -307,5 +315,22 @@ final class TrackAffiliateVisit
         }
 
         return Str::limit($value, 200, '');
+    }
+
+    private function mergeMetadata(array $context): array
+    {
+        $metadata = $context['metadata'] ?? [];
+
+        if (! is_array($metadata)) {
+            return [];
+        }
+
+        return array_diff_key($metadata, array_flip([
+            'affiliate_id', 'affiliate_code', 'affiliate_attribution_id', 'affiliate_link_id',
+            'subject_type', 'subject_key', 'subject_id', 'subject_instance',
+            'subject_title_snapshot', 'voucher_code', 'source', 'medium', 'campaign',
+            'term', 'content', 'landing_url', 'referrer_url', 'user_agent', 'ip_address',
+            'user_id', 'visitor_key', 'channel', 'origin', 'sharer_user_id', 'fingerprint',
+        ]));
     }
 }

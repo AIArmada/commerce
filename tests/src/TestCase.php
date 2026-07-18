@@ -406,13 +406,8 @@ abstract class TestCase extends Orchestra
         // Events integrations — these fail when class_exists() evaluates before the service provider loads
         $app['config']->set('events.integrations.order_model', Order::class);
         $app['config']->set('events.integrations.order_item_model', OrderItem::class);
-        // Events sync config — not merged by provider when config is cached
-        $app['config']->set('events.sync.attributes_to_metadata', true);
-        $app['config']->set('events.sync.audiences_to_metadata', true);
-        $app['config']->set('events.sync.time_expressions_to_metadata', true);
         $app['config']->set('events.sync.classifications_to_facets', true);
         $app['config']->set('events.sync.audiences_to_facets', true);
-        $app['config']->set('events.attribute_sync.always_rebuild', true);
         // Docs config — not merged by provider when config is cached
         $app['config']->set('docs.database.table_prefix', '');
         $app['config']->set('docs.database.tables.doc_templates', 'doc_templates');

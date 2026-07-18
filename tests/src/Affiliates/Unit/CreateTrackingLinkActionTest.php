@@ -28,7 +28,7 @@ test('it preserves a caller supplied tracking url for precomputed link schemes',
             'tracking_url' => 'https://ilmu360.test/majlis/ramadan',
             'custom_slug' => 'ramadan-share-token',
             'subject_type' => 'event',
-            'subject_identifier' => 'event:ramadan',
+            'subject_key' => 'event:ramadan',
         ],
     );
 
@@ -42,9 +42,9 @@ test('it records an attributed outcome without requiring a cart', function (): v
         'affiliate_id' => $this->affiliate->getKey(),
         'affiliate_code' => $this->affiliate->code,
         'subject_type' => 'event',
-        'subject_identifier' => 'event:ramadan',
+        'subject_key' => 'event:ramadan',
+        'subject_id' => 'event-id',
         'subject_instance' => 'web',
-        'metadata' => ['subject_id' => 'event-id'],
     ]);
 
     $conversion = app(RecordAffiliateOutcome::class)->handle(
@@ -53,7 +53,7 @@ test('it records an attributed outcome without requiring a cart', function (): v
         externalReference: 'event-checkin:1',
         payload: [
             'status' => ApprovedConversion::class,
-            'metadata' => ['subject_id' => 'event-id'],
+            'subject_id' => 'event-id',
             'dispatch_event' => false,
         ],
     );

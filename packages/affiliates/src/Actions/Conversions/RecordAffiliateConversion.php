@@ -19,6 +19,7 @@ use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Stringable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -38,19 +39,12 @@ final class RecordAffiliateConversion
 
     public function handle(Cart $cart, array $payload = []): ?AffiliateConversionData
     {
-        $metadata = $this->readCartMetadata($cart);
-
-        if (! $metadata) {
-            return null;
-        }
-
-        $affiliate = $this->resolveAffiliateFromMetadata($metadata);
+        $attribution = $this->resolveAttribution($cart, $payload);
+        $affiliate = $this->resolveAffiliate($payload, $attribution);
 
         if (! $affiliate) {
             return null;
         }
-
-        $attribution = $this->resolveAttributionFromMetadata($metadata);
 
         $subtotalMinor = $this->resolveMinorAmount($payload['subtotal'] ?? null, fn () => $cart->subtotal()->getAmount());
         $totalMinor = $this->resolveMinorAmount($payload['total'] ?? null, fn () => $cart->total()->getAmount());
@@ -58,8 +52,8 @@ final class RecordAffiliateConversion
         $commissionMinor = $this->resolveCommission(
             $affiliate,
             $subtotalMinor ?? $totalMinor ?? 0,
-            $metadata,
             $payload,
+            $attribution,
         );
 
         $status = config('affiliates.commissions.default_status', PendingConversion::value());
@@ -86,25 +80,24 @@ final class RecordAffiliateConversion
             $conversionMetadata = $this->buildConversionMetadata(
                 $payload['metadata'] ?? [],
                 $weight,
-                $payload['subject_type'] ?? $attribution?->subject_type ?? ($metadata['subject_type'] ?? null),
-                $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot ?? ($metadata['subject_title_snapshot'] ?? null),
+                $payload['subject_type'] ?? $attribution?->subject_type,
+                $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot,
             );
-
-            if (isset($metadata['upline_levels'])) {
-                $conversionMetadata['upline_levels'] = $metadata['upline_levels'];
-            }
-
-            $wasCreated = false;
 
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $beneficiary?->getKey() ?? $affiliateId,
                 'affiliate_code' => $beneficiary?->code ?? $affiliate->code,
                 'affiliate_attribution_id' => $attribution?->getKey(),
-                'subject_type' => $payload['subject_type'] ?? $attribution?->subject_type ?? ($metadata['subject_type'] ?? null),
-                'subject_identifier' => $attribution?->subject_identifier ?? $cart->getIdentifier(),
-                'subject_instance' => $attribution?->subject_instance ?? $cart->instance(),
-                'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot ?? ($metadata['subject_title_snapshot'] ?? null),
-                'voucher_code' => $metadata['voucher_code'] ?? null,
+                'affiliate_link_id' => $payload['affiliate_link_id'] ?? $attribution?->affiliate_link_id,
+                'affiliate_program_id' => $payload['affiliate_program_id'] ?? $attribution?->affiliate_program_id,
+                'subject_type' => $payload['subject_type'] ?? $attribution?->subject_type,
+                'subject_key' => $payload['subject_key'] ?? $attribution?->subject_key ?? $cart->getIdentifier(),
+                'subject_id' => $payload['subject_id'] ?? $attribution?->subject_id,
+                'subject_instance' => $payload['subject_instance'] ?? $attribution?->subject_instance ?? $cart->instance(),
+                'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot,
+                'voucher_code' => $payload['voucher_code'] ?? $attribution?->voucher_code,
+                'commission_override' => $payload['commission_override'] ?? $attribution?->commission_override,
+                'upline_levels' => $payload['upline_levels'] ?? $attribution?->upline_levels,
                 'external_reference' => $payload['external_reference'] ?? null,
                 'conversion_type' => $payload['conversion_type'] ?? 'purchase',
                 'subtotal_minor' => $subtotalMinor ?? 0,
@@ -112,7 +105,10 @@ final class RecordAffiliateConversion
                 'commission_minor' => $portionCommission,
                 'commission_currency' => $payload['commission_currency'] ?? $affiliate->currency,
                 'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
-                'channel' => $payload['channel'] ?? null,
+                'channel' => $payload['channel'] ?? $attribution?->channel,
+                'origin' => $payload['origin'] ?? $attribution?->origin,
+                'sharer_user_id' => $payload['sharer_user_id'] ?? $attribution?->sharer_user_id,
+                'actor_user_id' => $payload['actor_user_id'] ?? null,
                 'metadata' => $conversionMetadata,
                 'owner_type' => $beneficiary?->owner_type ?? $affiliate->owner_type,
                 'owner_id' => $beneficiary?->owner_id ?? $affiliate->owner_id,
@@ -139,19 +135,23 @@ final class RecordAffiliateConversion
         return $conversions[0];
     }
 
-    private function resolveCommission(Affiliate $affiliate, int $baseAmount, array $metadata, array $payload): int
-    {
+    private function resolveCommission(
+        Affiliate $affiliate,
+        int $baseAmount,
+        array $payload,
+        ?AffiliateAttribution $attribution,
+    ): int {
         if (isset($payload['commission'])) {
             return $this->resolveMinorAmount($payload['commission'], fn () => 0);
         }
 
-        $voucherOverride = $metadata['commission_override'] ?? null;
+        $voucherOverride = $payload['commission_override'] ?? $attribution?->commission_override;
 
         if (is_array($voucherOverride) && isset($voucherOverride['type'], $voucherOverride['value'])) {
             return $this->calculateVoucherCommission($voucherOverride, $baseAmount);
         }
 
-        $programId = $metadata['affiliate_program_id'] ?? null;
+        $programId = $payload['affiliate_program_id'] ?? $attribution?->affiliate_program_id;
 
         if ($programId) {
             $result = $this->ruleEngine->calculate($affiliate, $baseAmount, [
@@ -189,32 +189,48 @@ final class RecordAffiliateConversion
         return $query->find($affiliateId);
     }
 
-    private function readCartMetadata(Cart $cart): ?array
+    private function resolveAttribution(Cart $cart, array $payload): ?AffiliateAttribution
     {
-        $metadata = $cart->getMetadata($this->metadataKey());
+        $attributionId = $payload['affiliate_attribution_id'] ?? null;
 
-        return is_array($metadata) ? $metadata : null;
+        $query = AffiliateAttribution::query()->active();
+
+        if ($attributionId !== null) {
+            $query->whereKey($attributionId);
+        } else {
+            $query
+                ->where('cart_identifier', $cart->getIdentifier())
+                ->where('cart_instance', $cart->instance())
+                ->latest('last_seen_at')
+                ->latest('id');
+        }
+
+        if (config('affiliates.owner.enabled', false)) {
+            $query->forOwner(includeGlobal: true);
+        }
+
+        return $query->first();
     }
 
-    private function resolveAffiliateFromMetadata(array $metadata): ?Affiliate
+    private function resolveAffiliate(array $payload, ?AffiliateAttribution $attribution): ?Affiliate
     {
-        if (isset($metadata['affiliate_id'])) {
+        if (isset($payload['affiliate_id'])) {
             $query = Affiliate::query();
 
             if (config('affiliates.owner.enabled', false)) {
                 $query->forOwner(includeGlobal: true);
             }
 
-            $affiliate = $query->find($metadata['affiliate_id']);
+            $affiliate = $query->find($payload['affiliate_id']);
 
             if ($affiliate instanceof Affiliate) {
                 return $affiliate;
             }
         }
 
-        if (isset($metadata['affiliate_code'])) {
+        if (isset($payload['affiliate_code'])) {
             $query = Affiliate::query()
-                ->where('code', $metadata['affiliate_code']);
+                ->where('code', $payload['affiliate_code']);
 
             if (config('affiliates.owner.enabled', false)) {
                 $query->forOwner(includeGlobal: true);
@@ -223,23 +239,7 @@ final class RecordAffiliateConversion
             return $query->first();
         }
 
-        return null;
-    }
-
-    private function resolveAttributionFromMetadata(array $metadata): ?AffiliateAttribution
-    {
-        if (! isset($metadata['attribution_id'])) {
-            return null;
-        }
-
-        $query = AffiliateAttribution::query()
-            ->whereKey($metadata['attribution_id']);
-
-        if (config('affiliates.owner.enabled', false)) {
-            $query->forOwner(includeGlobal: true);
-        }
-
-        return $query->first();
+        return $attribution?->affiliate;
     }
 
     private function resolveMinorAmount(mixed $value, callable $fallback): ?int
@@ -267,22 +267,16 @@ final class RecordAffiliateConversion
 
     private function buildConversionMetadata(array $metadata, float $weight, ?string $subjectType, ?string $subjectTitleSnapshot): array
     {
+        $metadata = Arr::except($metadata, [
+            'affiliate_id', 'affiliate_code', 'affiliate_attribution_id', 'affiliate_link_id',
+            'subject_type', 'subject_key', 'subject_id', 'subject_instance',
+            'subject_title_snapshot', 'voucher_code', 'channel', 'origin',
+            'sharer_user_id', 'actor_user_id', 'external_reference', 'conversion_type',
+            'affiliate_program_id', 'commission_override', 'upline_levels', 'program_id', 'cart_identifier', 'cart_instance',
+        ]);
         $metadata['weight'] = $weight;
 
-        if ($subjectType && ! isset($metadata['subject_type'])) {
-            $metadata['subject_type'] = $subjectType;
-        }
-
-        if ($subjectTitleSnapshot && ! isset($metadata['subject_title_snapshot'])) {
-            $metadata['subject_title_snapshot'] = $subjectTitleSnapshot;
-        }
-
         return $metadata;
-    }
-
-    private function metadataKey(): string
-    {
-        return (string) config('affiliates.cart.metadata_key', 'affiliate');
     }
 
     private function shouldDispatch(string $flag): bool

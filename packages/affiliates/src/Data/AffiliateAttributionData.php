@@ -26,7 +26,7 @@ class AffiliateAttributionData extends Data
 
     public readonly ?string $subjectType;
 
-    public readonly ?string $subjectIdentifier;
+    public readonly ?string $subjectKey;
 
     public readonly string $subjectInstance;
 
@@ -39,6 +39,14 @@ class AffiliateAttributionData extends Data
     public readonly ?string $cookieValue;
 
     public readonly ?string $voucherCode;
+
+    public readonly ?string $affiliateProgramId;
+
+    /** @var array<string, mixed>|null */
+    public readonly ?array $commissionOverride;
+
+    /** @var list<array<string, mixed>>|null */
+    public readonly ?array $uplineLevels;
 
     public readonly ?string $source;
 
@@ -64,12 +72,15 @@ class AffiliateAttributionData extends Data
         string $id,
         string $affiliateId,
         string $affiliateCode,
-        ?string $subjectIdentifier = null,
+        ?string $subjectKey = null,
         ?string $subjectInstance = null,
         ?string $cartIdentifier = null,
         string $cartInstance = 'default',
         ?string $cookieValue = null,
         ?string $voucherCode = null,
+        ?string $affiliateProgramId = null,
+        ?array $commissionOverride = null,
+        ?array $uplineLevels = null,
         ?string $source = null,
         ?string $medium = null,
         ?string $campaign = null,
@@ -80,20 +91,23 @@ class AffiliateAttributionData extends Data
         ?string $subjectType = null,
         ?string $subjectTitleSnapshot = null,
     ) {
-        $resolvedSubjectIdentifier = $subjectIdentifier ?? $cartIdentifier;
+        $resolvedSubjectIdentifier = $subjectKey ?? $cartIdentifier;
         $resolvedSubjectInstance = $subjectInstance ?? $cartInstance;
 
         $this->id = $id;
         $this->affiliateId = $affiliateId;
         $this->affiliateCode = $affiliateCode;
         $this->subjectType = $subjectType;
-        $this->subjectIdentifier = $resolvedSubjectIdentifier;
+        $this->subjectKey = $resolvedSubjectIdentifier;
         $this->subjectInstance = $resolvedSubjectInstance;
         $this->subjectTitleSnapshot = $subjectTitleSnapshot;
         $this->cartIdentifier = $cartIdentifier ?? $resolvedSubjectIdentifier;
         $this->cartInstance = $cartInstance !== 'default' || $subjectInstance === null ? $cartInstance : $resolvedSubjectInstance;
         $this->cookieValue = $cookieValue;
         $this->voucherCode = $voucherCode;
+        $this->affiliateProgramId = $affiliateProgramId;
+        $this->commissionOverride = $commissionOverride;
+        $this->uplineLevels = $uplineLevels;
         $this->source = $source;
         $this->medium = $medium;
         $this->campaign = $campaign;
@@ -110,13 +124,16 @@ class AffiliateAttributionData extends Data
             affiliateId: (string) $attribution->affiliate_id,
             affiliateCode: (string) $attribution->affiliate_code,
             subjectType: $attribution->subject_type,
-            subjectIdentifier: $attribution->subject_identifier,
+            subjectKey: $attribution->subject_key,
             subjectInstance: $attribution->subject_instance,
             subjectTitleSnapshot: $attribution->subject_title_snapshot,
             cartIdentifier: $attribution->cart_identifier,
             cartInstance: (string) $attribution->cart_instance,
             cookieValue: $attribution->cookie_value,
             voucherCode: $attribution->voucher_code,
+            affiliateProgramId: $attribution->affiliate_program_id,
+            commissionOverride: $attribution->commission_override,
+            uplineLevels: $attribution->upline_levels,
             source: $attribution->source,
             medium: $attribution->medium,
             campaign: $attribution->campaign,

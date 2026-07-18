@@ -80,10 +80,6 @@ final class AttachAffiliateToCart
         $this->recordTouchpoint($attribution, $affiliate, $payload);
         $this->pruneAttributionOverflow($identifier, $instance, $affiliate->owner_type, $affiliate->owner_id);
 
-        if (config('affiliates.cart.persist_metadata', true)) {
-            $this->persistCartMetadata($cart, $affiliate, $attribution, $context);
-        }
-
         if ($this->shouldDispatch('dispatch_attributed')) {
             $this->events?->dispatch(
                 new AffiliateAttributed(
@@ -113,11 +109,12 @@ final class AttachAffiliateToCart
 
         $cartIdentifier = $cart?->getIdentifier() ?? ($context['cart_identifier'] ?? null);
         $cartInstance = $cart?->instance() ?? ($context['cart_instance'] ?? null);
-        $subjectType = $context['subject_type'] ?? Arr::get($context, 'metadata.subject_type');
-        $subjectIdentifier = $context['subject_identifier'] ?? $cartIdentifier;
+        $subjectType = $context['subject_type'] ?? null;
+        $subjectKey = $context['subject_key'] ?? $cartIdentifier;
+        $subjectId = $context['subject_id'] ?? null;
         $subjectInstance = $context['subject_instance'] ?? $cartInstance;
         $subjectTitleSnapshot = $this->normalizeSubjectTitleSnapshot(
-            $context['subject_title_snapshot'] ?? Arr::get($context, 'metadata.subject_title_snapshot')
+            $context['subject_title_snapshot'] ?? null
         );
 
         if (! $cartInstance && $cart) {
@@ -132,13 +129,24 @@ final class AttachAffiliateToCart
             'affiliate_id' => $affiliate->getKey(),
             'affiliate_code' => $affiliate->code,
             'subject_type' => $subjectType,
-            'subject_identifier' => $subjectIdentifier,
+            'subject_key' => $subjectKey,
+            'subject_id' => $subjectId,
             'subject_instance' => $subjectInstance,
             'subject_title_snapshot' => $subjectTitleSnapshot,
             'cart_identifier' => $cartIdentifier,
             'cart_instance' => $cartInstance,
+            'affiliate_link_id' => $context['affiliate_link_id'] ?? null,
+            'affiliate_program_id' => $context['affiliate_program_id'] ?? null,
+            'attribution_type' => $context['attribution_type'] ?? null,
+            'visitor_key' => $context['visitor_key'] ?? null,
+            'channel' => $context['channel'] ?? null,
+            'origin' => $context['origin'] ?? null,
+            'sharer_user_id' => $context['sharer_user_id'] ?? null,
+            'fingerprint' => $context['fingerprint'] ?? null,
             'cookie_value' => $context['cookie_value'] ?? null,
-            'voucher_code' => $context['voucher_code'] ?? Arr::get($context, 'metadata.voucher_code'),
+            'voucher_code' => $context['voucher_code'] ?? null,
+            'commission_override' => $context['commission_override'] ?? null,
+            'upline_levels' => $context['upline_levels'] ?? null,
             'source' => $context['source'] ?? $context['utm_source'] ?? null,
             'medium' => $context['medium'] ?? $context['utm_medium'] ?? null,
             'campaign' => $context['campaign'] ?? $context['utm_campaign'] ?? null,
@@ -166,9 +174,14 @@ final class AttachAffiliateToCart
             'affiliate_id' => $affiliate->getKey(),
             'affiliate_code' => $affiliate->code,
             'subject_type' => $payload['subject_type'] ?? $attribution->subject_type,
-            'subject_identifier' => $payload['subject_identifier'] ?? $attribution->subject_identifier,
+            'subject_key' => $payload['subject_key'] ?? $attribution->subject_key,
+            'subject_id' => $payload['subject_id'] ?? $attribution->subject_id,
             'subject_instance' => $payload['subject_instance'] ?? $attribution->subject_instance,
             'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution->subject_title_snapshot,
+            'affiliate_link_id' => $payload['affiliate_link_id'] ?? $attribution->affiliate_link_id,
+            'visitor_key' => $payload['visitor_key'] ?? $attribution->visitor_key,
+            'channel' => $payload['channel'] ?? $attribution->channel,
+            'origin' => $payload['origin'] ?? $attribution->origin,
             'source' => $payload['source'] ?? null,
             'medium' => $payload['medium'] ?? null,
             'campaign' => $payload['campaign'] ?? null,
@@ -177,12 +190,6 @@ final class AttachAffiliateToCart
             'owner_type' => $attribution->owner_type ?? $affiliate->owner_type,
             'owner_id' => $attribution->owner_id ?? $affiliate->owner_id,
             'metadata' => [
-                'subject_type' => $payload['subject_type'] ?? $attribution->subject_type,
-                'subject_identifier' => $attribution->subject_identifier,
-                'subject_instance' => $attribution->subject_instance,
-                'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution->subject_title_snapshot,
-                'cart_identifier' => $attribution->cart_identifier,
-                'cart_instance' => $attribution->cart_instance,
                 'utm' => [
                     'source' => $payload['source'] ?? null,
                     'medium' => $payload['medium'] ?? null,
@@ -193,38 +200,6 @@ final class AttachAffiliateToCart
             ],
             'touched_at' => now(),
         ]);
-    }
-
-    private function persistCartMetadata(Cart $cart, Affiliate $affiliate, AffiliateAttribution $attribution, array $context = []): void
-    {
-        $data = [
-            'affiliate_id' => $affiliate->getKey(),
-            'affiliate_code' => $affiliate->code,
-            'attribution_id' => $attribution->getKey(),
-            'subject_type' => $attribution->subject_type,
-            'subject_identifier' => $attribution->subject_identifier,
-            'subject_instance' => $attribution->subject_instance,
-            'subject_title_snapshot' => $attribution->subject_title_snapshot,
-            'cookie_value' => $attribution->cookie_value,
-            'voucher_code' => $attribution->voucher_code,
-            'source' => $attribution->source,
-            'campaign' => $attribution->campaign,
-            'attached_at' => now()->toIso8601String(),
-        ];
-
-        if (! empty($context['commission_override'])) {
-            $data['commission_override'] = $context['commission_override'];
-        }
-
-        if (! empty($context['affiliate_program_id'])) {
-            $data['affiliate_program_id'] = $context['affiliate_program_id'];
-        }
-
-        if (! empty($context['upline_levels'])) {
-            $data['upline_levels'] = $context['upline_levels'];
-        }
-
-        $cart->setMetadata($this->metadataKey(), $data);
     }
 
     private function fillAttribution(AffiliateAttribution $attribution, array $payload): void
@@ -382,18 +357,12 @@ final class AttachAffiliateToCart
     {
         $metadata = $context['metadata'] ?? Arr::only($context, ['coupon', 'notes', 'utm']);
 
-        $subjectType = $context['subject_type'] ?? null;
-        $subjectTitleSnapshot = $this->normalizeSubjectTitleSnapshot($context['subject_title_snapshot'] ?? null);
-
-        if ($subjectType && ! isset($metadata['subject_type'])) {
-            $metadata['subject_type'] = $subjectType;
-        }
-
-        if ($subjectTitleSnapshot && ! isset($metadata['subject_title_snapshot'])) {
-            $metadata['subject_title_snapshot'] = $subjectTitleSnapshot;
-        }
-
-        return $metadata;
+        return Arr::except($metadata, [
+            'affiliate_id', 'affiliate_code', 'affiliate_attribution_id',
+            'subject_type', 'subject_key', 'subject_id', 'subject_instance',
+            'subject_title_snapshot', 'origin', 'voucher_code', 'program_id',
+            'affiliate_program_id', 'commission_override', 'upline_levels',
+        ]);
     }
 
     private function normalizeSubjectTitleSnapshot(mixed $value): ?string
@@ -403,11 +372,6 @@ final class AttachAffiliateToCart
         }
 
         return Str::limit($value, 200, '');
-    }
-
-    private function metadataKey(): string
-    {
-        return (string) config('affiliates.cart.metadata_key', 'affiliate');
     }
 
     private function shouldDispatch(string $flag): bool

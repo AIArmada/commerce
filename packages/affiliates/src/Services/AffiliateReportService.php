@@ -108,13 +108,14 @@ final class AffiliateReportService
         $conversions = AffiliateConversion::query()
             ->forOwner()
             ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->get(['metadata']);
+            ->with('attribution:id,source,campaign')
+            ->get();
 
         return $this->aggregateUtm($conversions);
     }
 
     /**
-     * @return array<int, array{subject_type: string, subject_identifier: string, subject_title_snapshot: string|null, visits: int, attributions: int, conversions: int, revenue_minor: int, commission_minor: int}>
+     * @return array<int, array{subject_type: string, subject_key: string, subject_title_snapshot: string|null, visits: int, attributions: int, conversions: int, revenue_minor: int, commission_minor: int}>
      */
     public function getTopSubjects(CarbonInterface $startDate, CarbonInterface $endDate, int $limit = 10): array
     {
@@ -124,18 +125,18 @@ final class AffiliateReportService
             ->forOwner()
             ->whereBetween('touched_at', [$startDate, $endDate])
             ->whereNotNull('subject_type')
-            ->whereNotNull('subject_identifier')
+            ->whereNotNull('subject_key')
             ->toBase()
-            ->selectRaw('subject_type, subject_identifier, MAX(subject_title_snapshot) as subject_title_snapshot, COUNT(*) as visits')
-            ->groupBy('subject_type', 'subject_identifier')
+            ->selectRaw('subject_type, subject_key, MAX(subject_title_snapshot) as subject_title_snapshot, COUNT(*) as visits')
+            ->groupBy('subject_type', 'subject_key')
             ->get();
 
         foreach ($visitRows as $row) {
-            $key = $this->subjectKey((string) $row->subject_type, (string) $row->subject_identifier);
+            $key = $this->subjectKey((string) $row->subject_type, (string) $row->subject_key);
 
             $subjects[$key] = [
                 'subject_type' => (string) $row->subject_type,
-                'subject_identifier' => (string) $row->subject_identifier,
+                'subject_key' => (string) $row->subject_key,
                 'subject_title_snapshot' => $this->nullableString($row->subject_title_snapshot),
                 'visits' => (int) $row->visits,
                 'attributions' => 0,
@@ -151,18 +152,18 @@ final class AffiliateReportService
             $endDate,
         )
             ->whereNotNull('subject_type')
-            ->whereNotNull('subject_identifier')
+            ->whereNotNull('subject_key')
             ->toBase()
-            ->selectRaw('subject_type, subject_identifier, MAX(subject_title_snapshot) as subject_title_snapshot, COUNT(*) as attributions')
-            ->groupBy('subject_type', 'subject_identifier')
+            ->selectRaw('subject_type, subject_key, MAX(subject_title_snapshot) as subject_title_snapshot, COUNT(*) as attributions')
+            ->groupBy('subject_type', 'subject_key')
             ->get();
 
         foreach ($attributionRows as $row) {
-            $key = $this->subjectKey((string) $row->subject_type, (string) $row->subject_identifier);
+            $key = $this->subjectKey((string) $row->subject_type, (string) $row->subject_key);
 
             $subjects[$key] ??= [
                 'subject_type' => (string) $row->subject_type,
-                'subject_identifier' => (string) $row->subject_identifier,
+                'subject_key' => (string) $row->subject_key,
                 'subject_title_snapshot' => $this->nullableString($row->subject_title_snapshot),
                 'visits' => 0,
                 'attributions' => 0,
@@ -179,21 +180,21 @@ final class AffiliateReportService
             ->forOwner()
             ->whereBetween('occurred_at', [$startDate, $endDate])
             ->whereNotNull('subject_type')
-            ->whereNotNull('subject_identifier')
+            ->whereNotNull('subject_key')
             ->toBase()
             ->selectRaw(sprintf(
-                'subject_type, subject_identifier, MAX(subject_title_snapshot) as subject_title_snapshot, COUNT(*) as conversions, SUM(%s) as revenue_minor, SUM(commission_minor) as commission_minor',
+                'subject_type, subject_key, MAX(subject_title_snapshot) as subject_title_snapshot, COUNT(*) as conversions, SUM(%s) as revenue_minor, SUM(commission_minor) as commission_minor',
                 $this->revenueMinorExpression(),
             ))
-            ->groupBy('subject_type', 'subject_identifier')
+            ->groupBy('subject_type', 'subject_key')
             ->get();
 
         foreach ($conversionRows as $row) {
-            $key = $this->subjectKey((string) $row->subject_type, (string) $row->subject_identifier);
+            $key = $this->subjectKey((string) $row->subject_type, (string) $row->subject_key);
 
             $subjects[$key] ??= [
                 'subject_type' => (string) $row->subject_type,
-                'subject_identifier' => (string) $row->subject_identifier,
+                'subject_key' => (string) $row->subject_key,
                 'subject_title_snapshot' => $this->nullableString($row->subject_title_snapshot),
                 'visits' => 0,
                 'attributions' => 0,
@@ -233,7 +234,8 @@ final class AffiliateReportService
         $conversions = AffiliateConversion::query()
             ->forOwner()
             ->where('affiliate_id', $affiliateId)
-            ->get(['commission_minor', 'value_minor', 'metadata']);
+            ->with('attribution:id,source,campaign')
+            ->get();
 
         $totalCommission = (int) $conversions->sum('commission_minor');
         $totalRevenue = $this->sumRevenueMinor($conversions);
@@ -280,8 +282,8 @@ final class AffiliateReportService
         $campaigns = [];
 
         foreach ($conversions as $conversion) {
-            $source = $conversion->metadata['source'] ?? null;
-            $campaign = $conversion->metadata['campaign'] ?? null;
+            $source = $conversion->attribution?->source;
+            $campaign = $conversion->attribution?->campaign;
 
             if ($source) {
                 $sources[$source] = ($sources[$source] ?? 0) + 1;
@@ -332,9 +334,9 @@ final class AffiliateReportService
         return 'COALESCE(value_minor, 0)';
     }
 
-    private function subjectKey(string $subjectType, string $subjectIdentifier): string
+    private function subjectKey(string $subjectType, string $subjectKey): string
     {
-        return $subjectType . '|' . $subjectIdentifier;
+        return $subjectType . '|' . $subjectKey;
     }
 
     private function nullableString(mixed $value): ?string

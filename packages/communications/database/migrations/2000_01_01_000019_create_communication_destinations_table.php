@@ -24,6 +24,12 @@ return new class extends Migration
             $table->boolean('is_primary')->default(false);
             $table->timestampTz('verified_at')->nullable();
             $table->{$jsonType}('metadata')->nullable();
+            $table->string('platform', 32)->nullable()->index();
+            $table->string('app_version', 50)->nullable();
+            $table->string('device_label', 255)->nullable();
+            $table->string('locale', 16)->nullable();
+            $table->string('timezone', 64)->nullable();
+            $table->timestampTz('last_seen_at')->nullable()->index();
             $table->timestampsTz();
 
             $table->index(['recipient_type', 'recipient_id']);

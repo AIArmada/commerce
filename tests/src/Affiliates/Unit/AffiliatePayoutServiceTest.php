@@ -72,6 +72,7 @@ test('multi level payouts create upline conversions', function (): void {
     ]);
 
     Cart::attachAffiliate($child->code);
+    expect($child->parent?->getKey())->toBe($parent->getKey());
 
     app(AffiliateService::class)->recordConversion(app('cart')->getCurrentCart(), [
         'order_reference' => 'SO-MLM',
@@ -79,7 +80,6 @@ test('multi level payouts create upline conversions', function (): void {
     ]);
 
     $upline = AffiliateConversion::where('affiliate_id', $parent->getKey())->first();
-
     expect($upline)->not()->toBeNull()
         ->and($upline->commission_minor)->toBe(5);
 });

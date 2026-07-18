@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Affiliates\Unit\Services;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\CohortAnalyzer;
 use AIArmada\Affiliates\States\Active;
@@ -325,7 +326,7 @@ test('compareCohorts handles empty data', function (): void {
         ->and($comparison['trend'])->toBe('no_data');
 });
 
-test('analyzeBySource groups by metadata source', function (): void {
+test('analyzeBySource groups by canonical attribution source', function (): void {
     $googleAff = Affiliate::create([
         'code' => 'SRC_GOOGLE',
         'name' => 'Google Aff',
@@ -334,7 +335,6 @@ test('analyzeBySource groups by metadata source', function (): void {
         'commission_rate' => 1000,
         'currency' => 'USD',
         'created_at' => '2024-01-10',
-        'metadata' => ['source' => 'google_ads'],
     ]);
 
     $directAff = Affiliate::create([
@@ -348,8 +348,16 @@ test('analyzeBySource groups by metadata source', function (): void {
         // No metadata or explicit direct
     ]);
 
+    $googleAttribution = AffiliateAttribution::create([
+        'affiliate_id' => $googleAff->id,
+        'affiliate_code' => $googleAff->code,
+        'source' => 'google_ads',
+        'cart_instance' => 'default',
+    ]);
+
     AffiliateConversion::create([
         'affiliate_id' => $googleAff->id,
+        'affiliate_attribution_id' => $googleAttribution->id,
         'affiliate_code' => $googleAff->code,
         'external_reference' => 'SRC_O1',
         'occurred_at' => '2024-01-15',
@@ -366,8 +374,7 @@ test('analyzeBySource groups by metadata source', function (): void {
         Carbon::parse('2024-01-31')
     );
 
-    // Direct affiliates often default to 'direct' if source is missing in JSON extraction logic
-    // "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.source')), 'direct')"
+    // Affiliates without a canonical attribution source default to direct.
 
     expect($results)->toHaveKey('google_ads')
         ->and($results)->toHaveKey('direct');
@@ -385,11 +392,18 @@ test('analyzeBySource uses value_minor', function (): void {
         'commission_rate' => 1000,
         'currency' => 'USD',
         'created_at' => '2024-01-10',
-        'metadata' => ['source' => 'legacy_feed'],
+    ]);
+
+    $legacyAttribution = AffiliateAttribution::create([
+        'affiliate_id' => $legacyAffiliate->id,
+        'affiliate_code' => $legacyAffiliate->code,
+        'source' => 'legacy_feed',
+        'cart_instance' => 'default',
     ]);
 
     AffiliateConversion::create([
         'affiliate_id' => $legacyAffiliate->id,
+        'affiliate_attribution_id' => $legacyAttribution->id,
         'affiliate_code' => $legacyAffiliate->code,
         'external_reference' => 'SRC-LEGACY-001',
         'occurred_at' => '2024-01-15',

@@ -5,6 +5,7 @@ use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Models\EventSubmission;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -26,6 +27,7 @@ return [
         'event' => Event::class,
         'registration' => EventRegistration::class,
         'attendance' => EventAttendance::class,
+        'submission' => EventSubmission::class,
     ],
 
     /* Database */
@@ -156,20 +158,15 @@ return [
     'schedule' => ['resolver' => null],
 
     'sync' => [
-        'attributes_to_metadata' => env('EVENTS_SYNC_ATTRIBUTES_TO_METADATA', true),
-        'audiences_to_metadata' => env('EVENTS_SYNC_AUDIENCES_TO_METADATA', true),
-        'time_expressions_to_metadata' => env('EVENTS_SYNC_TIME_EXPRESSIONS_TO_METADATA', true),
         'classifications_to_facets' => env('EVENTS_SYNC_CLASSIFICATIONS_TO_FACETS', true),
         'audiences_to_facets' => env('EVENTS_SYNC_AUDIENCES_TO_FACETS', true),
         'build_search_documents' => env('EVENTS_SYNC_BUILD_SEARCH_DOCUMENTS', false),
     ],
 
     'attribute_sync' => [
-        // null = sync all; array = only these keys/types/codes
         'attribute_keys' => null,
         'audience_types' => null,
         'taxonomy_codes' => null,
-        'always_rebuild' => env('EVENTS_ATTRIBUTE_SYNC_ALWAYS_REBUILD', true),
     ],
 
     'search' => [

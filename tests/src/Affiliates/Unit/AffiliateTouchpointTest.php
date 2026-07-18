@@ -24,7 +24,7 @@ test('AffiliateTouchpoint can be created with fillable attributes', function ():
         'affiliate_id' => (string) Str::uuid(),
         'affiliate_code' => 'AFF1',
         'subject_type' => 'event',
-        'subject_identifier' => 'event:ramadan-1',
+        'subject_key' => 'event:ramadan-1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ramadan Night',
         'source' => 'google',
@@ -39,7 +39,7 @@ test('AffiliateTouchpoint can be created with fillable attributes', function ():
     expect($touchpoint->affiliate_id)->toBeString();
     expect($touchpoint->affiliate_code)->toBe('AFF1');
     expect($touchpoint->subject_type)->toBe('event');
-    expect($touchpoint->subject_identifier)->toBe('event:ramadan-1');
+    expect($touchpoint->subject_key)->toBe('event:ramadan-1');
     expect($touchpoint->subject_instance)->toBe('share');
     expect($touchpoint->subject_title_snapshot)->toBe('Ramadan Night');
     expect($touchpoint->source)->toBe('google');

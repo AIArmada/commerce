@@ -11,6 +11,7 @@ use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Events\Database\Factories\EventFactory;
 use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Enums\RegistrationMode;
+use AIArmada\Events\Enums\ScheduleKind;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\EventStatus\EventStatus as EventStatusState;
 use AIArmada\Events\States\EventStatus\Published;
@@ -28,7 +29,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
 use Spatie\MediaLibrary\HasMedia;
@@ -48,6 +48,7 @@ use Spatie\ModelStates\HasStates;
  * @property string $type
  * @property EventStatusState $status
  * @property string $visibility
+ * @property ScheduleKind $schedule_kind
  * @property string $delivery_mode
  * @property string $timezone
  * @property string|null $default_venue_id
@@ -154,7 +155,7 @@ class Event extends Model implements HasMedia
         'owner_type', 'owner_id',
         'created_by_type', 'created_by_id',
         'title', 'slug', 'summary', 'description',
-        'type', 'status', 'visibility', 'delivery_mode',
+        'type', 'schedule_kind', 'status', 'visibility', 'delivery_mode',
         'timezone', 'default_venue_id',
         'pricing_mode', 'registration_mode', 'issue_passes_for_free',
         'published_at', 'cancelled_at', 'postponed_at', 'archived_at', 'completed_at',
@@ -170,6 +171,7 @@ class Event extends Model implements HasMedia
     protected function casts(): array
     {
         return [
+            'schedule_kind' => ScheduleKind::class,
             'status' => EventStatusState::class,
             'pricing_mode' => PricingMode::class,
             'registration_mode' => RegistrationMode::class,
@@ -214,6 +216,17 @@ class Event extends Model implements HasMedia
     public function locations(): HasMany
     {
         return $this->hasMany(EventLocation::class);
+    }
+
+    /**
+     * @return HasOne<EventLocation, $this>
+     */
+    public function primaryLocation(): HasOne
+    {
+        return $this->hasOne(EventLocation::class)
+            ->where('location_role', 'primary')
+            ->orderBy('sort_order')
+            ->orderBy('created_at');
     }
 
     /**
@@ -394,6 +407,27 @@ class Event extends Model implements HasMedia
     }
 
     /**
+     * @return HasMany<EventSubmission, $this>
+     */
+    public function submissions(): HasMany
+    {
+        /* @phpstan-ignore argument.templateType */
+        return $this->hasMany(static::submissionModelClass(), 'event_id');
+    }
+
+    /**
+     * @return HasOne<EventSubmission, $this>
+     */
+    public function originalSubmission(): HasOne
+    {
+        /* @phpstan-ignore argument.templateType */
+        return $this->hasOne(static::submissionModelClass(), 'event_id')
+            ->orderBy('submitted_at')
+            ->orderBy('created_at')
+            ->orderBy('id');
+    }
+
+    /**
      * @return MorphTo<Model, $this>
      */
     public function createdBy(): MorphTo
@@ -463,6 +497,11 @@ class Event extends Model implements HasMedia
     protected static function registrationModelClass(): string
     {
         return ModelResolver::registrationClass();
+    }
+
+    protected static function submissionModelClass(): string
+    {
+        return ModelResolver::submissionClass();
     }
 
     public function isPubliclyVisible(): bool
@@ -558,88 +597,6 @@ class Event extends Model implements HasMedia
         $media = $this->mediaRecords->first();
 
         return $media?->url;
-    }
-
-    /**
-     * Read a display-oriented key from this Event.
-     *
-     * Maps config-style dotted paths to model columns or metadata:
-     *   series.name / event.name        → $this->title
-     *   event.summary                   → $this->summary
-     *   event.description               → $this->description
-     *   event.default_timezone          → $this->timezone
-     *   event.time_label                → $this->metadata['time_label']
-     *   venue.short_name                → $this->metadata['venue']['short_name']
-     *   occurrences                     → $this->metadata['occurrences']
-     */
-    public function metadata(string $key, mixed $default = null): mixed
-    {
-        return match (true) {
-            $key === 'series.name', $key === 'event.name' => $this->title,
-            $key === 'series.slug', $key === 'event.slug' => $this->slug,
-            $key === 'event.summary', $key === 'series.description' => $this->summary ?? $default,
-            $key === 'event.description' => $this->description ?? $default,
-            $key === 'event.default_timezone' => $this->timezone ?? $default,
-            str_starts_with($key, 'event.') => Arr::get($this->metadata ?? [], mb_substr($key, 6), $default),
-            default => Arr::get($this->metadata ?? [], $key, $default),
-        };
-    }
-
-    /**
-     * Static shortcut for metadata() on the first event.
-     */
-    public static function metadataValue(string $key, mixed $default = null, ?string $slug = null): mixed
-    {
-        $query = self::query();
-
-        if ($slug !== null) {
-            $query->where('slug', $slug);
-        }
-
-        $event = $query->first();
-
-        return $event?->metadata($key, $default) ?? $default;
-    }
-
-    /**
-     * First occurrence date label, read from metadata.
-     */
-    public static function occurrenceLabel(string $preferredDate, ?string $slug = null): ?string
-    {
-        $data = self::metadataValue("occurrences.{$preferredDate}", null, $slug);
-
-        return is_array($data) && isset($data['label']) && is_string($data['label'])
-            ? $data['label']
-            : null;
-    }
-
-    /**
-     * First occurrence start time, read from metadata.
-     */
-    public static function occurrenceStartsAt(string $preferredDate, ?string $slug = null): ?string
-    {
-        $data = self::metadataValue("occurrences.{$preferredDate}", null, $slug);
-
-        return is_array($data) && isset($data['starts_at']) && is_string($data['starts_at'])
-            ? $data['starts_at']
-            : null;
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    public static function preferredDates(?string $slug = null): array
-    {
-        $occurrences = self::metadataValue('occurrences', [], $slug);
-
-        if (! is_array($occurrences)) {
-            return [];
-        }
-
-        return array_values(array_filter(
-            array_keys($occurrences),
-            static fn (mixed $date): bool => is_string($date) && $date !== '',
-        ));
     }
 
     public function registerMediaCollections(): void

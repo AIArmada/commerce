@@ -45,7 +45,7 @@ final class AllocateUplineCommissions
                 continue;
             }
 
-            $overrideLevels = $conversionData->metadata['upline_levels'] ?? null;
+            $overrideLevels = $conversionData->uplineLevels;
 
             $resolvedLevels = $levels;
 
@@ -72,7 +72,7 @@ final class AllocateUplineCommissions
                         'affiliate_code' => $current->code,
                         'affiliate_attribution_id' => $attributionId,
                         'subject_type' => $conversionData->subjectType,
-                        'subject_identifier' => $conversionData->subjectIdentifier,
+                        'subject_key' => $conversionData->subjectKey,
                         'subject_instance' => $conversionData->subjectInstance,
                         'subject_title_snapshot' => $conversionData->subjectTitleSnapshot,
                         'voucher_code' => $conversionData->voucherCode,
@@ -135,7 +135,6 @@ final class AllocateUplineCommissions
                 return (int) round($commissionMinor * ((float) ($levelConfig['value'] ?? 0) / 100));
             }
 
-            // Legacy: share as float (0.05 = 5%)
             return (int) round($commissionMinor * (float) ($levelConfig['share'] ?? 0));
         }
 
@@ -159,7 +158,6 @@ final class AllocateUplineCommissions
                 return (float) ($levelConfig['value'] ?? 0);
             }
 
-            // Legacy: share as float
             return (float) ($levelConfig['share'] ?? 0);
         }
 

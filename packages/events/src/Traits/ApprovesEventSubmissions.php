@@ -17,7 +17,8 @@ trait ApprovesEventSubmissions
         $submission->status->transitionTo(Approved::class);
         $submission->update([
             'reviewed_at' => CarbonImmutable::now(),
-            'metadata' => $this->mergeSubmissionReviewMetadata($submission, 'approved', null, $notes),
+            'review_reason' => null,
+            'review_notes' => $notes,
         ]);
     }
 
@@ -26,7 +27,8 @@ trait ApprovesEventSubmissions
         $submission->status->transitionTo(Rejected::class);
         $submission->update([
             'reviewed_at' => CarbonImmutable::now(),
-            'metadata' => $this->mergeSubmissionReviewMetadata($submission, 'rejected', $reason, $notes),
+            'review_reason' => $reason,
+            'review_notes' => $notes,
         ]);
     }
 
@@ -35,23 +37,8 @@ trait ApprovesEventSubmissions
         $submission->status->transitionTo(ChangesRequested::class);
         $submission->update([
             'reviewed_at' => CarbonImmutable::now(),
-            'metadata' => $this->mergeSubmissionReviewMetadata($submission, 'changes_requested', $reason, $notes),
+            'review_reason' => $reason,
+            'review_notes' => $notes,
         ]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function mergeSubmissionReviewMetadata(EventSubmission $submission, string $status, ?string $reason, ?string $notes): array
-    {
-        $metadata = $submission->metadata ?? [];
-        $metadata['review'] = array_filter([
-            'status' => $status,
-            'reason' => $reason,
-            'notes' => $notes,
-            'reviewed_at' => CarbonImmutable::now()->toIso8601String(),
-        ], static fn (mixed $value): bool => $value !== null);
-
-        return $metadata;
     }
 }

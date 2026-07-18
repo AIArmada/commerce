@@ -26,10 +26,12 @@ return new class extends Migration
             $table->string('sub_id_2')->nullable();
             $table->string('sub_id_3')->nullable();
             $table->string('subject_type', 64)->nullable();
-            $table->string('subject_identifier')->nullable();
+            $table->string('subject_key')->nullable();
+            $table->uuid('subject_id')->nullable();
             $table->string('subject_instance', 64)->nullable();
             $table->string('subject_title_snapshot', 200)->nullable();
             $table->{$jsonType}('subject_metadata')->nullable();
+            $table->string('origin', 32)->nullable()->index();
             $table->unsignedBigInteger('clicks')->default(0);
             $table->unsignedBigInteger('conversions')->default(0);
             $table->timestampTz('deactivated_at')->nullable();
@@ -38,7 +40,8 @@ return new class extends Migration
             $table->index('affiliate_id');
             $table->index('custom_slug');
             $table->index(['affiliate_id', 'campaign']);
-            $table->index(['subject_type', 'subject_identifier'], 'affiliate_links_subject_idx');
+            $table->index(['subject_type', 'subject_key'], 'affiliate_links_subject_key_idx');
+            $table->index(['subject_type', 'subject_id'], 'affiliate_links_subject_id_idx');
         });
     }
 

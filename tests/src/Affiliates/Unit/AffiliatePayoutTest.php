@@ -10,7 +10,6 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\States\ProcessingPayout;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -162,7 +161,7 @@ describe('AffiliatePayout Model', function (): void {
         expect($payout->amount_minor)->toBe(45000);
     });
 
-    test('external_reference accessor returns metadata value', function (): void {
+    test('external_reference is a native payout field', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-EXT-' . uniqid(),
             'status' => CompletedPayout::class,
@@ -171,7 +170,7 @@ describe('AffiliatePayout Model', function (): void {
             'currency' => 'USD',
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'metadata' => ['external_reference' => 'EXT-12345'],
+            'external_reference' => 'EXT-12345',
         ]);
 
         expect($payout->external_reference)->toBe('EXT-12345');
@@ -189,35 +188,6 @@ describe('AffiliatePayout Model', function (): void {
         ]);
 
         expect($payout->external_reference)->toBeNull();
-    });
-
-    test('notes accessor returns metadata value', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-NOTE-' . uniqid(),
-            'status' => ProcessingPayout::class,
-            'total_minor' => 35000,
-            'conversion_count' => 3,
-            'currency' => 'USD',
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-            'metadata' => ['notes' => 'Monthly payout batch'],
-        ]);
-
-        expect($payout->notes)->toBe('Monthly payout batch');
-    });
-
-    test('notes accessor returns null when not set', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-NONOTE-' . uniqid(),
-            'status' => 'pending',
-            'total_minor' => 8000,
-            'conversion_count' => 1,
-            'currency' => 'USD',
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-        ]);
-
-        expect($payout->notes)->toBeNull();
     });
 
     test('casts metadata as array', function (): void {

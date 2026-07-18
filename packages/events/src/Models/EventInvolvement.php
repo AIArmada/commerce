@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string $event_id
  * @property string|null $event_occurrence_id
  * @property string|null $event_session_id
+ * @property string|null $display_name
  * @property string|null $involveable_type
  * @property string|null $involveable_id
  * @property string|null $event_role_id
@@ -56,6 +57,7 @@ class EventInvolvement extends Model
 
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',
+        'display_name',
         'involveable_type', 'involveable_id',
         'event_role_id', 'role_code',
         'status', 'visibility',

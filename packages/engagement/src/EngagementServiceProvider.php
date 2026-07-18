@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Engagement;
 
 use AIArmada\Engagement\Console\Commands\MatchSubscriptionsCommand;
+use AIArmada\Engagement\Console\Commands\ReconcileEngagementCountersCommand;
 use AIArmada\Engagement\Console\Commands\SendDueRemindersCommand;
 use AIArmada\Engagement\Contracts\EngagementCounterService;
 use AIArmada\Engagement\Contracts\EngagementManager;
@@ -13,6 +14,12 @@ use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Events\BookmarkArchived;
+use AIArmada\Engagement\Events\BookmarkCreated;
+use AIArmada\Engagement\Events\BookmarkRemoved;
+use AIArmada\Engagement\Events\ResponseCancelled;
+use AIArmada\Engagement\Events\ResponseChanged;
+use AIArmada\Engagement\Events\ResponseCreated;
 use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
 use AIArmada\Engagement\Listeners\MatchSubscriptionsOnEventOccurrencePublished;
 use AIArmada\Engagement\Services\DefaultEngagementCounterService;
@@ -40,6 +47,7 @@ final class EngagementServiceProvider extends PackageServiceProvider
             ->discoversMigrations()
             ->hasCommands([
                 MatchSubscriptionsCommand::class,
+                ReconcileEngagementCountersCommand::class,
                 SendDueRemindersCommand::class,
             ]);
     }
@@ -58,6 +66,7 @@ final class EngagementServiceProvider extends PackageServiceProvider
 
         $this->registerEventsIntegration();
         $this->registerEventListeners();
+        $this->registerCounterListeners();
     }
 
     private function registerEventsIntegration(): void
@@ -90,5 +99,18 @@ final class EngagementServiceProvider extends PackageServiceProvider
                 MatchSubscriptionsOnEventOccurrencePublished::class,
             );
         }
+    }
+
+    private function registerCounterListeners(): void
+    {
+        $service = $this->app->make(EngagementCounterService::class);
+        $dispatcher = $this->app->make(Dispatcher::class);
+
+        $dispatcher->listen(BookmarkCreated::class, $service->onBookmarkCreated(...));
+        $dispatcher->listen(BookmarkRemoved::class, $service->onBookmarkRemoved(...));
+        $dispatcher->listen(BookmarkArchived::class, $service->onBookmarkArchived(...));
+        $dispatcher->listen(ResponseCreated::class, $service->onResponseCreated(...));
+        $dispatcher->listen(ResponseChanged::class, $service->onResponseChanged(...));
+        $dispatcher->listen(ResponseCancelled::class, $service->onResponseCancelled(...));
     }
 }

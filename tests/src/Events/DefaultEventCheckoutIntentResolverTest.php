@@ -91,12 +91,6 @@ it('preserves the full participant payload when resolving an event checkout inte
                     'age' => 29,
                     'gender' => 'female',
                     'status' => 'active',
-                    'metadata' => [
-                        'contact' => [
-                            'email' => 'alice@example.com',
-                            'phone' => '+60111222333',
-                        ],
-                    ],
                     'is_primary' => true,
                 ],
             ]);
@@ -183,12 +177,6 @@ it('preserves the full participant payload when resolving a session checkout int
                     'age' => 29,
                     'gender' => 'female',
                     'status' => 'active',
-                    'metadata' => [
-                        'contact' => [
-                            'email' => 'alice@example.com',
-                            'phone' => '+60111222333',
-                        ],
-                    ],
                     'is_primary' => true,
                 ],
             ]);

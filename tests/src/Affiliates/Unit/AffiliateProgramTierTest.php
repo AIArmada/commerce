@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
@@ -158,6 +159,13 @@ describe('AffiliateProgramTier Model', function (): void {
             'currency' => 'USD',
         ]);
 
+        $link = AffiliateLink::create([
+            'affiliate_id' => $affiliate->id,
+            'program_id' => $this->program->id,
+            'destination_url' => 'https://example.com/revenue',
+            'tracking_url' => 'https://example.com/revenue?aff=' . $affiliate->code,
+        ]);
+
         // Create attribution for program
         // Create conversion with low total
         AffiliateConversion::create([
@@ -167,7 +175,7 @@ describe('AffiliateProgramTier Model', function (): void {
             'value_minor' => 50000, // Only 500 in minor units, below 100000 minimum
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'metadata' => ['program_id' => $this->program->id],
+            'affiliate_link_id' => $link->id,
             'status' => ApprovedConversion::class,
             'occurred_at' => now(),
         ]);
@@ -195,6 +203,13 @@ describe('AffiliateProgramTier Model', function (): void {
             'currency' => 'USD',
         ]);
 
+        $link = AffiliateLink::create([
+            'affiliate_id' => $affiliate->id,
+            'program_id' => $this->program->id,
+            'destination_url' => 'https://example.com/qualified',
+            'tracking_url' => 'https://example.com/qualified?aff=' . $affiliate->code,
+        ]);
+
         AffiliateConversion::create([
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => $affiliate->code,
@@ -202,7 +217,7 @@ describe('AffiliateProgramTier Model', function (): void {
             'value_minor' => 125000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'metadata' => ['program_id' => $this->program->id],
+            'affiliate_link_id' => $link->id,
             'status' => ApprovedConversion::class,
             'occurred_at' => now(),
         ]);

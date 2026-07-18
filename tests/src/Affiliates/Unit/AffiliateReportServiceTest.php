@@ -29,17 +29,19 @@ test('affiliate report service summarizes totals and utm', function (): void {
     $service = app(AffiliateService::class);
 
     $cart = app('cart')->getCurrentCart();
+    Cart::attachAffiliate($this->affiliate->code, [
+        'source' => 'newsletter',
+        'campaign' => 'spring',
+    ]);
 
     $service->recordConversion($cart, [
         'order_reference' => 'RPT-1',
         'subtotal' => 1000,
-        'metadata' => ['source' => 'newsletter', 'campaign' => 'spring'],
     ]);
 
     $service->recordConversion($cart, [
         'order_reference' => 'RPT-2',
         'subtotal' => 2000,
-        'metadata' => ['source' => 'ads', 'campaign' => 'spring'],
     ]);
 
     $summary = app(AffiliateReportService::class)->affiliateSummary($this->affiliate->getKey());
@@ -55,7 +57,7 @@ test('affiliate report service prefers neutral revenue fields and attribution fi
     AffiliateAttribution::create([
         'affiliate_id' => $this->affiliate->getKey(),
         'affiliate_code' => $this->affiliate->code,
-        'subject_identifier' => 'event:ramadan-1',
+        'subject_key' => 'event:ramadan-1',
         'subject_instance' => 'share',
         'first_seen_at' => $occurredAt,
     ]);
@@ -63,7 +65,7 @@ test('affiliate report service prefers neutral revenue fields and attribution fi
     AffiliateConversion::create([
         'affiliate_id' => $this->affiliate->getKey(),
         'affiliate_code' => $this->affiliate->code,
-        'subject_identifier' => 'event:ramadan-1',
+        'subject_key' => 'event:ramadan-1',
         'subject_instance' => 'share',
         'external_reference' => 'REG-1001',
         'conversion_type' => 'registration',
@@ -74,7 +76,8 @@ test('affiliate report service prefers neutral revenue fields and attribution fi
         'commission_currency' => 'USD',
         'status' => ApprovedConversion::class,
         'occurred_at' => $occurredAt,
-        'metadata' => ['source' => 'whatsapp', 'campaign' => 'ramadan'],
+        'source' => 'whatsapp',
+        'campaign' => 'ramadan',
     ]);
 
     $service = app(AffiliateReportService::class);
@@ -121,7 +124,7 @@ test('affiliate report service returns top subjects with visits and conversions'
         'affiliate_id' => $this->affiliate->getKey(),
         'affiliate_code' => $this->affiliate->code,
         'subject_type' => 'event',
-        'subject_identifier' => 'event:ramadan-1',
+        'subject_key' => 'event:ramadan-1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ramadan Night',
         'first_seen_at' => $occurredAt,
@@ -132,7 +135,7 @@ test('affiliate report service returns top subjects with visits and conversions'
         'affiliate_id' => $this->affiliate->getKey(),
         'affiliate_code' => $this->affiliate->code,
         'subject_type' => 'event',
-        'subject_identifier' => 'event:ramadan-1',
+        'subject_key' => 'event:ramadan-1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ramadan Night',
         'touched_at' => $occurredAt,
@@ -143,7 +146,7 @@ test('affiliate report service returns top subjects with visits and conversions'
         'affiliate_id' => $this->affiliate->getKey(),
         'affiliate_code' => $this->affiliate->code,
         'subject_type' => 'event',
-        'subject_identifier' => 'event:ramadan-1',
+        'subject_key' => 'event:ramadan-1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ramadan Night',
         'touched_at' => $occurredAt->copy()->addMinute(),
@@ -154,7 +157,7 @@ test('affiliate report service returns top subjects with visits and conversions'
         'affiliate_code' => $this->affiliate->code,
         'affiliate_attribution_id' => $eventAttribution->getKey(),
         'subject_type' => 'event',
-        'subject_identifier' => 'event:ramadan-1',
+        'subject_key' => 'event:ramadan-1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ramadan Night',
         'external_reference' => 'REG-2001',
@@ -172,7 +175,7 @@ test('affiliate report service returns top subjects with visits and conversions'
         'affiliate_id' => $this->affiliate->getKey(),
         'affiliate_code' => $this->affiliate->code,
         'subject_type' => 'speaker',
-        'subject_identifier' => 'speaker:ustaz-1',
+        'subject_key' => 'speaker:ustaz-1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ustaz Example',
         'first_seen_at' => $occurredAt,
@@ -183,7 +186,7 @@ test('affiliate report service returns top subjects with visits and conversions'
         'affiliate_id' => $this->affiliate->getKey(),
         'affiliate_code' => $this->affiliate->code,
         'subject_type' => 'speaker',
-        'subject_identifier' => 'speaker:ustaz-1',
+        'subject_key' => 'speaker:ustaz-1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ustaz Example',
         'touched_at' => $occurredAt,
@@ -196,7 +199,7 @@ test('affiliate report service returns top subjects with visits and conversions'
 
     expect($subjects[0])->toMatchArray([
         'subject_type' => 'event',
-        'subject_identifier' => 'event:ramadan-1',
+        'subject_key' => 'event:ramadan-1',
         'subject_title_snapshot' => 'Ramadan Night',
         'visits' => 2,
         'attributions' => 1,
@@ -207,7 +210,7 @@ test('affiliate report service returns top subjects with visits and conversions'
 
     expect($subjects[1])->toMatchArray([
         'subject_type' => 'speaker',
-        'subject_identifier' => 'speaker:ustaz-1',
+        'subject_key' => 'speaker:ustaz-1',
         'subject_title_snapshot' => 'Ustaz Example',
         'visits' => 1,
         'attributions' => 1,

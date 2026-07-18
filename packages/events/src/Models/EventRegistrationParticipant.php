@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string|null $relationship_to_registrant
  * @property bool $is_primary
+ * @property bool $is_purchaser
  * @property int|null $age
  * @property string|null $gender
  * @property string $status
@@ -51,7 +52,7 @@ final class EventRegistrationParticipant extends Model
         'event_id', 'event_occurrence_id', 'event_session_id',
         'participant_type', 'participant_id',
         'name',
-        'relationship_to_registrant', 'is_primary',
+        'relationship_to_registrant', 'is_primary', 'is_purchaser',
         'age', 'gender',
         'status', 'notes',
         'metadata',
@@ -70,6 +71,7 @@ final class EventRegistrationParticipant extends Model
     {
         return [
             'is_primary' => 'boolean',
+            'is_purchaser' => 'boolean',
             'age' => 'integer',
             'metadata' => 'array',
         ];

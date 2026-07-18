@@ -158,7 +158,7 @@ test('DailyAggregationService aggregateForAffiliate prefers neutral conversion v
     AffiliateConversion::create([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
-        'subject_identifier' => 'event:agg-1',
+        'subject_key' => 'event:agg-1',
         'subject_instance' => 'share',
         'external_reference' => 'REG-AGG-1',
         'conversion_type' => 'registration',

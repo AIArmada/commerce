@@ -69,7 +69,8 @@ final class AffiliateApiController extends Controller
                 'params' => $params,
                 'ttl_seconds' => $ttl,
                 'subject_type' => $request->input('subject_type'),
-                'subject_identifier' => $request->input('subject_identifier'),
+                'subject_key' => $request->input('subject_key'),
+                'subject_id' => $request->input('subject_id'),
                 'subject_instance' => $request->input('subject_instance'),
                 'subject_title_snapshot' => $request->input('subject_title_snapshot'),
                 'subject_metadata' => $subjectMetadata,
@@ -82,7 +83,7 @@ final class AffiliateApiController extends Controller
             'id' => (string) $link->getKey(),
             'link' => $link->tracking_url,
             'subject_type' => $link->subject_type,
-            'subject_identifier' => $link->subject_identifier,
+            'subject_key' => $link->subject_key,
         ]);
     }
 

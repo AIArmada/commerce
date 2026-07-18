@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('reference')->unique();
             $table->uuid('affiliate_payout_operation_id')->nullable()->unique();
+            $table->string('external_reference', 160)->nullable()->index();
             $table->string('status', 32)->default('draft')->index();
             $table->unsignedBigInteger('total_minor')->default(0);
             $table->unsignedInteger('conversion_count')->default(0);
