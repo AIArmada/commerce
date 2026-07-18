@@ -122,7 +122,7 @@ describe('AffiliateIntegrationRegistrar affiliate voucher creation', function ()
         $voucher->delete();
     });
 
-    it('creates voucher with correct metadata for affiliate', function (): void {
+    it('creates a voucher linked to an affiliate', function (): void {
         $affiliateCode = 'PARTNER' . uniqid();
 
         $affiliate = Affiliate::create([
@@ -145,8 +145,6 @@ describe('AffiliateIntegrationRegistrar affiliate voucher creation', function ()
             'status' => 'active',
             'affiliate_id' => $affiliateId,
             'metadata' => [
-                'affiliate_code' => $affiliate->code,
-                'affiliate_id' => $affiliateId,
                 'auto_generated' => true,
             ],
         ]);
@@ -156,7 +154,8 @@ describe('AffiliateIntegrationRegistrar affiliate voucher creation', function ()
             ->and($voucher->value)->toBe(1000)
             ->and($voucher->affiliate_id)->toBe($affiliateId)
             ->and($voucher->metadata['auto_generated'])->toBeTrue()
-            ->and($voucher->metadata['affiliate_code'])->toBe($affiliate->code);
+            ->and($voucher->metadata)->not()->toHaveKey('affiliate_code')
+            ->and($voucher->metadata)->not()->toHaveKey('affiliate_id');
 
         // Clean up
         $voucher->delete();

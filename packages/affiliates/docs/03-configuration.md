@@ -158,11 +158,6 @@ The package is configured via `config/affiliates.php`. This document reflects th
 'integrations' => [
     'vouchers' => [
         'attach_on_apply' => env('AFFILIATES_ATTACH_ON_VOUCHER', true),
-        'metadata_keys' => [
-            'affiliate_code',
-            'affiliate.code',
-            'metadata.affiliate_code',
-        ],
         'match_default_voucher_code' => env('AFFILIATES_MATCH_DEFAULT_VOUCHER', true),
     ],
 ],
@@ -171,7 +166,6 @@ The package is configured via `config/affiliates.php`. This document reflects th
 | Key | Description |
 |-----|-------------|
 | `attach_on_apply` | Auto-attach affiliate when voucher applied |
-| `metadata_keys` | Dot-notation paths to check for affiliate codes |
 | `match_default_voucher_code` | Match voucher code to affiliate's default voucher |
 
 ## Commission Settings

@@ -119,6 +119,13 @@ it('reads the configured navigation group from resources', function (): void {
     }
 });
 
+it('uses native contact methods for registration participant contact data', function (): void {
+    expect(EventRegistrationParticipantResource::getEloquentQuery()->getEagerLoads())
+        ->toHaveKey('contactMethods')
+        ->and(EventRegistrationResource::getEloquentQuery()->getEagerLoads())
+        ->toHaveKey('participants.contactMethods');
+});
+
 it('builds the current event resources and relation managers', function (): void {
     $table = Table::make(Mockery::mock(HasTable::class));
     $schemaLivewire = filamentEvents_makeSchemaLivewire();

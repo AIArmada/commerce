@@ -26,7 +26,7 @@ The `aiarmada/affiliates` package owns affiliate attribution, referral programs,
 - [`aiarmada/filament-affiliates`](../../filament-affiliates/docs/01-overview.md) — Filament admin UI and affiliate portal surfaces
 - [`aiarmada/affiliate-network`](../../affiliate-network/docs/01-overview.md) — marketplace/network extension on top of core affiliates
 - [`aiarmada/cart`](../../cart/docs/01-overview.md) — automatic attribution metadata and cart helpers
-- [`aiarmada/vouchers`](../../vouchers/docs/01-overview.md) — optional voucher-to-affiliate metadata bridge
+- [`aiarmada/vouchers`](../../vouchers/docs/01-overview.md) — native voucher-to-affiliate linking and default-code attribution
 - [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner scoping and shared infrastructure
 
 ## Main models services or surfaces

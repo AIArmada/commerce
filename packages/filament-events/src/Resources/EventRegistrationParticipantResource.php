@@ -53,7 +53,7 @@ final class EventRegistrationParticipantResource extends Resource
 
         return $query
             ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false))
-            ->with(['event', 'registration']);
+            ->with(['event', 'registration', 'contactMethods']);
     }
 
     public static function table(Table $table): Table
@@ -66,12 +66,12 @@ final class EventRegistrationParticipantResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('email')
                     ->label('Email')
-                    ->state(fn (EventRegistrationParticipant $record): ?string => $record->metadata['contact']['email'] ?? null)
+                    ->state(fn (EventRegistrationParticipant $record): ?string => static::contactValue($record, 'email'))
                     ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('phone')
                     ->label('Phone')
-                    ->state(fn (EventRegistrationParticipant $record): ?string => $record->metadata['contact']['phone'] ?? null)
+                    ->state(fn (EventRegistrationParticipant $record): ?string => static::contactValue($record, 'phone'))
                     ->copyable(),
                 Tables\Columns\TextColumn::make('event.title')
                     ->label('Event'),
@@ -117,9 +117,9 @@ final class EventRegistrationParticipantResource extends Resource
                     ->schema([
                         TextEntry::make('name'),
                         TextEntry::make('email')
-                            ->state(fn (EventRegistrationParticipant $record): ?string => $record->metadata['contact']['email'] ?? null),
+                            ->state(fn (EventRegistrationParticipant $record): ?string => static::contactValue($record, 'email')),
                         TextEntry::make('phone')
-                            ->state(fn (EventRegistrationParticipant $record): ?string => $record->metadata['contact']['phone'] ?? null),
+                            ->state(fn (EventRegistrationParticipant $record): ?string => static::contactValue($record, 'phone')),
                         TextEntry::make('event.title'),
                         TextEntry::make('registration.registration_no'),
                         TextEntry::make('is_primary')
@@ -140,5 +140,30 @@ final class EventRegistrationParticipantResource extends Resource
             'index' => EventRegistrationParticipantResource\Pages\ListEventRegistrationParticipants::route('/'),
             'view' => EventRegistrationParticipantResource\Pages\ViewEventRegistrationParticipant::route('/{record}'),
         ];
+    }
+
+    private static function contactValue(EventRegistrationParticipant $participant, string $type): ?string
+    {
+        $contact = $participant->relationLoaded('contactMethods')
+            ? $participant->contactMethods
+                ->where('type', $type)
+                ->sortByDesc('is_primary')
+                ->sortBy('sort_order')
+                ->first()
+            : $participant->contactMethods()
+                ->where('type', $type)
+                ->orderByDesc('is_primary')
+                ->orderBy('sort_order')
+                ->first();
+
+        $value = $contact?->normalized_value ?? $contact?->value;
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = mb_trim($value);
+
+        return $value !== '' ? $value : null;
     }
 }

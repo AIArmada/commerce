@@ -2,12 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherTransaction;
@@ -22,6 +16,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 describe('Voucher Model', function (): void {
     describe('class structure', function (): void {
@@ -85,197 +80,21 @@ describe('Voucher Model', function (): void {
         });
     });
 
-    describe('affiliate metadata synchronization', function (): void {
-        it('syncs affiliate metadata when affiliate_id is set on create', function (): void {
-            $affiliate = Affiliate::create([
-                'code' => 'AFF-META-' . uniqid(),
-                'name' => 'Affiliate Metadata',
-                'status' => AffiliateActive::class,
-                'commission_type' => 'percentage',
-                'commission_rate' => 1000,
-                'currency' => 'MYR',
-            ]);
+    it('keeps first-class affiliate fields out of voucher metadata', function (): void {
+        $voucher = Voucher::create([
+            'name' => 'Native Affiliate Voucher',
+            'code' => 'AFF-NATIVE-VOUCHER-' . Str::random(8),
+            'type' => VoucherType::Percentage,
+            'value' => 1000,
+            'currency' => 'MYR',
+            'status' => Active::class,
+            'affiliate_id' => (string) Str::uuid(),
+            'affiliate_program_id' => (string) Str::uuid(),
+            'affiliate_commission_value' => 2500,
+            'metadata' => ['campaign' => 'spring'],
+        ]);
 
-            $voucher = Voucher::create([
-                'name' => 'Affiliate Metadata Voucher',
-                'code' => 'AFF-META-VOUCHER-' . uniqid(),
-                'type' => VoucherType::Percentage,
-                'value' => 1000,
-                'currency' => 'MYR',
-                'status' => Active::class,
-                'affiliate_id' => $affiliate->id,
-                'metadata' => ['campaign' => 'spring'],
-            ]);
-
-            expect($voucher->metadata)->toMatchArray([
-                'campaign' => 'spring',
-                'affiliate_id' => $affiliate->id,
-                'affiliate_code' => $affiliate->code,
-            ]);
-        });
-
-        it('syncs affiliate override metadata when affiliate-specific fields are set', function (): void {
-            $affiliate = Affiliate::create([
-                'code' => 'AFF-OVERRIDE-' . uniqid(),
-                'name' => 'Affiliate Override',
-                'status' => AffiliateActive::class,
-                'commission_type' => 'percentage',
-                'commission_rate' => 1000,
-                'currency' => 'MYR',
-            ]);
-
-            $program = AffiliateProgram::create([
-                'name' => 'Voucher Override Program',
-                'status' => ProgramStatus::Active,
-                'requires_approval' => false,
-                'visibility' => ProgramVisibility::Public,
-                'default_commission_rate_basis_points' => 1000,
-                'commission_type' => CommissionType::Percentage,
-                'cookie_lifetime_days' => 30,
-            ]);
-
-            $voucher = Voucher::create([
-                'name' => 'Affiliate Override Voucher',
-                'code' => 'AFF-OVERRIDE-VOUCHER-' . uniqid(),
-                'type' => VoucherType::Percentage,
-                'value' => 1000,
-                'currency' => 'MYR',
-                'status' => Active::class,
-                'affiliate_id' => $affiliate->id,
-                'affiliate_program_id' => $program->id,
-                'affiliate_commission_type' => CommissionType::Fixed,
-                'affiliate_commission_value' => 2500,
-                'affiliate_upline_levels' => [
-                    ['level' => 1, 'share' => 0.05],
-                    ['level' => 2, 'share' => 0.025],
-                ],
-            ]);
-
-            expect($voucher->metadata)->toMatchArray([
-                'affiliate_id' => $affiliate->id,
-                'affiliate_code' => $affiliate->code,
-                'affiliate_program_id' => $program->id,
-                'affiliate_commission_type' => CommissionType::Fixed->value,
-                'affiliate_commission_value' => 2500,
-                'affiliate_upline_levels' => [
-                    ['level' => 1, 'share' => 0.05],
-                    ['level' => 2, 'share' => 0.025],
-                ],
-            ]);
-        });
-
-        it('preserves affiliate override metadata without affiliate_id', function (): void {
-            $program = AffiliateProgram::create([
-                'name' => 'Voucher Override Program',
-                'status' => ProgramStatus::Active,
-                'requires_approval' => false,
-                'visibility' => ProgramVisibility::Public,
-                'default_commission_rate_basis_points' => 1000,
-                'commission_type' => CommissionType::Percentage,
-                'cookie_lifetime_days' => 30,
-            ]);
-
-            $voucher = Voucher::create([
-                'name' => 'Affiliate Override Voucher',
-                'code' => 'AFF-OVERRIDE-VOUCHER-' . uniqid(),
-                'type' => VoucherType::Percentage,
-                'value' => 1000,
-                'currency' => 'MYR',
-                'status' => Active::class,
-                'affiliate_program_id' => $program->id,
-                'affiliate_commission_type' => CommissionType::Fixed,
-                'affiliate_commission_value' => 2500,
-                'affiliate_upline_levels' => [
-                    ['level' => 1, 'share' => 0.05],
-                ],
-            ]);
-
-            expect($voucher->metadata)->toMatchArray([
-                'affiliate_program_id' => $program->id,
-                'affiliate_commission_type' => CommissionType::Fixed->value,
-                'affiliate_commission_value' => 2500,
-                'affiliate_upline_levels' => [
-                    ['level' => 1, 'share' => 0.05],
-                ],
-            ])
-                ->and($voucher->metadata)->not()->toHaveKey('affiliate_id')
-                ->and($voucher->metadata)->not()->toHaveKey('affiliate_code');
-        });
-
-        it('syncs affiliate metadata when affiliate_id changes', function (): void {
-            $firstAffiliate = Affiliate::create([
-                'code' => 'AFF-OLD-' . uniqid(),
-                'name' => 'Old Affiliate',
-                'status' => AffiliateActive::class,
-                'commission_type' => 'percentage',
-                'commission_rate' => 1000,
-                'currency' => 'MYR',
-            ]);
-
-            $secondAffiliate = Affiliate::create([
-                'code' => 'AFF-NEW-' . uniqid(),
-                'name' => 'New Affiliate',
-                'status' => AffiliateActive::class,
-                'commission_type' => 'percentage',
-                'commission_rate' => 1000,
-                'currency' => 'MYR',
-            ]);
-
-            $voucher = Voucher::create([
-                'name' => 'Affiliate Change Voucher',
-                'code' => 'AFF-CHANGE-VOUCHER-' . uniqid(),
-                'type' => VoucherType::Percentage,
-                'value' => 1000,
-                'currency' => 'MYR',
-                'status' => Active::class,
-                'affiliate_id' => $firstAffiliate->id,
-            ]);
-
-            $voucher->update([
-                'affiliate_id' => $secondAffiliate->id,
-            ]);
-
-            $voucher->refresh();
-
-            expect($voucher->metadata)->toMatchArray([
-                'affiliate_id' => $secondAffiliate->id,
-                'affiliate_code' => $secondAffiliate->code,
-            ])
-                ->and($voucher->metadata['affiliate_code'])->toBe($secondAffiliate->code)
-                ->and($voucher->metadata['affiliate_code'])->not()->toBe($firstAffiliate->code);
-        });
-
-        it('removes affiliate metadata when affiliate_id is cleared', function (): void {
-            $affiliate = Affiliate::create([
-                'code' => 'AFF-CLEAR-' . uniqid(),
-                'name' => 'Clear Affiliate',
-                'status' => AffiliateActive::class,
-                'commission_type' => 'percentage',
-                'commission_rate' => 1000,
-                'currency' => 'MYR',
-            ]);
-
-            $voucher = Voucher::create([
-                'name' => 'Affiliate Clear Voucher',
-                'code' => 'AFF-CLEAR-VOUCHER-' . uniqid(),
-                'type' => VoucherType::Percentage,
-                'value' => 1000,
-                'currency' => 'MYR',
-                'status' => Active::class,
-                'affiliate_id' => $affiliate->id,
-                'metadata' => ['campaign' => 'summer'],
-            ]);
-
-            $voucher->update([
-                'affiliate_id' => null,
-            ]);
-
-            $voucher->refresh();
-
-            expect($voucher->metadata)->toBe([
-                'campaign' => 'summer',
-            ]);
-        });
+        expect($voucher->metadata)->toBe(['campaign' => 'spring']);
     });
 
     describe('value label attribute', function (): void {

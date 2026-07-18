@@ -170,20 +170,11 @@ return [
     |--------------------------------------------------------------------------
     | Voucher Integration
     |--------------------------------------------------------------------------
-    |
-    | When aiarmada/vouchers is installed we inspect voucher metadata for an
-    | affiliate code. Add any dot-notation keys you want the listener to check.
-    |
     */
 
     'integrations' => [
         'vouchers' => [
             'attach_on_apply' => env('AFFILIATES_ATTACH_ON_VOUCHER', true),
-            'metadata_keys' => [
-                'affiliate_code',
-                'affiliate.code',
-                'metadata.affiliate_code',
-            ],
             'match_default_voucher_code' => env('AFFILIATES_MATCH_DEFAULT_VOUCHER', true),
         ],
     ],

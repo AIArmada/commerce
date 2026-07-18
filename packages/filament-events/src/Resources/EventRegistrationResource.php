@@ -7,6 +7,7 @@ namespace AIArmada\FilamentEvents\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Models\EventRegistrationParticipant;
 use AIArmada\FilamentEvents\Actions\Exporter\EventRegistrationExporter;
 use AIArmada\FilamentEvents\Actions\Importer\EventRegistrationImporter;
 use BackedEnum;
@@ -48,7 +49,7 @@ final class EventRegistrationResource extends Resource
 
         return $query
             ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false))
-            ->with(['event', 'occurrence', 'registrant', 'participants']);
+            ->with(['event', 'occurrence', 'registrant', 'participants.contactMethods']);
     }
 
     public static function table(Table $table): Table
@@ -82,7 +83,7 @@ final class EventRegistrationResource extends Resource
                             return $registrant->email;
                         }
 
-                        return $record->participants->first()?->metadata['contact']['email'] ?? null;
+                        return static::participantContactValue($record->participants->first(), 'email');
                     })
                     ->copyable()
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query
@@ -96,7 +97,7 @@ final class EventRegistrationResource extends Resource
                             return $registrant->phone;
                         }
 
-                        return $record->participants->first()?->metadata['contact']['phone'] ?? null;
+                        return static::participantContactValue($record->participants->first(), 'phone');
                     })
                     ->copyable(),
                 Tables\Columns\TextColumn::make('registrant.company')
@@ -188,5 +189,34 @@ final class EventRegistrationResource extends Resource
             'index' => EventRegistrationResource\Pages\ListEventRegistrations::route('/'),
             'view' => EventRegistrationResource\Pages\ViewEventRegistration::route('/{record}'),
         ];
+    }
+
+    private static function participantContactValue(?EventRegistrationParticipant $participant, string $type): ?string
+    {
+        if (! $participant instanceof EventRegistrationParticipant) {
+            return null;
+        }
+
+        $contact = $participant->relationLoaded('contactMethods')
+            ? $participant->contactMethods
+                ->where('type', $type)
+                ->sortByDesc('is_primary')
+                ->sortBy('sort_order')
+                ->first()
+            : $participant->contactMethods()
+                ->where('type', $type)
+                ->orderByDesc('is_primary')
+                ->orderBy('sort_order')
+                ->first();
+
+        $value = $contact?->normalized_value ?? $contact?->value;
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = mb_trim($value);
+
+        return $value !== '' ? $value : null;
     }
 }

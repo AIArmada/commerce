@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Listeners;
 
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Vouchers\Events\VoucherApplied;
-use Illuminate\Support\Arr;
 
 final class AttachAffiliateFromVoucher
 {
@@ -46,12 +46,12 @@ final class AttachAffiliateFromVoucher
             $context['cookie_value'] = $cookieValue;
         }
 
-        $code = $this->resolveAffiliateCode($metadata);
+        if ($voucher->affiliateId !== null) {
+            $affiliate = $this->affiliates->query()->whereKey($voucher->affiliateId)->first();
 
-        if ($code) {
-            $attached = $this->affiliates->attachToCartByCode($code, $event->cart, $context);
+            if ($affiliate instanceof Affiliate && $affiliate->isActive()) {
+                $this->affiliates->attachAffiliate($affiliate, $event->cart, $context);
 
-            if ($attached !== null) {
                 return;
             }
         }
@@ -67,28 +67,6 @@ final class AttachAffiliateFromVoucher
         }
 
         $this->affiliates->attachAffiliate($affiliate, $event->cart, $context);
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $metadata
-     */
-    private function resolveAffiliateCode(?array $metadata): ?string
-    {
-        if (! $metadata) {
-            return null;
-        }
-
-        $paths = (array) config('affiliates.integrations.vouchers.metadata_keys', ['affiliate_code']);
-
-        foreach ($paths as $path) {
-            $value = Arr::get($metadata, $path);
-
-            if (is_string($value) && $value !== '') {
-                return $value;
-            }
-        }
-
-        return null;
     }
 
     private function shouldMatchDefaultVoucherCode(): bool

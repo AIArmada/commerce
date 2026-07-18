@@ -9,6 +9,9 @@ return RectorConfig::configure()
         __DIR__ . '/packages',
         __DIR__ . '/tests',
     ])
+    ->withSkip([
+        __DIR__ . '/packages/addressing/vendor',
+    ])
     ->withoutParallel()
     ->withTypeCoverageLevel(0)
     ->withDeadCodeLevel(0)

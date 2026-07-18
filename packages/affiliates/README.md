@@ -123,7 +123,7 @@ Key options exposed via `config/affiliates.php`:
 
 - `table_names` – override table names per tenant or schema layout.
 - `owner` – plug in a resolver to scope queries per marketplace merchant.
-- `integrations.vouchers.metadata_keys` – control which metadata paths are inspected for affiliate codes.
+- `integrations.vouchers` – attach affiliates from the voucher's native `affiliate_id` or its configured default voucher code.
 - `tracking.block_self_referral` – prevent owners/tenants from crediting their own affiliate code when they are the active owner.
 - `cookies.require_consent` / `cookies.consent_cookie` – gate tracking behind explicit consent.
 - `commissions` – default currency, rounding, and approval behaviour.

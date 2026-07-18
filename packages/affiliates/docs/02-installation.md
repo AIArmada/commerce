@@ -68,11 +68,11 @@ Cart::recordAffiliateConversion([...]);
 
 ## Optional: Voucher Integration
 
-If using `aiarmada/vouchers`, affiliates are automatically attached when vouchers with affiliate metadata are applied:
+If using `aiarmada/vouchers`, affiliates are automatically attached when vouchers with a native affiliate link are applied:
 
 ```php
-// Voucher with affiliate code in metadata
-$voucher->metadata = ['affiliate_code' => 'PARTNER42'];
+$voucher->affiliate_id = $affiliate->id;
+$voucher->save();
 ```
 
 ## Environment Variables

@@ -224,21 +224,6 @@ final class CreateOrderStep extends AbstractCheckoutStep
             return $metadata;
         }
 
-        $affiliate = $cartMetadata['affiliate'] ?? null;
-
-        if (is_array($affiliate)) {
-            $affiliateId = $affiliate['affiliate_id'] ?? null;
-            $affiliateCode = $affiliate['affiliate_code'] ?? null;
-
-            if (is_scalar($affiliateId) && mb_trim((string) $affiliateId) !== '') {
-                $metadata['affiliate_id'] = (string) $affiliateId;
-            }
-
-            if (is_string($affiliateCode) && mb_trim($affiliateCode) !== '') {
-                $metadata['affiliate_code'] = mb_trim($affiliateCode);
-            }
-        }
-
         $voucherCodes = array_values(array_filter(array_map(
             static fn (mixed $code): ?string => is_string($code) && mb_trim($code) !== '' ? mb_trim($code) : null,
             is_array($cartMetadata['voucher_codes'] ?? null) ? $cartMetadata['voucher_codes'] : [],
