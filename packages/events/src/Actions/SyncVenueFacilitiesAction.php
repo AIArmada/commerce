@@ -44,7 +44,7 @@ final class SyncVenueFacilitiesAction
 
             $incomingIds = [];
 
-            foreach ($facilities as $index => $facility) {
+            foreach ($facilities as $facility) {
                 $type = $types[$facility['code']];
 
                 VenueFacility::query()->updateOrCreate(
