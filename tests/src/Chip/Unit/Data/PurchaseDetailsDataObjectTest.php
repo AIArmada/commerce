@@ -31,8 +31,8 @@ describe('PurchaseDetails data object', function (): void {
 
         $details = PurchaseDetailsData::from($data);
 
-        expect($details->getTotalInCurrency())->toBe(195.0);
-        expect($details->getSubtotalInCurrency())->toEqual((10000 + (5000 * 2)) / 100);
+        expect($details->getTotalInCents())->toBe(19500);
+        expect($details->getSubtotalInCents())->toEqual(10000 + (5000 * 2));
         expect($details->products[0])->toBeInstanceOf(ProductData::class);
     });
 

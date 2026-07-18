@@ -96,18 +96,4 @@ describe('Product data object with Money', function (): void {
             ->and($product->getDiscountInCents())->toBe(0)
             ->and($product->discount->getCurrency()->getCurrency())->toBe('MYR');
     });
-
-    it('maintains backward compatibility with deprecated methods', function (): void {
-        $product = ProductData::from([
-            'name' => 'Test',
-            'quantity' => 1,
-            'price' => 10000,
-            'discount' => 1000,
-        ]);
-
-        // These methods are deprecated but should still work
-        expect($product->getPriceInCurrency())->toBe(100.0)
-            ->and($product->getDiscountInCurrency())->toBe(10.0)
-            ->and($product->getTotalPriceInCurrency())->toBe(90.0);
-    });
 });

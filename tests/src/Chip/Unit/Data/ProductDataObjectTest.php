@@ -6,7 +6,7 @@ use AIArmada\Chip\Data\ProductData;
 use Akaunting\Money\Money;
 
 describe('Product data object', function (): void {
-    it('calculates price helpers in currency', function (): void {
+    it('calculates price helpers in cents', function (): void {
         $product = ProductData::from([
             'name' => 'Premium Plan',
             'quantity' => 2,
@@ -16,10 +16,10 @@ describe('Product data object', function (): void {
             'category' => 'subscription',
         ]);
 
-        expect($product->getPriceInCurrency())->toBe(199.0);
-        expect($product->getDiscountInCurrency())->toBe(9.90);
+        expect($product->getPriceInCents())->toBe(19900);
+        expect($product->getDiscountInCents())->toBe(990);
         expect($product->getTotalPrice()->getAmount())->toEqual((19900 - 990) * 2.0);
-        expect($product->getTotalPriceInCurrency())->toBe(378.2);
+        expect($product->getTotalPriceInCents())->toBe(37820);
     });
 
     it('exports to array for API payloads', function (): void {

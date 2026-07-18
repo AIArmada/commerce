@@ -23,7 +23,7 @@ The billing portal is a separate Filament panel that customers can access to:
 // config/app.php
 'providers' => [
     // ...
-    AIArmada\FilamentCashierChip\BillingPanelProvider::class,
+    AIArmada\FilamentCashierChip\CustomerPortal\BillingPanelProvider::class,
 ],
 ```
 
@@ -34,7 +34,7 @@ Or register programmatically:
 public function register(): void
 {
     $this->app->register(
-        \AIArmada\FilamentCashierChip\BillingPanelProvider::class
+        \AIArmada\FilamentCashierChip\CustomerPortal\BillingPanelProvider::class
     );
 }
 ```
@@ -169,7 +169,7 @@ Create your own panel provider:
 ```php
 namespace App\Providers\Filament;
 
-use AIArmada\FilamentCashierChip\BillingPanelProvider;
+use AIArmada\FilamentCashierChip\CustomerPortal\BillingPanelProvider;
 use Filament\Panel;
 
 class CustomBillingPanelProvider extends BillingPanelProvider

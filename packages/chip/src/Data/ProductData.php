@@ -114,30 +114,6 @@ final class ProductData extends ChipData
     }
 
     /**
-     * @deprecated Use getPriceInCents() or $this->price directly
-     */
-    public function getPriceInCurrency(): float
-    {
-        return $this->price->getAmount() / 100;
-    }
-
-    /**
-     * @deprecated Use getDiscountInCents() or $this->discount directly
-     */
-    public function getDiscountInCurrency(): float
-    {
-        return $this->discount->getAmount() / 100;
-    }
-
-    /**
-     * @deprecated Use getTotalPrice() directly
-     */
-    public function getTotalPriceInCurrency(): float
-    {
-        return $this->getTotalPrice()->getAmount() / 100;
-    }
-
-    /**
      * Convert to array for CHIP API (prices in cents).
      *
      * @return array<string, mixed>

@@ -108,22 +108,6 @@ final class PurchaseDetailsData extends ChipData
     }
 
     /**
-     * @deprecated Use getTotalInCents() or $this->total directly
-     */
-    public function getTotalInCurrency(): float
-    {
-        return $this->total->getAmount() / 100;
-    }
-
-    /**
-     * @deprecated Use getSubtotalInCents() or getSubtotal() directly
-     */
-    public function getSubtotalInCurrency(): float
-    {
-        return $this->getSubtotal()->getAmount() / 100;
-    }
-
-    /**
      * Convert to array for CHIP API (amounts in cents).
      *
      * @return array<string, mixed>

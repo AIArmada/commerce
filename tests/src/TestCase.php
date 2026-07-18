@@ -464,8 +464,6 @@ abstract class TestCase extends Orchestra
 
         // Configure engagement settings for testing
         $app['config']->set('engagement.database.table_prefix', 'engagement_');
-        // Map interactions config for engagement migrations that use old config key
-        $app['config']->set('interactions.database', $app['config']->get('engagement.database'));
 
         // Configure auth to use our test User model
         $app['config']->set('auth.providers.users.model', User::class);

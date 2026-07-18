@@ -70,7 +70,7 @@ If you want customers to manage their own billing, register the `BillingPanelPro
 // config/app.php
 'providers' => [
     // ...
-    AIArmada\FilamentCashierChip\BillingPanelProvider::class,
+    AIArmada\FilamentCashierChip\CustomerPortal\BillingPanelProvider::class,
 ],
 ```
 
@@ -78,7 +78,7 @@ Or in a service provider:
 
 ```php
 // app/Providers/AppServiceProvider.php
-use AIArmada\FilamentCashierChip\BillingPanelProvider;
+use AIArmada\FilamentCashierChip\CustomerPortal\BillingPanelProvider;
 
 public function register(): void
 {

@@ -96,21 +96,6 @@ describe('PurchaseDetails data object with Money', function (): void {
             ->and($array['products'][0]['price'])->toBe(1000);
     });
 
-    it('maintains backward compatibility with deprecated methods', function (): void {
-        $data = [
-            'currency' => 'MYR',
-            'products' => [
-                ['name' => 'Test', 'quantity' => 1, 'price' => 10000],
-            ],
-            'total' => 10000,
-        ];
-
-        $details = PurchaseDetailsData::from($data);
-
-        expect($details->getTotalInCurrency())->toBe(100.0)
-            ->and($details->getSubtotalInCurrency())->toBe(100.0);
-    });
-
     it('handles null override values', function (): void {
         $data = [
             'currency' => 'MYR',

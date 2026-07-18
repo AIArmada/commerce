@@ -116,32 +116,6 @@ final class FilamentCashierPlugin implements Plugin
         return $this;
     }
 
-    // Legacy method aliases for backward compatibility
-
-    /** @deprecated Use dashboard() instead */
-    public function enableDashboard(bool $enable = true): static
-    {
-        return $this->dashboard($enable);
-    }
-
-    /** @deprecated Use subscriptions() instead */
-    public function enableSubscriptions(bool $enable = true): static
-    {
-        return $this->subscriptions($enable);
-    }
-
-    /** @deprecated Use invoices() instead */
-    public function enableInvoices(bool $enable = true): static
-    {
-        return $this->invoices($enable);
-    }
-
-    /** @deprecated Use gatewayManagement() instead */
-    public function enableGatewayManagement(bool $enable = true): static
-    {
-        return $this->gatewayManagement($enable);
-    }
-
     public function getNavigationGroup(): ?string
     {
         return $this->navigationGroup ?? config('filament-cashier.navigation.group', 'Billing');

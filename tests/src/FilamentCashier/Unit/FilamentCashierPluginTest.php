@@ -42,32 +42,29 @@ it('can set navigation sort', function (): void {
 it('can enable and disable dashboard', function (): void {
     $plugin = new FilamentCashierPlugin;
 
-    // Default enabled
-    expect($plugin)->enableDashboard()->toBeInstanceOf(FilamentCashierPlugin::class);
-
-    // Can disable
-    expect($plugin->enableDashboard(false))->toBeInstanceOf(FilamentCashierPlugin::class);
+    expect($plugin)->dashboard()->toBeInstanceOf(FilamentCashierPlugin::class);
+    expect($plugin->dashboard(false))->toBeInstanceOf(FilamentCashierPlugin::class);
 });
 
 it('can enable and disable subscriptions', function (): void {
     $plugin = new FilamentCashierPlugin;
 
-    expect($plugin->enableSubscriptions())->toBeInstanceOf(FilamentCashierPlugin::class);
-    expect($plugin->enableSubscriptions(false))->toBeInstanceOf(FilamentCashierPlugin::class);
+    expect($plugin->subscriptions())->toBeInstanceOf(FilamentCashierPlugin::class);
+    expect($plugin->subscriptions(false))->toBeInstanceOf(FilamentCashierPlugin::class);
 });
 
 it('can enable and disable invoices', function (): void {
     $plugin = new FilamentCashierPlugin;
 
-    expect($plugin->enableInvoices())->toBeInstanceOf(FilamentCashierPlugin::class);
-    expect($plugin->enableInvoices(false))->toBeInstanceOf(FilamentCashierPlugin::class);
+    expect($plugin->invoices())->toBeInstanceOf(FilamentCashierPlugin::class);
+    expect($plugin->invoices(false))->toBeInstanceOf(FilamentCashierPlugin::class);
 });
 
 it('can enable gateway management', function (): void {
     $plugin = new FilamentCashierPlugin;
 
-    expect($plugin->enableGatewayManagement())->toBeInstanceOf(FilamentCashierPlugin::class);
-    expect($plugin->enableGatewayManagement(true))->toBeInstanceOf(FilamentCashierPlugin::class);
+    expect($plugin->gatewayManagement())->toBeInstanceOf(FilamentCashierPlugin::class);
+    expect($plugin->gatewayManagement(true))->toBeInstanceOf(FilamentCashierPlugin::class);
 });
 
 it('can enable customer portal mode', function (): void {

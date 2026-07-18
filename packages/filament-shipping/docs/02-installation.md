@@ -65,17 +65,17 @@ Configure the plugin fluently in your panel provider:
 ```php
 FilamentShippingPlugin::make()
     // Enable/disable resources
-    ->enableShipmentResource()
-    ->enableShippingZoneResource()
-    ->enableReturnAuthorizationResource()
-    
+    ->shipmentResource()
+    ->shippingZoneResource()
+    ->returnAuthorizationResource()
+
     // Enable/disable pages
-    ->enableDashboard()
-    ->enableFulfillmentQueue()
-    ->enableManifestPage()
-    
+    ->shippingDashboard()
+    ->fulfillmentQueue()
+    ->manifestPage()
+
     // Enable/disable widgets
-    ->enableWidgets()
+    ->dashboardWidgets()
 ```
 
 Or disable specific features:
