@@ -83,8 +83,8 @@ final class DatabaseAffiliateLookup implements AffiliateLookup
         return $query
             ->when(
                 $driver === 'pgsql',
-                fn (Builder $builder) => $builder->whereRaw($column.' ILIKE ?', [$normalized]),
-                fn (Builder $builder) => $builder->whereRaw('LOWER('.$column.') = ?', [mb_strtolower($normalized)]),
+                fn (Builder $builder) => $builder->whereRaw($column . ' ILIKE ?', [$normalized]),
+                fn (Builder $builder) => $builder->whereRaw('LOWER(' . $column . ') = ?', [mb_strtolower($normalized)]),
             )
             ->first();
     }
