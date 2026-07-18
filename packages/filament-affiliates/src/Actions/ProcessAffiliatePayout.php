@@ -147,7 +147,6 @@ final class ProcessAffiliatePayout
             $fromStatus = $locked->status->getValue();
             $reference = $result->externalReference;
             $metadata = array_filter([
-                'external_reference' => $reference,
                 'provider' => $result->metadata['provider'] ?? null,
                 'provider_status' => $result->getStatus(),
             ], static fn (mixed $value): bool => $value !== null && $value !== '');
@@ -155,6 +154,7 @@ final class ProcessAffiliatePayout
             if ($result->getStatus() === 'completed') {
                 $locked->forceFill([
                     'status' => CompletedPayout::class,
+                    'external_reference' => $reference,
                     'paid_at' => now(),
                     'metadata' => array_merge($locked->metadata ?? [], $metadata),
                 ])->save();
@@ -166,7 +166,11 @@ final class ProcessAffiliatePayout
                     'lease_expires_at' => null,
                 ])->save();
             } elseif ($result->isPending()) {
-                $locked->forceFill(['status' => ProcessingPayout::class, 'metadata' => array_merge($locked->metadata ?? [], $metadata)])->save();
+                $locked->forceFill([
+                    'status' => ProcessingPayout::class,
+                    'external_reference' => $reference,
+                    'metadata' => array_merge($locked->metadata ?? [], $metadata),
+                ])->save();
                 $locked->operation->forceFill([
                     'status' => 'submitted',
                     'provider_reference' => $reference,
@@ -174,7 +178,11 @@ final class ProcessAffiliatePayout
                     'lease_expires_at' => null,
                 ])->save();
             } elseif ($result->isUnknown()) {
-                $locked->forceFill(['status' => ProcessingPayout::class, 'metadata' => array_merge($locked->metadata ?? [], ['provider_status' => 'unknown'])])->save();
+                $locked->forceFill([
+                    'status' => ProcessingPayout::class,
+                    'external_reference' => $reference ?? $locked->external_reference,
+                    'metadata' => array_merge($locked->metadata ?? [], ['provider_status' => 'unknown']),
+                ])->save();
                 $locked->operation->forceFill([
                     'status' => 'unknown',
                     'provider_reference' => $reference ?? $locked->operation->provider_reference,

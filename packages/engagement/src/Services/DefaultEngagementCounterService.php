@@ -43,18 +43,32 @@ final class DefaultEngagementCounterService implements EngagementCounterService
 
     public function countBookmarks(mixed $subject): int
     {
-        return Bookmark::query()
-            ->where('bookmarkable_type', $subject->getMorphClass())
-            ->where('bookmarkable_id', $subject->getKey())
-            ->where('status', 'active')
-            ->count();
+        return $this->countBookmarksByIdentity($subject->getMorphClass(), (string) $subject->getKey());
     }
 
     public function countResponses(mixed $subject, ?string $responseType = null): int
     {
+        return $this->countResponsesByIdentity(
+            $subject->getMorphClass(),
+            (string) $subject->getKey(),
+            $responseType,
+        );
+    }
+
+    private function countBookmarksByIdentity(string $subjectType, string $subjectId): int
+    {
+        return Bookmark::query()
+            ->where('bookmarkable_type', $subjectType)
+            ->where('bookmarkable_id', $subjectId)
+            ->where('status', 'active')
+            ->count();
+    }
+
+    private function countResponsesByIdentity(string $subjectType, string $subjectId, ?string $responseType = null): int
+    {
         $query = Response::query()
-            ->where('respondable_type', $subject->getMorphClass())
-            ->where('respondable_id', $subject->getKey())
+            ->where('respondable_type', $subjectType)
+            ->where('respondable_id', $subjectId)
             ->where('status', 'active');
 
         if ($responseType !== null) {
@@ -108,12 +122,17 @@ final class DefaultEngagementCounterService implements EngagementCounterService
 
     public function recalculateBookmarks(mixed $subject): void
     {
-        $count = $this->countBookmarks($subject);
+        $this->recalculateBookmarksByIdentity($subject->getMorphClass(), (string) $subject->getKey());
+    }
+
+    private function recalculateBookmarksByIdentity(string $subjectType, string $subjectId): void
+    {
+        $count = $this->countBookmarksByIdentity($subjectType, $subjectId);
 
         EngagementCounter::query()->updateOrCreate(
             [
-                'subject_type' => $subject->getMorphClass(),
-                'subject_id' => $subject->getKey(),
+                'subject_type' => $subjectType,
+                'subject_id' => $subjectId,
                 'counter_type' => 'bookmarks',
                 'counter_key' => '',
             ],
@@ -126,18 +145,23 @@ final class DefaultEngagementCounterService implements EngagementCounterService
 
     public function recalculateResponses(mixed $subject, ?string $responseType = null): void
     {
+        $this->recalculateResponsesByIdentity($subject->getMorphClass(), (string) $subject->getKey(), $responseType);
+    }
+
+    private function recalculateResponsesByIdentity(string $subjectType, string $subjectId, ?string $responseType = null): void
+    {
         $counterKeys = array_values(array_unique(array_filter(['', $responseType], static fn (?string $key): bool => $key !== null)));
 
         foreach ($counterKeys as $counterKey) {
             EngagementCounter::query()->updateOrCreate(
                 [
-                    'subject_type' => $subject->getMorphClass(),
-                    'subject_id' => $subject->getKey(),
+                    'subject_type' => $subjectType,
+                    'subject_id' => $subjectId,
                     'counter_type' => 'responses',
                     'counter_key' => $counterKey,
                 ],
                 [
-                    'count_value' => $this->countResponses($subject, $counterKey === '' ? null : $counterKey),
+                    'count_value' => $this->countResponsesByIdentity($subjectType, $subjectId, $counterKey === '' ? null : $counterKey),
                     'recalculated_at' => CarbonImmutable::now(),
                 ],
             );
@@ -146,32 +170,48 @@ final class DefaultEngagementCounterService implements EngagementCounterService
 
     public function onBookmarkCreated(BookmarkCreated $event): void
     {
-        $this->recalculateBookmarks($event->bookmark->bookmarkable);
+        $this->recalculateBookmarksByIdentity($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id);
     }
 
     public function onBookmarkRemoved(BookmarkRemoved $event): void
     {
-        $this->recalculateBookmarks($event->bookmark->bookmarkable);
+        $this->recalculateBookmarksByIdentity($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id);
     }
 
     public function onBookmarkArchived(BookmarkArchived $event): void
     {
-        $this->recalculateBookmarks($event->bookmark->bookmarkable);
+        $this->recalculateBookmarksByIdentity($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id);
     }
 
     public function onResponseCreated(ResponseCreated $event): void
     {
-        $this->recalculateResponses($event->response->respondable, $event->response->response_type);
+        $this->recalculateResponsesByIdentity(
+            $event->response->respondable_type,
+            (string) $event->response->respondable_id,
+            $event->response->response_type,
+        );
     }
 
     public function onResponseChanged(ResponseChanged $event): void
     {
-        $this->recalculateResponses($event->response->respondable, $event->previousType);
-        $this->recalculateResponses($event->response->respondable, $event->response->response_type);
+        $this->recalculateResponsesByIdentity(
+            $event->response->respondable_type,
+            (string) $event->response->respondable_id,
+            $event->previousType,
+        );
+        $this->recalculateResponsesByIdentity(
+            $event->response->respondable_type,
+            (string) $event->response->respondable_id,
+            $event->response->response_type,
+        );
     }
 
     public function onResponseCancelled(ResponseCancelled $event): void
     {
-        $this->recalculateResponses($event->response->respondable, $event->response->response_type);
+        $this->recalculateResponsesByIdentity(
+            $event->response->respondable_type,
+            (string) $event->response->respondable_id,
+            $event->response->response_type,
+        );
     }
 }

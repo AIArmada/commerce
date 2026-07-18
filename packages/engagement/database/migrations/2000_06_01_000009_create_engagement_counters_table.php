@@ -29,7 +29,14 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['subject_type', 'subject_id', 'counter_type'], 'engagement_counters_lookup_idx');
-            $table->unique(['subject_type', 'subject_id', 'counter_type', 'counter_key'], 'engagement_counters_unique_idx');
+            $table->unique([
+                'subject_type',
+                'subject_id',
+                'counter_type',
+                'counter_key',
+                'owner_type',
+                'owner_id',
+            ], 'engagement_counters_unique_idx');
         });
     }
 };
