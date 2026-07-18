@@ -199,7 +199,10 @@ class Event extends Model implements HasMedia
      */
     public function primaryOccurrence(): HasOne
     {
-        return $this->hasOne(EventOccurrence::class)->orderBy('starts_at');
+        return $this->hasOne(EventOccurrence::class)
+            ->orderBy('starts_at')
+            ->orderBy('created_at')
+            ->orderBy('id');
     }
 
     /**
@@ -224,9 +227,12 @@ class Event extends Model implements HasMedia
     public function primaryLocation(): HasOne
     {
         return $this->hasOne(EventLocation::class)
+            ->whereNull('event_occurrence_id')
+            ->whereNull('event_session_id')
             ->where('location_role', 'primary')
             ->orderBy('sort_order')
-            ->orderBy('created_at');
+            ->orderBy('created_at')
+            ->orderBy('id');
     }
 
     /**

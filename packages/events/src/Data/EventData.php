@@ -37,9 +37,11 @@ final class EventData extends Data
         $occurrence = $event->occurrences()
             ->whereIn('status', ['scheduled', 'published', 'live'])
             ->orderBy('starts_at')
+            ->orderBy('created_at')
+            ->orderBy('id')
             ->first();
 
-        $location = $event->locations()->where('location_role', 'primary')->first();
+        $location = $event->primaryLocation;
 
         return new self(
             id: $event->id,
