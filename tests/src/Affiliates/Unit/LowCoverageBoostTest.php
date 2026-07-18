@@ -32,8 +32,7 @@ test('AffiliateRankHistory can be created with all fields', function (): void {
     ]);
 
     $history = AffiliateRankHistory::create([
-        'payee_type' => $affiliate->getMorphClass(),
-        'payee_id' => $affiliate->id,
+        'affiliate_id' => $affiliate->id,
         'from_rank_id' => null,
         'to_rank_id' => null,
         'reason' => RankQualificationReason::Initial,

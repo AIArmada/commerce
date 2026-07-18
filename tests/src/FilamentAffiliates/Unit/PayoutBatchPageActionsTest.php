@@ -291,7 +291,7 @@ it('executes batch processing bulk action', function (): void {
         'is_default' => true,
     ]);
 
-    $payoutA = AffiliatePayout::create([
+    $payoutA = createBatchPagePayout([
         'reference' => 'PAY-' . Str::uuid(),
         'status' => PendingPayout::class,
         'total_minor' => 5000,
@@ -300,7 +300,7 @@ it('executes batch processing bulk action', function (): void {
         'payee_id' => $affiliateA->getKey(),
     ]);
 
-    $payoutB = AffiliatePayout::create([
+    $payoutB = createBatchPagePayout([
         'reference' => 'PAY-' . Str::uuid(),
         'status' => PendingPayout::class,
         'total_minor' => 7000,

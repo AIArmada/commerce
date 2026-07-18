@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -300,5 +302,3 @@ describe('AffiliateApiController class structure', function (): void {
             ->not->toContain("Route::get('{code}/links'");
     });
 });
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;

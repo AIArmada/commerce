@@ -11,9 +11,9 @@ use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
+use Throwable;
 
 final class DatabaseAffiliateLookup implements AffiliateLookup
 {
@@ -83,8 +83,8 @@ final class DatabaseAffiliateLookup implements AffiliateLookup
         return $query
             ->when(
                 $driver === 'pgsql',
-                fn (Builder $builder) => $builder->whereRaw($column.' ILIKE ?', [$normalized]),
-                fn (Builder $builder) => $builder->whereRaw('LOWER('.$column.') = ?', [mb_strtolower($normalized)]),
+                fn (Builder $builder) => $builder->whereRaw($column . ' ILIKE ?', [$normalized]),
+                fn (Builder $builder) => $builder->whereRaw('LOWER(' . $column . ') = ?', [mb_strtolower($normalized)]),
             )
             ->first();
     }
@@ -103,7 +103,7 @@ final class DatabaseAffiliateLookup implements AffiliateLookup
             if (is_string($decrypted) && $decrypted !== '') {
                 $candidates[] = $decrypted;
             }
-        } catch (DecryptException) {
+        } catch (Throwable) {
         }
 
         $query = AffiliateAttribution::query()

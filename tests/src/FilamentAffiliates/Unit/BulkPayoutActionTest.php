@@ -103,7 +103,7 @@ it('processes a pending payout successfully', function (): void {
         'is_default' => true,
     ]);
 
-    $payout = AffiliatePayout::create([
+    $payout = createBulkActionPayout([
         'reference' => 'PAYOUT-REF-' . Str::uuid(),
         'status' => PendingPayout::class,
         'total_minor' => 1500,
@@ -156,7 +156,7 @@ it('marks a pending payout as failed when no default payout method exists', func
         'owner_id' => (string) $user->getKey(),
     ]);
 
-    $payout = AffiliatePayout::create([
+    $payout = createBulkActionPayout([
         'reference' => 'PAYOUT-REF-' . Str::uuid(),
         'status' => PendingPayout::class,
         'total_minor' => 1500,
@@ -210,7 +210,7 @@ it('marks a pending payout as failed when the processor fails', function (): voi
         'is_default' => true,
     ]);
 
-    $payout = AffiliatePayout::create([
+    $payout = createBulkActionPayout([
         'reference' => 'PAYOUT-REF-' . Str::uuid(),
         'status' => PendingPayout::class,
         'total_minor' => 1500,
@@ -268,7 +268,7 @@ it('leaves a payout processing when the processor throws', function (): void {
         'is_default' => true,
     ]);
 
-    $payout = AffiliatePayout::create([
+    $payout = createBulkActionPayout([
         'reference' => 'PAYOUT-REF-' . Str::uuid(),
         'status' => PendingPayout::class,
         'total_minor' => 1500,

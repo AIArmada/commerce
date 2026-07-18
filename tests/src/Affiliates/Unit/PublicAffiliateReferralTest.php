@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\View;
 
 beforeEach(function (): void {
@@ -64,7 +63,7 @@ test('package resolves public referral context from encrypted cookies', function
     $request = Request::create('/', 'GET');
     $request->cookies->set(
         (string) config('affiliates.cookies.name', 'affiliate_session'),
-        Crypt::encryptString('public-cookie-value'),
+        encrypt('public-cookie-value'),
     );
 
     app()->instance('request', $request);

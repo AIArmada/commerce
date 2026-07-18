@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -218,4 +219,3 @@ test('affiliate report service returns top subjects with visits and conversions'
         'commission_minor' => 0,
     ]);
 });
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
