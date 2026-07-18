@@ -70,6 +70,7 @@ use Filament\Tables\TablesServiceProvider;
 use Illuminate\Cache\CacheServiceProvider;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\DatabaseServiceProvider;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Events\EventServiceProvider;
@@ -103,6 +104,11 @@ abstract class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Reset any leaked static unguarded state from a previous test so every
+        // test starts at the framework default (guarded). Individual tests that
+        // need unguarded mass assignment must opt in via Model::unguard().
+        Model::reguard();
 
         Factory::guessFactoryNamesUsing(function (string $modelName) {
             return Str::replace('Models', 'Database\\Factories', $modelName) . 'Factory';
