@@ -27,7 +27,7 @@ beforeEach(function (): void {
     ]);
 });
 
-function dispatchVoucherApplied(array $metadata): void
+function dispatchVoucherApplied(array $metadata, ?string $affiliateId = null): void
 {
     $cart = app('cart')->getCurrentCart();
 
@@ -40,13 +40,14 @@ function dispatchVoucherApplied(array $metadata): void
         'currency' => 'USD',
         'status' => Active::class,
         'metadata' => $metadata,
+        'affiliate_id' => $affiliateId,
     ]);
 
     app(AttachAffiliateFromVoucher::class)->handle(new VoucherApplied($cart, $voucher));
 }
 
-test('affiliate attaches when voucher metadata contains affiliate code', function (): void {
-    dispatchVoucherApplied(['affiliate_code' => 'VOUCHER-AFF']);
+test('affiliate attaches when voucher has a native affiliate link', function (): void {
+    dispatchVoucherApplied([], $this->affiliate->id);
 
     $attribution = AffiliateAttribution::firstOrFail();
 
@@ -54,7 +55,7 @@ test('affiliate attaches when voucher metadata contains affiliate code', functio
         ->and($attribution->voucher_code)->toBe('PROMO-1');
 });
 
-test('listener ignores vouchers without affiliate metadata', function (): void {
+test('listener ignores vouchers without affiliate linkage', function (): void {
     dispatchVoucherApplied(['campaign' => 'spring']);
 
     expect(AffiliateAttribution::count())->toBe(0);
@@ -100,8 +101,8 @@ test('listener preserves affiliate commission and program overrides from voucher
         'currency' => 'USD',
         'status' => Active::class,
         'metadata' => [
-            'affiliate_code' => 'VOUCHER-AFF',
         ],
+        'affiliate_id' => $this->affiliate->id,
         'affiliate_commission_type' => CommissionType::Fixed,
         'affiliate_commission_value' => 2500,
         'affiliate_program_id' => $program->id,
