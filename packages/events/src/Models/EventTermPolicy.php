@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
-use AIArmada\Events\Database\Factories\EventTermPolicyFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -47,10 +46,5 @@ final class EventTermPolicy extends Model
     public function term(): BelongsTo
     {
         return $this->belongsTo(EventTerm::class, 'event_term_id');
-    }
-
-    protected static function newFactory(): EventTermPolicyFactory
-    {
-        return EventTermPolicyFactory::new();
     }
 }
