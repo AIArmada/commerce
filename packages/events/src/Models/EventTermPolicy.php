@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
+use AIArmada\Events\Database\Factories\EventTermPolicyFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +20,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read EventTerm $term
  *
- * @use HasFactory<\AIArmada\Events\Database\Factories\EventTermPolicyFactory>
+ * @use HasFactory<EventTermPolicyFactory>
  */
 final class EventTermPolicy extends Model
 {
