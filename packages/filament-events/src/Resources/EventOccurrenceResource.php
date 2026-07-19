@@ -10,6 +10,7 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\FilamentEvents\Actions\Exporter\EventOccurrenceExporter;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -23,6 +24,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Contracts\HasColor;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -71,16 +73,7 @@ final class EventOccurrenceResource extends Resource
                     ->dateTime(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (mixed $state): string => match ((string) $state) {
-                        'draft' => 'gray',
-                        'scheduled' => 'info',
-                        'published' => 'success',
-                        'delayed', 'postponed', 'rescheduled' => 'warning',
-                        'cancelled' => 'danger',
-                        'completed' => 'success',
-                        'archived' => 'gray',
-                        default => 'gray',
-                    }),
+                    ->color(fn (mixed $state): string | array | null => $state instanceof HasColor ? $state->getColor() : 'gray'),
                 Tables\Columns\TextColumn::make('visibility')
                     ->badge(),
                 Tables\Columns\TextColumn::make('capacity')
@@ -92,17 +85,7 @@ final class EventOccurrenceResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'draft' => 'Draft',
-                        'scheduled' => 'Scheduled',
-                        'published' => 'Published',
-                        'delayed' => 'Delayed',
-                        'postponed' => 'Postponed',
-                        'rescheduled' => 'Rescheduled',
-                        'cancelled' => 'Cancelled',
-                        'completed' => 'Completed',
-                        'archived' => 'Archived',
-                    ]),
+                    ->options(OccurrenceStatusState::options()),
                 Tables\Filters\SelectFilter::make('visibility')
                     ->options([
                         'public' => 'Public',
@@ -242,18 +225,8 @@ final class EventOccurrenceResource extends Resource
                 Section::make('Lifecycle')
                     ->schema([
                         Select::make('status')
-                            ->options([
-                                EventOccurrence::DRAFT => 'Draft',
-                                EventOccurrence::SCHEDULED => 'Scheduled',
-                                EventOccurrence::PUBLISHED => 'Published',
-                                EventOccurrence::DELAYED => 'Delayed',
-                                EventOccurrence::POSTPONED => 'Postponed',
-                                EventOccurrence::RESCHEDULED => 'Rescheduled',
-                                EventOccurrence::CANCELLED => 'Cancelled',
-                                EventOccurrence::COMPLETED => 'Completed',
-                                EventOccurrence::ARCHIVED => 'Archived',
-                            ])
-                            ->default(EventOccurrence::SCHEDULED)
+                            ->options(OccurrenceStatusState::options())
+                            ->default('scheduled')
                             ->hiddenOn('edit')
                             ->required(),
                         Select::make('visibility')

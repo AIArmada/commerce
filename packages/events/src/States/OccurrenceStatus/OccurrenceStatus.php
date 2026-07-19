@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\States\OccurrenceStatus;
 
+use Filament\Support\Contracts\HasColor;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;
 
-abstract class OccurrenceStatus extends State
+abstract class OccurrenceStatus extends State implements HasColor
 {
     public static function config(): StateConfig
     {
@@ -74,4 +75,16 @@ abstract class OccurrenceStatus extends State
     }
 
     abstract public function label(): string;
+
+    public function getColor(): string
+    {
+        return match (static::$name) {
+            'draft', 'archived' => 'gray',
+            'scheduled' => 'info',
+            'published', 'completed', 'live' => 'success',
+            'delayed', 'postponed', 'rescheduled' => 'warning',
+            'cancelled' => 'danger',
+            default => 'gray',
+        };
+    }
 }

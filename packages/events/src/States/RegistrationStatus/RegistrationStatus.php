@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\States\RegistrationStatus;
 
+use Filament\Support\Contracts\HasColor;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;
 
-abstract class RegistrationStatus extends State
+abstract class RegistrationStatus extends State implements HasColor
 {
     public static function config(): StateConfig
     {
@@ -89,4 +90,14 @@ abstract class RegistrationStatus extends State
     }
 
     abstract public function label(): string;
+
+    public function getColor(): string
+    {
+        return match (static::$name) {
+            'pending', 'waitlisted', 'interested' => 'warning',
+            'confirmed', 'completed', 'checked_in' => 'success',
+            'cancelled', 'rejected', 'refunded', 'no_show', 'expired' => 'danger',
+            default => 'gray',
+        };
+    }
 }

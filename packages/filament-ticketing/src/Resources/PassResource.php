@@ -12,6 +12,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Contracts\HasColor;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,14 +52,7 @@ final class PassResource extends Resource
                 Tables\Columns\TextColumn::make('holder.email')->label('Email'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'issued' => 'success',
-                        'activated' => 'info',
-                        'used' => 'warning',
-                        'cancelled', 'revoked', 'voided' => 'danger',
-                        'expired' => 'gray',
-                        default => 'gray',
-                    }),
+                    ->color(fn (mixed $state): string | array | null => $state instanceof HasColor ? $state->getColor() : 'gray'),
                 Tables\Columns\TextColumn::make('issued_at')->dateTime(),
                 Tables\Columns\TextColumn::make('used_at')->dateTime(),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable(),

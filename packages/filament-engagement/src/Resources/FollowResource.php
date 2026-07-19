@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Follow;
+use AIArmada\Engagement\Support\ModelResolver;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -22,7 +23,12 @@ use UnitEnum;
 
 final class FollowResource extends Resource
 {
-    protected static ?string $model = Follow::class;
+    protected static ?string $model = null;
+
+    public static function getModel(): string
+    {
+        return ModelResolver::followClass();
+    }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-heart';
 

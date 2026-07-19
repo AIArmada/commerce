@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Support\ModelResolver;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -23,7 +24,12 @@ use UnitEnum;
 
 final class ReminderResource extends Resource
 {
-    protected static ?string $model = Reminder::class;
+    protected static ?string $model = null;
+
+    public static function getModel(): string
+    {
+        return ModelResolver::reminderClass();
+    }
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {

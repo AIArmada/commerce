@@ -8,6 +8,8 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationParticipant;
+use AIArmada\Events\States\RegistrationStatus\RegistrationStatus;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventRegistrationExporter;
 use AIArmada\FilamentEvents\Actions\Importer\EventRegistrationImporter;
 use BackedEnum;
@@ -18,6 +20,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Contracts\HasColor;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,7 +28,12 @@ use UnitEnum;
 
 final class EventRegistrationResource extends Resource
 {
-    protected static ?string $model = EventRegistration::class;
+    protected static ?string $model = null;
+
+    public static function getModel(): string
+    {
+        return ModelResolver::registrationClass();
+    }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-user-group';
 
@@ -113,12 +121,7 @@ final class EventRegistrationResource extends Resource
                     ->badge(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (mixed $state): string => match ((string) $state) {
-                        'pending', 'waitlisted', 'interested' => 'warning',
-                        'approved', 'confirmed', 'completed' => 'success',
-                        'cancelled', 'rejected', 'expired' => 'danger',
-                        default => 'gray',
-                    }),
+                    ->color(fn (mixed $state): string | array | null => $state instanceof HasColor ? $state->getColor() : 'gray'),
                 Tables\Columns\TextColumn::make('source')
                     ->badge(),
                 Tables\Columns\TextColumn::make('total_participants')
@@ -129,16 +132,7 @@ final class EventRegistrationResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'pending' => 'Pending',
-                        'interested' => 'Interested',
-                        'confirmed' => 'Confirmed',
-                        'waitlisted' => 'Waitlisted',
-                        'completed' => 'Completed',
-                        'cancelled' => 'Cancelled',
-                        'rejected' => 'Rejected',
-                        'expired' => 'Expired',
-                    ]),
+                    ->options(RegistrationStatus::options()),
                 Tables\Filters\SelectFilter::make('registration_type'),
                 Tables\Filters\SelectFilter::make('source'),
             ])

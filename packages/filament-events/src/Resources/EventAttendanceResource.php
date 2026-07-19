@@ -6,6 +6,7 @@ namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Models\EventAttendance;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventAttendanceExporter;
 use BackedEnum;
 use Filament\Actions\ExportAction;
@@ -21,7 +22,12 @@ use UnitEnum;
 
 final class EventAttendanceResource extends Resource
 {
-    protected static ?string $model = EventAttendance::class;
+    protected static ?string $model = null;
+
+    public static function getModel(): string
+    {
+        return ModelResolver::attendanceClass();
+    }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-check';
 
