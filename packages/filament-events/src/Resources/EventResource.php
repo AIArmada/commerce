@@ -74,7 +74,7 @@ final class EventResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (mixed $state): string|array|null => $state instanceof HasColor ? $state->getColor() : 'gray'),
+                    ->color(fn (mixed $state): string | array | null => $state instanceof HasColor ? $state->getColor() : 'gray'),
                 Tables\Columns\TextColumn::make('visibility')
                     ->badge()
                     ->color(fn (mixed $state): string => match ((string) $state) {
