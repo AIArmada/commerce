@@ -18,7 +18,7 @@ return new class extends Migration
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->string('event_id')->index();
+            $table->uuid('event_id')->index();
             $table->string('type');
             $table->string('decision_key')->unique();
             $table->text('reason')->nullable();
