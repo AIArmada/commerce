@@ -62,6 +62,7 @@ return [
             'event_eligibility_rules' => env('EVENTS_TABLE_ELIGIBILITY_RULES', $tablePrefix . 'event_eligibility_rules'),
             'event_taxonomies' => env('EVENTS_TABLE_TAXONOMIES', $tablePrefix . 'event_taxonomies'),
             'event_terms' => env('EVENTS_TABLE_TERMS', $tablePrefix . 'event_terms'),
+            'event_term_policies' => env('EVENTS_TABLE_TERM_POLICIES', $tablePrefix . 'event_term_policies'),
             'event_classifications' => env('EVENTS_TABLE_CLASSIFICATIONS', $tablePrefix . 'event_classifications'),
             'event_time_expressions' => env('EVENTS_TABLE_TIME_EXPRESSIONS', $tablePrefix . 'event_time_expressions'),
             'event_itineraries' => env('EVENTS_TABLE_ITINERARIES', $tablePrefix . 'event_itineraries'),
