@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventApprovalRequest;
-use AIArmada\Events\Models\EventSubmission;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -45,7 +44,7 @@ final class ApprovalQueue extends Page implements HasTable
                 EventApprovalRequest::query()
                     ->whereHasMorph(
                         'approvable',
-                        [EventSubmission::class],
+                        ['event_submission'],
                         fn (Builder $query): Builder => $query->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false)),
                     )
                     ->with('approvable')
