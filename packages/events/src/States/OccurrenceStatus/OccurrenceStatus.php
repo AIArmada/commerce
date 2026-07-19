@@ -76,9 +76,11 @@ abstract class OccurrenceStatus extends State implements HasColor
 
     abstract public function label(): string;
 
+    abstract public static function name(): string;
+
     public function getColor(): string
     {
-        return match (static::$name) {
+        return match (static::name()) {
             'draft', 'archived' => 'gray',
             'scheduled' => 'info',
             'published', 'completed', 'live' => 'success',

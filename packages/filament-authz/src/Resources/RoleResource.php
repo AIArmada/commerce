@@ -229,10 +229,7 @@ class RoleResource extends Resource
 
         return $query->where(function (Builder $query) use ($teamsKey, $validUuids): void {
             $query->whereNull($teamsKey);
-
-            if ($validUuids !== []) {
-                $query->orWhereIn($teamsKey, $validUuids);
-            }
+            $query->orWhereIn($teamsKey, $validUuids);
         });
     }
 
