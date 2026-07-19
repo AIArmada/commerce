@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Listeners;
 
-use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Exceptions\InconsistentTicketTypePricingException;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
+use AIArmada\Ticketing\Enums\PricingMode;
 use AIArmada\Ticketing\Models\TicketType;
 use Throwable;
 

@@ -9,4 +9,9 @@ enum PricingMode: string
     case Paid = 'paid';
     case Free = 'free';
     case Mixed = 'mixed';
+
+    public function isFreeOnly(): bool
+    {
+        return $this === self::Free;
+    }
 }

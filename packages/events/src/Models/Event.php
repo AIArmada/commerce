@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Events\Database\Factories\EventFactory;
-use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Enums\ScheduleKind;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
@@ -17,6 +16,8 @@ use AIArmada\Events\States\EventStatus\EventStatus as EventStatusState;
 use AIArmada\Events\States\EventStatus\Published;
 use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Ticketing\Contracts\TicketableInterface;
+use AIArmada\Ticketing\Enums\PricingMode;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
 use Carbon\CarbonImmutable;
@@ -95,7 +96,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Model|Eloquent $owner
  * @property-read Model|Eloquent $createdBy
  */
-class Event extends Model implements HasMedia
+class Event extends Model implements HasMedia, TicketableInterface
 {
     use HasContactMethods;
     use HasFactory;
@@ -283,6 +284,11 @@ class Event extends Model implements HasMedia
     public function passes(): MorphMany
     {
         return $this->morphMany(Pass::class, 'ticketable');
+    }
+
+    public function transferWindowEndsAt(): ?CarbonImmutable
+    {
+        return null;
     }
 
     /**

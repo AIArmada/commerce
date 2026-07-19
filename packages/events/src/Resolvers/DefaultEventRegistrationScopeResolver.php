@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Events\Resolvers;
 
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
-use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Support\EventRegistrationScope;
+use AIArmada\Ticketing\Enums\PricingMode;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 

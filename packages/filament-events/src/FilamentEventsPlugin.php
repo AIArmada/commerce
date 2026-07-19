@@ -80,6 +80,12 @@ final class FilamentEventsPlugin implements Plugin
         if ($e['event_template'] ?? true) {
             $r[] = Resources\EventTemplateResource::class;
         }
+        if ($e['event_taxonomy'] ?? true) {
+            $r[] = Resources\EventTaxonomyResource::class;
+        }
+        if ($e['event_term'] ?? true) {
+            $r[] = Resources\EventTermResource::class;
+        }
 
         return $r;
     }
