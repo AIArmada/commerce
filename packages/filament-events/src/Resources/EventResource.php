@@ -316,7 +316,7 @@ final class EventResource extends Resource
 
     protected static function extractString(mixed $value): string
     {
-        if ($value instanceof \BackedEnum) {
+        if ($value instanceof BackedEnum) {
             return $value->value;
         }
 
