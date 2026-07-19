@@ -10,7 +10,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('events.database.tables.event_escalations', 'event_escalations'), function (Blueprint $table): void {
+        $tableName = config('events.database.tables.event_escalations', 'event_escalations');
+
+        if (Schema::hasTable($tableName)) {
+            return;
+        }
+
+        Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('event_id')->index();
             $table->string('type');
