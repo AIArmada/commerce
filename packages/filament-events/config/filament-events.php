@@ -19,6 +19,8 @@ return [
             'attendance' => true,
             'change_log' => true,
             'event_template' => true,
+            'event_taxonomy' => true,
+            'event_term' => true,
         ],
         'navigation_sort' => [
             'event' => 1,
@@ -30,6 +32,8 @@ return [
             'ticket_type' => 11,
             'registration_participant' => 11,
             'attendance' => 12,
+            'event_taxonomy' => 20,
+            'event_term' => 21,
             'change_log' => 99,
             'event_template' => 98,
         ],
