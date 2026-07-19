@@ -77,7 +77,8 @@ final class EventResource extends Resource
                     ->color(fn (mixed $state): string | array | null => $state instanceof HasColor ? $state->getColor() : 'gray'),
                 Tables\Columns\TextColumn::make('visibility')
                     ->badge()
-                    ->color(fn (mixed $state): string => match ((string) $state) {
+                    ->formatStateUsing(fn (mixed $state): string => self::extractString($state))
+                    ->color(fn (mixed $state): string => match (self::extractString($state)) {
                         'public' => 'success',
                         'unlisted' => 'warning',
                         'private', 'internal' => 'danger',
@@ -85,7 +86,8 @@ final class EventResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('delivery_mode')
                     ->badge()
-                    ->color(fn (mixed $state): string => match ((string) $state) {
+                    ->formatStateUsing(fn (mixed $state): string => self::extractString($state))
+                    ->color(fn (mixed $state): string => match (self::extractString($state)) {
                         'physical' => 'info',
                         'online' => 'success',
                         'hybrid' => 'warning',
@@ -187,8 +189,8 @@ final class EventResource extends Resource
                 Section::make('Lifecycle')
                     ->schema([
                         TextEntry::make('status')->badge(),
-                        TextEntry::make('visibility')->badge(),
-                        TextEntry::make('delivery_mode')->badge(),
+                        TextEntry::make('visibility')->badge()->formatStateUsing(fn (mixed $state): string => self::extractString($state)),
+                        TextEntry::make('delivery_mode')->badge()->formatStateUsing(fn (mixed $state): string => self::extractString($state)),
                         TextEntry::make('published_at')->dateTime(),
                         TextEntry::make('cancelled_at')->dateTime(),
                         TextEntry::make('postponed_at')->dateTime(),
@@ -310,5 +312,18 @@ final class EventResource extends Resource
         }
 
         return [];
+    }
+
+    protected static function extractString(mixed $value): string
+    {
+        if ($value instanceof \BackedEnum) {
+            return $value->value;
+        }
+
+        if (is_string($value)) {
+            return $value;
+        }
+
+        return '';
     }
 }
