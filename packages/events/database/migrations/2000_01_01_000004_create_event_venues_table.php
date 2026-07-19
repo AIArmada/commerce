@@ -37,6 +37,7 @@ return new class extends Migration
             $table->string('geocoding_source')->nullable();
             $table->string('status')->index();
             $table->string('visibility')->index();
+            $table->foreignUuid('verified_by')->nullable()->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
         });
