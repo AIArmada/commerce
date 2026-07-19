@@ -24,7 +24,7 @@ it('only lists approval requests for event submissions', function (): void {
         ]);
 
         EventApprovalRequest::factory()->create([
-            'approvable_type' => EventSubmission::class,
+            'approvable_type' => $submission->getMorphClass(),
             'approvable_id' => $submission->id,
         ]);
 
