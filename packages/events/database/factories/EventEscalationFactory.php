@@ -21,7 +21,7 @@ final class EventEscalationFactory extends Factory
         return [
             'event_id' => EventFactory::new(),
             'type' => EventEscalationType::ModeratorSla,
-            'decision_key' => Str::uuid()->toString().':moderator_sla',
+            'decision_key' => Str::uuid()->toString() . ':moderator_sla',
             'reason' => $this->faker->sentence(),
         ];
     }
