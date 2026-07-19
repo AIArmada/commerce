@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use AIArmada\Addressing\Traits\HasAddresses;
@@ -16,6 +18,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Override;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 use Spatie\DeletedModels\Models\Concerns\KeepsDeletedModels;
 use Spatie\Image\Enums\Fit;
@@ -77,7 +80,7 @@ class Venue extends PackageVenue implements AuditableContract
         'visibility',
     ];
 
-    #[\Override]
+    #[Override]
     protected function casts(): array
     {
         return [
@@ -85,13 +88,13 @@ class Venue extends PackageVenue implements AuditableContract
         ];
     }
 
-    #[\Override]
+    #[Override]
     protected static function newFactory(): VenueFactory
     {
         return VenueFactory::new();
     }
 
-    #[\Override]
+    #[Override]
     protected static function booted(): void
     {
         static::saving(function (self $venue): void {
@@ -121,7 +124,7 @@ class Venue extends PackageVenue implements AuditableContract
     /**
      * Register media collections for Spatie Media Library.
      */
-    #[\Override]
+    #[Override]
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('cover')
