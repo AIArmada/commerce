@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventApprovalRequest;
+use AIArmada\Events\Models\EventSubmission;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -67,7 +68,7 @@ final class ApprovalQueue extends Page implements HasTable
                 SelectFilter::make('status')
                     ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected']),
                 SelectFilter::make('approvable_type')
-                    ->options([(new EventSubmission)->getMorphClass() => 'Event Submission']),
+                    ->options(['event_submission' => 'Event Submission']),
             ])
             ->actions([
                 Action::make('approve')
