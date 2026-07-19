@@ -79,7 +79,6 @@ final class LowInventoryAlertsWidget extends TableWidget
                     ->color('danger')
                     ->weight('bold'),
             ])
-            ->defaultSort('deficit', 'desc')
             ->paginated([5, 10, 25])
             ->striped()
             ->emptyStateHeading('No Low Stock Items')

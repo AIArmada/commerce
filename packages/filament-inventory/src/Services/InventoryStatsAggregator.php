@@ -12,6 +12,7 @@ use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 final class InventoryStatsAggregator
 {
@@ -173,6 +174,7 @@ final class InventoryStatsAggregator
             ->whereHas('location', fn (Builder $q): Builder => $q->where('is_active', true))
             ->whereRaw('quantity_on_hand - quantity_reserved <= reorder_point')
             ->where('reorder_point', '>', 0)
+            ->addSelect(DB::raw('(reorder_point - (quantity_on_hand - quantity_reserved)) AS deficit'))
             ->orderByRaw('reorder_point - (quantity_on_hand - quantity_reserved) DESC');
     }
 
