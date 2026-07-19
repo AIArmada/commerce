@@ -99,6 +99,7 @@ return [
             'event_verifications' => env('EVENTS_TABLE_VERIFICATIONS', $tablePrefix . 'event_verifications'),
 
             // Module 9: Moderation & Reporting
+            'event_escalations' => env('EVENTS_TABLE_ESCALATIONS', $tablePrefix . 'event_escalations'),
             'event_reports' => env('EVENTS_TABLE_REPORTS', $tablePrefix . 'event_reports'),
             'event_moderation_actions' => env('EVENTS_TABLE_MODERATION_ACTIONS', $tablePrefix . 'event_moderation_actions'),
         ],

@@ -90,6 +90,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventChangeLog> $changeLogs
  * @property-read Collection<int, EventUpdate> $updates
  * @property-read Collection<int, EventNotificationBatch> $notificationBatches
+ * @property-read Collection<int, EventEscalation> $escalations
  * @property-read Collection<int, SeatMap> $seatMaps
  * @property-read Model|Eloquent $owner
  * @property-read Model|Eloquent $createdBy
@@ -603,6 +604,21 @@ class Event extends Model implements HasMedia
         $media = $this->mediaRecords->first();
 
         return $media?->url;
+    }
+
+    /**
+     * @return HasMany<EventEscalation, $this>
+     */
+    public function escalations(): HasMany
+    {
+        return $this->hasMany(EventEscalation::class);
+    }
+
+    public function resolveEscalations(): void
+    {
+        $this->escalations()
+            ->whereNull('resolved_at')
+            ->update(['resolved_at' => now()]);
     }
 
     public function registerMediaCollections(): void
