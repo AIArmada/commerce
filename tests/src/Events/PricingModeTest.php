@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Enums\PricingMode;
+use AIArmada\Ticketing\Enums\PricingMode;
 
 it('has three cases', function (): void {
     expect(PricingMode::cases())->toHaveCount(3);

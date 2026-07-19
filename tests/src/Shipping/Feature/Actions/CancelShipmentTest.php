@@ -12,7 +12,6 @@ use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\States\Cancelled;
 use AIArmada\Shipping\States\Pending;
 use AIArmada\Shipping\States\Shipped;
-use RuntimeException;
 
 describe('CancelShipment Action', function (): void {
     it('cancels a cancellable shipment', function (): void {

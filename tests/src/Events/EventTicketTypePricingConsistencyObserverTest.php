@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Exceptions\InconsistentTicketTypePricingException;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
+use AIArmada\Ticketing\Enums\PricingMode;
 
 it('allows free ticket type on free event', function (): void {
     $event = Event::factory()->free()->create();

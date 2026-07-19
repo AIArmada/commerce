@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Support\EventRegistrationScope;
+use AIArmada\Ticketing\Enums\PricingMode;
 
 it('creates scope from explicit modes', function (): void {
     $event = Event::factory()->make();

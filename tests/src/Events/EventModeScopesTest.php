@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
+use AIArmada\Ticketing\Enums\PricingMode;
 
 beforeEach(function (): void {
     config()->set('events.features.free_only.auto_derive_pricing_from_ticket_types', true);
