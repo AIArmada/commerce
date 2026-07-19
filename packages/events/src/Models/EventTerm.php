@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventTermPolicy> $policies
  */
 final class EventTerm extends Model
 {
@@ -72,6 +73,12 @@ final class EventTerm extends Model
             ->where($this->getTable() . '.event_taxonomy_id', $this->event_taxonomy_id)
             ->orderBy('sort_order')
             ->orderBy('name');
+    }
+
+    /** @return HasMany<EventTermPolicy, $this> */
+    public function policies(): HasMany
+    {
+        return $this->hasMany(EventTermPolicy::class, 'event_term_id');
     }
 
     /** @param Builder<self> $query */
