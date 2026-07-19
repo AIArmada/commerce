@@ -70,6 +70,7 @@ use AIArmada\Events\Models\EventManagementAssignment;
 use AIArmada\Events\Models\EventManagementAssignmentRequest;
 use AIArmada\Events\Models\EventModerationAction;
 use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRecurrenceRule;
 use AIArmada\Events\Models\EventReport;
 use AIArmada\Events\Models\EventRevision;
@@ -120,6 +121,7 @@ use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Ticketing\Events\PassIssued;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use RuntimeException;
@@ -246,6 +248,8 @@ final class EventsServiceProvider extends PackageServiceProvider
                     SyncManagementAssignmentToAuthzAction::class,
                 );
         }
+
+        $this->registerMorphMap();
     }
 
     public function bootingPackage(): void
@@ -284,6 +288,13 @@ final class EventsServiceProvider extends PackageServiceProvider
         if (interface_exists(StepContributor::class)) {
             $this->app->tag(EventsStepContributor::class, 'checkout.steps');
         }
+    }
+
+    private function registerMorphMap(): void
+    {
+        Relation::morphMap([
+            'event_registration' => EventRegistration::class,
+        ]);
     }
 
     private function checkoutPipelineAvailable(): bool
