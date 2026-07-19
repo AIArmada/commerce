@@ -10,6 +10,7 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -23,6 +24,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Contracts\HasColor;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,7 +32,12 @@ use UnitEnum;
 
 final class EventResource extends Resource
 {
-    protected static ?string $model = Event::class;
+    protected static ?string $model = null;
+
+    public static function getModel(): string
+    {
+        return ModelResolver::eventClass();
+    }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-calendar';
 
@@ -67,17 +74,7 @@ final class EventResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (mixed $state): string => match ((string) $state) {
-                        'draft' => 'gray',
-                        'pending_review' => 'warning',
-                        'scheduled' => 'info',
-                        'published' => 'success',
-                        'delayed', 'postponed' => 'warning',
-                        'cancelled', 'voided', 'expired' => 'danger',
-                        'completed' => 'success',
-                        'archived' => 'gray',
-                        default => 'gray',
-                    }),
+                    ->color(fn (mixed $state): string|array|null => $state instanceof HasColor ? $state->getColor() : 'gray'),
                 Tables\Columns\TextColumn::make('visibility')
                     ->badge()
                     ->color(fn (mixed $state): string => match ((string) $state) {
@@ -110,17 +107,7 @@ final class EventResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'draft' => 'Draft',
-                        'pending_review' => 'Pending Review',
-                        'scheduled' => 'Scheduled',
-                        'published' => 'Published',
-                        'delayed' => 'Delayed',
-                        'postponed' => 'Postponed',
-                        'cancelled' => 'Cancelled',
-                        'completed' => 'Completed',
-                        'archived' => 'Archived',
-                    ]),
+                    ->options(fn (): array => static::getStatusOptions()),
                 Tables\Filters\SelectFilter::make('visibility')
                     ->options([
                         'public' => 'Public',
@@ -145,7 +132,7 @@ final class EventResource extends Resource
                     ->action(function (Event $record): void {
                         app(EventLifecycleWorkflow::class)->publish($record);
                     })
-                    ->visible(fn (?Event $record) => $record !== null && in_array((string) $record->status, [Event::DRAFT, Event::PENDING_REVIEW], true))
+                    ->visible(fn (?Event $record) => $record !== null && in_array((string) $record->status, ['draft', 'pending', 'pending_review', 'needs_changes'], true))
                     ->requiresConfirmation(),
                 Action::make('archive')
                     ->label('Archive')
@@ -154,7 +141,7 @@ final class EventResource extends Resource
                     ->action(function (Event $record): void {
                         app(EventLifecycleWorkflow::class)->archive($record);
                     })
-                    ->visible(fn (?Event $record) => $record !== null && (string) $record->status === Event::PUBLISHED)
+                    ->visible(fn (?Event $record) => $record !== null && (string) $record->status === 'approved')
                     ->requiresConfirmation(),
                 Action::make('cancel')
                     ->label('Cancel')
@@ -236,39 +223,27 @@ final class EventResource extends Resource
                 Section::make('Lifecycle')
                     ->schema([
                         Select::make('status')
-                            ->options([
-                                Event::DRAFT => 'Draft',
-                                Event::PENDING_REVIEW => 'Pending Review',
-                                Event::SCHEDULED => 'Scheduled',
-                                Event::PUBLISHED => 'Published',
-                                Event::DELAYED => 'Delayed',
-                                Event::POSTPONED => 'Postponed',
-                                Event::CANCELLED => 'Cancelled',
-                                Event::COMPLETED => 'Completed',
-                                Event::ARCHIVED => 'Archived',
-                                Event::VOIDED => 'Voided',
-                                Event::EXPIRED => 'Expired',
-                            ])
-                            ->default(Event::DRAFT)
+                            ->options(fn (): array => static::getStatusOptions())
+                            ->default('draft')
                             ->hiddenOn('edit')
                             ->required(),
                         Select::make('visibility')
                             ->options([
-                                Event::PUBLIC => 'Public',
-                                Event::UNLISTED => 'Unlisted',
-                                Event::PRIVATE => 'Private',
-                                Event::INTERNAL => 'Internal',
+                                'public' => 'Public',
+                                'unlisted' => 'Unlisted',
+                                'private' => 'Private',
+                                'internal' => 'Internal',
                             ])
-                            ->default(Event::PUBLIC)
+                            ->default('public')
                             ->hiddenOn('edit')
                             ->required(),
                         Select::make('delivery_mode')
                             ->options([
-                                Event::DELIVERY_PHYSICAL => 'Physical',
-                                Event::DELIVERY_ONLINE => 'Online',
-                                Event::DELIVERY_HYBRID => 'Hybrid',
+                                'physical' => 'Physical',
+                                'online' => 'Online',
+                                'hybrid' => 'Hybrid',
                             ])
-                            ->default(Event::DELIVERY_PHYSICAL)
+                            ->default('physical')
                             ->hiddenOn('edit'),
                     ])->columns(3),
                 Section::make('Pricing & Registration')
@@ -312,5 +287,28 @@ final class EventResource extends Resource
             'view' => EventResource\Pages\ViewEvent::route('/{record}'),
             'edit' => EventResource\Pages\EditEvent::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected static function getStatusOptions(): array
+    {
+        $modelClass = static::getModel();
+        $statusCast = app($modelClass)->getCasts()['status'] ?? null;
+
+        if ($statusCast === null) {
+            return [];
+        }
+
+        if (method_exists($statusCast, 'getStatesLabel')) {
+            return $statusCast::getStatesLabel($modelClass);
+        }
+
+        if (method_exists($statusCast, 'options')) {
+            return $statusCast::options();
+        }
+
+        return [];
     }
 }
