@@ -190,10 +190,10 @@ final class AuthzServiceProvider extends ServiceProvider
 
         $this->app['events']->listen(
             RequestReceived::class,
-            function (): void {
+            static function (): void {
                 app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-                if ($this->app->has(Authz::class)) {
+                if (app()->has(Authz::class)) {
                     app(Authz::class)->clearCache();
                 }
             }

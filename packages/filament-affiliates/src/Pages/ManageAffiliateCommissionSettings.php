@@ -96,5 +96,6 @@ class ManageAffiliateCommissionSettings extends Page
         foreach ($this->multi_level_rates as $i => &$rate) {
             $rate['level'] = $i + 1;
         }
+        unset($rate);
     }
 }
