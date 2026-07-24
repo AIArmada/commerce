@@ -50,3 +50,4 @@ parameters:
             - vendor
             - 'packages/*/vendor/*'
             - '*/Testing/*'
+            - 'packages/*/resources/data/*'
