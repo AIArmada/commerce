@@ -43,6 +43,8 @@ class Generator
 
     public function imageUrl(int $width = 640, int $height = 480, ?string $category = null, bool $randomize = true, ?string $word = null, bool $gray = false, string $format = 'png'): string {}
 
+    public function jobTitle(): string {}
+
     public function ipv4(): string {}
 
     public function lastName(): string {}
