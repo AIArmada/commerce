@@ -19,13 +19,13 @@ use AIArmada\Persons\Models\TitleAssignment;
 use AIArmada\Persons\Models\TitleCategory;
 use AIArmada\Persons\Models\TitleIssuer;
 
-beforeEach(function () {
+beforeEach(function (): void {
     persons_register_morph_map('person');
 });
 
-describe('person identity models', function () {
+describe('person identity models', function (): void {
 
-    it('creates a person with basic fields', function () {
+    it('creates a person with basic fields', function (): void {
         $person = Person::create([
             'name' => 'Ahmad Rahman',
             'family_name' => 'Rahman',
@@ -41,7 +41,7 @@ describe('person identity models', function () {
         expect($person->status)->toBe('verified');
     });
 
-    it('creates a person with multi-context names', function () {
+    it('creates a person with multi-context names', function (): void {
         $person = Person::factory()->create();
 
         PersonName::create([
@@ -63,7 +63,7 @@ describe('person identity models', function () {
         expect($person->names->first()->name_type)->toBe(PersonNameType::Display);
     });
 
-    it('creates a title category with titles', function () {
+    it('creates a title category with titles', function (): void {
         $category = TitleCategory::create([
             'code' => 'test_category',
             'name' => 'Test Category',
@@ -83,7 +83,7 @@ describe('person identity models', function () {
         expect($title->usage_position)->toBe(TitleUsagePosition::BeforeName);
     });
 
-    it('assigns a title to a person polymorphically', function () {
+    it('assigns a title to a person polymorphically', function (): void {
         $person = Person::factory()->create();
         $category = TitleCategory::create(['code' => 'state_honour', 'name' => 'State Honour']);
         $title = Title::create([
@@ -106,7 +106,7 @@ describe('person identity models', function () {
         expect($assignment->titleable->id)->toBe($person->id);
     });
 
-    it('creates credential definition and assignment', function () {
+    it('creates credential definition and assignment', function (): void {
         $person = Person::factory()->create();
         $definition = CredentialDefinition::create([
             'name' => 'Doctor of Philosophy',
@@ -125,7 +125,7 @@ describe('person identity models', function () {
         expect($assignment->credential->short_form)->toBe('PhD');
     });
 
-    it('creates affiliation with roles for a person', function () {
+    it('creates affiliation with roles for a person', function (): void {
         $person = Person::factory()->create();
 
         $affiliation = Affiliation::create([
@@ -152,7 +152,7 @@ describe('person identity models', function () {
         expect($affiliation->fresh()->roles)->toHaveCount(2);
     });
 
-    it('formats display name with ordered titles', function () {
+    it('formats display name with ordered titles', function (): void {
         $person = Person::create(['name' => 'Ahmad Rahman', 'status' => 'verified']);
         $academic = TitleCategory::create(['code' => 'academic', 'name' => 'Academic']);
         $honour = TitleCategory::create(['code' => 'state_honour', 'name' => 'State Honour']);
@@ -185,7 +185,7 @@ describe('person identity models', function () {
         expect($person->formatted_name)->toBe('Datuk Dr. Ahmad Rahman, PhD');
     });
 
-    it('enforces enum casts on model properties', function () {
+    it('enforces enum casts on model properties', function (): void {
         $category = TitleCategory::create(['code' => 'religious', 'name' => 'Religious']);
         $title = Title::create([
             'category_id' => $category->id,
@@ -198,7 +198,7 @@ describe('person identity models', function () {
         expect($title->usage_position->value)->toBe('before_name');
     });
 
-    it('creates a title issuer', function () {
+    it('creates a title issuer', function (): void {
         $issuer = TitleIssuer::create([
             'issuer_name' => 'Board of Engineers Malaysia',
             'issuer_type' => IssuerType::ProfessionalBoard,
@@ -208,7 +208,7 @@ describe('person identity models', function () {
         expect($issuer->issuer_type)->toBe(IssuerType::ProfessionalBoard);
     });
 
-    it('has no soft deletes or FK constraints in migrations', function () {
+    it('has no soft deletes or FK constraints in migrations', function (): void {
         $dir = __DIR__ . '/../../../packages/persons/database/migrations/';
         $files = glob($dir . '*.php');
         expect($files)->not->toBeEmpty();
@@ -223,7 +223,7 @@ describe('person identity models', function () {
         }
     });
 
-    it('has uuid primary keys in all create table migrations', function () {
+    it('has uuid primary keys in all create table migrations', function (): void {
         $dir = __DIR__ . '/../../../packages/persons/database/migrations/';
         $files = glob($dir . '*.php');
         expect($files)->not->toBeEmpty();

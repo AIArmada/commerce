@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Persons;
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Persons\PersonsServiceProvider;
 
 abstract class PersonsTestCase extends TestCase
 {
@@ -16,7 +17,7 @@ abstract class PersonsTestCase extends TestCase
     protected function getPackageProviders($app): array
     {
         return array_merge(parent::getPackageProviders($app), [
-            \AIArmada\Persons\PersonsServiceProvider::class,
+            PersonsServiceProvider::class,
         ]);
     }
 }
