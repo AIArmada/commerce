@@ -7,7 +7,7 @@ namespace App\Providers;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Cashier\Cashier;
-use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Models\Client;
