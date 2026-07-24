@@ -136,7 +136,7 @@ final class AddressCountryResource extends Resource
                         TextInput::make('official_name')->label('Official Name'),
                         TextInput::make('native')->label('Native Name'),
                         TextInput::make('phone_code')->label('Phone Code'),
-                        TextInput::make('currency')->label('Default Currency Code'),
+                        TextInput::make('currency')->label('Default Currency'),
                     ])->columns(2),
                 Section::make('Metadata')
                     ->schema([

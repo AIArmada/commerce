@@ -36,20 +36,20 @@ it('includes MY Malaysia with ISO2 MY and ISO3 MYS', function (): void {
     expect($my->name)->toContain('Malaysia');
 });
 
-it('stores calling_codes as array', function (): void {
+it('does not populate calling_codes (dropped from bundled data)', function (): void {
     $this->action->execute();
 
     $my = AddressCountry::where('iso2', 'MY')->first();
 
-    expect($my->calling_codes)->toBeArray();
+    expect($my->calling_codes)->toBeNull();
 });
 
-it('stores currency_codes as array', function (): void {
+it('stores currencies as array', function (): void {
     $this->action->execute();
 
     $my = AddressCountry::where('iso2', 'MY')->first();
 
-    expect($my->currency_codes)->toBeArray();
+    expect($my->currencies)->toBeArray();
 });
 
 it('stores timezones as array', function (): void {
