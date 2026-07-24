@@ -26,7 +26,7 @@ class AddressCountryExporter extends Exporter
                 ->label('Name'),
             ExportColumn::make('official_name')
                 ->label('Official Name'),
-            ExportColumn::make('native_name')
+            ExportColumn::make('native')
                 ->label('Native Name'),
             ExportColumn::make('entity_type')
                 ->label('Entity Type'),
@@ -34,7 +34,7 @@ class AddressCountryExporter extends Exporter
                 ->label('Independent'),
             ExportColumn::make('phone_code')
                 ->label('Phone Code'),
-            ExportColumn::make('default_currency_code')
+            ExportColumn::make('currency')
                 ->label('Currency'),
             ExportColumn::make('region')
                 ->label('Region'),

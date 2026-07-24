@@ -14,6 +14,7 @@ use AIArmada\Commerce\Tests\FilamentInventory\FilamentInventoryTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Commerce\Tests\Jnt\JntTestCase;
+use AIArmada\Commerce\Tests\Persons\PersonsTestCase;
 use AIArmada\Commerce\Tests\Products\ProductsTestCase;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Models\Role;
@@ -77,6 +78,8 @@ pest()->extend(TestCase::class)->in(
     'src/Moderation',
     'src/References',
 );
+
+pest()->extend(PersonsTestCase::class)->in('src/Persons');
 
 pest()->extend(ProductsTestCase::class)->in('src/Products');
 

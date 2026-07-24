@@ -6,6 +6,8 @@ use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\AddressSnapshot;
+use AIArmada\Addressing\Models\City;
+use AIArmada\Addressing\Models\State;
 
 return [
     'navigation' => [
@@ -14,6 +16,8 @@ return [
         'sort' => 80,
         'icons' => [
             'countries' => 'heroicon-o-globe-alt',
+            'states' => 'heroicon-o-map',
+            'cities' => 'heroicon-o-building-office',
             'areas' => 'heroicon-o-map',
             'addresses' => 'heroicon-o-map-pin',
             'snapshots' => 'heroicon-o-document-text',
@@ -34,6 +38,18 @@ return [
             'enabled' => true,
             'read_only' => true,
             'model' => AddressCountry::class,
+        ],
+
+        'states' => [
+            'enabled' => true,
+            'read_only' => false,
+            'model' => State::class,
+        ],
+
+        'cities' => [
+            'enabled' => true,
+            'read_only' => false,
+            'model' => City::class,
         ],
 
         'areas' => [

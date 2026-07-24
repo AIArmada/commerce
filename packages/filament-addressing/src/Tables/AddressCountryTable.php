@@ -38,7 +38,7 @@ class AddressCountryTable
                     ->label('Independent')
                     ->boolean()
                     ->toggleable(),
-                TextColumn::make('default_currency_code')
+                TextColumn::make('currency')
                     ->label('Currency')
                     ->toggleable(),
                 TextColumn::make('phone_code')
@@ -68,7 +68,7 @@ class AddressCountryTable
                     ]),
                 SelectFilter::make('region')
                     ->options(fn (): array => self::getRegionOptions()),
-                SelectFilter::make('default_currency_code')
+                SelectFilter::make('currency')
                     ->label('Currency')
                     ->options(fn (): array => self::getCurrencyOptions()),
             ])
@@ -89,10 +89,10 @@ class AddressCountryTable
     private static function getCurrencyOptions(): array
     {
         $models = AddressCountry::query()
-            ->whereNotNull('default_currency_code')
+            ->whereNotNull('currency')
             ->distinct()
-            ->orderBy('default_currency_code')
-            ->pluck('default_currency_code', 'default_currency_code')
+            ->orderBy('currency')
+            ->pluck('currency', 'currency')
             ->toArray();
 
         return array_combine($models, $models);

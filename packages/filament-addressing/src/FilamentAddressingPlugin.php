@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing;
 
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
+use AIArmada\FilamentAddressing\Resources\AddressCityResource;
 use AIArmada\FilamentAddressing\Resources\AddressCountryResource;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
 use AIArmada\FilamentAddressing\Resources\AddressSnapshotResource;
+use AIArmada\FilamentAddressing\Resources\AddressStateResource;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
@@ -42,6 +44,14 @@ final class FilamentAddressingPlugin implements Plugin
 
         if (config('filament-addressing.resources.countries.enabled')) {
             $resources[] = AddressCountryResource::class;
+        }
+
+        if (config('filament-addressing.resources.states.enabled')) {
+            $resources[] = AddressStateResource::class;
+        }
+
+        if (config('filament-addressing.resources.cities.enabled')) {
+            $resources[] = AddressCityResource::class;
         }
 
         if (config('filament-addressing.resources.areas.enabled')) {

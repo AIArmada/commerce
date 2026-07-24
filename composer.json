@@ -93,7 +93,8 @@
     "autoload": {
         "files": [
             "packages/authz/src/helpers.php",
-            "packages/commerce-support/src/helpers.php"
+            "packages/commerce-support/src/helpers.php",
+            "packages/persons/src/helpers.php"
         ],
         "psr-4": {
             "AIArmada\\Cart\\": "packages/cart/src",
@@ -201,6 +202,10 @@
             "AIArmada\\Orders\\": "packages/orders/src",
             "AIArmada\\Orders\\Database\\Factories\\": "packages/orders/database/factories",
             "AIArmada\\Orders\\Tests\\": "tests/src/Orders/",
+            "AIArmada\\Persons\\": "packages/persons/src",
+            "AIArmada\\Persons\\Database\\Factories\\": "packages/persons/database/factories",
+            "AIArmada\\Persons\\Database\\Seeders\\": "packages/persons/database/seeders",
+            "AIArmada\\Persons\\Tests\\": "tests/src/Persons/",
             "AIArmada\\Pricing\\": "packages/pricing/src",
             "AIArmada\\Pricing\\Database\\Factories\\": "packages/pricing/database/factories",
             "AIArmada\\Pricing\\Tests\\": "tests/src/Pricing/",
@@ -219,6 +224,8 @@
             "AIArmada\\FilamentCustomers\\Tests\\": "tests/src/FilamentCustomers/",
             "AIArmada\\FilamentOrders\\": "packages/filament-orders/src",
             "AIArmada\\FilamentOrders\\Tests\\": "tests/src/FilamentOrders/",
+            "AIArmada\\FilamentPersons\\": "packages/filament-persons/src",
+            "AIArmada\\FilamentPersons\\Tests\\": "tests/src/FilamentPersons/",
             "AIArmada\\FilamentPricing\\": "packages/filament-pricing/src",
             "AIArmada\\FilamentPricing\\Tests\\": "tests/src/FilamentPricing/",
             "AIArmada\\FilamentTax\\": "packages/filament-tax/src",

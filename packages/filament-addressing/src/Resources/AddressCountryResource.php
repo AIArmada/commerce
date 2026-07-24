@@ -67,7 +67,7 @@ final class AddressCountryResource extends Resource
                         TextEntry::make('name'),
                         TextEntry::make('official_name'),
                         TextEntry::make('common_name'),
-                        TextEntry::make('native_name'),
+                        TextEntry::make('native'),
                         TextEntry::make('emoji'),
                     ])->columns(3),
                 Section::make('Classification')
@@ -86,10 +86,10 @@ final class AddressCountryResource extends Resource
                         TextEntry::make('calling_codes')
                             ->badge()
                             ->state(fn (AddressCountry $record): array => $record->calling_codes ?? []),
-                        TextEntry::make('default_currency_code'),
-                        TextEntry::make('currency_codes')
+                        TextEntry::make('currency'),
+                        TextEntry::make('currencies')
                             ->badge()
-                            ->state(fn (AddressCountry $record): array => $record->currency_codes ?? []),
+                            ->state(fn (AddressCountry $record): array => $record->currencies ?? []),
                     ])->columns(2),
                 Section::make('Locale')
                     ->schema([
@@ -134,9 +134,9 @@ final class AddressCountryResource extends Resource
                             ->disabled(fn (): bool => self::isReadOnly() || $country !== null),
                         TextInput::make('name')->required(),
                         TextInput::make('official_name')->label('Official Name'),
-                        TextInput::make('native_name')->label('Native Name'),
+                        TextInput::make('native')->label('Native Name'),
                         TextInput::make('phone_code')->label('Phone Code'),
-                        TextInput::make('default_currency_code')->label('Default Currency Code'),
+                        TextInput::make('currency')->label('Default Currency Code'),
                     ])->columns(2),
                 Section::make('Metadata')
                     ->schema([
