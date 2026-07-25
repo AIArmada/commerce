@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources\PersonResource\Schemas;
 
+use AIArmada\Persons\Enums\Gender;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -29,10 +30,7 @@ class PersonForm
                         TextInput::make('middle_name')
                             ->maxLength(100),
                         Select::make('gender')
-                            ->options([
-                                'male' => 'Male',
-                                'female' => 'Female',
-                            ]),
+                            ->options(Gender::class),
                         DateTimePicker::make('date_of_birth')
                             ->native(false),
                         TextInput::make('status')
