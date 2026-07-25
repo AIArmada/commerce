@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Persons\Enums\AffiliationType;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\CredentialType;
+use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\IssuerType;
 use AIArmada\Persons\Enums\PersonNameType;
 use AIArmada\Persons\Enums\TitleUsagePosition;
@@ -37,7 +38,7 @@ describe('person identity models', function (): void {
         expect($person->name)->toBe('Ahmad Rahman');
         expect($person->family_name)->toBe('Rahman');
         expect($person->middle_name)->toBe('Bin');
-        expect($person->gender)->toBe('male');
+        expect($person->gender)->toBe(Gender::Male);
         expect($person->status)->toBe('verified');
     });
 
