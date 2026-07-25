@@ -26,3 +26,5 @@ vendor/orchestra/testbench-core/laravel/database/migrations/*.php
 # Architecture handoff artifacts
 architecture-handoff-*/
 architecture-handoff-*.zip
+
+.superpowers
