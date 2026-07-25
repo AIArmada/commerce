@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Database\Seeders;
+namespace AIArmada\CommerceSupport\Database\Seeders;
 
-use AIArmada\Persons\Actions\SeedLanguagesAction;
+use AIArmada\CommerceSupport\Actions\SeedLanguagesAction;
 use Illuminate\Database\Seeder;
 
 final class LanguageSeeder extends Seeder

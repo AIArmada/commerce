@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Actions;
+namespace AIArmada\CommerceSupport\Actions;
 
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -17,7 +17,7 @@ class SeedLanguagesAction
             throw new RuntimeException('Language data file must return an array.');
         }
 
-        $table = config('persons.database.tables.languages', 'languages');
+        $table = config('commerce-support.database.tables.languages', 'languages');
         $now = now()->toIso8601ZuluString();
         $created = 0;
         $updated = 0;

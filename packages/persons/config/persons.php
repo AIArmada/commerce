@@ -21,7 +21,6 @@ return [
             'credential_assignments' => env('PERSONS_TABLE_CREDENTIAL_ASSIGNMENTS', $tablePrefix . 'credential_assignments'),
             'affiliations' => env('PERSONS_TABLE_AFFILIATIONS', $tablePrefix . 'affiliations'),
             'affiliation_roles' => env('PERSONS_TABLE_AFFILIATION_ROLES', $tablePrefix . 'affiliation_roles'),
-            'languages' => env('PERSONS_TABLE_LANGUAGES', $tablePrefix . 'languages'),
         ],
     ],
 

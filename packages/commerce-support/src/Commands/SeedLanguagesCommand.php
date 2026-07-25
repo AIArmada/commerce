@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Commands;
+namespace AIArmada\CommerceSupport\Commands;
 
-use AIArmada\Persons\Actions\SeedLanguagesAction;
+use AIArmada\CommerceSupport\Actions\SeedLanguagesAction;
 use Illuminate\Console\Command;
 
 class SeedLanguagesCommand extends Command
 {
-    protected $signature = 'persons:seed-languages';
+    protected $signature = 'commerce:seed-languages';
 
     protected $description = 'Seed languages table with bundled ISO 639-1 language data';
 

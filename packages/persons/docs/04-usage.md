@@ -119,18 +119,18 @@ public function nationality(): BelongsTo
 
 ## Wiring language relations
 
-`language_code` columns store ISO 639-1 codes (`en`, `ms`, `ar`). The package ships a `languages` table with bundled ISO 639-1 data.
+`language_code` columns store ISO 639-1 codes (`en`, `ms`, `ar`). A `languages` lookup table with bundled ISO 639-1 data is provided by `aiarmada/commerce-support`.
 
 Seed it once after migration:
 
 ```bash
-php artisan persons:seed-languages
+php artisan commerce:seed-languages
 ```
 
 Or from a seeder:
 
 ```php
-$this->call(\AIArmada\Persons\Database\Seeders\LanguageSeeder::class);
+$this->call(\AIArmada\CommerceSupport\Database\Seeders\LanguageSeeder::class);
 ```
 
 To wire a `BelongsTo`, extend the package model and reference your own Language model:

@@ -50,7 +50,8 @@ This stores short stable type strings (e.g. `person`) in the polymorphic assignm
 ## Seed reference data
 
 ```bash
-php artisan persons:seed-languages
 php artisan db:seed --class="AIArmada\Persons\Database\Seeders\TitleCategorySeeder"
 php artisan db:seed --class="AIArmada\Persons\Database\Seeders\TitleSeeder"
 ```
+
+> Language seed data is provided by `aiarmada/commerce-support`. Run `php artisan commerce:seed-languages` after installing that package.
