@@ -53,7 +53,7 @@ class CheckoutReservationServiceTest extends InventoryTestCase
 
         $group = InventoryReservation::query()->where('reference', 'ref-1')->first();
         expect($group)->not->toBeNull();
-        expect($group->state)->toBe('reserved');
+        expect($group->status)->toBe('reserved');
 
         $allocations = InventoryAllocation::query()->where('reservation_group_id', $group->id)->get();
         expect($allocations->sum('quantity'))->toBe(3);
@@ -83,7 +83,7 @@ class CheckoutReservationServiceTest extends InventoryTestCase
         expect($outcome->state)->toBe('released');
 
         $group = InventoryReservation::query()->where('reference', 'ref-release')->first();
-        expect($group?->state)->toBe('released');
+        expect($group?->status)->toBe('released');
 
         // ponytail: not asserting allocations are deleted since releaseAllForCart may handle them differently
     }
@@ -222,7 +222,7 @@ class CheckoutReservationServiceTest extends InventoryTestCase
 
         $group = InventoryReservation::query()->where('reference', 'ref-concurrent-b')->first();
         expect($group)->not->toBeNull();
-        expect($group->state)->toBe('reserved');
+        expect($group->status)->toBe('reserved');
 
         $allocations = InventoryAllocation::query()
             ->where('reservation_group_id', $group->id)

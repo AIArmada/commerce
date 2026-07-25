@@ -1317,6 +1317,9 @@ abstract class TestCase extends Orchestra
             $table->timestamp('canceled_at')->nullable();
             $table->string('cancellation_reason')->nullable();
             $table->timestampTz('payment_failed_at')->nullable();
+            $table->timestampTz('held_at')->nullable();
+            $table->timestampTz('flagged_at')->nullable();
+            $table->timestampTz('returned_at')->nullable();
             $table->timestampTz('refunded_at')->nullable();
             $table->timestampTz('completed_at')->nullable();
             $table->timestamps();
