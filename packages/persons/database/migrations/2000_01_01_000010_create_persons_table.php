@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('searchable_name', 512)->nullable()->index();
             $table->{$jsonType}('bio')->nullable();
             $table->string('status', 50)->nullable()->index();
+            $table->timestampTz('published_at')->nullable()->index();
             $table->timestampsTz();
         });
     }

@@ -28,6 +28,7 @@ use Illuminate\Support\Collection;
  * @property string|null $searchable_name
  * @property array|null $bio
  * @property string|null $status
+ * @property CarbonImmutable|null $published_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PersonName> $names
  * @property-read string $formatted_name
  */
@@ -51,6 +52,7 @@ class Person extends Model
         'searchable_name',
         'bio',
         'status',
+        'published_at',
     ];
 
     public function getTable(): string
@@ -64,6 +66,7 @@ class Person extends Model
             'date_of_birth' => 'immutable_date',
             'bio' => 'array',
             'gender' => Gender::class,
+            'published_at' => 'immutable_datetime',
         ];
     }
 
