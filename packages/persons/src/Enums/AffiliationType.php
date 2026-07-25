@@ -14,6 +14,7 @@ enum AffiliationType: string
     case Employee = 'employee';
     case Advisor = 'advisor';
     case Partner = 'partner';
+    case ResidentScholar = 'resident_scholar';
 
     public function label(): string
     {
@@ -22,6 +23,7 @@ enum AffiliationType: string
             self::Employee => 'Employee',
             self::Advisor => 'Advisor',
             self::Partner => 'Partner',
+            self::ResidentScholar => 'Resident Scholar',
         };
     }
 }
