@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Models;
 
+use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Traits\HasAffiliations;
 use AIArmada\Persons\Traits\HasCredentials;
@@ -62,6 +63,7 @@ class Person extends Model
         return [
             'date_of_birth' => 'immutable_date',
             'bio' => 'array',
+            'gender' => Gender::class,
         ];
     }
 
