@@ -85,5 +85,4 @@ class SeedAddressStatesAction
 
         return compact('created', 'updated', 'skipped');
     }
-
 }
