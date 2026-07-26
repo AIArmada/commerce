@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('affiliatable_type');
             $table->uuid('affiliatable_id');
             $table->uuid('institution_id')->nullable()->index();
-            $table->string('affiliation_type', 50);
+            $table->string('affiliation_type', 50)->nullable();
             $table->date('joined_at')->nullable();
             $table->date('left_at')->nullable();
             $table->boolean('is_primary')->default(false);
