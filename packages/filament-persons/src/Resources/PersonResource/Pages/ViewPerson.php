@@ -8,7 +8,7 @@ use AIArmada\FilamentPersons\Resources\PersonResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 
-final class ViewPerson extends ViewRecord
+class ViewPerson extends ViewRecord
 {
     protected static string $resource = PersonResource::class;
 
