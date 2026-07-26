@@ -25,7 +25,8 @@ final class EditAddressArea extends EditRecord
     protected function mutateFormDataBeforeSave(array $data): array
     {
         if (isset($data['parent_id']) && $this->record instanceof AddressArea) {
-            $parent = AddressArea::query()->find($data['parent_id']);
+            $areaClass = AddressAreaResource::getModel();
+            $parent = $areaClass::query()->find($data['parent_id']);
 
             if ($parent instanceof AddressArea) {
                 $message = AddressAreaHierarchy::validateParentAssignment($this->record, $parent);

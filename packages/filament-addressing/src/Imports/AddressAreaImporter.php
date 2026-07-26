@@ -13,10 +13,14 @@ use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
 use JsonException;
+use LogicException;
 
 class AddressAreaImporter extends Importer
 {
-    protected static ?string $model = AddressArea::class;
+    public static function getModel(): string
+    {
+        return config('filament-addressing.resources.areas.model', AddressArea::class);
+    }
 
     public static function getColumns(): array
     {
@@ -93,12 +97,24 @@ class AddressAreaImporter extends Importer
             return null;
         }
 
-        $existing = AddressArea::query()
+        $areaClass = self::getModel();
+
+        $existing = $areaClass::query()
             ->where('source', $source)
             ->where('source_id', $sourceId)
             ->first();
 
-        return $existing ?? new AddressArea;
+        if ($existing instanceof AddressArea) {
+            return $existing;
+        }
+
+        $record = new $areaClass;
+
+        if (! $record instanceof AddressArea) {
+            throw new LogicException('Configured area model must extend AddressArea.');
+        }
+
+        return $record;
     }
 
     public function getValidationRules(): array
@@ -135,7 +151,9 @@ class AddressAreaImporter extends Importer
             ));
         }
 
-        $this->record = AddressArea::query()
+        $areaClass = self::getModel();
+
+        $this->record = $areaClass::query()
             ->where('source', $areaData->source)
             ->where('source_id', $areaData->sourceId)
             ->first() ?? $record;

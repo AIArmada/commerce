@@ -11,7 +11,10 @@ use Filament\Actions\Exports\Models\Export;
 
 class AddressAreaExporter extends Exporter
 {
-    protected static ?string $model = AddressArea::class;
+    public static function getModel(): string
+    {
+        return config('filament-addressing.resources.areas.model', AddressArea::class);
+    }
 
     public static function getColumns(): array
     {

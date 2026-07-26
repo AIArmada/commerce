@@ -79,11 +79,21 @@ final class AddressCityResource extends Resource
 
     public static function getPages(): array
     {
-        return [
+        $pages = [
             'index' => ListAddressCities::route('/'),
             'view' => ViewAddressCity::route('/{record}'),
-            'edit' => EditAddressCity::route('/{record}/edit'),
         ];
+
+        if (! self::isReadOnly()) {
+            $pages['edit'] = EditAddressCity::route('/{record}/edit');
+        }
+
+        return $pages;
+    }
+
+    public static function isReadOnly(): bool
+    {
+        return (bool) config('filament-addressing.resources.cities.read_only', false);
     }
 
     public static function form(Schema $schema): Schema

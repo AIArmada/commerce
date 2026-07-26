@@ -79,11 +79,21 @@ final class AddressStateResource extends Resource
 
     public static function getPages(): array
     {
-        return [
+        $pages = [
             'index' => ListAddressStates::route('/'),
             'view' => ViewAddressState::route('/{record}'),
-            'edit' => EditAddressState::route('/{record}/edit'),
         ];
+
+        if (! self::isReadOnly()) {
+            $pages['edit'] = EditAddressState::route('/{record}/edit');
+        }
+
+        return $pages;
+    }
+
+    public static function isReadOnly(): bool
+    {
+        return (bool) config('filament-addressing.resources.states.read_only', false);
     }
 
     public static function form(Schema $schema): Schema

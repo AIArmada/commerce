@@ -41,7 +41,7 @@ class AddressFormSchema
         $fields[] = Select::make($prefix . 'country_code')
             ->label('Country')
             ->options(
-                AddressCountry::query()
+                config('filament-addressing.resources.countries.model', AddressCountry::class)::query()
                     ->orderBy('name')
                     ->get()
                     ->mapWithKeys(fn (AddressCountry $country): array => [

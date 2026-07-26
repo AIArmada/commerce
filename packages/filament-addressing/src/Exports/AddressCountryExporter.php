@@ -11,7 +11,10 @@ use Filament\Actions\Exports\Models\Export;
 
 class AddressCountryExporter extends Exporter
 {
-    protected static ?string $model = AddressCountry::class;
+    public static function getModel(): string
+    {
+        return config('filament-addressing.resources.countries.model', AddressCountry::class);
+    }
 
     public static function getColumns(): array
     {
@@ -24,22 +27,29 @@ class AddressCountryExporter extends Exporter
                 ->label('Numeric Code'),
             ExportColumn::make('name')
                 ->label('Name'),
-            ExportColumn::make('official_name')
-                ->label('Official Name'),
             ExportColumn::make('native')
                 ->label('Native Name'),
-            ExportColumn::make('entity_type')
-                ->label('Entity Type'),
-            ExportColumn::make('is_independent')
-                ->label('Independent'),
             ExportColumn::make('phone_code')
                 ->label('Phone Code'),
-            ExportColumn::make('currency')
-                ->label('Currency'),
+            ExportColumn::make('capital')
+                ->label('Capital'),
+            ExportColumn::make('currencies.code')
+                ->label('Currencies'),
             ExportColumn::make('region')
                 ->label('Region'),
             ExportColumn::make('subregion')
                 ->label('Subregion'),
+            ExportColumn::make('tld')
+                ->label('Top-Level Domain'),
+            ExportColumn::make('latitude'),
+            ExportColumn::make('longitude'),
+            ExportColumn::make('emoji'),
+            ExportColumn::make('emojiU')
+                ->label('Emoji Unicode'),
+            ExportColumn::make('translations')
+                ->formatStateUsing(fn (mixed $state): string => is_array($state)
+                    ? (json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '')
+                    : (string) ($state ?? '')),
         ];
     }
 

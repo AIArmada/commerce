@@ -25,6 +25,8 @@ This package is not the address domain owner. The core `aiarmada/addressing` pac
 Enabled by default:
 
 - Address countries.
+- Address states.
+- Address cities.
 - Address areas.
 
 Disabled by default:
@@ -32,7 +34,7 @@ Disabled by default:
 - Addresses.
 - Address snapshots.
 
-Countries are read-only by default. Snapshots are read-only by design.
+Countries, states, and cities can be made read-only through their resource configuration. Countries are read-only by default. Snapshots are read-only by design.
 
 ## Why Addresses Are Disabled By Default
 

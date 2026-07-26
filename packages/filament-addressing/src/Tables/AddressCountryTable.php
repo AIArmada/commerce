@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Tables;
 
 use AIArmada\Addressing\Models\AddressCountry;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -27,19 +26,8 @@ class AddressCountryTable
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('official_name')
-                    ->label('Official Name')
-                    ->searchable()
-                    ->toggleable(),
-                TextColumn::make('entity_type')
-                    ->badge()
-                    ->toggleable(),
-                IconColumn::make('is_independent')
-                    ->label('Independent')
-                    ->boolean()
-                    ->toggleable(),
-                TextColumn::make('currency')
-                    ->label('Currency')
+                TextColumn::make('currencies.code')
+                    ->label('Currencies')
                     ->toggleable(),
                 TextColumn::make('phone_code')
                     ->label('Phone')
@@ -52,25 +40,11 @@ class AddressCountryTable
                     ->toggleable(),
             ])
             ->filters([
-                SelectFilter::make('entity_type')
-                    ->options([
-                        'country' => 'Country',
-                        'territory' => 'Territory',
-                        'dependent' => 'Dependent',
-                        'special' => 'Special',
-                        'disputed' => 'Disputed',
-                    ]),
-                SelectFilter::make('is_independent')
-                    ->label('Independent')
-                    ->options([
-                        '1' => 'Yes',
-                        '0' => 'No',
-                    ]),
                 SelectFilter::make('region')
                     ->options(fn (): array => self::getRegionOptions()),
-                SelectFilter::make('currency')
+                SelectFilter::make('currencies')
                     ->label('Currency')
-                    ->options(fn (): array => self::getCurrencyOptions()),
+                    ->relationship('currencies', 'code'),
             ])
             ->defaultSort('name')
             ->paginated([10, 25, 50, 100]);
@@ -78,23 +52,13 @@ class AddressCountryTable
 
     private static function getRegionOptions(): array
     {
-        return AddressCountry::query()
+        $countryClass = config('filament-addressing.resources.countries.model', AddressCountry::class);
+
+        return $countryClass::query()
             ->whereNotNull('region')
             ->distinct()
             ->orderBy('region')
             ->pluck('region', 'region')
             ->toArray();
-    }
-
-    private static function getCurrencyOptions(): array
-    {
-        $models = AddressCountry::query()
-            ->whereNotNull('currency')
-            ->distinct()
-            ->orderBy('currency')
-            ->pluck('currency', 'currency')
-            ->toArray();
-
-        return array_combine($models, $models);
     }
 }

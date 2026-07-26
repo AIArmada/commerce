@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Schemas;
 
-use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressAreaHierarchy;
 use Filament\Forms\Components\Select;
@@ -18,7 +17,7 @@ class AddressAreaFormSchema
     public static function form(Schema $schema): Schema
     {
         $record = $schema->getRecord();
-        $currentAreaId = $record instanceof AddressArea ? (string) $record->getKey() : null;
+        $currentAreaId = $record !== null ? (string) $record->getKey() : null;
 
         return $schema
             ->schema([
@@ -27,7 +26,7 @@ class AddressAreaFormSchema
                         Select::make('country_id')
                             ->label('Country')
                             ->options(
-                                AddressCountry::query()
+                                config('filament-addressing.resources.countries.model', AddressCountry::class)::query()
                                     ->orderBy('name')
                                     ->get()
                                     ->mapWithKeys(fn (AddressCountry $c): array => [$c->id => "{$c->iso2} — {$c->name}"])

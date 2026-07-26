@@ -13,8 +13,8 @@ beforeEach(function (): void {
 
 it('seeds states with codes', function (): void {
     $this->action->execute([
-        ['name' => 'Alpha', 'code' => 'AA', 'country_code' => 'US'],
-        ['name' => 'Beta', 'code' => 'BB', 'country_code' => 'US'],
+        ['name' => 'Alpha', 'state_code' => 'AA', 'country_code' => 'US'],
+        ['name' => 'Beta', 'state_code' => 'BB', 'country_code' => 'US'],
     ]);
 
     expect(State::count())->toBe(2)
@@ -47,8 +47,8 @@ it('matches codeless state by name on re-seed', function (): void {
 
 it('is idempotent', function (): void {
     $rows = [
-        ['name' => 'Alpha', 'code' => 'AA', 'country_code' => 'US'],
-        ['name' => 'Beta', 'code' => 'BB', 'country_code' => 'US'],
+        ['name' => 'Alpha', 'state_code' => 'AA', 'country_code' => 'US'],
+        ['name' => 'Beta', 'state_code' => 'BB', 'country_code' => 'US'],
     ];
 
     $first = $this->action->execute($rows);

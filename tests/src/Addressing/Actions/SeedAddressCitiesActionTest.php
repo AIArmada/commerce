@@ -15,8 +15,8 @@ beforeEach(function (): void {
 
 it('does not collapse same-name cities across different states', function (): void {
     app(SeedAddressStatesAction::class)->execute([
-        ['name' => 'Alpha', 'code' => 'AA', 'country_code' => 'US'],
-        ['name' => 'Beta', 'code' => 'BB', 'country_code' => 'US'],
+        ['name' => 'Alpha', 'state_code' => 'AA', 'country_code' => 'US'],
+        ['name' => 'Beta', 'state_code' => 'BB', 'country_code' => 'US'],
     ]);
 
     $this->action->execute([
@@ -32,7 +32,7 @@ it('does not collapse same-name cities across different states', function (): vo
 
 it('links cities to the correct state', function (): void {
     app(SeedAddressStatesAction::class)->execute([
-        ['name' => 'Alpha', 'code' => 'AA', 'country_code' => 'US'],
+        ['name' => 'Alpha', 'state_code' => 'AA', 'country_code' => 'US'],
     ]);
 
     $this->action->execute([
@@ -57,7 +57,7 @@ it('stores city with null state when state_code is absent', function (): void {
 
 it('is idempotent', function (): void {
     app(SeedAddressStatesAction::class)->execute([
-        ['name' => 'Alpha', 'code' => 'AA', 'country_code' => 'US'],
+        ['name' => 'Alpha', 'state_code' => 'AA', 'country_code' => 'US'],
     ]);
 
     $rows = [
@@ -74,7 +74,7 @@ it('is idempotent', function (): void {
 
 it('updates existing city in place on re-seed', function (): void {
     app(SeedAddressStatesAction::class)->execute([
-        ['name' => 'Alpha', 'code' => 'AA', 'country_code' => 'US'],
+        ['name' => 'Alpha', 'state_code' => 'AA', 'country_code' => 'US'],
     ]);
 
     $this->action->execute([

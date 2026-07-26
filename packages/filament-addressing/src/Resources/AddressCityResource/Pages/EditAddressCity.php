@@ -10,4 +10,9 @@ use Filament\Resources\Pages\EditRecord;
 final class EditAddressCity extends EditRecord
 {
     protected static string $resource = AddressCityResource::class;
+
+    public static function canAccess(array $parameters = []): bool
+    {
+        return ! AddressCityResource::isReadOnly();
+    }
 }

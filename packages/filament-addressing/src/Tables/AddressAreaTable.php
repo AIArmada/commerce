@@ -59,7 +59,7 @@ class AddressAreaTable
                 SelectFilter::make('country_code')
                     ->label('Country')
                     ->options(
-                        AddressCountry::query()
+                        config('filament-addressing.resources.countries.model', AddressCountry::class)::query()
                             ->orderBy('name')
                             ->pluck('name', 'iso2')
                             ->toArray(),
@@ -78,7 +78,9 @@ class AddressAreaTable
 
     private static function getTypeOptions(): array
     {
-        return AddressArea::query()
+        $areaClass = config('filament-addressing.resources.areas.model', AddressArea::class);
+
+        return $areaClass::query()
             ->distinct()
             ->orderBy('type')
             ->pluck('type', 'type')
@@ -87,7 +89,9 @@ class AddressAreaTable
 
     private static function getLevelOptions(): array
     {
-        return AddressArea::query()
+        $areaClass = config('filament-addressing.resources.areas.model', AddressArea::class);
+
+        return $areaClass::query()
             ->whereNotNull('level')
             ->distinct()
             ->orderBy('level')
@@ -98,7 +102,9 @@ class AddressAreaTable
 
     private static function getSourceOptions(): array
     {
-        return AddressArea::query()
+        $areaClass = config('filament-addressing.resources.areas.model', AddressArea::class);
+
+        return $areaClass::query()
             ->distinct()
             ->orderBy('source')
             ->pluck('source', 'source')

@@ -10,20 +10,35 @@ use AIArmada\FilamentAddressing\Resources\AddressCountryResource\Pages\ListAddre
 use AIArmada\FilamentAddressing\Resources\AddressCountryResource\Pages\ViewAddressCountry;
 use AIArmada\FilamentAddressing\Tables\AddressCountryTable;
 use BackedEnum;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
-final class AddressCountryResource extends Resource
+class AddressCountryResource extends Resource
 {
+    protected static ?string $slug = 'countries';
+
     protected static ?string $model = AddressCountry::class;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-globe-alt';
+
+    public static function getNavigationLabel(): string
+    {
+        return 'Countries';
+    }
+
+    public static function getModelLabel(): string
+    {
+        return 'Country';
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return 'Countries';
+    }
 
     public static function getNavigationGroup(): ?string
     {
@@ -65,53 +80,40 @@ final class AddressCountryResource extends Resource
                         TextEntry::make('iso3')->label('ISO3'),
                         TextEntry::make('numeric_code'),
                         TextEntry::make('name'),
-                        TextEntry::make('official_name'),
-                        TextEntry::make('common_name'),
                         TextEntry::make('native'),
                         TextEntry::make('emoji'),
                     ])->columns(3),
                 Section::make('Classification')
                     ->schema([
-                        TextEntry::make('entity_type')->badge(),
-                        TextEntry::make('is_independent')
-                            ->label('Independent')
-                            ->badge()
-                            ->state(fn (AddressCountry $record): string => $record->is_independent ? 'Yes' : 'No'),
                         TextEntry::make('region'),
                         TextEntry::make('subregion'),
                     ])->columns(2),
                 Section::make('Dialling / Currency')
                     ->schema([
                         TextEntry::make('phone_code')->label('Phone Code'),
-                        TextEntry::make('calling_codes')
-                            ->badge()
-                            ->state(fn (AddressCountry $record): array => $record->calling_codes ?? []),
-                        TextEntry::make('currency'),
                         TextEntry::make('currencies')
-                            ->badge()
-                            ->state(fn (AddressCountry $record): array => $record->currencies ?? []),
+                            ->state(fn (AddressCountry $record): string => $record->currencies->pluck('code')->implode(', ')),
                     ])->columns(2),
                 Section::make('Locale')
                     ->schema([
-                        TextEntry::make('language_codes')
-                            ->badge()
-                            ->state(fn (AddressCountry $record): array => $record->language_codes ?? []),
                         TextEntry::make('timezones')
-                            ->state(fn (AddressCountry $record): string => $record->timezones !== null
-                                ? implode(', ', $record->timezones)
-                                : '-'),
+                            ->state(fn (AddressCountry $record): string => $record->timezones->pluck('name')->implode(', ')),
                     ])->columns(1),
                 Section::make('Coordinates')
                     ->schema([
                         TextEntry::make('capital'),
-                        TextEntry::make('capital_latitude'),
-                        TextEntry::make('capital_longitude'),
+                        TextEntry::make('tld')->label('Top-Level Domain'),
                         TextEntry::make('latitude'),
                         TextEntry::make('longitude'),
-                        TextEntry::make('top_level_domains')
-                            ->badge()
-                            ->state(fn (AddressCountry $record): array => $record->top_level_domains ?? []),
+                        TextEntry::make('emojiU')->label('Emoji Unicode'),
                     ])->columns(3),
+                Section::make('Translations')
+                    ->schema([
+                        TextEntry::make('translations')
+                            ->formatStateUsing(fn (mixed $state): string => is_array($state)
+                                ? (json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '')
+                                : (string) ($state ?? '')),
+                    ]),
             ]);
     }
 
@@ -133,23 +135,11 @@ final class AddressCountryResource extends Resource
                             ->maxLength(3)
                             ->disabled(fn (): bool => self::isReadOnly() || $country !== null),
                         TextInput::make('name')->required(),
-                        TextInput::make('official_name')->label('Official Name'),
                         TextInput::make('native')->label('Native Name'),
                         TextInput::make('phone_code')->label('Phone Code'),
-                        TextInput::make('currency')->label('Default Currency'),
                     ])->columns(2),
                 Section::make('Metadata')
                     ->schema([
-                        Select::make('entity_type')
-                            ->options([
-                                'country' => 'Country',
-                                'territory' => 'Territory',
-                                'dependent' => 'Dependent',
-                                'special' => 'Special',
-                                'disputed' => 'Disputed',
-                            ]),
-                        Toggle::make('is_independent')
-                            ->label('Independent'),
                         TextInput::make('region'),
                         TextInput::make('subregion'),
                     ])->columns(2),
