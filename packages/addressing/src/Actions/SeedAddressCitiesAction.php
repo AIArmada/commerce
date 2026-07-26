@@ -92,5 +92,4 @@ class SeedAddressCitiesAction
 
         return compact('created', 'updated', 'skipped');
     }
-
 }
