@@ -7,6 +7,7 @@ use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\AddressSnapshot;
 use AIArmada\Addressing\Models\City;
+use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Models\State;
 
 return [
@@ -21,6 +22,7 @@ return [
             'areas' => 'heroicon-o-map',
             'addresses' => 'heroicon-o-map-pin',
             'snapshots' => 'heroicon-o-document-text',
+            'postal_codes' => 'heroicon-o-envelope',
         ],
     ],
 
@@ -31,6 +33,7 @@ return [
         'address_export' => false,
         'show_provider_payload' => false,
         'show_source_payload' => false,
+        'postal_code_export' => false,
     ],
 
     'resources' => [
@@ -56,6 +59,12 @@ return [
             'enabled' => true,
             'read_only' => false,
             'model' => AddressArea::class,
+        ],
+
+        'postal_codes' => [
+            'enabled' => true,
+            'read_only' => false,
+            'model' => PostalCode::class,
         ],
 
         'addresses' => [

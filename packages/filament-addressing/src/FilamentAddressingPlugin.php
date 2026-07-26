@@ -10,6 +10,7 @@ use AIArmada\FilamentAddressing\Resources\AddressCountryResource;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
 use AIArmada\FilamentAddressing\Resources\AddressSnapshotResource;
 use AIArmada\FilamentAddressing\Resources\AddressStateResource;
+use AIArmada\FilamentAddressing\Resources\PostalCodeResource;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
@@ -56,6 +57,10 @@ final class FilamentAddressingPlugin implements Plugin
 
         if (config('filament-addressing.resources.areas.enabled')) {
             $resources[] = AddressAreaResource::class;
+        }
+
+        if (config('filament-addressing.resources.postal_codes.enabled')) {
+            $resources[] = PostalCodeResource::class;
         }
 
         if (config('filament-addressing.resources.addresses.enabled')) {

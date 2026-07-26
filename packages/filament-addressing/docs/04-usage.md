@@ -43,6 +43,8 @@ Search examples:
 - `MYS`
 - `+60`
 
+Open any country to see its related states in the States section below the country details.
+
 ## Manage Areas
 
 Areas are user/importer-owned reference data.
@@ -75,15 +77,23 @@ MY,state,Selangor,app.malaysia,MY-10
 Recommended columns:
 
 ```csv
-country_code,type,level,name,native_name,code,parent_source_id,source,source_id,latitude,longitude,metadata
-MY,state,1,Selangor,Selangor,10,,app.malaysia,MY-10,3.0738,101.5183,"{""source"":""legacy""}"
-MY,district,2,Petaling,Petaling,PETALING,MY-10,app.malaysia,MY-10-PETALING,,
-MY,city,3,Shah Alam,Shah Alam,SHAH-ALAM,MY-10-PETALING,app.malaysia,MY-10-PETALING-SHAH-ALAM,,
+country_code,type,level,name,native_name,code,parent_source_id,hierarchy_type,source,source_id,latitude,longitude,metadata
+MY,state,1,Selangor,Selangor,10,,administrative,app.malaysia,MY-10,3.0738,101.5183,"{""source"":""legacy""}"
+MY,district,2,Petaling,Petaling,PETALING,MY-10,administrative,app.malaysia,MY-10-PETALING,,
+MY,locality,2,Bangsar,Bangsar,BANGSAR,MY-10,postal,app.malaysia,MY-10-BANGSAR,,
 ```
 
 The importer must call the core `ImportAddressAreasAction`. It must not insert rows directly.
 
 The `parent_source_id` column is country-scoped and cycle-safe. The UI hides parent choices that would create a loop, and the importer rejects the same loop server-side.
+
+For Malaysia, the area resource shows the shared State / Federal Territory root and the two provider branches: postal/address localities and administrative/land districts and subdivisions. Use the Roles filter to distinguish `locality` from `administrative_area` records. Kuala Lumpur, Putrajaya, and Labuan do not need separate postal-town records.
+
+Alternate names are managed as language-neutral aliases. The package does not expose a language selector because it does not yet have a trusted locale-specific name dataset.
+
+## Manage Postcodes
+
+The Postcodes resource searches and manages postcode records and their served areas. A postcode may serve multiple localities or administrative areas through the area relationship selector. This keeps postcode coverage separate from the geographic hierarchy and does not require a postal-town entity.
 
 ## Reuse Address Form Schema
 

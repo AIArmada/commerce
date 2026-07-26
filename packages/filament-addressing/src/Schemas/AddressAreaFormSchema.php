@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Schemas;
 
+use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressAreaHierarchy;
 use Filament\Forms\Components\Select;
@@ -17,7 +18,8 @@ class AddressAreaFormSchema
     public static function form(Schema $schema): Schema
     {
         $record = $schema->getRecord();
-        $currentAreaId = $record !== null ? (string) $record->getKey() : null;
+        $currentArea = $record instanceof AddressArea ? $record : null;
+        $currentAreaId = $currentArea?->getKey();
 
         return $schema
             ->schema([
@@ -59,6 +61,12 @@ class AddressAreaFormSchema
                             ->numeric()
                             ->minValue(1)
                             ->maxValue(10),
+                        TextInput::make('hierarchy_type')
+                            ->label('Hierarchy Type')
+                            ->placeholder('e.g. postal, administrative')
+                            ->maxLength(50)
+                            ->default(fn (): ?string => $currentArea?->ancestors()->first()?->pivot?->getAttribute('hierarchy_type'))
+                            ->helperText('Used to distinguish parallel geographic hierarchies.'),
                         Select::make('parent_id')
                             ->label('Parent')
                             ->options(

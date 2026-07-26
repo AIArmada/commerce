@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Tables;
 
 use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressCountry;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class AddressAreaTable
 {
@@ -19,6 +21,11 @@ class AddressAreaTable
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('names.name')
+                    ->label('Aliases')
+                    ->searchable()
+                    ->listWithLineBreaks()
+                    ->toggleable(),
                 TextColumn::make('native_name')
                     ->label('Native Name')
                     ->searchable()
@@ -31,6 +38,11 @@ class AddressAreaTable
                     ->badge()
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('roles.role')
+                    ->label('Roles')
+                    ->badge()
+                    ->listWithLineBreaks()
+                    ->toggleable(),
                 TextColumn::make('level')
                     ->sortable()
                     ->toggleable(),
@@ -71,6 +83,12 @@ class AddressAreaTable
                     ->options(fn (): array => self::getLevelOptions()),
                 SelectFilter::make('source')
                     ->options(fn (): array => self::getSourceOptions()),
+                SelectFilter::make('role')
+                    ->options(fn (): array => self::getRoleOptions())
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        $data['value'] ?? null,
+                        fn (Builder $areas, string $role): Builder => $areas->whereHas('roles', fn (Builder $roles): Builder => $roles->where('role', $role)),
+                    )),
             ])
             ->defaultSort('country_code')
             ->paginated([10, 25, 50, 100]);
@@ -109,5 +127,15 @@ class AddressAreaTable
             ->orderBy('source')
             ->pluck('source', 'source')
             ->toArray();
+    }
+
+    private static function getRoleOptions(): array
+    {
+        return AddressAreaRole::query()
+            ->distinct()
+            ->orderBy('role')
+            ->pluck('role', 'role')
+            ->mapWithKeys(static fn (string $role): array => [$role => str_replace('_', ' ', ucfirst($role))])
+            ->all();
     }
 }

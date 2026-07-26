@@ -9,7 +9,8 @@ title: Filament Addressing Overview
 It gives applications admin UI for:
 
 - Address countries.
-- Address areas.
+- Address areas with searchable roles, aliases, and hierarchy filters.
+- Postal codes and their served-area relationships.
 - Optional central address inspection.
 - Optional read-only address snapshot inspection.
 - CSV import/export surfaces for area reference data.
@@ -34,7 +35,7 @@ Disabled by default:
 - Addresses.
 - Address snapshots.
 
-Countries, states, and cities can be made read-only through their resource configuration. Countries are read-only by default. Snapshots are read-only by design.
+Countries, states, cities, areas, and postcodes can be made read-only through their resource configuration. Countries are read-only by default. Snapshots are read-only by design.
 
 ## Why Addresses Are Disabled By Default
 

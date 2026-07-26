@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
+use AIArmada\Persons\Enums\AssignmentStatus;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -32,11 +33,10 @@ final class TitleAssignmentsRelationManager extends RelationManager
                     ->badge(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'active' => 'success',
-                        'revoked' => 'danger',
-                        'expired' => 'warning',
-                        default => 'gray',
+                    ->color(fn (AssignmentStatus $state): string => match ($state) {
+                        AssignmentStatus::Active => 'success',
+                        AssignmentStatus::Revoked => 'danger',
+                        AssignmentStatus::Expired => 'warning',
                     }),
                 Tables\Columns\TextColumn::make('date_awarded')
                     ->date()

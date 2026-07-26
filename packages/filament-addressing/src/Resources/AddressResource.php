@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Resources;
 
 use AIArmada\Addressing\Models\Address;
+use AIArmada\FilamentAddressing\Resources\AddressResource\Pages\CreateAddress;
 use AIArmada\FilamentAddressing\Resources\AddressResource\Pages\EditAddress;
 use AIArmada\FilamentAddressing\Resources\AddressResource\Pages\ListAddresses;
 use AIArmada\FilamentAddressing\Resources\AddressResource\Pages\ViewAddress;
@@ -59,7 +60,9 @@ final class AddressResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->schema(AddressFormSchema::make());
+        $record = $schema->getRecord();
+
+        return $schema->schema(AddressFormSchema::make(record: $record instanceof Address ? $record : null));
     }
 
     public static function getPages(): array
@@ -70,6 +73,7 @@ final class AddressResource extends Resource
         ];
 
         if (! self::isReadOnly()) {
+            $pages['create'] = CreateAddress::route('/create');
             $pages['edit'] = EditAddress::route('/{record}/edit');
         }
 

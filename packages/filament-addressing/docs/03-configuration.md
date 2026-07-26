@@ -35,7 +35,7 @@ Sections are ordered as:
 
 Use this to control menu visibility, grouping, ordering, and icons.
 
-The `enabled` flag controls whether the adapter registers the resource with the Filament panel. The `sort` value is the base order for country, state, city, area, address, and snapshot resources.
+The `enabled` flag controls whether the adapter registers the resource with the Filament panel. The `sort` value is the base order for country, state, city, area, postcode, address, and snapshot resources.
 Each resource reads its icon from `navigation.icons.*`.
 
 ## Tables
@@ -101,6 +101,12 @@ Payloads can be large and may contain provider-specific data. Keep hidden unless
     'enabled' => true,
     'read_only' => false,
     'model' => \AIArmada\Addressing\Models\AddressArea::class,
+],
+
+'postal_codes' => [
+    'enabled' => true,
+    'read_only' => false,
+    'model' => \AIArmada\Addressing\Models\PostalCode::class,
 ],
 ```
 

@@ -50,6 +50,9 @@ class AddressAreaImporter extends Importer
             ImportColumn::make('parent_source_id')
                 ->label('Parent Source ID')
                 ->example('MYS'),
+            ImportColumn::make('hierarchy_type')
+                ->label('Hierarchy Type')
+                ->example('administrative'),
             ImportColumn::make('source')
                 ->label('Source')
                 ->requiredMapping()
@@ -125,6 +128,7 @@ class AddressAreaImporter extends Importer
             'name' => ['required', 'string', 'max:255'],
             'source' => ['required', 'string', 'max:100'],
             'source_id' => ['required', 'string', 'max:255'],
+            'hierarchy_type' => ['nullable', 'string', 'max:50'],
         ];
     }
 
@@ -178,6 +182,7 @@ class AddressAreaImporter extends Importer
             level: $this->nullableInteger($this->data['level'] ?? null),
             latitude: $this->nullableFloat($this->data['latitude'] ?? null),
             longitude: $this->nullableFloat($this->data['longitude'] ?? null),
+            hierarchyType: $this->nullableString($this->data['hierarchy_type'] ?? null),
             metadata: isset($this->data['metadata']) && is_array($this->data['metadata']) ? $this->data['metadata'] : [],
         );
     }

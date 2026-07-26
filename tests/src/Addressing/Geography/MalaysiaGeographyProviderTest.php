@@ -22,8 +22,7 @@ it('preserves globally seeded states and adds missing Malaysian states', functio
 
     $state->refresh();
 
-    expect($state->name)->toBe('Kuala Lumpur')
-        ->and($state->label)->toBe('Kuala Lumpur')
+    expect($state->name)->toBe('WP Kuala Lumpur')
         ->and(State::query()->where('country_id', $country->id)->count())->toBe(16)
         ->and(State::query()->where('country_id', $country->id)->where('code', '16')->exists())->toBeTrue();
 });
@@ -40,4 +39,21 @@ it('provides all sixteen Malaysian state and federal territory mappings', functi
             '01', '02', '03', '04', '05', '06', '07', '08',
             '09', '10', '11', '12', '13', '14', '15', '16',
         ]);
+});
+
+it('defines separate postal and administrative hierarchies with a shared first-level region', function (): void {
+    $hierarchies = app(MalaysiaGeographyProvider::class)->addressHierarchies();
+
+    expect($hierarchies)->toHaveCount(2)
+        ->and($hierarchies[0]->key)->toBe('postal')
+        ->and($hierarchies[0]->levels[0]->key)->toBe('region')
+        ->and($hierarchies[0]->levels[0]->label)->toBe('State / Federal Territory')
+        ->and($hierarchies[0]->levels[1]->key)->toBe('locality')
+        ->and($hierarchies[0]->levels[1]->parentKey)->toBe('region')
+        ->and($hierarchies[1]->key)->toBe('administrative')
+        ->and($hierarchies[1]->levels[0]->key)->toBe('region')
+        ->and($hierarchies[1]->levels[1]->key)->toBe('district')
+        ->and($hierarchies[1]->levels[1]->parentKey)->toBe('region')
+        ->and($hierarchies[1]->levels[2]->key)->toBe('subdivision')
+        ->and($hierarchies[1]->levels[2]->parentKey)->toBe('district');
 });

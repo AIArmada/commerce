@@ -23,6 +23,10 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['usage_position', 'sort_order']);
+            $table->unique(
+                ['category_id', 'usage_position', 'sort_order'],
+                'titles_category_usage_sort_order_unique',
+            );
         });
     }
 };

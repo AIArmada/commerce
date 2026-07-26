@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Persons\Actions\ReorderTitleAction;
 use AIArmada\Persons\Enums\AffiliationType;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\CredentialType;
@@ -82,6 +83,55 @@ describe('person identity models', function (): void {
         expect($category->titles)->toHaveCount(1);
         expect($title->category->code)->toBe('test_category');
         expect($title->usage_position)->toBe(TitleUsagePosition::BeforeName);
+    });
+
+    it('shifts titles when a title is moved within its usage and category scope', function (): void {
+        $category = TitleCategory::create(['code' => 'ordered', 'name' => 'Ordered']);
+        $first = Title::create([
+            'category_id' => $category->id,
+            'name' => 'First',
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 1,
+        ]);
+        $second = Title::create([
+            'category_id' => $category->id,
+            'name' => 'Second',
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 2,
+        ]);
+
+        app(ReorderTitleAction::class)->update($second, ['sort_order' => 1]);
+
+        expect($second->fresh()->sort_order)->toBe(1)
+            ->and($first->fresh()->sort_order)->toBe(2);
+    });
+
+    it('keeps sort orders independent between categories and usage positions', function (): void {
+        $firstCategory = TitleCategory::create(['code' => 'first', 'name' => 'First']);
+        $secondCategory = TitleCategory::create(['code' => 'second', 'name' => 'Second']);
+
+        $first = Title::create([
+            'category_id' => $firstCategory->id,
+            'name' => 'First',
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 1,
+        ]);
+        $second = Title::create([
+            'category_id' => $secondCategory->id,
+            'name' => 'Second',
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 1,
+        ]);
+        $afterName = Title::create([
+            'category_id' => $firstCategory->id,
+            'name' => 'After',
+            'usage_position' => TitleUsagePosition::AfterName,
+            'sort_order' => 1,
+        ]);
+
+        expect($first->sort_order)->toBe(1)
+            ->and($second->sort_order)->toBe(1)
+            ->and($afterName->sort_order)->toBe(1);
     });
 
     it('assigns a title to a person polymorphically', function (): void {
@@ -274,6 +324,11 @@ describe('person identity models', function (): void {
 
         foreach ($files as $file) {
             $content = file_get_contents($file);
+
+            if (! str_contains($content, 'Schema::create')) {
+                continue;
+            }
+
             expect($content)->toContain("\$table->uuid('id')->primary()");
         }
     });

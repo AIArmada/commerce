@@ -67,7 +67,7 @@ final class AddressAreaResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('level', '>', 1);
+        return parent::getEloquentQuery();
     }
 
     public static function table(Table $table): Table

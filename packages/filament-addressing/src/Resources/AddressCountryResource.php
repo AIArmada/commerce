@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Resources;
 
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\FilamentAddressing\RelationManagers\StatesRelationManager;
 use AIArmada\FilamentAddressing\Resources\AddressCountryResource\Pages\EditAddressCountry;
 use AIArmada\FilamentAddressing\Resources\AddressCountryResource\Pages\ListAddressCountries;
 use AIArmada\FilamentAddressing\Resources\AddressCountryResource\Pages\ViewAddressCountry;
@@ -68,6 +69,13 @@ class AddressCountryResource extends Resource
     public static function table(Table $table): Table
     {
         return AddressCountryTable::make($table);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            StatesRelationManager::class,
+        ];
     }
 
     public static function infolist(Schema $schema): Schema
