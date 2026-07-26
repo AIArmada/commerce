@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource\RelationManagers\TicketTypeComponentsRelationManager;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource\RelationManagers\TicketTypeProductsRelationManager;
 use AIArmada\FilamentTicketing\Support\TicketableTypeRegistry;
+use AIArmada\Ticketing\Enums\TicketTypeVisibility;
 use AIArmada\Ticketing\Models\TicketType;
 use BackedEnum;
 use Filament\Actions\ViewAction;
@@ -129,11 +130,7 @@ final class TicketTypeResource extends Resource
                             ])
                             ->required(),
                         Select::make('visibility')
-                            ->options([
-                                'public' => 'Public',
-                                'private' => 'Private',
-                                'hidden' => 'Hidden',
-                            ])
+                            ->options(TicketTypeVisibility::options())
                             ->required(),
                         DateTimePicker::make('sales_starts_at')
                             ->nullable(),
@@ -179,7 +176,7 @@ final class TicketTypeResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('visibility')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (TicketTypeVisibility | string $state): string => match ($state instanceof TicketTypeVisibility ? $state->value : $state) {
                         'public' => 'success',
                         'private' => 'warning',
                         'hidden' => 'danger',
@@ -214,11 +211,7 @@ final class TicketTypeResource extends Resource
                         'complimentary' => 'Complimentary',
                     ]),
                 Tables\Filters\SelectFilter::make('visibility')
-                    ->options([
-                        'public' => 'Public',
-                        'private' => 'Private',
-                        'hidden' => 'Hidden',
-                    ]),
+                    ->options(TicketTypeVisibility::options()),
             ])
             ->actions([
                 ViewAction::make(),

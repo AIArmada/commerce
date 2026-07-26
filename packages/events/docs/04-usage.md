@@ -120,6 +120,16 @@ Event::openDoor()->get();          // registration_mode = None
 Event::withResolvedModes()->get(); // eager-loads ticketTypes for effectivePricingMode()
 ```
 
+### Visibility
+
+Use `hidden` when an event, occurrence, or session must be excluded from public discovery and event search indexing. It remains available to administrative queries, while `Event::public()` continues to return only public events.
+
+```php
+$event->update(['visibility' => 'hidden']);
+
+Event::public()->get(); // excludes hidden events
+```
+
 ## Managing Events
 
 ```php

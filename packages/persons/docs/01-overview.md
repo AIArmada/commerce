@@ -33,7 +33,7 @@ title: Persons Overview
 |---|---|
 | **Person** | Canonical identity record (renamed concept from a host's `Speaker`). |
 | **Person Name** | Multi-context name variant (legal, display, religious, etc.) with a language code. |
-| **Title** | A reference definition (e.g. "Datuk", "PhD") with a category, usage position, and global sort order. |
+| **Title** | A reference definition (e.g. "Datuk", "PhD") with a category, usage position, and sort order within that category. |
 | **Title Assignment** | Polymorphic junction linking any model to a title, with status and dates. |
 | **Credential** | A definition (e.g. "Doctor of Philosophy") plus a polymorphic assignment with issuing details. |
 | **Affiliation** | Polymorphic link between any model and an institution, with a type and roles. |
@@ -41,7 +41,13 @@ title: Persons Overview
 
 ## Sort order behavior
 
-`titles.sort_order` is global within each `usage_position` scope — all `before_name` titles share one ordering space, all `after_name` titles share another. This ensures correct interleaving across categories (e.g. `Datuk Dr. Ahmad Rahman`, not `Dr. Datuk Ahmad Rahman`).
+Formatted names use three levels of ordering:
+
+1. `usage_position` separates titles before and after the name.
+2. `title_categories.sort_order` orders category groups within each position.
+3. `titles.sort_order` orders titles within their category group.
+
+This keeps the policy explicit when a person has titles from several categories, such as `Ustaz Dr. Ahmad Rahman, PhD, Ir.`.
 
 ## Morph aliases
 

@@ -147,6 +147,8 @@ class Event extends Model implements HasMedia, TicketableInterface
 
     public const INTERNAL = 'internal';
 
+    public const HIDDEN = 'hidden';
+
     public const DELIVERY_PHYSICAL = 'physical';
 
     public const DELIVERY_ONLINE = 'online';

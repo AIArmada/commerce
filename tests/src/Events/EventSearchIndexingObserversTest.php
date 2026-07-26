@@ -80,6 +80,30 @@ it('indexes and removes search documents when the event changes', function (): v
     expect(EventSearchDocument::where('event_id', $event->id)->exists())->toBeFalse();
 });
 
+it('does not index hidden event records', function (): void {
+    $event = createIndexedSearchEvent();
+    $builder = app(EventSearchDocumentBuilder::class);
+    $builder->index($event);
+
+    expect(EventSearchDocument::where('event_id', $event->id)->exists())->toBeTrue();
+
+    $event->update(['visibility' => 'hidden']);
+    $builder->index($event->fresh());
+
+    expect(EventSearchDocument::where('event_id', $event->id)->exists())->toBeFalse();
+});
+
+it('does not index children of hidden events', function (): void {
+    $event = createIndexedSearchEvent();
+    $occurrence = createIndexedOccurrence($event);
+    $builder = app(EventSearchDocumentBuilder::class);
+
+    $event->update(['visibility' => 'hidden']);
+    $builder->index($occurrence->fresh());
+
+    expect(EventSearchDocument::where('event_occurrence_id', $occurrence->id)->exists())->toBeFalse();
+});
+
 it('removes search documents after an owned event has been deleted', function (): void {
     config()->set('events.features.owner.enabled', true);
 

@@ -108,6 +108,10 @@ $affiliation->roles()->create([
 
 The package stores `country_id` / `nationality_country_id` as loose UUIDs. Add relations on your app's Person subclass:
 
+When `persons.models.country` is configured, the `Title` model exposes the same
+optional country relation and the Filament title resource displays it as a
+Country column.
+
 ```php
 use AIArmada\Addressing\Models\AddressCountry;
 
@@ -159,6 +163,6 @@ $person->formatted_name; // "Datuk Dr. Ahmad Rahman, PhD"
 ```
 
 Composition logic:
-1. Active `before_name` titles sorted by `sort_order` → space-separated prefix
+1. Active `before_name` titles grouped by `title.category.sort_order`, then sorted by `title.sort_order` → space-separated prefix
 2. Person's `name` field
-3. Active `after_name` titles sorted by `sort_order` → comma-separated suffix
+3. Active `after_name` titles grouped by `title.category.sort_order`, then sorted by `title.sort_order` → comma-separated suffix

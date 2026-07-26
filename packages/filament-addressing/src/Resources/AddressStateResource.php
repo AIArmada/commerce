@@ -20,6 +20,8 @@ use Filament\Tables\Table;
 
 final class AddressStateResource extends Resource
 {
+    protected static ?string $slug = 'state';
+
     protected static ?string $model = State::class;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-map';
@@ -62,8 +64,6 @@ final class AddressStateResource extends Resource
                     ->schema([
                         TextEntry::make('name'),
                         TextEntry::make('code')->label('Code'),
-                        TextEntry::make('type')->badge(),
-                        TextEntry::make('label'),
                         TextEntry::make('latitude')
                             ->numeric(5),
                         TextEntry::make('longitude')
@@ -104,8 +104,6 @@ final class AddressStateResource extends Resource
                     ->schema([
                         TextInput::make('name')->required(),
                         TextInput::make('code')->label('Code'),
-                        TextInput::make('type'),
-                        TextInput::make('label'),
                         TextInput::make('latitude')
                             ->numeric()
                             ->step(0.0000001),

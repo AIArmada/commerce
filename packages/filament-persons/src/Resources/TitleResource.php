@@ -9,6 +9,7 @@ use AIArmada\FilamentPersons\Resources\TitleResource\Pages\EditTitle;
 use AIArmada\FilamentPersons\Resources\TitleResource\Pages\ListTitles;
 use AIArmada\FilamentPersons\Resources\TitleResource\Pages\ViewTitle;
 use AIArmada\Persons\Models\Title;
+use AIArmada\Persons\Support\ModelResolver;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
@@ -77,15 +78,25 @@ class TitleResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $columns = [
+            Tables\Columns\TextColumn::make('name')
+                ->searchable()
+                ->sortable(),
+            Tables\Columns\TextColumn::make('short_form')
+                ->badge(),
+            Tables\Columns\TextColumn::make('category.name')
+                ->sortable(),
+        ];
+
+        if (ModelResolver::countryClass() !== null) {
+            $columns[] = Tables\Columns\TextColumn::make('country.name')
+                ->label('Country')
+                ->sortable();
+        }
+
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->searchable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('short_form')
-                    ->badge(),
-                Tables\Columns\TextColumn::make('category.name')
-                    ->sortable(),
+                ...$columns,
                 Tables\Columns\TextColumn::make('usage_position')
                     ->badge(),
                 Tables\Columns\TextColumn::make('sort_order')

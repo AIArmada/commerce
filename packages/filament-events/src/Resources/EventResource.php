@@ -7,6 +7,7 @@ namespace AIArmada\FilamentEvents\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
+use AIArmada\Events\Enums\EventVisibility;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Support\ModelResolver;
@@ -81,7 +82,7 @@ final class EventResource extends Resource
                     ->color(fn (mixed $state): string => match (self::extractString($state)) {
                         'public' => 'success',
                         'unlisted' => 'warning',
-                        'private', 'internal' => 'danger',
+                        'private', 'internal', 'hidden' => 'danger',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('delivery_mode')
@@ -111,11 +112,7 @@ final class EventResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(fn (): array => static::getStatusOptions()),
                 Tables\Filters\SelectFilter::make('visibility')
-                    ->options([
-                        'public' => 'Public',
-                        'unlisted' => 'Unlisted',
-                        'private' => 'Private',
-                    ]),
+                    ->options(EventVisibility::options()),
                 Tables\Filters\SelectFilter::make('delivery_mode')
                     ->options([
                         'physical' => 'Physical',
@@ -230,12 +227,7 @@ final class EventResource extends Resource
                             ->hiddenOn('edit')
                             ->required(),
                         Select::make('visibility')
-                            ->options([
-                                'public' => 'Public',
-                                'unlisted' => 'Unlisted',
-                                'private' => 'Private',
-                                'internal' => 'Internal',
-                            ])
+                            ->options(EventVisibility::options())
                             ->default('public')
                             ->hiddenOn('edit')
                             ->required(),

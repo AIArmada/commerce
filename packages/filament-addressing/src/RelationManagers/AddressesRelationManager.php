@@ -23,9 +23,6 @@ class AddressesRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('label')
             ->columns([
-                TextColumn::make('pivot.type')
-                    ->label('Type')
-                    ->badge(),
                 TextColumn::make('label')
                     ->searchable(),
                 TextColumn::make('line1')
@@ -38,6 +35,9 @@ class AddressesRelationManager extends RelationManager
                 TextColumn::make('postcode'),
                 TextColumn::make('country_code')
                     ->label('Country'),
+                TextColumn::make('pivot.type')
+                    ->label('Type')
+                    ->badge(),
                 IconColumn::make('pivot.is_primary')
                     ->label('Primary')
                     ->boolean(),

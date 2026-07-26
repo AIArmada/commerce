@@ -15,15 +15,15 @@ class AddressCountryTable
     {
         return $table
             ->columns([
+                TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('iso2')
                     ->label('ISO2')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('iso3')
                     ->label('ISO3')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('currencies.code')

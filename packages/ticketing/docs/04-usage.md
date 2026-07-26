@@ -82,6 +82,8 @@ $ticketType = app(EnsureTicketTypeAction::class)->handle($workshop, [
 | `capacity` | `?int` | Total capacity for this ticket type |
 | `pricing_mode` | `?PricingMode` | Override pricing mode (defaults to ticketable's mode) |
 
+Ticket types support `public`, `private`, and `hidden` visibility. Hidden ticket types remain manageable in administrative queries but cannot be added to a cart and are excluded by `TicketType::public()`.
+
 ### Pricing Components
 
 Split pricing into components:

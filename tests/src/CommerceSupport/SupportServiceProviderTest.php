@@ -6,6 +6,8 @@ use AIArmada\CommerceSupport\Commands\SetupCommand;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\SupportServiceProvider;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Spatie\LaravelPackageTools\Package;
@@ -18,6 +20,12 @@ it('registers the commerce setup command', function (): void {
     $provider->configurePackage($package);
 
     expect($package->commands)->toContain(SetupCommand::class);
+});
+
+it('configures live column managers for filament tables', function (): void {
+    $table = Table::make(Mockery::mock(HasTable::class));
+
+    expect($table->hasDeferredColumnManager())->toBeFalse();
 });
 
 it('binds OwnerResolverInterface using commerce-support config', function (): void {

@@ -14,6 +14,13 @@ class AddressCityTable
     {
         return $table
             ->columns([
+                TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('state.name')
+                    ->label('State')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('country.name')
                     ->label('Country')
                     ->searchable()
@@ -23,13 +30,6 @@ class AddressCityTable
                     ->label('ISO2')
                     ->badge()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('name')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('state.name')
-                    ->label('State')
-                    ->searchable()
-                    ->toggleable(),
                 TextColumn::make('latitude')
                     ->numeric(5)
                     ->toggleable(isToggledHiddenByDefault: true),

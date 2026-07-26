@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Events\Enums\EventSeriesVisibility;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventSeries;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Ticketing\Enums\PricingMode;
 
@@ -195,5 +197,26 @@ describe('Global scopes', function (): void {
         $event = Event::query()->withResolvedModes()->first();
 
         expect($event->relationLoaded('ticketTypes'))->toBeTrue();
+    });
+});
+
+describe('Visibility', function (): void {
+    it('adds hidden to event visibility and excludes it from public events', function (): void {
+        $hidden = Event::factory()->create(['visibility' => 'hidden']);
+        $public = Event::factory()->create(['visibility' => Event::PUBLIC]);
+
+        expect($hidden->isPubliclyVisible())->toBeFalse()
+            ->and(Event::public()->pluck('id'))->toContain($public->id)
+            ->and(Event::public()->pluck('id'))->not->toContain($hidden->id);
+    });
+
+    it('supports hidden event series visibility', function (): void {
+        $hidden = EventSeries::factory()->create(['visibility' => EventSeriesVisibility::Hidden]);
+        $public = EventSeries::factory()->create(['visibility' => EventSeriesVisibility::Public]);
+
+        expect($hidden->visibility)->toBe(EventSeriesVisibility::Hidden)
+            ->and($hidden->isPubliclyVisible())->toBeFalse()
+            ->and(EventSeries::public()->pluck('id'))->toContain($public->id)
+            ->and(EventSeries::public()->pluck('id'))->not->toContain($hidden->id);
     });
 });

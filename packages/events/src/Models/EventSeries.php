@@ -7,7 +7,9 @@ namespace AIArmada\Events\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Events\Database\Factories\EventSeriesFactory;
+use AIArmada\Events\Enums\EventSeriesVisibility;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,7 +24,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $description
  * @property string $series_type
  * @property string $status
- * @property string $visibility
+ * @property EventSeriesVisibility $visibility
  * @property bool $is_dynamic
  * @property mixed|null $dynamic_rule_json
  * @property array|null $metadata
@@ -54,10 +56,25 @@ class EventSeries extends Model
     protected function casts(): array
     {
         return [
+            'visibility' => EventSeriesVisibility::class,
             'is_dynamic' => 'boolean',
             'dynamic_rule_json' => 'array',
             'metadata' => 'array',
         ];
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopePublic(Builder $query): Builder
+    {
+        return $query->where('visibility', EventSeriesVisibility::Public->value);
+    }
+
+    public function isPubliclyVisible(): bool
+    {
+        return $this->visibility === EventSeriesVisibility::Public;
     }
 
     /**

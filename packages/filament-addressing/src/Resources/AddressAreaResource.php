@@ -15,12 +15,30 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class AddressAreaResource extends Resource
 {
+    protected static ?string $slug = 'areas';
+
     protected static ?string $model = AddressArea::class;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-map';
+
+    public static function getNavigationLabel(): string
+    {
+        return 'Areas';
+    }
+
+    public static function getModelLabel(): string
+    {
+        return 'Area';
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return 'Areas';
+    }
 
     public static function getNavigationGroup(): ?string
     {
@@ -45,6 +63,11 @@ final class AddressAreaResource extends Resource
     public static function getModel(): string
     {
         return config('filament-addressing.resources.areas.model', AddressArea::class);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->where('level', '>', 1);
     }
 
     public static function table(Table $table): Table

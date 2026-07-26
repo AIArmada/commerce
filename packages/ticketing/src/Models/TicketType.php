@@ -10,8 +10,10 @@ use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Ticketing\Database\Factories\TicketTypeFactory;
 use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Enums\TicketTypeVisibility;
 use Carbon\CarbonImmutable;
 use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -38,7 +40,7 @@ use Illuminate\Support\Collection;
  * @property CarbonImmutable|null $sales_starts_at
  * @property CarbonImmutable|null $sales_ends_at
  * @property string $status
- * @property string $visibility
+ * @property TicketTypeVisibility $visibility
  * @property int $sort_order
  * @property array|null $metadata
  * @property Carbon|null $created_at
@@ -103,6 +105,7 @@ class TicketType extends Model
     protected function casts(): array
     {
         return [
+            'visibility' => TicketTypeVisibility::class,
             'seating_mode' => SeatingMode::class,
             'price' => 'integer',
             'admits_quantity' => 'integer',
@@ -113,6 +116,25 @@ class TicketType extends Model
             'sales_ends_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopePublic(Builder $query): Builder
+    {
+        return $query->where('visibility', TicketTypeVisibility::Public->value);
+    }
+
+    public function isPubliclyVisible(): bool
+    {
+        return $this->visibility === TicketTypeVisibility::Public;
+    }
+
+    public function isHidden(): bool
+    {
+        return $this->visibility === TicketTypeVisibility::Hidden;
     }
 
     /**

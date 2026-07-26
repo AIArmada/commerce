@@ -28,7 +28,7 @@ final class AddTicketTypeToCartAction
             throw new InvalidArgumentException('Quantity must be at least 1.');
         }
 
-        if ($ticketType->status !== 'active') {
+        if ($ticketType->status !== 'active' || $ticketType->isHidden()) {
             throw new InvalidArgumentException(sprintf(
                 'Ticket type "%s" is not available for purchase.',
                 $ticketType->name,

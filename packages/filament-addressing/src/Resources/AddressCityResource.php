@@ -20,6 +20,8 @@ use Filament\Tables\Table;
 
 final class AddressCityResource extends Resource
 {
+    protected static ?string $slug = 'cities';
+
     protected static ?string $model = City::class;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-building-office';
@@ -61,7 +63,6 @@ final class AddressCityResource extends Resource
                 Section::make('Identity')
                     ->schema([
                         TextEntry::make('name'),
-                        TextEntry::make('label'),
                         TextEntry::make('latitude')
                             ->numeric(5),
                         TextEntry::make('longitude')
@@ -103,7 +104,6 @@ final class AddressCityResource extends Resource
                 Section::make('Identity')
                     ->schema([
                         TextInput::make('name')->required(),
-                        TextInput::make('label'),
                         TextInput::make('latitude')
                             ->numeric()
                             ->step(0.0000001),

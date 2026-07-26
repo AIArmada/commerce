@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Models;
 
 use AIArmada\Persons\Enums\TitleUsagePosition;
+use AIArmada\Persons\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -61,6 +62,19 @@ class Title extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(TitleCategory::class, 'category_id');
+    }
+
+    /**
+     * @return BelongsTo<Model, $this>
+     */
+    public function country(): BelongsTo
+    {
+        $countryClass = ModelResolver::countryClass() ?? Model::class;
+
+        /** @var BelongsTo<Model, $this> $relation */
+        $relation = $this->belongsTo($countryClass, 'country_id');
+
+        return $relation;
     }
 
     /**

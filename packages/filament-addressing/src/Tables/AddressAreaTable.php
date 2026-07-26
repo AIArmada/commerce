@@ -16,6 +16,13 @@ class AddressAreaTable
     {
         return $table
             ->columns([
+                TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('native_name')
+                    ->label('Native Name')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('country_code')
                     ->label('Country')
                     ->searchable()
@@ -26,13 +33,6 @@ class AddressAreaTable
                     ->sortable(),
                 TextColumn::make('level')
                     ->sortable()
-                    ->toggleable(),
-                TextColumn::make('name')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('native_name')
-                    ->label('Native Name')
-                    ->searchable()
                     ->toggleable(),
                 TextColumn::make('code')
                     ->searchable()

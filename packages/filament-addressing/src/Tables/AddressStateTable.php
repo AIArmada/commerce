@@ -14,14 +14,6 @@ class AddressStateTable
     {
         return $table
             ->columns([
-                TextColumn::make('country.name')
-                    ->label('Country')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('country.iso2')
-                    ->label('ISO2')
-                    ->badge()
-                    ->toggleable(),
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
@@ -29,10 +21,13 @@ class AddressStateTable
                     ->label('Code')
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('type')
+                TextColumn::make('country.name')
+                    ->label('Country')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('country.iso2')
+                    ->label('ISO2')
                     ->badge()
-                    ->toggleable(),
-                TextColumn::make('label')
                     ->toggleable(),
                 TextColumn::make('latitude')
                     ->numeric(5)

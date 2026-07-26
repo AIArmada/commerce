@@ -28,6 +28,8 @@ final class EloquentEventSearchEngine implements EventSearchEngine
 
         if (! empty($criteria['visibility'])) {
             $query->where('visibility', $criteria['visibility']);
+        } else {
+            $query->where('visibility', '!=', 'hidden');
         }
 
         if (! empty($criteria['type'])) {
@@ -68,7 +70,7 @@ final class EloquentEventSearchEngine implements EventSearchEngine
             ? $criteria['sort']
             : 'created_at';
         $sortDir = in_array(mb_strtolower((string) ($criteria['sort_dir'] ?? 'desc')), ['asc', 'desc'], true)
-            ? mb_strtolower((string) $criteria['sort_dir'])
+            ? mb_strtolower((string) ($criteria['sort_dir'] ?? 'desc'))
             : 'desc';
 
         $query->orderBy($sortField, $sortDir);

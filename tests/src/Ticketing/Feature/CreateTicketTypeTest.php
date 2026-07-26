@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Ticketing\Actions\EnsureTicketTypeAction;
 use AIArmada\Ticketing\Contracts\TicketableInterface;
 use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Enums\TicketTypeVisibility;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
 use Carbon\CarbonImmutable;
@@ -70,4 +71,22 @@ it('validates ticket type status on creation', function (): void {
     ]);
 
     expect($ticketType->status)->toBe('active');
+});
+
+it('casts visibility and excludes hidden ticket types from public queries', function (): void {
+    $hidden = app(EnsureTicketTypeAction::class)->handle($this->ticketable, [
+        'name' => 'Hidden Ticket',
+        'code' => 'HID',
+        'visibility' => TicketTypeVisibility::Hidden,
+    ]);
+    $public = app(EnsureTicketTypeAction::class)->handle($this->ticketable, [
+        'name' => 'Public Ticket',
+        'code' => 'PUB',
+        'visibility' => TicketTypeVisibility::Public,
+    ]);
+
+    expect($hidden->visibility)->toBe(TicketTypeVisibility::Hidden)
+        ->and($hidden->isHidden())->toBeTrue()
+        ->and(TicketType::public()->pluck('id'))->toContain($public->id)
+        ->and(TicketType::public()->pluck('id'))->not->toContain($hidden->id);
 });

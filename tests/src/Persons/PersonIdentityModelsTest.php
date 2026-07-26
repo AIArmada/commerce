@@ -155,8 +155,8 @@ describe('person identity models', function (): void {
 
     it('formats display name with ordered titles', function (): void {
         $person = Person::create(['name' => 'Ahmad Rahman', 'status' => 'verified']);
-        $academic = TitleCategory::create(['code' => 'academic', 'name' => 'Academic']);
-        $honour = TitleCategory::create(['code' => 'state_honour', 'name' => 'State Honour']);
+        $academic = TitleCategory::create(['code' => 'academic', 'name' => 'Academic', 'sort_order' => 20]);
+        $honour = TitleCategory::create(['code' => 'state_honour', 'name' => 'State Honour', 'sort_order' => 10]);
 
         $datuk = Title::create([
             'category_id' => $honour->id,
@@ -184,6 +184,49 @@ describe('person identity models', function (): void {
         TitleAssignment::create(['titleable_type' => 'person', 'titleable_id' => $person->id, 'title_id' => $phd->id, 'status' => 'active']);
 
         expect($person->formatted_name)->toBe('Datuk Dr. Ahmad Rahman, PhD');
+    });
+
+    it('orders titles by category before title within each name position', function (): void {
+        $person = Person::create(['name' => 'Ahmad Rahman', 'status' => 'verified']);
+        $religious = TitleCategory::create(['code' => 'religious', 'name' => 'Religious', 'sort_order' => 10]);
+        $academic = TitleCategory::create(['code' => 'academic', 'name' => 'Academic', 'sort_order' => 20]);
+        $professional = TitleCategory::create(['code' => 'professional', 'name' => 'Professional', 'sort_order' => 30]);
+
+        $religiousTitle = Title::create([
+            'category_id' => $religious->id,
+            'name' => 'Ustaz',
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 999,
+        ]);
+        $academicTitle = Title::create([
+            'category_id' => $academic->id,
+            'name' => 'Dr.',
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 1,
+        ]);
+        $professionalTitle = Title::create([
+            'category_id' => $professional->id,
+            'name' => 'Ir.',
+            'usage_position' => TitleUsagePosition::AfterName,
+            'sort_order' => 999,
+        ]);
+        $academicPostNominal = Title::create([
+            'category_id' => $academic->id,
+            'name' => 'PhD',
+            'usage_position' => TitleUsagePosition::AfterName,
+            'sort_order' => 1,
+        ]);
+
+        foreach ([$religiousTitle, $academicTitle, $professionalTitle, $academicPostNominal] as $title) {
+            TitleAssignment::create([
+                'titleable_type' => 'person',
+                'titleable_id' => $person->id,
+                'title_id' => $title->id,
+                'status' => AssignmentStatus::Active,
+            ]);
+        }
+
+        expect($person->formatted_name)->toBe('Ustaz Dr. Ahmad Rahman, PhD, Ir.');
     });
 
     it('enforces enum casts on model properties', function (): void {

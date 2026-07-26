@@ -13,6 +13,10 @@ class AddressSnapshotTable
     {
         return $table
             ->columns([
+                TextColumn::make('formatted_address')
+                    ->label('Address')
+                    ->searchable()
+                    ->limit(60),
                 TextColumn::make('snapshotable_type')
                     ->label('Source Type')
                     ->toggleable(),
@@ -22,10 +26,6 @@ class AddressSnapshotTable
                     ->toggleable(),
                 TextColumn::make('reason')
                     ->badge(),
-                TextColumn::make('formatted_address')
-                    ->label('Address')
-                    ->searchable()
-                    ->limit(60),
                 TextColumn::make('country')
                     ->toggleable(),
                 TextColumn::make('state')

@@ -32,6 +32,12 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
             return;
         }
 
+        if ($this->isHidden($target)) {
+            $this->deleteForTarget($target);
+
+            return;
+        }
+
         if (config('events.sync.build_search_documents')) {
             $this->dispatchOrBuild($target);
         }
@@ -161,6 +167,15 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
             $target instanceof EventOccurrence => $this->unscopedDocumentQuery()->where('event_occurrence_id', $target->id)->delete(),
             $target instanceof EventSession => $this->unscopedDocumentQuery()->where('event_session_id', $target->id)->delete(),
         };
+    }
+
+    private function isHidden(Event | EventOccurrence | EventSession $target): bool
+    {
+        if ($target->visibility === 'hidden') {
+            return true;
+        }
+
+        return ! $target instanceof Event && $target->event?->visibility === 'hidden';
     }
 
     /**

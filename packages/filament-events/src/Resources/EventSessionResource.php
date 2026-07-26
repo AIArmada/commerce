@@ -7,6 +7,7 @@ namespace AIArmada\FilamentEvents\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
+use AIArmada\Events\Enums\EventVisibility;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
@@ -78,7 +79,8 @@ final class EventSessionResource extends Resource
                     ->badge()
                     ->color(fn (mixed $state): string | array | null => $state instanceof HasColor ? $state->getColor() : 'gray'),
                 Tables\Columns\TextColumn::make('visibility')
-                    ->badge(),
+                    ->badge()
+                    ->color(fn (mixed $state): string => $state === 'hidden' ? 'danger' : 'gray'),
                 Tables\Columns\TextColumn::make('capacity')
                     ->numeric(),
                 Tables\Columns\TextColumn::make('published_at')
@@ -93,11 +95,7 @@ final class EventSessionResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(OccurrenceStatusState::options()),
                 Tables\Filters\SelectFilter::make('visibility')
-                    ->options([
-                        'public' => 'Public',
-                        'unlisted' => 'Unlisted',
-                        'private' => 'Private',
-                    ]),
+                    ->options(EventVisibility::options()),
                 Tables\Filters\SelectFilter::make('event_id')
                     ->label('Event')
                     ->relationship(
@@ -258,11 +256,7 @@ final class EventSessionResource extends Resource
                             ->hiddenOn('edit')
                             ->required(),
                         Select::make('visibility')
-                            ->options([
-                                'public' => 'Public',
-                                'unlisted' => 'Unlisted',
-                                'private' => 'Private',
-                            ])
+                            ->options(EventVisibility::options())
                             ->placeholder('Inherit from occurrence')
                             ->helperText('Leave blank to use the occurrence visibility.'),
                     ])->columns(2),

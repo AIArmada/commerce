@@ -75,6 +75,7 @@ pest()->extend(TestCase::class)->in(
     'src/FilamentCommerceSupport',
     'src/Communications',
     'src/FilamentCommunications',
+    'src/FilamentPersons',
     'src/Moderation',
     'src/References',
 );
