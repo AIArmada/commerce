@@ -8,6 +8,7 @@ use AIArmada\Addressing\Actions\SaveAddressAreaAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\AddressAreaHierarchy;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
+use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
@@ -22,6 +23,23 @@ final class EditAddressArea extends EditRecord
         return ! AddressAreaResource::isReadOnly();
     }
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\DeleteAction::make()
+                ->modalDescription(function (AddressArea $record): string {
+                    $areaClass = AddressAreaResource::getModel();
+                    $childCount = $areaClass::query()->where('parent_id', $record->getKey())->count();
+
+                    if ($childCount > 0) {
+                        return "This area has {$childCount} child area(s). Deleting will orphan them (their parent will be set to null). Are you sure?";
+                    }
+
+                    return 'Are you sure you\'d like to delete this area?';
+                }),
+        ];
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         if (isset($data['parent_id']) && $this->record instanceof AddressArea) {
@@ -34,6 +52,18 @@ final class EditAddressArea extends EditRecord
                 if ($message !== null) {
                     throw ValidationException::withMessages([
                         'parent_id' => $message,
+                    ]);
+                }
+
+                $childLevel = array_key_exists('level', $data) && $data['level'] !== null && $data['level'] !== ''
+                    ? (int) $data['level']
+                    : $this->record->level;
+
+                $levelMessage = AddressAreaHierarchy::validateParentCompatibility($parent, $childLevel);
+
+                if ($levelMessage !== null) {
+                    throw ValidationException::withMessages([
+                        'parent_id' => $levelMessage,
                     ]);
                 }
             }

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAddressing\Tables;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -20,7 +21,8 @@ class AddressAreaTable
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->url(fn (AddressArea $record): string => AddressAreaResource::getUrl('view', ['record' => $record])),
                 TextColumn::make('names.name')
                     ->label('Aliases')
                     ->searchable()
@@ -51,6 +53,7 @@ class AddressAreaTable
                     ->toggleable(),
                 TextColumn::make('parent.name')
                     ->label('Parent')
+                    ->url(fn (AddressArea $record): ?string => $record->parent ? AddressAreaResource::getUrl('view', ['record' => $record->parent]) : null)
                     ->toggleable(),
                 TextColumn::make('source')
                     ->toggleable(),

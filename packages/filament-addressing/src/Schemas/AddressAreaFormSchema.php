@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Schemas;
 
+use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressAreaHierarchy;
+use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -65,7 +69,8 @@ class AddressAreaFormSchema
                             ->label('Hierarchy Type')
                             ->placeholder('e.g. postal, administrative')
                             ->maxLength(50)
-                            ->default(fn (): ?string => $currentArea?->ancestors()->first()?->pivot?->getAttribute('hierarchy_type'))
+                            ->default(fn (callable $get): ?string => $currentArea?->ancestors()->first()?->pivot?->getAttribute('hierarchy_type')
+                                ?? self::inferHierarchyType($get('country_id')))
                             ->helperText('Used to distinguish parallel geographic hierarchies.'),
                         Select::make('parent_id')
                             ->label('Parent')
@@ -77,6 +82,9 @@ class AddressAreaFormSchema
                             )
                             ->searchable()
                             ->placeholder('None (top-level)'),
+                        Toggle::make('is_active')
+                            ->label('Active')
+                            ->default(true),
                     ])->columns(2),
                 Section::make('Coordinates')
                     ->schema([
@@ -120,6 +128,8 @@ class AddressAreaFormSchema
                         TextEntry::make('native_name'),
                         TextEntry::make('code'),
                         TextEntry::make('slug'),
+                        IconEntry::make('is_active')
+                            ->boolean(),
                     ])->columns(3),
                 Section::make('Hierarchy')
                     ->schema([
@@ -138,5 +148,33 @@ class AddressAreaFormSchema
                         TextEntry::make('synced_at')->dateTime(),
                     ])->columns(2),
             ]);
+    }
+
+    private static function inferHierarchyType(mixed $countryId): ?string
+    {
+        if (! is_string($countryId) || mb_trim($countryId) === '') {
+            return null;
+        }
+
+        $country = config('filament-addressing.resources.countries.model', AddressCountry::class)::query()
+            ->find($countryId);
+
+        if (! $country instanceof AddressCountry || ! is_string($country->iso2)) {
+            return null;
+        }
+
+        $provider = app(CountryAddressProfileResolver::class)->resolve($country->iso2);
+
+        if (! $provider instanceof CountryAddressProfile) {
+            return null;
+        }
+
+        $hierarchies = $provider->addressHierarchies();
+
+        if ($hierarchies === []) {
+            return null;
+        }
+
+        return $hierarchies[0]->key;
     }
 }

@@ -1,0 +1,13 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentCommerceSupport\Resources\LanguageResource\Pages;
+
+use AIArmada\FilamentCommerceSupport\Resources\LanguageResource;
+use Filament\Resources\Pages\ViewRecord;
+
+final class ViewLanguage extends ViewRecord
+{
+    protected static string $resource = LanguageResource::class;
+}
