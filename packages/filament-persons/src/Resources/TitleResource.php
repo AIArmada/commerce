@@ -28,11 +28,11 @@ class TitleResource extends Resource
 {
     protected static ?string $model = Title::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-tag';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-tag';
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-persons.navigation.group');
     }
@@ -131,7 +131,8 @@ class TitleResource extends Resource
                     ->relationship('category', 'name')
                     ->searchable()
                     ->preload(),
-                ...(ModelResolver::countryClass() !== null
+                ...(
+                    ModelResolver::countryClass() !== null
                     ? [Tables\Filters\SelectFilter::make('country_id')
                         ->label('Country')
                         ->relationship('country', 'name')
