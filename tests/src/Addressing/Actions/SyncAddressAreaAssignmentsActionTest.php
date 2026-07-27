@@ -91,7 +91,7 @@ it('rejects areas from another hierarchy level', function (): void {
     ]))->toThrow(ValidationException::class);
 });
 
-it('requires the administrative parent when assigning a subdivision', function (): void {
+it('allows assigning a subdivision without its parent district when state is selected', function (): void {
     $address = Address::query()->create([
         'country_code' => 'MY',
         'country' => 'Malaysia',
@@ -99,9 +99,11 @@ it('requires the administrative parent when assigning a subdivision', function (
     ]);
     $subdivision = AddressArea::query()->where('source_id', 'subdivision')->firstOrFail();
 
-    expect(fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
         'administrative_subdivision' => $subdivision->getKey(),
-    ]))->toThrow(ValidationException::class);
+    ]);
+
+    expect($address->areaAssignments()->where('role', 'administrative_subdivision')->exists())->toBeTrue();
 });
 
 it('requires an active containment relationship for hierarchy assignments', function (): void {
