@@ -63,10 +63,12 @@ it('defines separate postal and administrative hierarchies with a shared first-l
         ->and($hierarchies[0]->levels[1]->parentKey)->toBe('region')
         ->and($hierarchies[1]->key)->toBe('administrative')
         ->and($hierarchies[1]->levels[0]->key)->toBe('region')
-        ->and($hierarchies[1]->levels[1]->key)->toBe('district')
+        ->and($hierarchies[1]->levels[1]->key)->toBe('division')
         ->and($hierarchies[1]->levels[1]->parentKey)->toBe('region')
-        ->and($hierarchies[1]->levels[2]->key)->toBe('subdivision')
-        ->and($hierarchies[1]->levels[2]->parentKey)->toBe('district');
+        ->and($hierarchies[1]->levels[2]->key)->toBe('district')
+        ->and($hierarchies[1]->levels[2]->parentKey)->toBe('region')
+        ->and($hierarchies[1]->levels[3]->key)->toBe('subdivision')
+        ->and($hierarchies[1]->levels[3]->parentKey)->toBe('region');
 });
 
 it('removes obsolete provider-owned state links when reseeding', function (): void {
