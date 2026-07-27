@@ -87,9 +87,11 @@ The importer must call the core `ImportAddressAreasAction`. It must not insert r
 
 The `parent_source_id` column is country-scoped and cycle-safe. The UI hides parent choices that would create a loop, and the importer rejects the same loop server-side.
 
-For Malaysia, the area resource shows the shared State / Federal Territory root and the two provider branches: postal/address localities and administrative/land districts and subdivisions. Use the Roles filter to distinguish `locality` from `administrative_area` records. Kuala Lumpur, Putrajaya, and Labuan do not need separate postal-town records.
+For Malaysia, the area resource shows the shared State / Federal Territory root and the two provider branches: postal/address localities and administrative/land districts and subdivisions. Use the Roles filter to distinguish `postal_locality`, `administrative_district`, and `administrative_subdivision` records. Kuala Lumpur, Putrajaya, and Labuan do not need separate postal-town records.
 
-Alternate names are managed as language-neutral aliases. The package does not expose a language selector because it does not yet have a trusted locale-specific name dataset.
+Alternate names are managed as plain aliases without locale metadata.
+
+Address-form area selectors are defined by the selected country's profile, active area type/level, and typed containment. Roles are optional search metadata, not a prerequisite for an area to be selectable. Changing country clears every selected area assignment before save.
 
 ## Manage Postcodes
 

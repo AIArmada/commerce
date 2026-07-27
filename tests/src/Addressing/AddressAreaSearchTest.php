@@ -16,11 +16,11 @@ it('searches Malaysia localities by name and role', function (): void {
     $results = app(SearchAddressAreasAction::class)->execute(
         query: 'Wangsa',
         countryCode: 'MY',
-        role: 'locality',
+        role: 'postal_locality',
     );
 
     expect($results->pluck('name')->all())->toContain('Wangsa Maju')
-        ->and($results->first()->roles()->where('role', 'locality')->exists())->toBeTrue();
+        ->and($results->first()->roles()->where('role', 'postal_locality')->exists())->toBeTrue();
 });
 
 it('searches federal territory aliases', function (): void {

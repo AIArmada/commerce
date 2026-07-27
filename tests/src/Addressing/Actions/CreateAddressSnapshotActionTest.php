@@ -62,6 +62,30 @@ it('snapshots address from Address model', function (): void {
     expect($snapshot->provider_place_id)->toBe('ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4');
 });
 
+it('snapshots the address label from AddressData and Address', function (): void {
+    $snapshotable = new class extends Model
+    {
+        protected $table = 'test_models';
+    };
+    $snapshotable->save();
+
+    $address = Address::create([
+        'label' => 'Warehouse',
+        'line1' => '123 Main St',
+        'country_code' => 'MY',
+    ]);
+
+    $modelSnapshot = $this->action->execute($snapshotable, $address);
+    $dataSnapshot = $this->action->execute($snapshotable, AddressData::from([
+        'label' => 'Billing',
+        'line1' => '456 Main St',
+        'countryCode' => 'MY',
+    ]));
+
+    expect($modelSnapshot->label)->toBe('Warehouse')
+        ->and($dataSnapshot->label)->toBe('Billing');
+});
+
 it('snapshot copies latitude and longitude from address', function (): void {
     $snapshotable = new class extends Model
     {

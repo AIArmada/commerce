@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Actions\SaveAddressAreaAction;
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressCountry;
 use Illuminate\Validation\ValidationException;
 
@@ -87,4 +88,28 @@ it('rejects hierarchy cycles when updating an area', function (): void {
     expect(fn (): AddressArea => $this->action->handle([
         'parent_id' => $district->id,
     ], $state))->toThrow(ValidationException::class);
+});
+
+it('replaces the source-owned relationship when changing hierarchy type', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $state = $this->action->handle([
+        'country_id' => $country->id,
+        'type' => 'state',
+        'name' => 'Selangor',
+        'source_id' => 'state-selangor',
+    ]);
+    $area = $this->action->handle([
+        'country_id' => $country->id,
+        'parent_id' => $state->id,
+        'type' => 'locality',
+        'name' => 'Bangsar',
+        'hierarchy_type' => 'postal',
+    ]);
+
+    $this->action->handle([
+        'hierarchy_type' => 'administrative',
+    ], $area);
+
+    expect(AddressAreaRelationship::query()->where('child_address_area_id', $area->id)->count())->toBe(1)
+        ->and(AddressAreaRelationship::query()->where('child_address_area_id', $area->id)->value('hierarchy_type'))->toBe('administrative');
 });

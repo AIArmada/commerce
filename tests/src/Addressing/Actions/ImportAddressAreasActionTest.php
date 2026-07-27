@@ -6,6 +6,7 @@ use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 
 beforeEach(function (): void {
@@ -182,4 +183,51 @@ it('fails when updating an area would create a hierarchy cycle', function (): vo
 
     $root = AddressArea::where('source', 'test')->where('source_id', 'root')->first();
     expect($root->parent_id)->toBeNull();
+});
+
+it('removes stale source-owned relationships when hierarchy metadata changes', function (): void {
+    $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(source: 'test', sourceId: 'root', countryCode: 'MY', type: 'state', name: 'Selangor'),
+        new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling', parentSourceId: 'root', hierarchyType: 'administrative'),
+    ]));
+
+    $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling', hierarchyType: null),
+    ]));
+
+    expect(AddressAreaRelationship::query()->where('source', 'test')->exists())->toBeFalse();
+});
+
+it('keeps a manual relationship when an import owns the same typed edge', function (): void {
+    $this->action->execute(new ArrayAddressAreaSource('feed', [
+        new AddressAreaData(source: 'feed', sourceId: 'root', countryCode: 'MY', type: 'state', name: 'Selangor'),
+        new AddressAreaData(source: 'feed', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling', parentSourceId: 'root', hierarchyType: 'administrative'),
+    ]));
+
+    $areas = AddressArea::query()->where('source', 'feed')->get()->keyBy('source_id');
+    AddressAreaRelationship::query()->create([
+        'parent_address_area_id' => $areas['root']->getKey(),
+        'child_address_area_id' => $areas['child']->getKey(),
+        'relationship_type' => 'contains',
+        'hierarchy_type' => 'administrative',
+        'source' => 'manual',
+    ]);
+
+    expect(AddressAreaRelationship::query()
+        ->where('parent_address_area_id', $areas['root']->getKey())
+        ->where('child_address_area_id', $areas['child']->getKey())
+        ->pluck('source')
+        ->sort()
+        ->values()
+        ->all())->toBe(['feed', 'manual']);
+
+    $this->action->execute(new ArrayAddressAreaSource('feed', [
+        new AddressAreaData(source: 'feed', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling', hierarchyType: null),
+    ]));
+
+    expect(AddressAreaRelationship::query()
+        ->where('parent_address_area_id', $areas['root']->getKey())
+        ->where('child_address_area_id', $areas['child']->getKey())
+        ->pluck('source')
+        ->all())->toBe(['manual']);
 });

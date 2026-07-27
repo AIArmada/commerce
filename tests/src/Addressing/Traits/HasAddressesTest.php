@@ -41,6 +41,7 @@ it('sets primary address', function (): void {
 it('unsets old primary of same type', function (): void {
     $this->model->attachAddress($this->address1, type: 'primary', isPrimary: true);
     $this->model->attachAddress($this->address2, type: 'primary', isPrimary: false);
+    $this->model->load('addresses');
 
     $this->model->setPrimaryAddress($this->address2, type: 'primary');
 
@@ -61,6 +62,50 @@ it('preserves primary of different type', function (): void {
     expect($billingPrimary->id)->toBe($this->address2->id);
 });
 
+it('keeps only one primary address for a type when attaching a new primary', function (): void {
+    $this->model->attachAddress($this->address1, type: 'shipping', isPrimary: true);
+    $this->model->attachAddress($this->address2, type: 'shipping', isPrimary: true);
+
+    $primaries = Addressable::query()
+        ->where('addressable_id', $this->model->getKey())
+        ->where('type', 'shipping')
+        ->where('is_primary', true)
+        ->get();
+
+    expect($primaries)->toHaveCount(1)
+        ->and($primaries->first()->address_id)->toBe($this->address2->id);
+});
+
+it('sets the primary pivot for the requested type when an address has multiple attachments', function (): void {
+    $this->model->attachAddress($this->address1, type: 'shipping', isPrimary: true);
+    $this->model->attachAddress($this->address1, type: 'billing', isPrimary: false);
+
+    $this->model->setPrimaryAddress($this->address1, type: 'billing');
+
+    $addressablesTable = config('addressing.tables.addressables', 'addressables');
+    expect(DB::table($addressablesTable)->where('address_id', $this->address1->id)->where('type', 'shipping')->value('is_primary'))->toBe(1)
+        ->and(DB::table($addressablesTable)->where('address_id', $this->address1->id)->where('type', 'billing')->value('is_primary'))->toBe(1);
+});
+
+it('rejects making an unattached address primary', function (): void {
+    $this->model->attachAddress($this->address2, type: 'shipping', isPrimary: true);
+
+    expect(fn (): Addressable => $this->model->setPrimaryAddress($this->address1, type: 'shipping'))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect($this->model->primaryAddress('shipping')?->is($this->address2))->toBeTrue();
+});
+
+it('invalidates a loaded address relation after changing the primary address', function (): void {
+    $this->model->attachAddress($this->address1, type: 'shipping', isPrimary: true);
+    $this->model->attachAddress($this->address2, type: 'shipping');
+    $this->model->load('addresses');
+
+    $this->model->setPrimaryAddress($this->address2, type: 'shipping');
+
+    expect($this->model->primaryAddress('shipping')?->is($this->address2))->toBeTrue();
+});
+
 it('lists addresses of type', function (): void {
     $this->model->attachAddress($this->address1, type: 'shipping');
     $this->model->attachAddress($this->address2, type: 'billing');
@@ -75,7 +120,7 @@ it('returns only currently valid primary addresses', function (): void {
     $now = CarbonImmutable::now();
 
     $this->model->attachAddress($this->address1, type: 'shipping', isPrimary: true);
-    $this->model->attachAddress($this->address2, type: 'shipping', isPrimary: true);
+    $this->model->attachAddress($this->address2, type: 'shipping', isPrimary: false);
 
     DB::table($addressablesTable)
         ->where('addressable_type', $this->model->getMorphClass())
@@ -106,7 +151,7 @@ it('filters addressable pivots to those valid now', function (): void {
     $now = CarbonImmutable::now();
 
     $this->model->attachAddress($this->address1, type: 'shipping', isPrimary: true);
-    $this->model->attachAddress($this->address2, type: 'shipping', isPrimary: true);
+    $this->model->attachAddress($this->address2, type: 'shipping', isPrimary: false);
 
     DB::table($addressablesTable)
         ->where('addressable_type', $this->model->getMorphClass())

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressLocationData;
 use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Support\AddressLocationScope;
 use AIArmada\Addressing\Traits\HasAddresses;
 use Illuminate\Database\Eloquent\Model;
@@ -32,16 +34,37 @@ beforeEach(function (): void {
         'country_id' => (string) Str::uuid(),
         'state_id' => (string) Str::uuid(),
         'city_id' => (string) Str::uuid(),
-        'admin_area_1_id' => (string) Str::uuid(),
-        'admin_area_2_id' => (string) Str::uuid(),
-        'admin_area_3_id' => (string) Str::uuid(),
-        'admin_area_4_id' => (string) Str::uuid(),
     ];
+
+    $this->matchingArea = AddressArea::query()->create([
+        'country_code' => 'MY',
+        'type' => 'locality',
+        'level' => 2,
+        'name' => 'Matching area',
+        'slug' => 'matching-area',
+        'source' => 'tests',
+        'source_id' => 'matching',
+    ]);
+    $this->otherArea = AddressArea::query()->create([
+        'country_code' => 'MY',
+        'type' => 'locality',
+        'level' => 2,
+        'name' => 'Other area',
+        'slug' => 'other-area',
+        'source' => 'tests',
+        'source_id' => 'other',
+    ]);
 
     $matchingAddress = Address::query()->create([
         'line1' => 'Matching address',
         'country_code' => 'MY',
         ...$this->location,
+    ]);
+    AddressAreaAssignment::query()->create([
+        'address_id' => $matchingAddress->getKey(),
+        'address_area_id' => $this->matchingArea->getKey(),
+        'role' => 'postal_locality',
+        'is_primary' => true,
     ]);
     $this->owner->attachAddress($matchingAddress, isPrimary: true);
 
@@ -49,6 +72,12 @@ beforeEach(function (): void {
         'line1' => 'Other address',
         'country_code' => 'MY',
         ...array_map(static fn (): string => (string) Str::uuid(), $this->location),
+    ]);
+    AddressAreaAssignment::query()->create([
+        'address_id' => $otherAddress->getKey(),
+        'address_area_id' => $this->otherArea->getKey(),
+        'role' => 'postal_locality',
+        'is_primary' => true,
     ]);
     $this->otherOwner->attachAddress($otherAddress, isPrimary: true);
 });
@@ -58,10 +87,13 @@ it('normalizes only non-empty canonical location criteria', function (): void {
         'country_id' => '  country-id  ',
         'state_id' => '',
         'city_id' => 123,
+        'area_assignments' => ['postal_locality' => ' area-id '],
     ]);
 
     expect($location->criteria())->toBe(['country_id' => 'country-id'])
+        ->and($location->assignments())->toBe(['postal_locality' => 'area-id'])
         ->and($location->isEmpty())->toBeFalse()
+        ->and(new AddressLocationData(areaAssignments: ['postal_locality' => 'area-id'])->isEmpty())->toBeFalse()
         ->and(AddressLocationData::fromArray([])->isEmpty())->toBeTrue();
 });
 
@@ -78,17 +110,28 @@ it('filters addressable models by every canonical location column', function (st
     'country' => 'country_id',
     'state' => 'state_id',
     'city' => 'city_id',
-    'first area' => 'admin_area_1_id',
-    'second area' => 'admin_area_2_id',
-    'third area' => 'admin_area_3_id',
-    'fourth area' => 'admin_area_4_id',
 ]);
 
+it('filters addressable models by typed area assignments', function (): void {
+    $ownerIds = app(AddressLocationScope::class)
+        ->apply($this->owner::query(), new AddressLocationData(
+            areaAssignments: ['postal_locality' => $this->matchingArea->getKey()],
+        ))
+        ->pluck('id')
+        ->all();
+
+    expect($ownerIds)->toBe([$this->owner->id]);
+});
+
 it('combines canonical location criteria without changing empty queries', function (): void {
+    $location = new AddressLocationData(
+        countryId: $this->location['country_id'],
+        areaAssignments: ['postal_locality' => $this->matchingArea->getKey()],
+    );
     $scope = app(AddressLocationScope::class);
 
     $matchingIds = $scope
-        ->apply($this->owner::query(), AddressLocationData::fromArray($this->location))
+        ->apply($this->owner::query(), $location)
         ->pluck('id')
         ->all();
     $allIds = $scope

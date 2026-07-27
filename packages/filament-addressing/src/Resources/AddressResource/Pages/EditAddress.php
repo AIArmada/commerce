@@ -9,6 +9,7 @@ use AIArmada\Addressing\Models\Address;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use LogicException;
 
 final class EditAddress extends EditRecord
@@ -26,8 +27,15 @@ final class EditAddress extends EditRecord
             throw new LogicException('Expected an address record.');
         }
 
-        $record->update($data);
-        app(SyncAddressAreaAssignmentsAction::class)->execute($record, $this->areaAssignments());
+        DB::transaction(function () use ($record, $data): void {
+            $record->update($data);
+            app(SyncAddressAreaAssignmentsAction::class)->execute(
+                $record,
+                $this->areaAssignments(),
+                $record->state_id,
+                ['source' => 'filament-addressing'],
+            );
+        });
 
         return $record->fresh() ?? $record;
     }
@@ -37,12 +45,8 @@ final class EditAddress extends EditRecord
     {
         $rawState = $this->form->getRawState();
         $state = is_array($rawState) ? $rawState : $rawState->toArray();
+        $assignments = $state['area_assignments'] ?? [];
 
-        return [
-            'postal_locality' => $state['postal_area_id'] ?? null,
-            'administrative_district' => $state['administrative_district_id'] ?? null,
-            'administrative_subdivision' => $state['administrative_subdivision_id'] ?? null,
-            'administrative_lower_area' => $state['administrative_lower_area_id'] ?? null,
-        ];
+        return is_array($assignments) ? $assignments : [];
     }
 }
