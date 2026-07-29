@@ -60,7 +60,7 @@ final class SocialProfileFactory extends Factory
         return $this->state(fn () => [
             'platform' => 'youtube',
             'handle' => 'ExampleChannel',
-            'url' => 'https://youtube.com/@ExampleChannel',
+            'url' => 'https://youtube.com/ExampleChannel',
         ]);
     }
 

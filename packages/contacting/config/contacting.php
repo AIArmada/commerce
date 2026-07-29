@@ -65,7 +65,7 @@ return [
             'facebook' => ['label' => 'Facebook', 'prefix' => 'www.facebook.com/'],
             'instagram' => ['label' => 'Instagram', 'prefix' => 'www.instagram.com/'],
             'tiktok' => ['label' => 'TikTok', 'prefix' => 'www.tiktok.com/@'],
-            'youtube' => ['label' => 'YouTube', 'prefix' => 'www.youtube.com/@'],
+            'youtube' => ['label' => 'YouTube', 'prefix' => 'www.youtube.com/'],
             'x' => ['label' => 'X / Twitter', 'prefix' => 'x.com/'],
             'linkedin' => ['label' => 'LinkedIn', 'prefix' => 'www.linkedin.com/in/'],
             'threads' => ['label' => 'Threads', 'prefix' => 'www.threads.net/@'],

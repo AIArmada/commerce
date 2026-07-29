@@ -39,7 +39,7 @@ final class SocialProfileFormSchema
                         TextInput::make('handle')
                             ->label('Handle')
                             ->maxLength(255)
-                            ->placeholder('@example'),
+                            ->placeholder('example'),
 
                         TextInput::make('display_name')
                             ->label('Display Name')
