@@ -242,8 +242,6 @@ final class ContactMethod extends Model
         ContactMethod::query()
             ->where('contactable_type', $this->contactable_type)
             ->where('contactable_id', $this->contactable_id)
-            ->where('type', $this->type)
-            ->where('purpose', $this->purpose)
             ->where('id', '!=', $this->id)
             ->update(['is_primary' => false]);
     }

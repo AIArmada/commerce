@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Models\Language;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -52,10 +53,14 @@ final class NamesRelationManager extends RelationManager
                         TextInput::make('full_name')
                             ->required()
                             ->maxLength(255),
-                        TextInput::make('language_code')
+                        Select::make('language_code')
+                            ->options(fn (): array => Language::query()->orderBy('name')->pluck('name', 'code')->all())
+                            ->searchable()
+                            ->preload()
                             ->required()
-                            ->maxLength(10)
-                            ->default('en'),
+                            ->default(fn (): string => $this->getOwnerRecord()
+                                ?->primaryAddress()
+                                ?->country_code === 'MY' ? 'ms' : 'en'),
                         Checkbox::make('is_primary'),
                     ]),
             ])

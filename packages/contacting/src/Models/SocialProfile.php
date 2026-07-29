@@ -253,8 +253,6 @@ final class SocialProfile extends Model
         SocialProfile::query()
             ->where('socialable_type', $this->socialable_type)
             ->where('socialable_id', $this->socialable_id)
-            ->where('platform', $this->platform)
-            ->where('purpose', $this->purpose)
             ->where('id', '!=', $this->id)
             ->update(['is_primary' => false]);
     }

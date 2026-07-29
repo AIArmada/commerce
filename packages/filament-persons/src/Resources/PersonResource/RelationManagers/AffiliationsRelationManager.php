@@ -15,13 +15,26 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-final class AffiliationsRelationManager extends RelationManager
+class AffiliationsRelationManager extends RelationManager
 {
     protected static string $relationship = 'affiliations';
 
     protected static ?string $title = 'Affiliations';
 
     protected static ?string $recordTitleAttribute = 'institution_id';
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getInstitutionOptions(): array
+    {
+        return [];
+    }
+
+    public static function getInstitutionLabel(string $id): ?string
+    {
+        return static::getInstitutionOptions()[$id] ?? null;
+    }
 
     public function table(Table $table): Table
     {
@@ -31,7 +44,8 @@ final class AffiliationsRelationManager extends RelationManager
                     ->badge()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('institution_id')
-                    ->label('Institution ID')
+                    ->label('Institution')
+                    ->formatStateUsing(fn (string $state): string => static::getInstitutionLabel($state) ?? $state)
                     ->placeholder('-'),
                 Tables\Columns\IconColumn::make('is_primary')
                     ->boolean(),
@@ -53,9 +67,11 @@ final class AffiliationsRelationManager extends RelationManager
                                 'partner' => 'Partner',
                             ])
                             ->required(),
-                        TextInput::make('institution_id')
-                            ->label('Institution UUID')
-                            ->maxLength(36),
+                        Select::make('institution_id')
+                            ->label('Institution')
+                            ->options(static::getInstitutionOptions())
+                            ->searchable()
+                            ->preload(),
                         DatePicker::make('joined_at'),
                         DatePicker::make('left_at'),
                         Checkbox::make('is_primary'),
