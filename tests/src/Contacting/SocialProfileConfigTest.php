@@ -16,7 +16,7 @@ dataset('prefix_platforms', [
     ['facebook', 'www.facebook.com/'],
     ['instagram', 'www.instagram.com/'],
     ['tiktok', 'www.tiktok.com/@'],
-    ['youtube', 'www.youtube.com/@'],
+    ['youtube', 'www.youtube.com/'],
     ['x', 'x.com/'],
     ['linkedin', 'www.linkedin.com/in/'],
     ['threads', 'www.threads.net/@'],
