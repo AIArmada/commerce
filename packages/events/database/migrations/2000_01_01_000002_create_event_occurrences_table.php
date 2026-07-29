@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('event_id')->index();
             $table->index(['event_id', 'starts_at']);
+            $table->index(['event_id', 'starts_at', 'created_at', 'id']);
             $table->string('title')->nullable();
             $table->string('slug')->nullable();
             $table->timestampTz('starts_at')->nullable()->index();

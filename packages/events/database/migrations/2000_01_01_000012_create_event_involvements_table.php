@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('involveable_type')->nullable()->index();
             $table->uuid('involveable_id')->nullable()->index();
             $table->index(['involveable_type', 'involveable_id']);
+            $table->index(['involveable_type', 'involveable_id', 'role_code', 'sort_order']);
             $table->uuid('event_role_id')->nullable()->index();
             $table->string('role_code')->nullable()->index();
             $table->string('status')->nullable()->index();
