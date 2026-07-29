@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Models\Language;
+use AIArmada\Persons\Models\Person;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -58,9 +59,15 @@ final class NamesRelationManager extends RelationManager
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->default(fn (): string => $this->getOwnerRecord()
-                                ?->primaryAddress()
-                                ?->country_code === 'MY' ? 'ms' : 'en'),
+                            ->default(function (): string {
+                                $owner = $this->getOwnerRecord();
+
+                                if (! $owner instanceof Person) {
+                                    return 'en';
+                                }
+
+                                return $owner->primaryAddress()?->country_code === 'MY' ? 'ms' : 'en';
+                            }),
                         Checkbox::make('is_primary'),
                     ]),
             ])
