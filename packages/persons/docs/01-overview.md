@@ -32,7 +32,7 @@ title: Persons Overview
 | Concept | Description |
 |---|---|
 | **Person** | Canonical identity record (renamed concept from a host's `Speaker`). |
-| **Person Name** | Multi-context name variant (legal, display, religious, etc.) with a language code. |
+| **Person Name** | Multi-context name variant (legal, display, religious, nickname, etc.) with a language code. |
 | **Title** | A reference definition (e.g. "Datuk", "PhD") with a category, usage position, and sort order within that category. |
 | **Title Assignment** | Polymorphic junction linking any model to a title, with status and dates. |
 | **Credential** | A definition (e.g. "Doctor of Philosophy") plus a polymorphic assignment with issuing details. |

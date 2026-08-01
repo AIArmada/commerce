@@ -61,8 +61,16 @@ describe('person identity models', function (): void {
             'language_code' => 'ar',
         ]);
 
-        expect($person->fresh()->names)->toHaveCount(2);
+        PersonName::create([
+            'person_id' => $person->id,
+            'name_type' => PersonNameType::Nickname,
+            'full_name' => 'Mat',
+            'language_code' => 'ms',
+        ]);
+
+        expect($person->fresh()->names)->toHaveCount(3);
         expect($person->names->first()->name_type)->toBe(PersonNameType::Display);
+        expect($person->names->last()->name_type)->toBe(PersonNameType::Nickname);
     });
 
     it('creates a title category with titles', function (): void {

@@ -18,3 +18,14 @@ it('resolves title assignment colors from the enum state', function (): void {
         ->and($statusColumn?->getColor(AssignmentStatus::Revoked))->toBe('danger')
         ->and($statusColumn?->getColor(AssignmentStatus::Expired))->toBe('warning');
 });
+
+it('includes the title order column', function (): void {
+    $table = (new TitleAssignmentsRelationManager)->table(
+        Table::make(Mockery::mock(HasTable::class)),
+    );
+
+    $orderColumn = $table->getColumn('title.sort_order');
+
+    expect($orderColumn)->not->toBeNull()
+        ->and($orderColumn?->getLabel())->toBe('Order');
+});

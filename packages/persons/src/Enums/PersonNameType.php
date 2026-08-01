@@ -15,6 +15,7 @@ enum PersonNameType: string
     case Birth = 'birth';
     case Religious = 'religious';
     case Professional = 'professional';
+    case Nickname = 'nickname';
     case Previous = 'previous';
 
     public function label(): string
@@ -25,6 +26,7 @@ enum PersonNameType: string
             self::Birth => 'Birth',
             self::Religious => 'Religious',
             self::Professional => 'Professional',
+            self::Nickname => 'Nickname',
             self::Previous => 'Previous',
         };
     }

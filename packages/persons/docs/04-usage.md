@@ -32,6 +32,12 @@ $person->names()->create([
     'full_name' => 'أحمد بن عبد الرحمن',
     'language_code' => 'ar',
 ]);
+
+$person->names()->create([
+    'name_type' => PersonNameType::Nickname,
+    'full_name' => 'Mat',
+    'language_code' => 'ms',
+]);
 ```
 
 ## Titles

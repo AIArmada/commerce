@@ -29,6 +29,10 @@ final class TitleAssignmentsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('title.name')
                     ->label('Title')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('title.sort_order')
+                    ->label('Order')
+                    ->numeric()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('title.usage_position')
                     ->badge(),
                 Tables\Columns\TextColumn::make('status')
