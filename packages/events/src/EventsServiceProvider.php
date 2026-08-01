@@ -38,6 +38,7 @@ use AIArmada\Events\Contracts\EventScheduleResolver;
 use AIArmada\Events\Contracts\EventSearchEngine;
 use AIArmada\Events\Contracts\EventSearchIndexer;
 use AIArmada\Events\Contracts\EventSearchPayloadResolver;
+use AIArmada\Events\Contracts\EventSearchRelationProvider;
 use AIArmada\Events\Contracts\EventTaxonomyHierarchy;
 use AIArmada\Events\Contracts\EventTemplateService;
 use AIArmada\Events\Contracts\EventTranslationProvider;
@@ -94,6 +95,7 @@ use AIArmada\Events\Resolvers\DefaultEventReferenceResolver;
 use AIArmada\Events\Resolvers\DefaultEventRegistrationEligibility;
 use AIArmada\Events\Resolvers\DefaultEventRegistrationScopeResolver;
 use AIArmada\Events\Resolvers\DefaultEventSearchPayloadResolver;
+use AIArmada\Events\Resolvers\DefaultEventSearchRelationProvider;
 use AIArmada\Events\Resolvers\NullEventCheckoutIntentResolver;
 use AIArmada\Events\Resolvers\NullEventOrderItemFulfillmentResolver;
 use AIArmada\Events\Resolvers\NullEventScheduleResolver;
@@ -174,6 +176,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->bind(EventScheduleResolver::class, $this->scheduleResolverClass());
         $this->app->bind(EventSearchEngine::class, $this->searchEngineClass());
         $this->app->bind(EventSearchPayloadResolver::class, $this->searchPayloadResolverClass());
+        $this->app->bind(EventSearchRelationProvider::class, $this->searchRelationProviderClass());
         $this->app->bind(EventChangeNoticeAudienceResolver::class, $this->changeNoticeAudienceResolverClass());
         $this->app->bind(EventChangeNoticeNotificationDispatcher::class, $this->changeNoticeNotificationDispatcherClass());
 
@@ -431,6 +434,21 @@ final class EventsServiceProvider extends PackageServiceProvider
         }
 
         throw new RuntimeException('The events.search.engine config value must be an EventSearchEngine class.');
+    }
+
+    private function searchRelationProviderClass(): string
+    {
+        $provider = config('events.search.relation_provider');
+
+        if ($provider === null) {
+            return DefaultEventSearchRelationProvider::class;
+        }
+
+        if (is_string($provider) && is_a($provider, EventSearchRelationProvider::class, true)) {
+            return $provider;
+        }
+
+        throw new RuntimeException('The events.search.relation_provider config value must be an EventSearchRelationProvider class.');
     }
 
     private function searchIndexerClass(): string

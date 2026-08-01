@@ -175,6 +175,7 @@ return [
         'payload_resolver' => null,
         'engine' => null,
         'indexer' => null,
+        'relation_provider' => null,
         'queue_indexing' => env('EVENTS_SEARCH_QUEUE_INDEXING', false),
         'queue_connection' => env('EVENTS_SEARCH_QUEUE_CONNECTION'),
         'queue_name' => env('EVENTS_SEARCH_QUEUE_NAME'),

@@ -22,6 +22,18 @@ $tablePrefix = env('EVENTS_TABLE_PREFIX', '');
 
 Every table name is individually configurable via environment variables, allowing collision-free coexistence with other packages.
 
+### Event search relation provider
+
+Search adapters can share a relation provider so package-owned eager-loading stays separate from application-owned relations:
+
+```php
+'search' => [
+    'relation_provider' => App\Support\EventDiscovery\EventCardRelationshipProvider::class,
+],
+```
+
+The default provider returns only package-owned paths (`classifications.term` and `timeExpressions`). An application provider should compose that default and add its own relations, such as institutions, addresses, media, titles, or venues. This contract controls eager loading only; search matching, filters, and index adapters remain separate concerns.
+
 ### Free-Only Mode
 
 ```php

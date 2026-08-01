@@ -2,6 +2,26 @@
 title: Usage
 ---
 
+## Search relation loading
+
+The package’s `EventSearchRelationProvider` supplies only package-owned eager-loading paths. Applications that render richer event cards can configure a provider that composes the package default and adds host-owned relations:
+
+```php
+final class EventCardRelationshipProvider implements EventSearchRelationProvider
+{
+    public function relations(): array
+    {
+        return [
+            ...(new DefaultEventSearchRelationProvider)->relations(),
+            'institution.media',
+            'venue.addresses',
+        ];
+    }
+}
+```
+
+This provider is used by search adapters for eager loading only. It does not own matching thresholds, event fields, statuses, or search-index integration.
+
 ## Creating Events
 
 ### Free events
