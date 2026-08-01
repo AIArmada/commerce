@@ -73,6 +73,50 @@ describe('person identity models', function (): void {
         expect($person->names->last()->name_type)->toBe(PersonNameType::Nickname);
     });
 
+    it('keeps only one primary name per person', function (): void {
+        $person = Person::factory()->create();
+
+        $first = PersonName::create([
+            'person_id' => $person->id,
+            'name_type' => PersonNameType::Display,
+            'full_name' => 'First Name',
+            'language_code' => 'en',
+            'is_primary' => true,
+        ]);
+
+        $second = PersonName::create([
+            'person_id' => $person->id,
+            'name_type' => PersonNameType::Nickname,
+            'full_name' => 'Second Name',
+            'language_code' => 'en',
+            'is_primary' => true,
+        ]);
+
+        expect($person->fresh()->names()->where('is_primary', true)->pluck('id')->all())
+            ->toBe([$second->getKey()]);
+    });
+
+    it('keeps only one primary affiliation per affiliatable model', function (): void {
+        $person = Person::factory()->create();
+
+        $first = Affiliation::create([
+            'affiliatable_type' => $person->getMorphClass(),
+            'affiliatable_id' => $person->getKey(),
+            'affiliation_type' => AffiliationType::Member,
+            'is_primary' => true,
+        ]);
+
+        $second = Affiliation::create([
+            'affiliatable_type' => $person->getMorphClass(),
+            'affiliatable_id' => $person->getKey(),
+            'affiliation_type' => AffiliationType::Employee,
+            'is_primary' => true,
+        ]);
+
+        expect($person->fresh()->affiliations()->where('is_primary', true)->pluck('id')->all())
+            ->toBe([$second->getKey()]);
+    });
+
     it('creates a title category with titles', function (): void {
         $category = TitleCategory::create([
             'code' => 'test_category',
@@ -162,7 +206,7 @@ describe('person identity models', function (): void {
 
         expect($person->fresh()->titleAssignments)->toHaveCount(1);
         expect($assignment->title->name)->toBe('Datuk');
-        expect($assignment->titleable->id)->toBe($person->id);
+        expect($assignment->titleable->getKey())->toBe($person->getKey());
     });
 
     it('creates credential definition and assignment', function (): void {

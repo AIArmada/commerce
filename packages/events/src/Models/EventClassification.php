@@ -7,6 +7,7 @@ namespace AIArmada\Events\Models;
 use AIArmada\Events\Database\Factories\EventClassificationFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\Support\ModelResolver;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,6 +41,30 @@ final class EventClassification extends Model
         'is_primary', 'weight', 'sort_order',
         'metadata',
     ];
+
+    protected static function booted(): void
+    {
+        static::saved(function (EventClassification $classification): void {
+            if (! $classification->is_primary) {
+                return;
+            }
+
+            static::query()
+                ->where('event_id', $classification->event_id)
+                ->when(
+                    $classification->event_occurrence_id === null,
+                    fn (Builder $query): Builder => $query->whereNull('event_occurrence_id'),
+                    fn (Builder $query): Builder => $query->where('event_occurrence_id', $classification->event_occurrence_id),
+                )
+                ->when(
+                    $classification->event_session_id === null,
+                    fn (Builder $query): Builder => $query->whereNull('event_session_id'),
+                    fn (Builder $query): Builder => $query->where('event_session_id', $classification->event_session_id),
+                )
+                ->whereKeyNot($classification->getKey())
+                ->update(['is_primary' => false]);
+        });
+    }
 
     public function getTable(): string
     {

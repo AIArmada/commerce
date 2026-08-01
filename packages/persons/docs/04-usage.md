@@ -110,6 +110,10 @@ $affiliation->roles()->create([
 ]);
 ```
 
+### Primary identity records
+
+`is_primary` is exclusive within an owning person for both names and affiliations. Saving a primary `PersonName` or `Affiliation` automatically clears the sibling records for that person, including writes made through Filament relation managers.
+
 ## Wiring country relations
 
 The package stores `country_id` / `nationality_country_id` as loose UUIDs. Add relations on your app's Person subclass:

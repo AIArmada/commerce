@@ -34,6 +34,20 @@ class PersonName extends Model
         'is_primary',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function (PersonName $name): void {
+            if (! $name->is_primary) {
+                return;
+            }
+
+            static::query()
+                ->where('person_id', $name->person_id)
+                ->whereKeyNot($name->getKey())
+                ->update(['is_primary' => false]);
+        });
+    }
+
     public function getTable(): string
     {
         return config('persons.database.tables.person_names', 'person_names');

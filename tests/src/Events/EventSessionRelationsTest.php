@@ -65,3 +65,27 @@ it('exposes session-scoped relations for inherited event features', function ():
         ->and($session->timeExpressions)->toHaveCount(1)
         ->and($session->notificationBatches)->toHaveCount(1);
 });
+
+it('keeps primary classifications exclusive within each event scope', function (): void {
+    $event = Event::factory()->create();
+    $taxonomy = EventTaxonomy::factory()->create();
+    $firstTerm = EventTerm::factory()->create(['event_taxonomy_id' => $taxonomy->id]);
+    $secondTerm = EventTerm::factory()->create(['event_taxonomy_id' => $taxonomy->id]);
+
+    $first = EventClassification::factory()->create([
+        'event_id' => $event->id,
+        'event_taxonomy_id' => $taxonomy->id,
+        'event_term_id' => $firstTerm->id,
+        'is_primary' => true,
+    ]);
+
+    $second = EventClassification::factory()->create([
+        'event_id' => $event->id,
+        'event_taxonomy_id' => $taxonomy->id,
+        'event_term_id' => $secondTerm->id,
+        'is_primary' => true,
+    ]);
+
+    expect(EventClassification::query()->where('event_id', $event->id)->where('is_primary', true)->pluck('id')->all())
+        ->toBe([$second->getKey()]);
+});

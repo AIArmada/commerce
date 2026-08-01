@@ -15,6 +15,10 @@ $event = Event::create([
 ]);
 ```
 
+### Primary classifications
+
+An event, occurrence, or session can have only one primary classification within its own scope. Saving a primary `EventClassification` clears the other classifications in that same scope, so direct model writes and Filament relation-manager edits keep the invariant consistent.
+
 Use factory states for convenience:
 
 ```php

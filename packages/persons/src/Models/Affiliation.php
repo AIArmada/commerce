@@ -41,6 +41,21 @@ class Affiliation extends Model
         'is_primary',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function (Affiliation $affiliation): void {
+            if (! $affiliation->is_primary) {
+                return;
+            }
+
+            static::query()
+                ->where('affiliatable_type', $affiliation->affiliatable_type)
+                ->where('affiliatable_id', $affiliation->affiliatable_id)
+                ->whereKeyNot($affiliation->getKey())
+                ->update(['is_primary' => false]);
+        });
+    }
+
     public function getTable(): string
     {
         return config('persons.database.tables.affiliations', 'affiliations');
