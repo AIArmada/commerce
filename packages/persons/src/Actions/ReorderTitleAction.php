@@ -146,12 +146,9 @@ final class ReorderTitleAction
         }
 
         $offset = (int) $titles->max('sort_order') + $titles->count() + 1;
-
-        foreach ($titles as $title) {
-            $title->newQuery()->whereKey($title->getKey())->update([
-                'sort_order' => (int) $title->sort_order + $offset,
-            ]);
-        }
+        $this->bulkSetOrder($titles->mapWithKeys(
+            fn (Title $title): array => [(string) $title->getKey() => (int) $title->sort_order + $offset],
+        )->all());
     }
 
     /**
@@ -159,15 +156,45 @@ final class ReorderTitleAction
      */
     private function persistOrder(Collection $titles, ?Title $exclude = null): void
     {
+        $orders = [];
+
         foreach ($titles as $index => $title) {
             if ($exclude?->is($title)) {
                 continue;
             }
 
-            $title->newQuery()->whereKey($title->getKey())->update([
-                'sort_order' => $index + 1,
-            ]);
+            $orders[(string) $title->getKey()] = $index + 1;
         }
+
+        $this->bulkSetOrder($orders);
+    }
+
+    /**
+     * Update an entire ordering scope in one statement. Ordering already used
+     * direct query updates (and therefore did not dispatch model events); the
+     * CASE expression preserves that behavior while removing the per-title N+1.
+     *
+     * @param  array<string, int>  $orders
+     */
+    private function bulkSetOrder(array $orders): void
+    {
+        if ($orders === []) {
+            return;
+        }
+
+        $quotedCases = [];
+        $connection = DB::connection();
+
+        foreach ($orders as $id => $order) {
+            $quotedId = $connection->getPdo()->quote($id);
+            $quotedCases[] = "WHEN {$quotedId} THEN " . (int) $order;
+        }
+
+        Title::query()
+            ->whereIn('id', array_keys($orders))
+            ->update([
+                'sort_order' => DB::raw('CASE id ' . implode(' ', $quotedCases) . ' ELSE sort_order END'),
+            ]);
     }
 
     /** @param Collection<int, Title> $titles */

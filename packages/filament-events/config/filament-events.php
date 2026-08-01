@@ -37,5 +37,6 @@ return [
             'change_log' => 99,
             'event_template' => 98,
         ],
+        'event_form_extensions' => [],
     ],
 ];

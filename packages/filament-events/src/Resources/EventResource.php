@@ -12,6 +12,7 @@ use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Support\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
+use AIArmada\FilamentEvents\Contracts\EventFormExtension;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -23,6 +24,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\CodeEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\HasColor;
@@ -219,6 +221,7 @@ final class EventResource extends Resource
                         Textarea::make('summary')->rows(3),
                         Textarea::make('description')->rows(5),
                     ])->columns(2),
+                ...self::configuredFormExtensions(),
                 Section::make('Lifecycle')
                     ->schema([
                         Select::make('status')
@@ -259,6 +262,32 @@ final class EventResource extends Resource
                             ->helperText('Leave blank to use the configured or inherited default.'),
                     ])->columns(2),
             ]);
+    }
+
+    /**
+     * @return array<int, Component>
+     */
+    private static function configuredFormExtensions(): array
+    {
+        $configuredExtensions = config('filament-events.resources.event_form_extensions', []);
+
+        if (! is_array($configuredExtensions)) {
+            return [];
+        }
+
+        $components = [];
+
+        foreach ($configuredExtensions as $extensionClass) {
+            if (! is_string($extensionClass) || ! is_a($extensionClass, EventFormExtension::class, true)) {
+                continue;
+            }
+
+            /** @var EventFormExtension $extension */
+            $extension = app($extensionClass);
+            $components = [...$components, ...$extension->components()];
+        }
+
+        return $components;
     }
 
     public static function getRelations(): array

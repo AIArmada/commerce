@@ -11,12 +11,15 @@ use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use Closure;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Throwable;
 
 final class DatabaseAffiliateLookup implements AffiliateLookup
 {
+    private const REQUEST_CACHE_KEY = 'aiarmada.affiliates.lookup';
+
     /** @return Builder<Affiliate> */
     private function query(): Builder
     {
@@ -31,17 +34,17 @@ final class DatabaseAffiliateLookup implements AffiliateLookup
 
     public function findByCode(string $code): ?Affiliate
     {
-        return $this->findByColumn($this->query(), 'code', $code);
+        return $this->remembered('code:' . mb_strtolower(mb_trim($code)), fn (): ?Affiliate => $this->findByColumn($this->query(), 'code', $code));
     }
 
     public function findByDefaultVoucherCode(string $voucherCode): ?Affiliate
     {
-        return $this->findByColumn($this->query(), 'default_voucher_code', $voucherCode);
+        return $this->remembered('voucher:' . mb_strtolower(mb_trim($voucherCode)), fn (): ?Affiliate => $this->findByColumn($this->query(), 'default_voucher_code', $voucherCode));
     }
 
     public function findById(string $id): ?Affiliate
     {
-        return $this->query()->whereKey($id)->first();
+        return $this->remembered('id:' . $id, fn (): ?Affiliate => $this->query()->whereKey($id)->first());
     }
 
     public function findActiveAffiliateByCookie(string $cookieValue): ?Affiliate
@@ -128,5 +131,33 @@ final class DatabaseAffiliateLookup implements AffiliateLookup
             OwnerContext::resolve(),
             (bool) config('affiliates.owner.include_global', false),
         );
+    }
+
+    /**
+     * Affiliate resolution is commonly requested by several checkout and
+     * attribution collaborators during one request. Keep the optimization
+     * request-local so it cannot leak owner context or stale data between requests.
+     */
+    private function remembered(string $key, Closure $resolver): ?Affiliate
+    {
+        if (! app()->bound('request')) {
+            return $resolver();
+        }
+
+        $request = request();
+        $cache = $request->attributes->get(self::REQUEST_CACHE_KEY, []);
+
+        if (is_array($cache) && array_key_exists($key, $cache)) {
+            $affiliate = $cache[$key];
+
+            return $affiliate instanceof Affiliate ? $affiliate : null;
+        }
+
+        $affiliate = $resolver();
+        $cache = is_array($cache) ? $cache : [];
+        $cache[$key] = $affiliate;
+        $request->attributes->set(self::REQUEST_CACHE_KEY, $cache);
+
+        return $affiliate;
     }
 }

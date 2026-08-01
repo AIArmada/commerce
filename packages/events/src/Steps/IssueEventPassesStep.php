@@ -73,25 +73,13 @@ final class IssueEventPassesStep extends AbstractCheckoutStep
             ->unique()
             ->values();
 
-        foreach ($ticketTypeIds as $ticketTypeId) {
-            $purchasable = $orderItems
-                ->first(function (mixed $orderItem) use ($ticketTypeId): bool {
-                    $purchasable = $orderItem->getRelation('purchasable');
-
-                    return $purchasable instanceof TicketType
-                        && $purchasable->getKey() === $ticketTypeId;
-                })?->getRelation('purchasable');
-
-            if (! $purchasable instanceof TicketType) {
-                continue;
-            }
-
+        if ($ticketTypeIds->isNotEmpty()) {
             $registrations = EventRegistration::byOrder($order)
                 ->whereHas(
                     'items',
-                    fn ($query) => $query
-                        ->where('ticket_type_id', $purchasable->getKey()),
+                    fn ($query) => $query->whereIn('ticket_type_id', $ticketTypeIds->all()),
                 )
+                ->with('items')
                 ->get();
 
             foreach ($registrations as $registration) {

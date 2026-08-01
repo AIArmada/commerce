@@ -17,6 +17,7 @@ use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Models\Response;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 final class DefaultEngagementCounterService implements EngagementCounterService
 {
@@ -97,12 +98,7 @@ final class DefaultEngagementCounterService implements EngagementCounterService
         $subjectType = $subject->getMorphClass();
         $subjectId = $subject->getKey();
 
-        $counters = [
-            'followers' => $this->countFollowers($subject),
-            'bookmarks' => $this->countBookmarks($subject),
-            'responses' => $this->countResponses($subject),
-            'reactions' => $this->countReactions($subject),
-        ];
+        $counters = $this->aggregateCounters($subjectType, (string) $subjectId);
 
         foreach ($counters as $type => $count) {
             EngagementCounter::query()->updateOrCreate(
@@ -118,6 +114,56 @@ final class DefaultEngagementCounterService implements EngagementCounterService
                 ],
             );
         }
+    }
+
+    /**
+     * Compute all base counters in one database round trip.
+     *
+     * The individual public count methods remain available for callers that
+     * request one counter, while reconciliation avoids four identical scans.
+     *
+     * @return array<string, int>
+     */
+    private function aggregateCounters(string $subjectType, string $subjectId): array
+    {
+        $followers = Follow::query()
+            ->where('followable_type', $subjectType)
+            ->where('followable_id', $subjectId)
+            ->where('status', 'active')
+            ->selectRaw('COUNT(*) as followers')
+            ->selectRaw('COUNT(*)');
+        $bookmarks = Bookmark::query()
+            ->where('bookmarkable_type', $subjectType)
+            ->where('bookmarkable_id', $subjectId)
+            ->where('status', 'active')
+            ->selectRaw('COUNT(*) as bookmarks')
+            ->selectRaw('COUNT(*)');
+        $responses = Response::query()
+            ->where('respondable_type', $subjectType)
+            ->where('respondable_id', $subjectId)
+            ->where('status', 'active')
+            ->selectRaw('COUNT(*) as responses')
+            ->selectRaw('COUNT(*)');
+        $reactions = Reaction::query()
+            ->where('reactable_type', $subjectType)
+            ->where('reactable_id', $subjectId)
+            ->where('status', 'active')
+            ->selectRaw('COUNT(*) as reactions')
+            ->selectRaw('COUNT(*)');
+
+        $totals = DB::query()
+            ->selectSub($followers, 'followers')
+            ->selectSub($bookmarks, 'bookmarks')
+            ->selectSub($responses, 'responses')
+            ->selectSub($reactions, 'reactions')
+            ->first();
+
+        return [
+            'followers' => (int) ($totals->followers ?? 0),
+            'bookmarks' => (int) ($totals->bookmarks ?? 0),
+            'responses' => (int) ($totals->responses ?? 0),
+            'reactions' => (int) ($totals->reactions ?? 0),
+        ];
     }
 
     public function recalculateBookmarks(mixed $subject): void

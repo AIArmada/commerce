@@ -7,14 +7,23 @@ namespace AIArmada\Events\Services;
 use AIArmada\Events\Contracts\EventTaxonomyHierarchy;
 use AIArmada\Events\Models\EventTaxonomy;
 use AIArmada\Events\Models\EventTerm;
+use Closure;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
 final class EventTaxonomyHierarchyService implements EventTaxonomyHierarchy
 {
+    private const string REQUEST_CACHE_KEY = 'aiarmada.events.taxonomy-hierarchy';
+
     public function taxonomy(string $code): ?EventTaxonomy
     {
-        return EventTaxonomy::query()->where('code', $code)->first();
+        /** @var EventTaxonomy|null $taxonomy */
+        $taxonomy = $this->rememberForRequest(
+            "taxonomy:{$code}",
+            fn (): ?EventTaxonomy => EventTaxonomy::query()->where('code', $code)->first(),
+        );
+
+        return $taxonomy;
     }
 
     public function terms(string $taxonomyCode, bool $activeOnly = true): Collection
@@ -28,12 +37,39 @@ final class EventTaxonomyHierarchyService implements EventTaxonomyHierarchy
             return collect();
         }
 
-        return EventTerm::query()
-            ->where('event_taxonomy_id', $taxonomy->getKey())
-            ->when($activeOnly, fn ($query) => $query->where('is_active', true))
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        /** @var Collection<int, EventTerm> $terms */
+        $terms = $this->rememberForRequest(
+            "terms:{$taxonomyCode}:" . ($activeOnly ? 'active' : 'all'),
+            fn (): Collection => EventTerm::query()
+                ->where('event_taxonomy_id', $taxonomy->getKey())
+                ->when($activeOnly, fn ($query) => $query->where('is_active', true))
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(),
+        );
+
+        return $terms;
+    }
+
+    private function rememberForRequest(string $key, Closure $resolver): mixed
+    {
+        if (! app()->bound('request')) {
+            return $resolver();
+        }
+
+        $request = request();
+        $cache = $request->attributes->get(self::REQUEST_CACHE_KEY, []);
+
+        if (is_array($cache) && array_key_exists($key, $cache)) {
+            return $cache[$key];
+        }
+
+        $value = $resolver();
+        $cache = is_array($cache) ? $cache : [];
+        $cache[$key] = $value;
+        $request->attributes->set(self::REQUEST_CACHE_KEY, $cache);
+
+        return $value;
     }
 
     public function tree(string $taxonomyCode, bool $activeOnly = true): array

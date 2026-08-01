@@ -21,13 +21,18 @@ final class EventStatsWidget extends StatsOverviewWidget
     protected function getStats(): array
     {
         $eventQuery = OwnerUiScope::apply(Event::query(), includeGlobal: false);
+        $eventTotals = (clone $eventQuery)
+            ->selectRaw('COUNT(*) as total_events')
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as published_events', [Event::PUBLISHED])
+            ->toBase()
+            ->first();
 
         return [
-            Stat::make('Total Events', (clone $eventQuery)->count())
+            Stat::make('Total Events', (int) ($eventTotals->total_events ?? 0))
                 ->description('All events in the system')
                 ->descriptionIcon('heroicon-o-calendar')
                 ->color('primary'),
-            Stat::make('Published Events', (clone $eventQuery)->where('status', Event::PUBLISHED)->count())
+            Stat::make('Published Events', (int) ($eventTotals->published_events ?? 0))
                 ->description('Currently published')
                 ->descriptionIcon('heroicon-o-check-circle')
                 ->color('success'),

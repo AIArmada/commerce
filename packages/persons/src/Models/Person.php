@@ -86,11 +86,21 @@ class Person extends Model
      */
     public function getFormattedNameAttribute(): string
     {
-        /** @var EloquentCollection<int, TitleAssignment> $assignments */
-        $assignments = $this->relationLoaded('titleAssignments')
-            ? $this->getRelation('titleAssignments')
-            : $this->titleAssignments()->where('status', AssignmentStatus::Active)->with('title.category')->get();
+        if ($this->relationLoaded('titleAssignments')) {
+            $assignments = $this->getRelation('titleAssignments');
+        } else {
+            $assignments = $this->titleAssignments()
+                ->where('status', AssignmentStatus::Active)
+                ->with('title.category')
+                ->get();
 
+            // Accessors can be evaluated more than once by serializers and
+            // form components. Keep the resolved collection on this model
+            // so repeated reads do not issue the same relationship query.
+            $this->setRelation('titleAssignments', $assignments);
+        }
+
+        /** @var EloquentCollection<int, TitleAssignment> $assignments */
         $assignments->loadMissing('title.category');
         $assignments = $assignments
             ->filter(fn (TitleAssignment $assignment): bool => $assignment->status === AssignmentStatus::Active)

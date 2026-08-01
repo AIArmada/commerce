@@ -9,6 +9,7 @@ use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\DB;
 
 final class DeliveryStatusOverviewWidget extends StatsOverviewWidget
 {
@@ -17,35 +18,41 @@ final class DeliveryStatusOverviewWidget extends StatsOverviewWidget
     protected function getStats(): array
     {
         $baseQuery = OwnerUiScope::apply(CommunicationDelivery::query(), includeGlobal: false);
-
-        return [
-            Stat::make('Pending', (clone $baseQuery)->where('status', DeliveryStatus::Pending)->count())
-                ->description('Awaiting delivery')
-                ->descriptionIcon('heroicon-o-clock')
-                ->color('gray'),
-            Stat::make('Sent', (clone $baseQuery)->whereIn('status', [
+        $totals = DB::query()
+            ->selectSub((clone $baseQuery)->where('status', DeliveryStatus::Pending)->selectRaw('COUNT(*)'), 'pending')
+            ->selectSub((clone $baseQuery)->whereIn('status', [
                 DeliveryStatus::Sent,
                 DeliveryStatus::Accepted,
                 DeliveryStatus::Received,
-            ])->count())
-                ->description('Transmitted to provider')
-                ->descriptionIcon('heroicon-o-paper-airplane')
-                ->color('info'),
-            Stat::make('Delivered', (clone $baseQuery)->whereIn('status', [
+            ])->selectRaw('COUNT(*)'), 'sent')
+            ->selectSub((clone $baseQuery)->whereIn('status', [
                 DeliveryStatus::Delivered,
                 DeliveryStatus::Opened,
                 DeliveryStatus::Read,
                 DeliveryStatus::Clicked,
-            ])->count())
-                ->description('Confirmed delivered')
-                ->descriptionIcon('heroicon-o-check-circle')
-                ->color('success'),
-            Stat::make('Failed', (clone $baseQuery)->whereIn('status', [
+            ])->selectRaw('COUNT(*)'), 'delivered')
+            ->selectSub((clone $baseQuery)->whereIn('status', [
                 DeliveryStatus::Failed,
                 DeliveryStatus::Bounced,
                 DeliveryStatus::Complained,
                 DeliveryStatus::Expired,
-            ])->count())
+            ])->selectRaw('COUNT(*)'), 'failed')
+            ->first();
+
+        return [
+            Stat::make('Pending', (int) ($totals->pending ?? 0))
+                ->description('Awaiting delivery')
+                ->descriptionIcon('heroicon-o-clock')
+                ->color('gray'),
+            Stat::make('Sent', (int) ($totals->sent ?? 0))
+                ->description('Transmitted to provider')
+                ->descriptionIcon('heroicon-o-paper-airplane')
+                ->color('info'),
+            Stat::make('Delivered', (int) ($totals->delivered ?? 0))
+                ->description('Confirmed delivered')
+                ->descriptionIcon('heroicon-o-check-circle')
+                ->color('success'),
+            Stat::make('Failed', (int) ($totals->failed ?? 0))
                 ->description('Delivery failed')
                 ->descriptionIcon('heroicon-o-x-circle')
                 ->color('danger'),

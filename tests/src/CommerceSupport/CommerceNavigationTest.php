@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\Filament\CommerceNavigation;
 use AIArmada\CommerceSupport\Support\Filament\CommerceNavigationPlugin;
 use Filament\Navigation\NavigationItem;
+use Illuminate\Http\Request;
 
 beforeEach(function (): void {
     config()->set('commerce-support.filament.navigation', [
@@ -103,6 +104,25 @@ it('configures panels with commerce navigation groups and builder', function ():
     CommerceNavigation::configurePanel($panel);
 
     expect($panel->builder)->toBeInstanceOf(Closure::class);
+});
+
+it('memoizes the navigation builder only for the current request', function (): void {
+    filament()->setCurrentPanel('admin');
+
+    $firstBuilder = CommerceNavigation::builder();
+    $secondBuilder = CommerceNavigation::builder();
+
+    expect($secondBuilder)->toBe($firstBuilder);
+
+    $originalRequest = app('request');
+    $newRequest = Request::create('/different-request');
+    app()->instance('request', $newRequest);
+
+    try {
+        expect(CommerceNavigation::builder())->not->toBe($firstBuilder);
+    } finally {
+        app()->instance('request', $originalRequest);
+    }
 });
 
 it('exposes a filament plugin for panel registration', function (): void {

@@ -22,6 +22,23 @@ final class AddMemberAction
 
         /** @phpstan-ignore method.notFound */
         $existingMember = $subject->members()->whereKey($user->getKey())->first();
+
+        $this->persist($subject, $user, $role, $existingMember);
+    }
+
+    /**
+     * Persist a membership when the caller already resolved the member row.
+     * This keeps role-change workflows from issuing the same membership read twice.
+     */
+    public function handleResolvedMember(Model $subject, Model $user, MemberRole $role, ?Model $existingMember): void
+    {
+        app(MembershipSubjectGuard::class)->validate($subject);
+
+        $this->persist($subject, $user, $role, $existingMember);
+    }
+
+    private function persist(Model $subject, Model $user, MemberRole $role, ?Model $existingMember): void
+    {
         /** @phpstan-ignore property.notFound */
         $existingRole = $existingMember?->pivot?->role;
 

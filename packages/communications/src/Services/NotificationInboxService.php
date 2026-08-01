@@ -15,6 +15,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -36,20 +37,60 @@ final class NotificationInboxService
         $this->validateOwnedModel($communication);
 
         return DB::transaction(function () use ($recipientModel, $communication, $family, $priority, $trigger, $title, $body, $data, $scheduledAt): NotificationInbox {
-            $inbox = new NotificationInbox;
-            $inbox->recipient_type = $recipientModel->getMorphClass();
-            $inbox->recipient_id = $recipientModel->getKey();
-            $inbox->communication_id = $communication->id;
-            $inbox->family = $family;
-            $inbox->priority = $priority;
-            $inbox->trigger = $trigger;
-            $inbox->title = $title;
-            $inbox->body = $body;
-            $inbox->data = $data;
-            $inbox->scheduled_at = $scheduledAt !== null ? CarbonImmutable::instance($scheduledAt) : null;
-            $inbox->save();
+            return $this->persist(
+                $recipientModel,
+                $communication,
+                $family,
+                $priority,
+                $trigger,
+                $title,
+                $body,
+                $data,
+                $scheduledAt,
+            );
+        });
+    }
 
-            return $inbox;
+    /**
+     * Create inbox entries for multiple recipients in one transaction while
+     * retaining model events and observers for every entry.
+     *
+     * @param  iterable<int, MorphMany|Model>  $recipients
+     * @return Collection<int, NotificationInbox>
+     */
+    public function createMany(
+        iterable $recipients,
+        Communication $communication,
+        NotificationFamily $family,
+        NotificationPriority $priority,
+        NotificationTrigger $trigger,
+        string $title,
+        ?string $body = null,
+        ?array $data = null,
+        ?CarbonInterface $scheduledAt = null,
+    ): Collection {
+        $recipientModels = collect($recipients)
+            ->map(fn (MorphMany | Model $recipient): Model => $recipient instanceof Model ? $recipient : $recipient->getParent())
+            ->unique(fn (Model $recipient): string => $recipient->getMorphClass() . ':' . $recipient->getKey())
+            ->values();
+
+        $this->validateOwnedModel($communication);
+        $recipientModels->each(function (Model $recipient): void {
+            $this->validateOwnedModel($recipient);
+        });
+
+        return DB::transaction(function () use ($recipientModels, $communication, $family, $priority, $trigger, $title, $body, $data, $scheduledAt): Collection {
+            return $recipientModels->map(fn (Model $recipient): NotificationInbox => $this->persist(
+                $recipient,
+                $communication,
+                $family,
+                $priority,
+                $trigger,
+                $title,
+                $body,
+                $data,
+                $scheduledAt,
+            ));
         });
     }
 
@@ -114,6 +155,33 @@ final class NotificationInboxService
         return $recipient instanceof MorphMany
             ? $recipient
             : $recipient->morphMany(NotificationInbox::class, 'recipient');
+    }
+
+    private function persist(
+        Model $recipient,
+        Communication $communication,
+        NotificationFamily $family,
+        NotificationPriority $priority,
+        NotificationTrigger $trigger,
+        string $title,
+        ?string $body,
+        ?array $data,
+        ?CarbonInterface $scheduledAt,
+    ): NotificationInbox {
+        $inbox = new NotificationInbox;
+        $inbox->recipient_type = $recipient->getMorphClass();
+        $inbox->recipient_id = $recipient->getKey();
+        $inbox->communication_id = $communication->id;
+        $inbox->family = $family;
+        $inbox->priority = $priority;
+        $inbox->trigger = $trigger;
+        $inbox->title = $title;
+        $inbox->body = $body;
+        $inbox->data = $data;
+        $inbox->scheduled_at = $scheduledAt !== null ? CarbonImmutable::instance($scheduledAt) : null;
+        $inbox->save();
+
+        return $inbox;
     }
 
     private function validateOwnedModel(Model $model): void

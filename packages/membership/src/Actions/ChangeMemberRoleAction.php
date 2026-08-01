@@ -29,7 +29,7 @@ final class ChangeMemberRoleAction
         /** @phpstan-ignore property.notFound */
         $oldRole = MemberRole::fromSpatieRoleName((string) $member->pivot?->role);
 
-        AddMemberAction::make()->handle($subject, $user, $role);
+        AddMemberAction::make()->handleResolvedMember($subject, $user, $role, $member);
 
         if ($oldRole !== null && $oldRole !== $role && app()->bound(MembershipHook::class)) {
             app(MembershipHook::class)->onMemberRoleChanged(

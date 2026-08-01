@@ -54,3 +54,19 @@ FilamentEventsPlugin::make();
 ```
 
 The plugin reads resource toggles and navigation settings from `config/filament-events.php`.
+
+### Event form extensions
+
+The event resource accepts application-owned form extensions without coupling the package to
+application-specific fields such as media conversions or custom metadata.
+
+```php
+'resources' => [
+    'event_form_extensions' => [
+        App\Filament\Resources\Events\EventMediaFormExtension::class,
+    ],
+],
+```
+
+Each extension must implement `AIArmada\FilamentEvents\Contracts\EventFormExtension` and
+return Filament schema components from `components()`.

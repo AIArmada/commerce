@@ -39,12 +39,23 @@ final class InventoryStatsAggregator
             'location'
         );
 
+        $locationTotals = (clone $locationQuery)
+            ->selectRaw('COUNT(*) as total_locations')
+            ->selectRaw('SUM(CASE WHEN is_active = ? THEN 1 ELSE 0 END) as active_locations', [true])
+            ->toBase()
+            ->first();
+        $levelTotals = (clone $levelQuery)
+            ->selectRaw('COALESCE(SUM(quantity_on_hand), 0) as total_on_hand')
+            ->selectRaw('COALESCE(SUM(quantity_reserved), 0) as total_reserved')
+            ->toBase()
+            ->first();
+
         return [
-            'total_locations' => $locationQuery->count(),
-            'active_locations' => (clone $locationQuery)->active()->count(),
+            'total_locations' => (int) ($locationTotals->total_locations ?? 0),
+            'active_locations' => (int) ($locationTotals->active_locations ?? 0),
             'total_skus' => $this->countDistinctSkus(),
-            'total_on_hand' => (int) $levelQuery->sum('quantity_on_hand'),
-            'total_reserved' => (int) $levelQuery->sum('quantity_reserved'),
+            'total_on_hand' => (int) ($levelTotals->total_on_hand ?? 0),
+            'total_reserved' => (int) ($levelTotals->total_reserved ?? 0),
             'active_allocations' => (clone $allocationQuery)->active()->count(),
         ];
     }
