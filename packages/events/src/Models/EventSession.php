@@ -9,6 +9,7 @@ use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Database\Factories\EventSessionFactory;
 use AIArmada\Events\Enums\RegistrationMode;
+use AIArmada\Events\Models\Concerns\RegistersEventMedia;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\Seating\Models\SeatMap;
@@ -25,6 +26,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\ModelStates\HasStates;
 
 /**
@@ -68,7 +71,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventMaterial> $materials
  * @property-read Collection<int, EventReference> $references
  * @property-read Collection<int, EventLink> $links
- * @property-read Collection<int, EventMedia> $media
+ * @property-read Collection<int, EventMedia> $mediaRecords
  * @property-read Collection<int, EventLanguage> $languages
  * @property-read Collection<int, EventAudience> $audiences
  * @property-read Collection<int, EventAudienceProfile> $audienceProfiles
@@ -84,12 +87,16 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventNotificationBatch> $notificationBatches
  * @property-read Collection<int, SeatMap> $seatMaps
  */
-final class EventSession extends Model
+final class EventSession extends Model implements HasMedia
 {
     use HasContactMethods;
     use HasFactory;
     use HasSocialProfiles;
     use HasStates;
+    use InteractsWithMedia, RegistersEventMedia {
+        RegistersEventMedia::registerMediaCollections insteadof InteractsWithMedia;
+        RegistersEventMedia::registerMediaConversions insteadof InteractsWithMedia;
+    }
     use UsesEventUuid;
 
     public const DRAFT = 'draft';
@@ -248,9 +255,14 @@ final class EventSession extends Model
     /**
      * @return HasMany<EventMedia, $this>
      */
-    public function media(): HasMany
+    public function mediaRecords(): HasMany
     {
         return $this->hasMany(EventMedia::class, 'event_session_id');
+    }
+
+    protected function eventMediaProfile(): string
+    {
+        return 'session';
     }
 
     /**

@@ -17,6 +17,10 @@ use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Spatie\MediaLibrary\Support\FileNamer\DefaultFileNamer;
+use Spatie\MediaLibrary\Support\PathGenerator\DefaultPathGenerator;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -128,6 +132,51 @@ it('clones an occurrence with child sessions and contents', function (): void {
 
     $clonedInvolvements = EventInvolvement::where('event_occurrence_id', $clone->id)->get();
     expect($clonedInvolvements)->toHaveCount(1);
+});
+
+it('clones Spatie media for occurrences and sessions', function (): void {
+    Storage::fake('public');
+    config()->set('media-library.file_namer', DefaultFileNamer::class);
+    config()->set('media-library.image_optimizers', []);
+    config()->set('media-library.max_file_size', 10 * 1024 * 1024);
+    config()->set('media-library.path_generator', DefaultPathGenerator::class);
+    config()->set('events.media.profiles.occurrence.collections.cover.responsive', false);
+    config()->set('events.media.profiles.occurrence.conversions', []);
+    config()->set('events.media.profiles.session.collections.cover.responsive', false);
+    config()->set('events.media.profiles.session.conversions', []);
+
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create([
+        'event_id' => $event->id,
+        'starts_at' => CarbonImmutable::parse('2026-07-01 08:00:00'),
+        'ends_at' => CarbonImmutable::parse('2026-07-01 17:00:00'),
+        'timezone' => 'UTC',
+        'delivery_mode' => 'in_person',
+    ]);
+    $session = EventSession::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+        'starts_at' => CarbonImmutable::parse('2026-07-01 09:00:00'),
+        'ends_at' => CarbonImmutable::parse('2026-07-01 10:00:00'),
+    ]);
+
+    $occurrenceCover = UploadedFile::fake()->image('occurrence-cover.jpg');
+    $sessionCover = UploadedFile::fake()->image('session-cover.jpg');
+
+    $occurrence->addMedia($occurrenceCover)
+        ->toMediaCollection('cover');
+    $session->addMedia($sessionCover)
+        ->toMediaCollection('cover');
+
+    expect($occurrence->getMedia('cover'))->toHaveCount(1)
+        ->and($occurrence->media()->count())->toBe(1)
+        ->and($session->getMedia('cover'))->toHaveCount(1);
+
+    $clone = app(CloneEventOccurrenceAction::class)->handle($occurrence);
+    $clonedSession = $clone->sessions()->firstOrFail();
+
+    expect($clone->getMedia('cover'))->toHaveCount(1)
+        ->and($clonedSession->getMedia('cover'))->toHaveCount(1);
 });
 
 it('clones an occurrence without sessions when clone_sessions is false', function (): void {

@@ -53,7 +53,10 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property Carbon|null $updated_at
  * @property-read Venue|null $parentVenue
  * @property-read Collection<int, Venue> $childVenues
- * @property-read Collection<int, VenueSpace> $spaces
+ *
+ * @template TSpace of VenueSpace
+ *
+ * @property-read Collection<int, TSpace> $spaces
  * @property-read Collection<int, VenueFacility> $facilities
  * @property-read Collection<int, EventLocation> $eventLocations
  */
@@ -126,7 +129,7 @@ class Venue extends Model implements HasMedia
     }
 
     /**
-     * @return HasMany<VenueSpace, $this>
+     * @return HasMany<TSpace, $this>
      */
     public function spaces(): HasMany
     {

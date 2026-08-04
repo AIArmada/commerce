@@ -13,6 +13,7 @@ final class EventLocationData extends Data
     public function __construct(
         public readonly string $id,
         public readonly string $location_role,
+        public readonly string | null | Optional $space_name_snapshot,
         public readonly string | null | Optional $label,
         public readonly string | null | Optional $line1,
         public readonly string | null | Optional $city,
@@ -31,6 +32,7 @@ final class EventLocationData extends Data
         return new self(
             id: $location->id,
             location_role: $location->location_role,
+            space_name_snapshot: $location->space_name_snapshot,
             label: $location->label,
             line1: $location->line1,
             city: $location->city,

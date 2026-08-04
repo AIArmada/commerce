@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
+use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAccessPolicy;
 use AIArmada\Events\Models\EventAudience;
 use AIArmada\Events\Models\EventAudienceProfile;
@@ -16,9 +17,12 @@ use AIArmada\Events\Models\EventLink;
 use AIArmada\Events\Models\EventLocation;
 use AIArmada\Events\Models\EventMaterial;
 use AIArmada\Events\Models\EventMedia;
+use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventReference;
+use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventTimeExpression;
 use Illuminate\Support\Collection;
+use Spatie\MediaLibrary\HasMedia;
 
 final class CloneEventContentsAction
 {
@@ -101,6 +105,51 @@ final class CloneEventContentsAction
             }
         }
 
+        $this->cloneSpatieMedia(
+            sourceEventId: $sourceEventId,
+            targetEventId: $targetEventId,
+            sourceOccurrenceId: $sourceOccurrenceId,
+            targetOccurrenceId: $targetOccurrenceId,
+            sourceSessionId: $sourceSessionId,
+            targetSessionId: $targetSessionId,
+        );
+
         return $cloned;
+    }
+
+    private function cloneSpatieMedia(
+        string $sourceEventId,
+        string $targetEventId,
+        ?string $sourceOccurrenceId,
+        ?string $targetOccurrenceId,
+        ?string $sourceSessionId,
+        ?string $targetSessionId,
+    ): void {
+        if ($sourceSessionId !== null && $targetSessionId !== null) {
+            $source = EventSession::query()
+                ->where('event_id', $sourceEventId)
+                ->findOrFail($sourceSessionId);
+            $target = EventSession::query()
+                ->where('event_id', $targetEventId)
+                ->findOrFail($targetSessionId);
+        } elseif ($sourceOccurrenceId !== null && $targetOccurrenceId !== null) {
+            $source = EventOccurrence::query()
+                ->where('event_id', $sourceEventId)
+                ->findOrFail($sourceOccurrenceId);
+            $target = EventOccurrence::query()
+                ->where('event_id', $targetEventId)
+                ->findOrFail($targetOccurrenceId);
+        } else {
+            $source = Event::query()->findOrFail($sourceEventId);
+            $target = Event::query()->findOrFail($targetEventId);
+        }
+
+        if (! $source instanceof HasMedia || ! $target instanceof HasMedia) {
+            return;
+        }
+
+        foreach ($source->media()->get() as $media) {
+            $media->copy($target, $media->collection_name, $media->disk);
+        }
     }
 }

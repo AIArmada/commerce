@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Events\Data\EventData;
 use AIArmada\Events\Data\EventDetailData;
+use AIArmada\Events\Data\EventLocationData;
 use AIArmada\Events\Data\EventOccurrenceData;
 use AIArmada\Events\Data\EventSessionData;
 use AIArmada\Events\Data\RegistrationData;
@@ -12,6 +13,9 @@ use AIArmada\Events\Models\EventLocation;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Models\Venue;
+use AIArmada\Events\Models\VenueSpace;
+use Illuminate\Database\QueryException;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -67,4 +71,37 @@ it('projects only the event-level primary location into event data', function ()
     ]);
 
     expect(EventData::fromEvent($event)->location_summary)->toBe('Event City, Event State, MY');
+});
+
+it('snapshots venue space names and exposes them in location data', function (): void {
+    $event = Event::factory()->create();
+    $space = VenueSpace::factory()->create(['name' => 'Room A']);
+
+    $location = EventLocation::factory()->create([
+        'event_id' => $event->id,
+        'venue_space_id' => $space->id,
+    ]);
+
+    $space->update(['name' => 'Room B']);
+    $location->refresh();
+
+    expect($location->space_name_snapshot)->toBe('Room A')
+        ->and(EventLocationData::fromEventLocation($location)->space_name_snapshot)->toBe('Room A');
+});
+
+it('enforces venue space slug uniqueness by ownership scope', function (): void {
+    $venueA = Venue::factory()->create();
+    $venueB = Venue::factory()->create();
+
+    VenueSpace::factory()->create(['slug' => 'auditorium']);
+    VenueSpace::factory()->create(['slug' => 'auditorium', 'venue_id' => $venueA->id]);
+    VenueSpace::factory()->create(['slug' => 'auditorium', 'venue_id' => $venueB->id]);
+
+    expect(fn (): VenueSpace => VenueSpace::factory()->create(['slug' => 'auditorium']))
+        ->toThrow(QueryException::class);
+
+    expect(fn (): VenueSpace => VenueSpace::factory()->create([
+        'slug' => 'auditorium',
+        'venue_id' => $venueA->id,
+    ]))->toThrow(QueryException::class);
 });

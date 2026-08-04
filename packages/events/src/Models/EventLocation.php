@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $venue_id
  * @property string|null $venue_space_id
  * @property string|null $venue_space_type_id
+ * @property string|null $space_name_snapshot
  * @property string|null $label
  * @property string|null $line1
  * @property string|null $line2
@@ -73,7 +74,7 @@ final class EventLocation extends Model
         'event_id', 'event_occurrence_id', 'event_session_id',
         'location_role',
         'locationable_type', 'locationable_id',
-        'venue_id', 'venue_space_id', 'venue_space_type_id',
+        'venue_id', 'venue_space_id', 'venue_space_type_id', 'space_name_snapshot',
         'label',
         'line1', 'line2',
         'city', 'state', 'postcode', 'country_code', 'country',
@@ -101,6 +102,29 @@ final class EventLocation extends Model
             'sort_order' => 'integer',
             'metadata' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (EventLocation $location): void {
+            if (! $location->isDirty('venue_space_id') && filled($location->space_name_snapshot)) {
+                return;
+            }
+
+            if (blank($location->venue_space_id)) {
+                if ($location->isDirty('venue_space_id')) {
+                    $location->space_name_snapshot = null;
+                }
+
+                return;
+            }
+
+            $spaceName = $location->venueSpace()->value('name');
+
+            if (is_string($spaceName)) {
+                $location->space_name_snapshot = $spaceName;
+            }
+        });
     }
 
     /**

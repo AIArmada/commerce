@@ -38,5 +38,8 @@ return [
             'event_template' => 98,
         ],
         'event_form_extensions' => [],
+        'event_relation_managers' => [],
+        'occurrence_relation_managers' => [],
+        'session_relation_managers' => [],
     ],
 ];

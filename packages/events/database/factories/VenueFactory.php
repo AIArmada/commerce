@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Events\Database\Factories;
 
 use AIArmada\Events\Models\Venue;
+use AIArmada\Events\Models\VenueSpace;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends Factory<Venue>
+ * @template TSpace of VenueSpace
+ *
+ * @extends Factory<Venue<TSpace>>
  */
 class VenueFactory extends Factory
 {

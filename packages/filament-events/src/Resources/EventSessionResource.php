@@ -21,9 +21,11 @@ use Filament\Actions\ImportAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -247,7 +249,42 @@ final class EventSessionResource extends Resource
                             ->required(),
                         DateTimePicker::make('ends_at')
                             ->required(),
+                        TextInput::make('timezone')
+                            ->required()
+                            ->maxLength(64),
+                        Select::make('delivery_mode')
+                            ->options([
+                                'physical' => 'Physical',
+                                'in_person' => 'In Person',
+                                'online' => 'Online',
+                                'hybrid' => 'Hybrid',
+                            ])
+                            ->required(),
+                        TextInput::make('capacity')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(0)
+                            ->nullable(),
+                        TextInput::make('sort_order')
+                            ->numeric()
+                            ->integer()
+                            ->default(0),
                     ])->columns(2),
+                Section::make('Media')
+                    ->schema([
+                        SpatieMediaLibraryFileUpload::make('cover')
+                            ->label('Cover image')
+                            ->collection('cover')
+                            ->image()
+                            ->acceptedFileTypes(config('events.media.profiles.session.collections.cover.mimes', []))
+                            ->imageEditor()
+                            ->imageAspectRatio('16:9')
+                            ->automaticallyOpenImageEditorForAspectRatio()
+                            ->imageEditorAspectRatioOptions(['16:9', null])
+                            ->automaticallyCropImagesToAspectRatio()
+                            ->conversion('thumb')
+                            ->responsiveImages(),
+                    ]),
                 Section::make('Lifecycle')
                     ->schema([
                         Select::make('status')
@@ -293,12 +330,26 @@ final class EventSessionResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
+        $relations = [
             EventSessionResource\RelationManagers\SessionInvolvementsRelationManager::class,
             EventSessionResource\RelationManagers\SessionLocationsRelationManager::class,
             EventSessionResource\RelationManagers\SessionRegistrationsRelationManager::class,
             EventSessionResource\RelationManagers\SessionAttendancesRelationManager::class,
             EventSessionResource\RelationManagers\SessionMaterialsRelationManager::class,
         ];
+
+        $configuredRelations = config('filament-events.resources.session_relation_managers', []);
+
+        if (! is_array($configuredRelations)) {
+            return $relations;
+        }
+
+        foreach ($configuredRelations as $relationClass) {
+            if (is_string($relationClass) && is_a($relationClass, RelationManager::class, true)) {
+                $relations[] = $relationClass;
+            }
+        }
+
+        return array_values(array_unique($relations));
     }
 }

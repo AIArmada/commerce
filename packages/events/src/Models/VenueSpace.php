@@ -15,10 +15,10 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
- * @property string $venue_id
+ * @property string|null $venue_id
  * @property string $name
  * @property string|null $code
- * @property string $space_type
+ * @property string|null $space_type
  * @property string|null $level
  * @property string|null $unit_no
  * @property string|null $block
@@ -91,7 +91,7 @@ class VenueSpace extends Model
      */
     public function eventLocations(): HasMany
     {
-        return $this->hasMany(EventLocation::class);
+        return $this->hasMany(EventLocation::class, 'venue_space_id');
     }
 
     protected static function newFactory(): VenueSpaceFactory

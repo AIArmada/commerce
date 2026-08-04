@@ -47,6 +47,22 @@ Customize the navigation group label for all event resources and pages.
 
 Each resource can be individually disabled by setting its key to `false`. The resource will not be registered in the Filament panel or appear in navigation.
 
+### Relation manager extensions
+
+Append application-owned relation managers to the event, occurrence, or session resources:
+
+```php
+'resources' => [
+    'event_relation_managers' => [
+        App\Filament\Resources\Events\SpeakersRelationManager::class,
+    ],
+    'occurrence_relation_managers' => [],
+    'session_relation_managers' => [],
+],
+```
+
+Each configured class must extend `Filament\Resources\RelationManagers\RelationManager`.
+
 ### Panel registration
 
 ```php

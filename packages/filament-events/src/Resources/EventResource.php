@@ -23,6 +23,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\CodeEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
@@ -240,8 +241,7 @@ final class EventResource extends Resource
                                 'online' => 'Online',
                                 'hybrid' => 'Hybrid',
                             ])
-                            ->default('physical')
-                            ->hiddenOn('edit'),
+                            ->default('physical'),
                     ])->columns(3),
                 Section::make('Pricing & Registration')
                     ->schema([
@@ -292,7 +292,7 @@ final class EventResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
+        $relations = [
             EventResource\RelationManagers\OccurrencesRelationManager::class,
             EventResource\RelationManagers\SessionsRelationManager::class,
             EventResource\RelationManagers\LocationsRelationManager::class,
@@ -301,6 +301,20 @@ final class EventResource extends Resource
             EventResource\RelationManagers\AttendancesRelationManager::class,
             EventResource\RelationManagers\ClassificationsRelationManager::class,
         ];
+
+        $configuredRelations = config('filament-events.resources.event_relation_managers', []);
+
+        if (! is_array($configuredRelations)) {
+            return $relations;
+        }
+
+        foreach ($configuredRelations as $relationClass) {
+            if (is_string($relationClass) && is_a($relationClass, RelationManager::class, true)) {
+                $relations[] = $relationClass;
+            }
+        }
+
+        return array_values(array_unique($relations));
     }
 
     public static function getPages(): array

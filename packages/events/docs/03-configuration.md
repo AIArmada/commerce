@@ -22,6 +22,37 @@ $tablePrefix = env('EVENTS_TABLE_PREFIX', '');
 
 Every table name is individually configurable via environment variables, allowing collision-free coexistence with other packages.
 
+### Media profiles
+
+The package models use Spatie Media Library through configurable media profiles. The default profiles provide `cover`, `poster`, and `gallery` collections for `Event`, and a `cover` collection for occurrences and sessions. Applications can replace the collections or conversions without editing package models:
+
+```php
+'media' => [
+    'profiles' => [
+        'occurrence' => [
+            'collections' => [
+                'cover' => [
+                    'mimes' => ['image/jpeg', 'image/png', 'image/webp'],
+                    'responsive' => true,
+                    'single_file' => true,
+                ],
+            ],
+            'conversions' => [
+                'thumb' => [
+                    'collections' => ['cover'],
+                    'fit' => 'max',
+                    'width' => 1920,
+                    'height' => 1080,
+                    'format' => 'webp',
+                ],
+            ],
+        ],
+    ],
+],
+```
+
+Collection options include `disk`, `mimes`, `responsive`, `single_file`, `limit`, `fallback_url`, and `fallback_path`. Conversion options include `collections`, `fit`, `width`, `height`, `sharpen`, and `format`. The `mediaRecords()` relation remains the package's structured `EventMedia` relation; Spatie's file relation remains `media()`.
+
 ### Event search relation provider
 
 Search adapters can share a relation provider so package-owned eager-loading stays separate from application-owned relations:

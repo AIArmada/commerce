@@ -127,6 +127,93 @@ return [
         'timezone' => env('EVENTS_TIMEZONE', env('APP_TIMEZONE', 'UTC')),
     ],
 
+    /* Media Library profiles */
+    'media' => [
+        'profiles' => [
+            'event' => [
+                'collections' => [
+                    'cover' => [
+                        'mimes' => ['image/jpeg', 'image/png', 'image/webp'],
+                        'responsive' => true,
+                        'single_file' => true,
+                    ],
+                    'poster' => [
+                        'mimes' => ['image/jpeg', 'image/png', 'image/webp'],
+                        'responsive' => true,
+                        'single_file' => true,
+                    ],
+                    'gallery' => [
+                        'mimes' => ['image/jpeg', 'image/png', 'image/webp'],
+                        'responsive' => true,
+                    ],
+                ],
+                'conversions' => [
+                    'thumb' => [
+                        'collections' => ['cover'],
+                        'fit' => 'max',
+                        'width' => 1920,
+                        'height' => 1080,
+                        'sharpen' => 10,
+                        'format' => 'webp',
+                    ],
+                    'poster_thumb' => [
+                        'collections' => ['poster'],
+                        'fit' => 'max',
+                        'width' => 1080,
+                        'height' => 1440,
+                        'format' => 'webp',
+                    ],
+                    'gallery_thumb' => [
+                        'collections' => ['gallery'],
+                        'fit' => 'max',
+                        'width' => 1080,
+                        'height' => 1080,
+                        'sharpen' => 10,
+                        'format' => 'webp',
+                    ],
+                ],
+            ],
+            'occurrence' => [
+                'collections' => [
+                    'cover' => [
+                        'mimes' => ['image/jpeg', 'image/png', 'image/webp'],
+                        'responsive' => true,
+                        'single_file' => true,
+                    ],
+                ],
+                'conversions' => [
+                    'thumb' => [
+                        'collections' => ['cover'],
+                        'fit' => 'max',
+                        'width' => 1920,
+                        'height' => 1080,
+                        'sharpen' => 10,
+                        'format' => 'webp',
+                    ],
+                ],
+            ],
+            'session' => [
+                'collections' => [
+                    'cover' => [
+                        'mimes' => ['image/jpeg', 'image/png', 'image/webp'],
+                        'responsive' => true,
+                        'single_file' => true,
+                    ],
+                ],
+                'conversions' => [
+                    'thumb' => [
+                        'collections' => ['cover'],
+                        'fit' => 'max',
+                        'width' => 1920,
+                        'height' => 1080,
+                        'sharpen' => 10,
+                        'format' => 'webp',
+                    ],
+                ],
+            ],
+        ],
+    ],
+
     /* Shares */
     'shares' => [
         'route_name' => env('EVENTS_SHARE_ROUTE', 'events.show'),

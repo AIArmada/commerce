@@ -11,6 +11,7 @@ use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Events\Database\Factories\EventFactory;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Enums\ScheduleKind;
+use AIArmada\Events\Models\Concerns\RegistersEventMedia;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\EventStatus\EventStatus as EventStatusState;
 use AIArmada\Events\States\EventStatus\Published;
@@ -104,7 +105,10 @@ class Event extends Model implements HasMedia, TicketableInterface
     use HasOwnerScopeConfig;
     use HasSocialProfiles;
     use HasStates;
-    use InteractsWithMedia;
+    use InteractsWithMedia, RegistersEventMedia {
+        RegistersEventMedia::registerMediaCollections insteadof InteractsWithMedia;
+        RegistersEventMedia::registerMediaConversions insteadof InteractsWithMedia;
+    }
     use UsesEventUuid;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
@@ -627,25 +631,5 @@ class Event extends Model implements HasMedia, TicketableInterface
         $this->escalations()
             ->whereNull('resolved_at')
             ->update(['resolved_at' => now()]);
-    }
-
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection('cover')
-            ->useDisk(config('media-library.disk_name'))
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
-            ->withResponsiveImages()
-            ->singleFile();
-
-        $this->addMediaCollection('poster')
-            ->useDisk(config('media-library.disk_name'))
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
-            ->withResponsiveImages()
-            ->singleFile();
-
-        $this->addMediaCollection('gallery')
-            ->useDisk(config('media-library.disk_name'))
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
-            ->withResponsiveImages();
     }
 }
