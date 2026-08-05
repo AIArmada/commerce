@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Traits;
 
+use AIArmada\Events\Models\Event;
 use AIArmada\Events\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 

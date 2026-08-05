@@ -24,6 +24,8 @@ return new class extends Migration
             $table->string('status')->index();
             $table->timestampTz('submitted_at');
             $table->timestampTz('reviewed_at')->nullable();
+            $table->text('review_reason')->nullable();
+            $table->text('review_notes')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
         });

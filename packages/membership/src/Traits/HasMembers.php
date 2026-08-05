@@ -27,8 +27,11 @@ trait HasMembers
 {
     public function members(): BelongsToMany
     {
+        /** @var class-string<Model> $userModel */
+        $userModel = config('auth.providers.users.model', Model::class);
+
         return $this->belongsToMany(
-            config('auth.providers.users.model'),
+            $userModel,
             $this->membersTable(),
         )->withPivot(['role', 'joined_at'])->withTimestamps();
     }
