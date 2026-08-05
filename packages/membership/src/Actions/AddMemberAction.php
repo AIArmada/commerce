@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Membership\Actions;
 
 use AIArmada\Membership\Contracts\MembershipHook;
+use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Services\MembershipRoleSyncService;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
@@ -42,7 +43,11 @@ final class AddMemberAction
         /** @phpstan-ignore property.notFound */
         $existingRole = $existingMember?->pivot?->role;
 
-        DB::transaction(function () use ($existingRole, $role, $subject, $user): void {
+        DB::transaction(function () use ($existingMember, $existingRole, $role, $subject, $user): void {
+            if ($subject instanceof MembershipMutationGuard) {
+                $subject->assertMemberCanBeAdded($user, $role, $existingMember);
+            }
+
             /** @phpstan-ignore method.notFound */
             $subject->members()->syncWithoutDetaching([
                 $user->getKey() => [

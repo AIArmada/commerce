@@ -26,6 +26,7 @@ return new class extends Migration
             $table->uuid('venue_id')->nullable()->index();
             $table->uuid('venue_space_id')->nullable()->index();
             $table->uuid('venue_space_type_id')->nullable()->index();
+            $table->string('space_name_snapshot')->nullable()->after('venue_space_type_id');
             $table->string('label')->nullable();
             $table->string('line1')->nullable();
             $table->string('line2')->nullable();

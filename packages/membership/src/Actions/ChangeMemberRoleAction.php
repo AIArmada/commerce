@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Membership\Actions;
 
 use AIArmada\Membership\Contracts\MembershipHook;
+use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +25,10 @@ final class ChangeMemberRoleAction
 
         if ($member === null) {
             throw new RuntimeException('Cannot change the role of a non-member.');
+        }
+
+        if ($subject instanceof MembershipMutationGuard) {
+            $subject->assertMemberRoleCanChange($member, $role);
         }
 
         /** @phpstan-ignore property.notFound */

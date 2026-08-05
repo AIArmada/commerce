@@ -21,6 +21,8 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
+ * Event-domain organizer profile. This is not a tenant organization.
+ *
  * @property string $id
  * @property string|null $owner_type
  * @property string|null $owner_id
@@ -37,7 +39,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-final class Organization extends Model implements CanBeInvolvedInEvents, HasMedia, OwnsEvents
+final class EventOrganizer extends Model implements CanBeInvolvedInEvents, HasMedia, OwnsEvents
 {
     use CanOrganizeEvents;
     use HasContactMethods;
@@ -61,7 +63,7 @@ final class Organization extends Model implements CanBeInvolvedInEvents, HasMedi
 
     public function getTable(): string
     {
-        return config('events.database.tables.organizations', 'organizations');
+        return config('events.database.tables.event_organizers', 'event_organizers');
     }
 
     protected function casts(): array

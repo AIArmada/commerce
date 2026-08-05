@@ -10,14 +10,14 @@ use AIArmada\Events\Actions\SubmitAssignmentRequestAction;
 use AIArmada\Events\Enums\AssignmentRequestStatus;
 use AIArmada\Events\Models\EventManagementAssignment;
 use AIArmada\Events\Models\EventManagementAssignmentRequest;
-use AIArmada\Events\Models\Organization;
+use AIArmada\Events\Models\EventOrganizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-function makeOrganization(string $suffix): Organization
+function makeEventOrganizer(string $suffix): EventOrganizer
 {
-    return Organization::create([
+    return EventOrganizer::create([
         'name' => 'Organization ' . $suffix,
         'slug' => 'organization-' . $suffix,
         'status' => 'active',
@@ -37,7 +37,7 @@ function makeCustomer(string $suffix): Customer
 }
 
 test('assignment requests can be submitted only once while pending', function (): void {
-    $manageable = makeOrganization('pending');
+    $manageable = makeEventOrganizer('pending');
     $requestor = makeCustomer('requestor');
 
     $action = new SubmitAssignmentRequestAction;
@@ -54,7 +54,7 @@ test('assignment requests can be submitted only once while pending', function ()
 });
 
 test('assignment requests can be approved and rejected with timestamps', function (): void {
-    $manageable = makeOrganization('workflow');
+    $manageable = makeEventOrganizer('workflow');
     $requestor = makeCustomer('requestor-workflow');
     $reviewer = makeCustomer('reviewer-workflow');
 

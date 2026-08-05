@@ -10,9 +10,15 @@ return new class extends Migration
 {
     public function up(): void
     {
+        $tableName = (string) config('events.database.tables.event_organizers', 'event_organizers');
+
+        if (Schema::hasTable($tableName)) {
+            return;
+        }
+
         $jsonType = commerce_json_column_type('events', 'jsonb');
 
-        Schema::create(config('events.database.tables.organizations', 'organizations'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('owner_type')->nullable()->index();
             $table->string('owner_id')->nullable()->index();

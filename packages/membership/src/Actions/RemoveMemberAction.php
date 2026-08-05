@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Membership\Actions;
 
 use AIArmada\Membership\Contracts\MembershipHook;
+use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Services\MembershipRoleSyncService;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
@@ -30,7 +31,11 @@ final class RemoveMemberAction
         /** @phpstan-ignore property.notFound */
         $role = MemberRole::fromSpatieRoleName((string) $member->pivot?->role);
 
-        DB::transaction(function () use ($role, $subject, $user): void {
+        DB::transaction(function () use ($member, $role, $subject, $user): void {
+            if ($subject instanceof MembershipMutationGuard) {
+                $subject->assertMemberCanBeRemoved($member);
+            }
+
             /** @phpstan-ignore method.notFound */
             $subject->members()->detach($user->getKey());
 

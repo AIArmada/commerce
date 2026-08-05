@@ -1,0 +1,42 @@
+{
+  "name": "aiarmada/organizations",
+  "description": "Reusable organization tenancy aggregate, membership ownership, and lifecycle workflows.",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "laravel",
+    "organizations",
+    "tenancy",
+    "multitenancy",
+    "membership"
+  ],
+  "authors": [
+    {
+      "name": "AIArmada",
+      "email": "dev@aiarmada.com"
+    }
+  ],
+  "require": {
+    "php": "^8.4",
+    "aiarmada/commerce-support": "self.version",
+    "aiarmada/membership": "self.version",
+    "spatie/laravel-package-tools": "^1.16"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\Organizations\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\Organizations\\OrganizationsServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

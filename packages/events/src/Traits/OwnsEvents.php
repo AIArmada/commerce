@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Traits;
 
-use AIArmada\Events\Models\Event;
+use AIArmada\Events\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait OwnsEvents
@@ -14,7 +14,7 @@ trait OwnsEvents
      */
     public function ownedEvents(): MorphMany
     {
-        return $this->morphMany(Event::class, 'owner');
+        return $this->morphMany(ModelResolver::eventClass(), 'owner');
     }
 
     public function defaultEventVisibility(): string

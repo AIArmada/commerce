@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4f5e2badd54d11c04cc7a870e59d3b39",
+    "content-hash": "4840ddbfc7f52efab0169194622d63d3",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -8236,6 +8236,54 @@
             }
         },
         {
+            "name": "aiarmada/filament-organizations",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "packages/filament-organizations",
+                "reference": "cfa80520c8d02fa932ec85cdc006f8164e2066dd"
+            },
+            "require": {
+                "aiarmada/membership": "self.version",
+                "aiarmada/organizations": "self.version",
+                "filament/filament": "^5.6.7",
+                "php": "^8.4",
+                "spatie/laravel-package-tools": "^1.16"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AIArmada\\FilamentOrganizations\\FilamentOrganizationsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AIArmada\\FilamentOrganizations\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "AIArmada",
+                    "email": "dev@aiarmada.com"
+                }
+            ],
+            "description": "Filament v5 administration for reusable AIArmada organizations tenancy.",
+            "keywords": [
+                "filament",
+                "laravel",
+                "organizations",
+                "tenancy"
+            ],
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "aiarmada/membership",
             "version": "dev-main",
             "dist": {
@@ -8266,6 +8314,54 @@
                 "MIT"
             ],
             "description": "Multi-tenant membership management: applications, invitations, and member roles for Laravel applications.",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "aiarmada/organizations",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "packages/organizations",
+                "reference": "a8e789f261044eee6245d0f83f547b43ac73eed1"
+            },
+            "require": {
+                "aiarmada/commerce-support": "self.version",
+                "aiarmada/membership": "self.version",
+                "php": "^8.4",
+                "spatie/laravel-package-tools": "^1.16"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AIArmada\\Organizations\\OrganizationsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AIArmada\\Organizations\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "AIArmada",
+                    "email": "dev@aiarmada.com"
+                }
+            ],
+            "description": "Reusable organization tenancy aggregate, membership ownership, and lifecycle workflows.",
+            "keywords": [
+                "laravel",
+                "membership",
+                "multitenancy",
+                "organizations",
+                "tenancy"
+            ],
             "transport-options": {
                 "relative": true
             }

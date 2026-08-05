@@ -88,6 +88,7 @@ pest()->extend(JntTestCase::class)->in('src/Jnt');
 
 pest()->extend(InventoryTestCase::class)->in('src/Inventory');
 
+
 pest()->extend(FilamentInventoryTestCase::class)->in('src/FilamentInventory');
 
 pest()->extend(FilamentAuthzTestCase::class)->in('src/FilamentAuthzScoped');

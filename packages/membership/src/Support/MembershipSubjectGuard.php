@@ -12,6 +12,10 @@ final class MembershipSubjectGuard
 {
     public function validate(Model $subject): void
     {
+        if (! method_exists($subject::class, 'ownerScopeConfig') && ! method_exists($subject::class, 'scopeForOwner')) {
+            return;
+        }
+
         try {
             OwnerWriteGuard::findOrFailForOwner($subject::class, $subject->getKey());
         } catch (InvalidArgumentException) {

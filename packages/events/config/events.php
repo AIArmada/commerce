@@ -89,8 +89,8 @@ return [
             'event_templates' => env('EVENTS_TABLE_TEMPLATES', $tablePrefix . 'event_templates'),
             'event_template_items' => env('EVENTS_TABLE_TEMPLATE_ITEMS', $tablePrefix . 'event_template_items'),
 
-            // Module 11: Organizations
-            'organizations' => env('EVENTS_TABLE_ORGANIZATIONS', $tablePrefix . 'organizations'),
+            // Event-domain organizer profiles. Tenant organizations live in aiarmada/organizations.
+            'event_organizers' => env('EVENTS_TABLE_EVENT_ORGANIZERS', $tablePrefix . 'event_organizers'),
 
             // Free-only / RSVP mode (new in 000071–000072)
             'event_walk_ins' => env('EVENTS_TABLE_WALK_INS', $tablePrefix . 'event_walk_ins'),

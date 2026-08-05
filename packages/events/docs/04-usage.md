@@ -405,7 +405,7 @@ app(EventCheckInService::class)->checkIn([
 
 ## Managing Involvements
 
-Involvements link people (any model) to an event, occurrence, or session with a role. The `involveable` is polymorphic — it can be a `User`, `Organization`, `Speaker`, or any model implementing `CanBeInvolvedInEvents`.
+Involvements link people (any model) to an event, occurrence, or session with a role. The `involveable` is polymorphic — it can be a `User`, `EventOrganizer`, `Speaker`, or any model implementing `CanBeInvolvedInEvents`.
 
 ### Creating involvements
 
