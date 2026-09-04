@@ -40,7 +40,7 @@ class ChipPaymentMethod implements PaymentMethodContract
      */
     public function id(): string
     {
-        return $this->token['recurring_token'] ?? $this->token['id'] ?? '';
+        return is_string($this->token['id'] ?? null) ? $this->token['id'] : '';
     }
 
     /**
@@ -56,7 +56,7 @@ class ChipPaymentMethod implements PaymentMethodContract
      */
     public function brand(): ?string
     {
-        return $this->token['card_brand'] ?? $this->token['brand'] ?? null;
+        return is_string($this->token['brand'] ?? null) ? $this->token['brand'] : null;
     }
 
     /**
@@ -64,7 +64,7 @@ class ChipPaymentMethod implements PaymentMethodContract
      */
     public function lastFour(): ?string
     {
-        return $this->token['card_last4'] ?? $this->token['last4'] ?? null;
+        return is_string($this->token['last_four'] ?? null) ? $this->token['last_four'] : null;
     }
 
     /**
@@ -72,12 +72,7 @@ class ChipPaymentMethod implements PaymentMethodContract
      */
     public function expirationMonth(): ?int
     {
-        $exp = $this->token['card_expiry'] ?? null;
-        if ($exp && preg_match('/^(\d{2})\/\d{2}$/', $exp, $matches)) {
-            return (int) $matches[1];
-        }
-
-        return $this->token['exp_month'] ?? null;
+        return null;
     }
 
     /**
@@ -85,14 +80,7 @@ class ChipPaymentMethod implements PaymentMethodContract
      */
     public function expirationYear(): ?int
     {
-        $exp = $this->token['card_expiry'] ?? null;
-        if ($exp && preg_match('/^\d{2}\/(\d{2})$/', $exp, $matches)) {
-            $year = (int) $matches[1];
-
-            return $year + 2000; // Convert 2-digit to 4-digit year
-        }
-
-        return $this->token['exp_year'] ?? null;
+        return null;
     }
 
     /**
@@ -100,7 +88,9 @@ class ChipPaymentMethod implements PaymentMethodContract
      */
     public function type(): string
     {
-        return $this->token['payment_method'] ?? $this->token['type'] ?? 'card';
+        $type = $this->token['payment_method'] ?? $this->token['type'] ?? null;
+
+        return is_string($type) ? $type : '';
     }
 
     /**
@@ -123,7 +113,7 @@ class ChipPaymentMethod implements PaymentMethodContract
         }
 
         if (is_array($default)) {
-            return ($default['recurring_token'] ?? $default['id'] ?? null) === $this->id();
+            return ($default['id'] ?? null) === $this->id();
         }
 
         if ($default instanceof PaymentMethodContract) {

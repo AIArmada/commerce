@@ -6,8 +6,10 @@ namespace AIArmada\Chip\Data;
 
 use AIArmada\Chip\Data\Casts\MoneyCast;
 use AIArmada\Chip\Data\Transformers\MoneyTransformer;
+use AIArmada\Chip\Enums\PurchaseStatus;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
+use InvalidArgumentException;
 use Spatie\LaravelData\Attributes\WithCast;
 use Spatie\LaravelData\Attributes\WithTransformer;
 
@@ -72,6 +74,9 @@ final class PurchaseData extends ChipData
         public readonly mixed $retain_level_details, // Can be null or object
         public readonly bool $can_retrieve,
         public readonly bool $can_chargeback,
+        public readonly bool $can_reverse_chargeback,
+        /** @var array<int, string> */
+        public readonly array $tags,
     ) {}
 
     /**
@@ -89,19 +94,11 @@ final class PurchaseData extends ChipData
         if (is_string($created_on)) {
             $created_on = strtotime($created_on) ?: null;
         }
-        if ($created_on === null && isset($data['created_at'])) {
-            $created_at = $data['created_at'];
-            $created_on = is_string($created_at) ? strtotime($created_at) : $created_at;
-        }
         $created_on = $created_on ?? time();
 
         $updated_on = $data['updated_on'] ?? null;
         if (is_string($updated_on)) {
             $updated_on = strtotime($updated_on) ?: null;
-        }
-        if ($updated_on === null && isset($data['updated_at'])) {
-            $updated_at = $data['updated_at'];
-            $updated_on = is_string($updated_at) ? strtotime($updated_at) : $updated_at;
         }
         $updated_on = $updated_on ?? time();
 
@@ -109,14 +106,12 @@ final class PurchaseData extends ChipData
             ? ClientDetailsData::from($data['client'])
             : ClientDetailsData::from([]);
 
-        $purchase = isset($data['purchase'])
-            ? PurchaseDetailsData::from($data['purchase'])
-            : PurchaseDetailsData::from([
-                'total' => $data['amount_in_cents'] ?? 0,
-                'currency' => $data['currency'] ?? 'MYR',
-                'products' => [],
-                'metadata' => $data['metadata'] ?? null,
-            ]);
+        $purchase = PurchaseDetailsData::from($data['purchase'] ?? []);
+
+        $status = $data['status'] ?? 'created';
+        if (! is_string($status) || PurchaseStatus::tryFrom($status) === null) {
+            throw new InvalidArgumentException('CHIP Purchase payload contains an unsupported status.');
+        }
 
         return new self(
             id: $data['id'],
@@ -129,7 +124,7 @@ final class PurchaseData extends ChipData
             payment: isset($data['payment']) ? PaymentData::from($data['payment']) : null,
             issuer_details: isset($data['issuer_details']) ? IssuerDetailsData::from($data['issuer_details']) : IssuerDetailsData::from(['legal_name' => '']),
             transaction_data: isset($data['transaction_data']) ? TransactionData::from($data['transaction_data']) : TransactionData::from(['payment_method' => '', 'attempts' => []]),
-            status: $data['status'] ?? 'created',
+            status: $status,
             status_history: $data['status_history'] ?? [],
             viewed_on: $data['viewed_on'] ?? null,
             company_id: $data['company_id'] ?? null,
@@ -138,11 +133,11 @@ final class PurchaseData extends ChipData
             billing_template_id: $data['billing_template_id'] ?? null,
             client_id: $data['client_id'] ?? null,
             send_receipt: $data['send_receipt'] ?? false,
-            is_recurring_token: $data['is_recurring_token'] ?? ($data['is_recurring'] ?? false),
+            is_recurring_token: $data['is_recurring_token'] ?? false,
             recurring_token: $data['recurring_token'] ?? null,
             skip_capture: $data['skip_capture'] ?? false,
             force_recurring: $data['force_recurring'] ?? false,
-            reference_generated: $data['reference_generated'] ?? ($data['reference'] ?? ''),
+            reference_generated: $data['reference_generated'] ?? '',
             reference: $data['reference'] ?? null,
             notes: $data['notes'] ?? null,
             issued: $data['issued'] ?? null,
@@ -172,6 +167,8 @@ final class PurchaseData extends ChipData
             retain_level_details: $data['retain_level_details'] ?? null,
             can_retrieve: $data['can_retrieve'] ?? false,
             can_chargeback: $data['can_chargeback'] ?? false,
+            can_reverse_chargeback: $data['can_reverse_chargeback'] ?? false,
+            tags: is_array($data['tags'] ?? null) ? array_values(array_filter($data['tags'], 'is_string')) : [],
         );
     }
 
@@ -259,7 +256,7 @@ final class PurchaseData extends ChipData
 
     public function isPaid(): bool
     {
-        return $this->status === 'paid';
+        return in_array($this->status, ['paid', 'cleared', 'settled'], true);
     }
 
     public function isRefunded(): bool
@@ -279,7 +276,17 @@ final class PurchaseData extends ChipData
 
     public function isPending(): bool
     {
-        return in_array($this->status, ['pending_execute', 'pending_capture', 'pending_charge', 'pending_refund', 'pending_release']);
+        return in_array($this->status, [
+            'created',
+            'sent',
+            'viewed',
+            'overdue',
+            'pending_execute',
+            'pending_capture',
+            'pending_charge',
+            'pending_refund',
+            'pending_release',
+        ], true);
     }
 
     public function hasError(): bool
@@ -289,12 +296,18 @@ final class PurchaseData extends ChipData
 
     public function canBeRefunded(): bool
     {
-        return in_array($this->refund_availability, ['all', 'full_only', 'partial_only']);
+        return in_array($this->refund_availability, [
+            'all',
+            'full_only',
+            'partial_only',
+            'pis_all',
+            'pis_partial',
+        ], true);
     }
 
     public function canBePartiallyRefunded(): bool
     {
-        return in_array($this->refund_availability, ['all', 'partial_only']);
+        return in_array($this->refund_availability, ['all', 'partial_only', 'pis_all', 'pis_partial'], true);
     }
 
     public function canRetrieve(): bool
@@ -392,6 +405,8 @@ final class PurchaseData extends ChipData
             'retain_level_details' => $this->retain_level_details,
             'can_retrieve' => $this->can_retrieve,
             'can_chargeback' => $this->can_chargeback,
+            'can_reverse_chargeback' => $this->can_reverse_chargeback,
+            'tags' => $this->tags,
         ];
     }
 

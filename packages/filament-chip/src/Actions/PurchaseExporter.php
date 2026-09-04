@@ -37,13 +37,7 @@ class PurchaseExporter extends Exporter
 
             ExportColumn::make('purchase.total')
                 ->label('Amount (cents)')
-                ->formatStateUsing(function ($state): int {
-                    if (is_array($state)) {
-                        return (int) ($state['amount'] ?? 0);
-                    }
-
-                    return (int) $state;
-                }),
+                ->formatStateUsing(fn (mixed $state): int => (int) $state),
 
             ExportColumn::make('payment_method')
                 ->label('Payment Method'),

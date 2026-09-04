@@ -45,10 +45,6 @@ return new class extends Migration
                 $table->string('event_type')->nullable()->index();
             }
 
-            if (! Schema::hasColumn('webhook_calls', 'event')) {
-                $table->string('event')->nullable()->index();
-            }
-
             if (! Schema::hasColumn('webhook_calls', 'signature')) {
                 $table->text('signature')->nullable();
             }

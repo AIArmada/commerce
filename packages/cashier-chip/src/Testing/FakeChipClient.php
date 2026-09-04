@@ -111,16 +111,6 @@ class FakeChipClient
 
     public function createPurchase(array $data): array
     {
-        $idempotencyKey = $data['idempotency_key'] ?? null;
-
-        if (is_string($idempotencyKey) && $idempotencyKey !== '') {
-            foreach ($this->purchases as $purchase) {
-                if (($purchase['idempotency_key'] ?? null) === $idempotencyKey) {
-                    return $purchase;
-                }
-            }
-        }
-
         $id = 'pur_' . Str::random(20);
 
         $purchase = array_merge([
@@ -191,11 +181,55 @@ class FakeChipClient
             return null;
         }
 
-        $this->purchases[$purchaseId]['status'] = 'refunded';
-        $this->purchases[$purchaseId]['refunded_amount'] = $amount ?? $this->purchases[$purchaseId]['purchase']['total'];
-        $this->purchases[$purchaseId]['updated_on'] = now()->getTimestamp();
+        $purchase = $this->purchases[$purchaseId];
+        $refundAmount = $amount ?? $purchase['purchase']['total'];
+        $now = now()->getTimestamp();
 
-        return $this->purchases[$purchaseId];
+        $this->purchases[$purchaseId]['status'] = 'refunded';
+        $this->purchases[$purchaseId]['refunded_amount'] = $refundAmount;
+        $this->purchases[$purchaseId]['refundable_amount'] = max(
+            0,
+            (int) ($purchase['purchase']['total'] ?? 0) - $refundAmount,
+        );
+        $this->purchases[$purchaseId]['updated_on'] = $now;
+
+        return [
+            'id' => 'pay_' . Str::random(20),
+            'type' => 'payment',
+            'created_on' => $now,
+            'updated_on' => $now,
+            'client' => is_array($purchase['client'] ?? null) ? $purchase['client'] : null,
+            'payment' => [
+                'is_outgoing' => true,
+                'payment_type' => 'refund',
+                'amount' => $refundAmount,
+                'currency' => $purchase['purchase']['currency'] ?? 'MYR',
+                'net_amount' => $refundAmount,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'pending_unfreeze_on' => null,
+                'description' => 'Refund',
+                'paid_on' => $now,
+                'remote_paid_on' => null,
+            ],
+            'transaction_data' => [
+                'payment_method' => '',
+                'extra' => [],
+                'country' => '',
+                'attempts' => [],
+            ],
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => $purchaseId,
+            ],
+            'reference_generated' => $purchase['reference_generated'] ?? null,
+            'reference' => $purchase['reference'] ?? null,
+            'account_id' => null,
+            'company_id' => $purchase['company_id'] ?? null,
+            'is_test' => true,
+            'user_id' => $purchase['user_id'] ?? null,
+            'brand_id' => $purchase['brand_id'] ?? $this->brandId,
+        ];
     }
 
     public function chargePurchase(string $purchaseId, string $recurringToken): ?array
@@ -207,9 +241,17 @@ class FakeChipClient
         $this->purchases[$purchaseId]['status'] = 'paid';
         $this->purchases[$purchaseId]['recurring_token'] = $recurringToken;
         $this->purchases[$purchaseId]['payment'] = [
-            'method' => 'card',
-            'psp' => 'test-psp',
+            'is_outgoing' => false,
+            'payment_type' => 'purchase',
+            'amount' => $this->purchases[$purchaseId]['purchase']['total'],
+            'currency' => $this->purchases[$purchaseId]['purchase']['currency'],
+            'net_amount' => $this->purchases[$purchaseId]['purchase']['total'],
+            'fee_amount' => 0,
+            'pending_amount' => 0,
+            'description' => null,
             'paid_on' => now()->getTimestamp(),
+            'remote_paid_on' => null,
+            'pending_unfreeze_on' => null,
         ];
         $this->purchases[$purchaseId]['updated_on'] = now()->getTimestamp();
 
@@ -249,8 +291,17 @@ class FakeChipClient
 
         $this->purchases[$purchaseId]['status'] = 'paid';
         $this->purchases[$purchaseId]['payment'] = [
-            'method' => 'manual',
+            'is_outgoing' => false,
+            'payment_type' => 'purchase',
+            'amount' => $this->purchases[$purchaseId]['purchase']['total'],
+            'currency' => $this->purchases[$purchaseId]['purchase']['currency'],
+            'net_amount' => $this->purchases[$purchaseId]['purchase']['total'],
+            'fee_amount' => 0,
+            'pending_amount' => 0,
+            'description' => null,
             'paid_on' => $paidOn ?? now()->getTimestamp(),
+            'remote_paid_on' => null,
+            'pending_unfreeze_on' => null,
         ];
         $this->purchases[$purchaseId]['updated_on'] = now()->getTimestamp();
 
@@ -317,16 +368,11 @@ class FakeChipClient
 
         $token = array_merge([
             'id' => $tokenId,
-            'recurring_token' => $tokenId,
-            'type' => $data['type'] ?? 'card',
-            'card_brand' => $data['card_brand'] ?? 'Visa',
-            'brand' => $data['card_brand'] ?? 'Visa',
-            'last_4' => $data['last_4'] ?? '4242',
-            'card_last_4' => $data['last_4'] ?? '4242',
-            'exp_month' => $data['exp_month'] ?? 12,
-            'exp_year' => $data['exp_year'] ?? 2030,
-            'client_id' => $clientId,
+            'type' => 'client_recurring_token',
+            'payment_method' => $data['payment_method'] ?? 'visa',
+            'description' => $data['description'] ?? '**** **** **** 4242',
             'created_on' => now()->getTimestamp(),
+            'updated_on' => now()->getTimestamp(),
         ], $data ?? []);
 
         $effectiveTokenId = isset($token['id']) && is_string($token['id']) && $token['id'] !== ''
@@ -334,10 +380,6 @@ class FakeChipClient
             : $tokenId;
 
         $token['id'] = $effectiveTokenId;
-
-        if (! isset($token['recurring_token']) || ! is_string($token['recurring_token']) || $token['recurring_token'] === '') {
-            $token['recurring_token'] = $effectiveTokenId;
-        }
 
         if (! isset($this->recurringTokens[$clientId])) {
             $this->recurringTokens[$clientId] = [];

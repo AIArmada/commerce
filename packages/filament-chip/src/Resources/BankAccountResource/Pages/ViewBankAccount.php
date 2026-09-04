@@ -39,53 +39,13 @@ final class ViewBankAccount extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('verify')
-                ->label('Request Verification')
-                ->icon(Heroicon::OutlinedShieldCheck)
-                ->color('warning')
-                ->requiresConfirmation()
-                ->modalHeading('Request Verification')
-                ->modalDescription('This will submit the bank account for verification with CHIP.')
-                ->action(function (): void {
-                    $record = $this->getRecord();
-                    $service = app(ChipSendService::class);
-                    $scopedRecord = $this->resolveScopedBankAccount($record);
-
-                    if ($scopedRecord === null) {
-                        Notification::make()
-                            ->title('Bank account is outside your owner scope')
-                            ->danger()
-                            ->send();
-
-                        return;
-                    }
-
-                    try {
-                        $service->updateBankAccount((string) $scopedRecord->getKey(), [
-                            'status' => 'verifying',
-                        ]);
-                        Notification::make()
-                            ->title('Verification requested')
-                            ->success()
-                            ->send();
-                        $this->refreshFormData(['status']);
-                    } catch (Throwable $e) {
-                        Notification::make()
-                            ->title('Failed to request verification')
-                            ->body($e->getMessage())
-                            ->danger()
-                            ->send();
-                    }
-                })
-                ->visible(fn (): bool => (string) $this->getRecord()->getAttribute('status') === 'pending'),
-
-            Actions\Action::make('disable')
-                ->label('Disable Account')
-                ->icon(Heroicon::OutlinedNoSymbol)
+            Actions\Action::make('delete')
+                ->label('Delete Account')
+                ->icon(Heroicon::OutlinedTrash)
                 ->color('danger')
                 ->requiresConfirmation()
-                ->modalHeading('Disable Bank Account')
-                ->modalDescription('This will disable the bank account. It cannot be used for payouts until re-enabled.')
+                ->modalHeading('Delete Bank Account')
+                ->modalDescription('This will delete the bank account from CHIP Send. This cannot be undone.')
                 ->action(function (): void {
                     $record = $this->getRecord();
                     $service = app(ChipSendService::class);
@@ -101,21 +61,21 @@ final class ViewBankAccount extends ViewRecord
                     }
 
                     try {
-                        $service->deleteBankAccount((string) $scopedRecord->getKey());
+                        $service->deleteBankAccount((int) $scopedRecord->getKey());
                         Notification::make()
-                            ->title('Bank account disabled')
+                            ->title('Bank account deleted')
                             ->success()
                             ->send();
-                        $this->refreshFormData(['status']);
+                        $this->redirect(self::getResource()::getUrl('index'));
                     } catch (Throwable $e) {
                         Notification::make()
-                            ->title('Failed to disable account')
+                            ->title('Failed to delete account')
                             ->body($e->getMessage())
                             ->danger()
                             ->send();
                     }
                 })
-                ->visible(fn (): bool => in_array((string) $this->getRecord()->getAttribute('status'), ['active', 'approved'], true)),
+                ->visible(fn (): bool => $this->getRecord()->getAttribute('deleted_at') === null),
         ];
     }
 

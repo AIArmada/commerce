@@ -143,7 +143,9 @@ return [
         ],
 
         'send' => [
+            'webhook_id' => env('CHIP_SEND_WEBHOOK_ID'),
             'webhook_keys' => $sendWebhookKeys,
+            'route' => env('CHIP_SEND_WEBHOOK_ROUTE', '/chip/send/webhooks'),
         ],
     ],
 

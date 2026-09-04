@@ -45,7 +45,7 @@ it('dispatches PaymentFailed on purchase.payment_failure', function (): void {
     $purchaseData = [
         'id' => 'test-purchase-id',
         'client_id' => 'test-client-id',
-        'status' => 'failed',
+        'status' => 'error',
         'purchase' => ['total' => 10000, 'currency' => 'MYR'],
     ];
 
@@ -64,7 +64,10 @@ it('stores recurring token from webhook when no default payment method', functio
         'client_id' => 'test-client-id',
         'status' => 'paid',
         'recurring_token' => 'new-recurring-token',
-        'card' => ['brand' => 'Visa', 'last_4' => '4242'],
+        'transaction_data' => [
+            'payment_method' => 'visa',
+            'extra' => ['masked_pan' => '**** **** **** 4242'],
+        ],
         'purchase' => ['total' => 10000, 'currency' => 'MYR'],
     ];
 
@@ -73,7 +76,7 @@ it('stores recurring token from webhook when no default payment method', functio
     $this->user->refresh();
 
     expect($this->user->default_pm_id)->toBe('new-recurring-token');
-    expect($this->user->pm_type)->toBe('Visa');
+    expect($this->user->pm_type)->toBe('visa');
     expect($this->user->pm_last_four)->toBe('4242');
 });
 
@@ -91,8 +94,11 @@ it('updates subscription to active on payment success', function (): void {
         'id' => 'test-purchase-id',
         'client_id' => 'test-client-id',
         'status' => 'paid',
-        'metadata' => ['subscription_type' => 'standard'],
-        'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+        'purchase' => [
+            'total' => 10000,
+            'currency' => 'MYR',
+            'metadata' => ['subscription_type' => 'standard'],
+        ],
     ];
 
     PurchasePaid::dispatch(PurchaseData::from($purchaseData), $purchaseData);
@@ -114,9 +120,12 @@ it('updates subscription to past due on payment failure', function (): void {
     $purchaseData = [
         'id' => 'test-purchase-id',
         'client_id' => 'test-client-id',
-        'status' => 'failed',
-        'metadata' => ['subscription_type' => 'standard'],
-        'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+        'status' => 'error',
+        'purchase' => [
+            'total' => 10000,
+            'currency' => 'MYR',
+            'metadata' => ['subscription_type' => 'standard'],
+        ],
     ];
 
     PurchasePaymentFailure::dispatch(PurchaseData::from($purchaseData), $purchaseData);
@@ -179,7 +188,10 @@ it('resolves billable by owner context when chip_id is duplicated across tenants
         'client_id' => 'duplicated-client-id',
         'status' => 'paid',
         'recurring_token' => 'tok_owner_a_only',
-        'card' => ['brand' => 'Visa', 'last_4' => '4242'],
+        'transaction_data' => [
+            'payment_method' => 'visa',
+            'extra' => ['masked_pan' => '**** **** **** 4242'],
+        ],
         'purchase' => ['total' => 10000, 'currency' => 'MYR'],
     ];
 

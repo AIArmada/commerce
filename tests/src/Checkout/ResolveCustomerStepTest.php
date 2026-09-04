@@ -21,6 +21,36 @@ use AIArmada\Customers\Services\CustomerResolver;
 use function Pest\Laravel\actingAs;
 
 describe('ResolveCustomerStep', function (): void {
+    it('uses the authenticated actor as the billable subject when checkout prefers actors', function (): void {
+        config()->set('checkout.payment.prefer_actor', true);
+
+        $user = User::factory()->create([
+            'name' => 'Account Buyer',
+            'email' => 'account-buyer@example.com',
+        ]);
+
+        actingAs($user);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'cart-actor-1',
+            'selected_payment_gateway' => 'chip',
+            'billing_data' => [
+                'email' => $user->email,
+                'name' => $user->name,
+            ],
+        ]);
+
+        app(ResolveCustomerStep::class)->handle($session);
+
+        $session->refresh();
+
+        expect($session->customer_id)->toBeNull()
+            ->and($session->billable_type)->toBe($user->getMorphClass())
+            ->and($session->billable_id)->toBe((string) $user->getKey())
+            ->and($session->billable?->is($user))->toBeTrue()
+            ->and(Customer::query()->where('email', $user->email)->exists())->toBeFalse();
+    });
+
     it('does not create a guest customer from billing and shipping data for direct-capable gateways', function (): void {
         $session = CheckoutSession::create([
             'cart_id' => 'cart-guest-1',

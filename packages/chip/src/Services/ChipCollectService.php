@@ -79,6 +79,10 @@ class ChipCollectService
         // Set default brand_id and currency from config if not provided
         $filters['brand_id'] ??= $this->getBrandId();
         $filters['currency'] ??= config('chip.defaults.currency', 'MYR');
+        // CHIP documents 1000 minor units as the safe lookup amount for
+        // exposing payment methods. Callers may provide a different amount
+        // when their purchase currency or payment-method rules require it.
+        $filters['amount'] ??= 1000;
 
         return $this->purchases->paymentMethods($filters);
     }
@@ -217,25 +221,20 @@ class ChipCollectService
      * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
-    /**
-     * @param  array<string, mixed>  $filters
-     * @return array<int, CompanyStatementData>|array{data: array<int, CompanyStatementData>, meta?: array<string, mixed>}
-     */
     public function listCompanyStatements(array $filters = []): array
     {
         $response = $this->account->companyStatements($filters);
 
-        if (isset($response['data']) && is_array($response['data'])) {
-            $response['data'] = array_map(static fn (array $item) => CompanyStatementData::from($item), $response['data']);
+        if (isset($response['results']) && is_array($response['results'])) {
+            $response['results'] = array_map(
+                static fn (mixed $item): CompanyStatementData => CompanyStatementData::from(is_array($item) ? $item : []),
+                $response['results'],
+            );
 
             return $response;
         }
 
-        if (array_is_list($response)) {
-            return array_map(static fn (array $item) => CompanyStatementData::from($item), $response);
-        }
-
-        return [];
+        return $response;
     }
 
     public function getCompanyStatement(string $statementId): CompanyStatementData

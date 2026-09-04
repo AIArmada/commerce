@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\PurchaseResource\Tables;
 
+use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -60,20 +61,29 @@ final class PurchaseTable
                                 ->badge()
                                 ->color('primary')
                                 ->weight(FontWeight::SemiBold),
-                            TextColumn::make('purchase.subtotal.amount')
-                                ->label('Subtotal')
+                            TextColumn::make('purchase.total_discount_override')
+                                ->label('Discount override')
                                 ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
-                                    $record->purchase['subtotal']['currency'] ?? $record->purchase['currency'] ?? null,
+                                    $record->purchase['currency'] ?? null,
                                 ))
-                                ->icon('heroicon-o-banknotes'),
-                            TextColumn::make('purchase.taxes.amount')
-                                ->label('Taxes')
+                                ->icon('heroicon-o-tag')
+                                ->placeholder('—'),
+                            TextColumn::make('purchase.total_tax_override')
+                                ->label('Tax override')
                                 ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
-                                    $record->purchase['taxes']['currency'] ?? $record->purchase['currency'] ?? null,
+                                    $record->purchase['currency'] ?? null,
                                 ))
                                 ->icon('heroicon-o-sparkles')
+                                ->placeholder('—'),
+                            TextColumn::make('payment.fee_amount')
+                                ->label('Fee')
+                                ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
+                                    $state,
+                                    $record->purchase['currency'] ?? null,
+                                ))
+                                ->icon('heroicon-o-banknotes')
                                 ->placeholder('—'),
                         ]),
                     ]),
@@ -104,19 +114,9 @@ final class PurchaseTable
             ->filters([
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->options([
-                        'created' => 'Created',
-                        'processing' => 'Processing',
-                        'paid' => 'Paid',
-                        'captured' => 'Captured',
-                        'completed' => 'Completed',
-                        'failed' => 'Failed',
-                        'cancelled' => 'Cancelled',
-                        'refund_pending' => 'Refund Pending',
-                        'refunding' => 'Refunding',
-                        'partially_paid' => 'Partially Paid',
-                        'chargeback' => 'Chargeback',
-                    ]),
+                    ->options(collect(PurchaseStatus::cases())
+                        ->mapWithKeys(fn (PurchaseStatus $status): array => [$status->value => $status->label()])
+                        ->all()),
                 Filter::make('is_test')
                     ->label('Test Mode')
                     ->toggle()
@@ -127,30 +127,19 @@ final class PurchaseTable
                         $driver = ConnectionDriver::name($query->getConnection());
                         $amount = 500000; // amounts are stored in cents
 
-                        // Build DB-specific JSON extraction for purchase total with fallbacks
+                        // The documented purchase total is stored in minor units.
                         return match ($driver) {
                             'pgsql' => $query->whereRaw(
-                                // Try purchase.total, then purchase.total.amount, then purchase.amount, then purchase.subtotal
-                                'COALESCE((purchase->>\'total\')::int, (purchase->\'total\'->>\'amount\')::int, (purchase->>\'amount\')::int, (purchase->>\'subtotal\')::int) >= ?',
+                                "(purchase->>'total')::int >= ?",
                                 [$amount]
                             ),
                             'mysql', 'mariadb' => $query->whereRaw(
-                                'CAST(COALESCE(
-                                    JSON_UNQUOTE(JSON_EXTRACT(purchase, \"$.total\")),
-                                    JSON_UNQUOTE(JSON_EXTRACT(purchase, \"$.total.amount\")),
-                                    JSON_UNQUOTE(JSON_EXTRACT(purchase, \"$.amount\")),
-                                    JSON_UNQUOTE(JSON_EXTRACT(purchase, \"$.subtotal\"))
-                                ) AS UNSIGNED) >= ?',
+                                'CAST(JSON_UNQUOTE(JSON_EXTRACT(purchase, "$.total")) AS UNSIGNED) >= ?',
                                 [$amount]
                             ),
                             default => $query->whereRaw(
                                 // SQLite
-                                "CAST(COALESCE(
-                                    json_extract(purchase, '$.total'),
-                                    json_extract(purchase, '$.total.amount'),
-                                    json_extract(purchase, '$.amount'),
-                                    json_extract(purchase, '$.subtotal')
-                                ) AS INTEGER) >= ?",
+                                "CAST(json_extract(purchase, '$.total') AS INTEGER) >= ?",
                                 [$amount]
                             ),
                         };

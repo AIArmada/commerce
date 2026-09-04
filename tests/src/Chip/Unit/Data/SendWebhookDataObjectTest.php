@@ -5,12 +5,12 @@ declare(strict_types=1);
 use AIArmada\Chip\Data\SendWebhookData;
 
 describe('SendWebhook data object', function (): void {
-    it('parses webhook payloads with malformed callback key', function (): void {
+    it('parses webhook payloads with the documented callback key', function (): void {
         $payload = [
             'id' => 4,
             'name' => 'Send webhook',
             'public_key' => 'pk',
-            'callback_url"' => 'https://example.com/webhook',
+            'callback_url' => 'https://example.com/webhook',
             'email' => 'ops@example.com',
             'event_hooks' => ['bank_account_status', 'send_instruction_status'],
             'created_at' => 1712074800,

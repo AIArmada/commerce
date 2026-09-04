@@ -194,7 +194,7 @@ class InvoiceTest extends CashierChipTestCase
     public function test_is_paid_when_not_paid(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertFalse($invoice->isPaid());
@@ -203,7 +203,7 @@ class InvoiceTest extends CashierChipTestCase
     public function test_is_open(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertTrue($invoice->isOpen());
@@ -241,7 +241,7 @@ class InvoiceTest extends CashierChipTestCase
     public function test_is_uncollectible(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'failed']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'error']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertTrue($invoice->isUncollectible());
@@ -259,7 +259,7 @@ class InvoiceTest extends CashierChipTestCase
     public function test_amount_due(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertIsString($invoice->amountDue());
@@ -286,7 +286,7 @@ class InvoiceTest extends CashierChipTestCase
     public function test_raw_amount_paid_zero_when_not_paid(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertEquals(0, $invoice->rawAmountPaid());
@@ -297,7 +297,7 @@ class InvoiceTest extends CashierChipTestCase
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
-            'status' => 'pending',
+            'status' => 'pending_execute',
             'checkout_url' => 'https://example.com/checkout',
         ]);
         $invoice = new Invoice($user, $purchase);

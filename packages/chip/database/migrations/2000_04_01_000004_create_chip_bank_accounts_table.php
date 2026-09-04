@@ -27,7 +27,7 @@ return new class extends Migration
                 ->default('pending')
                 ->comment('Backed by AIArmada\\Chip\\Enums\\BankAccountStatus enum.');
             $table->integer('group_id')->nullable(); // Account grouping
-            $table->string('reference')->nullable(); // Unique submission reference
+            $table->string('reference'); // Unique submission reference
 
             // Account capabilities
             $table->boolean('is_debiting_account')->default(false);

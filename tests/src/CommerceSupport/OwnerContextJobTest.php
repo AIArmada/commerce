@@ -105,7 +105,7 @@ describe('OwnerContextJob', function (): void {
         expect($before)->toBe($after);
     });
 
-    it('resolves owner from explicit owner_type and owner_id payload fields', function (): void {
+    it('resolves owner from explicit ownerType and ownerId payload fields', function (): void {
         $contextInJob = null;
         $owner = new class extends Model
         {

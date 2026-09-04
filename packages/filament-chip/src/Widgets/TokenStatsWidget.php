@@ -54,9 +54,9 @@ final class TokenStatsWidget extends BaseWidget
                 $query->forOwner();
             }
         })
-            ->whereNotNull('purchase->recurring_token')
-            ->where('status', 'paid')
-            ->distinct('purchase->recurring_token')
+            ->whereNotNull('recurring_token')
+            ->whereIn('status', ['paid', 'cleared', 'settled'])
+            ->distinct('recurring_token')
             ->count();
 
         $tokenPurchases = tap(Purchase::query(), function ($query): void {
@@ -64,8 +64,8 @@ final class TokenStatsWidget extends BaseWidget
                 $query->forOwner();
             }
         })
-            ->whereNotNull('purchase->recurring_token')
-            ->where('status', 'paid')
+            ->whereNotNull('recurring_token')
+            ->whereIn('status', ['paid', 'cleared', 'settled'])
             ->count();
 
         $tokenRevenue = tap(Purchase::query(), function ($query): void {
@@ -73,17 +73,11 @@ final class TokenStatsWidget extends BaseWidget
                 $query->forOwner();
             }
         })
-            ->whereNotNull('purchase->recurring_token')
-            ->where('status', 'paid')
+            ->whereNotNull('recurring_token')
+            ->whereIn('status', ['paid', 'cleared', 'settled'])
             ->get()
             ->sum(function (Purchase $purchase): int {
-                $total = $purchase->purchase['total'] ?? $purchase->purchase['amount'] ?? 0;
-
-                if (is_array($total)) {
-                    return (int) ($total['amount'] ?? 0);
-                }
-
-                return (int) $total;
+                return (int) ($purchase->purchase['total'] ?? 0);
             });
 
         return [

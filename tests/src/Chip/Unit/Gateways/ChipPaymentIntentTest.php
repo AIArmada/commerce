@@ -151,12 +151,13 @@ describe('ChipPaymentIntent', function (): void {
                 ->and($intent->isRefunded())->toBeTrue();
         });
 
-        it('maps partially_refunded status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'partially_refunded']);
+        it('maps pending_refund status', function (): void {
+            $data = array_merge($this->purchaseData, ['status' => 'pending_refund']);
             $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
-            expect($intent->getStatus())->toBe(PaymentStatus::PARTIALLY_REFUNDED);
+            expect($intent->getStatus())->toBe(PaymentStatus::PROCESSING)
+                ->and($intent->isPending())->toBeTrue();
         });
 
         it('maps settled status', function (): void {
@@ -207,7 +208,7 @@ describe('ChipPaymentIntent', function (): void {
             $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
-            expect($intent->getStatus())->toBe(PaymentStatus::EXPIRED);
+            expect($intent->getStatus())->toBe(PaymentStatus::PENDING);
         });
 
         it('maps error status', function (): void {

@@ -6,9 +6,9 @@ namespace AIArmada\CashierChip\Payment;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
-use AIArmada\CashierChip\Enums\PaymentStatus;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Enums\PurchaseStatus;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Model;
@@ -108,7 +108,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isSucceeded(): bool
     {
-        return in_array($this->status(), [PaymentStatus::Success->value, 'paid'], true);
+        return $this->purchaseStatus()->isSuccessful();
     }
 
     /**
@@ -116,7 +116,17 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isPending(): bool
     {
-        return $this->status() === PaymentStatus::Pending->value;
+        return in_array($this->purchaseStatus(), [
+            PurchaseStatus::CREATED,
+            PurchaseStatus::SENT,
+            PurchaseStatus::VIEWED,
+            PurchaseStatus::OVERDUE,
+            PurchaseStatus::PENDING_EXECUTE,
+            PurchaseStatus::PENDING_CHARGE,
+            PurchaseStatus::PENDING_CAPTURE,
+            PurchaseStatus::PENDING_RELEASE,
+            PurchaseStatus::PENDING_REFUND,
+        ], true);
     }
 
     /**
@@ -124,7 +134,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isExpired(): bool
     {
-        return $this->status() === PaymentStatus::Expired->value;
+        return $this->purchaseStatus() === PurchaseStatus::EXPIRED;
     }
 
     /**
@@ -132,7 +142,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isFailed(): bool
     {
-        return $this->status() === PaymentStatus::Failed->value;
+        return in_array($this->purchaseStatus(), [PurchaseStatus::ERROR, PurchaseStatus::BLOCKED], true);
     }
 
     /**
@@ -140,7 +150,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isCancelled(): bool
     {
-        return $this->status() === PaymentStatus::Cancelled->value;
+        return in_array($this->purchaseStatus(), [PurchaseStatus::CANCELLED, PurchaseStatus::RELEASED], true);
     }
 
     /**
@@ -148,7 +158,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isRefunded(): bool
     {
-        return $this->status() === PaymentStatus::Refunded->value;
+        return $this->purchaseStatus() === PurchaseStatus::REFUNDED;
     }
 
     /**
@@ -160,11 +170,11 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Determine if the payment needs to be captured (pre-authorized).
+     * Determine if the payment has funds on hold that can be captured.
      */
     public function requiresCapture(): bool
     {
-        return $this->purchase->status === 'preauthorized';
+        return $this->purchaseStatus() === PurchaseStatus::HOLD;
     }
 
     /**
@@ -172,11 +182,17 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isProcessing(): bool
     {
-        return in_array($this->purchase->status, ['pending_execute', 'pending_charge'], true);
+        return in_array($this->purchaseStatus(), [
+            PurchaseStatus::PENDING_EXECUTE,
+            PurchaseStatus::PENDING_CHARGE,
+            PurchaseStatus::PENDING_CAPTURE,
+            PurchaseStatus::PENDING_RELEASE,
+            PurchaseStatus::PENDING_REFUND,
+        ], true);
     }
 
     /**
-     * Capture a payment that is being held for the customer (pre-authorized).
+     * Capture a payment that is being held for the customer.
      *
      * @param  array<string, mixed>  $options
      */
@@ -207,7 +223,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
             return $this;
         }
 
-        // CHIP may not support direct cancellation, but we can release pre-auth
+        // CHIP may not support direct cancellation, but we can release held funds.
         if ($this->requiresCapture()) {
             $releasedPurchase = Cashier::chip()->releasePurchase($this->purchase->id);
             $this->purchase = $releasedPurchase;
@@ -321,5 +337,10 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     public function jsonSerialize(): array
     {
         return $this->toArray();
+    }
+
+    private function purchaseStatus(): PurchaseStatus
+    {
+        return PurchaseStatus::from($this->purchase->status);
     }
 }

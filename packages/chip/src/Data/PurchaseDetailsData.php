@@ -72,7 +72,7 @@ final class PurchaseDetailsData extends ChipData
             total_discount_override: isset($data['total_discount_override']) ? Money::{$currency}($data['total_discount_override']) : null,
             total_override: isset($data['total_override']) ? Money::{$currency}($data['total_override']) : null,
             request_client_details: is_array($data['request_client_details'] ?? null) ? $data['request_client_details'] : [],
-            timezone: $data['timezone'] ?? 'Asia/Kuala_Lumpur',
+            timezone: $data['timezone'] ?? 'UTC',
             due_strict: $data['due_strict'] ?? false,
             email_message: $data['email_message'] ?? null,
             metadata: $data['metadata'] ?? null,
@@ -129,6 +129,7 @@ final class PurchaseDetailsData extends ChipData
             'timezone' => $this->timezone,
             'due_strict' => $this->due_strict,
             'email_message' => $this->email_message,
+            'metadata' => $this->metadata,
         ];
     }
 }

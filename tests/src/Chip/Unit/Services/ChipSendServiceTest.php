@@ -7,6 +7,7 @@ use AIArmada\Chip\Data\BankAccountData;
 use AIArmada\Chip\Data\SendInstructionData;
 use AIArmada\Chip\Data\SendLimitData;
 use AIArmada\Chip\Data\SendWebhookData;
+use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\ChipSendService;
 
 describe('ChipSendService', function (): void {
@@ -19,7 +20,7 @@ describe('ChipSendService', function (): void {
         Mockery::close();
     });
 
-    it('can create a send instruction', function (): void {
+    it('creates a send instruction using the documented request fields', function (): void {
         $instructionData = [
             'id' => 50,
             'bank_account_id' => 1,
@@ -28,40 +29,45 @@ describe('ChipSendService', function (): void {
             'email' => 'test@example.com',
             'description' => 'Payment for services',
             'reference' => 'TRANSFER_001',
+            'send_recipient_receipt' => true,
+            'receipt_url' => null,
+            'slug' => null,
             'created_at' => '2023-07-20T10:41:25.190Z',
             'updated_at' => '2023-07-20T10:41:25.302Z',
         ];
 
         $this->client->shouldReceive('post')
             ->with('send/send_instructions', [
-                'bank_account_id' => '1',
+                'bank_account_id' => 1,
                 'amount' => '500.00',
-                'currency' => 'MYR',
                 'description' => 'Payment for services',
                 'reference' => 'TRANSFER_001',
                 'email' => 'test@example.com',
+                'send_recipient_receipt' => true,
             ])
             ->andReturn($instructionData);
 
         $instruction = $this->service->createSendInstruction(
-            50000, // amount in cents
-            'MYR',
-            '1', // recipient bank account id
+            50000,
+            1,
             'Payment for services',
             'TRANSFER_001',
-            'test@example.com'
+            'test@example.com',
+            true,
         );
 
-        expect($instruction)->toBeInstanceOf(SendInstructionData::class);
-        expect($instruction->id)->toBe(50);
-        expect($instruction->amount)->toBe('500.00');
-        expect($instruction->state)->toBe('completed');
-        expect($instruction->description)->toBe('Payment for services');
-        expect($instruction->reference)->toBe('TRANSFER_001');
-        expect($instruction->email)->toBe('test@example.com');
+        expect($instruction)->toBeInstanceOf(SendInstructionData::class)
+            ->and($instruction->id)->toBe(50)
+            ->and($instruction->amount)->toBe('500.00')
+            ->and($instruction->state)->toBe('completed')
+            ->and($instruction->send_recipient_receipt)->toBeTrue();
     });
 
-    it('can retrieve a send instruction', function (): void {
+    it('validates send instruction parameters', function (): void {
+        $this->service->createSendInstruction(-100, 1, 'Test', 'REF123', 'test@example.com');
+    })->throws(ChipValidationException::class);
+
+    it('retrieves and lists send instructions', function (): void {
         $instructionData = [
             'id' => 50,
             'bank_account_id' => 1,
@@ -70,22 +76,21 @@ describe('ChipSendService', function (): void {
             'email' => 'test@example.com',
             'description' => 'Payment for services',
             'reference' => 'TRANSFER_001',
+            'send_recipient_receipt' => false,
+            'receipt_url' => null,
+            'slug' => null,
             'created_at' => '2023-07-20T10:41:25.190Z',
             'updated_at' => '2023-07-20T10:41:25.302Z',
         ];
 
-        $this->client->shouldReceive('get')
-            ->with('send/send_instructions/50')
-            ->andReturn($instructionData);
+        $this->client->shouldReceive('get')->with('send/send_instructions/50')->once()->andReturn($instructionData);
+        expect($this->service->getSendInstruction(50))->toBeInstanceOf(SendInstructionData::class);
 
-        $instruction = $this->service->getSendInstruction('50');
-
-        expect($instruction)->toBeInstanceOf(SendInstructionData::class);
-        expect($instruction->id)->toBe(50);
-        expect($instruction->state)->toBe('completed');
+        $this->client->shouldReceive('get')->with('send/send_instructions?state=completed&page=2')->once()->andReturn(['results' => []]);
+        expect($this->service->listSendInstructions(['state' => 'completed', 'page' => 2]))->toBe(['results' => []]);
     });
 
-    it('can create a bank account', function (): void {
+    it('creates and manages bank accounts using documented integer IDs', function (): void {
         $accountData = [
             'id' => 84,
             'status' => 'verified',
@@ -93,64 +98,47 @@ describe('ChipSendService', function (): void {
             'bank_code' => 'MBBEMYKL',
             'group_id' => null,
             'name' => 'Ahmad Pintu',
-            'reference' => null,
+            'reference' => 'recipient-84',
             'created_at' => '2023-07-20T08:59:10.766Z',
             'is_debiting_account' => false,
-            'is_crediting_account' => false,
+            'is_crediting_account' => true,
             'updated_at' => '2023-07-20T08:59:10.766Z',
             'deleted_at' => null,
             'rejection_reason' => null,
         ];
 
-        $this->client->shouldReceive('post')
-            ->with('send/bank_accounts', [
-                'bank_code' => 'MBBEMYKL',
-                'account_number' => '157380111111',
-                'name' => 'Ahmad Pintu',
-            ])
-            ->andReturn($accountData);
+        $this->client->shouldReceive('post')->with('send/bank_accounts', [
+            'bank_code' => 'MBBEMYKL',
+            'account_number' => '157380111111',
+            'name' => 'Ahmad Pintu',
+            'reference' => 'recipient-84',
+        ])->once()->andReturn($accountData);
+        expect($this->service->createBankAccount('MBBEMYKL', '157380111111', 'Ahmad Pintu', 'recipient-84'))
+            ->toBeInstanceOf(BankAccountData::class);
 
-        $account = $this->service->createBankAccount(
-            'MBBEMYKL',
-            '157380111111',
-            'Ahmad Pintu'
-        );
+        $this->client->shouldReceive('get')->with('send/bank_accounts/84')->once()->andReturn($accountData);
+        expect($this->service->getBankAccount(84))->toBeInstanceOf(BankAccountData::class);
 
-        expect($account)->toBeInstanceOf(BankAccountData::class);
-        expect($account->id)->toBe(84);
-        expect($account->status)->toBe('verified');
-        expect($account->account_number)->toBe('157380111111');
-        expect($account->bank_code)->toBe('MBBEMYKL');
-        expect($account->name)->toBe('Ahmad Pintu');
+        $this->client->shouldReceive('get')->with('send/bank_accounts?status=verified')->once()->andReturn(['results' => []]);
+        expect($this->service->listBankAccounts(['status' => 'verified']))->toBe(['results' => []]);
+
+        $this->client->shouldReceive('delete')->with('send/bank_accounts/84')->once();
+        $this->service->deleteBankAccount(84);
+
+        $this->client->shouldReceive('post')->with('send/bank_accounts/84/resend_webhook_event')->once()->andReturn(['success' => true]);
+        expect($this->service->resendBankAccountWebhook(84))->toBe(['success' => true]);
     });
 
-    it('lists accounts and send instructions with filters', function (): void {
-        $this->client->shouldReceive('get')
-            ->once()
-            ->with('send/accounts')
-            ->andReturn(['accounts' => []]);
-
-        expect($this->service->listAccounts())->toBe(['accounts' => []]);
-
-        $this->client->shouldReceive('get')
-            ->once()
-            ->with('send/send_instructions?state=completed&page=2')
-            ->andReturn(['instructions' => []]);
-
-        expect($this->service->listSendInstructions(['state' => 'completed', 'page' => 2]))
-            ->toBe(['instructions' => []]);
-    });
-
-    it('retrieves a send limit', function (): void {
+    it('retrieves, requests, lists, and resends Send limits', function (): void {
         $limitPayload = [
             'id' => 9,
             'currency' => 'MYR',
             'fee_type' => 'flat',
             'transaction_type' => 'out',
-            'amount' => 10000,
-            'fee' => 100,
-            'net_amount' => 9900,
-            'status' => 'success',
+            'amount' => 100,
+            'fee' => 1,
+            'net_amount' => 99,
+            'status' => 'approved',
             'approvals_required' => 1,
             'approvals_received' => 1,
             'from_settlement' => '2024-04-01',
@@ -158,152 +146,47 @@ describe('ChipSendService', function (): void {
             'updated_at' => '2024-04-01T10:10:00Z',
         ];
 
-        $this->client->shouldReceive('get')
-            ->once()
-            ->with('send/send_limits/9')
-            ->andReturn($limitPayload);
+        $this->client->shouldReceive('get')->with('send/send_limits/9')->once()->andReturn($limitPayload);
+        expect($this->service->getSendLimit(9))->toBeInstanceOf(SendLimitData::class);
 
-        $limit = $this->service->getSendLimit(9);
+        $this->client->shouldReceive('post')->with('send/send_limits', ['amount' => 1000.5])->once()->andReturn($limitPayload);
+        expect($this->service->increaseBudgetAllocation(1000.5))->toBeInstanceOf(SendLimitData::class);
 
-        expect($limit)->toBeInstanceOf(SendLimitData::class);
-        expect($limit->currency)->toBe('MYR');
-        expect($limit->net_amount)->toBe(9900);
+        $this->client->shouldReceive('get')->with('send/send_limits?status=pending')->once()->andReturn(['results' => []]);
+        expect($this->service->listSendLimits(['status' => 'pending']))->toBe(['results' => []]);
+
+        $this->client->shouldReceive('post')->with('send/send_limits/9/resend_approval_requests')->once()->andReturn(['success' => true]);
+        expect($this->service->resendApprovalRequest(9))->toBe(['success' => true]);
     });
 
-    it('manages bank account lifecycle', function (): void {
-        $accountPayload = [
-            'id' => 84,
-            'status' => 'verified',
-            'account_number' => '157380111111',
-            'bank_code' => 'MBBEMYKL',
-            'group_id' => null,
-            'name' => 'Ahmad Pintu',
-            'reference' => null,
-            'created_at' => '2023-07-20T08:59:10.766Z',
-            'is_debiting_account' => false,
-            'is_crediting_account' => false,
-            'updated_at' => '2023-07-20T08:59:10.766Z',
-            'deleted_at' => null,
-            'rejection_reason' => null,
-        ];
+    it('deletes send instructions and resends their webhook event', function (): void {
+        $this->client->shouldReceive('delete')->with('send/send_instructions/50')->once();
+        $this->service->deleteSendInstruction(50);
 
-        $this->client->shouldReceive('get')
-            ->once()
-            ->with('send/bank_accounts/84')
-            ->andReturn($accountPayload);
-
-        $account = $this->service->getBankAccount('84');
-
-        expect($account)->toBeInstanceOf(BankAccountData::class);
-
-        $this->client->shouldReceive('get')
-            ->once()
-            ->with('send/bank_accounts?status=verified')
-            ->andReturn(['accounts' => []]);
-
-        expect($this->service->listBankAccounts(['status' => 'verified']))
-            ->toBe(['accounts' => []]);
-
-        $this->client->shouldReceive('put')
-            ->once()
-            ->with('send/bank_accounts/84', ['name' => 'New Name'])
-            ->andReturn($accountPayload);
-
-        expect($this->service->updateBankAccount('84', ['name' => 'New Name']))
-            ->toBeInstanceOf(BankAccountData::class);
-
-        $this->client->shouldReceive('delete')
-            ->once()
-            ->with('send/bank_accounts/84');
-
-        $this->service->deleteBankAccount('84');
-
-        $this->client->shouldReceive('post')
-            ->once()
-            ->with('send/bank_accounts/84/resend_webhook')
-            ->andReturn(['status' => 'queued']);
-
-        expect($this->service->resendBankAccountWebhook('84'))
-            ->toBe(['status' => 'queued']);
+        $this->client->shouldReceive('post')->with('send/send_instructions/50/resend_webhook_event')->once()->andReturn(['success' => true]);
+        expect($this->service->resendSendInstructionWebhook(50))->toBe(['success' => true]);
     });
 
-    it('handles send instruction cancellations and deletions', function (): void {
-        $instructionPayload = ['data' => [
-            'id' => 'si_100',
-            'bank_account_id' => 84,
-            'amount' => '100.00',
-            'state' => 'cancelled',
-            'email' => 'recipient@example.com',
-            'description' => 'Refund',
-            'reference' => 'REF-100',
-            'created_at' => '2023-07-20T10:41:25.190Z',
-            'updated_at' => '2023-07-20T10:41:25.302Z',
-        ]];
+    it('manages groups and uses PATCH for group updates', function (): void {
+        $data = ['id' => 1, 'name' => 'Test Group'];
 
-        $this->client->shouldReceive('post')
-            ->once()
-            ->with('send/send_instructions/si_100/cancel')
-            ->andReturn($instructionPayload);
+        $this->client->shouldReceive('post')->with('send/groups', ['name' => 'Test Group'])->once()->andReturn($data);
+        expect($this->service->createGroup(['name' => 'Test Group']))->toBe($data);
 
-        $cancelled = $this->service->cancelSendInstruction('si_100');
+        $this->client->shouldReceive('get')->with('send/groups/1')->once()->andReturn($data);
+        expect($this->service->getGroup(1))->toBe($data);
 
-        expect($cancelled)->toBeInstanceOf(SendInstructionData::class);
-        expect($cancelled->state)->toBe('cancelled');
+        $this->client->shouldReceive('patch')->with('send/groups/1', ['name' => 'Updated'])->once()->andReturn(['id' => 1, 'name' => 'Updated']);
+        expect($this->service->updateGroup(1, ['name' => 'Updated']))->toBe(['id' => 1, 'name' => 'Updated']);
 
-        $this->client->shouldReceive('delete')
-            ->once()
-            ->with('send/send_instructions/si_100');
+        $this->client->shouldReceive('delete')->with('send/groups/1')->once();
+        $this->service->deleteGroup(1);
 
-        $this->service->deleteSendInstruction('si_100');
-
-        $this->client->shouldReceive('post')
-            ->once()
-            ->with('send/send_instructions/si_100/resend_webhook')
-            ->andReturn(['status' => 'queued']);
-
-        expect($this->service->resendSendInstructionWebhook('si_100'))
-            ->toBe(['status' => 'queued']);
+        $this->client->shouldReceive('get')->with('send/groups')->once()->andReturn(['results' => []]);
+        expect($this->service->listGroups())->toBe(['results' => []]);
     });
 
-    it('manages send groups and webhooks', function (): void {
-        $this->client->shouldReceive('post')
-            ->once()
-            ->with('send/groups', ['name' => 'VIP'])
-            ->andReturn(['id' => 'group_1']);
-
-        expect($this->service->createGroup(['name' => 'VIP']))
-            ->toBe(['id' => 'group_1']);
-
-        $this->client->shouldReceive('get')
-            ->once()
-            ->with('send/groups/group_1')
-            ->andReturn(['id' => 'group_1']);
-
-        expect($this->service->getGroup('group_1'))
-            ->toBe(['id' => 'group_1']);
-
-        $this->client->shouldReceive('put')
-            ->once()
-            ->with('send/groups/group_1', ['name' => 'Priority'])
-            ->andReturn(['id' => 'group_1', 'name' => 'Priority']);
-
-        expect($this->service->updateGroup('group_1', ['name' => 'Priority']))
-            ->toBe(['id' => 'group_1', 'name' => 'Priority']);
-
-        $this->client->shouldReceive('delete')
-            ->once()
-            ->with('send/groups/group_1');
-
-        $this->service->deleteGroup('group_1');
-
-        $this->client->shouldReceive('get')
-            ->once()
-            ->with('send/groups?per_page=10')
-            ->andReturn(['data' => []]);
-
-        expect($this->service->listGroups(['per_page' => 10]))
-            ->toBe(['data' => []]);
-
+    it('manages Send webhooks at the documented root endpoint', function (): void {
         $webhookPayload = [
             'id' => 1,
             'name' => 'Primary',
@@ -315,59 +198,22 @@ describe('ChipSendService', function (): void {
             'updated_at' => '2024-04-01T00:00:00Z',
         ];
 
-        $this->client->shouldReceive('post')
-            ->once()
-            ->with('send/webhooks', ['url' => 'https://example.com'])
-            ->andReturn($webhookPayload);
+        $this->client->shouldReceive('post')->with('webhooks', ['name' => 'Primary'])->once()->andReturn($webhookPayload);
+        expect($this->service->createSendWebhook(['name' => 'Primary']))->toBeInstanceOf(SendWebhookData::class);
 
-        $createdWebhook = $this->service->createSendWebhook(['url' => 'https://example.com']);
+        $this->client->shouldReceive('get')->with('webhooks/1')->once()->andReturn($webhookPayload);
+        expect($this->service->getSendWebhook(1))->toBeInstanceOf(SendWebhookData::class);
 
-        expect($createdWebhook)->toBeInstanceOf(SendWebhookData::class)
-            ->and($createdWebhook->handlesEvent('send_instruction_status'))->toBeTrue();
+        $this->client->shouldReceive('patch')->with('webhooks/1', ['event_hooks' => ['bank_account_status']])->once()->andReturn($webhookPayload);
+        expect($this->service->updateSendWebhook(1, ['event_hooks' => ['bank_account_status']]))->toBeInstanceOf(SendWebhookData::class);
 
-        $this->client->shouldReceive('get')
-            ->once()
-            ->with('send/webhooks/wh_1')
-            ->andReturn($webhookPayload);
+        $this->client->shouldReceive('delete')->with('webhooks/1')->once();
+        $this->service->deleteSendWebhook(1);
 
-        expect($this->service->getSendWebhook('wh_1'))
-            ->toBeInstanceOf(SendWebhookData::class);
+        $this->client->shouldReceive('get')->with('webhooks')->once()->andReturn(['results' => [$webhookPayload], 'meta' => ['total' => 1]]);
+        $list = $this->service->listSendWebhooks();
 
-        $updatedPayload = $webhookPayload;
-        $updatedPayload['event_hooks'] = ['bank_account_status'];
-
-        $this->client->shouldReceive('put')
-            ->once()
-            ->with('send/webhooks/wh_1', ['events' => ['bank_account_status']])
-            ->andReturn($updatedPayload);
-
-        $updated = $this->service->updateSendWebhook('wh_1', ['events' => ['bank_account_status']]);
-
-        expect($updated)->toBeInstanceOf(SendWebhookData::class)
-            ->and($updated->handlesEvent('bank_account_status'))->toBeTrue();
-
-        $this->client->shouldReceive('delete')
-            ->once()
-            ->with('send/webhooks/wh_1');
-
-        $this->service->deleteSendWebhook('wh_1');
-
-        $listPayload = [
-            'data' => [
-                $webhookPayload,
-            ],
-            'meta' => ['total' => 1],
-        ];
-
-        $this->client->shouldReceive('get')
-            ->once()
-            ->with('send/webhooks?type=callback')
-            ->andReturn($listPayload);
-
-        $list = $this->service->listSendWebhooks(['type' => 'callback']);
-
-        expect($list)->toHaveKey('data');
-        expect($list['data'][0])->toBeInstanceOf(SendWebhookData::class);
-        expect($list['meta']['total'])->toBe(1);
+        expect($list['results'][0])->toBeInstanceOf(SendWebhookData::class)
+            ->and($list['meta']['total'])->toBe(1);
     });
 });

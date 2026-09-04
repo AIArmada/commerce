@@ -208,6 +208,20 @@ describe('StackingPolicy', function (): void {
 
             expect($decision->isAllowed())->toBeTrue();
         });
+
+        it('denies all vouchers when the maximum is zero', function (): void {
+            $policy = new StackingPolicy(
+                mode: StackingMode::Sequential,
+                rules: [['type' => StackingRuleType::MaxVouchers->value, 'value' => 0]],
+            );
+            $cart = createPolicyTestCart();
+            $newVoucher = createPolicyVoucherCondition('DISABLED');
+
+            $decision = $policy->canAdd($newVoucher, collect(), $cart);
+
+            expect($decision->isDenied())->toBeTrue()
+                ->and($decision->getReason())->toBe('Vouchers are disabled');
+        });
     });
 
     describe('resolveConflict', function (): void {

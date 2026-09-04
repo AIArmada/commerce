@@ -93,12 +93,9 @@ final class BankAccountTable
             ->filters([
                 SelectFilter::make('status')
                     ->options([
-                        'active' => 'Active',
-                        'approved' => 'Approved',
+                        'verified' => 'Verified',
                         'pending' => 'Pending',
-                        'verifying' => 'Verifying',
                         'rejected' => 'Rejected',
-                        'disabled' => 'Disabled',
                     ])
                     ->label('Status'),
 
@@ -121,51 +118,13 @@ final class BankAccountTable
                     ->iconButton(),
 
                 ActionGroup::make([
-                    Action::make('verify')
-                        ->label('Request Verification')
-                        ->icon(Heroicon::OutlinedShieldCheck)
-                        ->color('warning')
-                        ->requiresConfirmation()
-                        ->modalHeading('Request Verification')
-                        ->modalDescription('This will submit the bank account for verification with CHIP. Continue?')
-                        ->action(function (BankAccount $record): void {
-                            $service = app(ChipSendService::class);
-                            $scopedRecord = self::resolveScopedBankAccount($record);
-
-                            if ($scopedRecord === null) {
-                                Notification::make()
-                                    ->title('Bank account is outside your owner scope')
-                                    ->danger()
-                                    ->send();
-
-                                return;
-                            }
-
-                            try {
-                                $service->updateBankAccount((string) $scopedRecord->getKey(), [
-                                    'status' => 'verifying',
-                                ]);
-                                Notification::make()
-                                    ->title('Verification requested')
-                                    ->success()
-                                    ->send();
-                            } catch (Throwable $e) {
-                                Notification::make()
-                                    ->title('Failed to request verification')
-                                    ->body($e->getMessage())
-                                    ->danger()
-                                    ->send();
-                            }
-                        })
-                        ->visible(fn (BankAccount $record): bool => $record->status === 'pending'),
-
-                    Action::make('disable')
-                        ->label('Disable Account')
-                        ->icon(Heroicon::OutlinedNoSymbol)
+                    Action::make('delete')
+                        ->label('Delete Account')
+                        ->icon(Heroicon::OutlinedTrash)
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->modalHeading('Disable Bank Account')
-                        ->modalDescription('This will disable the bank account. It cannot be used for payouts until re-enabled.')
+                        ->modalHeading('Delete Bank Account')
+                        ->modalDescription('This will delete the bank account from CHIP Send. This cannot be undone.')
                         ->action(function (BankAccount $record): void {
                             $service = app(ChipSendService::class);
                             $scopedRecord = self::resolveScopedBankAccount($record);
@@ -180,20 +139,20 @@ final class BankAccountTable
                             }
 
                             try {
-                                $service->deleteBankAccount((string) $scopedRecord->getKey());
+                                $service->deleteBankAccount((int) $scopedRecord->getKey());
                                 Notification::make()
-                                    ->title('Bank account disabled')
+                                    ->title('Bank account deleted')
                                     ->success()
                                     ->send();
                             } catch (Throwable $e) {
                                 Notification::make()
-                                    ->title('Failed to disable account')
+                                    ->title('Failed to delete account')
                                     ->body($e->getMessage())
                                     ->danger()
                                     ->send();
                             }
                         })
-                        ->visible(fn (BankAccount $record): bool => in_array($record->status, ['active', 'approved'], true)),
+                        ->visible(fn (BankAccount $record): bool => $record->getAttribute('deleted_at') === null),
                 ])
                     ->iconButton()
                     ->icon(Heroicon::OutlinedEllipsisVertical),

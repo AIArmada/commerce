@@ -16,10 +16,10 @@ return new class extends Migration
             // Core API fields - Send Limit structure from CHIP Send API
             $table->integer('id')->primary();
 
-            // Monetary and accounting details (values are provided in minor units)
-            $table->bigInteger('amount');
-            $table->bigInteger('fee');
-            $table->bigInteger('net_amount');
+            // CHIP Send expresses these amounts in major currency units (for example, 1 = RM1).
+            $table->decimal('amount', 20, 2);
+            $table->decimal('fee', 20, 2);
+            $table->decimal('net_amount', 20, 2);
 
             // Classification fields straight from the API contract
             $table->string('currency', 3);

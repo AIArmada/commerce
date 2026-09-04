@@ -55,73 +55,82 @@ describe('ChipWebhookHandler', function (): void {
     });
 
     describe('getEventType', function (): void {
-        it('returns payment.paid for paid status', function (): void {
+        it('returns the documented purchase.paid event type', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
                 'id' => 'purchase-123',
+                'event_type' => 'purchase.paid',
                 'status' => 'paid',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('payment.paid');
+            expect($this->handler->getEventType($request))->toBe('purchase.paid');
         });
 
-        it('returns payment.refunded for refunded status', function (): void {
+        it('returns the documented payment.refunded event type', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
+                'event_type' => 'payment.refunded',
                 'status' => 'refunded',
             ]));
 
             expect($this->handler->getEventType($request))->toBe('payment.refunded');
         });
 
-        it('returns payment.cancelled for cancelled status', function (): void {
+        it('returns the documented purchase.cancelled event type', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
+                'event_type' => 'purchase.cancelled',
                 'status' => 'cancelled',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('payment.cancelled');
+            expect($this->handler->getEventType($request))->toBe('purchase.cancelled');
         });
 
-        it('returns payment.failed for error status', function (): void {
+        it('returns the documented purchase.payment_failure event type', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
+                'event_type' => 'purchase.payment_failure',
                 'status' => 'error',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('payment.failed');
+            expect($this->handler->getEventType($request))->toBe('purchase.payment_failure');
         });
 
-        it('returns payment.failed for blocked status', function (): void {
+        it('does not derive an event type from a blocked status', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
+                'event_type' => 'purchase.payment_failure',
                 'status' => 'blocked',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('payment.failed');
+            expect($this->handler->getEventType($request))->toBe('purchase.payment_failure');
         });
 
-        it('returns payment.authorized for hold status', function (): void {
+        it('returns the documented purchase.hold event type', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
+                'event_type' => 'purchase.hold',
                 'status' => 'hold',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('payment.authorized');
+            expect($this->handler->getEventType($request))->toBe('purchase.hold');
         });
 
-        it('returns payment.authorized for preauthorized status', function (): void {
+        it('returns the documented purchase.preauthorized event type', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
+                'event_type' => 'purchase.preauthorized',
                 'status' => 'preauthorized',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('payment.authorized');
+            expect($this->handler->getEventType($request))->toBe('purchase.preauthorized');
         });
 
-        it('returns payment.pending for pending_execute status', function (): void {
+        it('returns the documented purchase.pending_execute event type', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
+                'event_type' => 'purchase.pending_execute',
                 'status' => 'pending_execute',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('payment.pending');
+            expect($this->handler->getEventType($request))->toBe('purchase.pending_execute');
         });
 
-        it('returns purchase.pending_refund for pending_refund status', function (): void {
+        it('returns the documented purchase.pending_refund event type', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
+                'event_type' => 'purchase.pending_refund',
                 'status' => 'pending_refund',
             ]));
 
@@ -134,18 +143,21 @@ describe('ChipWebhookHandler', function (): void {
             expect($this->handler->getEventType($request))->toBe('unknown');
         });
 
-        it('returns default for unknown status', function (): void {
+        it('returns the supplied event type without deriving it from status', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
+                'event_type' => 'unknown.event',
                 'status' => 'some_new_status',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('payment.some_new_status');
+            expect($this->handler->getEventType($request))->toBe('unknown.event');
         });
     });
 
     describe('isPaymentEvent', function (): void {
         it('always returns true', function (): void {
-            $request = Request::create('/webhook', 'POST');
+            $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
+                'event_type' => 'purchase.paid',
+            ]));
 
             expect($this->handler->isPaymentEvent($request))->toBeTrue();
         });
@@ -170,6 +182,7 @@ describe('ChipWebhookHandler', function (): void {
             $payload = [
                 'id' => 'purchase-' . uniqid(),
                 'type' => 'purchase',
+                'event_type' => 'purchase.paid',
                 'status' => 'paid',
                 'brand_id' => 'brand-123',
                 'is_test' => true,
@@ -223,6 +236,8 @@ describe('ChipWebhookHandler', function (): void {
         it('parses webhook payload correctly', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
                 'id' => 'purchase-123',
+                'event_type' => 'purchase.paid',
+                'type' => 'purchase',
                 'status' => 'paid',
                 'reference' => 'REF-123',
                 'updated_on' => time(),
@@ -232,6 +247,8 @@ describe('ChipWebhookHandler', function (): void {
                 ->once()
                 ->andReturn((object) [
                     'id' => 'purchase-123',
+                    'event_type' => 'purchase.paid',
+                    'type' => 'purchase',
                     'status' => 'paid',
                     'reference' => 'REF-123',
                     'updated_on' => time(),

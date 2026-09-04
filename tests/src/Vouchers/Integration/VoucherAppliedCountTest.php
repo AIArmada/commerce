@@ -30,7 +30,9 @@ beforeEach(function (): void {
     VoucherModel::query()->forceDelete();
 
     config([
-        'vouchers.cart.max_vouchers_per_cart' => 1,
+        'vouchers.stacking.rules' => [
+            ['type' => 'max_vouchers', 'value' => 1],
+        ],
         'vouchers.validation.check_user_limit' => false,
         'vouchers.validation.check_global_limit' => true,
         'vouchers.validation.check_min_cart_value' => true,

@@ -139,7 +139,7 @@ it('covers resource pages and read-only list base class', function (): void {
     $bankAccount = OwnerContext::withOwner(null, function (): BankAccount {
         return BankAccount::query()->create([
             'id' => 10,
-            'status' => 'approved',
+            'status' => 'verified',
             'name' => 'Acct',
             'account_number' => '123',
             'bank_code' => 'MBBEMYKL',
@@ -161,23 +161,22 @@ it('covers resource pages and read-only list base class', function (): void {
     {
         public function __construct(private BankAccount $bankAccount, private SendInstruction $sendInstruction) {}
 
-        public function createBankAccount(string $bankCode, string $accountNumber, string $accountHolderName, ?string $reference = null): BankAccount
+        public function createBankAccount(string $bankCode, string $accountNumber, string $accountHolderName, string $reference): BankAccount
         {
             return $this->bankAccount;
         }
 
-        public function createSendInstruction(int $amountInCents, string $currency, string $recipientBankAccountId, string $description, string $reference, string $email): SendInstruction
+        public function createSendInstruction(int $amountInCents, int $recipientBankAccountId, string $description, string $reference, string $email, bool $sendRecipientReceipt = false): SendInstruction
         {
             return $this->sendInstruction;
         }
 
-        public function updateBankAccount(string $id, array $data): void {}
+        public function deleteBankAccount(int $id): void {}
 
-        public function deleteBankAccount(string $id): void {}
-
-        public function resendSendInstructionWebhook(string $id): void {}
-
-        public function cancelSendInstruction(string $id): void {}
+        public function resendSendInstructionWebhook(int $id): array
+        {
+            return [];
+        }
     });
 
     $createBank = new CreateBankAccount;
@@ -188,6 +187,7 @@ it('covers resource pages and read-only list base class', function (): void {
         'bank_code' => 'MBBEMYKL',
         'account_number' => '123',
         'name' => 'Acct',
+        'reference' => 'ref',
     ]);
 
     expect($data)->toHaveKey('id')->toHaveKey('status');
@@ -327,7 +327,7 @@ it('enforces owner scoping in mutation action record resolution', function (): v
             'id' => 101,
             'owner_type' => $ownerA->getMorphClass(),
             'owner_id' => (string) $ownerA->getKey(),
-            'status' => 'active',
+            'status' => 'verified',
             'name' => 'A Account',
             'account_number' => '111',
             'bank_code' => 'MBBEMYKL',
@@ -339,7 +339,7 @@ it('enforces owner scoping in mutation action record resolution', function (): v
             'id' => 102,
             'owner_type' => $ownerB->getMorphClass(),
             'owner_id' => (string) $ownerB->getKey(),
-            'status' => 'active',
+            'status' => 'verified',
             'name' => 'B Account',
             'account_number' => '222',
             'bank_code' => 'MBBEMYKL',

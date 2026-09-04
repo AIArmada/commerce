@@ -47,7 +47,6 @@ final class PaymentData extends ChipData
         public readonly ?bool $is_test = null,
         public readonly ?string $user_id = null,
         public readonly ?string $brand_id = null,
-        public readonly ?string $status = null,
     ) {}
 
     /**
@@ -64,11 +63,6 @@ final class PaymentData extends ChipData
 
         if (isset($data['payment']) && is_array($data['payment'])) {
             $paymentPayload = $data['payment'];
-        } elseif (! isset($data['amount']) && isset($data['purchase']) && is_array($data['purchase'])) {
-            $paymentPayload = [
-                'amount' => $data['purchase']['total'] ?? 0,
-                'currency' => $data['purchase']['currency'] ?? 'MYR',
-            ];
         }
 
         $currency = $paymentPayload['currency'] ?? $data['currency'] ?? 'MYR';
@@ -98,7 +92,6 @@ final class PaymentData extends ChipData
             is_test: isset($data['is_test']) ? (bool) $data['is_test'] : null,
             user_id: $data['user_id'] ?? null,
             brand_id: $data['brand_id'] ?? null,
-            status: $data['status'] ?? null,
         );
     }
 
@@ -122,11 +115,10 @@ final class PaymentData extends ChipData
      */
     public static function hasWebhookPaymentPayload(array $payload): bool
     {
-        if (isset($payload['payment']) && is_array($payload['payment'])) {
-            return self::hasMoneyFields($payload['payment']);
-        }
-
-        return self::hasMoneyFields($payload);
+        return isset($payload['type'], $payload['payment'])
+            && $payload['type'] === 'payment'
+            && is_array($payload['payment'])
+            && self::hasMoneyFields($payload['payment']);
     }
 
     /**
@@ -244,7 +236,7 @@ final class PaymentData extends ChipData
      */
     public function toArray(): array
     {
-        return array_filter([
+        $details = array_filter([
             'is_outgoing' => $this->is_outgoing,
             'payment_type' => $this->payment_type,
             'amount' => $this->getAmountInCents(),
@@ -256,11 +248,19 @@ final class PaymentData extends ChipData
             'description' => $this->description,
             'paid_on' => $this->paid_on,
             'remote_paid_on' => $this->remote_paid_on,
-            'type' => $this->type,
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
+
+        if ($this->id === null) {
+            return $details;
+        }
+
+        return array_filter([
             'id' => $this->id,
+            'type' => $this->type ?? 'payment',
             'created_on' => $this->created_on,
             'updated_on' => $this->updated_on,
             'client' => $this->client?->toArray(),
+            'payment' => $details,
             'transaction_data' => $this->transaction_data,
             'related_to' => $this->related_to?->toArray(),
             'reference_generated' => $this->reference_generated,
@@ -270,7 +270,6 @@ final class PaymentData extends ChipData
             'is_test' => $this->is_test,
             'user_id' => $this->user_id,
             'brand_id' => $this->brand_id,
-            'status' => $this->status,
         ], static fn (mixed $value): bool => $value !== null && $value !== [] && $value !== '');
     }
 

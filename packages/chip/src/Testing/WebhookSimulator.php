@@ -8,13 +8,16 @@ use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\WebhookData;
 use AIArmada\Chip\Enums\WebhookEventType;
-use AIArmada\Chip\Events\BillingCancelled;
+use AIArmada\Chip\Events\PaymentChargebackReversed;
+use AIArmada\Chip\Events\PaymentChargedBack;
 use AIArmada\Chip\Events\PaymentRefunded;
+use AIArmada\Chip\Events\PayoutCreated;
 use AIArmada\Chip\Events\PayoutFailed;
 use AIArmada\Chip\Events\PayoutPending;
 use AIArmada\Chip\Events\PayoutSuccess;
 use AIArmada\Chip\Events\PurchaseCancelled;
 use AIArmada\Chip\Events\PurchaseCaptured;
+use AIArmada\Chip\Events\PurchaseCaptureFailure;
 use AIArmada\Chip\Events\PurchaseCreated;
 use AIArmada\Chip\Events\PurchaseHold;
 use AIArmada\Chip\Events\PurchasePaid;
@@ -27,8 +30,11 @@ use AIArmada\Chip\Events\PurchasePendingRefund;
 use AIArmada\Chip\Events\PurchasePendingRelease;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
+use AIArmada\Chip\Events\PurchaseRefundFailure;
 use AIArmada\Chip\Events\PurchaseReleased;
-use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
+use AIArmada\Chip\Events\PurchaseReleaseFailure;
+use AIArmada\Chip\Events\PurchaseSettled;
+use AIArmada\Chip\Events\PurchaseViewed;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\Client\Response;
@@ -85,11 +91,6 @@ final class WebhookSimulator
         return (new self)->factory(WebhookFactory::make()->cancelled());
     }
 
-    public static function expired(): self
-    {
-        return (new self)->factory(WebhookFactory::make()->expired());
-    }
-
     public static function failed(): self
     {
         return (new self)->factory(WebhookFactory::make()->failed());
@@ -117,9 +118,15 @@ final class WebhookSimulator
             PurchaseCaptured::class,
             PurchaseReleased::class,
             PurchaseRecurringTokenDeleted::class,
-            PurchaseSubscriptionChargeFailure::class,
+            PurchaseRefundFailure::class,
+            PurchaseCaptureFailure::class,
+            PurchaseReleaseFailure::class,
+            PurchaseViewed::class,
+            PurchaseSettled::class,
             PaymentRefunded::class,
-            BillingCancelled::class,
+            PaymentChargedBack::class,
+            PaymentChargebackReversed::class,
+            PayoutCreated::class,
             PayoutPending::class,
             PayoutSuccess::class,
             PayoutFailed::class,

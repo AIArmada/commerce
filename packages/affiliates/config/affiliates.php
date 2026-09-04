@@ -262,7 +262,7 @@ return [
             'payout' => explode(',', (string) env('AFFILIATES_WEBHOOKS_PAYOUT', '')),
         ],
         'headers' => [
-            // Backward compatibility: WebhookDispatcher treats this as a signature secret and never sends it to endpoints.
+            // Additional signature header used by dispatched webhook requests.
             'X-Affiliates-Signature' => env('AFFILIATES_WEBHOOKS_SIGNATURE'),
         ],
     ],

@@ -6,7 +6,6 @@ namespace AIArmada\Checkout\Webhooks;
 
 use AIArmada\Checkout\Actions\ProcessCheckoutPaymentNotification;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
-use Illuminate\Support\Arr;
 
 final class ProcessCheckoutWebhook extends CommerceWebhookProcessor
 {
@@ -30,11 +29,6 @@ final class ProcessCheckoutWebhook extends CommerceWebhookProcessor
      */
     protected function extractEventType(array $payload): string
     {
-        return (string) (
-            Arr::get($payload, 'event_type')
-            ?? Arr::get($payload, 'event')
-            ?? Arr::get($payload, 'type')
-            ?? 'unknown'
-        );
+        return parent::extractEventType($payload);
     }
 }

@@ -247,12 +247,11 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
         $options = [
             'purchase' => [
                 'products' => $this->products,
+                'metadata' => $this->meta,
             ],
-            'success_callback' => $this->success ?? url('/'),
-            'failure_callback' => $this->cancel ?? url('/'),
-            'cancel_callback' => $this->cancel ?? url('/'),
+            'success_redirect' => $this->success ?? url('/'),
+            'cancel_redirect' => $this->cancel ?? url('/'),
             'brand_id' => $this->gateway->brandId(),
-            'metadata' => [],
         ];
 
         $chipCustomerId = $this->resolveBillableChipId();
@@ -285,13 +284,6 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
             ];
             $options['skip_capture'] = true;
             $options['force_recurring'] = true;
-        }
-
-        // Add coupon metadata if present
-        if ($this->couponCode) {
-            $options['metadata'] = array_merge($options['metadata'], [
-                'coupon_id' => $this->couponCode,
-            ]);
         }
 
         $purchase = $this->gateway->client()->createPurchase($options);

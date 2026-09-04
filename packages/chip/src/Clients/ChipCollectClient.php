@@ -9,6 +9,7 @@ use AIArmada\Chip\Exceptions\ChipApiException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use JsonException;
 
 class ChipCollectClient extends BaseHttpClient
 {
@@ -45,7 +46,25 @@ class ChipCollectClient extends BaseHttpClient
                 $this->handleFailedResponse($response);
             }
 
-            return $response->body(); // PEM string
+            try {
+                $publicKey = json_decode($response->body(), true, flags: JSON_THROW_ON_ERROR);
+            } catch (JsonException $exception) {
+                throw new ChipApiException(
+                    'CHIP public key response was not a JSON-encoded string',
+                    $response->status(),
+                    [],
+                    $exception,
+                );
+            }
+
+            if (! is_string($publicKey) || $publicKey === '') {
+                throw new ChipApiException(
+                    'CHIP public key response did not contain a PEM string',
+                    $response->status(),
+                );
+            }
+
+            return $publicKey;
         }
 
         return $this->request('GET', $endpoint);
@@ -65,26 +84,26 @@ class ChipCollectClient extends BaseHttpClient
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function put(string $endpoint, array $data = []): array
+    public function put(string $endpoint, array $data = [], array $headers = []): array
     {
-        return $this->request('PUT', $endpoint, $data);
+        return $this->request('PUT', $endpoint, $data, $headers);
     }
 
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function patch(string $endpoint, array $data = []): array
+    public function patch(string $endpoint, array $data = [], array $headers = []): array
     {
-        return $this->request('PATCH', $endpoint, $data);
+        return $this->request('PATCH', $endpoint, $data, $headers);
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function delete(string $endpoint): array
+    public function delete(string $endpoint, array $headers = []): array
     {
-        return $this->request('DELETE', $endpoint);
+        return $this->request('DELETE', $endpoint, [], $headers);
     }
 
     public function getBrandId(): string

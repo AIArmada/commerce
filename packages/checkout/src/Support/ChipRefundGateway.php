@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Support;
 use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Chip\Data\PaymentData;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Facades\Chip;
 use Throwable;
 
@@ -16,18 +17,11 @@ final readonly class ChipRefundGateway
     {
         try {
             $refund = Chip::refundPurchase($paymentId, $amount);
-            $response = method_exists($refund, 'toArray')
-                ? $refund->toArray()
-                : (array) $refund;
-            $status = data_get($response, 'status');
-            $status = is_string($status) ? mb_strtolower(mb_trim($status)) : null;
-            $paymentStatus = match ($status) {
-                'refunded' => PaymentStatus::Refunded,
-                'partially_refunded' => PaymentStatus::PartiallyRefunded,
-                'pending_refund', 'attempted_refund' => PaymentStatus::Processing,
-                'failed', 'error', 'blocked' => PaymentStatus::Failed,
-                // A provider response without a recognised status must never
-                // be treated as a completed money movement.
+            $response = $refund->toArray();
+            $paymentStatus = match (true) {
+                $refund instanceof PaymentData && $refund->payment_type === 'refund' => PaymentStatus::Refunded,
+                $refund instanceof PurchaseData && $refund->status === 'pending_refund' => PaymentStatus::Processing,
+                $refund instanceof PurchaseData && $refund->status === 'refunded' => PaymentStatus::Refunded,
                 default => PaymentStatus::Processing,
             };
 
@@ -45,7 +39,7 @@ final readonly class ChipRefundGateway
                 amount: $amount,
                 message: $paymentStatus === PaymentStatus::Processing
                     ? 'Refund is being processed by CHIP'
-                    : ($paymentStatus === PaymentStatus::Failed ? 'CHIP could not process the refund' : 'Refund processed successfully'),
+                    : 'Refund processed successfully',
                 gatewayResponse: $response,
                 provider: 'chip',
             );
@@ -62,21 +56,9 @@ final readonly class ChipRefundGateway
      */
     private function refundTransactionId(array $response, string $paymentId): ?string
     {
-        $candidates = [
-            data_get($response, 'refund_id'),
-            data_get($response, 'transaction_id'),
-            data_get($response, 'payment.id'),
-            data_get($response, 'refund.id'),
-            data_get($response, 'id'),
-            data_get($response, 'reference_generated'),
-            data_get($response, 'reference'),
-        ];
+        $candidate = $response['id'] ?? null;
 
-        foreach ($candidates as $candidate) {
-            if (! is_scalar($candidate)) {
-                continue;
-            }
-
+        if (is_scalar($candidate)) {
             $candidate = mb_trim((string) $candidate);
 
             if ($candidate !== '' && $candidate !== $paymentId) {

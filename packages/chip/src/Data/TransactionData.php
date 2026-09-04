@@ -36,20 +36,17 @@ final class TransactionData extends ChipData
             return null;
         }
 
-        $lastKey = array_key_last($this->attempts);
+        $attempt = $this->attempts[0] ?? null;
 
-        if ($lastKey === null) {
-            return null;
-        }
-
-        $lastAttempt = $this->attempts[$lastKey];
-
-        return is_array($lastAttempt) ? $lastAttempt : null;
+        return is_array($attempt) ? $attempt : null;
     }
 
     public function hasFailedAttempts(): bool
     {
-        return ! empty(array_filter($this->attempts, fn ($attempt) => ! ($attempt['successful'] ?? true)));
+        return ! empty(array_filter(
+            $this->attempts,
+            fn (mixed $attempt): bool => is_array($attempt) && ($attempt['successful'] ?? true) === false,
+        ));
     }
 
     /**

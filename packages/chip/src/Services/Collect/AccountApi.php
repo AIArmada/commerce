@@ -12,7 +12,7 @@ final class AccountApi extends CollectApi
     public function balance(): array
     {
         return $this->attempt(
-            fn () => $this->client->get('account/balance/'),
+            fn () => $this->client->get('account/json/balance/'),
             'Failed to get CHIP account balance'
         );
     }
@@ -24,7 +24,7 @@ final class AccountApi extends CollectApi
     public function turnover(array $filters = []): array
     {
         $queryString = http_build_query($filters);
-        $endpoint = 'account/turnover/' . ($queryString ? '?' . $queryString : '');
+        $endpoint = 'account/json/turnover/' . ($queryString ? '?' . $queryString : '');
 
         return $this->attempt(
             fn () => $this->client->get($endpoint),

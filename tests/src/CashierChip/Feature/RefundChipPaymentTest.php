@@ -7,7 +7,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 use AIArmada\CashierChip\Actions\RefundChipPayment;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Testing\FakeChipClient;
-use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Commerce\Tests\TestCase;
 
 \uses(TestCase::class);
@@ -21,8 +21,8 @@ describe('RefundChipPayment', function (): void {
 
         $result = RefundChipPayment::run($purchaseId);
 
-        expect($result)->toBeInstanceOf(PurchaseData::class);
-        expect($result->status)->toBe('refunded');
+        expect($result)->toBeInstanceOf(PaymentData::class)
+            ->and($result->payment_type)->toBe('refund');
     });
 
     it('refunds a purchase with partial amount', function (): void {
@@ -34,7 +34,7 @@ describe('RefundChipPayment', function (): void {
 
         $result = RefundChipPayment::run($purchaseId, 2500);
 
-        expect($result)->toBeInstanceOf(PurchaseData::class);
-        expect($result->status)->toBe('refunded');
+        expect($result)->toBeInstanceOf(PaymentData::class)
+            ->and($result->payment_type)->toBe('refund');
     });
 });

@@ -8,15 +8,18 @@ describe('Purchase data object', function (): void {
     it('creates a purchase from array data', function (): void {
         $data = [
             'id' => 'purchase_123',
-            'amount_in_cents' => 10000,
-            'currency' => 'MYR',
             'reference' => 'ORDER_001',
+            'reference_generated' => 'ORDER_001',
             'checkout_url' => 'https://gate.chip-in.asia/checkout/purchase_123',
             'status' => 'created',
-            'is_recurring' => false,
-            'metadata' => ['order_id' => '123'],
-            'created_at' => '2024-01-01T12:00:00Z',
-            'updated_at' => '2024-01-01T12:00:00Z',
+            'is_recurring_token' => false,
+            'created_on' => strtotime('2024-01-01T12:00:00Z'),
+            'updated_on' => strtotime('2024-01-01T12:00:00Z'),
+            'purchase' => [
+                'total' => 10000,
+                'currency' => 'MYR',
+                'metadata' => ['order_id' => '123'],
+            ],
         ];
 
         $purchase = PurchaseData::from($data);
@@ -34,9 +37,8 @@ describe('Purchase data object', function (): void {
     it('handles nullable fields correctly', function (): void {
         $data = [
             'id' => 'purchase_123',
-            'amount_in_cents' => 10000,
-            'currency' => 'MYR',
             'status' => 'created',
+            'purchase' => ['currency' => 'MYR', 'total' => 0],
         ];
 
         $purchase = PurchaseData::from($data);
@@ -50,9 +52,8 @@ describe('Purchase data object', function (): void {
     it('returns amount as Money object', function (): void {
         $purchase = PurchaseData::from([
             'id' => 'purchase_123',
-            'amount_in_cents' => 12345,
-            'currency' => 'MYR',
             'status' => 'created',
+            'purchase' => ['currency' => 'MYR', 'total' => 12345],
         ]);
 
         expect($purchase->getAmount()->getAmount())->toBe(12345)

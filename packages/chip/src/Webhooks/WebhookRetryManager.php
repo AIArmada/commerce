@@ -56,7 +56,7 @@ class WebhookRetryManager
 
             try {
                 $payload = is_array($webhook->payload) ? $webhook->payload : [];
-                $result = $this->dispatchAction->execute($webhook->event, $payload, $retryOwner ?? null);
+                $result = $this->dispatchAction->execute($webhook->event_type, $payload, $retryOwner ?? null);
 
                 if ($result->isSuccess()) {
                     $webhook->forceFill([

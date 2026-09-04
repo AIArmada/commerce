@@ -51,21 +51,19 @@ class ChipGatewayCheck extends CommerceHealthCheck
      */
     protected function performCheck(): Result
     {
-        $brandId = config('chip.collect.brand_id');
         $apiKey = config('chip.collect.api_key');
 
-        if (empty($brandId) || empty($apiKey)) {
+        if (empty($apiKey)) {
             return $this->warning('CHIP credentials not configured');
         }
 
         try {
             $response = Http::timeout($this->timeout)
                 ->withToken($apiKey)
-                ->get($this->endpoint . 'brands/' . $brandId);
+                ->get($this->endpoint . 'account/json/balance/');
 
             if ($response->successful()) {
                 return $this->success('CHIP gateway is operational', [
-                    'brand_id' => $brandId,
                     'response_time_ms' => $response->handlerStats()['total_time'] ?? null,
                 ]);
             }

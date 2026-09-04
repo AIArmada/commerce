@@ -220,15 +220,15 @@ $bankAccount = ChipSend::createBankAccount(
 ```php
 $instruction = ChipSend::createSendInstruction(
     amountInCents: 10000,        // RM 100.00
-    currency: 'MYR',
     recipientBankAccountId: $bankAccount->id,
     description: 'Affiliate Payout',
     reference: 'PAY-2024-001',
-    email: 'recipient@example.com'
+    email: 'recipient@example.com',
+    sendRecipientReceipt: true,
 );
 
 // Track status
-$status = $instruction->state; // pending, success, failed
+$status = $instruction->state; // received, enquiring, executing, reviewing, accepted, completed, rejected, deleted
 ```
 
 ### Manage Payouts
@@ -240,8 +240,8 @@ $payouts = ChipSend::listSendInstructions();
 // Get specific payout
 $payout = ChipSend::getSendInstruction($id);
 
-// Cancel pending payout
-$cancelled = ChipSend::cancelSendInstruction($id);
+// Delete an unprocessed payout
+ChipSend::deleteSendInstruction($id);
 ```
 
 ## Webhooks
@@ -371,23 +371,25 @@ $result->wasSkipped(); // true if no handler matched
 
 When an `owner` model is provided, the webhook envelope is enriched with owner context before routing, and the handler runs inside `OwnerContext::withOwner()`. When omitted, the action attempts to resolve the owner from the enriched payload's brand-to-owner map.
 
-### HandleSendInstructionWebhookAction
+### CHIP Send webhook event
 
-Handles CHIP Send payout webhooks by updating the local send instruction state and dispatching the corresponding typed event:
+CHIP Send deliveries use a separate route and signature scheme. After SHA-512 RSA verification, the package dispatches `SendWebhookReceived` with the raw JSON object:
 
 ```php
-use AIArmada\Chip\Actions\HandleSendInstructionWebhookAction;
-use AIArmada\Chip\Enums\SendInstructionState;
-use AIArmada\Chip\Events\PayoutSuccess;
+use AIArmada\Chip\Events\SendWebhookReceived;
 
-$result = app(HandleSendInstructionWebhookAction::class)->execute(
-    payload: $enrichedPayload,
-    targetState: SendInstructionState::Success,
-    eventClass: PayoutSuccess::class,
-);
+final class HandleSendWebhook
+{
+    public function handle(SendWebhookReceived $event): void
+    {
+        $payload = $event->payload;
+
+        // Interpret the payload according to the configured Send event hook.
+    }
+}
 ```
 
-The action looks up the local `SendInstruction` by ID from the payload, updates its `state` column, and dispatches the given event class. It returns `WebhookResult::skipped()` when the send instruction is not found locally.
+The package does not invent a status-to-event mapping for Send. CHIP Send supplies the resource payload and the configured hook category; applications decide how to persist or act on it.
 
 ### RunChipPurchaseDocGenerationAction
 

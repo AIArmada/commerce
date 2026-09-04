@@ -359,7 +359,7 @@ final class VoucherForm
                                 ->step(fn (Get $get): string => $get('type') === 'fixed' ? '0.01' : '0.1')
                                 ->formatStateUsing(function ($state, Get $get): mixed {
                                     if ($state === null) {
-                                        return $get('share') !== null ? (float) round((float) $get('share') * 100, 2) : null;
+                                        return null;
                                     }
 
                                     if ($get('type') === 'fixed') {

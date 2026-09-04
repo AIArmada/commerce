@@ -85,7 +85,7 @@ final class RevenueChartWidget extends ChartWidget
                     $query->forOwner();
                 }
             })
-                ->where('status', 'paid')
+                ->whereIn('status', ['paid', 'cleared', 'settled'])
                 ->where('is_test', false)
                 ->whereBetween('created_on', [$startDate->getTimestamp(), $endDate->getTimestamp()])
                 ->get(['created_on', 'purchase']);
@@ -103,13 +103,7 @@ final class RevenueChartWidget extends ChartWidget
                     continue;
                 }
 
-                $total = $purchase->purchase['total'] ?? $purchase->purchase['amount'] ?? 0;
-
-                if (is_array($total)) {
-                    $amountsByDay[$label] += (int) ($total['amount'] ?? 0);
-                } else {
-                    $amountsByDay[$label] += (int) $total;
-                }
+                $amountsByDay[$label] += (int) ($purchase->purchase['total'] ?? 0);
             }
 
             $amounts = array_map(

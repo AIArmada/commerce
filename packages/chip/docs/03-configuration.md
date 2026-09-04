@@ -113,15 +113,9 @@ When owner scoping is enabled, incoming CHIP webhooks must be mapped to the corr
 ],
 ```
 
-**Fields (preferred):**
+**Fields:**
 - `owner_type`: Full class name or morph alias of the owner model (e.g., `\App\Models\Tenant::class` or `'tenant'` if using `morphMap`)
 - `owner_id`: ID of the owner record in your database (string or integer)
-
-**Legacy aliases (also accepted):**
-- `type` (alias for `owner_type`)
-- `id` (alias for `owner_id`)
-
-For forward compatibility, prefer `owner_type`/`owner_id`.
 
 **Environment-based mapping:**
 ```php

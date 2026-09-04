@@ -8,8 +8,6 @@ use AIArmada\Chip\Webhooks\Handlers\PaymentFailedHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchaseCancelledHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchaseRefundedHandler;
-use AIArmada\Chip\Webhooks\Handlers\SendCompletedHandler;
-use AIArmada\Chip\Webhooks\Handlers\SendRejectedHandler;
 use AIArmada\Chip\Webhooks\Handlers\WebhookHandler;
 
 describe('PurchasePaidHandler', function (): void {
@@ -91,7 +89,7 @@ describe('PaymentFailedHandler', function (): void {
         $handler = app(PaymentFailedHandler::class);
 
         $payload = new EnrichedWebhookPayload(
-            event: 'payment.failed',
+            event: 'purchase.payment_failure',
             rawPayload: ['id' => 'purchase_abc'],
             localPurchase: null,
         );
@@ -101,47 +99,5 @@ describe('PaymentFailedHandler', function (): void {
         expect($result)->toBeInstanceOf(WebhookResult::class);
         expect($result->isSkipped())->toBeTrue()
             ->and($result->message)->toContain('not found');
-    });
-});
-
-describe('SendCompletedHandler', function (): void {
-    it('can be instantiated', function (): void {
-        $handler = app(SendCompletedHandler::class);
-        expect($handler)->toBeInstanceOf(WebhookHandler::class);
-    });
-
-    it('returns skipped when instruction not found', function (): void {
-        $handler = app(SendCompletedHandler::class);
-
-        $payload = new EnrichedWebhookPayload(
-            event: 'send.completed',
-            rawPayload: ['id' => 'send_123'],
-            localPurchase: null,
-        );
-
-        $result = $handler->handle($payload);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
-    });
-});
-
-describe('SendRejectedHandler', function (): void {
-    it('can be instantiated', function (): void {
-        $handler = app(SendRejectedHandler::class);
-        expect($handler)->toBeInstanceOf(WebhookHandler::class);
-    });
-
-    it('returns skipped when instruction not found', function (): void {
-        $handler = app(SendRejectedHandler::class);
-
-        $payload = new EnrichedWebhookPayload(
-            event: 'send.rejected',
-            rawPayload: ['id' => 'send_123', 'rejection_reason' => 'Test reason'],
-            localPurchase: null,
-        );
-
-        $result = $handler->handle($payload);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
     });
 });

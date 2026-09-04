@@ -75,9 +75,10 @@ describe('WebhookRouter', function (): void {
         $router = new WebhookRouter;
         $handlers = $router->getHandlers();
 
-        expect($handlers)->toBeArray()
-            ->and($handlers)->toHaveKey('payout.success')
-            ->and($handlers)->toHaveKey('send_instruction.completed');
+        expect($handlers)->toBeArray()->toBeEmpty();
+        expect($router->hasHandler('payout.success'))->toBeTrue()
+            ->and($router->hasHandler('payment.chargeback_reversed'))->toBeTrue()
+            ->and($router->hasHandler('send_instruction.completed'))->toBeFalse();
     });
 
     it('replays pending refund events through the dispatcher fallback', function (): void {
@@ -176,7 +177,7 @@ describe('WebhookRetryManager', function (): void {
 
         $webhook = Webhook::forceCreate([
             'title' => 'Pending refund webhook',
-            'event' => 'purchase.pending_refund',
+            'event_type' => 'purchase.pending_refund',
             'events' => ['purchase.pending_refund'],
             'payload' => WebhookFactory::purchasePendingRefund([
                 'id' => 'purchase-pending-refund-123',
@@ -217,7 +218,7 @@ describe('WebhookRetryManager', function (): void {
         $webhook = OwnerContext::withOwner($owner, function () use ($owner, $purchaseId): Webhook {
             return Webhook::forceCreate([
                 'title' => 'Owned pending refund webhook',
-                'event' => 'purchase.pending_refund',
+                'event_type' => 'purchase.pending_refund',
                 'events' => ['purchase.pending_refund'],
                 'payload' => WebhookFactory::purchasePendingRefund([
                     'id' => $purchaseId,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
+use AIArmada\Chip\Enums\SendInstructionState;
 use Carbon\CarbonImmutable;
 
 final class SendInstructionData extends ChipData
@@ -16,6 +17,7 @@ final class SendInstructionData extends ChipData
         public readonly string $email,
         public readonly string $description,
         public readonly string $reference,
+        public readonly bool $send_recipient_receipt,
         public readonly ?string $receipt_url,
         public readonly ?string $slug,
         public readonly string $created_at,
@@ -30,14 +32,15 @@ final class SendInstructionData extends ChipData
             id: (int) $data['id'],
             bank_account_id: (int) $data['bank_account_id'],
             amount: (string) $data['amount'],
-            state: $data['state'] ?? 'received',
-            email: $data['email'],
-            description: $data['description'],
-            reference: $data['reference'],
+            state: SendInstructionState::from((string) $data['state'])->value,
+            email: (string) $data['email'],
+            description: (string) $data['description'],
+            reference: (string) $data['reference'],
+            send_recipient_receipt: (bool) $data['send_recipient_receipt'],
             receipt_url: $data['receipt_url'] ?? null,
             slug: $data['slug'] ?? null,
-            created_at: $data['created_at'],
-            updated_at: $data['updated_at'],
+            created_at: (string) $data['created_at'],
+            updated_at: (string) $data['updated_at'],
         );
     }
 
@@ -53,7 +56,9 @@ final class SendInstructionData extends ChipData
 
     public function getAmountInMinorUnits(): int
     {
-        return (int) (((float) $this->amount) * 100);
+        [$whole, $fraction] = array_pad(explode('.', mb_trim($this->amount), 2), 2, '0');
+
+        return ((int) $whole * 100) + (int) mb_str_pad(mb_substr($fraction, 0, 2), 2, '0');
     }
 
     public function isReceived(): bool
@@ -114,6 +119,7 @@ final class SendInstructionData extends ChipData
             'email' => $this->email,
             'description' => $this->description,
             'reference' => $this->reference,
+            'send_recipient_receipt' => $this->send_recipient_receipt,
             'receipt_url' => $this->receipt_url,
             'slug' => $this->slug,
             'created_at' => $this->created_at,

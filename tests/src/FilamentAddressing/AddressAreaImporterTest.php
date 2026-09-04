@@ -27,7 +27,7 @@ it('imports metadata and clears parent links through the core action', function 
         'source_id' => 'MY-10',
         'latitude' => '3.0738',
         'longitude' => '101.5183',
-        'metadata' => '{"source":"legacy"}',
+        'metadata' => '{"source":"import"}',
     ]);
 
     $importer([
@@ -42,7 +42,7 @@ it('imports metadata and clears parent links through the core action', function 
         'source_id' => 'MY-10-PETALING',
         'latitude' => '3.1073',
         'longitude' => '101.6067',
-        'metadata' => '{"source":"legacy"}',
+        'metadata' => '{"source":"import"}',
     ]);
 
     $importer([
@@ -68,7 +68,7 @@ it('imports metadata and clears parent links through the core action', function 
         ->where('source_id', 'MY-10-PETALING')
         ->firstOrFail();
 
-    expect($root->metadata)->toBe(['source' => 'legacy']);
+    expect($root->metadata)->toBe(['source' => 'import']);
     expect($child->parent_id)->toBeNull();
     expect($child->metadata)->toBe(['source' => 'updated']);
 });
@@ -88,7 +88,7 @@ it('surfaces core import failures as row import errors', function (): void {
         'source_id' => 'MY-10',
         'latitude' => '3.0738',
         'longitude' => '101.5183',
-        'metadata' => '{"source":"legacy"}',
+        'metadata' => '{"source":"import"}',
     ]);
 
     $importer([
@@ -103,7 +103,7 @@ it('surfaces core import failures as row import errors', function (): void {
         'source_id' => 'MY-10-PETALING',
         'latitude' => '3.1073',
         'longitude' => '101.6067',
-        'metadata' => '{"source":"legacy"}',
+        'metadata' => '{"source":"import"}',
     ]);
 
     expect(function () use ($importer): void {
@@ -119,7 +119,7 @@ it('surfaces core import failures as row import errors', function (): void {
             'source_id' => 'MY-10',
             'latitude' => '3.0738',
             'longitude' => '101.5183',
-            'metadata' => '{"source":"legacy"}',
+            'metadata' => '{"source":"import"}',
         ]);
     })->toThrow(RowImportFailedException::class, 'hierarchy cycle');
 });

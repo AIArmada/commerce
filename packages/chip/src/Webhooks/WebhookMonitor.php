@@ -52,9 +52,9 @@ class WebhookMonitor
         return Webhook::query()
             ->forOwner()
             ->where('created_at', '>=', $since)
-            ->selectRaw('event, COUNT(*) as count')
-            ->groupBy('event')
-            ->pluck('count', 'event')
+            ->selectRaw('event_type, COUNT(*) as count')
+            ->groupBy('event_type')
+            ->pluck('count', 'event_type')
             ->toArray();
     }
 

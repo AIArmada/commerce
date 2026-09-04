@@ -90,154 +90,21 @@ describe('ChipWebhookHandler verifyWebhook', function (): void {
 });
 
 describe('ChipWebhookHandler getEventType', function (): void {
-    it('returns explicit event_type when provided for pending capture payloads', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
+    it('returns the documented event_type without deriving it from status', function (): void {
+        $handler = new ChipWebhookHandler(
+            Mockery::mock(WebhookService::class),
+            Mockery::mock(ChipCollectService::class),
+        );
 
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest([
+        expect($handler->getEventType(createWebhookRequest([
             'event_type' => 'purchase.pending_capture',
             'status' => 'pending_capture',
-        ]);
+        ])))->toBe('purchase.pending_capture');
 
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('purchase.pending_capture');
-    });
-
-    it('returns explicit event_type when provided for payment failure payloads', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest([
-            'event_type' => 'purchase.payment_failure',
-            'status' => 'error',
-        ]);
-
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('purchase.payment_failure');
-    });
-
-    it('returns payment.paid for paid status', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['status' => 'paid']);
-
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('payment.paid');
-    });
-
-    it('returns payment.refunded for refunded status', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['status' => 'refunded']);
-
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('payment.refunded');
-    });
-
-    it('returns payment.cancelled for cancelled status', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['status' => 'cancelled']);
-
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('payment.cancelled');
-    });
-
-    it('returns payment.failed for error status', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['status' => 'error']);
-
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('payment.failed');
-    });
-
-    it('returns payment.failed for blocked status', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['status' => 'blocked']);
-
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('payment.failed');
-    });
-
-    it('returns payment.authorized for hold status', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['status' => 'hold']);
-
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('payment.authorized');
-    });
-
-    it('returns payment.authorized for preauthorized status', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['status' => 'preauthorized']);
-
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('payment.authorized');
-    });
-
-    it('returns payment.pending for pending_execute status', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['status' => 'pending_execute']);
-
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('payment.pending');
-    });
-
-    it('returns payment.pending for pending_charge status', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['status' => 'pending_charge']);
-
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('payment.pending');
-    });
-
-    it('returns purchase.pending_refund for pending_refund status', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['status' => 'pending_refund']);
-
-        $result = $handler->getEventType($request);
-
-        expect($result)->toBe('purchase.pending_refund');
+        expect($handler->getEventType(createWebhookRequest([
+            'event_type' => 'payment.refunded',
+            'status' => 'refunded',
+        ])))->toBe('payment.refunded');
     });
 
     it('returns unknown for invalid JSON', function (): void {
@@ -252,16 +119,16 @@ describe('ChipWebhookHandler getEventType', function (): void {
         expect($result)->toBe('unknown');
     });
 
-    it('returns payment.unknown for missing status', function (): void {
+    it('returns unknown when the event_type is missing', function (): void {
         $webhookService = Mockery::mock(WebhookService::class);
         $collectService = Mockery::mock(ChipCollectService::class);
 
         $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['id' => 'test']);
+        $request = createWebhookRequest(['id' => 'test', 'status' => 'paid']);
 
         $result = $handler->getEventType($request);
 
-        expect($result)->toBe('payment.unknown');
+        expect($result)->toBe('unknown');
     });
 });
 
@@ -270,7 +137,7 @@ describe('ChipWebhookHandler parseWebhook status mapping', function (): void {
         $payload = [
             'id' => 'purchase-captured-123',
             'event_type' => 'purchase.captured',
-            'status' => 'captured',
+            'status' => 'paid',
             'updated_on' => 1702819200,
         ];
 
@@ -311,6 +178,7 @@ describe('ChipWebhookHandler parseWebhook status mapping', function (): void {
     it('maps settled status to paid', function (): void {
         $payload = [
             'id' => 'purchase-settled-123',
+            'event_type' => 'purchase.settled',
             'status' => 'settled',
             'updated_on' => 1702819200,
         ];
@@ -324,13 +192,14 @@ describe('ChipWebhookHandler parseWebhook status mapping', function (): void {
         $handler = new ChipWebhookHandler($webhookService, $collectService);
         $result = $handler->parseWebhook(createWebhookRequest($payload));
 
-        expect($result->eventType)->toBe('payment.paid')
+        expect($result->eventType)->toBe('purchase.settled')
             ->and($result->status)->toBe(PaymentStatus::PAID);
     });
 
     it('maps chargeback status to disputed', function (): void {
         $payload = [
             'id' => 'purchase-chargeback-123',
+            'event_type' => 'payment.charged_back',
             'status' => 'chargeback',
             'updated_on' => 1702819200,
         ];
@@ -344,18 +213,18 @@ describe('ChipWebhookHandler parseWebhook status mapping', function (): void {
         $handler = new ChipWebhookHandler($webhookService, $collectService);
         $result = $handler->parseWebhook(createWebhookRequest($payload));
 
-        expect($result->eventType)->toBe('payment.disputed')
+        expect($result->eventType)->toBe('payment.charged_back')
             ->and($result->status)->toBe(PaymentStatus::DISPUTED);
     });
 });
 
 describe('ChipWebhookHandler isPaymentEvent', function (): void {
-    it('always returns true for CHIP webhooks', function (): void {
+    it('recognizes documented purchase and payment webhook events', function (): void {
         $webhookService = Mockery::mock(WebhookService::class);
         $collectService = Mockery::mock(ChipCollectService::class);
 
         $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = createWebhookRequest(['status' => 'paid']);
+        $request = createWebhookRequest(['event_type' => 'purchase.paid', 'status' => 'paid']);
 
         $result = $handler->isPaymentEvent($request);
 

@@ -54,7 +54,7 @@ final class PaymentMethodsWidget extends BaseWidget
                 $query->forOwner();
             }
         })
-            ->whereIn('status', ['paid', 'completed', 'captured'])
+            ->whereIn('status', ['paid', 'cleared', 'settled'])
             ->where('is_test', false)
             ->get();
 
@@ -100,13 +100,7 @@ final class PaymentMethodsWidget extends BaseWidget
 
     private function extractAmount(Purchase $purchase): int
     {
-        $total = $purchase->purchase['total'] ?? $purchase->purchase['amount'] ?? 0;
-
-        if (is_array($total)) {
-            return (int) ($total['amount'] ?? 0);
-        }
-
-        return (int) $total;
+        return (int) ($purchase->purchase['total'] ?? 0);
     }
 
     private function getMethodIcon(string $method): Heroicon

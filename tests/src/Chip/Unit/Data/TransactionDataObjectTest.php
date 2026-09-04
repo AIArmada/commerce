@@ -11,8 +11,8 @@ describe('TransactionData data object', function (): void {
             'country' => 'MY',
             'extra' => ['bank' => 'Maybank'],
             'attempts' => [
-                ['id' => 'attempt_1', 'successful' => false],
                 ['id' => 'attempt_2', 'successful' => true],
+                ['id' => 'attempt_1', 'successful' => false],
             ],
         ];
 

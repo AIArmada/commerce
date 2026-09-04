@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 class InventoryAllocationTest extends InventoryTestCase
 {
@@ -127,7 +127,7 @@ class InventoryAllocationTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'level_id' => $this->level->id,
             'cart_id' => 'cart-1',
-            'expires_at' => Carbon::now()->subHour(),
+            'expires_at' => CarbonImmutable::now()->subHour(),
         ]);
         InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -135,7 +135,7 @@ class InventoryAllocationTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'level_id' => $this->level->id,
             'cart_id' => 'cart-2',
-            'expires_at' => Carbon::now()->addHour(),
+            'expires_at' => CarbonImmutable::now()->addHour(),
         ]);
 
         $expired = InventoryAllocation::expired()->get();
@@ -152,7 +152,7 @@ class InventoryAllocationTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'level_id' => $this->level->id,
             'cart_id' => 'cart-1',
-            'expires_at' => Carbon::now()->addHour(),
+            'expires_at' => CarbonImmutable::now()->addHour(),
         ]);
         InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -160,7 +160,7 @@ class InventoryAllocationTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'level_id' => $this->level->id,
             'cart_id' => 'cart-2',
-            'expires_at' => Carbon::now()->subHour(),
+            'expires_at' => CarbonImmutable::now()->subHour(),
         ]);
 
         $active = InventoryAllocation::active()->get();
@@ -209,7 +209,7 @@ class InventoryAllocationTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'level_id' => $this->level->id,
             'cart_id' => 'cart-1',
-            'expires_at' => Carbon::now()->subMinutes(5),
+            'expires_at' => CarbonImmutable::now()->subMinutes(5),
         ]);
 
         expect($allocation->isExpired())->toBeTrue();
@@ -223,7 +223,7 @@ class InventoryAllocationTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'level_id' => $this->level->id,
             'cart_id' => 'cart-1',
-            'expires_at' => Carbon::now()->addHour(),
+            'expires_at' => CarbonImmutable::now()->addHour(),
         ]);
 
         expect($allocation->isExpired())->toBeFalse();
@@ -237,7 +237,7 @@ class InventoryAllocationTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'level_id' => $this->level->id,
             'cart_id' => 'cart-1',
-            'expires_at' => Carbon::now()->addHour(),
+            'expires_at' => CarbonImmutable::now()->addHour(),
         ]);
 
         expect($allocation->isActive())->toBeTrue();
@@ -251,7 +251,7 @@ class InventoryAllocationTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'level_id' => $this->level->id,
             'cart_id' => 'cart-1',
-            'expires_at' => Carbon::now()->subMinutes(5),
+            'expires_at' => CarbonImmutable::now()->subMinutes(5),
         ]);
 
         expect($allocation->isActive())->toBeFalse();
@@ -265,7 +265,7 @@ class InventoryAllocationTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'level_id' => $this->level->id,
             'cart_id' => 'cart-1',
-            'expires_at' => Carbon::now()->addMinutes(5),
+            'expires_at' => CarbonImmutable::now()->addMinutes(5),
         ]);
 
         $allocation->extend(120);
@@ -283,10 +283,10 @@ class InventoryAllocationTest extends InventoryTestCase
             'level_id' => $this->level->id,
             'cart_id' => 'cart-1',
             'quantity' => 10,
-            'expires_at' => Carbon::now()->addHour(),
+            'expires_at' => CarbonImmutable::now()->addHour(),
         ]);
 
         expect($allocation->quantity)->toBeInt();
-        expect($allocation->expires_at)->toBeInstanceOf(Carbon::class);
+        expect($allocation->expires_at)->toBeInstanceOf(CarbonImmutable::class);
     }
 }

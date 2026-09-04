@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Services;
 
 use AIArmada\Chip\Actions\Purchases\SyncPurchaseRefundState;
-use AIArmada\Chip\Data\BillingTemplateClientData;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Enums\WebhookEventType;
-use AIArmada\Chip\Events\BillingCancelled;
+use AIArmada\Chip\Events\PaymentChargebackReversed;
+use AIArmada\Chip\Events\PaymentChargedBack;
 use AIArmada\Chip\Events\PaymentRefunded;
+use AIArmada\Chip\Events\PayoutCreated;
 use AIArmada\Chip\Events\PayoutFailed;
 use AIArmada\Chip\Events\PayoutPending;
 use AIArmada\Chip\Events\PayoutSuccess;
 use AIArmada\Chip\Events\PurchaseCancelled;
 use AIArmada\Chip\Events\PurchaseCaptured;
+use AIArmada\Chip\Events\PurchaseCaptureFailure;
 use AIArmada\Chip\Events\PurchaseCreated;
 use AIArmada\Chip\Events\PurchaseHold;
 use AIArmada\Chip\Events\PurchasePaid;
@@ -29,8 +31,11 @@ use AIArmada\Chip\Events\PurchasePendingRefund;
 use AIArmada\Chip\Events\PurchasePendingRelease;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
+use AIArmada\Chip\Events\PurchaseRefundFailure;
 use AIArmada\Chip\Events\PurchaseReleased;
-use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
+use AIArmada\Chip\Events\PurchaseReleaseFailure;
+use AIArmada\Chip\Events\PurchaseSettled;
+use AIArmada\Chip\Events\PurchaseViewed;
 use AIArmada\CommerceSupport\Events\PaymentRefunded as CommercePaymentRefunded;
 use Illuminate\Support\Facades\Log;
 
@@ -72,6 +77,9 @@ class WebhookEventDispatcher
             WebhookEventType::PurchaseCreated => PurchaseCreated::dispatch($this->extractPurchase($payload), $payload),
             WebhookEventType::PurchasePaid => PurchasePaid::dispatch($this->extractPurchase($payload), $payload),
             WebhookEventType::PurchasePaymentFailure => PurchasePaymentFailure::dispatch($this->extractPurchase($payload), $payload),
+            WebhookEventType::PurchaseRefundFailure => PurchaseRefundFailure::dispatch($this->extractPurchase($payload), $payload),
+            WebhookEventType::PurchaseCaptureFailure => PurchaseCaptureFailure::dispatch($this->extractPurchase($payload), $payload),
+            WebhookEventType::PurchaseReleaseFailure => PurchaseReleaseFailure::dispatch($this->extractPurchase($payload), $payload),
             WebhookEventType::PurchaseCancelled => PurchaseCancelled::dispatch($this->extractPurchase($payload), $payload),
 
             // Pending events
@@ -91,16 +99,17 @@ class WebhookEventDispatcher
             // Recurring token events
             WebhookEventType::PurchaseRecurringTokenDeleted => PurchaseRecurringTokenDeleted::dispatch($this->extractPurchase($payload), $payload),
 
-            // Subscription events
-            WebhookEventType::PurchaseSubscriptionChargeFailure => PurchaseSubscriptionChargeFailure::dispatch($this->extractPurchase($payload), $payload),
+            // Additional purchase events
+            WebhookEventType::PurchaseViewed => PurchaseViewed::dispatch($this->extractPurchase($payload), $payload),
+            WebhookEventType::PurchaseSettled => PurchaseSettled::dispatch($this->extractPurchase($payload), $payload),
 
             // Refund events
             WebhookEventType::PaymentRefunded => $this->dispatchPaymentRefunded($payload),
-
-            // Billing events
-            WebhookEventType::BillingTemplateClientSubscriptionBillingCancelled => BillingCancelled::dispatch($this->extractBillingTemplateClient($payload), $payload),
+            WebhookEventType::PaymentChargedBack => PaymentChargedBack::dispatch($this->extractPayment($payload), $payload),
+            WebhookEventType::PaymentChargebackReversed => PaymentChargebackReversed::dispatch($this->extractPayment($payload), $payload),
 
             // Payout events
+            WebhookEventType::PayoutCreated => PayoutCreated::dispatch($this->extractPayout($payload), $payload),
             WebhookEventType::PayoutPending => PayoutPending::dispatch($this->extractPayout($payload), $payload),
             WebhookEventType::PayoutFailed => PayoutFailed::dispatch($this->extractPayout($payload), $payload),
             WebhookEventType::PayoutSuccess => PayoutSuccess::dispatch($this->extractPayout($payload), $payload),
@@ -117,7 +126,7 @@ class WebhookEventDispatcher
         $type = $payload['type'] ?? '';
         $eventType = $payload['event_type'] ?? '';
 
-        if ($type === 'purchase' || str_starts_with($eventType, 'purchase.')) {
+        if ($type === 'purchase' && WebhookEventType::fromString($eventType)?->isPurchaseEvent()) {
             return PurchaseData::from($payload);
         }
 
@@ -134,7 +143,7 @@ class WebhookEventDispatcher
         $type = $payload['type'] ?? '';
         $eventType = $payload['event_type'] ?? '';
 
-        if ($type === 'payment' || str_starts_with($eventType, 'payment.')) {
+        if ($type === 'payment' && WebhookEventType::fromString($eventType)?->isPaymentEvent()) {
             return PaymentData::fromWebhookPayload($payload);
         }
 
@@ -151,25 +160,8 @@ class WebhookEventDispatcher
         $type = $payload['type'] ?? '';
         $eventType = $payload['event_type'] ?? '';
 
-        if ($type === 'payout' || str_starts_with($eventType, 'payout.')) {
+        if ($type === 'payout' && WebhookEventType::fromString($eventType)?->isPayoutEvent()) {
             return PayoutData::from($payload);
-        }
-
-        return null;
-    }
-
-    /**
-     * Extract BillingTemplateClientData from payload.
-     *
-     * @param  array<string, mixed>  $payload
-     */
-    public function extractBillingTemplateClient(array $payload): ?BillingTemplateClientData
-    {
-        $type = $payload['type'] ?? '';
-        $eventType = $payload['event_type'] ?? '';
-
-        if ($type === 'billing_template_client' || str_starts_with($eventType, 'billing_template_client.')) {
-            return BillingTemplateClientData::from($payload);
         }
 
         return null;
@@ -203,28 +195,8 @@ class WebhookEventDispatcher
             amount: $payment->getAmountInCents(),
             currency: $payment->getCurrency(),
             reference: $payment->getReference(),
-            metadata: $this->refundMetadata($payload),
+            metadata: [],
             payload: $payload,
         );
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     * @return array<string, mixed>
-     */
-    private function refundMetadata(array $payload): array
-    {
-        $metadata = $payload['metadata'] ?? [];
-        $paymentMetadata = data_get($payload, 'payment.metadata');
-
-        if (is_array($metadata) && $metadata !== []) {
-            return $metadata;
-        }
-
-        if (is_array($paymentMetadata) && $paymentMetadata !== []) {
-            return $paymentMetadata;
-        }
-
-        return is_array($metadata) ? $metadata : [];
     }
 }

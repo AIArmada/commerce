@@ -43,7 +43,8 @@ describe('WebhookSimulator', function (): void {
         $simulator = WebhookSimulator::refunded();
         $payload = $simulator->getPayload();
 
-        expect($payload['status'])->toBe('refunded');
+        expect($payload['event_type'])->toBe('payment.refunded')
+            ->and($payload['type'])->toBe('payment');
     });
 
     it('can create cancelled simulator', function (): void {
@@ -53,11 +54,12 @@ describe('WebhookSimulator', function (): void {
         expect($payload['status'])->toBe('cancelled');
     });
 
-    it('can create expired simulator', function (): void {
-        $simulator = WebhookSimulator::expired();
+    it('can create settled simulator for an official purchase event', function (): void {
+        $simulator = WebhookSimulator::forEvent(WebhookEventType::PurchaseSettled);
         $payload = $simulator->getPayload();
 
-        expect($payload['status'])->toBe('expired');
+        expect($payload['event_type'])->toBe('purchase.settled')
+            ->and($payload['status'])->toBe('settled');
     });
 
     it('can create failed simulator', function (): void {
@@ -345,7 +347,7 @@ describe('WebhookSimulator', function (): void {
 
         $purchase->refresh();
 
-        expect($purchase->status)->toBe('partially_refunded')
+        expect($purchase->status)->toBe('refunded')
             ->and($purchase->refund_amount_minor)->toBe(2500)
             ->and($purchase->refundable_amount)->toBe(7500);
 

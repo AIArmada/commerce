@@ -61,7 +61,7 @@ final class ViewSendInstruction extends ViewRecord
                     }
 
                     try {
-                        $service->resendSendInstructionWebhook((string) $scopedRecord->getKey());
+                        $service->resendSendInstructionWebhook((int) $scopedRecord->getKey());
                         Notification::make()
                             ->title('Webhook resent successfully')
                             ->success()
@@ -74,45 +74,7 @@ final class ViewSendInstruction extends ViewRecord
                             ->send();
                     }
                 })
-                ->visible(fn (): bool => in_array((string) $this->getRecord()->getAttribute('state'), ['completed', 'processed', 'failed'], true)),
-
-            Actions\Action::make('cancel')
-                ->label('Cancel Payout')
-                ->icon('heroicon-o-x-circle')
-                ->color('danger')
-                ->requiresConfirmation()
-                ->modalHeading('Cancel Payout')
-                ->modalDescription('Are you sure you want to cancel this payout? This action cannot be undone.')
-                ->action(function (): void {
-                    $record = $this->getRecord();
-                    $service = app(ChipSendService::class);
-                    $scopedRecord = $this->resolveScopedSendInstruction($record);
-
-                    if ($scopedRecord === null) {
-                        Notification::make()
-                            ->title('Payout is outside your owner scope')
-                            ->danger()
-                            ->send();
-
-                        return;
-                    }
-
-                    try {
-                        $service->cancelSendInstruction((string) $scopedRecord->getKey());
-                        Notification::make()
-                            ->title('Payout cancelled successfully')
-                            ->success()
-                            ->send();
-                        $this->refreshFormData(['state']);
-                    } catch (Throwable $e) {
-                        Notification::make()
-                            ->title('Failed to cancel payout')
-                            ->body($e->getMessage())
-                            ->danger()
-                            ->send();
-                    }
-                })
-                ->visible(fn (): bool => in_array((string) $this->getRecord()->getAttribute('state'), ['queued', 'received', 'verifying'], true)),
+                ->visible(fn (): bool => true),
         ];
     }
 

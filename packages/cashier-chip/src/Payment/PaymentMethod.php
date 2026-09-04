@@ -36,7 +36,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     /**
      * Create a new PaymentMethod instance.
      *
-     * @param  array|StoredPaymentMethod  $recurringToken  The stored payment method or recurring token data
+     * @param  array|StoredPaymentMethod  $recurringToken  The stored payment method or CHIP recurring token resource
      * @return void
      */
     /**
@@ -50,11 +50,8 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
             $this->storedPaymentMethod = $recurringToken;
             $this->recurringToken = [
                 'id' => $recurringToken->recurringToken(),
-                'type' => $recurringToken->type,
-                'brand' => $recurringToken->brand,
-                'last_4' => $recurringToken->last_four,
-                'is_default' => $recurringToken->is_default,
-                'metadata' => $recurringToken->metadata,
+                'payment_method' => $recurringToken->type,
+                'description' => data_get($recurringToken->metadata, 'description'),
             ];
 
             return;
@@ -78,32 +75,25 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      */
     public function id(): ?string
     {
-        return $this->storedPaymentMethod?->recurringToken()
-            ?? $this->recurringToken['id']
-            ?? $this->recurringToken['recurring_token']
-            ?? null;
+        $id = $this->storedPaymentMethod?->recurringToken() ?? ($this->recurringToken['id'] ?? null);
+
+        return is_string($id) && $id !== '' ? $id : null;
     }
 
     /**
-     * Get the card brand (if available).
+     * Get the card brand when the local payment-method record has one.
      */
     public function brand(): ?string
     {
-        return $this->storedPaymentMethod?->brand
-            ?? $this->recurringToken['card_brand']
-            ?? $this->recurringToken['brand']
-            ?? null;
+        return $this->storedPaymentMethod?->brand;
     }
 
     /**
-     * Get the last four digits of the card (if available).
+     * Get the last four digits when the local payment-method record has them.
      */
     public function lastFour(): ?string
     {
-        return $this->storedPaymentMethod?->last_four
-            ?? $this->recurringToken['last_4']
-            ?? $this->recurringToken['card_last_4']
-            ?? null;
+        return $this->storedPaymentMethod?->last_four;
     }
 
     /**
@@ -111,7 +101,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      */
     public function expirationMonth(): ?int
     {
-        return $this->recurringToken['exp_month'] ?? null;
+        return null;
     }
 
     /**
@@ -119,11 +109,11 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      */
     public function expirationYear(): ?int
     {
-        return $this->recurringToken['exp_year'] ?? null;
+        return null;
     }
 
     /**
-     * Get the card brand for blade templates (alias for brand).
+     * Get the card brand.
      */
     public function cardBrand(): ?string
     {
@@ -131,7 +121,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Get the last four digits for blade templates (alias for lastFour).
+     * Get the last four digits.
      */
     public function cardLastFour(): ?string
     {
@@ -139,7 +129,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Get the expiration month for blade templates (alias for expirationMonth).
+     * Get the expiration month.
      */
     public function cardExpMonth(): ?int
     {
@@ -147,7 +137,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Get the expiration year for blade templates (alias for expirationYear).
+     * Get the expiration year.
      */
     public function cardExpYear(): ?int
     {
@@ -155,7 +145,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Get the CHIP token identifier (for blade template compatibility).
+     * Get the CHIP recurring token identifier.
      */
     public function chipToken(): ?string
     {
@@ -167,9 +157,9 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      */
     public function type(): string
     {
-        return $this->storedPaymentMethod?->type
-            ?? $this->recurringToken['type']
-            ?? 'card';
+        $type = $this->storedPaymentMethod?->type ?? ($this->recurringToken['payment_method'] ?? null);
+
+        return is_string($type) ? $type : '';
     }
 
     /**
@@ -214,11 +204,8 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
         if ($this->storedPaymentMethod instanceof StoredPaymentMethod) {
             return [
                 'id' => $this->storedPaymentMethod->recurringToken(),
-                'type' => $this->storedPaymentMethod->type,
-                'brand' => $this->storedPaymentMethod->brand,
-                'last_4' => $this->storedPaymentMethod->last_four,
-                'is_default' => $this->storedPaymentMethod->is_default,
-                'metadata' => $this->storedPaymentMethod->metadata,
+                'payment_method' => $this->storedPaymentMethod->type,
+                'description' => data_get($this->storedPaymentMethod->metadata, 'description'),
             ];
         }
 
@@ -231,6 +218,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     public function toArray(): array
     {
         return [
+            'id' => $this->id(),
             'type' => $this->type(),
             'brand' => $this->brand(),
             'last_4' => $this->lastFour(),

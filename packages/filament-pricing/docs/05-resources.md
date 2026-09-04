@@ -96,73 +96,9 @@ public static function getRelations(): array
 }
 ```
 
----
+## Promotions
 
-## PromotionResource (Fallback)
-
-Fallback resource for managing promotions when `aiarmada/promotions` is installed and `aiarmada/filament-promotions` is not.
-
-### Model
-
-```php
-protected static ?string $model = Promotion::class;
-```
-
-### Navigation
-
-```php
-protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-gift';
-protected static string|UnitEnum|null $navigationGroup = 'Pricing';
-protected static ?int $navigationSort = 2;
-protected static ?string $recordTitleAttribute = 'name';
-```
-
-### Navigation Badge
-
-Shows count of active promotions:
-
-```php
-public static function getNavigationBadge(): ?string
-{
-    $count = static::getEloquentQuery()
-        ->where('is_active', true)
-        ->count();
-
-    return $count ? (string) $count : null;
-}
-```
-
-### Duplicate Action
-
-Custom table action to duplicate promotions:
-
-```php
-Actions\Action::make('duplicate')
-    ->label('Duplicate')
-    ->icon('heroicon-o-document-duplicate')
-    ->authorize(fn (): bool => static::canCreate())
-    ->action(function (Promotion $record) {
-        $new = $record->replicate();
-        $new->name = $record->name . ' (Copy)';
-        $new->code = null;
-        $new->usage_count = 0;
-        $new->save();
-
-        return redirect(static::getUrl('edit', ['record' => $new]));
-    })
-```
-
-### Table Columns
-
-| Column | Type | Features |
-|--------|------|----------|
-| name | TextColumn | searchable, sortable, with code description |
-| type | TextColumn | badge, colored by type |
-| discount_value | TextColumn | formatted by type |
-| usage_count | TextColumn | shows limit if set |
-| is_active | IconColumn | boolean |
-| starts_at | TextColumn | datetime, placeholder |
-| ends_at | TextColumn | datetime, placeholder |
+Promotion administration is provided by `aiarmada/filament-promotions`. This package exposes only pricing resources and optional promotion statistics.
 
 ---
 

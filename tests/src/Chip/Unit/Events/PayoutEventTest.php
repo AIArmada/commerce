@@ -11,23 +11,29 @@ use AIArmada\Chip\Events\PayoutSuccess;
 describe('PayoutEvent base class', function (): void {
     function createPayoutPayload(array $overrides = []): array
     {
-        return array_merge([
+        return array_replace_recursive([
             'id' => 'payout_test123',
             'type' => 'payout',
             'created_on' => time(),
             'updated_on' => time(),
             'status' => 'success',
-            'amount' => 50000,
-            'currency' => 'MYR',
+            'payment' => [
+                'amount' => 50000,
+                'currency' => 'MYR',
+                'net_amount' => 50000,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'payout',
+                'is_outgoing' => true,
+            ],
+            'client' => [
+                'email' => 'john@example.com',
+                'full_name' => 'John Doe',
+            ],
+            'brand_id' => 'brand_123',
+            'transaction_data' => ['attempts' => []],
             'reference' => 'PAYOUT-REF-123',
-            'description' => 'Test payout',
-            'recipient_bank_account' => '1234567890',
-            'recipient_bank_code' => 'MAYBANK',
-            'recipient_name' => 'John Doe',
-            'company_id' => 'company_abc',
             'is_test' => true,
-            'metadata' => ['order_id' => 'ord-123'],
-            'error' => [],
         ], $overrides);
     }
 
@@ -54,7 +60,12 @@ describe('PayoutEvent base class', function (): void {
     it('can create PayoutFailed from payload', function (): void {
         $payload = createPayoutPayload([
             'status' => 'error',
-            'error' => ['message' => 'Insufficient funds', 'code' => 'INSUFFICIENT_FUNDS'],
+            'transaction_data' => [
+                'attempts' => [[
+                    'successful' => false,
+                    'error' => ['message' => 'Insufficient funds', 'code' => 'INSUFFICIENT_FUNDS'],
+                ]],
+            ],
         ]);
 
         $event = PayoutFailed::fromPayload($payload);
@@ -73,14 +84,14 @@ describe('PayoutEvent base class', function (): void {
     });
 
     it('provides correct getAmount', function (): void {
-        $payload = createPayoutPayload(['amount' => 75000]);
+        $payload = createPayoutPayload(['payment' => ['amount' => 75000]]);
         $event = PayoutSuccess::fromPayload($payload);
 
         expect($event->getAmount())->toBe(75000);
     });
 
     it('provides correct getCurrency', function (): void {
-        $payload = createPayoutPayload(['currency' => 'USD']);
+        $payload = createPayoutPayload(['payment' => ['currency' => 'USD']]);
         $event = PayoutSuccess::fromPayload($payload);
 
         expect($event->getCurrency())->toBe('USD');
@@ -101,17 +112,30 @@ describe('PayoutEvent base class', function (): void {
     });
 
     it('provides correct getRecipientName', function (): void {
-        $payload = createPayoutPayload(['recipient_name' => 'Jane Smith']);
+        $payload = createPayoutPayload([
+            'client' => [
+                'email' => 'jane@example.com',
+                'full_name' => 'Jane Smith',
+            ],
+        ]);
         $event = PayoutSuccess::fromPayload($payload);
 
         expect($event->getRecipientName())->toBe('Jane Smith');
     });
 
-    it('provides correct getRecipientBankAccount', function (): void {
-        $payload = createPayoutPayload(['recipient_bank_account' => '9876543210']);
+    it('provides documented card details', function (): void {
+        $payload = createPayoutPayload([
+            'recipient_card_country' => 'MY',
+            'recipient_card_brand' => 'visa',
+            'sender_name' => 'Commerce Ltd',
+            'execution_url' => 'https://example.test/payout',
+        ]);
         $event = PayoutSuccess::fromPayload($payload);
 
-        expect($event->getRecipientBankAccount())->toBe('9876543210');
+        expect($event->getRecipientCardCountry())->toBe('MY')
+            ->and($event->getRecipientCardBrand())->toBe('visa')
+            ->and($event->getSenderName())->toBe('Commerce Ltd')
+            ->and($event->getExecutionUrl())->toBe('https://example.test/payout');
     });
 
     it('correctly checks isTest', function (): void {
@@ -151,10 +175,24 @@ describe('PayoutFailed specific methods', function (): void {
             'created_on' => time(),
             'updated_on' => time(),
             'status' => 'error',
-            'amount' => 10000,
-            'currency' => 'MYR',
+            'payment' => [
+                'amount' => 10000,
+                'currency' => 'MYR',
+                'net_amount' => 10000,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'payout',
+                'is_outgoing' => true,
+            ],
+            'client' => ['email' => 'recipient@example.com'],
+            'brand_id' => 'brand_123',
+            'transaction_data' => [
+                'attempts' => [[
+                    'successful' => false,
+                    'error' => ['message' => 'Bank rejected transfer', 'code' => 'BANK_REJECTED'],
+                ]],
+            ],
             'is_test' => true,
-            'error' => ['message' => 'Bank rejected transfer', 'code' => 'BANK_REJECTED'],
         ];
 
         $event = PayoutFailed::fromPayload($payload);
@@ -170,10 +208,19 @@ describe('PayoutFailed specific methods', function (): void {
             'created_on' => time(),
             'updated_on' => time(),
             'status' => 'error',
-            'amount' => 10000,
-            'currency' => 'MYR',
+            'payment' => [
+                'amount' => 10000,
+                'currency' => 'MYR',
+                'net_amount' => 10000,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'payout',
+                'is_outgoing' => true,
+            ],
+            'client' => ['email' => 'recipient@example.com'],
+            'brand_id' => 'brand_123',
+            'transaction_data' => ['attempts' => []],
             'is_test' => true,
-            'error' => [],
         ];
 
         $event = PayoutFailed::fromPayload($payload);

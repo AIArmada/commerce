@@ -36,7 +36,11 @@ final class ChargeChipCustomer
 
         if (! $executed) {
             throw new IncompletePayment(
-                new Payment(PurchaseData::from(['id' => 'rate_limited', 'status' => 'failed'])),
+                new Payment(PurchaseData::from([
+                    'id' => 'rate_limited',
+                    'status' => 'error',
+                    'purchase' => ['currency' => config('cashier-chip.currency', 'MYR'), 'total' => 0],
+                ])),
                 'Rate limit exceeded. Please wait before making another charge.'
             );
         }
@@ -77,10 +81,6 @@ final class ChargeChipCustomer
 
         if (isset($options['reference'])) {
             $builder->reference($options['reference']);
-        }
-
-        if (isset($options['idempotency_key']) && is_string($options['idempotency_key']) && $options['idempotency_key'] !== '') {
-            $builder->idempotencyKey($options['idempotency_key']);
         }
 
         if ($metadata !== []) {

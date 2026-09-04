@@ -60,7 +60,7 @@ final class RetryWebhooksCommand extends Command
                 ['ID', 'Event', 'Retry Count', 'Last Error'],
                 $webhooks->map(fn ($w) => [
                     $w->id,
-                    $w->event,
+                    $w->event_type,
                     $w->retry_count,
                     Str::limit($w->last_error ?? 'N/A', 50),
                 ])->toArray()
@@ -79,7 +79,7 @@ final class RetryWebhooksCommand extends Command
         $failed = 0;
 
         foreach ($webhooks as $webhook) {
-            $this->line("Retrying webhook {$webhook->id} ({$webhook->event})...");
+            $this->line("Retrying webhook {$webhook->id} ({$webhook->event_type})...");
 
             try {
                 $result = $retryManager->retry($webhook);

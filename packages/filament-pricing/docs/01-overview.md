@@ -13,12 +13,12 @@ The `aiarmada/filament-pricing` package is the Filament admin adapter for `aiarm
 - Filament resources for price lists and their related prices or tiers
 - Pricing settings and simulator pages
 - Pricing dashboard widgets and admin navigation
-- The fallback promotions admin resource when `aiarmada/promotions` is installed without `aiarmada/filament-promotions`
+- Promotion-aware pricing statistics when `aiarmada/promotions` is installed
 
 ## What this package does not own
 
 - Price calculation rules, persistence, or pricing settings storage; those stay in `aiarmada/pricing`
-- Dedicated promotions admin when `aiarmada/filament-promotions` is installed
+- Promotions administration provided by `aiarmada/filament-promotions`
 - Product or customer domain records
 
 ## Related packages
@@ -30,7 +30,7 @@ The `aiarmada/filament-pricing` package is the Filament admin adapter for `aiarm
 
 ## Main models services or surfaces
 
-- **Resources** — `PriceListResource`, plus fallback `PromotionResource` only when the dedicated promotions UI is absent
+- **Resources** — `PriceListResource`
 - **Pages** — `ManagePricingSettings`, `PriceSimulator`
 - **Widgets** — `PricingStatsWidget`
 - **Relation managers** — `PricesRelationManager`, `TiersRelationManager`
@@ -39,14 +39,14 @@ The `aiarmada/filament-pricing` package is the Filament admin adapter for `aiarm
 
 - The package should follow the owner-scoping behavior defined by `aiarmada/pricing` and `commerce-support`
 - Filament option lists improve usability, but submitted IDs in simulator or admin actions still need the backing domain package to enforce owner-safe reads and writes
-- Promotions UI ownership is explicit: fallback mode belongs to this package only until `aiarmada/filament-promotions` is present
+- Promotions administration is owned by `aiarmada/filament-promotions`; this package only reports optional promotion statistics
 
 ## Features
 
 - **Price List Management** - Full CRUD for price lists with scheduling and priority
 - **Prices Relation Manager** - Manage individual prices within price lists
 - **Price Tiers Relation Manager** - Configure quantity-based tier pricing
-- **Promotion Management** - Fallback promotion admin when `aiarmada/promotions` is installed and `aiarmada/filament-promotions` is not
+- **Promotion Statistics** - Optional promotion counts and usage statistics when `aiarmada/promotions` is installed
 - **Price Simulator** - Interactive tool to test price calculations (requires `aiarmada/products`)
 - **Pricing Settings Page** - Configure pricing defaults and features
 - **Stats Widget** - Dashboard overview of active price lists and promotions
@@ -54,16 +54,13 @@ The `aiarmada/filament-pricing` package is the Filament admin adapter for `aiarm
 
 ## Promotions UI Handoff
 
-The pricing plugin supports two valid promotions UI modes:
-
-- **Fallback mode** — when only `aiarmada/promotions` is installed, Filament Pricing registers its legacy `PromotionResource` under the Pricing navigation.
-- **Dedicated mode** — when `aiarmada/filament-promotions` is also installed, the dedicated promotions plugin owns the promotions navigation and resource. Filament Pricing skips its fallback `PromotionResource` to avoid duplicate admin surfaces.
+Promotion administration is provided by the dedicated `aiarmada/filament-promotions` package. Filament Pricing does not register a promotion resource; it may display promotion statistics when `aiarmada/promotions` is installed.
 
 ## Plugin Architecture
 
 The package uses Filament's plugin architecture:
 
-- **Resources**: `PriceListResource`, `PromotionResource` (fallback only)
+- **Resources**: `PriceListResource`
 - **Pages**: `ManagePricingSettings`, `PriceSimulator`
 - **Widgets**: `PricingStatsWidget`
 - **Relation Managers**: `PricesRelationManager`, `TiersRelationManager`
@@ -75,7 +72,6 @@ All resources and pages are grouped under the "Pricing" navigation group:
 | Item | Icon | Sort Order |
 |------|------|------------|
 | Price Lists | currency-dollar | 1 |
-| Promotions (fallback only) | gift | 2 |
 | Price Simulator | calculator | 99 |
 | Pricing Settings | currency-dollar | 10 (Settings group) |
 
@@ -90,7 +86,7 @@ All resources and pages are grouped under the "Pricing" navigation group:
 ### Optional
 
 - `aiarmada/promotions` - For promotion management features
-- `aiarmada/filament-promotions` - For the dedicated promotions admin surface
+- `aiarmada/filament-promotions` - For the promotions admin surface
 - `aiarmada/products` - For price simulator functionality
 - `aiarmada/customers` - For customer-specific pricing in simulator
 
@@ -99,12 +95,7 @@ All resources and pages are grouped under the "Pricing" navigation group:
 The plugin automatically enables features based on installed packages:
 
 ```php
-// PromotionResource - only in fallback mode
-$hasDedicatedPromotionsPlugin = class_exists('\\AIArmada\\FilamentPromotions\\FilamentPromotionsPlugin');
-
-if (class_exists('\\AIArmada\\Promotions\\Models\\Promotion') && ! $hasDedicatedPromotionsPlugin) {
-    $resources[] = Resources\PromotionResource::class;
-}
+// Promotion administration is registered by aiarmada/filament-promotions.
 
 // PriceSimulator - only if products package is installed
 if (class_exists('\\AIArmada\\Products\\Models\\Product')) {

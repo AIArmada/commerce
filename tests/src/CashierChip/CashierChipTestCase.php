@@ -103,10 +103,8 @@ abstract class CashierChipTestCase extends Orchestra
 
         // Configure CHIP settings for testing
         $app['config']->set('chip.collect.api_key', 'test_secret_key');
-        $app['config']->set('chip.collect.secret_key', 'test_secret_key');
         $app['config']->set('chip.collect.brand_id', 'test_brand_id');
-        $app['config']->set('chip.collect.environment', 'sandbox');
-        $app['config']->set('chip.is_sandbox', true);
+        $app['config']->set('chip.environment', 'sandbox');
         $app['config']->set('chip.integrations.docs.paid_doc_type', null);
 
         // Configure Cashier CHIP settings
@@ -156,6 +154,9 @@ abstract class CashierChipTestCase extends Orchestra
 
     protected function createUser(array $attributes = []): User
     {
+        $chipCustomerId = $attributes['chip_id'] ?? null;
+        unset($attributes['chip_id']);
+
         $user = User::create(array_merge([
             'name' => 'Test User',
             'email' => 'test-' . uniqid() . '@example.com',
@@ -171,7 +172,16 @@ abstract class CashierChipTestCase extends Orchestra
             }
         });
 
+        if (is_string($chipCustomerId) && $chipCustomerId !== '') {
+            Cashier::chipCustomerDirectory()->link($user, $chipCustomerId);
+        }
+
         return $user;
+    }
+
+    protected function linkChipCustomer(User $user, string $chipCustomerId): void
+    {
+        Cashier::chipCustomerDirectory()->link($user, $chipCustomerId);
     }
 
     /**

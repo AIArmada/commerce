@@ -16,34 +16,32 @@ class PaymentMethodTest extends CashierChipTestCase
         $owner = new User;
         $tokenData = [
             'id' => 'tok_123',
-            'recurring_token' => 'tok_123',
-            'card_brand' => 'Visa',
-            'brand' => 'Visa',
-            'last_4' => '4242',
-            'card_last_4' => '4242',
-            'exp_month' => 12,
-            'exp_year' => 2030,
-            'type' => 'card',
+            'type' => 'client_recurring_token',
+            'payment_method' => 'visa',
+            'description' => '**** **** **** 4242',
+            'created_on' => 1704067200,
+            'updated_on' => 1704067200,
         ];
 
         $paymentMethod = new PaymentMethod($owner, $tokenData);
 
         $this->assertEquals('tok_123', $paymentMethod->id());
-        $this->assertEquals('Visa', $paymentMethod->brand());
-        $this->assertEquals('4242', $paymentMethod->lastFour());
-        $this->assertEquals(12, $paymentMethod->expirationMonth());
-        $this->assertEquals(2030, $paymentMethod->expirationYear());
-        $this->assertEquals('card', $paymentMethod->type());
+        $this->assertNull($paymentMethod->brand());
+        $this->assertNull($paymentMethod->lastFour());
+        $this->assertNull($paymentMethod->expirationMonth());
+        $this->assertNull($paymentMethod->expirationYear());
+        $this->assertEquals('visa', $paymentMethod->type());
         $this->assertSame($owner, $paymentMethod->owner());
         $this->assertEquals($tokenData, $paymentMethod->asChipRecurringToken());
-        $this->assertEquals($tokenData, $paymentMethod->toArray());
-        $this->assertEquals(json_encode($tokenData), $paymentMethod->toJson());
+        $this->assertSame('tok_123', $paymentMethod->toArray()['id']);
+        $this->assertSame('visa', $paymentMethod->toArray()['type']);
+        $this->assertEquals(json_encode($paymentMethod->toArray()), $paymentMethod->toJson());
 
         // Blade aliases
-        $this->assertEquals('Visa', $paymentMethod->cardBrand());
-        $this->assertEquals('4242', $paymentMethod->cardLastFour());
-        $this->assertEquals(12, $paymentMethod->cardExpMonth());
-        $this->assertEquals(2030, $paymentMethod->cardExpYear());
+        $this->assertNull($paymentMethod->cardBrand());
+        $this->assertNull($paymentMethod->cardLastFour());
+        $this->assertNull($paymentMethod->cardExpMonth());
+        $this->assertNull($paymentMethod->cardExpYear());
         $this->assertEquals('tok_123', $paymentMethod->chipToken());
     }
 

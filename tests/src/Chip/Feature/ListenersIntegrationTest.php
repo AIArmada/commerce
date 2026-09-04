@@ -48,12 +48,7 @@ describe('StoreWebhookData Listener', function (): void {
             $initialPurchaseCount = Purchase::count();
 
             $event = WebhookReceived::fromPayload([
-                'id' => 'payout-123',
-                'type' => 'payout',  // Not a purchase
-                'status' => 'success',
-                'event_type' => 'payout.success',
-                'created_on' => time(),
-                'updated_on' => time(),
+                ...WebhookFactory::payoutSuccess(['id' => 'payout-123']),
             ]);
 
             $this->listener->handle($event);
@@ -66,7 +61,7 @@ describe('StoreWebhookData Listener', function (): void {
         it('skips when no id in payload', function (): void {
             Log::shouldReceive('warning')
                 ->once()
-                ->with('CHIP: No purchase ID in webhook payload');
+                ->with('CHIP: Purchase resource must contain a type and ID');
 
             // Use eventType directly in constructor to bypass PurchaseData validation
             $event = new WebhookReceived(
@@ -87,11 +82,10 @@ describe('StoreWebhookData Listener', function (): void {
 
         it('skips when type is not purchase', function (): void {
             $event = new WebhookReceived(
-                eventType: 'billing_template.created',
+                eventType: 'unknown.event',
                 payload: [
-                    'id' => 'billing-template-123',
-                    'type' => 'billing_template',
-                    'status' => 'active',
+                    'id' => 'unknown-123',
+                    'type' => 'unknown_resource',
                     'created_on' => time(),
                     'updated_on' => time(),
                 ],

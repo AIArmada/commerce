@@ -18,7 +18,6 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Facades\Config;
 use UnitEnum;
 
 /**
@@ -70,7 +69,6 @@ final class StackingConfigurationPage extends Page implements HasForms
             'mode' => config('vouchers.stacking.mode', 'sequential'),
             'auto_optimize' => config('vouchers.stacking.auto_optimize', false),
             'auto_replace' => config('vouchers.stacking.auto_replace', true),
-            'max_vouchers' => config('vouchers.cart.max_vouchers_per_cart', 3),
             'rules' => config('vouchers.stacking.rules', []),
         ]);
     }
@@ -89,14 +87,6 @@ final class StackingConfigurationPage extends Page implements HasForms
                     ])
                     ->required()
                     ->helperText('How multiple vouchers are applied to the cart'),
-
-                TextInput::make('max_vouchers')
-                    ->label('Max Vouchers per Cart')
-                    ->numeric()
-                    ->minValue(1)
-                    ->maxValue(10)
-                    ->required()
-                    ->helperText('Maximum number of vouchers that can be stacked'),
 
                 Toggle::make('auto_optimize')
                     ->label('Auto-Optimize')

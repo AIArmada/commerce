@@ -106,7 +106,7 @@ it('scopes filament resource queries to the current owner', function (): void {
             'is_test' => false,
             'owner_type' => $ownerA->getMorphClass(),
             'owner_id' => (string) $ownerA->getKey(),
-            'purchase' => ['amount' => 1000],
+            'purchase' => ['total' => 1000],
         ]);
 
         forcePurchase([
@@ -114,7 +114,7 @@ it('scopes filament resource queries to the current owner', function (): void {
             'is_test' => false,
             'owner_type' => $ownerB->getMorphClass(),
             'owner_id' => (string) $ownerB->getKey(),
-            'purchase' => ['amount' => 2000],
+            'purchase' => ['total' => 2000],
         ]);
 
         forcePurchase([
@@ -122,7 +122,7 @@ it('scopes filament resource queries to the current owner', function (): void {
             'is_test' => false,
             'owner_type' => null,
             'owner_id' => null,
-            'purchase' => ['amount' => 3000],
+            'purchase' => ['total' => 3000],
         ]);
     });
 
@@ -134,14 +134,14 @@ it('computes payment method breakdown without including test mode purchases', fu
         forcePurchase([
             'status' => 'paid',
             'is_test' => false,
-            'purchase' => ['amount' => 1000],
+            'purchase' => ['total' => 1000],
             'payment' => ['payment_type' => 'fpx'],
         ]);
 
         forcePurchase([
             'status' => 'paid',
             'is_test' => true,
-            'purchase' => ['amount' => 9999],
+            'purchase' => ['total' => 9999],
             'payment' => ['payment_type' => 'card'],
         ]);
     });
@@ -172,14 +172,14 @@ it('generates revenue data for the last 30 days', function (): void {
             'status' => 'paid',
             'is_test' => false,
             'created_on' => $today->copy()->startOfDay()->getTimestamp(),
-            'purchase' => ['amount' => 1000],
+            'purchase' => ['total' => 1000],
         ]);
 
         forcePurchase([
             'status' => 'paid',
             'is_test' => false,
             'created_on' => $today->copy()->endOfDay()->getTimestamp(),
-            'purchase' => ['amount' => 2000],
+            'purchase' => ['total' => 2000],
         ]);
     });
 
@@ -248,7 +248,7 @@ it('resource rejects cross-tenant reads', function (): void {
             'is_test' => false,
             'owner_type' => $ownerA->getMorphClass(),
             'owner_id' => (string) $ownerA->getKey(),
-            'purchase' => ['amount' => 1000],
+            'purchase' => ['total' => 1000],
         ]);
 
         forcePurchase([
@@ -257,7 +257,7 @@ it('resource rejects cross-tenant reads', function (): void {
             'is_test' => false,
             'owner_type' => $ownerB->getMorphClass(),
             'owner_id' => (string) $ownerB->getKey(),
-            'purchase' => ['amount' => 2000],
+            'purchase' => ['total' => 2000],
         ]);
     });
 
@@ -339,7 +339,7 @@ it('widget metrics reject cross-tenant data', function (): void {
             'owner_type' => $ownerA->getMorphClass(),
             'owner_id' => (string) $ownerA->getKey(),
             'created_on' => $today->getTimestamp(),
-            'purchase' => ['amount' => 5000],
+            'purchase' => ['total' => 5000],
             'payment' => ['payment_type' => 'fpx'],
         ]);
 
@@ -349,7 +349,7 @@ it('widget metrics reject cross-tenant data', function (): void {
             'owner_type' => $ownerB->getMorphClass(),
             'owner_id' => (string) $ownerB->getKey(),
             'created_on' => $today->getTimestamp(),
-            'purchase' => ['amount' => 10000],
+            'purchase' => ['total' => 10000],
             'payment' => ['payment_type' => 'card'],
         ]);
     });
@@ -409,7 +409,7 @@ it('renders chip stats using explicit global context when no owner is resolved',
             'status' => 'paid',
             'is_test' => false,
             'created_on' => now()->getTimestamp(),
-            'purchase' => ['amount' => 1000],
+            'purchase' => ['total' => 1000],
             'payment' => ['payment_type' => 'fpx'],
         ]);
     });
@@ -431,7 +431,7 @@ it('renders revenue chart using explicit global context when no owner is resolve
             'status' => 'paid',
             'is_test' => false,
             'created_on' => now()->getTimestamp(),
-            'purchase' => ['amount' => 2000],
+            'purchase' => ['total' => 2000],
         ]);
     });
 
@@ -455,14 +455,14 @@ it('builds recent transactions query using explicit global context when no owner
             'status' => 'paid',
             'is_test' => false,
             'created_on' => now()->getTimestamp(),
-            'purchase' => ['amount' => 1000],
+            'purchase' => ['total' => 1000],
         ]);
 
         forcePurchase([
             'status' => 'paid',
             'is_test' => true,
             'created_on' => now()->getTimestamp(),
-            'purchase' => ['amount' => 9000],
+            'purchase' => ['total' => 9000],
         ]);
     });
 

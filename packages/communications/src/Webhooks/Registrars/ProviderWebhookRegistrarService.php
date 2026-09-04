@@ -29,17 +29,7 @@ final class ProviderWebhookRegistrarService implements ProviderWebhookRegistrar
             return $config['secret'];
         }
 
-        $secret = config("services.webhooks.{$provider}.secret");
-
-        if (is_string($secret) && $secret !== '') {
-            return $secret;
-        }
-
-        $fallback = config('services.webhooks.secret');
-
-        return is_string($fallback) && $fallback !== ''
-            ? $fallback
-            : null;
+        return null;
     }
 
     public function normalizeProvider(string $provider): string

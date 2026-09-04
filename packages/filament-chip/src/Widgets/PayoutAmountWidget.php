@@ -28,7 +28,7 @@ final class PayoutAmountWidget extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Payouts (MYR)',
+                    'label' => sprintf('Payouts (%s)', config('filament-chip.default_currency', 'MYR')),
                     'data' => $data['amounts'],
                     'backgroundColor' => 'rgba(16, 185, 129, 0.2)',
                     'borderColor' => 'rgb(16, 185, 129)',
@@ -59,7 +59,7 @@ final class PayoutAmountWidget extends ChartWidget
                 $query->forOwner();
             }
         })
-            ->whereIn('state', ['completed', 'processed'])
+            ->where('state', 'completed')
             ->whereBetween('created_at', [$start, $end])
             ->selectRaw('DATE(created_at) as day, SUM(amount) as total')
             ->groupBy('day')

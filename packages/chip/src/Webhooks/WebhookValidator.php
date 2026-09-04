@@ -9,7 +9,7 @@ use AIArmada\Chip\Services\WebhookService;
 use Illuminate\Http\Request;
 
 /**
- * Backwards-compatible webhook validator.
+ * Public webhook validator facade.
  *
  * Signature verification is delegated to WebhookService.
  */

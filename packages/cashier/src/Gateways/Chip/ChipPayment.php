@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Http\RedirectResponse;
 use InvalidArgumentException;
@@ -69,22 +70,21 @@ class ChipPayment implements PaymentContract
         }
 
         if ($this->payment instanceof PaymentData) {
-            return in_array($this->payment->status, [
-                'pending',
-                'pending_execute',
-                'pending_refund',
-            ], true);
+            return ! $this->payment->isPaid();
         }
 
         // CHIP pending statuses
-        return in_array($this->payment->status, [
-            'created',
-            'pending_execute',
-            'pending_capture',
-            'pending_charge',
-            'pending_refund',
-            'pending_release',
-        ]);
+        return in_array(PurchaseStatus::from($this->payment->status), [
+            PurchaseStatus::CREATED,
+            PurchaseStatus::SENT,
+            PurchaseStatus::VIEWED,
+            PurchaseStatus::OVERDUE,
+            PurchaseStatus::PENDING_EXECUTE,
+            PurchaseStatus::PENDING_CAPTURE,
+            PurchaseStatus::PENDING_CHARGE,
+            PurchaseStatus::PENDING_REFUND,
+            PurchaseStatus::PENDING_RELEASE,
+        ], true);
     }
 
     /**
@@ -97,11 +97,11 @@ class ChipPayment implements PaymentContract
         }
 
         if ($this->payment instanceof PaymentData) {
-            return in_array($this->payment->status, ['paid', 'cleared', 'settled', 'refunded'], true);
+            return $this->payment->isPaid();
         }
 
         // CHIP paid statuses
-        return in_array($this->payment->status, ['paid', 'cleared', 'settled']);
+        return PurchaseStatus::from($this->payment->status)->isSuccessful();
     }
 
     /**
@@ -114,11 +114,11 @@ class ChipPayment implements PaymentContract
         }
 
         if ($this->payment instanceof PaymentData) {
-            return in_array($this->payment->status, ['failed', 'error', 'blocked'], true);
+            return false;
         }
 
         // CHIP failure statuses
-        return in_array($this->payment->status, ['error', 'blocked']);
+        return in_array(PurchaseStatus::from($this->payment->status), [PurchaseStatus::ERROR, PurchaseStatus::BLOCKED], true);
     }
 
     /**
@@ -131,10 +131,10 @@ class ChipPayment implements PaymentContract
         }
 
         if ($this->payment instanceof PaymentData) {
-            return $this->payment->status === 'expired';
+            return false;
         }
 
-        return $this->payment->status === 'expired';
+        return PurchaseStatus::from($this->payment->status) === PurchaseStatus::EXPIRED;
     }
 
     /**
@@ -147,10 +147,10 @@ class ChipPayment implements PaymentContract
         }
 
         if ($this->payment instanceof PaymentData) {
-            return in_array($this->payment->status, ['cancelled', 'canceled'], true);
+            return false;
         }
 
-        return $this->payment->status === 'cancelled';
+        return in_array(PurchaseStatus::from($this->payment->status), [PurchaseStatus::CANCELLED, PurchaseStatus::RELEASED], true);
     }
 
     /**
@@ -171,10 +171,10 @@ class ChipPayment implements PaymentContract
         }
 
         if ($this->payment instanceof PaymentData) {
-            return $this->payment->status === 'refunded' || $this->payment->payment_type === 'refund';
+            return $this->payment->payment_type === 'refund';
         }
 
-        return $this->payment->status === 'refunded';
+        return PurchaseStatus::from($this->payment->status) === PurchaseStatus::REFUNDED;
     }
 
     /**
@@ -187,10 +187,10 @@ class ChipPayment implements PaymentContract
         }
 
         if ($this->payment instanceof PaymentData) {
-            return $this->payment->status === 'hold';
+            return false;
         }
 
-        return $this->payment->status === 'hold';
+        return PurchaseStatus::from($this->payment->status) === PurchaseStatus::HOLD;
     }
 
     /**
@@ -206,7 +206,7 @@ class ChipPayment implements PaymentContract
             return false;
         }
 
-        return $this->payment->status === 'preauthorized';
+        return PurchaseStatus::from($this->payment->status) === PurchaseStatus::PREAUTHORIZED;
     }
 
     /**
@@ -231,8 +231,13 @@ class ChipPayment implements PaymentContract
             return false;
         }
 
-        // Requires redirect if created/pending and has checkout URL
-        return in_array($this->payment->status, ['created', 'viewed'])
+        // CHIP provides a checkout URL while the purchase can still be paid.
+        return in_array(PurchaseStatus::from($this->payment->status), [
+            PurchaseStatus::CREATED,
+            PurchaseStatus::SENT,
+            PurchaseStatus::VIEWED,
+            PurchaseStatus::OVERDUE,
+        ], true)
             && ! empty($this->payment->checkout_url);
     }
 
@@ -345,7 +350,9 @@ class ChipPayment implements PaymentContract
         }
 
         if ($this->payment instanceof PaymentData) {
-            return $this->payment->status ?? ($this->payment->payment_type === 'refund' ? 'refunded' : 'processing');
+            return $this->payment->payment_type === 'refund'
+                ? 'refunded'
+                : ($this->payment->isPaid() ? 'paid' : 'processing');
         }
 
         return $this->payment->status;

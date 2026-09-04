@@ -446,7 +446,7 @@ describe('ChipCollectService Purchase Management', function (): void {
         ];
 
         $this->client->shouldReceive('get')
-            ->with('payment_methods/?brand_id=test_brand&currency=MYR')
+            ->with('payment_methods/?brand_id=test_brand&currency=MYR&amount=1000')
             ->andReturn($paymentMethods);
 
         $result = $this->service->getPaymentMethods(['brand_id' => 'test_brand', 'currency' => 'MYR']);
@@ -466,7 +466,7 @@ describe('ChipCollectService Purchase Management', function (): void {
             ->andReturn('configured_brand_id');
 
         $this->client->shouldReceive('get')
-            ->with('payment_methods/?brand_id=configured_brand_id&currency=MYR')
+            ->with('payment_methods/?brand_id=configured_brand_id&currency=MYR&amount=1000')
             ->andReturn($paymentMethods);
 
         $result = $this->service->getPaymentMethods();
@@ -486,7 +486,7 @@ describe('ChipCollectService Purchase Management', function (): void {
             ->andReturn('configured_brand_id');
 
         $this->client->shouldReceive('get')
-            ->with('payment_methods/?brand_id=override_brand&currency=SGD')
+            ->with('payment_methods/?brand_id=override_brand&currency=SGD&amount=1000')
             ->andReturn($paymentMethods);
 
         $result = $this->service->getPaymentMethods(['brand_id' => 'override_brand', 'currency' => 'SGD']);
@@ -505,7 +505,7 @@ describe('ChipCollectService Purchase Management', function (): void {
 
         $this->client->shouldReceive('get')
             ->once()
-            ->with('payment_methods/?brand_id=test_brand&currency=MYR')
+            ->with('payment_methods/?brand_id=test_brand&currency=MYR&amount=1000')
             ->andReturn($paymentMethods);
 
         $cache->shouldReceive('remember')
@@ -656,11 +656,11 @@ describe('ChipCollectService Purchase Actions', function (): void {
         $this->client->shouldReceive('post')
             ->once()
             ->with('purchases/purchase_123/capture/', [])
-            ->andReturn(chipCollectPurchaseResponse(['status' => 'captured']));
+            ->andReturn(chipCollectPurchaseResponse(['status' => 'paid']));
 
         $purchase = $this->service->capturePurchase('purchase_123');
 
-        expect($purchase->status)->toBe('captured');
+        expect($purchase->status)->toBe('paid');
     });
 
     it('can release a purchase', function (): void {
@@ -717,7 +717,7 @@ describe('ChipCollectService Account & Reporting', function (): void {
     it('retrieves account balance', function (): void {
         $this->client->shouldReceive('get')
             ->once()
-            ->with('account/balance/')
+            ->with('account/json/balance/')
             ->andReturn(['balance' => 10000]);
 
         expect($this->service->getAccountBalance())->toBe(['balance' => 10000]);
@@ -726,7 +726,7 @@ describe('ChipCollectService Account & Reporting', function (): void {
     it('retrieves account turnover with filters', function (): void {
         $this->client->shouldReceive('get')
             ->once()
-            ->with('account/turnover/?date_from=2024-01-01')
+            ->with('account/json/turnover/?date_from=2024-01-01')
             ->andReturn(['turnover' => []]);
 
         expect($this->service->getAccountTurnover(['date_from' => '2024-01-01']))->toBe(['turnover' => []]);
@@ -748,14 +748,13 @@ describe('ChipCollectService Account & Reporting', function (): void {
         $this->client->shouldReceive('get')
             ->once()
             ->with('company_statements/?status=active')
-            ->andReturn(['data' => $payload, 'meta' => ['total' => 1]]);
+            ->andReturn(['results' => $payload, 'next' => null, 'previous' => null]);
 
         $statements = $this->service->listCompanyStatements(['status' => 'active']);
 
-        expect($statements)->toHaveKey('data');
-        expect($statements['data'][0])->toBeInstanceOf(CompanyStatementData::class);
-        expect($statements['data'][0]->status)->toBe('queued');
-        expect($statements['meta']['total'])->toBe(1);
+        expect($statements)->toHaveKey('results');
+        expect($statements['results'][0])->toBeInstanceOf(CompanyStatementData::class);
+        expect($statements['results'][0]->status)->toBe('queued');
     });
 
     it('retrieves a specific company statement', function (): void {

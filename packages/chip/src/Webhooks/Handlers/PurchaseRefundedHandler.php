@@ -46,10 +46,12 @@ class PurchaseRefundedHandler implements WebhookHandler
      */
     private function hasRefundPaymentPayload(array $payload): bool
     {
-        if (isset($payload['payment']) && is_array($payload['payment'])) {
-            return isset($payload['payment']['amount'], $payload['payment']['currency']);
-        }
-
-        return isset($payload['amount'], $payload['currency']);
+        return ($payload['type'] ?? null) === 'payment'
+            && data_get($payload, 'related_to.type') === 'purchase'
+            && is_string(data_get($payload, 'related_to.id'))
+            && is_array($payload['payment'] ?? null)
+            && is_numeric(data_get($payload, 'payment.amount'))
+            && is_string(data_get($payload, 'payment.currency'))
+            && data_get($payload, 'payment.currency') !== '';
     }
 }

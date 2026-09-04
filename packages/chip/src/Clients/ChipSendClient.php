@@ -9,6 +9,7 @@ use AIArmada\Chip\Exceptions\ChipApiException;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use InvalidArgumentException;
 
 class ChipSendClient extends BaseHttpClient
 {
@@ -85,7 +86,14 @@ class ChipSendClient extends BaseHttpClient
             'production' => 'https://api.chip-in.asia/api',
         ];
 
-        return $baseUrls[$this->environment] ?? $baseUrls['sandbox'];
+        if (! array_key_exists($this->environment, $baseUrls)) {
+            throw new InvalidArgumentException(sprintf(
+                'CHIP Send environment [%s] must be sandbox or production.',
+                $this->environment,
+            ));
+        }
+
+        return $baseUrls[$this->environment];
     }
 
     /**
@@ -112,7 +120,7 @@ class ChipSendClient extends BaseHttpClient
 
     protected function generateChecksum(int $epoch): string
     {
-        return hash_hmac('sha256', (string) $epoch, $this->apiSecret);
+        return hash_hmac('sha512', (string) $epoch . $this->apiKey, $this->apiSecret);
     }
 
     protected function handleFailedResponse(Response $response): never

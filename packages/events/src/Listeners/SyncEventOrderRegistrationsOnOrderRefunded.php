@@ -40,9 +40,6 @@ final class SyncEventOrderRegistrationsOnOrderRefunded
                 }
 
                 $registrationIds = array_values($candidateIds);
-            } elseif ($scope === null) {
-                // Preserve legacy full-order refunds that pre-date scoped refund metadata.
-                $registrationIds = null;
             } else {
                 Log::warning('Skipped event registration refund synchronization because its scope was unsupported.', [
                     'order_id' => $event->order->getKey(),

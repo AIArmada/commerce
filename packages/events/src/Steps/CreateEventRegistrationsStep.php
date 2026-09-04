@@ -84,7 +84,6 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
             }
 
             $participants = $this->resolveParticipants(
-                session: $session,
                 orderItem: $orderItem,
                 cartItems: $cartItems,
                 order: $order,
@@ -112,7 +111,6 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
      * @return array<int, array<string, mixed>>
      */
     private function resolveParticipants(
-        CheckoutSession $session,
         mixed $orderItem,
         array $cartItems,
         mixed $order,
@@ -120,9 +118,7 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
         $orderItemPurchasableId = data_get($orderItem, 'purchasable_id');
 
         foreach ($cartItems as $cartItem) {
-            $cartPurchasableId = data_get($cartItem, 'attributes.purchasable_id')
-                ?? data_get($cartItem, 'associated_model.id')
-                ?? data_get($cartItem, 'purchasable_id');
+            $cartPurchasableId = data_get($cartItem, 'attributes.purchasable_id');
 
             if ($cartPurchasableId === $orderItemPurchasableId) {
                 $participants = data_get($cartItem, 'attributes.participants', []);
@@ -135,13 +131,13 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
             }
         }
 
-        return $this->fallbackParticipants($order, $orderItem);
+        return $this->participantsForOrderItem($order, $orderItem);
     }
 
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function fallbackParticipants(mixed $order, mixed $orderItem): array
+    private function participantsForOrderItem(mixed $order, mixed $orderItem): array
     {
         $customer = $order->getRelation('customer');
         $quantity = max(1, (int) ($orderItem->quantity ?? 1));

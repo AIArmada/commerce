@@ -9,8 +9,6 @@ use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
-use AIArmada\Chip\Webhooks\Handlers\SendCompletedHandler;
-use AIArmada\Chip\Webhooks\Handlers\SendRejectedHandler;
 use AIArmada\Chip\Webhooks\Handlers\WebhookHandler;
 
 /**
@@ -26,10 +24,6 @@ class WebhookRouter
      * @var array<string, class-string<WebhookHandler>>
      */
     protected array $handlers = [
-        'send_instruction.completed' => SendCompletedHandler::class,
-        'send_instruction.rejected' => SendRejectedHandler::class,
-        'payout.success' => SendCompletedHandler::class,
-        'payout.failed' => SendRejectedHandler::class,
     ];
 
     /**
@@ -57,7 +51,6 @@ class WebhookRouter
             $payload->rawPayload,
             $dispatcher->extractPurchase($payload->rawPayload),
             $dispatcher->extractPayout($payload->rawPayload),
-            $dispatcher->extractBillingTemplateClient($payload->rawPayload),
             $dispatcher->extractPayment($payload->rawPayload),
         );
 

@@ -31,9 +31,6 @@ describe('WebhookEventDispatcher service', function (): void {
         expect(method_exists(WebhookEventDispatcher::class, 'extractPayout'))->toBeTrue();
     });
 
-    it('has extractBillingTemplateClient method', function (): void {
-        expect(method_exists(WebhookEventDispatcher::class, 'extractBillingTemplateClient'))->toBeTrue();
-    });
 });
 
 describe('WebhookEventType enum for ProcessChipWebhook', function (): void {
@@ -112,9 +109,9 @@ describe('WebhookEventType enum for ProcessChipWebhook', function (): void {
         expect($type)->toBe(WebhookEventType::PurchaseRecurringTokenDeleted);
     });
 
-    it('can parse subscription charge failure event', function (): void {
-        $type = WebhookEventType::fromString('purchase.subscription_charge_failure');
-        expect($type)->toBe(WebhookEventType::PurchaseSubscriptionChargeFailure);
+    it('can parse purchase refund failure event', function (): void {
+        $type = WebhookEventType::fromString('purchase.refund_failure');
+        expect($type)->toBe(WebhookEventType::PurchaseRefundFailure);
     });
 
     it('can parse payment refunded event', function (): void {
@@ -137,9 +134,9 @@ describe('WebhookEventType enum for ProcessChipWebhook', function (): void {
         expect($type)->toBe(WebhookEventType::PayoutFailed);
     });
 
-    it('can parse billing cancelled event', function (): void {
-        $type = WebhookEventType::fromString('billing_template_client.subscription_billing_cancelled');
-        expect($type)->toBe(WebhookEventType::BillingTemplateClientSubscriptionBillingCancelled);
+    it('can parse payment chargeback reversed event', function (): void {
+        $type = WebhookEventType::fromString('payment.chargeback_reversed');
+        expect($type)->toBe(WebhookEventType::PaymentChargebackReversed);
     });
 
     it('returns null for unknown event', function (): void {

@@ -77,9 +77,6 @@ class CartMigrationService
         ];
     }
 
-    // ponytail: stub for auth event listener, wire when cart auto-switch on login is needed
-    public function autoSwitchCartIdentifier(): void {}
-
     public function getCurrentIdentifier(): string
     {
         if (Auth::check()) {

@@ -8,6 +8,7 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Support\Facades\RateLimiter;
 use SensitiveParameter;
@@ -34,7 +35,11 @@ trait PerformsCharges // @phpstan-ignore trait.unused
 
         if (! $executed) {
             throw new IncompletePayment(
-                new Payment(PurchaseData::from(['id' => 'rate_limited', 'status' => 'failed'])),
+                new Payment(PurchaseData::from([
+                    'id' => 'rate_limited',
+                    'status' => 'error',
+                    'purchase' => ['currency' => config('cashier-chip.currency', 'MYR'), 'total' => 0],
+                ])),
                 'Rate limit exceeded. Please wait before making another charge.'
             );
         }
@@ -227,7 +232,7 @@ trait PerformsCharges // @phpstan-ignore trait.unused
      *
      * @param  array<string, mixed>  $options
      */
-    public function refund(string $purchaseId, ?int $amount = null): PurchaseData
+    public function refund(string $purchaseId, ?int $amount = null): PurchaseData | PaymentData
     {
         return Cashier::chip()->refundPurchase($purchaseId, $amount);
     }

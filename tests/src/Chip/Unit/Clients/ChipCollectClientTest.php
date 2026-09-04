@@ -36,6 +36,14 @@ describe('ChipCollectClient Authentication', function (): void {
             return $request->header('Content-Type')[0] === 'application/json';
         });
     });
+
+    it('does not add an undocumented idempotency header to mutations', function (): void {
+        Http::fake(['*' => Http::response(['data' => []], 200)]);
+
+        $this->client->post('/test', ['key' => 'value']);
+
+        Http::assertSent(fn ($request): bool => ! $request->hasHeader('Idempotency-Key'));
+    });
 });
 
 describe('ChipCollectClient Request Methods', function (): void {
@@ -125,6 +133,15 @@ describe('ChipCollectClient Retry Logic', function (): void {
             ->toThrow(ChipApiException::class, 'Server Error');
 
         Http::assertSentCount(3);
+    });
+
+    it('does not retry mutation requests without documented provider idempotency', function (): void {
+        Http::fake(['*' => Http::response(['error' => 'Server Error'], 500)]);
+
+        expect(fn () => $this->client->post('/test'))
+            ->toThrow(ChipApiException::class, 'Server Error');
+
+        Http::assertSentCount(1);
     });
 });
 

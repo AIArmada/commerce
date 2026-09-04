@@ -24,7 +24,7 @@ final class SendInstructionForm
                             ->options(function (): array {
                                 return BankAccount::query()
                                     ->forOwner()
-                                    ->whereIn('status', ['active', 'approved'])
+                                    ->where('status', 'verified')
                                     ->get()
                                     ->mapWithKeys(fn (BankAccount $account): array => [
                                         $account->id => sprintf(
@@ -46,13 +46,12 @@ final class SendInstructionForm
                     ->description('Specify the payout amount and details.')
                     ->schema([
                         TextInput::make('amount')
-                            ->label('Amount (MYR)')
+                            ->label('Amount')
                             ->numeric()
                             ->required()
                             ->minValue(0.01)
                             ->step(0.01)
-                            ->prefix('RM')
-                            ->helperText('Enter the amount in MYR.'),
+                            ->helperText('Enter an amount with no more than two decimal places.'),
 
                         TextInput::make('description')
                             ->label('Description')

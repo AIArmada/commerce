@@ -17,7 +17,7 @@ describe('Collect Account API', function (): void {
 
         $this->client->shouldReceive('get')
             ->once()
-            ->with('account/balance/')
+            ->with('account/json/balance/')
             ->andReturn($expected);
 
         $balance = $this->api->balance();
@@ -31,7 +31,7 @@ describe('Collect Account API', function (): void {
 
         $this->client->shouldReceive('get')
             ->once()
-            ->with('account/turnover/?date_from=2024-01-01')
+            ->with('account/json/turnover/?date_from=2024-01-01')
             ->andReturn($response);
 
         expect($this->api->turnover($filters))->toBe($response);
@@ -42,7 +42,7 @@ describe('Collect Account API', function (): void {
 
         $this->client->shouldReceive('get')
             ->once()
-            ->with('account/balance/')
+            ->with('account/json/balance/')
             ->andThrow(new RuntimeException('connection failed'));
 
         expect(fn () => $this->api->balance())->toThrow(RuntimeException::class, 'connection failed');

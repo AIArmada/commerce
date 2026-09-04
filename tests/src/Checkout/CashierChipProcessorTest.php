@@ -40,11 +40,11 @@ it('stores a JSON-safe public CHIP purchase response when checking payment statu
         ->and($json)->toBeString();
 });
 
-it('keeps an unrecognised CHIP refund status in processing', function (): void {
+it('keeps a pending CHIP refund in processing', function (): void {
     $purchase = PurchaseData::from([
         'id' => 'purchase-unknown',
         'type' => 'purchase',
-        'status' => 'provider_new_status',
+        'status' => 'pending_refund',
         'reference' => 'checkout-reference',
         'created_on' => time(),
         'updated_on' => time(),

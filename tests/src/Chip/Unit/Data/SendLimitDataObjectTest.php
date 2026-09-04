@@ -11,10 +11,10 @@ describe('SendLimit data object', function (): void {
             'currency' => 'MYR',
             'fee_type' => 'flat',
             'transaction_type' => 'out',
-            'amount' => 12345,
-            'fee' => 100,
-            'net_amount' => 12245,
-            'status' => 'success',
+            'amount' => 123.45,
+            'fee' => 1,
+            'net_amount' => 122.45,
+            'status' => 'approved',
             'approvals_required' => 2,
             'approvals_received' => 1,
             'from_settlement' => '2024-04-01',
@@ -28,10 +28,10 @@ describe('SendLimit data object', function (): void {
             ->and($limit->currency)->toBe('MYR')
             ->and($limit->fee_type)->toBe('flat')
             ->and($limit->transaction_type)->toBe('out')
-            ->and($limit->amount)->toBe(12345)
-            ->and($limit->fee)->toBe(100)
-            ->and($limit->net_amount)->toBe(12245)
-            ->and($limit->status)->toBe('success')
+            ->and($limit->amount)->toBe(123.45)
+            ->and($limit->fee)->toBe(1)
+            ->and($limit->net_amount)->toBe(122.45)
+            ->and($limit->status)->toBe('approved')
             ->and($limit->approvals_required)->toBe(2)
             ->and($limit->approvals_received)->toBe(1)
             ->and($limit->from_settlement)->toBe('2024-04-01');
@@ -42,7 +42,7 @@ describe('SendLimit data object', function (): void {
         expect($limit->toArray())->toMatchArray([
             'id' => 7,
             'currency' => 'MYR',
-            'status' => 'success',
+            'status' => 'approved',
         ]);
     });
 });

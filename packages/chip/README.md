@@ -99,8 +99,7 @@ use AIArmada\Chip\Facades\ChipSend;
 
 $instruction = ChipSend::createSendInstruction(
     amountInCents: 10000,
-    currency: 'MYR',
-    recipientBankAccountId: 'bank_123',
+    recipientBankAccountId: 1,
     description: 'Payout',
     reference: 'PAY-001',
     email: 'recipient@example.com',

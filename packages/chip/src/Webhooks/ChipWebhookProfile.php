@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Webhooks;
 
+use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProfile;
 use Illuminate\Http\Request;
 
@@ -17,34 +18,8 @@ class ChipWebhookProfile extends CommerceWebhookProfile
      */
     public function shouldProcess(Request $request): bool
     {
-        $eventType = $request->input('event_type') ?? $request->input('event');
+        $eventType = $request->input('event_type');
 
-        if (is_string($eventType) && $eventType !== '') {
-            // Process all valid CHIP events
-            $validPrefixes = [
-                'purchase.',
-                'payment.',
-                'payout.',
-                'billing_template_client.',
-            ];
-
-            foreach ($validPrefixes as $prefix) {
-                if (str_starts_with($eventType, $prefix)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        $type = $request->input('type');
-        $validTypes = [
-            'purchase',
-            'payment',
-            'payout',
-            'billing_template_client',
-        ];
-
-        return is_string($type) && in_array($type, $validTypes, true);
+        return is_string($eventType) && WebhookEventType::tryFrom($eventType) !== null;
     }
 }

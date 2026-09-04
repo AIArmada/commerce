@@ -4,7 +4,7 @@ title: Webhooks
 
 # Webhooks
 
-Use the built-in CHIP webhook route when you want signature verification, queued processing, typed events, and local persistence updates without wiring your own controller.
+Use the built-in CHIP webhook route when you want signature verification, queued processing, typed events, and local persistence updates without wiring your own controller. The route is for registered CHIP webhooks; purchase success callbacks use the separate company-key verifier described below.
 
 ## Built-in route
 
@@ -50,7 +50,7 @@ If `aiarmada/checkout` is installed with the default `checkout.integrations.chip
 
 ## Signature verification
 
-CHIP signs callback payloads with RSA PKCS#1 v1.5 over the SHA-256 digest of the raw request body. The signature is delivered in the `X-Signature` header.
+CHIP Collect signs callback payloads with RSA PKCS#1 v1.5 over the SHA-256 digest of the raw request body. CHIP Send webhook deliveries use RSA PKCS#1 v1.5 over the SHA-512 digest instead. Both signatures are delivered in the `X-Signature` header.
 
 According to the CHIP Collect docs:
 
@@ -61,9 +61,7 @@ This package supports both sources:
 
 - `chip.collect.public_key` (company key for Collect success callbacks)
 - `chip.webhooks.collect.webhook_keys` (per-webhook keys for Collect registered webhooks)
-- `chip.webhooks.send.webhook_keys` (per-webhook keys for Send webhooks)
-
-At runtime, `AIArmada\Chip\Services\WebhookService` attempts a webhook-specific key first when it can resolve a webhook ID, then falls back to configured webhook keys and finally the company key.
+Send webhook verification requires the dedicated key returned by the CHIP Send webhook API. Send webhooks must not be posted to the Collect webhook route because their payloads have no Collect `event_type` and use SHA-512 verification.
 
 Low-level verification example:
 
@@ -83,6 +81,15 @@ Route::post('/webhooks/chip/manual', function (Request $request) {
         'event_type' => $payload['event_type'] ?? 'unknown',
     ]);
 });
+```
+
+For a `success_callback` URL configured on a Purchase, use the company-wide
+public key returned by `GET /public_key/`:
+
+```php
+$service = app(\AIArmada\Chip\Services\WebhookService::class);
+
+abort_unless($service->verifySuccessCallbackSignature($request), 400, 'Invalid signature');
 ```
 
 ## Built-in processing flow
@@ -245,24 +252,21 @@ if ($result->wasHandled()) {
 
 The action enriches the payload, resolves owner context from the payload or provided model, and routes through the same `WebhookRouter` used by the built-in HTTP controller.
 
-## Alternative handler: HandleSendInstructionWebhookAction
+## CHIP Send webhooks
 
-Use `HandleSendInstructionWebhookAction` specifically for CHIP Send payout webhooks. Unlike the generic `DispatchChipWebhookAction`, this action handles both the local model update (transitioning the `SendInstruction` state) and typed event dispatch in one step:
+CHIP Send has a separate webhook API and signature scheme from CHIP Collect. The package registers a second route at `config('chip.webhooks.send.route', '/chip/send/webhooks')`:
 
-```php
-use AIArmada\Chip\Actions\HandleSendInstructionWebhookAction;
-use AIArmada\Chip\Enums\SendInstructionState;
-use AIArmada\Chip\Events\PayoutSuccess;
+- controller: `AIArmada\Chip\Http\Controllers\SendWebhookController`
+- route name: `chip.send.webhook`
+- event: `AIArmada\Chip\Events\SendWebhookReceived`
 
-$result = app(HandleSendInstructionWebhookAction::class)->execute(
-    payload: $enrichedPayload,
-    targetState: SendInstructionState::Success,
-    eventClass: PayoutSuccess::class,
-);
+The controller verifies the raw request body with the Send webhook's dedicated public key and SHA-512 RSA signature, then dispatches the raw JSON object as `SendWebhookReceived::$payload`. CHIP Send identifies the subscribed delivery through the configured `event_hooks` resource type (`bank_account_status`, `budget_allocation_status`, or `send_instruction_status`); it does not use the Collect `event_type` envelope. Applications can interpret the verified resource payload according to the hook they configured.
 
-if ($result->wasSkipped()) {
-    // Send instruction not found locally
-}
+Configure the Send webhook public key directly or let the package retrieve it using `CHIP_SEND_WEBHOOK_ID`:
+
+```dotenv
+CHIP_SEND_WEBHOOK_ID=123
+CHIP_SEND_WEBHOOK_ROUTE=/chip/send/webhooks
 ```
 
-The action queries `SendInstruction` without owner scoping (CHIP Send records are not tenant-owned), updates the state, and dispatches the given event class with `PayoutData` as the first argument.
+For multiple Send webhooks, use `CHIP_SEND_WEBHOOK_PUBLIC_KEYS` as a JSON object keyed by the integer webhook ID. The route returns HTTP 200 only after signature and JSON-object validation; a non-2xx response allows CHIP to retry the delivery.

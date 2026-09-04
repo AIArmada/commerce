@@ -108,7 +108,7 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
     /**
      * Update the default payment method for the customer.
      */
-    public function updateDefaultPaymentMethod(#[SensitiveParameter] string $paymentMethodId): self
+    public function updateDefaultPaymentMethod(#[SensitiveParameter] string $paymentMethodId): static
     {
         $paymentMethod = Cashier::paymentMethodStore()->setDefaultForBillable($this, $paymentMethodId);
 
@@ -168,7 +168,7 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      *
      * This creates a zero-amount preauthorization purchase that:
      * - Uses skip_capture=true to preauthorize without capturing
-     * - Uses total_override=0 for zero-amount authorization
+     * - Uses purchase.total_override=0 for zero-amount authorization
      * - Uses force_recurring=true to ensure a recurring token is saved
      *
      * On successful preauthorization, the webhook will receive purchase.preauthorized
@@ -187,10 +187,10 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
             'client_id' => $this->chipId(),
             'send_receipt' => false,
             'skip_capture' => true,
-            'total_override' => 0,
             'force_recurring' => true,
             'purchase' => [
                 'currency' => config('cashier-chip.currency', 'MYR'),
+                'total_override' => 0,
                 'products' => [
                     [
                         'name' => $options['product_name'] ?? 'Payment Method Setup',
@@ -200,11 +200,17 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
                 ],
             ],
             'brand_id' => config('chip.collect.brand_id'),
-            'success_callback' => $options['success_url'] ?? null,
-            'failure_callback' => $options['cancel_url'] ?? null,
             'success_redirect' => $options['success_url'] ?? null,
-            'failure_redirect' => $options['cancel_url'] ?? null,
+            'failure_redirect' => $options['failure_url'] ?? null,
+            'cancel_redirect' => $options['cancel_url'] ?? null,
+            'success_callback' => $options['success_callback'] ?? null,
         ], $options['chip'] ?? []);
+
+        foreach (['success_redirect', 'failure_redirect', 'cancel_redirect', 'success_callback'] as $key) {
+            if ($purchaseData[$key] === null) {
+                unset($purchaseData[$key]);
+            }
+        }
 
         return Cashier::chip()->createPurchase($purchaseData);
     }
@@ -239,13 +245,13 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
     protected function syncPaymentMethodsFromChip(): void
     {
         foreach ($this->chipRecurringTokens() as $index => $token) {
-            $tokenId = $token['id'] ?? $token['recurring_token'] ?? null;
+            $tokenId = $token['id'] ?? null;
 
             if (! is_string($tokenId) || $tokenId === '') {
                 continue;
             }
 
-            $makeDefault = ($token['is_default'] ?? false) === true || $index === 0;
+            $makeDefault = $index === 0;
 
             Cashier::paymentMethodStore()->saveForBillable(
                 $this,
@@ -283,9 +289,9 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
     protected function paymentMethodAttributesFromToken(array $token): array
     {
         return [
-            'type' => $token['type'] ?? $token['payment_method'] ?? null,
-            'brand' => $token['card_brand'] ?? $token['brand'] ?? null,
-            'last_four' => $token['last_4'] ?? $token['card_last_4'] ?? $token['last_four'] ?? null,
+            'type' => $token['payment_method'] ?? null,
+            'brand' => null,
+            'last_four' => null,
             'metadata' => $token,
         ];
     }

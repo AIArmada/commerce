@@ -78,7 +78,7 @@ Recommended columns:
 
 ```csv
 country_code,type,level,name,native_name,code,parent_source_id,hierarchy_type,source,source_id,latitude,longitude,metadata
-MY,state,1,Selangor,Selangor,10,,administrative,app.malaysia,MY-10,3.0738,101.5183,"{""source"":""legacy""}"
+MY,state,1,Selangor,Selangor,10,,administrative,app.malaysia,MY-10,3.0738,101.5183,"{""source"":""import""}"
 MY,district,2,Petaling,Petaling,PETALING,MY-10,administrative,app.malaysia,MY-10-PETALING,,
 MY,locality,2,Bangsar,Bangsar,BANGSAR,MY-10,postal,app.malaysia,MY-10-BANGSAR,,
 ```

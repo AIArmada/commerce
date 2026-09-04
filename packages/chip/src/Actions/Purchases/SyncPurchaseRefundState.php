@@ -52,13 +52,10 @@ final class SyncPurchaseRefundState
             return $purchase;
         }
 
-        $isFullyRefunded = $purchaseTotal > 0 && $cumulativeRefundAmount >= $purchaseTotal;
-        $status = $isFullyRefunded
-            ? PurchaseStatus::REFUNDED->value
-            : PurchaseStatus::PARTIALLY_REFUNDED->value;
-
         $purchase->forceFill([
-            'status' => $status,
+            // CHIP uses refunded for both full and partial refunds. The
+            // local refund amount fields preserve the distinction.
+            'status' => PurchaseStatus::REFUNDED->value,
             'refund_amount_minor' => $cumulativeRefundAmount,
             'refundable_amount' => $purchaseTotal > 0 ? max(0, $purchaseTotal - $cumulativeRefundAmount) : 0,
             'refunded_at' => now(),
@@ -82,13 +79,7 @@ final class SyncPurchaseRefundState
     {
         $total = Arr::get($purchase->purchase, 'total');
 
-        if (is_numeric($total)) {
-            return (int) $total;
-        }
-
-        $fallback = Arr::get($purchase->payment, 'amount');
-
-        return is_numeric($fallback) ? (int) $fallback : 0;
+        return is_numeric($total) ? (int) $total : 0;
     }
 
     private function currentRefundPaymentExists(Purchase $purchase, PaymentData $refundPayment): bool

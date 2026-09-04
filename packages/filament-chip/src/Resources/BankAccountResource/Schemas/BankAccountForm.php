@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\BankAccountResource\Schemas;
 
-use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -22,44 +21,28 @@ final class BankAccountForm
                         TextInput::make('name')
                             ->label('Account Holder Name')
                             ->required()
-                            ->maxLength(255)
                             ->helperText('The full name of the account holder as it appears on the bank account.'),
 
                         TextInput::make('account_number')
                             ->label('Account Number')
                             ->required()
-                            ->maxLength(50)
                             ->helperText('The bank account number.'),
 
                         Select::make('bank_code')
-                            ->label('Bank')
-                            ->options(self::getMalaysianBanks())
+                            ->label('Bank code')
+                            ->options(self::getSupportedBankCodes())
                             ->searchable()
                             ->required()
-                            ->helperText('Select the bank for this account.'),
+                            ->helperText('Select the bank code accepted by CHIP Send.'),
                     ]),
 
                 Section::make('Configuration')
-                    ->description('Account capabilities and grouping.')
+                    ->description('Reference information for this recipient account.')
                     ->schema([
                         TextInput::make('reference')
                             ->label('Reference')
-                            ->maxLength(100)
-                            ->helperText('Your internal reference for this bank account.'),
-
-                        TextInput::make('group_id')
-                            ->label('Group ID')
-                            ->numeric()
-                            ->helperText('Optional group ID for organizing bank accounts.'),
-
-                        Checkbox::make('is_debiting_account')
-                            ->label('Enable for debiting')
-                            ->helperText('Allow this account to be used for debiting funds.'),
-
-                        Checkbox::make('is_crediting_account')
-                            ->label('Enable for crediting')
-                            ->default(true)
-                            ->helperText('Allow this account to receive funds (payouts).'),
+                            ->required()
+                            ->helperText('A unique reference used to prevent duplicate submissions.'),
                     ]),
             ]);
     }
@@ -67,29 +50,43 @@ final class BankAccountForm
     /**
      * @return array<string, string>
      */
-    private static function getMalaysianBanks(): array
+    private static function getSupportedBankCodes(): array
     {
         return [
-            'MBBEMYKL' => 'Maybank',
-            'CIABORJ' => 'CIMB Bank',
-            'PABORJX' => 'Public Bank',
-            'RHBAYJK' => 'RHB Bank',
-            'HMABMYKL' => 'Hong Leong Bank',
-            'AMMBMYKL' => 'AmBank',
-            'UOVBMYKL' => 'UOB Malaysia',
-            'OCBCMYKL' => 'OCBC Malaysia',
-            'BKCHMYXX' => 'Bank of China Malaysia',
-            'SCBLMYKX' => 'Standard Chartered Malaysia',
-            'HSBCMYKL' => 'HSBC Malaysia',
-            'BIMBMYKL' => 'Bank Islam',
-            'BMMUMYKL' => 'Bank Muamalat',
-            'AFBOMYKL' => 'Affin Bank',
-            'AABORJ' => 'Alliance Bank',
+            'ACDBMYK2' => 'AEON Bank (M) Berhad',
+            'PHBMMYKL' => 'Affin Bank Berhad',
             'AGOBMYKL' => 'Agrobank',
-            'BSNAMYK1' => 'BSN',
-            'RAKYATMY' => 'Bank Rakyat',
-            'KABORJ' => 'Kenanga Investment Bank',
-            'MBSABMYK' => 'MBSB Bank',
+            'RJHIMYKL' => 'Al-Rajhi',
+            'MFBBMYKL' => 'Alliance Bank Malaysia Berhad',
+            'ARBKMYKL' => 'Ambank Malaysia Berhad',
+            'BIMBMYKL' => 'Bank Islam Malaysia Berhad',
+            'BKRMMYKL' => 'Bank Kerjasama Rakyat Malaysia Berhad',
+            'BMMBMYKL' => 'Bank Muamalat Malaysia Bhd',
+            'BOFAMY2X' => 'Bank of America (M) Berhad',
+            'BKCHMYKL' => 'Bank of China (M) Berhad',
+            'BOTKMYKX' => 'Bank of Tokyo-Mitsubishi UFJ (M) Berhad',
+            'BSNAMYK1' => 'Bank Simpanan Nasional Berhad',
+            'BNPAMYKL' => 'BNP Paribas Malaysia Berhad',
+            'PCBCMYKL' => 'China Construction Bank (M) Berhad',
+            'CIBBMYKL' => 'CIMB Bank Berhad',
+            'DEUTMYKL' => 'Deutsche Bank (Malaysia) Berhad',
+            'FNXSMYNB' => 'Finexus Cards Sdn. Bhd.',
+            'GXSPMYKL' => 'GX Bank Berhad',
+            'HLBBMYKL' => 'Hong Leong Bank Berhad',
+            'HBMBMYKL' => 'HSBC Bank Malaysia Berhad',
+            'ICBKMYKL' => 'Industrial and Commercial Bank of China (M) Berhad',
+            'CHASMYKX' => 'JP Morgan Chase Bank Berhad',
+            'KFHOMYKL' => 'Kuwait Finance House',
+            'MBBEMYKL' => 'Maybank',
+            'AFBQMYKL' => 'MBSB Bank Berhad',
+            'MHCBMYKA' => 'Mizuho Bank (Malaysia) Berhad',
+            'OCBCMYKL' => 'OCBC Malaysia',
+            'PBBEMYKL' => 'Public Bank Berhad',
+            'RHBBMYKL' => 'RHB Bank Berhad',
+            'SCBLMYKX' => 'Standard Chartered Malaysia',
+            'SMBCMYKL' => 'Sumitomo Mitsui Banking Corporation (M) Berhad',
+            'TNGDMYNB' => "Touch 'n Go eWallet",
+            'UOVBMYKL' => 'United Overseas Bank Berhad (UOB)',
         ];
     }
 }

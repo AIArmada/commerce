@@ -6,7 +6,6 @@ namespace AIArmada\Chip\Webhooks;
 
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Models\Webhook;
-use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Support\ChipWebhookOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
@@ -21,7 +20,6 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
 {
     protected function processEvent(string $eventType, array $payload): void
     {
-        $dispatcher = app(WebhookEventDispatcher::class);
         $dispatchAction = app(DispatchChipWebhookAction::class);
 
         $owner = $this->resolveOwner($payload);
@@ -124,7 +122,6 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
 
         $attributes = [
             'event_type' => $eventType,
-            'event' => $eventType,
             'payload' => $payload,
             'status' => 'pending',
             'verified' => true,
@@ -166,15 +163,11 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
      */
     protected function isDuplicateProcessedEvent(WebhookCall $current, array $payload, string $eventType): bool
     {
-        $eventId = $this->extractEventId($payload);
+        $eventId = $payload['id'] ?? null;
 
-        if ($eventId === null) {
+        if (! is_string($eventId) || $eventId === '') {
             return false;
         }
-
-        $hasExplicitType = array_key_exists('event_type', $payload)
-            || array_key_exists('event', $payload)
-            || array_key_exists('type', $payload);
 
         $ownerType = Arr::get($payload, '__owner_type');
         $ownerId = Arr::get($payload, '__owner_id');
@@ -183,25 +176,8 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
             ->where('name', $current->name)
             ->whereKeyNot($current->getKey())
             ->whereNotNull('processed_at')
-            ->where(function (Builder $builder) use ($eventId): void {
-                $builder->where('payload->event_id', $eventId)
-                    ->orWhere('payload->eventId', $eventId)
-                    ->orWhere('payload->id', $eventId)
-                    ->orWhere('payload->data->id', $eventId);
-            })
-            ->where(function (Builder $builder) use ($eventType, $hasExplicitType): void {
-                if ($hasExplicitType) {
-                    $builder->where('payload->event_type', $eventType)
-                        ->orWhere('payload->event', $eventType)
-                        ->orWhere('payload->type', $eventType);
-
-                    return;
-                }
-
-                $builder->whereNull('payload->event_type')
-                    ->whereNull('payload->event')
-                    ->whereNull('payload->type');
-            })
+            ->where('payload->id', $eventId)
+            ->where('payload->event_type', $eventType)
             ->where(function (Builder $builder) use ($ownerType, $ownerId): void {
                 if (is_string($ownerType) && (is_string($ownerId) || is_int($ownerId))) {
                     $builder->where('payload->__owner_type', $ownerType)

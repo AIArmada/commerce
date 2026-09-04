@@ -68,7 +68,7 @@ abstract class BaseHttpClient
                 try {
                     $response = $this->sendRequest($method, $url, $data, $headers);
 
-                    if ($response->failed() && $attempt < $attempts && $this->shouldRetry(null, $response)) {
+                    if ($response->failed() && $attempt < $attempts && $this->shouldRetry($method, null, $response)) {
                         usleep($delayMilliseconds * 1000);
 
                         continue;
@@ -80,7 +80,7 @@ abstract class BaseHttpClient
 
                     break;
                 } catch (Exception $exception) {
-                    if ($attempt >= $attempts || ! $this->shouldRetry($exception, null)) {
+                    if ($attempt >= $attempts || ! $this->shouldRetry($method, $exception, null)) {
                         throw $exception;
                     }
 
@@ -140,8 +140,12 @@ abstract class BaseHttpClient
         return (int) config('chip.http.rate_limit.decay_seconds', 60);
     }
 
-    protected function shouldRetry(?Throwable $exception, ?Response $response): bool
+    protected function shouldRetry(string $method, ?Throwable $exception, ?Response $response): bool
     {
+        if (! $this->isRetryableMethod($method)) {
+            return false;
+        }
+
         if ($exception !== null) {
             return $this->shouldRetryOnException($exception);
         }
@@ -151,6 +155,16 @@ abstract class BaseHttpClient
         }
 
         return false;
+    }
+
+    /**
+     * CHIP does not document idempotency keys for its mutation endpoints.
+     * Restrict automatic retries to methods that do not create or change a
+     * remote resource, so a connection failure cannot repeat a mutation.
+     */
+    protected function isRetryableMethod(string $method): bool
+    {
+        return in_array(mb_strtoupper($method), ['GET', 'HEAD', 'OPTIONS'], true);
     }
 
     protected function shouldRetryOnException(Throwable $exception): bool

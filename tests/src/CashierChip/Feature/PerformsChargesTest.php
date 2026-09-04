@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 
 use AIArmada\CashierChip\Payment\Payment;
-use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
 class PerformsChargesTest extends CashierChipTestCase
@@ -52,7 +52,7 @@ class PerformsChargesTest extends CashierChipTestCase
 
         $refundData = $this->user->refund($purchaseId, 500);
 
-        $this->assertInstanceOf(PurchaseData::class, $refundData);
+        $this->assertInstanceOf(PaymentData::class, $refundData);
     }
 
     public function test_find_payment()

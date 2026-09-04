@@ -10,17 +10,13 @@ use AIArmada\CashierChip\Console\WebhookCommand;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
 use AIArmada\CashierChip\Invoices\DocsInvoiceRenderer;
-use AIArmada\CashierChip\Listeners\HandleBillingCancelled;
 use AIArmada\CashierChip\Listeners\HandlePurchasePaid;
 use AIArmada\CashierChip\Listeners\HandlePurchasePaymentFailure;
 use AIArmada\CashierChip\Listeners\HandlePurchasePreauthorized;
-use AIArmada\CashierChip\Listeners\HandleSubscriptionChargeFailure;
 use AIArmada\CashierChip\Payment\PaymentMethodStore;
-use AIArmada\Chip\Events\BillingCancelled;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Events\PurchasePreauthorized;
-use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
 use AIArmada\Docs\Services\DocService;
 use Illuminate\Support\Facades\Event;
 use Laravel\Octane\Events\RequestReceived;
@@ -92,8 +88,6 @@ final class CashierChipServiceProvider extends PackageServiceProvider
         Event::listen(PurchasePaid::class, HandlePurchasePaid::class);
         Event::listen(PurchasePaymentFailure::class, HandlePurchasePaymentFailure::class);
         Event::listen(PurchasePreauthorized::class, HandlePurchasePreauthorized::class);
-        Event::listen(PurchaseSubscriptionChargeFailure::class, HandleSubscriptionChargeFailure::class);
-        Event::listen(BillingCancelled::class, HandleBillingCancelled::class);
     }
 
     private function registerOctaneListeners(): void

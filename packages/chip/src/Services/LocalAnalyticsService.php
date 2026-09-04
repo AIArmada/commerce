@@ -18,10 +18,12 @@ use Carbon\CarbonImmutable;
 class LocalAnalyticsService
 {
     /** @var array<int, string> */
-    private const SUCCESSFUL_REVENUE_STATUSES = ['paid', 'partially_refunded'];
+    private const SUCCESSFUL_REVENUE_STATUSES = ['paid', 'cleared', 'settled'];
 
     /** @var array<int, string> */
-    private const REFUND_STATUSES = ['refunded', 'partially_refunded'];
+    private const REFUND_STATUSES = ['refunded'];
+
+    private const PARTIAL_REFUND_CONDITION = "(status = 'refunded' AND refundable_amount > 0)";
 
     /**
      * Get comprehensive dashboard metrics from LOCAL data.
@@ -46,10 +48,10 @@ class LocalAnalyticsService
             ->whereBetween('created_at', [$startDate, $endDate])
             ->toBase()
             ->selectRaw('
-                SUM(CASE WHEN status IN (?, ?) THEN total_minor ELSE 0 END) as revenue,
-                SUM(CASE WHEN status IN (?, ?) THEN refund_amount_minor ELSE 0 END) as refunds,
-                COUNT(CASE WHEN status IN (?, ?) THEN 1 END) as paid_count,
-                AVG(CASE WHEN status IN (?, ?) THEN total_minor END) as avg_transaction
+                SUM(CASE WHEN (status IN (?, ?, ?) OR ' . self::PARTIAL_REFUND_CONDITION . ') THEN total_minor ELSE 0 END) as revenue,
+                SUM(CASE WHEN status IN (?) THEN refund_amount_minor ELSE 0 END) as refunds,
+                COUNT(CASE WHEN (status IN (?, ?, ?) OR ' . self::PARTIAL_REFUND_CONDITION . ') THEN 1 END) as paid_count,
+                AVG(CASE WHEN (status IN (?, ?, ?) OR ' . self::PARTIAL_REFUND_CONDITION . ') THEN total_minor END) as avg_transaction
             ', [
                 ...self::SUCCESSFUL_REVENUE_STATUSES,
                 ...self::REFUND_STATUSES,
@@ -66,7 +68,13 @@ class LocalAnalyticsService
         $previous = Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$previousStart, $previousEnd])
-            ->whereIn('status', self::SUCCESSFUL_REVENUE_STATUSES)
+            ->where(function ($query): void {
+                $query->whereIn('status', self::SUCCESSFUL_REVENUE_STATUSES)
+                    ->orWhere(function ($query): void {
+                        $query->where('status', 'refunded')
+                            ->where('refundable_amount', '>', 0);
+                    });
+            })
             ->sum('total_minor');
 
         $currentRevenue = $metrics->revenue ?? 0;
@@ -93,12 +101,12 @@ class LocalAnalyticsService
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->toBase()
-            ->selectRaw("
+            ->selectRaw('
                 COUNT(*) as total,
-                SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as successful,
-                SUM(CASE WHEN status IN ('failed', 'error') THEN 1 ELSE 0 END) as failed,
-                SUM(CASE WHEN status IN ('pending', 'created') THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as refunded
+                SUM(CASE WHEN (status IN (?, ?, ?) OR ' . self::PARTIAL_REFUND_CONDITION . ") THEN 1 ELSE 0 END) as successful,
+                SUM(CASE WHEN status IN ('error', 'blocked') THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN status IN ('created', 'sent', 'viewed', 'overdue', 'pending_execute', 'pending_charge', 'hold', 'preauthorized', 'pending_capture', 'pending_release', 'pending_refund') THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status IN (?) THEN 1 ELSE 0 END) as refunded
             ", [
                 ...self::SUCCESSFUL_REVENUE_STATUSES,
                 ...self::REFUND_STATUSES,
@@ -133,9 +141,9 @@ class LocalAnalyticsService
             ->selectRaw("
                 COALESCE(payment_method, 'unknown') as payment_method,
                 COUNT(*) as total_attempts,
-                SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as successful,
-                SUM(CASE WHEN status IN (?, ?) THEN total_minor ELSE 0 END) as revenue
-            ", [
+                SUM(CASE WHEN (status IN (?, ?, ?) OR " . self::PARTIAL_REFUND_CONDITION . ') THEN 1 ELSE 0 END) as successful,
+                SUM(CASE WHEN (status IN (?, ?, ?) OR ' . self::PARTIAL_REFUND_CONDITION . ') THEN total_minor ELSE 0 END) as revenue
+            ', [
                 ...self::SUCCESSFUL_REVENUE_STATUSES,
                 ...self::SUCCESSFUL_REVENUE_STATUSES,
             ])
@@ -165,7 +173,7 @@ class LocalAnalyticsService
         return Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereIn('status', ['failed', 'error'])
+            ->whereIn('status', ['error', 'blocked'])
             ->toBase()
             ->selectRaw("
                 COALESCE(failure_reason, 'Unknown') as failure_reason,
@@ -196,7 +204,13 @@ class LocalAnalyticsService
         $purchases = Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->whereIn('status', self::SUCCESSFUL_REVENUE_STATUSES)
+            ->where(function ($query): void {
+                $query->whereIn('status', self::SUCCESSFUL_REVENUE_STATUSES)
+                    ->orWhere(function ($query): void {
+                        $query->where('status', 'refunded')
+                            ->where('refundable_amount', '>', 0);
+                    });
+            })
             ->select(['created_at', 'total_minor'])
             ->get();
 

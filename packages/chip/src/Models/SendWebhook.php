@@ -10,9 +10,9 @@ namespace AIArmada\Chip\Models;
  * @property string $public_key
  * @property string $callback_url
  * @property string $email
- * @property array<string>|null $event_hooks
+ * @property array<int, string>|null $event_hooks
  */
-class SendWebhook extends ChipModel
+class SendWebhook extends ChipIntegerModel
 {
     public $timestamps = false;
 

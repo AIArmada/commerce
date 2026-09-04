@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Actions;
 
-use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Purchase;
@@ -74,21 +73,13 @@ class SyncChipRecordsFromApiAction
                     continue;
                 }
 
-                if (($payload['event_type'] ?? null) === null && ($payload['status'] ?? null) !== null) {
-                    $payload['event_type'] = 'purchase.' . (string) $payload['status'];
-                }
-
-                if (($payload['event_type'] ?? null) === null) {
-                    $payload['event_type'] = 'purchase.updated';
-                }
-
                 if ($dryRun) {
                     $summary['synced']++;
 
                     continue;
                 }
 
-                $this->storeWebhookData->handle(WebhookReceived::fromPayload($payload));
+                $this->storeWebhookData->storePurchasePayload($payload);
                 $this->linkCustomer($purchaseId, null, $payload);
                 $summary['synced']++;
             } catch (Throwable $throwable) {

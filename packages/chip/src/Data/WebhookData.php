@@ -8,14 +8,13 @@ use Carbon\CarbonImmutable;
 
 /**
  * Value object representing both stored webhook configurations and individual webhook event deliveries.
- * Incoming deliveries populate the event/payload/headers fields, while stored endpoint definitions
+ * Incoming deliveries populate the event_type/payload/headers fields, while stored endpoint definitions
  * expose configuration metadata alongside processing status flags.
  */
 final class WebhookData extends ChipData
 {
     /**
      * @param  array<string, mixed>  $events
-     * @param  array<string, mixed>|null  $data
      * @param  array<string, mixed>|null  $payload
      * @param  array<string, string>|null  $headers
      * @param  array<string>  $unique_brands
@@ -33,9 +32,6 @@ final class WebhookData extends ChipData
         public readonly bool $is_test,
         public readonly string $version,
         public readonly array $unique_brands,
-        public readonly ?string $event = null,
-        public readonly ?array $data = null,
-        public readonly ?string $timestamp = null,
         public readonly ?string $event_type = null,
         public readonly ?array $payload = null,
         public readonly ?array $headers = null,
@@ -54,48 +50,10 @@ final class WebhookData extends ChipData
     {
         $data = self::resolvePayload(...$payloads);
 
-        // Handle webhook event data with wrapped payload (old format: {event: "purchase.paid", data: {...}})
-        if (isset($data['event']) && isset($data['data'])) {
-            /** @var array<string, mixed> $events */
-            $events = is_array($data['event']) ? $data['event'] : [$data['event']];
-            $events = array_combine(array_map('strval', array_keys($events)), array_values($events));
-
-            /** @var array<string> $uniqueBrands */
-            $uniqueBrands = $data['unique_brands'] ?? [];
-
-            return new self(
-                id: $data['id'] ?? 'webhook_event_' . uniqid(),
-                type: 'webhook_event',
-                created_on: isset($data['timestamp']) ? strtotime((string) $data['timestamp']) : time(),
-                updated_on: isset($data['timestamp']) ? strtotime((string) $data['timestamp']) : time(),
-                title: 'Webhook Event',
-                all_events: false,
-                public_key: '',
-                events: $events,
-                callback: '',
-                is_test: (bool) ($data['is_test'] ?? false),
-                version: $data['version'] ?? 'v1',
-                unique_brands: $uniqueBrands,
-                event: is_string($data['event']) ? $data['event'] : null,
-                data: $data['data'] ?? null,
-                timestamp: isset($data['timestamp']) ? (string) $data['timestamp'] : null,
-                event_type: $data['event_type'] ?? (is_string($data['event']) ? $data['event'] : null),
-                payload: $data['payload'] ?? null,
-                headers: $data['headers'] ?? null,
-                signature: $data['signature'] ?? null,
-                verified: (bool) ($data['verified'] ?? false),
-                processed: (bool) ($data['processed'] ?? false),
-                processed_at: isset($data['processed_at']) ? (string) $data['processed_at'] : null,
-                processing_error: $data['processing_error'] ?? null,
-                processing_attempts: (int) ($data['processing_attempts'] ?? 0),
-            );
-        }
-
-        // Handle current CHIP webhook delivery format where the entire payload is the
-        // delivered resource object (purchase/payment/payout/billing template client).
+        // CHIP webhook deliveries use the resource object as the payload.
         if (
             isset($data['event_type'], $data['type'])
-            && in_array($data['type'], ['purchase', 'payment', 'payout', 'billing_template_client'], true)
+            && in_array($data['type'], ['purchase', 'payment', 'payout'], true)
         ) {
             /** @var array<string> $events */
             $events = [(string) $data['event_type']];
@@ -117,9 +75,6 @@ final class WebhookData extends ChipData
                 is_test: (bool) ($data['is_test'] ?? false),
                 version: 'v1',
                 unique_brands: $uniqueBrands,
-                event: null,
-                data: null,
-                timestamp: null,
                 event_type: $data['event_type'],
                 payload: $data,
                 headers: $data['headers'] ?? null,
@@ -143,8 +98,8 @@ final class WebhookData extends ChipData
         return new self(
             id: $data['id'] ?? 'webhook_' . uniqid(),
             type: $data['type'] ?? 'webhook',
-            created_on: $data['created_on'] ?? strtotime((string) ($data['created_at'] ?? 'now')),
-            updated_on: $data['updated_on'] ?? strtotime((string) ($data['updated_at'] ?? 'now')),
+            created_on: $data['created_on'] ?? time(),
+            updated_on: $data['updated_on'] ?? time(),
             title: $data['title'] ?? '',
             all_events: $data['all_events'] ?? false,
             public_key: $data['public_key'] ?? '',
@@ -153,9 +108,6 @@ final class WebhookData extends ChipData
             is_test: (bool) ($data['is_test'] ?? false),
             version: $data['version'] ?? 'v1',
             unique_brands: $uniqueBrands,
-            event: null,
-            data: null,
-            timestamp: null,
             event_type: $data['event_type'] ?? null,
             payload: $data['payload'] ?? null,
             headers: $data['headers'] ?? null,
@@ -170,13 +122,6 @@ final class WebhookData extends ChipData
 
     public function getPurchase(): ?PurchaseData
     {
-        // Handle wrapped data format (old format: {event: "purchase.paid", data: {...}})
-        if ($this->event && str_starts_with($this->event, 'purchase.') && $this->data) {
-            return PurchaseData::from($this->data);
-        }
-
-        // Handle current CHIP format where payload IS the purchase object
-        // (format: {id: "...", type: "purchase", event_type: "purchase.paid", ...})
         if ($this->event_type && str_starts_with($this->event_type, 'purchase.') && $this->payload) {
             return PurchaseData::from($this->payload);
         }
@@ -245,9 +190,6 @@ final class WebhookData extends ChipData
             'is_test' => $this->is_test,
             'version' => $this->version,
             'unique_brands' => $this->unique_brands,
-            'event' => $this->event,
-            'data' => $this->data,
-            'timestamp' => $this->timestamp,
             'event_type' => $this->event_type,
             'payload' => $this->payload,
             'headers' => $this->headers,

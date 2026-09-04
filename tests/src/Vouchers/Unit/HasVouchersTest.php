@@ -11,6 +11,8 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
+use AIArmada\Vouchers\Stacking\StackingPolicy;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Support\CartWithVouchers;
 use Illuminate\Support\Facades\Config;
@@ -264,10 +266,45 @@ it('checks if can add voucher', function (): void {
 
     expect($wrapper->canAddVoucher())->toBeTrue();
 
-    // Test with max vouchers disabled
-    Config::set('vouchers.cart.max_vouchers_per_cart', 0);
+    Config::set('vouchers.stacking.mode', 'none');
+    $voucher = Voucher::create([
+        'code' => 'SINGLEONLY',
+        'name' => 'Single Only',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => Active::class,
+    ]);
+    $cart->add([
+        'id' => 'single-only-item',
+        'name' => 'Single Only Item',
+        'price' => 100,
+        'quantity' => 1,
+        'attributes' => [],
+    ]);
+    $wrapper->applyVoucher('singleonly');
+
     expect($wrapper->canAddVoucher())->toBeFalse();
-    Config::set('vouchers.cart.max_vouchers_per_cart', 1);
+});
+
+it('treats an explicit zero voucher limit as disabled', function (): void {
+    $storage = new InMemoryStorage;
+
+    $cart = new Cart(
+        storage: $storage,
+        identifier: 'zero-limit-test',
+        events: null,
+        instanceName: 'default',
+        eventsEnabled: false,
+        conditionResolver: new CartConditionResolver
+    );
+
+    $wrapper = new CartWithVouchers($cart);
+    $wrapper->setStackingPolicy(new StackingPolicy(
+        rules: [['type' => StackingRuleType::MaxVouchers->value, 'value' => 0]],
+    ));
+
+    expect($wrapper->canAddVoucher())->toBeFalse();
 });
 
 it('validates applied vouchers', function (): void {
@@ -309,8 +346,8 @@ it('validates applied vouchers', function (): void {
 });
 
 it('calculates voucher discount with stacking', function (): void {
-    Config::set('vouchers.cart.allow_stacking', true);
-    Config::set('vouchers.cart.max_vouchers_per_cart', 2);
+    Config::set('vouchers.stacking.mode', 'sequential');
+    Config::set('vouchers.stacking.rules', [['type' => 'max_vouchers', 'value' => 2]]);
 
     $storage = new InMemoryStorage;
 

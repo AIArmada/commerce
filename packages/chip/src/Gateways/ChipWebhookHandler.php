@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Gateways;
 
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentIntentInterface;
@@ -14,6 +15,7 @@ use AIArmada\CommerceSupport\Contracts\Payment\WebhookPayload;
 use AIArmada\CommerceSupport\Exceptions\WebhookVerificationException;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -42,12 +44,20 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
     {
         $payload = $this->webhookService->parsePayload($request->getContent());
         $data = (array) $payload;
+        $eventType = $this->getEventType($request);
 
-        $status = $this->mapChipStatus($data['status'] ?? 'unknown');
+        if (WebhookEventType::tryFrom($eventType) === null) {
+            throw new InvalidArgumentException('CHIP webhook payload contains an unsupported event_type.');
+        }
+
+        $status = $this->mapChipStatus(
+            is_string($data['status'] ?? null) ? $data['status'] : null,
+            $eventType,
+        );
         $paymentId = $this->resolvePurchaseIdFromWebhook($data) ?? ($data['id'] ?? '');
 
         return new WebhookPayload(
-            eventType: $this->getEventType($request),
+            eventType: $eventType,
             paymentId: $paymentId,
             status: $status,
             reference: $data['reference'] ?? null,
@@ -67,35 +77,20 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
             return 'unknown';
         }
 
-        $eventType = $payload['event_type'] ?? $payload['event'] ?? null;
+        $eventType = $payload['event_type'] ?? null;
 
         if (is_string($eventType) && $eventType !== '') {
             return $eventType;
         }
 
-        $status = $payload['status'] ?? 'unknown';
-
-        return match ($status) {
-            'paid' => 'payment.paid',
-            'captured', 'paid_authorized', 'recurring_successful', 'cleared', 'settled' => 'payment.paid',
-            'refunded' => 'payment.refunded',
-            'partially_refunded' => 'payment.partially_refunded',
-            'cancelled' => 'payment.cancelled',
-            'released' => 'payment.cancelled',
-            'error', 'blocked' => 'payment.failed',
-            'chargeback' => 'payment.disputed',
-            'hold', 'preauthorized' => 'payment.authorized',
-            'pending_execute', 'pending_charge', 'sent', 'viewed', 'attempted_capture', 'attempted_refund', 'attempted_recurring' => 'payment.pending',
-            'pending_refund' => 'purchase.pending_refund',
-            'expired', 'overdue' => 'payment.expired',
-            default => "payment.{$status}",
-        };
+        return 'unknown';
     }
 
     public function isPaymentEvent(Request $request): bool
     {
-        // CHIP webhooks are always payment-related
-        return true;
+        $eventType = WebhookEventType::tryFrom($this->getEventType($request));
+
+        return $eventType?->isPurchaseEvent() === true || $eventType?->isPaymentEvent() === true;
     }
 
     public function getPaymentFromWebhook(Request $request): ?PaymentIntentInterface
@@ -103,6 +98,25 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
         $payload = json_decode($request->getContent(), true);
 
         if (! is_array($payload) || ! isset($payload['id'])) {
+            return null;
+        }
+
+        $eventType = WebhookEventType::tryFrom($this->getEventType($request));
+        $type = $payload['type'] ?? null;
+
+        if ($eventType === null || ! in_array($type, ['purchase', 'payment'], true)) {
+            return null;
+        }
+
+        if ($eventType->isPurchaseEvent() && $type !== 'purchase') {
+            return null;
+        }
+
+        if ($eventType->isPaymentEvent() && $type !== 'payment') {
+            return null;
+        }
+
+        if (! $eventType->isPurchaseEvent() && ! $eventType->isPaymentEvent()) {
             return null;
         }
 
@@ -115,45 +129,59 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
                 return new ChipPaymentIntent($purchase);
             }
 
-            // We can construct a Purchase directly from webhook data
-            $purchase = PurchaseData::from($payload);
-
-            return new ChipPaymentIntent($purchase);
-        } catch (Throwable) {
-            // If parsing fails, try fetching from API
-            try {
-                $purchaseId = $this->resolvePurchaseIdFromWebhook($payload) ?? $payload['id'];
-                $purchase = $this->collectService->getPurchase($purchaseId);
-
-                return new ChipPaymentIntent($purchase);
-            } catch (Throwable) {
-                return null;
+            if ($eventType->isPurchaseEvent()) {
+                return new ChipPaymentIntent(PurchaseData::from($payload));
             }
+
+            return null;
+        } catch (Throwable) {
+            return null;
         }
     }
 
     /**
      * Map CHIP status to universal PaymentStatus.
      */
-    private function mapChipStatus(string $chipStatus): PaymentStatus
+    private function mapChipStatus(?string $chipStatus, string $eventType): PaymentStatus
     {
+        $eventStatus = match ($eventType) {
+            'purchase.created' => PaymentStatus::CREATED,
+            'purchase.paid', 'purchase.captured', 'purchase.settled' => PaymentStatus::PAID,
+            'purchase.payment_failure', 'purchase.refund_failure',
+            'purchase.capture_failure', 'purchase.release_failure' => PaymentStatus::FAILED,
+            'purchase.cancelled', 'purchase.released' => PaymentStatus::CANCELLED,
+            'purchase.hold', 'purchase.preauthorized' => PaymentStatus::AUTHORIZED,
+            'purchase.pending_execute', 'purchase.pending_charge',
+            'purchase.viewed' => PaymentStatus::PENDING,
+            'purchase.pending_capture', 'purchase.pending_release',
+            'purchase.pending_refund', 'purchase.pending_recurring_token_delete' => PaymentStatus::PROCESSING,
+            'payment.refunded' => PaymentStatus::REFUNDED,
+            'payment.charged_back' => PaymentStatus::DISPUTED,
+            'payment.chargeback_reversed' => PaymentStatus::PROCESSING,
+            'payout.created', 'payout.pending' => PaymentStatus::PENDING,
+            'payout.failed' => PaymentStatus::FAILED,
+            'payout.success' => PaymentStatus::PAID,
+            default => null,
+        };
+
+        if ($eventStatus !== null) {
+            return $eventStatus;
+        }
+
         return match ($chipStatus) {
             'created' => PaymentStatus::CREATED,
-            'sent', 'viewed', 'pending_execute', 'pending_charge' => PaymentStatus::PENDING,
-            'attempted_capture', 'attempted_refund', 'attempted_recurring', 'pending_refund' => PaymentStatus::PROCESSING,
-            'pending_capture' => PaymentStatus::AUTHORIZED,
-            'pending_release' => PaymentStatus::AUTHORIZED,
+            'sent', 'viewed', 'overdue', 'pending_execute', 'pending_charge' => PaymentStatus::PENDING,
+            'pending_capture', 'pending_release', 'pending_refund' => PaymentStatus::PROCESSING,
             'hold' => PaymentStatus::AUTHORIZED,
             'preauthorized' => PaymentStatus::AUTHORIZED,
-            'paid', 'captured', 'paid_authorized', 'recurring_successful', 'cleared', 'settled' => PaymentStatus::PAID,
+            'paid', 'cleared', 'settled' => PaymentStatus::PAID,
             'refunded' => PaymentStatus::REFUNDED,
-            'partially_refunded' => PaymentStatus::PARTIALLY_REFUNDED,
             'cancelled', 'released' => PaymentStatus::CANCELLED,
-            'expired', 'overdue' => PaymentStatus::EXPIRED,
+            'expired' => PaymentStatus::EXPIRED,
             'chargeback' => PaymentStatus::DISPUTED,
             'error' => PaymentStatus::FAILED,
             'blocked' => PaymentStatus::FAILED,
-            default => PaymentStatus::PENDING,
+            default => throw new InvalidArgumentException('CHIP webhook payload contains an unsupported status.'),
         };
     }
 

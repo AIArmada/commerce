@@ -8,7 +8,7 @@ title: Troubleshooting
 
 ### Resources Not Appearing
 
-**Symptom**: Price Lists or Promotions don't show in navigation.
+**Symptom**: Price Lists don't show in navigation.
 
 **Checks**:
 
@@ -26,23 +26,14 @@ php artisan filament:clear-cached-components
 php artisan cache:clear
 ```
 
-3. For PromotionResource, ensure promotions package is installed:
-```bash
-composer show aiarmada/promotions
-```
-
-4. If `aiarmada/filament-promotions` is installed, Promotions are intentionally provided by the dedicated promotions plugin instead of under Pricing:
+3. If promotion administration is required, install the dedicated plugin:
 ```bash
 composer show aiarmada/filament-promotions
 ```
 
-### Promotions Missing Under Pricing
+### Promotions Administration
 
-**Symptom**: Price Lists are visible, but Promotions do not appear under the Pricing navigation.
-
-**Cause**: `aiarmada/filament-promotions` is installed. Filament Pricing suppresses its fallback `PromotionResource` so you do not get duplicate promotions navigation.
-
-**Expected behavior**: use the dedicated promotions navigation/resource provided by `aiarmada/filament-promotions`.
+Promotion administration is not provided by Filament Pricing. Use the navigation/resource from `aiarmada/filament-promotions`.
 
 ### Price Simulator Not Available
 
@@ -126,23 +117,6 @@ if (! class_exists('\\AIArmada\\Products\\Models\\Product')) {
 composer require aiarmada/products
 ```
 
-### Duplicate Action Fails
-
-**Symptom**: Duplicate promotion action throws error.
-
-**Checks**:
-
-1. User has create permission:
-```php
-static::canCreate(); // Must return true
-```
-
-2. Unique constraint on code:
-```php
-// Code is set to null on duplicate
-$new->code = null;
-```
-
 ### Widget Shows Zero Stats
 
 **Symptom**: PricingStatsWidget shows all zeros.
@@ -159,9 +133,9 @@ PriceList::active()->count();
 PriceList::forOwner($owner)->count();
 ```
 
-3. Promotions stats (if expected):
+3. Promotion stats (if expected):
 ```php
-// Requires promotions package
+// Statistics are available only when the promotions package is installed.
 class_exists(Promotion::class);
 ```
 

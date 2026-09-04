@@ -9,9 +9,9 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
  * @property int $id
- * @property int $amount
- * @property int $fee
- * @property int $net_amount
+ * @property string $amount Amount in major currency units
+ * @property string $fee Amount in major currency units
+ * @property string $net_amount Amount in major currency units
  * @property string $currency
  * @property string $fee_type
  * @property string $transaction_type
@@ -23,17 +23,17 @@ class SendLimit extends ChipIntegerModel
 {
     public function amountMoney(): Attribute
     {
-        return Attribute::get(fn (): ?Money => $this->toMoney((int) $this->amount, $this->currency));
+        return Attribute::get(fn (): ?Money => $this->toMoney((int) round((float) $this->amount * 100), $this->currency));
     }
 
     public function netAmountMoney(): Attribute
     {
-        return Attribute::get(fn (): ?Money => $this->toMoney((int) $this->net_amount, $this->currency));
+        return Attribute::get(fn (): ?Money => $this->toMoney((int) round((float) $this->net_amount * 100), $this->currency));
     }
 
     public function feeMoney(): Attribute
     {
-        return Attribute::get(fn (): ?Money => $this->toMoney((int) $this->fee, $this->currency));
+        return Attribute::get(fn (): ?Money => $this->toMoney((int) round((float) $this->fee * 100), $this->currency));
     }
 
     public function statusColor(): string
@@ -41,9 +41,9 @@ class SendLimit extends ChipIntegerModel
         $status = $this->status ?? '';
 
         return match ($status) {
-            'active', 'approved' => 'success',
-            'pending', 'review' => 'warning',
-            'expired', 'rejected', 'blocked' => 'danger',
+            'approved', 'success' => 'success',
+            'pending' => 'warning',
+            'expired' => 'danger',
             default => 'gray',
         };
     }

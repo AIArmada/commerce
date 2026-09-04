@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Models\InventoryStandardCost;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 class InventoryStandardCostTest extends InventoryTestCase
 {
@@ -209,7 +209,7 @@ class InventoryStandardCostTest extends InventoryTestCase
         $cost = $cost->fresh();
 
         expect($cost->standard_cost_minor)->toBeInt();
-        expect($cost->effective_from)->toBeInstanceOf(Carbon::class);
+        expect($cost->effective_from)->toBeInstanceOf(CarbonImmutable::class);
         expect($cost->metadata)->toBeArray();
     }
 }

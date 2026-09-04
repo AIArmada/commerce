@@ -98,7 +98,7 @@ $attribution->conversions;  // HasMany<AffiliateConversion>
 $attribution->touchpoints;  // HasMany<AffiliateTouchpoint>
 ```
 
-Compatibility aliases are maintained for legacy cart semantics:
+Attribution identity fields describe the originating commerce subject:
 
 - `subject_key` and `cart_identifier` are stored independently with explicit meaning.
 - `subject_instance` <-> `cart_instance`

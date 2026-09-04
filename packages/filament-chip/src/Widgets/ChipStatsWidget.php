@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use DateTimeInterface;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
 
 final class ChipStatsWidget extends BaseWidget
 {
@@ -73,34 +71,26 @@ final class ChipStatsWidget extends BaseWidget
     private function getRevenueForPeriod(DateTimeInterface $since): int
     {
         $sinceTimestamp = $since->getTimestamp();
-        $driver = ConnectionDriver::name(DB::connection());
-
         $query = tap(Purchase::query(), function ($query): void {
             if (method_exists($query->getModel(), 'scopeForOwner')) {
                 $query->forOwner();
             }
         })
-            ->where('status', 'paid')
+            ->whereIn('status', ['paid', 'cleared', 'settled'])
             ->where('is_test', false)
             ->where('created_on', '>=', $sinceTimestamp);
 
         $purchases = $query->get();
 
         return $purchases->sum(function (Purchase $purchase): int {
-            $total = $purchase->purchase['total'] ?? $purchase->purchase['amount'] ?? 0;
-
-            if (is_array($total)) {
-                return (int) ($total['amount'] ?? 0);
-            }
-
-            return (int) $total;
+            return (int) ($purchase->purchase['total'] ?? 0);
         });
     }
 
     private function getSuccessRate(): float
     {
-        $successStatuses = ['paid', 'completed', 'captured'];
-        $failedStatuses = ['failed', 'cancelled'];
+        $successStatuses = ['paid', 'cleared', 'settled'];
+        $failedStatuses = ['error', 'blocked', 'cancelled', 'released', 'expired', 'chargeback'];
 
         $successful = tap(Purchase::query(), function ($query): void {
             if (method_exists($query->getModel(), 'scopeForOwner')) {

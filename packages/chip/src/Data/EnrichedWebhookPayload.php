@@ -37,9 +37,9 @@ final class EnrichedWebhookPayload extends Data
     {
         $purchaseId = data_get($payload, 'related_to.type') === 'purchase'
             ? data_get($payload, 'related_to.id')
-            : ($payload['id'] ?? $payload['data']['id'] ?? null);
+            : (($payload['type'] ?? null) === 'purchase' ? ($payload['id'] ?? null) : null);
         $purchaseId = is_string($purchaseId) || is_int($purchaseId) ? (string) $purchaseId : null;
-        $clientId = $payload['client_id'] ?? $payload['client']['id'] ?? $payload['data']['client_id'] ?? null;
+        $clientId = $payload['client_id'] ?? (is_array($payload['client'] ?? null) ? ($payload['client']['id'] ?? null) : null);
         $clientId = is_string($clientId) || is_int($clientId) ? (string) $clientId : null;
 
         $localPurchase = null;
@@ -108,7 +108,7 @@ final class EnrichedWebhookPayload extends Data
      */
     private static function resolveEventTimestamp(array $payload): ?CarbonInterface
     {
-        $candidate = $payload['created'] ?? $payload['created_on'] ?? null;
+        $candidate = $payload['created_on'] ?? null;
 
         if (is_int($candidate) || is_float($candidate) || (is_string($candidate) && is_numeric($candidate))) {
             return CarbonImmutable::createFromTimestampUTC((int) $candidate);

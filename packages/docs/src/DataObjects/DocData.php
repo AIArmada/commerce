@@ -50,11 +50,11 @@ final class DocData
      */
     public static function from(array $data): self
     {
-        foreach (['subtotal', 'total', 'tax_rate', 'tax_amount', 'discount_amount'] as $legacyKey) {
-            if (array_key_exists($legacyKey, $data)) {
+        foreach (['subtotal', 'total', 'tax_rate', 'tax_amount', 'discount_amount'] as $unsupportedKey) {
+            if (array_key_exists($unsupportedKey, $data)) {
                 throw new InvalidArgumentException(sprintf(
                     'Removed major-unit document field `%s` is not accepted; provide the corresponding minor-unit integer field.',
-                    $legacyKey,
+                    $unsupportedKey,
                 ));
             }
         }

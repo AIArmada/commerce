@@ -37,7 +37,7 @@ describe('WebhookRetryManager', function (): void {
         it('returns false for non-failed webhooks', function (): void {
             $webhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['test' => 'data'],
                 'status' => 'processed',
@@ -53,7 +53,7 @@ describe('WebhookRetryManager', function (): void {
         it('returns true for failed webhooks with retries remaining', function (): void {
             $webhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['test' => 'data'],
                 'status' => 'failed',
@@ -69,7 +69,7 @@ describe('WebhookRetryManager', function (): void {
         it('returns false for failed webhooks with max retries reached', function (): void {
             $webhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['test' => 'data'],
                 'status' => 'failed',
@@ -87,7 +87,7 @@ describe('WebhookRetryManager', function (): void {
         it('returns correct delay for first retry', function (): void {
             $webhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['test' => 'data'],
                 'status' => 'failed',
@@ -103,7 +103,7 @@ describe('WebhookRetryManager', function (): void {
         it('returns correct delay for second retry', function (): void {
             $webhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['test' => 'data'],
                 'status' => 'failed',
@@ -119,7 +119,7 @@ describe('WebhookRetryManager', function (): void {
         it('returns last delay for attempts beyond schedule', function (): void {
             $webhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['test' => 'data'],
                 'status' => 'failed',
@@ -139,7 +139,7 @@ describe('WebhookRetryManager', function (): void {
 
             $webhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['id' => 'purchase-123', 'type' => 'purchase'],
                 'status' => 'failed',
@@ -164,7 +164,7 @@ describe('WebhookRetryManager', function (): void {
 
             $webhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['id' => 'purchase-123', 'type' => 'purchase'],
                 'status' => 'failed',
@@ -188,7 +188,7 @@ describe('WebhookRetryManager', function (): void {
 
             $webhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['id' => 'purchase-123', 'type' => 'purchase'],
                 'status' => 'failed',
@@ -218,7 +218,7 @@ describe('WebhookRetryManager', function (): void {
 
             $webhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['test' => 'data'],
                 'status' => 'failed',
@@ -243,7 +243,7 @@ describe('WebhookRetryManager', function (): void {
 
             $eligibleWebhook = Webhook::forceCreate([
                 'title' => 'Eligible webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['id' => 'purchase-eligible', 'type' => 'purchase'],
                 'status' => 'failed',
@@ -256,7 +256,7 @@ describe('WebhookRetryManager', function (): void {
 
             Webhook::forceCreate([
                 'title' => 'Too recent webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['id' => 'purchase-recent', 'type' => 'purchase'],
                 'status' => 'failed',
@@ -269,7 +269,7 @@ describe('WebhookRetryManager', function (): void {
 
             Webhook::forceCreate([
                 'title' => 'Processed webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['id' => 'purchase-processed', 'type' => 'purchase'],
                 'status' => 'processed',

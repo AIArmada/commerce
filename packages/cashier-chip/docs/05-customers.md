@@ -85,7 +85,7 @@ This syncs the following fields (if present on your model):
 Override the CHIP mapping helpers for custom data:
 
 ```php
-class User extends Authenticatable
+class User extends Authenticatable implements BillableContract
 {
     use Billable;
 
@@ -140,11 +140,12 @@ public function boot(): void
 ```
 
 The model must:
-1. Use the `Billable` trait
-2. Have a factory for testing
+1. Implement `BillableContract`
+2. Use the `Billable` trait
+3. Have a factory for testing
 
 ```php
-class Team extends Model
+class Team extends Model implements BillableContract
 {
     use Billable;
     

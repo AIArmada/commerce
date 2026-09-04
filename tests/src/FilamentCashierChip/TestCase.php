@@ -118,10 +118,8 @@ abstract class TestCase extends Orchestra
 
         // Configure CHIP settings for testing
         $app['config']->set('chip.collect.api_key', 'test_secret_key');
-        $app['config']->set('chip.collect.secret_key', 'test_secret_key');
         $app['config']->set('chip.collect.brand_id', 'test_brand_id');
-        $app['config']->set('chip.collect.environment', 'sandbox');
-        $app['config']->set('chip.is_sandbox', true);
+        $app['config']->set('chip.environment', 'sandbox');
 
         // Configure Cashier CHIP settings
         $app['config']->set('cashier-chip.currency', 'MYR');
@@ -165,9 +163,6 @@ abstract class TestCase extends Orchestra
             $table->string('email')->unique();
             $table->string('phone')->nullable();
             $table->string('chip_id')->nullable()->index();
-            $table->string('pm_type')->nullable();
-            $table->string('pm_last_four', 4)->nullable();
-            $table->string('default_pm_id')->nullable();
             $table->timestamp('trial_ends_at')->nullable();
             $table->timestamps();
         });

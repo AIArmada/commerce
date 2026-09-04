@@ -32,18 +32,18 @@ class InvoicePaymentTest extends CashierChipTestCase
         $invoicePayment = new InvoicePayment($purchase);
         $this->assertTrue($invoicePayment->isCompleted());
 
-        $purchaseSuccess = PurchaseData::from(['id' => 'pur_124', 'status' => 'success']);
+        $purchaseSuccess = PurchaseData::from(['id' => 'pur_124', 'status' => 'cleared']);
         $invoicePaymentSuccess = new InvoicePayment($purchaseSuccess);
         $this->assertTrue($invoicePaymentSuccess->isCompleted());
 
-        $purchaseFailed = PurchaseData::from(['id' => 'pur_125', 'status' => 'failed']);
+        $purchaseFailed = PurchaseData::from(['id' => 'pur_125', 'status' => 'error']);
         $invoicePaymentFailed = new InvoicePayment($purchaseFailed);
         $this->assertFalse($invoicePaymentFailed->isCompleted());
     }
 
     public function test_is_pending(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $invoicePayment = new InvoicePayment($purchase);
         $this->assertTrue($invoicePayment->isPending());
 
@@ -56,9 +56,17 @@ class InvoicePaymentTest extends CashierChipTestCase
         $this->assertFalse($invoicePaymentPaid->isPending());
     }
 
+    public function test_overdue_purchase_is_pending(): void
+    {
+        $purchase = PurchaseData::from(['id' => 'pur_126', 'status' => 'overdue']);
+        $invoicePayment = new InvoicePayment($purchase);
+
+        $this->assertTrue($invoicePayment->isPending());
+    }
+
     public function test_is_failed(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'failed']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'error']);
         $invoicePayment = new InvoicePayment($purchase);
         $this->assertTrue($invoicePayment->isFailed());
 

@@ -109,11 +109,12 @@ class RenewSubscriptionsCommand extends Command
         $billable = $subscription?->billable;
 
         if (! $subscription instanceof Subscription || ! $billable instanceof Model || ! $billable instanceof BillableContract) {
-            $this->recordFailure($attempt, $subscription, 'INVALID_RENEWAL_SUBJECT');
+            $this->recordSkipped($attempt, 'INVALID_RENEWAL_SUBJECT');
 
-            return 'failed';
+            return 'skipped';
         }
 
+        /** @var Model&BillableContract $billable */
         if ($attempt->amount_minor <= 0) {
             $this->recordFailure($attempt, $subscription, 'INVALID_RENEWAL_AMOUNT');
 
@@ -136,7 +137,6 @@ class RenewSubscriptionsCommand extends Command
                     $attempt->amount_minor,
                     $paymentMethodId,
                     [
-                        'idempotency_key' => $attempt->id,
                         'product_name' => "Subscription: {$subscription->type}",
                         'reference' => "Renewal {$attempt->id}",
                         'metadata' => [
@@ -225,6 +225,17 @@ class RenewSubscriptionsCommand extends Command
             'purchase_id' => $purchaseId,
             'last_error_code' => $code,
             'lease_expires_at' => null,
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function recordSkipped(RenewalAttempt $attempt, string $code): void
+    {
+        RenewalAttempt::query()->whereKey($attempt->id)->where('status', 'claimed')->update([
+            'status' => 'skipped',
+            'last_error_code' => $code,
+            'lease_expires_at' => null,
+            'completed_at' => now(),
             'updated_at' => now(),
         ]);
     }

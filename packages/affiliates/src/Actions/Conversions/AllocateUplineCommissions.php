@@ -135,7 +135,11 @@ final class AllocateUplineCommissions
                 return (int) round($commissionMinor * ((float) ($levelConfig['value'] ?? 0) / 100));
             }
 
-            return (int) round($commissionMinor * (float) ($levelConfig['share'] ?? 0));
+            if (array_key_exists('share', $levelConfig) && is_numeric($levelConfig['share'])) {
+                return (int) round($commissionMinor * (float) $levelConfig['share']);
+            }
+
+            return 0;
         }
 
         // Global config: flat float (0.05 = 5%)
@@ -158,7 +162,11 @@ final class AllocateUplineCommissions
                 return (float) ($levelConfig['value'] ?? 0);
             }
 
-            return (float) ($levelConfig['share'] ?? 0);
+            if (array_key_exists('share', $levelConfig) && is_numeric($levelConfig['share'])) {
+                return (float) $levelConfig['share'];
+            }
+
+            return 0.0;
         }
 
         return (float) $levelConfig;

@@ -191,7 +191,7 @@ $result = $migrationService->migrateGuestCartForUser(
 );
 ```
 
-> **Deprecation Notice:** The `CartMigrationService` is deprecated. Prefer the dedicated Action classes below.
+The service API is available for integrations that need identifier management. The dedicated Action classes below are the preferred orchestration path for application workflows.
 
 ### Action-Based Migration
 

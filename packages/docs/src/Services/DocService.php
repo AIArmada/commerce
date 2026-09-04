@@ -524,12 +524,12 @@ final class DocService implements DocServiceInterface
     /** @param array<string, mixed> $item */
     private function assertMinorUnitItem(array $item, int $index, ?string $currency): void
     {
-        foreach (['price', 'unit_price', 'tax_amount'] as $legacyKey) {
-            if (array_key_exists($legacyKey, $item)) {
+        foreach (['price', 'unit_price', 'tax_amount'] as $unsupportedKey) {
+            if (array_key_exists($unsupportedKey, $item)) {
                 throw new InvalidArgumentException(sprintf(
                     'Document item %d uses removed major-unit field `%s`; use the corresponding `*_minor` integer field.',
                     $index,
-                    $legacyKey,
+                    $unsupportedKey,
                 ));
             }
         }

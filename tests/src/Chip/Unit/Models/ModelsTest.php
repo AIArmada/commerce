@@ -129,11 +129,11 @@ describe('ChipIntegerModel base class', function (): void {
         expect($sendWebhook->getTable())->toBe('chip_send_webhooks');
     });
 
-    it('uses a UUID local identity for Send webhooks', function (): void {
+    it('uses an integer API identity for Send webhooks', function (): void {
         $sendWebhook = new SendWebhook;
 
-        expect(in_array(HasUuids::class, class_uses_recursive($sendWebhook)))->toBeTrue()
-            ->and($sendWebhook->getKeyType())->toBe('string')
+        expect(in_array(HasUuids::class, class_uses_recursive($sendWebhook)))->toBeFalse()
+            ->and($sendWebhook->getKeyType())->toBe('int')
             ->and($sendWebhook->getIncrementing())->toBeFalse();
     });
 });
@@ -191,10 +191,10 @@ describe('Purchase model', function (): void {
         $purchase->forceFill(['status' => 'paid']);
         expect($purchase->statusColor())->toBe('success');
 
-        $purchase->forceFill(['status' => 'processing']);
+        $purchase->forceFill(['status' => 'pending_execute']);
         expect($purchase->statusColor())->toBe('warning');
 
-        $purchase->forceFill(['status' => 'failed']);
+        $purchase->forceFill(['status' => 'error']);
         expect($purchase->statusColor())->toBe('danger');
 
         $purchase->forceFill(['status' => 'unknown']);
@@ -399,7 +399,7 @@ describe('Webhook model', function (): void {
 
     it('protects owner and processing state from mass assignment', function (): void {
         $webhook = new Webhook([
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'payload' => ['id' => 'purchase_123'],
             'owner_type' => 'App\\Models\\User',
             'owner_id' => 'user-123',
@@ -407,7 +407,7 @@ describe('Webhook model', function (): void {
             'processed_at' => now(),
         ]);
 
-        expect($webhook->event)->toBe('purchase.paid')
+        expect($webhook->event_type)->toBe('purchase.paid')
             ->and($webhook->payload)->toBe(['id' => 'purchase_123'])
             ->and($webhook->owner_type)->toBeNull()
             ->and($webhook->owner_id)->toBeNull()

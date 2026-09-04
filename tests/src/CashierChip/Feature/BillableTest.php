@@ -21,13 +21,13 @@ beforeEach(function (): void {
 it('can check if user has chip id', function (): void {
     expect($this->user->hasChipId())->toBeFalse();
 
-    $this->user->update(['chip_id' => 'test-chip-id']);
+    $this->linkChipCustomer($this->user, 'test-chip-id');
 
     expect($this->user->hasChipId())->toBeTrue();
 });
 
 it('can get chip id', function (): void {
-    $this->user->update(['chip_id' => 'test-chip-id']);
+    $this->linkChipCustomer($this->user, 'test-chip-id');
 
     expect($this->user->chipId())->toBe('test-chip-id');
 });
@@ -45,36 +45,30 @@ it('can check if has default payment method', function (): void {
 });
 
 it('can get default payment method', function (): void {
-    $this->user->update(['chip_id' => 'cli_test123']);
+    $this->linkChipCustomer($this->user, 'cli_test123');
 
     $fake = Cashier::getFake();
     $fake->addRecurringToken($this->user->chip_id, [
-        'type' => 'card',
-        'card_brand' => 'Visa',
-        'last_4' => '4242',
-        'exp_month' => 12,
-        'exp_year' => 2030,
+        'payment_method' => 'visa',
+        'description' => '**** **** **** 4242',
     ]);
 
     $paymentMethod = $this->user->defaultPaymentMethod();
 
     expect($paymentMethod)->not->toBeNull();
-    expect($paymentMethod->brand())->toBe('Visa');
-    expect($paymentMethod->lastFour())->toBe('4242');
+    expect($paymentMethod->type())->toBe('visa');
+    expect($paymentMethod->brand())->toBeNull();
+    expect($paymentMethod->lastFour())->toBeNull();
 });
 
 it('can update default payment method', function (): void {
-    // Set up user with chip_id
-    $this->user->update(['chip_id' => 'cli_test456']);
+    $this->linkChipCustomer($this->user, 'cli_test456');
 
     // Add a recurring token to the fake client using Cashier::getFake()
     $fake = Cashier::getFake();
     $token = $fake->addRecurringToken($this->user->chip_id, [
-        'type' => 'card',
-        'card_brand' => 'Mastercard',
-        'last_4' => '5555',
-        'exp_month' => 6,
-        'exp_year' => 2028,
+        'payment_method' => 'mastercard',
+        'description' => '**** **** **** 5555',
     ]);
 
     // Update default payment method
@@ -83,8 +77,8 @@ it('can update default payment method', function (): void {
     // Refresh the user to get the latest values
     $this->user->refresh();
 
-    expect($this->user->pm_type)->toBe('Mastercard');
-    expect($this->user->pm_last_four)->toBe('5555');
+    expect($this->user->pm_type)->toBe('mastercard');
+    expect($this->user->pm_last_four)->toBeNull();
 });
 
 // Subscription Tests

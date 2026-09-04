@@ -9,6 +9,7 @@ use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\CompanyStatementData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\ChipCollectService;
 use Mockery;
@@ -73,9 +74,13 @@ class FakeChipCollectService extends ChipCollectService
         return PurchaseData::from($response ?? []);
     }
 
-    public function refundPurchase(string $purchaseId, ?int $amount = null): PurchaseData
+    public function refundPurchase(string $purchaseId, ?int $amount = null): PurchaseData | PaymentData
     {
         $response = $this->fakeClient->refundPurchase($purchaseId, $amount);
+
+        if (($response['type'] ?? null) === 'payment') {
+            return PaymentData::from($response);
+        }
 
         return PurchaseData::from($response ?? []);
     }

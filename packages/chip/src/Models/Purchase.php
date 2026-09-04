@@ -91,7 +91,7 @@ class Purchase extends ChipModel
     public function amount(): Attribute
     {
         return Attribute::get(function (): ?int {
-            $amount = Arr::get($this->purchase, 'amount');
+            $amount = Arr::get($this->purchase, 'total');
 
             return is_numeric($amount) ? (int) $amount : null;
         });
@@ -134,23 +134,14 @@ class Purchase extends ChipModel
     public function totalMoney(): Attribute
     {
         return Attribute::get(function (): ?Money {
-            $currency = Arr::get($this->purchase, 'currency', 'MYR');
+            $currency = Arr::get($this->purchase, 'currency');
             $total = Arr::get($this->purchase, 'total');
 
-            if ($total === null) {
+            if (! is_string($currency) || $currency === '' || ! is_numeric($total)) {
                 return null;
             }
 
-            if (is_array($total)) {
-                $total = Arr::get($total, 'amount');
-                $currency = Arr::get($this->purchase, 'total.currency', $currency);
-            }
-
-            if (! is_numeric($total)) {
-                return null;
-            }
-
-            return $this->toMoney((int) $total, is_string($currency) ? mb_strtoupper($currency) : 'MYR');
+            return $this->toMoney((int) $total, mb_strtoupper($currency));
         });
     }
 
@@ -172,9 +163,11 @@ class Purchase extends ChipModel
         $status = (string) ($this->status ?? '');
 
         return match ($status) {
-            'paid', 'completed', 'captured' => 'success',
-            'partially_paid', 'processing', 'refunding' => 'warning',
-            'failed', 'cancelled', 'chargeback' => 'danger',
+            'paid', 'cleared', 'settled' => 'success',
+            'hold', 'preauthorized', 'pending_execute', 'pending_charge',
+            'pending_capture', 'pending_release', 'pending_refund', 'overdue' => 'warning',
+            'error', 'blocked', 'cancelled', 'released', 'expired', 'chargeback' => 'danger',
+            'refunded' => 'info',
             default => 'secondary',
         };
     }

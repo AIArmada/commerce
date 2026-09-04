@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Actions;
 
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
+use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Support\ModelResolver;
 use InvalidArgumentException;
 
@@ -38,14 +39,47 @@ final class SyncEventOrderRegistrationsAction
         $count = 0;
         foreach ($registrations as $registration) {
             match ($eventType) {
-                'paid' => $this->registrationService->approve($registration),
-                'cancelled' => $this->registrationService->cancel($registration, 'Order cancelled'),
-                'refunded' => $this->registrationService->refund($registration, 'Order refunded'),
-                'refund_failed' => $this->registrationService->restoreFromRefundPending($registration, 'Refund failed'),
+                'paid' => $this->syncPaid($registration),
+                'cancelled' => $this->syncCancelled($registration),
+                'refunded' => $this->syncRefunded($registration),
+                'refund_failed' => $this->syncRefundFailed($registration),
             };
             $count++;
         }
 
         return $count;
+    }
+
+    private function syncPaid(EventRegistration $registration): void
+    {
+        $this->registrationService->approve($registration);
+        $this->setPaymentStatus($registration, 'paid');
+    }
+
+    private function syncCancelled(EventRegistration $registration): void
+    {
+        $this->registrationService->cancel($registration, 'Order cancelled');
+        $this->setPaymentStatus($registration, 'cancelled');
+    }
+
+    private function syncRefunded(EventRegistration $registration): void
+    {
+        $this->registrationService->refund($registration, 'Order refunded');
+        $this->setPaymentStatus($registration, 'refunded');
+    }
+
+    private function syncRefundFailed(EventRegistration $registration): void
+    {
+        $this->registrationService->restoreFromRefundPending($registration, 'Refund failed');
+        $this->setPaymentStatus($registration, 'paid');
+    }
+
+    private function setPaymentStatus(EventRegistration $registration, string $paymentStatus): void
+    {
+        if ($registration->payment_status === $paymentStatus) {
+            return;
+        }
+
+        $registration->forceFill(['payment_status' => $paymentStatus])->save();
     }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Chip;
 
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
-use AIArmada\Chip\Actions\HandleSendInstructionWebhookAction;
 use AIArmada\Chip\Actions\RunChipPurchaseDocGenerationAction;
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Clients\ChipSendClient;
@@ -70,7 +69,10 @@ final class ChipServiceProvider extends PackageServiceProvider
         }
 
         Route::middleware(config('chip.webhooks.middleware', ['api']))
-            ->group(fn () => $this->loadRoutesFrom(__DIR__ . '/../routes/webhooks.php'));
+            ->group(function (): void {
+                $this->loadRoutesFrom(__DIR__ . '/../routes/webhooks.php');
+                $this->loadRoutesFrom(__DIR__ . '/../routes/send-webhooks.php');
+            });
     }
 
     public function packageRegistered(): void
@@ -262,7 +264,6 @@ final class ChipServiceProvider extends PackageServiceProvider
     protected function registerActions(): void
     {
         $this->app->singleton(DispatchChipWebhookAction::class);
-        $this->app->singleton(HandleSendInstructionWebhookAction::class);
         $this->app->singleton(RunChipPurchaseDocGenerationAction::class);
         $this->app->singleton(BuildChipDocData::class);
     }
@@ -284,7 +285,14 @@ final class ChipServiceProvider extends PackageServiceProvider
             $environment = config('chip.environment', 'sandbox');
 
             if (is_array($baseUrlConfig)) {
-                $baseUrl = $baseUrlConfig[$environment] ?? reset($baseUrlConfig);
+                if (! array_key_exists($environment, $baseUrlConfig)) {
+                    throw new InvalidArgumentException(sprintf(
+                        'CHIP Collect environment [%s] has no configured base URL.',
+                        $environment,
+                    ));
+                }
+
+                $baseUrl = $baseUrlConfig[$environment];
             } else {
                 $baseUrl = $baseUrlConfig;
             }
@@ -311,8 +319,7 @@ final class ChipServiceProvider extends PackageServiceProvider
                 apiKey: $apiKey,
                 apiSecret: $apiSecret,
                 environment: $environment,
-                baseUrl: config("chip.send.base_url.{$environment}")
-                ?? config('chip.send.base_url.sandbox', 'https://staging-api.chip-in.asia/api'),
+                baseUrl: $this->resolveSendBaseUrl($environment),
                 timeout: config('chip.http.timeout', 30),
                 retryConfig: config('chip.http.retry', [
                     'attempts' => 3,
@@ -320,6 +327,20 @@ final class ChipServiceProvider extends PackageServiceProvider
                 ])
             );
         });
+    }
+
+    private function resolveSendBaseUrl(string $environment): string
+    {
+        $baseUrls = config('chip.send.base_url', []);
+
+        if (! is_array($baseUrls) || ! array_key_exists($environment, $baseUrls)) {
+            throw new InvalidArgumentException(sprintf(
+                'CHIP Send environment [%s] has no configured base URL.',
+                $environment,
+            ));
+        }
+
+        return (string) $baseUrls[$environment];
     }
 
     protected function registerGateway(): void
@@ -362,8 +383,8 @@ final class ChipServiceProvider extends PackageServiceProvider
                 );
             }
 
-            $ownerType = $entry['owner_type'] ?? $entry['type'] ?? null;
-            $ownerId = $entry['owner_id'] ?? $entry['id'] ?? null;
+            $ownerType = $entry['owner_type'] ?? null;
+            $ownerId = $entry['owner_id'] ?? null;
 
             if (empty($ownerType)) {
                 throw new InvalidArgumentException(

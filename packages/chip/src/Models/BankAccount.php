@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
-
 /**
  * @property int $id
  * @property string|null $status
@@ -27,9 +25,9 @@ class BankAccount extends ChipIntegerModel
         $status = $this->status ?? '';
 
         return match ($status) {
-            'approved', 'active' => 'success',
-            'pending', 'verifying' => 'warning',
-            'rejected', 'disabled' => 'danger',
+            'verified' => 'success',
+            'pending' => 'warning',
+            'rejected' => 'danger',
             default => 'gray',
         };
     }
@@ -37,12 +35,6 @@ class BankAccount extends ChipIntegerModel
     public function statusLabel(): string
     {
         return (string) str($this->status ?? 'unknown')->headline();
-    }
-
-    /** @return Attribute<bool, never> */
-    public function isActive(): Attribute
-    {
-        return Attribute::get(fn (): bool => $this->status === 'active' || $this->status === 'approved');
     }
 
     protected static function tableSuffix(): string

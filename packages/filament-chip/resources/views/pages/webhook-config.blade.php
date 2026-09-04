@@ -134,28 +134,43 @@
                 <div class="space-y-2">
                     <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ __('Purchase Events') }}</h4>
                     <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        <li><code class="text-xs">purchase.created</code></li>
                         <li><code class="text-xs">purchase.paid</code></li>
-                        <li><code class="text-xs">purchase.payment_failed</code></li>
-                        <li><code class="text-xs">purchase.refunded</code></li>
+                        <li><code class="text-xs">purchase.payment_failure</code></li>
+                        <li><code class="text-xs">purchase.refund_failure</code></li>
+                        <li><code class="text-xs">purchase.capture_failure</code></li>
+                        <li><code class="text-xs">purchase.release_failure</code></li>
+                        <li><code class="text-xs">purchase.pending_execute</code></li>
+                        <li><code class="text-xs">purchase.pending_charge</code></li>
                         <li><code class="text-xs">purchase.cancelled</code></li>
+                        <li><code class="text-xs">purchase.hold</code></li>
+                        <li><code class="text-xs">purchase.captured</code></li>
+                        <li><code class="text-xs">purchase.pending_capture</code></li>
+                        <li><code class="text-xs">purchase.released</code></li>
+                        <li><code class="text-xs">purchase.pending_release</code></li>
+                        <li><code class="text-xs">purchase.preauthorized</code></li>
+                        <li><code class="text-xs">purchase.pending_recurring_token_delete</code></li>
+                        <li><code class="text-xs">purchase.recurring_token_deleted</code></li>
+                        <li><code class="text-xs">purchase.pending_refund</code></li>
+                        <li><code class="text-xs">purchase.viewed</code></li>
+                        <li><code class="text-xs">purchase.settled</code></li>
                     </ul>
                 </div>
                 <div class="space-y-2">
-                    <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ __('Subscription Events') }}</h4>
+                    <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ __('Payment Events') }}</h4>
                     <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                        <li><code class="text-xs">billing_template.activated</code></li>
-                        <li><code class="text-xs">billing_template.cancelled</code></li>
-                        <li><code class="text-xs">billing_template_client.added</code></li>
-                        <li><code class="text-xs">billing_template_client.removed</code></li>
+                        <li><code class="text-xs">payment.refunded</code></li>
+                        <li><code class="text-xs">payment.charged_back</code></li>
+                        <li><code class="text-xs">payment.chargeback_reversed</code></li>
                     </ul>
                 </div>
                 <div class="space-y-2">
-                    <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ __('Send Events') }}</h4>
+                    <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ __('Payout Events') }}</h4>
                     <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                        <li><code class="text-xs">send_instruction.completed</code></li>
-                        <li><code class="text-xs">send_instruction.failed</code></li>
-                        <li><code class="text-xs">bank_account.verified</code></li>
-                        <li><code class="text-xs">bank_account.rejected</code></li>
+                        <li><code class="text-xs">payout.created</code></li>
+                        <li><code class="text-xs">payout.pending</code></li>
+                        <li><code class="text-xs">payout.failed</code></li>
+                        <li><code class="text-xs">payout.success</code></li>
                     </ul>
                 </div>
             </div>

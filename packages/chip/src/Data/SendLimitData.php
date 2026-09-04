@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Data;
 
 use Carbon\CarbonImmutable;
+use InvalidArgumentException;
 
 final class SendLimitData extends ChipData
 {
@@ -13,9 +14,9 @@ final class SendLimitData extends ChipData
         public readonly string $currency,
         public readonly string $fee_type,
         public readonly string $transaction_type,
-        public readonly int $amount,
-        public readonly int $fee,
-        public readonly int $net_amount,
+        public readonly int | float $amount,
+        public readonly int | float $fee,
+        public readonly int | float $net_amount,
         public readonly string $status,
         public readonly int $approvals_required,
         public readonly int $approvals_received,
@@ -33,15 +34,17 @@ final class SendLimitData extends ChipData
             currency: (string) $data['currency'],
             fee_type: (string) $data['fee_type'],
             transaction_type: (string) $data['transaction_type'],
-            amount: (int) ($data['amount'] ?? 0),
-            fee: (int) ($data['fee'] ?? 0),
-            net_amount: (int) ($data['net_amount'] ?? 0),
-            status: $data['status'] ?? 'unknown',
-            approvals_required: (int) ($data['approvals_required'] ?? 0),
-            approvals_received: (int) ($data['approvals_received'] ?? 0),
-            from_settlement: $data['from_settlement'] ?? null,
-            created_at: (string) ($data['created_at'] ?? CarbonImmutable::now()->toISOString()),
-            updated_at: (string) ($data['updated_at'] ?? CarbonImmutable::now()->toISOString()),
+            amount: self::numericValue($data['amount']),
+            fee: self::numericValue($data['fee']),
+            net_amount: self::numericValue($data['net_amount']),
+            status: (string) $data['status'],
+            approvals_required: (int) $data['approvals_required'],
+            approvals_received: (int) $data['approvals_received'],
+            from_settlement: isset($data['from_settlement'])
+                ? (string) $data['from_settlement']
+                : null,
+            created_at: (string) $data['created_at'],
+            updated_at: (string) $data['updated_at'],
         );
     }
 
@@ -84,5 +87,16 @@ final class SendLimitData extends ChipData
         }
 
         return CarbonImmutable::parse($value);
+    }
+
+    private static function numericValue(mixed $value): int | float
+    {
+        if (! is_int($value) && ! is_float($value) && ! (is_string($value) && is_numeric($value))) {
+            throw new InvalidArgumentException('CHIP Send limit monetary values must be numeric.');
+        }
+
+        $value = (string) $value;
+
+        return str_contains($value, '.') ? (float) $value : (int) $value;
     }
 }

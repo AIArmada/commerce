@@ -7,15 +7,12 @@ namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
-use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Listeners\HandlePurchasePaymentFailure;
 use AIArmada\CashierChip\Listeners\HandlePurchasePreauthorized;
-use AIArmada\CashierChip\Listeners\HandleSubscriptionChargeFailure;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Events\PurchasePreauthorized;
-use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Event;
@@ -32,7 +29,7 @@ class MoreListenersTest extends CashierChipTestCase
         $purchaseData = [
             'id' => 'pur_123',
             'client_id' => 'cli_123',
-            'status' => 'failed',
+            'status' => 'error',
             'purchase' => ['total' => 1000, 'currency' => 'MYR'],
         ];
 
@@ -53,7 +50,7 @@ class MoreListenersTest extends CashierChipTestCase
 
         $purchaseData = [
             'id' => 'pur_123',
-            'status' => 'failed',
+            'status' => 'error',
         ];
 
         $purchase = PurchaseData::from($purchaseData);
@@ -78,8 +75,10 @@ class MoreListenersTest extends CashierChipTestCase
         $purchaseData = [
             'id' => 'pur_123',
             'client_id' => 'cli_123',
-            'status' => 'failed',
-            'metadata' => ['subscription_type' => 'default'],
+            'status' => 'error',
+            'purchase' => [
+                'metadata' => ['subscription_type' => 'default'],
+            ],
         ];
 
         $purchase = PurchaseData::from($purchaseData);
@@ -101,8 +100,10 @@ class MoreListenersTest extends CashierChipTestCase
             'client_id' => 'cli_123',
             'status' => 'preauthorized',
             'recurring_token' => 'tok_preauth_123',
-            'transaction_data' => ['payment_method' => 'card'],
-            'card' => ['brand' => 'Visa', 'last_4' => '4242'],
+            'transaction_data' => [
+                'payment_method' => 'visa',
+                'extra' => ['masked_pan' => '**** **** **** 4242'],
+            ],
         ];
 
         $purchase = PurchaseData::from($purchaseData);
@@ -156,84 +157,5 @@ class MoreListenersTest extends CashierChipTestCase
 
         $user->refresh();
         $this->assertNull($user->defaultPaymentMethod());
-    }
-
-    public function test_handle_subscription_charge_failure_dispatches_event(): void
-    {
-        Event::fake([SubscriptionRenewalFailed::class]);
-
-        $user = $this->createUser();
-        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
-
-        $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
-            'type' => 'default',
-            'chip_status' => SubscriptionStatus::Active,
-        ]);
-
-        $purchaseData = [
-            'id' => 'pur_123',
-            'client_id' => 'cli_123',
-            'status' => 'failed',
-            'failure_reason' => 'Insufficient funds',
-            'metadata' => ['subscription_type' => 'default'],
-        ];
-
-        $purchase = PurchaseData::from($purchaseData);
-        $event = new PurchaseSubscriptionChargeFailure($purchase, $purchaseData);
-
-        $listener = new HandleSubscriptionChargeFailure;
-        OwnerContext::withOwner($user, fn (): null => tap(null, fn () => $listener->handle($event)));
-
-        Event::assertDispatched(SubscriptionRenewalFailed::class, function ($e) use ($subscription) {
-            return $e->subscription->id === $subscription->id;
-        });
-    }
-
-    public function test_handle_subscription_charge_failure_marks_past_due(): void
-    {
-        $user = $this->createUser();
-        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
-
-        $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
-            'type' => 'default',
-            'chip_status' => SubscriptionStatus::Active,
-        ]);
-
-        $purchaseData = [
-            'id' => 'pur_123',
-            'client_id' => 'cli_123',
-            'status' => 'failed',
-            'metadata' => ['subscription_type' => 'default'],
-        ];
-
-        $purchase = PurchaseData::from($purchaseData);
-        $event = new PurchaseSubscriptionChargeFailure($purchase, $purchaseData);
-
-        $listener = new HandleSubscriptionChargeFailure;
-        OwnerContext::withOwner($user, fn (): null => tap(null, fn () => $listener->handle($event)));
-
-        $this->assertEquals(SubscriptionStatus::PastDue, $subscription->fresh()->chip_status);
-    }
-
-    public function test_handle_subscription_charge_failure_returns_early_without_subscription_type(): void
-    {
-        Event::fake([SubscriptionRenewalFailed::class]);
-
-        $user = $this->createUser();
-        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
-
-        $purchaseData = [
-            'id' => 'pur_123',
-            'client_id' => 'cli_123',
-            'status' => 'failed',
-        ];
-
-        $purchase = PurchaseData::from($purchaseData);
-        $event = new PurchaseSubscriptionChargeFailure($purchase, $purchaseData);
-
-        $listener = new HandleSubscriptionChargeFailure;
-        $listener->handle($event);
-
-        Event::assertNotDispatched(SubscriptionRenewalFailed::class);
     }
 }

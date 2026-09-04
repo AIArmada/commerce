@@ -8,7 +8,6 @@ use AIArmada\Chip\Services\SubscriptionService;
 beforeEach(function (): void {
     config()->set('chip.collect.api_key', 'collect-key');
     config()->set('chip.collect.brand_id', 'brand-123');
-    config()->set('chip.collect.environment', 'sandbox');
 });
 
 it('proxies collect service helpers through the Chip facade', function (): void {

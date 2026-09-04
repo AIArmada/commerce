@@ -134,7 +134,11 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
         }
 
         if (isset($options['cancel_url'])) {
-            $builder->failureUrl($options['cancel_url']);
+            $builder->cancelUrl($options['cancel_url']);
+        }
+
+        if (isset($options['failure_url'])) {
+            $builder->failureUrl($options['failure_url']);
         }
 
         if (isset($options['webhook_url'])) {

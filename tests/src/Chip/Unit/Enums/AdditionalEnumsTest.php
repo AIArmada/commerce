@@ -43,9 +43,9 @@ describe('WebhookEventType enum', function (): void {
         expect(WebhookEventType::PurchasePaid->isPayoutEvent())->toBeFalse();
     });
 
-    it('correctly identifies billing events', function (): void {
-        expect(WebhookEventType::BillingTemplateClientSubscriptionBillingCancelled->isBillingEvent())->toBeTrue();
-        expect(WebhookEventType::PurchasePaid->isBillingEvent())->toBeFalse();
+    it('does not expose undocumented billing events', function (): void {
+        expect(WebhookEventType::fromString('billing_template_client.subscription_billing_cancelled'))->toBeNull();
+        expect(WebhookEventType::PurchasePaid->isPurchaseEvent())->toBeTrue();
     });
 
     it('correctly identifies payment events', function (): void {
@@ -69,7 +69,8 @@ describe('WebhookEventType enum', function (): void {
 
     it('correctly identifies failure events', function (): void {
         expect(WebhookEventType::PurchasePaymentFailure->isFailureEvent())->toBeTrue();
-        expect(WebhookEventType::PurchaseSubscriptionChargeFailure->isFailureEvent())->toBeTrue();
+        expect(WebhookEventType::PurchaseRefundFailure->isFailureEvent())->toBeTrue();
+        expect(WebhookEventType::PaymentChargedBack->isFailureEvent())->toBeTrue();
         expect(WebhookEventType::PayoutFailed->isFailureEvent())->toBeTrue();
         expect(WebhookEventType::PurchasePaid->isFailureEvent())->toBeFalse();
     });
@@ -78,6 +79,6 @@ describe('WebhookEventType enum', function (): void {
         expect(WebhookEventType::PurchasePaid->eventClass())->toBe('AIArmada\\Chip\\Events\\PurchasePaid');
         expect(WebhookEventType::PayoutSuccess->eventClass())->toBe('AIArmada\\Chip\\Events\\PayoutSuccess');
         expect(WebhookEventType::PaymentRefunded->eventClass())->toBe('AIArmada\\Chip\\Events\\PaymentRefunded');
-        expect(WebhookEventType::BillingTemplateClientSubscriptionBillingCancelled->eventClass())->toBe('AIArmada\\Chip\\Events\\BillingCancelled');
+        expect(WebhookEventType::PurchaseSettled->eventClass())->toBe('AIArmada\\Chip\\Events\\PurchaseSettled');
     });
 });

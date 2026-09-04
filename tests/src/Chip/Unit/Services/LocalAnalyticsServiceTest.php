@@ -51,11 +51,13 @@ it('calculates revenue metrics', function (): void {
         'created_at' => $now,
     ]);
 
-    // Current period partially refunded
+    // CHIP uses refunded for both full and partial refunds. A positive
+    // refundable amount identifies a partial refund locally.
     createPurchase([
-        'status' => 'partially_refunded',
+        'status' => 'refunded',
         'total_minor' => 7000,
         'refund_amount_minor' => 2000, // 20.00
+        'refundable_amount' => 5000,
         'created_at' => $now,
     ]);
 
@@ -79,10 +81,15 @@ it('calculates transaction metrics', function (): void {
     $now = CarbonImmutable::now();
 
     createPurchase(['status' => 'paid', 'created_at' => $now]);
-    createPurchase(['status' => 'failed', 'created_at' => $now]);
-    createPurchase(['status' => 'pending', 'created_at' => $now]);
+    createPurchase(['status' => 'error', 'created_at' => $now]);
+    createPurchase(['status' => 'pending_execute', 'created_at' => $now]);
     createPurchase(['status' => 'refunded', 'created_at' => $now]);
-    createPurchase(['status' => 'partially_refunded', 'created_at' => $now]);
+    createPurchase([
+        'status' => 'refunded',
+        'refund_amount_minor' => 500,
+        'refundable_amount' => 500,
+        'created_at' => $now,
+    ]);
 
     $metrics = $this->service->getTransactionMetrics($now->copy()->subDay(), $now->copy()->addDay());
 
@@ -100,8 +107,8 @@ it('calculates payment method breakdown', function (): void {
     createPurchase(['status' => 'paid', 'payment_method' => 'card', 'total_minor' => 1000, 'created_at' => $now]);
     createPurchase(['status' => 'paid', 'payment_method' => 'card', 'total_minor' => 2000, 'created_at' => $now]);
     createPurchase(['status' => 'paid', 'payment_method' => 'fpx', 'total_minor' => 1500, 'created_at' => $now]);
-    createPurchase(['status' => 'partially_refunded', 'payment_method' => 'fpx', 'total_minor' => 2500, 'refund_amount_minor' => 500, 'created_at' => $now]);
-    createPurchase(['status' => 'failed', 'payment_method' => 'card', 'total_minor' => 1000, 'created_at' => $now]);
+    createPurchase(['status' => 'refunded', 'payment_method' => 'fpx', 'total_minor' => 2500, 'refund_amount_minor' => 500, 'refundable_amount' => 2000, 'created_at' => $now]);
+    createPurchase(['status' => 'error', 'payment_method' => 'card', 'total_minor' => 1000, 'created_at' => $now]);
 
     $breakdown = $this->service->getPaymentMethodBreakdown($now->copy()->subDay(), $now->copy()->addDay());
 
@@ -122,7 +129,7 @@ it('calculates payment method breakdown', function (): void {
     expect($fpx['success_rate'])->toBe(100.0);
 });
 
-it('includes partially refunded purchases in revenue trends', function (): void {
+it('includes partial refunds in revenue trends using CHIP amount fields', function (): void {
     $now = CarbonImmutable::now();
 
     createPurchase([
@@ -132,9 +139,10 @@ it('includes partially refunded purchases in revenue trends', function (): void 
     ]);
 
     createPurchase([
-        'status' => 'partially_refunded',
+        'status' => 'refunded',
         'total_minor' => 2500,
         'refund_amount_minor' => 500,
+        'refundable_amount' => 2000,
         'created_at' => $now,
     ]);
 
@@ -149,7 +157,7 @@ it('calculates failure analysis', function (): void {
     $now = CarbonImmutable::now();
 
     createPurchase([
-        'status' => 'failed',
+        'status' => 'error',
         'failure_reason' => 'insufficient_funds',
         'total_minor' => 1000,
         'created_at' => $now,
@@ -163,7 +171,7 @@ it('calculates failure analysis', function (): void {
     ]);
 
     createPurchase([
-        'status' => 'failed',
+        'status' => 'error',
         'failure_reason' => 'timeout',
         'total_minor' => 1500,
         'created_at' => $now,

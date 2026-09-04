@@ -92,15 +92,39 @@ abstract class PayoutEvent
      */
     final public function getRecipientName(): ?string
     {
-        return $this->payout->recipient_name;
+        return $this->payout->client->full_name;
     }
 
     /**
-     * Get the recipient bank account.
+     * Get the payout sender name.
      */
-    final public function getRecipientBankAccount(): ?string
+    final public function getSenderName(): ?string
     {
-        return $this->payout->recipient_bank_account;
+        return $this->payout->sender_name;
+    }
+
+    /**
+     * Get the recipient card country.
+     */
+    final public function getRecipientCardCountry(): ?string
+    {
+        return $this->payout->recipient_card_country;
+    }
+
+    /**
+     * Get the recipient card brand.
+     */
+    final public function getRecipientCardBrand(): ?string
+    {
+        return $this->payout->recipient_card_brand;
+    }
+
+    /**
+     * Get the payout execution URL.
+     */
+    final public function getExecutionUrl(): ?string
+    {
+        return $this->payout->execution_url;
     }
 
     /**

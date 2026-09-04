@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
 class ManagesPaymentMethodsTest extends CashierChipTestCase
@@ -28,21 +29,26 @@ class ManagesPaymentMethodsTest extends CashierChipTestCase
 
     public function test_has_default_payment_method(): void
     {
-        $user = $this->createUser(['chip_id' => 'cli_123', 'pm_type' => 'card', 'pm_last_four' => '4242']);
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        Cashier::paymentMethodStore()->saveForBillable($user, 'tok_default', [
+            'type' => 'card',
+            'brand' => 'Visa',
+            'last_four' => '4242',
+        ], true);
 
         $this->assertTrue($user->hasDefaultPaymentMethod());
     }
 
     public function test_has_default_payment_method_false(): void
     {
-        $user = $this->createUser(['chip_id' => 'cli_123', 'pm_type' => null]);
+        $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertFalse($user->hasDefaultPaymentMethod());
     }
 
     public function test_default_payment_method_returns_null_without_default(): void
     {
-        $user = $this->createUser(['chip_id' => 'cli_123', 'pm_type' => null]);
+        $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertNull($user->defaultPaymentMethod());
     }
@@ -59,22 +65,26 @@ class ManagesPaymentMethodsTest extends CashierChipTestCase
 
     public function test_delete_payment_methods(): void
     {
-        $user = $this->createUser(['chip_id' => 'cli_123', 'pm_type' => 'card', 'pm_last_four' => '4242']);
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        Cashier::paymentMethodStore()->saveForBillable($user, 'tok_default', [
+            'type' => 'card',
+            'brand' => 'Visa',
+            'last_four' => '4242',
+        ], true);
 
         $user->deletePaymentMethods();
 
-        $this->assertNull($user->fresh()->pm_type);
-        $this->assertNull($user->fresh()->pm_last_four);
+        $this->assertFalse($user->fresh()->hasPaymentMethod());
     }
 
-    public function test_update_default_payment_method_persists_default_pm_id(): void
+    public function test_update_default_payment_method_persists_default_payment_method(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $token = $this->fakeChip->addRecurringToken('cli_123', [
             'id' => 'tok_primary',
-            'card_brand' => 'Visa',
-            'last_4' => '4242',
+            'payment_method' => 'visa',
+            'description' => '**** **** **** 4242',
         ]);
 
         $user->updateDefaultPaymentMethod('tok_primary');
@@ -83,29 +93,29 @@ class ManagesPaymentMethodsTest extends CashierChipTestCase
 
         $this->assertNotNull($freshUser);
         $this->assertSame('tok_primary', $freshUser->default_pm_id);
-        $this->assertSame('Visa', $freshUser->pm_type);
-        $this->assertSame('4242', $freshUser->pm_last_four);
+        $this->assertSame('visa', $freshUser->pm_type);
+        $this->assertNull($freshUser->pm_last_four);
         $this->assertSame('tok_primary', $token['id']);
     }
 
-    public function test_default_payment_method_prefers_saved_default_pm_id(): void
+    public function test_default_payment_method_prefers_saved_default_payment_method(): void
     {
-        $user = $this->createUser([
-            'chip_id' => 'cli_456',
-            'default_pm_id' => 'tok_preferred',
-            'pm_type' => 'card',
-        ]);
+        $user = $this->createUser(['chip_id' => 'cli_456']);
+        Cashier::paymentMethodStore()->saveForBillable($user, 'tok_preferred', [
+            'type' => 'card',
+            'brand' => 'Visa',
+        ], true);
 
         $this->fakeChip->addRecurringToken('cli_456', [
             'id' => 'tok_other',
-            'card_brand' => 'Mastercard',
-            'last_4' => '1111',
+            'payment_method' => 'mastercard',
+            'description' => '**** **** **** 1111',
         ]);
 
         $this->fakeChip->addRecurringToken('cli_456', [
             'id' => 'tok_preferred',
-            'card_brand' => 'Visa',
-            'last_4' => '4242',
+            'payment_method' => 'visa',
+            'description' => '**** **** **** 4242',
         ]);
 
         $paymentMethod = $user->defaultPaymentMethod();

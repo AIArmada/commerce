@@ -31,7 +31,7 @@ beforeEach(function (): void {
 });
 
 it('validates commerce webhook signatures with constant time comparison', function (): void {
-    $payload = json_encode(['event' => 'payment.completed'], JSON_THROW_ON_ERROR);
+    $payload = json_encode(['event_type' => 'payment.completed'], JSON_THROW_ON_ERROR);
     $secret = 'super-secret';
     $request = Request::create('/webhooks/test', 'POST', [], [], [], [], $payload);
     $request->headers->set('X-Commerce-Signature', hash_hmac('sha256', $payload, $secret));
@@ -51,7 +51,7 @@ it('creates webhook calls tables with processed_at support', function (): void {
 });
 
 it('rejects unsigned invalid or unconfigured commerce webhook signatures', function (): void {
-    $payload = json_encode(['event' => 'payment.completed'], JSON_THROW_ON_ERROR);
+    $payload = json_encode(['event_type' => 'payment.completed'], JSON_THROW_ON_ERROR);
     $validator = new SupportWebhookSignatureValidator;
     $request = Request::create('/webhooks/test', 'POST', [], [], [], [], $payload);
 
@@ -68,14 +68,14 @@ it('processes commerce webhooks and marks webhook calls as processed', function 
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['event' => 'payment.completed', 'id' => 'evt_123'],
+        'payload' => ['event_type' => 'payment.completed', 'id' => 'evt_123'],
         'exception' => null,
     ]);
 
     (new SupportWebhookProcessor($webhookCall))->handle();
 
     expect(SupportWebhookProcessor::$processed)->toBe([
-        ['payment.completed', ['event' => 'payment.completed', 'id' => 'evt_123']],
+        ['payment.completed', ['event_type' => 'payment.completed', 'id' => 'evt_123']],
     ])->and($webhookCall->fresh()?->processed_at)->not->toBeNull();
 });
 
@@ -84,7 +84,7 @@ it('processes duplicate webhook deliveries only once', function (): void {
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['event' => 'payment.completed', 'id' => 'evt_dupe'],
+        'payload' => ['event_type' => 'payment.completed', 'id' => 'evt_dupe'],
         'exception' => null,
     ]);
 
@@ -92,7 +92,7 @@ it('processes duplicate webhook deliveries only once', function (): void {
     (new SupportWebhookProcessor($webhookCall->fresh()))->handle();
 
     expect(SupportWebhookProcessor::$processed)->toBe([
-        ['payment.completed', ['event' => 'payment.completed', 'id' => 'evt_dupe']],
+        ['payment.completed', ['event_type' => 'payment.completed', 'id' => 'evt_dupe']],
     ])->and($webhookCall->fresh()?->processed_at)->not->toBeNull();
 });
 
@@ -101,7 +101,7 @@ it('deduplicates processed provider events across separate webhook rows', functi
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['event' => 'payment.completed', 'id' => 'evt_provider_1'],
+        'payload' => ['event_type' => 'payment.completed', 'id' => 'evt_provider_1'],
         'exception' => null,
     ]);
 
@@ -109,7 +109,7 @@ it('deduplicates processed provider events across separate webhook rows', functi
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['event' => 'payment.completed', 'id' => 'evt_provider_1'],
+        'payload' => ['event_type' => 'payment.completed', 'id' => 'evt_provider_1'],
         'exception' => null,
     ]);
 
@@ -117,7 +117,7 @@ it('deduplicates processed provider events across separate webhook rows', functi
     (new SupportWebhookProcessor($second))->handle();
 
     expect(SupportWebhookProcessor::$processed)->toBe([
-        ['payment.completed', ['event' => 'payment.completed', 'id' => 'evt_provider_1']],
+        ['payment.completed', ['event_type' => 'payment.completed', 'id' => 'evt_provider_1']],
     ])->and($first->fresh()?->processed_at)->not->toBeNull()
         ->and($second->fresh()?->processed_at)->not->toBeNull();
 });
@@ -127,7 +127,7 @@ it('does not deduplicate rows that share an event_id but have different event ty
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['event' => 'payment.completed', 'id' => 'evt_shared_id'],
+        'payload' => ['event_type' => 'payment.completed', 'id' => 'evt_shared_id'],
         'exception' => null,
     ]);
 
@@ -135,7 +135,7 @@ it('does not deduplicate rows that share an event_id but have different event ty
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['event' => 'payment.refunded', 'id' => 'evt_shared_id'],
+        'payload' => ['event_type' => 'payment.refunded', 'id' => 'evt_shared_id'],
         'exception' => null,
     ]);
 
@@ -144,18 +144,18 @@ it('does not deduplicate rows that share an event_id but have different event ty
 
     // Both must be processed: same ID but different event types are distinct events.
     expect(SupportWebhookProcessor::$processed)->toBe([
-        ['payment.completed', ['event' => 'payment.completed', 'id' => 'evt_shared_id']],
-        ['payment.refunded', ['event' => 'payment.refunded', 'id' => 'evt_shared_id']],
+        ['payment.completed', ['event_type' => 'payment.completed', 'id' => 'evt_shared_id']],
+        ['payment.refunded', ['event_type' => 'payment.refunded', 'id' => 'evt_shared_id']],
     ])->and($first->fresh()?->processed_at)->not->toBeNull()
         ->and($second->fresh()?->processed_at)->not->toBeNull();
 });
 
-it('deduplicates type-less rows with a shared event_id', function (): void {
+it('processes canonical events without a provider id independently', function (): void {
     $first = WebhookCall::query()->create([
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['id' => 'evt_typeless'],
+        'payload' => ['event_type' => 'payment.completed'],
         'exception' => null,
     ]);
 
@@ -163,15 +163,15 @@ it('deduplicates type-less rows with a shared event_id', function (): void {
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['id' => 'evt_typeless'],
+        'payload' => ['event_type' => 'payment.completed'],
         'exception' => null,
     ]);
 
     (new SupportWebhookProcessor($first))->handle();
     (new SupportWebhookProcessor($second))->handle();
 
-    // Both lack any event type: treated as the same typeless event, so only processed once.
-    expect(SupportWebhookProcessor::$processed)->toHaveCount(1)
+    // Without a provider id, cross-row deduplication cannot run.
+    expect(SupportWebhookProcessor::$processed)->toHaveCount(2)
         ->and($first->fresh()?->processed_at)->not->toBeNull()
         ->and($second->fresh()?->processed_at)->not->toBeNull();
 });
@@ -181,7 +181,7 @@ it('does not cross-row deduplicate when no event_id is present', function (): vo
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['event' => 'payment.completed'],
+        'payload' => ['event_type' => 'payment.completed'],
         'exception' => null,
     ]);
 
@@ -189,7 +189,7 @@ it('does not cross-row deduplicate when no event_id is present', function (): vo
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['event' => 'payment.completed'],
+        'payload' => ['event_type' => 'payment.completed'],
         'exception' => null,
     ]);
 

@@ -208,21 +208,15 @@ describe('Collect Purchases API', function (): void {
         expect($purchase->brand_id)->toBe('brand_checkout');
     });
 
-    it('provides public key regardless of API response shape', function (): void {
-        $this->client->shouldReceive('get')
-            ->once()
-            ->with('public_key/')
-            ->andReturn(['public_key' => 'test-key']);
-
-        expect($this->apiWithoutCache->publicKey())->toBe('test-key');
+    it('provides the PEM public key returned by the API', function (): void {
+        $pem = "-----BEGIN PUBLIC KEY-----\ntest-key\n-----END PUBLIC KEY-----";
 
         $this->client->shouldReceive('get')
             ->once()
             ->with('public_key/')
-            ->andReturn('-----BEGIN PUBLIC KEY-----...');
+            ->andReturn($pem);
 
-        expect($this->apiWithoutCache->publicKey())
-            ->toBe('-----BEGIN PUBLIC KEY-----...');
+        expect($this->apiWithoutCache->publicKey())->toBe($pem);
     });
 
     it('logs failures when deleting recurring tokens', function (): void {
@@ -268,11 +262,11 @@ describe('Collect Purchases API', function (): void {
         $this->client->shouldReceive('post')
             ->once()
             ->with('purchases/purchase_charge/charge/', ['recurring_token' => 'token_123'])
-            ->andReturn(chipPurchaseResponse(['status' => 'charged']));
+            ->andReturn(chipPurchaseResponse(['status' => 'paid']));
 
         $purchase = $this->apiWithoutCache->charge('purchase_charge', 'token_123');
 
-        expect($purchase->status)->toBe('charged');
+        expect($purchase->status)->toBe('paid');
     });
 
     it('captures a purchase with and without amount', function (): void {
@@ -287,10 +281,10 @@ describe('Collect Purchases API', function (): void {
         $this->client->shouldReceive('post')
             ->once()
             ->with('purchases/purchase_capture/capture/', [])
-            ->andReturn(chipPurchaseResponse(['status' => 'captured']));
+            ->andReturn(chipPurchaseResponse(['status' => 'paid']));
 
         $fullCapture = $this->apiWithoutCache->capture('purchase_capture');
-        expect($fullCapture->status)->toBe('captured');
+        expect($fullCapture->status)->toBe('paid');
     });
 
     it('releases a purchase hold', function (): void {

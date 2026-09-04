@@ -47,7 +47,6 @@ final class StoredPaymentMethod extends Model
     protected $fillable = [
         'billable_type',
         'billable_id',
-        'recurring_token',
         'type',
         'brand',
         'last_four',

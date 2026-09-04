@@ -77,11 +77,15 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId, 'amount' => $amount]
         );
 
-        if (($response['type'] ?? null) === 'purchase' || isset($response['purchase'])) {
+        if (($response['status'] ?? null) === 'pending_refund') {
             return PurchaseData::from($response);
         }
 
-        return PaymentData::from($response);
+        return match ($response['type'] ?? null) {
+            'payment' => PaymentData::from($response),
+            'purchase' => PurchaseData::from($response),
+            default => throw new ChipValidationException('CHIP refund response has an unsupported resource type or status.'),
+        };
     }
 
     public function charge(string $purchaseId, string $recurringToken): PurchaseData
@@ -248,7 +252,7 @@ final class PurchasesApi extends CollectApi
             'Failed to get CHIP public key'
         );
 
-        return is_string($key) ? $key : (string) ($key['public_key'] ?? '');
+        return is_string($key) ? $key : '';
     }
 
     /**

@@ -5,17 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Chip\Feature;
 
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
+use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Events\PurchaseCreated;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\WebhookReceived;
-use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\Chip\Webhooks\ProcessChipWebhook;
-use AIArmada\Chip\Webhooks\WebhookEnricher;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
 use AIArmada\Chip\Webhooks\WebhookRouter;
 use Illuminate\Support\Facades\Event;
@@ -121,7 +120,7 @@ describe('WebhookRetryManager', function (): void {
             'name' => Webhook::WEBHOOK_NAME,
             'url' => 'https://example.test/webhooks',
             'title' => 'Failed webhook',
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'events' => ['purchase.paid'],
             'payload' => WebhookFactory::make()->paid()->toArray(),
             'status' => 'failed',
@@ -144,7 +143,7 @@ describe('WebhookRetryManager', function (): void {
             'name' => Webhook::WEBHOOK_NAME,
             'url' => 'https://example.test/webhooks',
             'title' => 'Retryable webhook',
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'events' => ['purchase.paid'],
             'payload' => WebhookFactory::make()->paid()->toArray(),
             'status' => 'failed',
@@ -164,7 +163,7 @@ describe('WebhookRetryManager', function (): void {
             'name' => Webhook::WEBHOOK_NAME,
             'url' => 'https://example.test/webhooks',
             'title' => 'Processed webhook',
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'events' => ['purchase.paid'],
             'payload' => WebhookFactory::make()->paid()->toArray(),
             'status' => 'processed',
@@ -198,25 +197,8 @@ describe('WebhookSimulatorDispatch', function (): void {
 });
 
 describe('WebhookRouter', function (): void {
-    it('routes payout.success to send completed handler', function (): void {
-        $instruction = SendInstruction::create([
-            'id' => 42,
-            'bank_account_id' => 1,
-            'state' => 'received',
-            'amount' => '500.00',
-            'email' => 'test@example.com',
-            'description' => 'Test payout',
-            'reference' => 'REF-123',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $enricher = new WebhookEnricher;
-        $payload = $enricher->enrich('payout.success', [
-            'id' => (string) $instruction->id,
-            'type' => 'payout',
-            'status' => 'success',
-        ]);
+    it('routes payout.success through the typed dispatcher', function (): void {
+        $payload = EnrichedWebhookPayload::fromPayload('payout.success', WebhookFactory::payoutSuccess());
 
         $router = new WebhookRouter;
         $result = $router->route('payout.success', $payload);

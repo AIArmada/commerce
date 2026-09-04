@@ -4,22 +4,16 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\WebhookResult;
-use AIArmada\Chip\Enums\SendInstructionState;
 use AIArmada\Chip\Events\PaymentRefunded;
-use AIArmada\Chip\Events\PayoutFailed;
-use AIArmada\Chip\Events\PayoutSuccess;
 use AIArmada\Chip\Events\PurchaseCancelled;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Webhooks\Handlers\PaymentFailedHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchaseCancelledHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchaseRefundedHandler;
-use AIArmada\Chip\Webhooks\Handlers\SendCompletedHandler;
-use AIArmada\Chip\Webhooks\Handlers\SendRejectedHandler;
 use AIArmada\Chip\Webhooks\Handlers\WebhookHandler;
 use Illuminate\Support\Facades\Event;
 
@@ -96,15 +90,6 @@ describe('Webhook Handlers Integration', function (): void {
             expect($handler)->toBeInstanceOf(WebhookHandler::class);
         });
 
-        it('SendCompletedHandler extends WebhookHandler', function (): void {
-            $handler = app(SendCompletedHandler::class);
-            expect($handler)->toBeInstanceOf(WebhookHandler::class);
-        });
-
-        it('SendRejectedHandler extends WebhookHandler', function (): void {
-            $handler = app(SendRejectedHandler::class);
-            expect($handler)->toBeInstanceOf(WebhookHandler::class);
-        });
     });
 
     describe('Handler skip behavior without local purchase', function (): void {
@@ -129,7 +114,7 @@ describe('Webhook Handlers Integration', function (): void {
         });
 
         it('PaymentFailedHandler skips when no local purchase exists', function (): void {
-            $payload = createPayload('purchase.payment_failure', ['status' => 'failed']);
+            $payload = createPayload('purchase.payment_failure', ['status' => 'error']);
 
             $handler = app(PaymentFailedHandler::class);
             $result = $handler->handle($payload);
@@ -148,33 +133,6 @@ describe('Webhook Handlers Integration', function (): void {
             expect($result->isSkipped())->toBeTrue();
         });
 
-        it('SendCompletedHandler skips for unknown payout', function (): void {
-            $payload = createPayload('payout.success', [
-                'id' => 'payout-123',
-                'type' => 'payout',
-                'status' => 'success',
-            ]);
-
-            $handler = app(SendCompletedHandler::class);
-            $result = $handler->handle($payload);
-
-            expect($result)->toBeInstanceOf(WebhookResult::class);
-            expect($result->isSkipped())->toBeTrue();
-        });
-
-        it('SendRejectedHandler skips for unknown payout', function (): void {
-            $payload = createPayload('payout.failed', [
-                'id' => 'payout-123',
-                'type' => 'payout',
-                'status' => 'failed',
-            ]);
-
-            $handler = app(SendRejectedHandler::class);
-            $result = $handler->handle($payload);
-
-            expect($result)->toBeInstanceOf(WebhookResult::class);
-            expect($result->isSkipped())->toBeTrue();
-        });
     });
 
     describe('Handler method signatures', function (): void {
@@ -351,8 +309,8 @@ describe('Webhook Handlers Integration', function (): void {
         it('PaymentFailedHandler updates purchase status', function (): void {
             Event::fake();
 
-            $purchase = createTestPurchase(['status' => 'pending']);
-            $payload = createPayloadWithPurchase('purchase.payment_failure', $purchase, ['status' => 'failed']);
+            $purchase = createTestPurchase(['status' => 'pending_execute']);
+            $payload = createPayloadWithPurchase('purchase.payment_failure', $purchase, ['status' => 'error']);
 
             $handler = app(PaymentFailedHandler::class);
             $result = $handler->handle($payload);
@@ -387,7 +345,7 @@ describe('Webhook Handlers Integration', function (): void {
             expect($result->isHandled())->toBeTrue();
 
             $purchase->refresh();
-            expect($purchase->status)->toBe('partially_refunded')
+            expect($purchase->status)->toBe('refunded')
                 ->and($purchase->refund_amount_minor)->toBe(3000)
                 ->and($purchase->refundable_amount)->toBe(7000)
                 ->and($purchase->refunded_at)->not->toBeNull();
@@ -445,88 +403,5 @@ describe('Webhook Handlers Integration', function (): void {
                 ->and($purchase->refunded_at)->not->toBeNull();
         });
 
-        it('SendCompletedHandler updates send instruction state', function (): void {
-            Event::fake();
-
-            $instruction = SendInstruction::create([
-                'id' => 12345,
-                'bank_account_id' => 1,
-                'amount' => '100.00',
-                'email' => 'test@example.com',
-                'description' => 'Test Payout',
-                'reference' => 'ref-123',
-                'state' => 'received',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $payload = new EnrichedWebhookPayload(
-                event: 'payout.success',
-                rawPayload: [
-                    'id' => 12345,
-                    'type' => 'payout',
-                    'status' => 'success',
-                ],
-                localPurchase: null, // Payouts don't have localPurchase attached in this context usually, or do they?
-                // The handler looks up instruction manually.
-                owner: null,
-                receivedAt: now(),
-                purchaseId: '12345',
-                clientId: 'client-123',
-            );
-
-            $handler = app(SendCompletedHandler::class);
-            $result = $handler->handle($payload);
-
-            expect($result)->toBeInstanceOf(WebhookResult::class);
-            expect($result->isHandled())->toBeTrue();
-
-            $instruction->refresh();
-            expect($instruction->state)->toBe(SendInstructionState::COMPLETED->value);
-
-            Event::assertDispatched(PayoutSuccess::class);
-        });
-
-        it('SendRejectedHandler updates send instruction state', function (): void {
-            Event::fake();
-
-            $instruction = SendInstruction::create([
-                'id' => 67890,
-                'bank_account_id' => 1,
-                'amount' => '100.00',
-                'email' => 'test@example.com',
-                'description' => 'Test Payout',
-                'reference' => 'ref-456',
-                'state' => 'received',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $payload = new EnrichedWebhookPayload(
-                event: 'payout.failed',
-                rawPayload: [
-                    'id' => 67890,
-                    'type' => 'payout',
-                    'status' => 'failed',
-                    'failure_reason' => 'insufficient_funds',
-                ],
-                localPurchase: null,
-                owner: null,
-                receivedAt: now(),
-                purchaseId: '67890',
-                clientId: 'client-123',
-            );
-
-            $handler = app(SendRejectedHandler::class);
-            $result = $handler->handle($payload);
-
-            expect($result)->toBeInstanceOf(WebhookResult::class);
-            expect($result->isHandled())->toBeTrue();
-
-            $instruction->refresh();
-            expect($instruction->state)->toBe(SendInstructionState::REJECTED->value);
-
-            Event::assertDispatched(PayoutFailed::class);
-        });
     });
 });

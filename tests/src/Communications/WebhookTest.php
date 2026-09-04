@@ -53,7 +53,7 @@ beforeEach(function (): void {
     });
 
     Config::set('communications.http.route_prefix', 'communications');
-    Config::set('services.webhooks.sendgrid.secret', 'test-secret');
+    Config::set('communications.webhooks.providers.sendgrid.secret', 'test-secret');
 });
 
 test('route returns 202 for valid webhook request', function (): void {
@@ -87,8 +87,8 @@ test('route uses configurable middleware', function (): void {
     expect($middleware)->toContain('api', VerifyWebhookSignature::class);
 });
 
-test('provider webhook registrar falls back to services secrets', function (): void {
-    Config::set('services.webhooks.sendgrid.secret', 'test-secret');
+test('provider webhook registrar reads the configured provider secret', function (): void {
+    Config::set('communications.webhooks.providers.sendgrid.secret', 'test-secret');
 
     $registrar = new ProviderWebhookRegistrarService;
 
@@ -96,7 +96,7 @@ test('provider webhook registrar falls back to services secrets', function (): v
 });
 
 test('signature middleware aborts on missing signature when secret is set', function (): void {
-    Config::set('services.webhooks.sendgrid.secret', 'test-secret');
+    Config::set('communications.webhooks.providers.sendgrid.secret', 'test-secret');
 
     $request = Request::create(
         'communications/webhooks/sendgrid',
@@ -150,7 +150,7 @@ test('NullCommunicationAuditRecorder implements CommunicationAuditRecorder', fun
 
 test('signature middleware accepts valid signature', function (): void {
     $secret = 'test-secret';
-    Config::set('services.webhooks.sendgrid.secret', $secret);
+    Config::set('communications.webhooks.providers.sendgrid.secret', $secret);
 
     $payload = ['event' => 'delivery.delivered', 'delivery_id' => 'test-id'];
     $body = json_encode($payload);
@@ -184,8 +184,8 @@ test('signature middleware accepts valid signature', function (): void {
 });
 
 test('signature middleware rejects providers without a configured secret', function (): void {
-    Config::set('services.webhooks.sendgrid.secret');
-    Config::set('services.webhooks.secret');
+    Config::set('communications.webhooks.providers.sendgrid.secret');
+    Config::set('services.webhooks.sendgrid.secret', 'removed-configuration-key');
 
     $request = Request::create(
         'communications/webhooks/sendgrid',

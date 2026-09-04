@@ -86,7 +86,7 @@ describe('WebhookFactory', function (): void {
         $payload = WebhookFactory::purchaseCaptured();
 
         expect($payload['event_type'])->toBe('purchase.captured')
-            ->and($payload['status'])->toBe('captured');
+            ->and($payload['status'])->toBe('paid');
     });
 
     it('creates purchase.released payload', function (): void {
@@ -112,28 +112,33 @@ describe('WebhookFactory', function (): void {
             ->and($payload['is_recurring_token'])->toBeFalse();
     });
 
-    it('creates purchase.subscription_charge_failure payload', function (): void {
-        $payload = WebhookFactory::purchaseSubscriptionChargeFailure();
+    it('creates official purchase failure payloads', function (): void {
+        $refundFailure = WebhookFactory::forEvent(WebhookEventType::PurchaseRefundFailure);
+        $captureFailure = WebhookFactory::forEvent(WebhookEventType::PurchaseCaptureFailure);
+        $releaseFailure = WebhookFactory::forEvent(WebhookEventType::PurchaseReleaseFailure);
 
-        expect($payload['event_type'])->toBe('purchase.subscription_charge_failure')
-            ->and($payload['status'])->toBe('error');
+        expect($refundFailure['event_type'])->toBe('purchase.refund_failure')
+            ->and($captureFailure['event_type'])->toBe('purchase.capture_failure')
+            ->and($releaseFailure['event_type'])->toBe('purchase.release_failure')
+            ->and($refundFailure['status'])->toBe('error');
     });
 
     it('creates payment.refunded payload', function (): void {
         $payload = WebhookFactory::paymentRefunded();
 
         expect($payload['event_type'])->toBe('payment.refunded')
-            ->and($payload['status'])->toBe('refunded')
             ->and($payload['type'])->toBe('payment')
             ->and(data_get($payload, 'related_to.type'))->toBe('purchase')
             ->and(data_get($payload, 'payment.is_outgoing'))->toBeTrue();
     });
 
-    it('creates billing_template_client.subscription_billing_cancelled payload', function (): void {
-        $payload = WebhookFactory::billingCancelled();
+    it('creates official payment chargeback payloads', function (): void {
+        $chargedBack = WebhookFactory::paymentChargedBack();
+        $reversed = WebhookFactory::paymentChargebackReversed();
 
-        expect($payload['event_type'])->toBe('billing_template_client.subscription_billing_cancelled')
-            ->and($payload['type'])->toBe('billing_template_client');
+        expect($chargedBack['event_type'])->toBe('payment.charged_back')
+            ->and($reversed['event_type'])->toBe('payment.chargeback_reversed')
+            ->and($chargedBack['type'])->toBe('payment');
     });
 
     it('creates payout.pending payload', function (): void {
@@ -155,8 +160,8 @@ describe('WebhookFactory', function (): void {
         $payload = WebhookFactory::payoutFailed();
 
         expect($payload['event_type'])->toBe('payout.failed')
-            ->and($payload['status'])->toBe('failed')
-            ->and($payload['error_code'])->toBe('insufficient_funds');
+            ->and($payload['status'])->toBe('error')
+            ->and(data_get($payload, 'transaction_data.attempts.0.error.code'))->toBe('insufficient_funds');
     });
 
     it('creates payload for event via forEvent', function (): void {
@@ -216,10 +221,10 @@ describe('WebhookFactory', function (): void {
     });
 
     it('sets payment method via ewallet helper', function (): void {
-        $factory = WebhookFactory::make()->paid()->ewallet('touch_n_go');
+        $factory = WebhookFactory::make()->paid()->ewallet('razer_tng');
         $payload = $factory->toArray();
 
-        expect($payload['transaction_data']['payment_method'])->toBe('touch_n_go');
+        expect($payload['transaction_data']['payment_method'])->toBe('razer_tng');
     });
 
     it('supports overrides via with method', function (): void {
@@ -305,18 +310,19 @@ describe('WebhookFactory', function (): void {
         expect($payload['status'])->toBe('error');
     });
 
-    it('creates expired status', function (): void {
-        $factory = WebhookFactory::make()->expired();
+    it('creates settled status', function (): void {
+        $factory = WebhookFactory::make()->eventType('purchase.settled')->status('settled');
         $payload = $factory->toArray();
 
-        expect($payload['status'])->toBe('expired');
+        expect($payload['status'])->toBe('settled');
     });
 
     it('creates refunded status', function (): void {
         $factory = WebhookFactory::make()->refunded();
         $payload = $factory->toArray();
 
-        expect($payload['status'])->toBe('refunded');
+        expect($payload['event_type'])->toBe('payment.refunded')
+            ->and($payload['type'])->toBe('payment');
     });
 
     it('creates cancelled status', function (): void {

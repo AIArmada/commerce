@@ -17,7 +17,6 @@ use Throwable;
 
 /**
  * @property string|null $url
- * @property string|null $event
  * @property string|null $event_type
  * @property string $status
  * @property array<string>|null $events
@@ -66,7 +65,6 @@ class Webhook extends WebhookCall
         'all_events',
         'public_key',
         'event_type',
-        'event',
         'signature',
         'verified',
         'processed',
@@ -113,10 +111,6 @@ class Webhook extends WebhookCall
         static::creating(function (Webhook $webhook): void {
             $webhook->setAttribute('name', $webhook->getAttribute('name') ?? self::WEBHOOK_NAME);
             $webhook->setAttribute('url', $webhook->getAttribute('url') ?? (string) ($webhook->getAttribute('callback') ?? ''));
-
-            if ($webhook->getAttribute('event_type') === null) {
-                $webhook->setAttribute('event_type', $webhook->getAttribute('event'));
-            }
         });
     }
 

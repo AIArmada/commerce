@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Testing;
 
 use AIArmada\Chip\Enums\WebhookEventType;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 /**
  * Factory for creating CHIP webhook payloads for testing.
@@ -156,7 +157,7 @@ final class WebhookFactory
      */
     public static function purchaseCaptured(array $overrides = []): array
     {
-        return self::make()->eventType('purchase.captured')->status('captured')->with($overrides)->toArray();
+        return self::make()->eventType('purchase.captured')->status('paid')->with($overrides)->toArray();
     }
 
     /**
@@ -242,22 +243,6 @@ final class WebhookFactory
     }
 
     /**
-     * Create a purchase.subscription_charge_failure payload.
-     *
-     * @param  array<string, mixed>  $overrides
-     * @return array<string, mixed>
-     */
-    public static function purchaseSubscriptionChargeFailure(array $overrides = []): array
-    {
-        return self::make()
-            ->eventType('purchase.subscription_charge_failure')
-            ->status('error')
-            ->with(['purchase' => ['metadata' => ['subscription_type' => $overrides['subscription_type'] ?? 'default']]])
-            ->with($overrides)
-            ->toArray();
-    }
-
-    /**
      * Create a payment.refunded payload.
      *
      * @param  array<string, mixed>  $overrides
@@ -269,25 +254,36 @@ final class WebhookFactory
     }
 
     /**
-     * Create a billing_template_client.subscription_billing_cancelled payload.
+     * Create a payment.charged_back payload.
      *
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
-    public static function billingCancelled(array $overrides = []): array
+    public static function paymentChargedBack(array $overrides = []): array
     {
-        return array_merge([
-            'id' => $overrides['id'] ?? Str::uuid()->toString(),
-            'type' => 'billing_template_client',
-            'event_type' => 'billing_template_client.subscription_billing_cancelled',
-            'status' => 'cancelled',
-            'billing_template_id' => $overrides['billing_template_id'] ?? Str::uuid()->toString(),
-            'client_id' => $overrides['client_id'] ?? Str::uuid()->toString(),
-            'recurring_token' => $overrides['recurring_token'] ?? Str::uuid()->toString(),
-            'is_test' => $overrides['is_test'] ?? true,
-            'created_on' => time(),
-            'updated_on' => time(),
-        ], $overrides);
+        return self::make()->eventType('payment.charged_back')->with($overrides)->toArray();
+    }
+
+    /**
+     * Create a payment.chargeback_reversed payload.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    public static function paymentChargebackReversed(array $overrides = []): array
+    {
+        return self::make()->eventType('payment.chargeback_reversed')->with($overrides)->toArray();
+    }
+
+    /**
+     * Create a payout.created payload.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    public static function payoutCreated(array $overrides = []): array
+    {
+        return self::payoutPayload('payout.created', 'initialized', $overrides);
     }
 
     /**
@@ -320,7 +316,7 @@ final class WebhookFactory
      */
     public static function payoutFailed(array $overrides = []): array
     {
-        return self::payoutPayload('payout.failed', 'failed', array_merge([
+        return self::payoutPayload('payout.failed', 'error', array_merge([
             'error_code' => 'insufficient_funds',
             'error_message' => 'Insufficient funds for payout',
         ], $overrides));
@@ -350,9 +346,15 @@ final class WebhookFactory
             WebhookEventType::PurchasePendingRefund => self::purchasePendingRefund($overrides),
             WebhookEventType::PurchasePendingRecurringTokenDelete => self::purchasePendingRecurringTokenDelete($overrides),
             WebhookEventType::PurchaseRecurringTokenDeleted => self::purchaseRecurringTokenDeleted($overrides),
-            WebhookEventType::PurchaseSubscriptionChargeFailure => self::purchaseSubscriptionChargeFailure($overrides),
+            WebhookEventType::PurchaseRefundFailure => self::make()->eventType('purchase.refund_failure')->status('error')->with($overrides)->toArray(),
+            WebhookEventType::PurchaseCaptureFailure => self::make()->eventType('purchase.capture_failure')->status('error')->with($overrides)->toArray(),
+            WebhookEventType::PurchaseReleaseFailure => self::make()->eventType('purchase.release_failure')->status('error')->with($overrides)->toArray(),
+            WebhookEventType::PurchaseViewed => self::make()->eventType('purchase.viewed')->status('viewed')->with($overrides)->toArray(),
+            WebhookEventType::PurchaseSettled => self::make()->eventType('purchase.settled')->status('settled')->with($overrides)->toArray(),
             WebhookEventType::PaymentRefunded => self::paymentRefunded($overrides),
-            WebhookEventType::BillingTemplateClientSubscriptionBillingCancelled => self::billingCancelled($overrides),
+            WebhookEventType::PaymentChargedBack => self::paymentChargedBack($overrides),
+            WebhookEventType::PaymentChargebackReversed => self::paymentChargebackReversed($overrides),
+            WebhookEventType::PayoutCreated => self::payoutCreated($overrides),
             WebhookEventType::PayoutPending => self::payoutPending($overrides),
             WebhookEventType::PayoutSuccess => self::payoutSuccess($overrides),
             WebhookEventType::PayoutFailed => self::payoutFailed($overrides),
@@ -370,12 +372,17 @@ final class WebhookFactory
         $eventType = is_string($payload['event_type'] ?? null) ? $payload['event_type'] : 'purchase.paid';
         $status = is_string($payload['status'] ?? null) ? $payload['status'] : 'paid';
 
+        if (WebhookEventType::tryFrom($eventType) === null) {
+            throw new InvalidArgumentException("Unsupported CHIP webhook event type: {$eventType}");
+        }
+
         $factory = match ($eventType) {
             'purchase.paid' => self::make()->paid(),
             'purchase.created' => self::make()->created(),
             'purchase.cancelled' => self::make()->cancelled(),
             'purchase.payment_failure' => self::make()->failed(),
             'payment.refunded' => self::make()->refunded(),
+            'payment.charged_back', 'payment.chargeback_reversed' => self::make()->eventType($eventType),
             default => self::make()->eventType($eventType)->status($status),
         };
 
@@ -416,14 +423,6 @@ final class WebhookFactory
         return $this;
     }
 
-    public function expired(): self
-    {
-        $this->eventType = 'purchase.expired';
-        $this->status = 'expired';
-
-        return $this;
-    }
-
     public function failed(): self
     {
         $this->eventType = 'purchase.payment_failure';
@@ -434,6 +433,10 @@ final class WebhookFactory
 
     public function eventType(string $eventType): self
     {
+        if (WebhookEventType::tryFrom($eventType) === null) {
+            throw new InvalidArgumentException("Unsupported CHIP webhook event type: {$eventType}");
+        }
+
         $this->eventType = $eventType;
 
         return $this;
@@ -477,7 +480,7 @@ final class WebhookFactory
         return $this->paymentMethod('card');
     }
 
-    public function ewallet(string $wallet = 'touch_n_go'): self
+    public function ewallet(string $wallet = 'razer_tng'): self
     {
         return $this->paymentMethod($wallet);
     }
@@ -617,14 +620,14 @@ final class WebhookFactory
 
         $statusHistory = $this->buildStatusHistory($now);
 
-        if ($this->eventType === 'payment.refunded') {
+        if (str_starts_with($this->eventType, 'payment.')) {
             $paymentId = $this->overrides['id'] ?? (string) Str::uuid();
+            $paymentType = $this->eventType === 'payment.refunded' ? 'refund' : 'purchase';
 
             return array_replace_recursive([
                 'id' => $paymentId,
                 'type' => 'payment',
-                'event_type' => 'payment.refunded',
-                'status' => $this->status,
+                'event_type' => $this->eventType,
                 'created_on' => $now,
                 'updated_on' => $now,
                 'client' => [
@@ -657,9 +660,9 @@ final class WebhookFactory
                     'currency' => $this->currency,
                     'fee_amount' => (int) round($total * 0.01),
                     'net_amount' => $total - (int) round($total * 0.01),
-                    'description' => 'Refund',
-                    'is_outgoing' => true,
-                    'payment_type' => 'refund',
+                    'description' => $paymentType === 'refund' ? 'Refund' : 'Chargeback',
+                    'is_outgoing' => $paymentType === 'refund',
+                    'payment_type' => $paymentType,
                     'pending_amount' => 0,
                     'remote_paid_on' => $now,
                     'pending_unfreeze_on' => null,
@@ -722,7 +725,7 @@ final class WebhookFactory
             'issued' => date('Y-m-d', $now),
             'status' => $this->status,
             'is_test' => $this->isTest,
-            'payment' => $this->status === 'paid' ? [
+            'payment' => in_array($this->status, ['paid', 'cleared', 'settled'], true) ? [
                 'amount' => $total,
                 'paid_on' => $now,
                 'currency' => $this->currency,
@@ -806,7 +809,7 @@ final class WebhookFactory
                 'flow' => 'payform',
                 'extra' => [],
                 'country' => 'MY',
-                'attempts' => $this->status === 'paid' ? [
+                'attempts' => in_array($this->status, ['paid', 'cleared', 'settled'], true) ? [
                     [
                         'flow' => 'payform',
                         'type' => 'execute',
@@ -825,7 +828,7 @@ final class WebhookFactory
                 'processing_tx_id' => $purchaseId,
             ],
             'upsell_campaigns' => [],
-            'refundable_amount' => $this->status === 'paid' ? $total : 0,
+            'refundable_amount' => in_array($this->status, ['paid', 'cleared', 'settled'], true) ? $total : 0,
             'is_recurring_token' => false,
             'billing_template_id' => null,
             'currency_conversion' => null,
@@ -859,21 +862,68 @@ final class WebhookFactory
      */
     private static function payoutPayload(string $eventType, string $status, array $overrides = []): array
     {
-        return array_merge([
-            'id' => $overrides['id'] ?? Str::uuid()->toString(),
+        $now = time();
+        $payoutId = is_string($overrides['id'] ?? null) ? $overrides['id'] : Str::uuid()->toString();
+        $brandId = is_string($overrides['brand_id'] ?? null) ? $overrides['brand_id'] : Str::uuid()->toString();
+        $companyId = is_string($overrides['company_id'] ?? null) ? $overrides['company_id'] : Str::uuid()->toString();
+        $amount = is_numeric($overrides['amount'] ?? null) ? (int) $overrides['amount'] : 10000;
+        $currency = is_string($overrides['currency'] ?? null) ? $overrides['currency'] : 'MYR';
+
+        $payload = [
+            'id' => $payoutId,
             'type' => 'payout',
             'event_type' => $eventType,
             'status' => $status,
-            'amount' => $overrides['amount'] ?? 10000,
-            'currency' => $overrides['currency'] ?? 'MYR',
-            'recipient_name' => $overrides['recipient_name'] ?? 'Test Recipient',
-            'recipient_account' => $overrides['recipient_account'] ?? '1234567890',
-            'recipient_bank' => $overrides['recipient_bank'] ?? 'Maybank',
+            'created_on' => $now,
+            'updated_on' => $now,
+            'payment' => [
+                'is_outgoing' => true,
+                'payment_type' => 'payout',
+                'amount' => $amount,
+                'currency' => $currency,
+                'fee_amount' => 0,
+                'net_amount' => $amount,
+                'pending_amount' => 0,
+                'description' => 'Payout',
+                'paid_on' => $status === 'success' ? $now : null,
+                'remote_paid_on' => null,
+                'pending_unfreeze_on' => null,
+            ],
+            'client' => [
+                'email' => 'recipient@example.com',
+                'full_name' => 'Test Recipient',
+                'phone' => '+60123456789',
+                'country' => 'MY',
+            ],
+            'transaction_data' => [
+                'flow' => 'payout',
+                'extra' => [],
+                'country' => 'MY',
+                'attempts' => $status === 'error' ? [[
+                    'error' => [
+                        'code' => $overrides['error_code'] ?? 'insufficient_funds',
+                        'message' => $overrides['error_message'] ?? 'Insufficient funds for payout',
+                    ],
+                    'successful' => false,
+                ]] : [],
+            ],
+            'reference_generated' => 'TEST-' . Str::random(8),
             'reference' => $overrides['reference'] ?? 'PAYOUT-' . Str::random(8),
+            'sender_name' => $overrides['sender_name'] ?? 'Test Sender',
+            'recipient_card_country' => $overrides['recipient_card_country'] ?? null,
+            'recipient_card_brand' => $overrides['recipient_card_brand'] ?? null,
+            'execution_url' => $overrides['execution_url'] ?? null,
+            'brand_id' => $brandId,
+            'company_id' => $companyId,
             'is_test' => $overrides['is_test'] ?? true,
-            'created_on' => time(),
-            'updated_on' => time(),
-        ], $overrides);
+            'user_id' => $overrides['user_id'] ?? null,
+            'status_history' => [
+                ['status' => 'initialized', 'timestamp' => $now - 10],
+                ...($status === 'initialized' ? [] : [['status' => $status, 'timestamp' => $now]]),
+            ],
+        ];
+
+        return array_replace_recursive($payload, $overrides);
     }
 
     /**

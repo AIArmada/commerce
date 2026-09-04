@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
+use AIArmada\Chip\Enums\SendWebhookHook;
 use Carbon\CarbonImmutable;
+use InvalidArgumentException;
 
 final class SendWebhookData extends ChipData
 {
@@ -26,20 +28,26 @@ final class SendWebhookData extends ChipData
     {
         $data = self::resolvePayload(...$payloads);
 
-        $callbackKey = array_key_exists('callback_url', $data) ? 'callback_url' : 'callback_url"';
+        $eventHooks = $data['event_hooks'];
 
-        $eventHooks = $data['event_hooks'] ?? [];
-        $eventHooks = is_array($eventHooks) ? array_values(array_map('strval', $eventHooks)) : [];
+        if (! is_array($eventHooks)) {
+            throw new InvalidArgumentException('CHIP Send webhook event_hooks must be an array.');
+        }
+
+        $eventHooks = array_values(array_map(
+            static fn (mixed $hook): string => SendWebhookHook::from((string) $hook)->value,
+            $eventHooks,
+        ));
 
         return new self(
             id: (int) $data['id'],
-            name: $data['name'] ?? '',
-            public_key: $data['public_key'] ?? '',
-            callback_url: (string) ($data[$callbackKey] ?? ''),
-            email: $data['email'] ?? '',
+            name: (string) $data['name'],
+            public_key: (string) $data['public_key'],
+            callback_url: (string) $data['callback_url'],
+            email: (string) $data['email'],
             event_hooks: $eventHooks,
-            created_at: (string) ($data['created_at'] ?? CarbonImmutable::now()->toISOString()),
-            updated_at: (string) ($data['updated_at'] ?? CarbonImmutable::now()->toISOString()),
+            created_at: (string) $data['created_at'],
+            updated_at: (string) $data['updated_at'],
         );
     }
 

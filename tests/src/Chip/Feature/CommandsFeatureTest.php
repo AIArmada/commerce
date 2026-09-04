@@ -21,7 +21,7 @@ describe('CleanWebhooksCommand', function (): void {
         // Create old webhook
         Webhook::forceCreate([
             'title' => 'Test Webhook',
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'events' => ['purchase.paid'],
             'payload' => ['test' => 'data'],
             'status' => 'processed',
@@ -43,7 +43,7 @@ describe('CleanWebhooksCommand', function (): void {
         // Create old webhook
         Webhook::forceCreate([
             'title' => 'Test Webhook',
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'events' => ['purchase.paid'],
             'payload' => ['test' => 'data'],
             'status' => 'processed',
@@ -65,7 +65,7 @@ describe('CleanWebhooksCommand', function (): void {
     it('cancels when user declines confirmation', function (): void {
         Webhook::forceCreate([
             'title' => 'Test Webhook',
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'events' => ['purchase.paid'],
             'payload' => ['test' => 'data'],
             'status' => 'processed',
@@ -86,7 +86,7 @@ describe('CleanWebhooksCommand', function (): void {
     it('respects custom days option', function (): void {
         Webhook::forceCreate([
             'title' => 'Test Webhook',
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'events' => ['purchase.paid'],
             'payload' => ['test' => 'data'],
             'status' => 'processed',
@@ -110,7 +110,7 @@ describe('CleanWebhooksCommand', function (): void {
     it('respects status all option', function (): void {
         Webhook::forceCreate([
             'title' => 'Test Webhook',
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'events' => ['purchase.paid'],
             'payload' => ['test' => 'data'],
             'status' => 'failed',
@@ -158,7 +158,7 @@ describe('RetryWebhooksCommand', function (): void {
         $mockWebhook = new Webhook([
             'id' => 'webhook-123',
             'title' => 'Test Webhook',
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'retry_count' => 2,
             'last_error' => 'Connection timeout',
             'payload' => [],
@@ -183,9 +183,9 @@ describe('RetryWebhooksCommand', function (): void {
 
     it('respects limit option', function (): void {
         $webhooks = collect([
-            new Webhook(['id' => 'w1', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
-            new Webhook(['id' => 'w2', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
-            new Webhook(['id' => 'w3', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
+            new Webhook(['id' => 'w1', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event_type' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
+            new Webhook(['id' => 'w2', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event_type' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
+            new Webhook(['id' => 'w3', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event_type' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
         ]);
 
         $retryManager = Mockery::mock(WebhookRetryManager::class);
@@ -219,7 +219,7 @@ describe('RetryWebhooksCommand', function (): void {
         OwnerContext::withOwner($ownerA, function (): void {
             Webhook::forceCreate([
                 'title' => 'Owner A webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['test' => 'owner-a'],
                 'status' => 'failed',
@@ -232,7 +232,7 @@ describe('RetryWebhooksCommand', function (): void {
         OwnerContext::withOwner($ownerB, function (): void {
             Webhook::forceCreate([
                 'title' => 'Owner B webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['test' => 'owner-b'],
                 'status' => 'failed',
@@ -251,8 +251,8 @@ describe('RetryWebhooksCommand', function (): void {
                 expect($owner)->not->toBeNull();
 
                 return new EloquentCollection([
-                    new Webhook(['id' => 'w-owner-1', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
-                    new Webhook(['id' => 'w-owner-2', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
+                    new Webhook(['id' => 'w-owner-1', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event_type' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
+                    new Webhook(['id' => 'w-owner-2', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event_type' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
                 ]);
             });
 

@@ -31,7 +31,7 @@ final class ResolveWebhookPurchaseId
             return $fromPayment;
         }
 
-        $purchaseId = $payload['id'] ?? $payload['data.id'] ?? null;
+        $purchaseId = $payload['id'] ?? null;
 
         return is_string($purchaseId) || is_int($purchaseId) ? (string) $purchaseId : null;
     }

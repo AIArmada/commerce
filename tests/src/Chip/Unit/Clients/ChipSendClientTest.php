@@ -36,8 +36,8 @@ describe('ChipSendClient Authentication', function (): void {
             $epoch = $request->header('epoch')[0];
             $checksum = $request->header('checksum')[0];
 
-            // The checksum should be a hash of the epoch with the API secret
-            $expectedChecksum = hash_hmac('sha256', $epoch, 'test_secret_key');
+            // CHIP Send signs the epoch followed immediately by the API key.
+            $expectedChecksum = hash_hmac('sha512', $epoch . 'test_api_key', 'test_secret_key');
 
             return $checksum === $expectedChecksum;
         });

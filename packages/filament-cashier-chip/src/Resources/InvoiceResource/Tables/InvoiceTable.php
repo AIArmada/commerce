@@ -63,7 +63,7 @@ final class InvoiceTable
                     ->falseIcon('heroicon-o-x-circle')
                     ->trueColor('success')
                     ->falseColor('danger')
-                    ->getStateUsing(fn (Purchase $record): bool => $record->status === 'paid'),
+                    ->getStateUsing(fn (Purchase $record): bool => in_array($record->status, ['paid', 'cleared', 'settled'], true)),
 
                 TextColumn::make('created_on')
                     ->label('Date')
@@ -90,26 +90,40 @@ final class InvoiceTable
                     ->label('Status')
                     ->options([
                         'created' => 'Created',
-                        'pending' => 'Pending',
+                        'sent' => 'Sent',
+                        'viewed' => 'Viewed',
+                        'pending_execute' => 'Pending Execution',
+                        'pending_charge' => 'Pending Charge',
+                        'hold' => 'On Hold',
+                        'pending_capture' => 'Pending Capture',
+                        'pending_release' => 'Pending Release',
+                        'preauthorized' => 'Pre-authorized',
                         'paid' => 'Paid',
-                        'captured' => 'Captured',
-                        'completed' => 'Completed',
-                        'failed' => 'Failed',
-                        'cancelled' => 'Cancelled',
-                        'refund_pending' => 'Refund Pending',
+                        'cleared' => 'Cleared',
+                        'settled' => 'Settled',
+                        'pending_refund' => 'Pending Refund',
                         'refunded' => 'Refunded',
-                        'partially_refunded' => 'Partially Refunded',
+                        'error' => 'Error',
+                        'blocked' => 'Blocked',
+                        'cancelled' => 'Cancelled',
+                        'overdue' => 'Overdue',
+                        'expired' => 'Expired',
+                        'released' => 'Released',
+                        'chargeback' => 'Chargeback',
                     ]),
 
                 Filter::make('paid')
                     ->label('Paid Only')
                     ->toggle()
-                    ->query(fn (Builder $query): Builder => $query->where('status', 'paid')),
+                    ->query(fn (Builder $query): Builder => $query->whereIn('status', ['paid', 'cleared', 'settled'])),
 
                 Filter::make('unpaid')
                     ->label('Unpaid Only')
                     ->toggle()
-                    ->query(fn (Builder $query): Builder => $query->whereIn('status', ['created', 'pending', 'pending_execute'])),
+                    ->query(fn (Builder $query): Builder => $query->whereIn('status', [
+                        'created', 'sent', 'viewed', 'overdue', 'pending_execute', 'pending_charge',
+                        'hold', 'pending_capture', 'pending_release', 'preauthorized', 'pending_refund',
+                    ])),
 
                 Filter::make('is_test')
                     ->label('Test Mode')
@@ -147,7 +161,7 @@ final class InvoiceTable
                     ->label('PDF')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('gray')
-                    ->visible(fn (Purchase $record): bool => $record->status === 'paid')
+                    ->visible(fn (Purchase $record): bool => in_array($record->status, ['paid', 'cleared', 'settled'], true))
                     ->action(function (Purchase $record): void {
                         // PDF download logic would be handled here
                         // For now, we just show a notification

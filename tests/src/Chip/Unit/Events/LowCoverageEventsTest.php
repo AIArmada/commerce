@@ -6,7 +6,6 @@ use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\Chip\Events\PurchaseHold;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Events\PurchasePreauthorized;
-use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
 
 describe('PurchasePaymentFailure event', function (): void {
     it('can be created from payload', function (): void {
@@ -34,15 +33,15 @@ describe('PurchasePaymentFailure event', function (): void {
                     [
                         'successful' => false,
                         'error' => [
-                            'message' => 'Insufficient funds',
-                            'code' => 'INSUFFICIENT_FUNDS',
+                            'message' => 'Card declined',
+                            'code' => 'CARD_DECLINED',
                         ],
                     ],
                     [
                         'successful' => false,
                         'error' => [
-                            'message' => 'Card declined',
-                            'code' => 'CARD_DECLINED',
+                            'message' => 'Insufficient funds',
+                            'code' => 'INSUFFICIENT_FUNDS',
                         ],
                     ],
                 ],
@@ -99,104 +98,28 @@ describe('PurchasePreauthorized event', function (): void {
     });
 });
 
-describe('PurchaseSubscriptionChargeFailure event', function (): void {
-    it('can be created from payload', function (): void {
-        $payload = [
-            'id' => 'purch_sub_fail',
-            'status' => 'error',
-            'type' => 'purchase',
-            'created_on' => time(),
-            'updated_on' => time(),
-            'purchase' => [
-                'total' => 10000,
-                'currency' => 'MYR',
-                'products' => [['name' => 'Subscription', 'price' => 10000, 'quantity' => 1]],
-                'metadata' => ['subscription_id' => 'sub_123'],
-            ],
-            'is_test' => true,
-            'recurring_token' => 'token_123',
-        ];
-
-        $event = PurchaseSubscriptionChargeFailure::fromPayload($payload);
-
-        expect($event)->toBeInstanceOf(PurchaseSubscriptionChargeFailure::class)
-            ->and($event->eventType())->toBe(WebhookEventType::PurchaseSubscriptionChargeFailure);
-    });
-
-    it('returns subscription metadata', function (): void {
-        $payload = [
-            'id' => 'purch_sub_fail',
-            'status' => 'error',
-            'type' => 'purchase',
-            'created_on' => time(),
-            'updated_on' => time(),
-            'purchase' => [
-                'total' => 10000,
-                'currency' => 'MYR',
-                'products' => [['name' => 'Subscription', 'price' => 10000, 'quantity' => 1]],
-                'metadata' => ['subscription_id' => 'sub_123'],
-            ],
-            'is_test' => true,
-            'recurring_token' => 'token_abc',
-        ];
-
-        $event = PurchaseSubscriptionChargeFailure::fromPayload($payload);
-
-        expect($event->hasRecurringToken())->toBeTrue()
-            ->and($event->getRecurringToken())->toBe('token_abc');
-    });
-
-    it('returns error details from the last attempt', function (): void {
-        $payload = [
-            'id' => 'purch_sub_fail_last_attempt',
-            'status' => 'error',
-            'type' => 'purchase',
-            'created_on' => time(),
-            'updated_on' => time(),
-            'purchase' => [
-                'total' => 10000,
-                'currency' => 'MYR',
-                'products' => [['name' => 'Subscription', 'price' => 10000, 'quantity' => 1]],
-                'metadata' => ['subscription_id' => 'sub_123'],
-            ],
-            'transaction_data' => [
-                'attempts' => [
-                    [
-                        'successful' => false,
-                        'error' => [
-                            'message' => 'Temporary network failure',
-                            'code' => 'NETWORK_FAILURE',
-                        ],
-                    ],
-                    [
-                        'successful' => false,
-                        'error' => [
-                            'message' => 'Saved card expired',
-                            'code' => 'CARD_EXPIRED',
-                        ],
-                    ],
-                ],
-            ],
-            'is_test' => true,
-            'recurring_token' => 'token_xyz',
-        ];
-
-        $event = PurchaseSubscriptionChargeFailure::fromPayload($payload);
-
-        expect($event->getErrorMessage())->toBe('Saved card expired')
-            ->and($event->getErrorCode())->toBe('CARD_EXPIRED');
-    });
-});
-
 /**
  * Helper function to create purchase payload.
  */
 function createLowCoveragePayload(string $status): array
 {
+    $eventType = match ($status) {
+        'payment_failure' => 'purchase.payment_failure',
+        'hold' => 'purchase.hold',
+        'preauthorized' => 'purchase.preauthorized',
+        default => throw new InvalidArgumentException("Unsupported low-coverage event: {$status}"),
+    };
+
+    $purchaseStatus = match ($status) {
+        'payment_failure' => 'error',
+        default => $status,
+    };
+
     return [
         'id' => 'purch_' . uniqid(),
-        'status' => $status,
+        'status' => $purchaseStatus,
         'type' => 'purchase',
+        'event_type' => $eventType,
         'created_on' => time(),
         'updated_on' => time(),
         'purchase' => [

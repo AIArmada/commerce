@@ -26,16 +26,16 @@ it('allows mocking of webhook helpers through the ChipSend facade', function ():
         public_key: 'test-key',
         callback_url: 'https://example.com',
         email: 'test@example.com',
-        event_hooks: ['send.created'],
+        event_hooks: ['send_instruction_status'],
         created_at: '2023-01-01T00:00:00Z',
         updated_at: '2023-01-01T00:00:00Z',
     );
 
     ChipSend::shouldReceive('createSendWebhook')
         ->once()
-        ->with(['url' => 'https://example.com'])
+        ->with(['callback_url' => 'https://example.com'])
         ->andReturn($webhook);
 
-    expect(ChipSend::createSendWebhook(['url' => 'https://example.com']))
+    expect(ChipSend::createSendWebhook(['callback_url' => 'https://example.com']))
         ->toBe($webhook);
 });

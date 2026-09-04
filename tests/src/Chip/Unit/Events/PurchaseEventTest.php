@@ -6,6 +6,7 @@ use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\Chip\Events\PurchaseCancelled;
 use AIArmada\Chip\Events\PurchaseCaptured;
+use AIArmada\Chip\Events\PurchaseCaptureFailure;
 use AIArmada\Chip\Events\PurchaseCreated;
 use AIArmada\Chip\Events\PurchaseHold;
 use AIArmada\Chip\Events\PurchasePaid;
@@ -18,8 +19,11 @@ use AIArmada\Chip\Events\PurchasePendingRefund;
 use AIArmada\Chip\Events\PurchasePendingRelease;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
+use AIArmada\Chip\Events\PurchaseRefundFailure;
 use AIArmada\Chip\Events\PurchaseReleased;
-use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
+use AIArmada\Chip\Events\PurchaseReleaseFailure;
+use AIArmada\Chip\Events\PurchaseSettled;
+use AIArmada\Chip\Events\PurchaseViewed;
 
 describe('PurchaseEvent base class', function (): void {
     function createPurchasePayload(array $overrides = []): array
@@ -79,6 +83,7 @@ describe('PurchaseEvent base class', function (): void {
             PurchasePaid::class => WebhookEventType::PurchasePaid,
             PurchaseCancelled::class => WebhookEventType::PurchaseCancelled,
             PurchaseCaptured::class => WebhookEventType::PurchaseCaptured,
+            PurchaseCaptureFailure::class => WebhookEventType::PurchaseCaptureFailure,
             PurchaseCreated::class => WebhookEventType::PurchaseCreated,
             PurchaseHold::class => WebhookEventType::PurchaseHold,
             PurchasePaymentFailure::class => WebhookEventType::PurchasePaymentFailure,
@@ -89,9 +94,12 @@ describe('PurchaseEvent base class', function (): void {
             PurchasePendingRefund::class => WebhookEventType::PurchasePendingRefund,
             PurchasePendingRelease::class => WebhookEventType::PurchasePendingRelease,
             PurchasePreauthorized::class => WebhookEventType::PurchasePreauthorized,
+            PurchaseRefundFailure::class => WebhookEventType::PurchaseRefundFailure,
             PurchaseRecurringTokenDeleted::class => WebhookEventType::PurchaseRecurringTokenDeleted,
             PurchaseReleased::class => WebhookEventType::PurchaseReleased,
-            PurchaseSubscriptionChargeFailure::class => WebhookEventType::PurchaseSubscriptionChargeFailure,
+            PurchaseReleaseFailure::class => WebhookEventType::PurchaseReleaseFailure,
+            PurchaseSettled::class => WebhookEventType::PurchaseSettled,
+            PurchaseViewed::class => WebhookEventType::PurchaseViewed,
         ];
 
         foreach ($events as $eventClass => $expectedType) {

@@ -42,15 +42,7 @@ final class StoreWebhookData
 
         // Only process purchase-related webhooks
         if ($payloadType === 'purchase') {
-            if (empty($payload['id'])) {
-                Log::warning('CHIP: No purchase ID in webhook payload');
-
-                return;
-            }
-
-            $this->storePurchase($payload);
-            $this->storeClient($payload);
-            $this->storePayment($payload);
+            $this->storePurchasePayload($payload);
 
             return;
         }
@@ -58,6 +50,27 @@ final class StoreWebhookData
         if ($payloadType === 'payment' && data_get($payload, 'related_to.type') === 'purchase') {
             $this->storePayment($payload);
         }
+    }
+
+    /**
+     * Store a purchase resource returned by the CHIP API.
+     *
+     * API synchronisation is not a webhook delivery, so it must not invent an
+     * event type merely to reuse the webhook event object.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function storePurchasePayload(array $payload): void
+    {
+        if (($payload['type'] ?? null) !== 'purchase' || empty($payload['id'])) {
+            Log::warning('CHIP: Purchase resource must contain a type and ID');
+
+            return;
+        }
+
+        $this->storePurchase($payload);
+        $this->storeClient($payload);
+        $this->storePayment($payload);
     }
 
     /**

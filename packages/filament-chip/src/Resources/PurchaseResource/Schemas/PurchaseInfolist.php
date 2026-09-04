@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\PurchaseResource\Schemas;
 
+use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -179,11 +180,16 @@ final class PurchaseInfolist
                             TextEntry::make('translated')
                                 ->label('Status')
                                 ->badge()
-                                ->color(fn (string $state): string => match (mb_strtolower($state)) {
-                                    'paid', 'completed', 'captured' => 'success',
-                                    'processing', 'partially paid', 'refund pending' => 'warning',
-                                    'failed', 'cancelled', 'chargeback' => 'danger',
-                                    default => 'secondary',
+                                ->color(function (string $state): string {
+                                    $status = PurchaseStatus::tryFrom(mb_strtolower($state));
+
+                                    return match (true) {
+                                        $status?->isSuccessful() ?? false => 'success',
+                                        $status?->isPending() ?? false => 'warning',
+                                        $status?->isFailed() ?? false => 'danger',
+                                        $status === PurchaseStatus::REFUNDED => 'info',
+                                        default => 'secondary',
+                                    };
                                 }),
                             TextEntry::make('timestamp')
                                 ->label('When')

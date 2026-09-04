@@ -102,63 +102,9 @@ Configure quantity-based tiered pricing:
 - Amount
 - Discount value
 
-## Promotions UI Modes
+## Promotions
 
-Promotion management works in one of two ways:
-
-- **Fallback mode** — Filament Pricing registers `PromotionResource` when `aiarmada/promotions` is installed and `aiarmada/filament-promotions` is not.
-- **Dedicated mode** — the `aiarmada/filament-promotions` plugin owns the promotions resource and navigation, while Filament Pricing keeps handling price lists, settings, simulator flows, and pricing stats.
-
-## Promotion Resource (Fallback Mode)
-
-Manage promotional discounts in fallback mode (requires `aiarmada/promotions` and no dedicated `aiarmada/filament-promotions` plugin).
-
-### List View
-
-| Column | Description |
-|--------|-------------|
-| Promotion | Name with code description |
-| Type | Badge with color |
-| Discount | Formatted based on type |
-| Uses | Count with limit display |
-| Active | Boolean icon |
-| Starts/Ends | Date display |
-
-**Filters**:
-- Type select
-- Active status
-
-**Actions**:
-- View
-- Edit
-- Duplicate (creates copy with cleared code/usage)
-
-### Create/Edit Form
-
-**Promotion Details**:
-- Name
-- Coupon Code (optional, unique)
-- Description
-
-**Discount**:
-- Discount Type (percentage, fixed, etc.)
-- Discount Value (label changes based on type)
-- Minimum Purchase (cents)
-- Minimum Quantity
-
-**Scheduling**:
-- Start Date
-- End Date
-
-**Settings** (sidebar):
-- Active toggle
-- Stackable toggle
-- Priority number
-
-**Usage Limits** (sidebar):
-- Total Uses limit
-- Per Customer limit
-- Usage count display
+Promotion rules are calculated by `aiarmada/promotions` and managed through the dedicated `aiarmada/filament-promotions` package. Filament Pricing does not register a promotion resource.
 
 ## Price Simulator
 
@@ -261,9 +207,7 @@ Widget auto-refreshes every 30 seconds.
 
 ### Setting Up a Time-Limited Promotion
 
-1. Open the promotions resource
-   - **Pricing > Promotions** in fallback mode
-   - the dedicated promotions navigation from `aiarmada/filament-promotions` when that plugin is installed
+1. Open the Promotions resource provided by `aiarmada/filament-promotions`
 2. Click **Create**
 3. Enter details:
    - Name: "Weekend Sale"

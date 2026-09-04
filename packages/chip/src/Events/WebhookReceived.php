@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Events;
 
-use AIArmada\Chip\Data\BillingTemplateClientData;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;
@@ -33,7 +32,6 @@ class WebhookReceived
         public readonly array $payload,
         public readonly ?PurchaseData $purchase = null,
         public readonly ?PayoutData $payout = null,
-        public readonly ?BillingTemplateClientData $billingTemplateClient = null,
         public readonly ?PaymentData $payment = null,
     ) {}
 
@@ -47,19 +45,16 @@ class WebhookReceived
         $eventType = $payload['event_type'] ?? 'unknown';
         $purchase = null;
         $payout = null;
-        $billingTemplateClient = null;
         $payment = null;
 
         $type = $payload['type'] ?? '';
 
-        if ($type === 'payment' || str_starts_with($eventType, 'payment.')) {
+        if ($type === 'payment') {
             $payment = PaymentData::fromWebhookPayload($payload);
-        } elseif ($type === 'purchase' || str_starts_with($eventType, 'purchase.')) {
+        } elseif ($type === 'purchase') {
             $purchase = PurchaseData::from($payload);
-        } elseif ($type === 'payout' || str_starts_with($eventType, 'payout.')) {
+        } elseif ($type === 'payout') {
             $payout = PayoutData::from($payload);
-        } elseif ($type === 'billing_template_client' || str_starts_with($eventType, 'billing_template_client.')) {
-            $billingTemplateClient = BillingTemplateClientData::from($payload);
         }
 
         return new self(
@@ -67,7 +62,6 @@ class WebhookReceived
             payload: $payload,
             purchase: $purchase,
             payout: $payout,
-            billingTemplateClient: $billingTemplateClient,
             payment: $payment,
         );
     }
@@ -95,6 +89,21 @@ class WebhookReceived
     public function isPaymentFailure(): bool
     {
         return $this->eventType === WebhookEventType::PurchasePaymentFailure->value;
+    }
+
+    public function isRefundFailure(): bool
+    {
+        return $this->eventType === WebhookEventType::PurchaseRefundFailure->value;
+    }
+
+    public function isCaptureFailure(): bool
+    {
+        return $this->eventType === WebhookEventType::PurchaseCaptureFailure->value;
+    }
+
+    public function isReleaseFailure(): bool
+    {
+        return $this->eventType === WebhookEventType::PurchaseReleaseFailure->value;
     }
 
     public function isCancelled(): bool
@@ -156,18 +165,21 @@ class WebhookReceived
         return $this->eventType === WebhookEventType::PurchasePreauthorized->value;
     }
 
+    public function isViewed(): bool
+    {
+        return $this->eventType === WebhookEventType::PurchaseViewed->value;
+    }
+
+    public function isSettled(): bool
+    {
+        return $this->eventType === WebhookEventType::PurchaseSettled->value;
+    }
+
     // Recurring token events
 
     public function isRecurringTokenDeleted(): bool
     {
         return $this->eventType === WebhookEventType::PurchaseRecurringTokenDeleted->value;
-    }
-
-    // Subscription events
-
-    public function isSubscriptionChargeFailure(): bool
-    {
-        return $this->eventType === WebhookEventType::PurchaseSubscriptionChargeFailure->value;
     }
 
     // Refund events
@@ -177,11 +189,14 @@ class WebhookReceived
         return $this->eventType === WebhookEventType::PaymentRefunded->value;
     }
 
-    // Billing events
-
-    public function isBillingCancelled(): bool
+    public function isChargedBack(): bool
     {
-        return $this->eventType === WebhookEventType::BillingTemplateClientSubscriptionBillingCancelled->value;
+        return $this->eventType === WebhookEventType::PaymentChargedBack->value;
+    }
+
+    public function isChargebackReversed(): bool
+    {
+        return $this->eventType === WebhookEventType::PaymentChargebackReversed->value;
     }
 
     // Payout events
@@ -205,47 +220,32 @@ class WebhookReceived
 
     public function isPurchaseEvent(): bool
     {
-        return str_starts_with($this->eventType, 'purchase.');
+        return $this->getEventTypeEnum()?->isPurchaseEvent() ?? false;
     }
 
     public function isPayoutEvent(): bool
     {
-        return str_starts_with($this->eventType, 'payout.');
-    }
-
-    public function isBillingEvent(): bool
-    {
-        return str_starts_with($this->eventType, 'billing_template_client.');
+        return $this->getEventTypeEnum()?->isPayoutEvent() ?? false;
     }
 
     public function isPaymentEvent(): bool
     {
-        return str_starts_with($this->eventType, 'payment.');
+        return $this->getEventTypeEnum()?->isPaymentEvent() ?? false;
     }
 
     public function isPendingEvent(): bool
     {
-        return str_contains($this->eventType, 'pending');
+        return $this->getEventTypeEnum()?->isPendingEvent() ?? false;
     }
 
     public function isSuccessEvent(): bool
     {
-        return in_array($this->eventType, [
-            WebhookEventType::PurchasePaid->value,
-            WebhookEventType::PurchaseCaptured->value,
-            WebhookEventType::PurchaseReleased->value,
-            WebhookEventType::PurchasePreauthorized->value,
-            WebhookEventType::PayoutSuccess->value,
-        ]);
+        return $this->getEventTypeEnum()?->isSuccessEvent() ?? false;
     }
 
     public function isFailureEvent(): bool
     {
-        return in_array($this->eventType, [
-            WebhookEventType::PurchasePaymentFailure->value,
-            WebhookEventType::PurchaseSubscriptionChargeFailure->value,
-            WebhookEventType::PayoutFailed->value,
-        ]);
+        return $this->getEventTypeEnum()?->isFailureEvent() ?? false;
     }
 
     // Data accessors
@@ -289,17 +289,17 @@ class WebhookReceived
     public function getAmount(): int
     {
         return $this->payment?->getAmountInCents()
-            ?? $this->payload['purchase']['total']
-            ?? $this->payload['amount']
-            ?? 0;
+            ?? (is_numeric(data_get($this->payload, 'purchase.total'))
+                ? (int) data_get($this->payload, 'purchase.total')
+                : 0);
     }
 
     public function getCurrency(): string
     {
         return $this->payment?->getCurrency()
-            ?? $this->payload['purchase']['currency']
-            ?? $this->payload['currency']
-            ?? 'MYR';
+            ?? (is_string(data_get($this->payload, 'purchase.currency'))
+                ? data_get($this->payload, 'purchase.currency')
+                : (string) config('chip.defaults.currency', 'MYR'));
     }
 
     /**

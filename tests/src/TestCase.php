@@ -332,9 +332,8 @@ abstract class TestCase extends Orchestra
         ]);
         // Configure CHIP settings for testing
         $app['config']->set('chip.collect.api_key', 'test_secret_key');
-        $app['config']->set('chip.collect.secret_key', 'test_secret_key'); // For backward compatibility with tests
         $app['config']->set('chip.collect.brand_id', 'test_brand_id');
-        $app['config']->set('chip.collect.environment', 'sandbox');
+        $app['config']->set('chip.environment', 'sandbox');
         $app['config']->set('chip.send.api_key', 'test_api_key');
         $app['config']->set('chip.send.api_secret', 'test_send_secret');
         $app['config']->set('chip.collect.public_key', 'test_public_key');
@@ -365,7 +364,6 @@ abstract class TestCase extends Orchestra
         $app['config']->set('chip.owner.enabled', false);
         $app['config']->set('chip.owner.include_global', false);
         $app['config']->set('chip.owner.auto_assign_on_create', true);
-        $app['config']->set('chip.is_sandbox', true);
 
         // Configure communications settings for testing
         $app['config']->set('communications.features.owner.enabled', true);

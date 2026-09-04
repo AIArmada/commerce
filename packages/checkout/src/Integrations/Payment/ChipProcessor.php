@@ -38,8 +38,8 @@ final class ChipProcessor implements PaymentProcessorInterface
             return false;
         }
 
-        return config('chip.collect.brand_id') !== null
-            && config('chip.collect.api_key') !== null;
+        return filled(config('chip.collect.brand_id'))
+            && filled(config('chip.collect.api_key'));
     }
 
     public function createPayment(CheckoutSession $session, PaymentRequest $request): PaymentResult
@@ -78,8 +78,9 @@ final class ChipProcessor implements PaymentProcessorInterface
             return new PaymentResult(
                 status: $paymentStatus,
                 paymentId: $paymentId,
-                transactionId: $payload['transaction_id'] ?? null,
+                transactionId: null,
                 amount: $payload['purchase']['total'] ?? null,
+                currency: $payload['purchase']['currency'] ?? null,
                 gatewayResponse: $payload,
                 provider: 'chip',
             );
@@ -111,6 +112,7 @@ final class ChipProcessor implements PaymentProcessorInterface
                 paymentId: $paymentId,
                 transactionId: $purchase->reference_generated,
                 amount: $purchase->purchase->total->getAmount(),
+                currency: $purchase->getCurrency(),
                 gatewayResponse: $gatewayResponse,
                 provider: 'chip',
             );

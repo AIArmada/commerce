@@ -16,7 +16,6 @@ class UserFactory extends Factory
         return [
             'name' => 'Test User',
             'email' => 'test-' . Str::random(10) . '@example.com',
-            'chip_id' => 'cli_' . Str::random(10),
         ];
     }
 }

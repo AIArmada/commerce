@@ -58,9 +58,9 @@ final class SendInstructionTable
                     ->label('Status')
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
-                        'completed', 'processed' => 'success',
-                        'received', 'queued', 'verifying' => 'warning',
-                        'failed', 'cancelled', 'rejected' => 'danger',
+                        'completed' => 'success',
+                        'received', 'enquiring', 'executing', 'reviewing', 'accepted' => 'warning',
+                        'rejected', 'deleted' => 'danger',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (?string $state): string => (string) str($state ?? 'unknown')->headline()),
@@ -86,54 +86,18 @@ final class SendInstructionTable
                     ->label('Status')
                     ->options([
                         'received' => 'Received',
-                        'queued' => 'Queued',
-                        'verifying' => 'Verifying',
+                        'enquiring' => 'Enquiring',
+                        'executing' => 'Executing',
+                        'reviewing' => 'Under Review',
+                        'accepted' => 'Accepted',
                         'completed' => 'Completed',
-                        'processed' => 'Processed',
-                        'failed' => 'Failed',
-                        'cancelled' => 'Cancelled',
                         'rejected' => 'Rejected',
+                        'deleted' => 'Deleted',
                     ]),
             ], layout: FiltersLayout::AboveContent)
             ->actions([
                 ViewAction::make()
                     ->icon(Heroicon::Eye),
-
-                Action::make('cancel')
-                    ->label('Cancel')
-                    ->icon(Heroicon::XCircle)
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalHeading('Cancel Payout')
-                    ->modalDescription('Are you sure you want to cancel this payout? This action cannot be undone.')
-                    ->visible(fn (SendInstruction $record): bool => in_array($record->state, ['received', 'queued'], true))
-                    ->action(function (SendInstruction $record): void {
-                        $scopedRecord = self::resolveScopedSendInstruction($record);
-
-                        if ($scopedRecord === null) {
-                            Notification::make()
-                                ->title('Payout is outside your owner scope')
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        try {
-                            app(ChipSendService::class)->cancelSendInstruction((string) $scopedRecord->id);
-
-                            Notification::make()
-                                ->title('Payout cancelled')
-                                ->success()
-                                ->send();
-                        } catch (Throwable $e) {
-                            Notification::make()
-                                ->title('Failed to cancel payout')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
-                    }),
 
                 Action::make('resend_webhook')
                     ->label('Resend Webhook')
@@ -152,7 +116,7 @@ final class SendInstructionTable
                         }
 
                         try {
-                            app(ChipSendService::class)->resendSendInstructionWebhook((string) $scopedRecord->id);
+                            app(ChipSendService::class)->resendSendInstructionWebhook((int) $scopedRecord->id);
 
                             Notification::make()
                                 ->title('Webhook resent')

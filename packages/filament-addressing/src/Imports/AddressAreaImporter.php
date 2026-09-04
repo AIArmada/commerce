@@ -71,7 +71,7 @@ class AddressAreaImporter extends Importer
                 ->example('101.5183'),
             ImportColumn::make('metadata')
                 ->label('Metadata')
-                ->example('{"source":"legacy"}')
+                ->example('{"source":"import"}')
                 ->castStateUsing(static function (?string $state): array {
                     if ($state === null || mb_trim($state) === '') {
                         return [];

@@ -8,6 +8,7 @@ use AIArmada\Cashier\Contracts\InvoiceContract;
 use AIArmada\Cashier\Contracts\InvoiceLineItemContract;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -159,7 +160,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function isPaid(): bool
     {
-        return in_array($this->purchase->status, ['paid', 'success', 'cleared', 'settled']);
+        return $this->purchaseStatus()->isSuccessful();
     }
 
     /**
@@ -167,7 +168,17 @@ class ChipInvoice implements InvoiceContract
      */
     public function isOpen(): bool
     {
-        return in_array($this->purchase->status, ['created', 'sent', 'viewed', 'pending', 'pending_execute', 'pending_capture']);
+        return in_array($this->purchaseStatus(), [
+            PurchaseStatus::CREATED,
+            PurchaseStatus::SENT,
+            PurchaseStatus::VIEWED,
+            PurchaseStatus::OVERDUE,
+            PurchaseStatus::PENDING_EXECUTE,
+            PurchaseStatus::PENDING_CHARGE,
+            PurchaseStatus::PENDING_CAPTURE,
+            PurchaseStatus::PENDING_RELEASE,
+            PurchaseStatus::PENDING_REFUND,
+        ], true);
     }
 
     /**
@@ -175,7 +186,13 @@ class ChipInvoice implements InvoiceContract
      */
     public function isVoid(): bool
     {
-        return in_array($this->purchase->status, ['cancelled', 'expired', 'error', 'blocked']);
+        return in_array($this->purchaseStatus(), [
+            PurchaseStatus::CANCELLED,
+            PurchaseStatus::RELEASED,
+            PurchaseStatus::EXPIRED,
+            PurchaseStatus::ERROR,
+            PurchaseStatus::BLOCKED,
+        ], true);
     }
 
     /**
@@ -238,6 +255,11 @@ class ChipInvoice implements InvoiceContract
     public function asGatewayInvoice(): PurchaseData
     {
         return $this->purchase;
+    }
+
+    private function purchaseStatus(): PurchaseStatus
+    {
+        return PurchaseStatus::from($this->purchase->status);
     }
 
     /**

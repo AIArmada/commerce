@@ -7,6 +7,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Http\RedirectResponse;
 
@@ -59,7 +60,7 @@ class ChipCheckout implements CheckoutContract
      */
     public function successUrl(): string
     {
-        return $this->purchase->success_callback ?? '';
+        return $this->purchase->success_redirect ?? '';
     }
 
     /**
@@ -83,15 +84,28 @@ class ChipCheckout implements CheckoutContract
      */
     public function paymentStatus(): string
     {
-        return match ($this->purchase->status) {
-            'paid', 'cleared', 'settled' => 'paid',
-            'created', 'sent', 'viewed', 'pending_execute', 'pending_capture', 'pending_charge' => 'unpaid',
-            'expired', 'overdue' => 'expired',
-            'cancelled' => 'cancelled',
-            'error', 'blocked' => 'failed',
-            'refunded', 'pending_refund' => 'refunded',
-            'hold', 'preauthorized' => 'authorized',
-            default => 'unpaid',
+        return match ($this->purchaseStatus()) {
+            PurchaseStatus::PAID,
+            PurchaseStatus::CLEARED,
+            PurchaseStatus::SETTLED => 'paid',
+            PurchaseStatus::CREATED,
+            PurchaseStatus::SENT,
+            PurchaseStatus::VIEWED,
+            PurchaseStatus::OVERDUE,
+            PurchaseStatus::PENDING_EXECUTE,
+            PurchaseStatus::PENDING_CAPTURE,
+            PurchaseStatus::PENDING_CHARGE,
+            PurchaseStatus::PENDING_RELEASE,
+            PurchaseStatus::PENDING_REFUND => 'unpaid',
+            PurchaseStatus::EXPIRED => 'expired',
+            PurchaseStatus::CANCELLED,
+            PurchaseStatus::RELEASED => 'cancelled',
+            PurchaseStatus::ERROR,
+            PurchaseStatus::BLOCKED,
+            PurchaseStatus::CHARGEBACK => 'failed',
+            PurchaseStatus::REFUNDED => 'refunded',
+            PurchaseStatus::HOLD,
+            PurchaseStatus::PREAUTHORIZED => 'authorized',
         };
     }
 
@@ -100,7 +114,7 @@ class ChipCheckout implements CheckoutContract
      */
     public function isComplete(): bool
     {
-        return in_array($this->purchase->status, ['paid', 'cleared', 'settled']);
+        return $this->purchaseStatus()->isSuccessful();
     }
 
     /**
@@ -108,7 +122,7 @@ class ChipCheckout implements CheckoutContract
      */
     public function isSuccessful(): bool
     {
-        return in_array($this->purchase->status, ['paid', 'cleared', 'settled']);
+        return $this->purchaseStatus()->isSuccessful();
     }
 
     /**
@@ -116,9 +130,16 @@ class ChipCheckout implements CheckoutContract
      */
     public function isPending(): bool
     {
-        return in_array($this->purchase->status, [
-            'created', 'sent', 'viewed',
-            'pending_execute', 'pending_capture', 'pending_charge',
+        return in_array($this->purchaseStatus(), [
+            PurchaseStatus::CREATED,
+            PurchaseStatus::SENT,
+            PurchaseStatus::VIEWED,
+            PurchaseStatus::OVERDUE,
+            PurchaseStatus::PENDING_EXECUTE,
+            PurchaseStatus::PENDING_CAPTURE,
+            PurchaseStatus::PENDING_CHARGE,
+            PurchaseStatus::PENDING_RELEASE,
+            PurchaseStatus::PENDING_REFUND,
         ]);
     }
 
@@ -127,7 +148,7 @@ class ChipCheckout implements CheckoutContract
      */
     public function isExpired(): bool
     {
-        return in_array($this->purchase->status, ['expired', 'overdue']);
+        return $this->purchaseStatus() === PurchaseStatus::EXPIRED;
     }
 
     /**
@@ -178,5 +199,10 @@ class ChipCheckout implements CheckoutContract
     public function asGatewayCheckout(): PurchaseData
     {
         return $this->purchase;
+    }
+
+    private function purchaseStatus(): PurchaseStatus
+    {
+        return PurchaseStatus::from($this->purchase->status);
     }
 }

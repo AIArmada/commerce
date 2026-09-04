@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Exceptions\WebhookVerificationException;
 use AIArmada\Chip\Services\ChipCollectService;
+use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\WebhookService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -35,13 +36,25 @@ describe('WebhookService', function (): void {
 
     it('verifies valid webhook signatures', function (): void {
         $payload = json_encode([
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'data' => ['id' => 'purchase_123'],
         ], JSON_THROW_ON_ERROR);
 
         openssl_sign($payload, $signature, $this->privateKey, OPENSSL_ALGO_SHA256);
 
         expect($this->webhookService->verifySignature($payload, base64_encode($signature), $this->publicKey))
+            ->toBeTrue();
+    });
+
+    it('verifies valid CHIP Send webhook signatures with SHA-512', function (): void {
+        $payload = json_encode([
+            'id' => 1,
+            'state' => 'completed',
+        ], JSON_THROW_ON_ERROR);
+
+        openssl_sign($payload, $signature, $this->privateKey, OPENSSL_ALGO_SHA512);
+
+        expect($this->webhookService->verifySendSignature($payload, base64_encode($signature), $this->publicKey))
             ->toBeTrue();
     });
 
@@ -72,7 +85,7 @@ describe('WebhookService', function (): void {
         expect($this->webhookService->verifySignature($request))->toBeTrue();
     });
 
-    it('falls back to the company public key for incoming requests when webhook keys do not match', function (): void {
+    it('does not use the company public key for incoming Collect webhooks', function (): void {
         $alternateKey = openssl_pkey_new([
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
             'private_key_bits' => 2048,
@@ -103,7 +116,33 @@ describe('WebhookService', function (): void {
             content: $payload,
         );
 
-        expect($this->webhookService->verifySignature($request))->toBeTrue();
+        expect($this->webhookService->verifySignature($request))->toBeFalse();
+    });
+
+    it('verifies success callbacks with the company public key', function (): void {
+        config()->set('chip.collect.public_key', $this->publicKey);
+        config()->set('chip.webhooks.collect.webhook_keys', []);
+
+        $payload = json_encode([
+            'id' => 'purchase_123',
+            'type' => 'purchase',
+            'event_type' => 'purchase.paid',
+            'status' => 'paid',
+        ], JSON_THROW_ON_ERROR);
+
+        openssl_sign($payload, $signature, $this->privateKey, OPENSSL_ALGO_SHA256);
+
+        $request = Request::create(
+            uri: '/success-callback',
+            method: 'POST',
+            server: [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_SIGNATURE' => base64_encode($signature),
+            ],
+            content: $payload,
+        );
+
+        expect($this->webhookService->verifySuccessCallbackSignature($request))->toBeTrue();
     });
 
     it('skips signature verification when disabled', function (): void {
@@ -113,17 +152,11 @@ describe('WebhookService', function (): void {
     });
 
     it('throws when signature header is missing', function (): void {
-        $request = Request::create('/', 'POST', [], [], [], [], json_encode(['event' => 'purchase.created', 'data' => []]));
+        config()->set('chip.webhooks.collect.webhook_keys', [$this->publicKey]);
 
-        $service = new class extends WebhookService
-        {
-            public function getPublicKey(?string $webhookId = null): string
-            {
-                return 'dummy-public-key';
-            }
-        };
+        $request = Request::create('/', 'POST', [], [], [], [], json_encode(['event_type' => 'purchase.created']));
 
-        expect(fn () => $service->verifySignature($request))
+        expect(fn () => $this->webhookService->verifySignature($request))
             ->toThrow(WebhookVerificationException::class, 'Missing signature header');
     });
 
@@ -141,7 +174,7 @@ describe('WebhookService', function (): void {
             }
         };
 
-        expect(fn () => $service->verifySignature('payload', '***invalid***'))
+        expect(fn () => $service->verifySignature('payload', '***invalid***', $this->publicKey))
             ->toThrow(WebhookVerificationException::class, 'Signature is not valid base64');
     });
 
@@ -213,6 +246,41 @@ describe('WebhookService', function (): void {
         }
     });
 
+    it('uses a configured Send webhook key before requesting it from the api', function (): void {
+        config([
+            'chip.webhooks.send.webhook_id' => 17,
+            'chip.webhooks.send.webhook_keys' => [17 => $this->publicKey],
+        ]);
+
+        $originalSend = app(ChipSendService::class);
+        $sendService = Mockery::mock(ChipSendService::class);
+        $sendService->shouldReceive('getSendWebhook')->never();
+        app()->instance(ChipSendService::class, $sendService);
+
+        $payload = json_encode([
+            'id' => 17,
+            'state' => 'completed',
+        ], JSON_THROW_ON_ERROR);
+
+        openssl_sign($payload, $signature, $this->privateKey, OPENSSL_ALGO_SHA512);
+
+        $request = Request::create(
+            uri: '/send-webhook',
+            method: 'POST',
+            server: [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_SIGNATURE' => base64_encode($signature),
+            ],
+            content: $payload,
+        );
+
+        try {
+            expect($this->webhookService->verifySendSignature($request))->toBeTrue();
+        } finally {
+            app()->instance(ChipSendService::class, $originalSend);
+        }
+    });
+
     it('throws exception when company public key is not configured', function (): void {
         config(['chip.collect.public_key' => null]);
 
@@ -227,7 +295,7 @@ describe('WebhookService', function (): void {
 
         try {
             expect(fn () => $this->webhookService->getPublicKey())
-                ->toThrow(WebhookVerificationException::class, 'Company public key is required but not configured');
+                ->toThrow(WebhookVerificationException::class, 'Unable to retrieve the CHIP Collect public key');
         } finally {
             app()->instance(ChipCollectClient::class, $originalClient);
         }

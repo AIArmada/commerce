@@ -8,6 +8,7 @@ use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Services\WebhookService;
+use AIArmada\Chip\Testing\WebhookFactory;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -40,9 +41,6 @@ describe('WebhookController', function (): void {
         Schema::table('webhook_calls', function (Blueprint $table): void {
             if (! Schema::hasColumn('webhook_calls', 'event_type')) {
                 $table->string('event_type')->nullable();
-            }
-            if (! Schema::hasColumn('webhook_calls', 'event')) {
-                $table->string('event')->nullable();
             }
             if (! Schema::hasColumn('webhook_calls', 'status')) {
                 $table->string('status')->nullable();
@@ -124,39 +122,7 @@ describe('WebhookController', function (): void {
     it('handles payout webhook', function (): void {
         $controller = new WebhookController;
 
-        $payload = [
-            'id' => 'payout_test123',
-            'type' => 'payout',
-            'event_type' => 'payout.success',
-            'status' => 'success',
-            'amount' => 10000,
-            'currency' => 'MYR',
-            'created_on' => time(),
-            'updated_on' => time(),
-            'is_test' => true,
-        ];
-
-        $request = Request::create('/webhook', 'POST', $payload);
-        $response = $controller->handle($request);
-
-        expect($response->getStatusCode())->toBe(200)
-            ->and($response->getData()->status)->toBe('accepted');
-    });
-
-    it('handles billing template client webhook', function (): void {
-        $controller = new WebhookController;
-
-        $payload = [
-            'id' => 'btc_test123',
-            'type' => 'billing_template_client',
-            'event_type' => 'billing_template_client.subscription_billing_cancelled',
-            'status' => 'cancelled',
-            'billing_template_id' => 'bt_123',
-            'client_id' => 'client_123',
-            'created_on' => time(),
-            'updated_on' => time(),
-            'is_test' => true,
-        ];
+        $payload = WebhookFactory::payoutSuccess(['id' => 'payout_test123']);
 
         $request = Request::create('/webhook', 'POST', $payload);
         $response = $controller->handle($request);

@@ -4,75 +4,71 @@ title: CHIP Send
 
 # CHIP Send
 
-Disbursements, vendor payouts, and transfers.
+CHIP Send is CHIP's disbursement API for sending money to verified bank accounts. It is separate from CHIP Collect: it has different base URLs, HMAC request authentication, integer resource IDs, and its own webhook API.
 
-## Facade
+## Authentication and environments
+
+The package uses the official CHIP Send endpoints:
+
+| Environment | Base URL |
+|-------------|----------|
+| Sandbox | `https://staging-api.chip-in.asia/api` |
+| Production | `https://api.chip-in.asia/api` |
+
+Every request uses `Authorization: Bearer {API_KEY}`, an `epoch` header, and a hexadecimal HMAC-SHA512 `checksum`. The signed value is the epoch immediately followed by the API key, using the API secret as the HMAC key. The epoch must be recent according to CHIP's API rules.
+
+```dotenv
+CHIP_ENVIRONMENT=sandbox
+CHIP_SEND_API_KEY=your-send-api-key
+CHIP_SEND_API_SECRET=your-send-api-secret
+```
+
+## Send instructions
+
+### Create
+
+The public package method accepts cents and converts them to CHIP's documented decimal-string amount. CHIP Send does not accept a currency field on this request; the currency is determined by the Send account.
 
 ```php
 use AIArmada\Chip\Facades\ChipSend;
-```
 
-## Send Instructions
-
-### Create Disbursement
-
-```php
 $instruction = ChipSend::createSendInstruction(
     amountInCents: 10000,
-    currency: 'MYR',
-    recipientBankAccountId: 'bank_abc123',
-    description: 'Affiliate Commission',
+    recipientBankAccountId: 1,
+    description: 'Affiliate commission',
     reference: 'AFF-2025-001',
     email: 'affiliate@example.com',
+    sendRecipientReceipt: true,
 );
 
-$instruction->id;
-$instruction->state;        // 'received', 'completed', etc.
-$instruction->amount;       // '100.00'
-$instruction->receipt_url;
+$instruction->id;       // integer
+$instruction->state;    // received, enquiring, executing, reviewing, accepted, completed, rejected, or deleted
+$instruction->amount;   // decimal string, for example '100.00'
 ```
 
-### Retrieve
+The request maps to `POST /send/send_instructions` with `bank_account_id`, `amount`, `email`, `description`, `reference`, and the optional `send_recipient_receipt` field.
+
+### Retrieve, list, and delete
 
 ```php
-$instruction = ChipSend::getSendInstruction('inst_abc123');
+$instruction = ChipSend::getSendInstruction(1);
 
-$instruction->isCompleted();
-$instruction->isPending();
-$instruction->isRejected();
-$instruction->getAmountInMinorUnits(); // cents
-```
-
-### List
-
-```php
 $instructions = ChipSend::listSendInstructions([
     'state' => 'completed',
-    'created_after' => '2025-01-01',
 ]);
+
+ChipSend::deleteSendInstruction(1);
 ```
 
-### Cancel
+Deletion maps to CHIP's `DELETE /send/send_instructions/{id}` operation and is only available while the instruction is unprocessed. To ask CHIP to resend the latest instruction webhook:
 
 ```php
-$instruction = ChipSend::cancelSendInstruction('inst_abc123');
+ChipSend::resendSendInstructionWebhook(1);
 ```
 
-### Delete
+That maps to `POST /send/send_instructions/{id}/resend_webhook_event`.
 
-```php
-ChipSend::deleteSendInstruction('inst_abc123');
-```
-
-### Resend Webhook
-
-```php
-ChipSend::resendSendInstructionWebhook('inst_abc123');
-```
-
-## Bank Accounts
-
-### Create
+## Bank accounts
 
 ```php
 $account = ChipSend::createBankAccount(
@@ -82,140 +78,93 @@ $account = ChipSend::createBankAccount(
     reference: 'vendor-001',
 );
 
-$account->id;
-$account->status; // 'pending', 'verified', 'rejected'
+$account->id;       // integer
+$account->status;   // pending, verified, or rejected
+
+$account = ChipSend::getBankAccount(1);
+$accounts = ChipSend::listBankAccounts(['status' => 'verified']);
+
+ChipSend::deleteBankAccount(1);
+ChipSend::resendBankAccountWebhook(1);
 ```
 
-### Retrieve
+The create operation maps to `POST /send/bank_accounts`. CHIP's documented Send API exposes create, retrieve, list, delete, and webhook-resend operations for bank accounts; it does not expose a bank-account update operation, so this package does not provide one.
+
+## Send limits
+
+Send-limit amounts are expressed by CHIP in major currency units (`100` means RM100), not cents:
 
 ```php
-$account = ChipSend::getBankAccount('bank_abc123');
+$limit = ChipSend::getSendLimit(1);
+$limit = ChipSend::increaseBudgetAllocation(1000);
+$limits = ChipSend::listSendLimits();
+
+ChipSend::resendApprovalRequest(1);
+
+$limit->amount;      // major units
+$limit->fee;         // major units
+$limit->net_amount;  // major units
 ```
 
-### List
+These map to `GET /send/send_limits/{id}`, `POST /send/send_limits`, `GET /send/send_limits`, and `POST /send/send_limits/{id}/resend_approval_requests`.
+
+## Groups and accounts
 
 ```php
-$accounts = ChipSend::listBankAccounts([
-    'status' => 'verified',
-    'group_id' => 'grp_123',
-]);
-```
-
-### Update
-
-```php
-$account = ChipSend::updateBankAccount('bank_abc123', [
-    'reference' => 'new-reference',
-]);
-```
-
-### Delete
-
-```php
-ChipSend::deleteBankAccount('bank_abc123');
-```
-
-### Resend Webhook
-
-```php
-ChipSend::resendBankAccountWebhook('bank_abc123');
-```
-
-## Send Limits
-
-```php
-$limit = ChipSend::getSendLimit($limitId);
-
-$limit->amount;       // cents
-$limit->fee;          // cents
-$limit->net_amount;   // cents
-$limit->currency;
-$limit->status;
-```
-
-## Groups
-
-Organize bank accounts into groups.
-
-```php
-// Create
-$group = ChipSend::createGroup([
-    'name' => 'Vendors',
-    'description' => 'Vendor payouts',
-]);
-
-// Retrieve
-$group = ChipSend::getGroup('grp_abc123');
-
-// List
+$group = ChipSend::createGroup(['name' => 'Vendors']);
+$group = ChipSend::getGroup(1);
 $groups = ChipSend::listGroups();
+$group = ChipSend::updateGroup(1, ['name' => 'Preferred vendors']);
+ChipSend::deleteGroup(1);
 
-// Update
-$group = ChipSend::updateGroup('grp_abc123', ['name' => 'Updated']);
-
-// Delete
-ChipSend::deleteGroup('grp_abc123');
-```
-
-## Accounts
-
-List payout accounts linked to merchant.
-
-```php
 $accounts = ChipSend::listAccounts();
 ```
 
-## Webhooks
+Group updates use the documented `PATCH /send/groups/{id}` operation.
 
-### Create
+## Send webhooks
+
+Send webhooks are managed at the API root (`/webhooks`), not under `/send/webhooks`:
 
 ```php
 $webhook = ChipSend::createSendWebhook([
-    'url' => 'https://example.com/webhooks/chip-send',
-    'events' => ['send_instruction.completed'],
+    'name' => 'Commerce Send webhook',
+    'callback_url' => 'https://example.com/chip/send/webhooks',
+    'email' => 'ops@example.com',
+    'event_hooks' => [
+        'send_instruction_status',
+    ],
 ]);
-```
 
-### Retrieve
-
-```php
-$webhook = ChipSend::getSendWebhook('wh_abc123');
-```
-
-### List
-
-```php
+$webhook = ChipSend::getSendWebhook(1);
 $webhooks = ChipSend::listSendWebhooks();
-```
-
-### Update
-
-```php
-$webhook = ChipSend::updateSendWebhook('wh_abc123', [
-    'events' => ['send_instruction.completed', 'bank_account.verified'],
+$webhook = ChipSend::updateSendWebhook(1, [
+    'event_hooks' => ['bank_account_status', 'budget_allocation_status'],
 ]);
+ChipSend::deleteSendWebhook(1);
 ```
 
-### Delete
+The documented hook categories are:
 
-```php
-ChipSend::deleteSendWebhook('wh_abc123');
+- `bank_account_status`
+- `budget_allocation_status`
+- `send_instruction_status`
+
+The package's Send route verifies `X-Signature` as a base64 RSA PKCS#1 v1.5 SHA-512 signature over the raw request body using the dedicated Send webhook public key. It then dispatches `AIArmada\Chip\Events\SendWebhookReceived` with the verified JSON object. The payload is not converted into synthetic status events; applications interpret it according to the configured hook category.
+
+Configure the route and key lookup as follows:
+
+```dotenv
+CHIP_SEND_WEBHOOK_ROUTE=/chip/send/webhooks
+CHIP_SEND_WEBHOOK_ID=1
+CHIP_SEND_WEBHOOK_PUBLIC_KEYS='{"1":"-----BEGIN PUBLIC KEY-----\\n...\\n-----END PUBLIC KEY-----"}'
 ```
 
-## Instruction States
+Use `CHIP_SEND_WEBHOOK_ID` when the package should retrieve the public key from CHIP. Use the JSON key map when several Send webhooks are configured locally. The route returns HTTP 200 only after verification and JSON-object validation, allowing CHIP's documented retry protocol to handle failures.
 
-| State | Description |
-|-------|-------------|
-| `received` | Instruction received |
-| `enquiring` | Verifying bank account |
-| `executing` | Processing transfer |
-| `reviewing` | Manual review |
-| `accepted` | Accepted, pending completion |
-| `completed` | Successfully transferred |
-| `rejected` | Transfer failed |
-| `deleted` | Instruction deleted |
+## Official references
 
-## Next Steps
-
-- [Webhooks](webhooks.md) – Handle Send events
-- [API Reference](api-reference.md) – Complete methods
+- [CHIP Send API introduction](https://docs.chip-in.asia/chip-send/api-reference/introduction)
+- [Create send instruction](https://docs.chip-in.asia/chip-send/api-reference/send-instructions/create)
+- [Send webhook validation](https://docs.chip-in.asia/chip-send/api-reference/webhooks/validation)
+- [Send webhook delivery protocol](https://docs.chip-in.asia/chip-send/api-reference/webhooks/delivery-protocol)

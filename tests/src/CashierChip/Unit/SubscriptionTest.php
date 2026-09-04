@@ -138,7 +138,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_can_cancel_immediately()
     {
-        $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
+        $user = $this->createUser(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
         $subscription = Subscription::factory()->for($user, 'owner')->create(['chip_status' => SubscriptionStatus::Active]);
 
         $subscription->cancelNow();
@@ -150,7 +150,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_can_resume()
     {
-        $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
+        $user = $this->createUser(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Canceled,
             'ends_at' => Carbon::tomorrow(),
@@ -187,7 +187,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_end_trial()
     {
-        $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
+        $user = $this->createUser(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
         $subscription = Subscription::factory()->for($user, 'billable')->create([
             'trial_ends_at' => Carbon::tomorrow(),
         ]);
@@ -199,8 +199,9 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_recurring_token()
     {
-        $subscription = (new Subscription)->assignRecurringToken('test-recurring-token-123');
-        $this->assertEquals('tok_123', $subscription->recurringToken());
+        $subscription = new Subscription;
+        $subscription->recurring_token = 'test-recurring-token-123';
+        $this->assertEquals('test-recurring-token-123', $subscription->recurringToken());
 
         $subscription = new Subscription;
         $owner = Mockery::mock(User::class);
@@ -214,7 +215,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_increment_decrement_quantity()
     {
-        $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
+        $user = $this->createUser(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
 
         $subscription = null;
         OwnerContext::withOwner($user, function () use ($user, &$subscription): void {
@@ -237,7 +238,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_scope_active()
     {
-        $user = User::create(['email' => 'u1', 'name' => 'U1', 'chip_id' => 'c1']);
+        $user = $this->createUser(['email' => 'u1', 'name' => 'U1', 'chip_id' => 'c1']);
         Subscription::factory()->for($user, 'billable')->create(['chip_status' => SubscriptionStatus::Active]);
         Subscription::factory()->for($user, 'billable')->create(['chip_status' => SubscriptionStatus::Canceled, 'ends_at' => Carbon::now()->subDay()]);
 

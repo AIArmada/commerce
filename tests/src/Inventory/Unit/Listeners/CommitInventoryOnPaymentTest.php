@@ -96,6 +96,11 @@ function makeTypedPayment(array $metadata = [], string $id = 'payment-123'): Pay
             return false;
         }
 
+        public function isRefunded(): bool
+        {
+            return false;
+        }
+
         public function requiresAction(): bool
         {
             return false;

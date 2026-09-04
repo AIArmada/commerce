@@ -6,7 +6,6 @@ namespace AIArmada\Events\Support\Integration;
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -20,8 +19,7 @@ final class CommerceIntegration
 {
     public static function aiArmadaOrderFulfillmentAvailable(): bool
     {
-        return class_exists(Customer::class)
-            && class_exists(Order::class)
+        return class_exists(Order::class)
             && class_exists(OrderItem::class)
             && interface_exists(OrderServiceInterface::class)
             && class_exists(Processing::class);

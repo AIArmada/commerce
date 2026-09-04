@@ -59,20 +59,36 @@ final class SyncChipPurchaseStatus
     private function saveRecurringToken(Model $billable, string $recurringToken, array $purchase): void
     {
         $transactionData = $purchase['transaction_data'] ?? [];
-        $extra = $transactionData['extra'] ?? [];
-        $card = $purchase['card'] ?? [];
+        $extra = is_array($transactionData) && is_array($transactionData['extra'] ?? null)
+            ? $transactionData['extra']
+            : [];
+        $paymentMethod = is_array($transactionData) && is_string($transactionData['payment_method'] ?? null)
+            ? $transactionData['payment_method']
+            : null;
 
         Cashier::paymentMethodStore()->saveForBillable(
             $billable,
             $recurringToken,
             attributes: [
-                'type' => $transactionData['payment_method'] ?? 'card',
-                'brand' => $card['brand'] ?? $extra['card_brand'] ?? $transactionData['payment_method'] ?? 'card',
-                'last_four' => $card['last_4'] ?? $extra['card_last_4'] ?? null,
+                'type' => $paymentMethod,
+                'brand' => $paymentMethod,
+                'last_four' => $this->lastFourFromMaskedPan($extra['masked_pan'] ?? null),
                 'metadata' => $purchase,
             ],
             makeDefault: ! $billable->hasDefaultPaymentMethod(),
         );
+    }
+
+    /**
+     * CHIP exposes card digits as the trailing digits of transaction_data.extra.masked_pan.
+     */
+    private function lastFourFromMaskedPan(mixed $maskedPan): ?string
+    {
+        if (! is_string($maskedPan) || preg_match('/(\d{4})$/', $maskedPan, $matches) !== 1) {
+            return null;
+        }
+
+        return $matches[1];
     }
 
     /**
@@ -98,26 +114,10 @@ final class SyncChipPurchaseStatus
      */
     private function getSubscriptionType(array $payload): ?string
     {
-        $metadata = Arr::get($payload, 'metadata');
+        $metadata = Arr::get($payload, 'purchase.metadata', []);
 
-        if (! is_array($metadata)) {
-            $metadata = Arr::get($payload, 'purchase.metadata', []);
-        }
+        $subscriptionType = is_array($metadata) ? $metadata['subscription_type'] ?? null : null;
 
-        $subscriptionType = $metadata['subscription_type'] ?? null;
-
-        if (is_string($subscriptionType) && $subscriptionType !== '') {
-            return $subscriptionType;
-        }
-
-        $reference = Arr::get($payload, 'reference')
-            ?? Arr::get($payload, 'purchase.reference')
-            ?? '';
-
-        if (preg_match('/Subscription (\w+)/', $reference, $matches)) {
-            return $matches[1];
-        }
-
-        return null;
+        return is_string($subscriptionType) && $subscriptionType !== '' ? $subscriptionType : null;
     }
 }

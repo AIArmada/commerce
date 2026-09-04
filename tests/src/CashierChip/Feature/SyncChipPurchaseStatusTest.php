@@ -144,7 +144,7 @@ describe('SyncChipPurchaseStatus', function (): void {
 
         $purchaseData = PurchaseData::from([
             'id' => 'purchase_fail_1',
-            'status' => 'failed',
+            'status' => 'error',
             'currency' => 'MYR',
             'amount_in_cents' => 5000,
         ]);

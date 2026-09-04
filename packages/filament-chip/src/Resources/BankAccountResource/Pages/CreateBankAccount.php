@@ -41,7 +41,7 @@ final class CreateBankAccount extends CreateRecord
                 bankCode: $data['bank_code'],
                 accountNumber: $data['account_number'],
                 accountHolderName: $data['name'],
-                reference: $data['reference'] ?? null,
+                reference: $data['reference'],
             );
 
             Notification::make()

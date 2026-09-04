@@ -56,32 +56,15 @@ php artisan vendor:publish --tag=pricing-config
 php artisan migrate
 ```
 
-## Promotions UI Modes
+## Optional: Add Promotions Administration
 
-Filament Pricing supports two promotion-management modes:
-
-1. **Fallback promotions UI** — install `aiarmada/promotions` and let Filament Pricing register its legacy `PromotionResource`.
-2. **Dedicated promotions UI** — install `aiarmada/filament-promotions` as well. In this mode the dedicated promotions plugin owns the navigation/resource and Filament Pricing keeps handling price lists, pricing settings, simulator flows, and pricing stats.
-
-## Optional: Enable Fallback Promotions
-
-To enable the fallback Promotions resource inside Filament Pricing, install the promotions package:
-
-```bash
-composer require aiarmada/promotions
-```
-
-The fallback `PromotionResource` will automatically appear in the Pricing navigation.
-
-## Optional: Use the Dedicated Promotions Plugin
-
-If you want a dedicated promotions admin surface, install the Filament Promotions plugin alongside Filament Pricing:
+Promotion rules are calculated by `aiarmada/promotions`. When administrators need to manage those rules in Filament, install the dedicated adapter alongside Filament Pricing:
 
 ```bash
 composer require aiarmada/filament-promotions
 ```
 
-Register both plugins in your Filament panel provider. When both are installed, `aiarmada/filament-promotions` owns the promotions navigation/resource and Filament Pricing skips its fallback promotions resource.
+Register `FilamentPromotionsPlugin` in your Filament panel provider. Filament Pricing continues to own price lists, pricing settings, simulator flows, and pricing statistics.
 
 See [Filament Promotions Installation](../../filament-promotions/docs/02-installation.md) for the dedicated setup flow.
 
@@ -107,10 +90,7 @@ After installation, you should see:
 2. **Pricing Settings** page in the Settings navigation group
 3. **Pricing Stats** widget on the dashboard
 
-If only the promotions package is installed:
-- **Promotions** resource in the Pricing navigation group
-
-If the dedicated promotions plugin is also installed:
+If the dedicated promotions plugin is installed:
 - **Promotions** resource in the navigation group configured by `aiarmada/filament-promotions`
 
 If products package is installed:

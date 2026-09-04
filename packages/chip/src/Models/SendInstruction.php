@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $email
  * @property string $description
  * @property string $reference
+ * @property bool $send_recipient_receipt
  * @property string|null $state
  * @property string|null $receipt_url
  * @property string|null $slug
@@ -45,9 +46,9 @@ class SendInstruction extends ChipIntegerModel
         $state = $this->state ?? '';
 
         return match ($state) {
-            'completed', 'processed' => 'success',
-            'received', 'queued', 'verifying' => 'warning',
-            'failed', 'cancelled', 'rejected' => 'danger',
+            'completed' => 'success',
+            'received', 'enquiring', 'executing', 'reviewing', 'accepted' => 'warning',
+            'rejected', 'deleted' => 'danger',
             default => 'gray',
         };
     }
@@ -65,6 +66,7 @@ class SendInstruction extends ChipIntegerModel
         return [
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
+            'send_recipient_receipt' => 'boolean',
         ];
     }
 }

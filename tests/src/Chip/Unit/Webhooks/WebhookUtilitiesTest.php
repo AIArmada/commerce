@@ -70,13 +70,13 @@ describe('ChipWebhookProfile', function (): void {
         }
     });
 
-    it('returns true for billing_template_client events', function (): void {
+    it('returns false for unsupported resource events', function (): void {
         $profile = new ChipWebhookProfile;
         $request = Request::create('/webhook', 'POST', [
-            'event_type' => 'billing_template_client.subscription_billing_cancelled',
+            'event_type' => 'unknown.event',
         ]);
 
-        expect($profile->shouldProcess($request))->toBeTrue();
+        expect($profile->shouldProcess($request))->toBeFalse();
     });
 
     it('returns false for unknown event types', function (): void {
@@ -117,6 +117,7 @@ describe('WebhookValidator', function (): void {
         config([
             'chip.webhooks.verify_signature' => true,
             'chip.collect.public_key' => $publicKeyDetails['key'],
+            'chip.webhooks.collect.webhook_keys' => [$publicKeyDetails['key']],
         ]);
 
         $validator = new WebhookValidator;
@@ -154,6 +155,7 @@ describe('WebhookValidator', function (): void {
         config([
             'chip.webhooks.verify_signature' => true,
             'chip.collect.public_key' => $publicKeyDetails['key'],
+            'chip.webhooks.collect.webhook_keys' => [$publicKeyDetails['key']],
         ]);
 
         $validator = new WebhookValidator;
@@ -188,6 +190,7 @@ describe('WebhookValidator', function (): void {
         config([
             'chip.webhooks.verify_signature' => true,
             'chip.collect.public_key' => $publicKeyDetails['key'],
+            'chip.webhooks.collect.webhook_keys' => [$publicKeyDetails['key']],
         ]);
 
         $validator = new WebhookValidator;
@@ -256,15 +259,13 @@ describe('WebhookLogger', function (): void {
         expect($key1)->not->toBe($key2);
     });
 
-    it('handles nested data structure for idempotency key', function (): void {
+    it('uses canonical object identity for idempotency key', function (): void {
         $logger = new WebhookLogger;
 
         $payload = [
-            'event' => 'purchase.paid',
-            'data' => [
-                'id' => 'purch_nested',
-            ],
-            'created' => '2024-01-15T10:00:00Z',
+            'event_type' => 'purchase.paid',
+            'id' => 'purch_123',
+            'created_on' => 1705300800,
         ];
 
         $key = $logger->generateIdempotencyKey($payload);
@@ -330,7 +331,7 @@ describe('WebhookLogger', function (): void {
         OwnerContext::withOwner($ownerA, function () use ($idempotencyKey): void {
             Webhook::forceCreate([
                 'title' => 'Owner A webhook',
-                'event' => 'purchase.paid',
+                'event_type' => 'purchase.paid',
                 'events' => ['purchase.paid'],
                 'payload' => ['id' => 'purchase-a'],
                 'status' => 'processed',

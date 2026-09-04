@@ -195,7 +195,6 @@ class SubscriptionBuilderTest extends CashierChipTestCase
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test-' . uniqid() . '@example.com',
-            'chip_id' => 'cli_123',
         ]);
 
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');

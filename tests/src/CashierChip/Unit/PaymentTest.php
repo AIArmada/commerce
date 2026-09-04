@@ -21,15 +21,15 @@ class PaymentTest extends CashierChipTestCase
 
     public function test_can_get_status(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'success']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
-        $this->assertEquals('success', $payment->status());
+        $this->assertEquals('paid', $payment->status());
     }
 
     public function test_is_succeeded(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'success']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isSucceeded());
@@ -45,10 +45,19 @@ class PaymentTest extends CashierChipTestCase
 
     public function test_is_pending(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isPending());
+    }
+
+    public function test_overdue_purchase_remains_pending_and_not_expired(): void
+    {
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'overdue']);
+        $payment = new Payment($purchase);
+
+        $this->assertTrue($payment->isPending());
+        $this->assertFalse($payment->isExpired());
     }
 
     public function test_is_expired(): void
@@ -61,7 +70,7 @@ class PaymentTest extends CashierChipTestCase
 
     public function test_is_failed(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'failed']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'error']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isFailed());
@@ -70,6 +79,14 @@ class PaymentTest extends CashierChipTestCase
     public function test_is_cancelled(): void
     {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'cancelled']);
+        $payment = new Payment($purchase);
+
+        $this->assertTrue($payment->isCancelled());
+    }
+
+    public function test_released_purchase_is_cancelled(): void
+    {
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'released']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isCancelled());
@@ -102,7 +119,7 @@ class PaymentTest extends CashierChipTestCase
     {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
-            'status' => 'pending',
+            'status' => 'created',
             'checkout_url' => 'https://chip.example.com/checkout/pur_123',
         ]);
         $payment = new Payment($purchase);
@@ -110,12 +127,20 @@ class PaymentTest extends CashierChipTestCase
         $this->assertTrue($payment->requiresRedirect());
     }
 
-    public function test_requires_capture(): void
+    public function test_requires_capture_for_held_purchase(): void
+    {
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'hold']);
+        $payment = new Payment($purchase);
+
+        $this->assertTrue($payment->requiresCapture());
+    }
+
+    public function test_preauthorized_purchase_does_not_require_capture(): void
     {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'preauthorized']);
         $payment = new Payment($purchase);
 
-        $this->assertTrue($payment->requiresCapture());
+        $this->assertFalse($payment->requiresCapture());
     }
 
     public function test_is_processing(): void
@@ -135,7 +160,7 @@ class PaymentTest extends CashierChipTestCase
     {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
-            'status' => 'pending',
+            'status' => 'created',
             'checkout_url' => 'https://chip.example.com/checkout/pur_123',
         ]);
         $payment = new Payment($purchase);
@@ -147,7 +172,7 @@ class PaymentTest extends CashierChipTestCase
     {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
-            'status' => 'success',
+            'status' => 'paid',
             'recurring_token' => 'tok_123',
         ]);
         $payment = new Payment($purchase);
@@ -159,7 +184,7 @@ class PaymentTest extends CashierChipTestCase
     {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
-            'status' => 'success',
+            'status' => 'paid',
             'payment' => ['amount' => 1000, 'currency' => 'MYR'],
         ]);
         $payment = new Payment($purchase);
@@ -171,7 +196,7 @@ class PaymentTest extends CashierChipTestCase
     {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
-            'status' => 'success',
+            'status' => 'paid',
             'payment' => ['amount' => 1000, 'currency' => 'MYR'],
         ]);
         $payment = new Payment($purchase);
@@ -182,7 +207,7 @@ class PaymentTest extends CashierChipTestCase
 
     public function test_as_chip_purchase(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'success']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $this->assertSame($purchase, $payment->asChipPurchase());
@@ -191,7 +216,7 @@ class PaymentTest extends CashierChipTestCase
     public function test_set_customer(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'success']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $payment->setCustomer($user);
@@ -201,7 +226,7 @@ class PaymentTest extends CashierChipTestCase
 
     public function test_to_array(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'success']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $array = $payment->toArray();
@@ -211,7 +236,7 @@ class PaymentTest extends CashierChipTestCase
 
     public function test_to_json(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'success']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $json = $payment->toJson();
@@ -221,7 +246,7 @@ class PaymentTest extends CashierChipTestCase
 
     public function test_json_serialize(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'success', 'reference' => 'ref_123']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid', 'reference' => 'ref_123']);
         $payment = new Payment($purchase);
 
         $this->assertIsArray($payment->jsonSerialize());
@@ -231,7 +256,7 @@ class PaymentTest extends CashierChipTestCase
     {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
-            'status' => 'pending',
+            'status' => 'created',
             'checkout_url' => 'https://chip.example.com/checkout',
         ]);
         $payment = new Payment($purchase);
@@ -242,7 +267,7 @@ class PaymentTest extends CashierChipTestCase
 
     public function test_validate_throws_on_failed(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'failed']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'error']);
         $payment = new Payment($purchase);
 
         $this->expectException(IncompletePayment::class);
@@ -260,7 +285,7 @@ class PaymentTest extends CashierChipTestCase
 
     public function test_validate_passes_on_success(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'success']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         // Should not throw
@@ -268,9 +293,9 @@ class PaymentTest extends CashierChipTestCase
         $this->assertTrue(true);
     }
 
-    public function test_capture_returns_self_when_not_preauthorized(): void
+    public function test_capture_returns_self_when_not_held(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'success']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $result = $payment->capture();
@@ -280,7 +305,7 @@ class PaymentTest extends CashierChipTestCase
 
     public function test_cancel_returns_self_when_succeeded(): void
     {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'success']);
+        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $result = $payment->cancel();

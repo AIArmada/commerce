@@ -292,7 +292,7 @@ final class VoucherInfolist
     }
 
     /**
-     * @param  array{level?: int, type?: string, value?: int, share?: float}  $level
+     * @param  array{level?: int, type?: string, value?: int|float}  $level
      */
     private static function formatUplineLevel(array $level, string $currency = 'MYR'): string
     {
@@ -308,7 +308,6 @@ final class VoucherInfolist
             return $label . ($level['value'] ?? 0) . '% of commission';
         }
 
-        // Legacy: share as float (0.05 = 5%)
-        return $label . number_format(($level['share'] ?? 0) * 100, 1) . '%';
+        return $label . '—';
     }
 }

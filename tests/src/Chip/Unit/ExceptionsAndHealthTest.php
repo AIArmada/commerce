@@ -59,14 +59,18 @@ describe('ChipGatewayCheck', function (): void {
             ->and($result->status->value)->toBe('warning');
     });
 
-    it('returns warning when only brand_id is missing', function (): void {
+    it('checks the account endpoint when brand_id is missing', function (): void {
         config(['chip.collect.brand_id' => null, 'chip.collect.api_key' => 'test-key']);
+
+        Http::fake([
+            '*' => Http::response(['balance' => 1000], 200),
+        ]);
 
         $check = new ChipGatewayCheck;
         $result = $check->run();
 
         expect($result)->toBeInstanceOf(Result::class)
-            ->and($result->status->value)->toBe('warning');
+            ->and($result->status->value)->toBe('ok');
     });
 
     it('returns warning when only api_key is missing', function (): void {

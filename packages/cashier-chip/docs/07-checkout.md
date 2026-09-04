@@ -199,7 +199,7 @@ This creates a CHIP purchase with:
 Override the `createCheckout` method:
 
 ```php
-class User extends Authenticatable
+class User extends Authenticatable implements BillableContract
 {
     use Billable;
     

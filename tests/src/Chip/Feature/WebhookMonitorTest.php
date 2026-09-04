@@ -17,7 +17,7 @@ describe('WebhookMonitor without database', function (): void {
 
         Webhook::forceCreate([
             'title' => 'Processed webhook',
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'events' => ['purchase.paid'],
             'payload' => ['id' => 'purchase-processed'],
             'status' => 'processed',
@@ -32,7 +32,7 @@ describe('WebhookMonitor without database', function (): void {
 
         Webhook::forceCreate([
             'title' => 'Failed webhook',
-            'event' => 'purchase.failed',
+            'event_type' => 'purchase.failed',
             'events' => ['purchase.failed'],
             'payload' => ['id' => 'purchase-failed'],
             'status' => 'failed',
@@ -47,7 +47,7 @@ describe('WebhookMonitor without database', function (): void {
 
         Webhook::forceCreate([
             'title' => 'Pending webhook',
-            'event' => 'purchase.created',
+            'event_type' => 'purchase.created',
             'events' => ['purchase.created'],
             'payload' => ['id' => 'purchase-pending'],
             'status' => 'pending',
@@ -62,7 +62,7 @@ describe('WebhookMonitor without database', function (): void {
 
         Webhook::forceCreate([
             'title' => 'Old webhook',
-            'event' => 'purchase.old',
+            'event_type' => 'purchase.old',
             'events' => ['purchase.old'],
             'payload' => ['id' => 'purchase-old'],
             'status' => 'processed',
@@ -90,7 +90,7 @@ describe('WebhookMonitor without database', function (): void {
 
         Webhook::forceCreate([
             'title' => 'Hour one processed',
-            'event' => 'purchase.paid',
+            'event_type' => 'purchase.paid',
             'events' => ['purchase.paid'],
             'payload' => ['id' => 'purchase-hour-1-a'],
             'status' => 'processed',
@@ -104,7 +104,7 @@ describe('WebhookMonitor without database', function (): void {
 
         Webhook::forceCreate([
             'title' => 'Hour one failed',
-            'event' => 'purchase.failed',
+            'event_type' => 'purchase.failed',
             'events' => ['purchase.failed'],
             'payload' => ['id' => 'purchase-hour-1-b'],
             'status' => 'failed',
@@ -118,7 +118,7 @@ describe('WebhookMonitor without database', function (): void {
 
         Webhook::forceCreate([
             'title' => 'Hour two processed',
-            'event' => 'purchase.created',
+            'event_type' => 'purchase.created',
             'events' => ['purchase.created'],
             'payload' => ['id' => 'purchase-hour-2-a'],
             'status' => 'processed',

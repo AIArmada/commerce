@@ -201,8 +201,8 @@ class InventoryBatchTest extends InventoryTestCase
 
         expect($result)->toBe($batch);
         expect($batch->fresh()->status)->toBe(BatchStatus::Quarantined->value);
-        expect($batch->fresh()->is_quarantined)->toBeTrue();
         expect($batch->fresh()->quarantine_reason)->toBe('Quality issue detected');
+        expect($batch->fresh()->quarantined_at)->not->toBeNull();
     }
 
     public function test_release_from_quarantine(): void
@@ -212,15 +212,15 @@ class InventoryBatchTest extends InventoryTestCase
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'status' => BatchStatus::Quarantined->value,
-            'is_quarantined' => true,
             'quarantine_reason' => 'Test reason',
+            'quarantined_at' => now(),
         ]);
 
         $result = $batch->releaseFromQuarantine();
 
         expect($result)->toBe($batch);
         expect($batch->fresh()->status)->toBe(BatchStatus::Active->value);
-        expect($batch->fresh()->is_quarantined)->toBeFalse();
+        expect($batch->fresh()->quarantined_at)->toBeNull();
         expect($batch->fresh()->quarantine_reason)->toBeNull();
     }
 
@@ -238,7 +238,6 @@ class InventoryBatchTest extends InventoryTestCase
         expect($result)->toBe($batch);
         $fresh = $batch->fresh();
         expect($fresh->status)->toBe(BatchStatus::Recalled->value);
-        expect($fresh->is_recalled)->toBeTrue();
         expect($fresh->recall_reason)->toBe('Safety hazard found');
         expect($fresh->recalled_at)->not->toBeNull();
     }

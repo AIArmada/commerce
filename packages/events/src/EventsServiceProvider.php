@@ -143,6 +143,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $package
             ->name('events')
             ->hasConfigFile()
+            ->hasViews()
             ->runsMigrations()
             ->discoversMigrations();
     }

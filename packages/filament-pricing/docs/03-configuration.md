@@ -8,7 +8,7 @@ The Filament Pricing package relies on configuration from the base `aiarmada/pri
 
 ## Filament Package Configuration
 
-The admin navigation and fallback promotion resource are configured in `config/filament-pricing.php`:
+The admin navigation is configured in `config/filament-pricing.php`:
 
 ```php
 'navigation' => [
@@ -16,14 +16,9 @@ The admin navigation and fallback promotion resource are configured in `config/f
     'settings_group' => 'Settings',
 ],
 
-'features' => [
-    'promotions' => true,
-],
-
 'resources' => [
     'navigation_sort' => [
         'price_lists' => 1,
-        'promotions' => 2,
     ],
 ],
 
@@ -93,18 +88,6 @@ Resources use these default navigation settings:
 | Navigation Icon | heroicon-o-currency-dollar |
 | Navigation Sort | 1 |
 | Record Title | name |
-
-### PromotionResource (fallback only)
-
-These navigation details apply only when Filament Pricing is providing the fallback promotions resource. If `aiarmada/filament-promotions` is installed, the dedicated promotions plugin owns the promotions navigation and resource settings.
-
-| Setting | Value |
-|---------|-------|
-| Navigation Group | Pricing |
-| Navigation Icon | heroicon-o-gift |
-| Navigation Sort | 2 |
-| Record Title | name |
-| Navigation Badge | Count of active promotions |
 
 ### ManagePricingSettings
 

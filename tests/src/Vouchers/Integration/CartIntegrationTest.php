@@ -33,7 +33,9 @@ beforeEach(function (): void {
     VoucherModel::query()->forceDelete();
 
     config([
-        'vouchers.cart.max_vouchers_per_cart' => 1,
+        'vouchers.stacking.rules' => [
+            ['type' => 'max_vouchers', 'value' => 1],
+        ],
         'vouchers.validation.check_user_limit' => false,
         'vouchers.validation.check_global_limit' => true,
         'vouchers.validation.check_min_cart_value' => true,
@@ -242,7 +244,7 @@ test('can clear all vouchers from cart', function (): void {
         'expires_at' => now()->addMonth(),
     ]);
 
-    config(['vouchers.cart.max_vouchers_per_cart' => 2]);
+    config(['vouchers.stacking.rules' => [['type' => 'max_vouchers', 'value' => 2]]]);
 
     Cart::add('sku-multi', 'Test Product', 250.00, 1);
 
@@ -281,7 +283,10 @@ test('can get applied voucher codes', function (): void {
 });
 
 test('respects maximum vouchers per cart', function (): void {
-    config(['vouchers.cart.max_vouchers_per_cart' => 1, 'vouchers.cart.replace_when_max_reached' => false]);
+    config([
+        'vouchers.stacking.rules' => [['type' => 'max_vouchers', 'value' => 1]],
+        'vouchers.stacking.auto_replace' => false,
+    ]);
 
     VoucherModel::create([
         'name' => 'First Voucher',
@@ -314,7 +319,10 @@ test('respects maximum vouchers per cart', function (): void {
 })->throws(InvalidVoucherException::class, 'Cart already has the maximum number of vouchers');
 
 test('replaces voucher when max per cart and replacement enabled', function (): void {
-    config(['vouchers.cart.max_vouchers_per_cart' => 1, 'vouchers.cart.replace_when_max_reached' => true]);
+    config([
+        'vouchers.stacking.rules' => [['type' => 'max_vouchers', 'value' => 1]],
+        'vouchers.stacking.auto_replace' => true,
+    ]);
 
     VoucherModel::create([
         'name' => 'First Voucher',
@@ -366,7 +374,7 @@ test('throws exception when applying same voucher twice', function (): void {
 })->throws(InvalidVoucherException::class, 'already applied');
 
 test('can check if cart can add more vouchers', function (): void {
-    config(['vouchers.cart.max_vouchers_per_cart' => 2]);
+    config(['vouchers.stacking.rules' => [['type' => 'max_vouchers', 'value' => 2]]]);
 
     VoucherModel::create([
         'name' => 'Check Voucher',

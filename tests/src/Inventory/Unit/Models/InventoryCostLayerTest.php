@@ -8,7 +8,7 @@ use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLocation;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 class InventoryCostLayerTest extends InventoryTestCase
 {
@@ -426,6 +426,6 @@ class InventoryCostLayerTest extends InventoryTestCase
         expect($layer->quantity)->toBeInt();
         expect($layer->remaining_quantity)->toBeInt();
         expect($layer->costing_method)->toBe(CostingMethod::Fifo);
-        expect($layer->layer_date)->toBeInstanceOf(Carbon::class);
+        expect($layer->layer_date)->toBeInstanceOf(CarbonImmutable::class);
     }
 }

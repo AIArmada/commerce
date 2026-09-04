@@ -29,17 +29,14 @@ enum PurchaseStatus: string
 
     // Success states
     case PAID = 'paid';
-    case PAID_AUTHORIZED = 'paid_authorized';
-    case RECURRING_SUCCESSFUL = 'recurring_successful';
     case CLEARED = 'cleared';
     case SETTLED = 'settled';
 
     // Refund states
     case PENDING_REFUND = 'pending_refund';
-    case PARTIALLY_REFUNDED = 'partially_refunded';
     case REFUNDED = 'refunded';
 
-    // Failure states
+    // Payment deadline states
     case ERROR = 'error';
     case BLOCKED = 'blocked';
     case CANCELLED = 'cancelled';
@@ -51,11 +48,6 @@ enum PurchaseStatus: string
 
     // Chargeback
     case CHARGEBACK = 'chargeback';
-
-    // Attempt states
-    case ATTEMPTED_CAPTURE = 'attempted_capture';
-    case ATTEMPTED_REFUND = 'attempted_refund';
-    case ATTEMPTED_RECURRING = 'attempted_recurring';
 
     public function label(): string
     {
@@ -70,12 +62,9 @@ enum PurchaseStatus: string
             self::PENDING_RELEASE => 'Pending Release',
             self::PREAUTHORIZED => 'Pre-authorized',
             self::PAID => 'Paid',
-            self::PAID_AUTHORIZED => 'Paid (Authorized)',
-            self::RECURRING_SUCCESSFUL => 'Recurring Successful',
             self::CLEARED => 'Cleared',
             self::SETTLED => 'Settled',
             self::PENDING_REFUND => 'Pending Refund',
-            self::PARTIALLY_REFUNDED => 'Partially Refunded',
             self::REFUNDED => 'Refunded',
             self::ERROR => 'Error',
             self::BLOCKED => 'Blocked',
@@ -84,9 +73,6 @@ enum PurchaseStatus: string
             self::EXPIRED => 'Expired',
             self::RELEASED => 'Released',
             self::CHARGEBACK => 'Chargeback',
-            self::ATTEMPTED_CAPTURE => 'Attempted Capture',
-            self::ATTEMPTED_REFUND => 'Attempted Refund',
-            self::ATTEMPTED_RECURRING => 'Attempted Recurring',
         };
     }
 
@@ -94,11 +80,8 @@ enum PurchaseStatus: string
     {
         return in_array($this, [
             self::PAID,
-            self::PAID_AUTHORIZED,
-            self::RECURRING_SUCCESSFUL,
             self::CLEARED,
             self::SETTLED,
-            self::PARTIALLY_REFUNDED,
         ]);
     }
 
@@ -115,9 +98,7 @@ enum PurchaseStatus: string
             self::PENDING_RELEASE,
             self::PREAUTHORIZED,
             self::PENDING_REFUND,
-            self::ATTEMPTED_CAPTURE,
-            self::ATTEMPTED_REFUND,
-            self::ATTEMPTED_RECURRING,
+            self::OVERDUE,
         ]);
     }
 
@@ -127,7 +108,6 @@ enum PurchaseStatus: string
             self::ERROR,
             self::BLOCKED,
             self::CANCELLED,
-            self::OVERDUE,
             self::EXPIRED,
         ]);
     }
@@ -155,10 +135,8 @@ enum PurchaseStatus: string
     {
         return in_array($this, [
             self::PAID,
-            self::PAID_AUTHORIZED,
             self::CLEARED,
             self::SETTLED,
-            self::PARTIALLY_REFUNDED,
         ]);
     }
 }

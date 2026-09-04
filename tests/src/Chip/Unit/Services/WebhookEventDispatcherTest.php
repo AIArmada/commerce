@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\BillingTemplateClientData;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;
@@ -114,7 +113,6 @@ describe('WebhookEventDispatcher::extractPayment', function (): void {
     it('extracts PaymentData for payment.* events', function (): void {
         $dispatcher = new WebhookEventDispatcher;
         $payload = createMinimalPaymentPayload();
-        unset($payload['type']);
 
         $result = $dispatcher->extractPayment($payload);
 
@@ -143,37 +141,6 @@ describe('WebhookEventDispatcher::extractPayment', function (): void {
         ];
 
         $result = $dispatcher->extractPayment($payload);
-
-        expect($result)->toBeNull();
-    });
-});
-
-describe('WebhookEventDispatcher::extractBillingTemplateClient', function (): void {
-    it('extracts BillingTemplateClientData for billing_template_client type', function (): void {
-        $dispatcher = new WebhookEventDispatcher;
-        $payload = createMinimalBillingTemplateClientPayload();
-        $payload['type'] = 'billing_template_client';
-
-        $result = $dispatcher->extractBillingTemplateClient($payload);
-
-        expect($result)->toBeInstanceOf(BillingTemplateClientData::class);
-    });
-
-    it('extracts BillingTemplateClientData for billing_template_client.* events', function (): void {
-        $dispatcher = new WebhookEventDispatcher;
-        $payload = createMinimalBillingTemplateClientPayload();
-        $payload['event_type'] = 'billing_template_client.subscription_billing_cancelled';
-
-        $result = $dispatcher->extractBillingTemplateClient($payload);
-
-        expect($result)->toBeInstanceOf(BillingTemplateClientData::class);
-    });
-
-    it('returns null for non-billing payloads', function (): void {
-        $dispatcher = new WebhookEventDispatcher;
-        $payload = ['type' => 'purchase', 'event_type' => 'purchase.paid'];
-
-        $result = $dispatcher->extractBillingTemplateClient($payload);
 
         expect($result)->toBeNull();
     });
@@ -216,7 +183,7 @@ describe('WebhookEventDispatcher::dispatch', function (): void {
             && $event->currency === 'MYR');
     });
 
-    it('uses nested payment metadata when top-level metadata is empty', function (): void {
+    it('does not invent application metadata for a provider payload', function (): void {
         $dispatcher = new WebhookEventDispatcher;
         $payload = createMinimalPaymentPayload();
         $payload['metadata'] = [];
@@ -227,10 +194,7 @@ describe('WebhookEventDispatcher::dispatch', function (): void {
 
         $dispatcher->dispatch('payment.refunded', $payload);
 
-        Event::assertDispatched(CommercePaymentRefunded::class, fn (CommercePaymentRefunded $event): bool => $event->metadata === [
-            'order_id' => 'order-123',
-            'refund_id' => 'refund-123',
-        ]);
+        Event::assertDispatched(CommercePaymentRefunded::class, fn (CommercePaymentRefunded $event): bool => $event->metadata === []);
     });
 
     it('skips malformed payment.refunded payloads that have no payment details', function (): void {
@@ -266,6 +230,7 @@ function createMinimalPurchasePayload(): array
     return [
         'id' => '550e8400-e29b-41d4-a716-446655440000',
         'type' => 'purchase',
+        'event_type' => 'purchase.paid',
         'created_on' => time(),
         'updated_on' => time(),
         'client' => [
@@ -339,7 +304,6 @@ function createMinimalPaymentPayload(): array
         'id' => 'payment-123',
         'type' => 'payment',
         'event_type' => 'payment.refunded',
-        'status' => 'refunded',
         'created_on' => time(),
         'updated_on' => time(),
         'client' => [
@@ -376,27 +340,20 @@ function createMinimalPayoutPayload(): array
     return [
         'id' => '550e8400-e29b-41d4-a716-446655440002',
         'type' => 'payout',
+        'event_type' => 'payout.pending',
         'status' => 'pending',
-        'amount' => 1000,
-        'currency' => 'MYR',
-        'created_on' => time(),
-        'updated_on' => time(),
-    ];
-}
-
-/**
- * Helper to create minimal valid billing template client payload.
- *
- * @return array<string, mixed>
- */
-function createMinimalBillingTemplateClientPayload(): array
-{
-    return [
-        'id' => '550e8400-e29b-41d4-a716-446655440003',
-        'type' => 'billing_template_client',
-        'status' => 'active',
-        'billing_template_id' => '550e8400-e29b-41d4-a716-446655440004',
-        'client_id' => '550e8400-e29b-41d4-a716-446655440005',
+        'payment' => [
+            'amount' => 1000,
+            'currency' => 'MYR',
+            'net_amount' => 1000,
+            'fee_amount' => 0,
+            'pending_amount' => 0,
+            'payment_type' => 'payout',
+            'is_outgoing' => true,
+        ],
+        'client' => ['email' => 'recipient@example.com'],
+        'brand_id' => 'brand_123',
+        'transaction_data' => ['attempts' => []],
         'created_on' => time(),
         'updated_on' => time(),
     ];

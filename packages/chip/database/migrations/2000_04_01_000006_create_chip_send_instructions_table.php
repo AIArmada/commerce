@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('email'); // Email address
             $table->text('description'); // Description
             $table->string('reference'); // Any reference value
+            $table->boolean('send_recipient_receipt')->default(false);
 
             // Status tracking - exact states from API
             $table->string('state', 24)

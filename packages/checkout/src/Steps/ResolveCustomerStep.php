@@ -71,7 +71,10 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
                 sessionBillable: $billable,
                 billingData: $billingData,
                 shippingData: $shippingData,
-                metadata: ['checkout_session_id' => $session->id],
+                metadata: [
+                    'checkout_session_id' => $session->id,
+                    'prefer_actor' => (bool) config('checkout.payment.prefer_actor', false),
+                ],
                 owner: $owner,
                 source: 'checkout.resolve_customer',
             ));

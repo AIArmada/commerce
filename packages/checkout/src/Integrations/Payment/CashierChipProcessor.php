@@ -66,14 +66,15 @@ final class CashierChipProcessor implements PaymentProcessorInterface
     public function handleCallback(array $payload): PaymentResult
     {
         try {
-            $paymentId = $payload['id'] ?? $payload['purchase']['id'] ?? null;
+            $paymentId = $payload['id'] ?? null;
             $paymentStatus = $this->statusMapper->fromCallbackPayload($payload);
 
             return new PaymentResult(
                 status: $paymentStatus,
                 paymentId: $paymentId,
-                transactionId: $payload['transaction_id'] ?? null,
-                amount: $payload['amount'] ?? null,
+                transactionId: null,
+                amount: $payload['purchase']['total'] ?? null,
+                currency: $payload['purchase']['currency'] ?? null,
                 gatewayResponse: $payload,
                 provider: 'chip',
             );

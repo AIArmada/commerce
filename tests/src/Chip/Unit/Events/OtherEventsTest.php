@@ -2,12 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\BillingTemplateClientData;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Enums\WebhookEventType;
-use AIArmada\Chip\Events\BillingCancelled;
 use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Events\WebhookReceived;
 
@@ -109,48 +107,6 @@ describe('PaymentRefunded event', function (): void {
     });
 });
 
-describe('BillingCancelled event', function (): void {
-    function createBillingPayload(array $overrides = []): array
-    {
-        return array_merge([
-            'id' => 'btc_test123',
-            'type' => 'billing_template_client',
-            'created_on' => time(),
-            'updated_on' => time(),
-            'status' => 'subscription_paused',
-            'billing_template_id' => 'bt_template_123',
-            'client_id' => 'client_abc',
-            'recurring_token' => 'token_xyz',
-            'next_billing_on' => time() + 86400,
-            'last_billing_on' => time() - 86400,
-            'company_id' => 'company_123',
-            'is_test' => true,
-            'metadata' => ['plan' => 'premium'],
-        ], $overrides);
-    }
-
-    it('can create from payload', function (): void {
-        $payload = createBillingPayload();
-
-        $event = BillingCancelled::fromPayload($payload);
-
-        expect($event)->toBeInstanceOf(BillingCancelled::class)
-            ->and($event->eventType())->toBe(WebhookEventType::BillingTemplateClientSubscriptionBillingCancelled)
-            ->and($event->getBillingTemplateClientId())->toBe('btc_test123')
-            ->and($event->getBillingTemplateId())->toBe('bt_template_123')
-            ->and($event->getClientId())->toBe('client_abc')
-            ->and($event->isTest())->toBeTrue();
-    });
-
-    it('correctly checks isTest for live event', function (): void {
-        $payload = createBillingPayload(['is_test' => false]);
-
-        $event = BillingCancelled::fromPayload($payload);
-
-        expect($event->isTest())->toBeFalse();
-    });
-});
-
 describe('WebhookReceived event', function (): void {
     it('can create from purchase payload', function (): void {
         $payload = [
@@ -173,8 +129,7 @@ describe('WebhookReceived event', function (): void {
         expect($event)->toBeInstanceOf(WebhookReceived::class)
             ->and($event->eventType)->toBe('purchase.paid')
             ->and($event->purchase)->toBeInstanceOf(PurchaseData::class)
-            ->and($event->payout)->toBeNull()
-            ->and($event->billingTemplateClient)->toBeNull();
+            ->and($event->payout)->toBeNull();
     });
 
     it('can create from payout payload', function (): void {
@@ -185,16 +140,28 @@ describe('WebhookReceived event', function (): void {
             'status' => 'success',
             'created_on' => time(),
             'updated_on' => time(),
-            'amount' => 50000,
-            'currency' => 'MYR',
+            'payment' => [
+                'amount' => 50000,
+                'currency' => 'MYR',
+                'net_amount' => 50000,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'payout',
+                'is_outgoing' => true,
+            ],
+            'client' => [
+                'email' => 'john@example.com',
+                'full_name' => 'John Doe',
+            ],
+            'brand_id' => 'brand_123',
+            'transaction_data' => ['attempts' => []],
             'is_test' => true,
         ];
 
         $event = WebhookReceived::fromPayload($payload);
 
         expect($event->payout)->toBeInstanceOf(PayoutData::class)
-            ->and($event->purchase)->toBeNull()
-            ->and($event->billingTemplateClient)->toBeNull();
+            ->and($event->purchase)->toBeNull();
     });
 
     it('can create from payment payload', function (): void {
@@ -202,7 +169,6 @@ describe('WebhookReceived event', function (): void {
             'id' => 'pay_123',
             'type' => 'payment',
             'event_type' => 'payment.refunded',
-            'status' => 'refunded',
             'created_on' => time(),
             'updated_on' => time(),
             'payment' => [
@@ -236,7 +202,6 @@ describe('WebhookReceived event', function (): void {
             'id' => 'pay_invalid_123',
             'type' => 'payment',
             'event_type' => 'payment.refunded',
-            'status' => 'refunded',
             'created_on' => time(),
             'updated_on' => time(),
             'related_to' => [
@@ -254,22 +219,19 @@ describe('WebhookReceived event', function (): void {
             ->and($event->getPurchaseId())->toBe('purch_invalid_123');
     });
 
-    it('can create from billing template client payload', function (): void {
+    it('does not create data for an unsupported resource type', function (): void {
         $payload = [
-            'id' => 'btc_123',
-            'type' => 'billing_template_client',
-            'event_type' => 'billing_template_client.subscription_billing_cancelled',
-            'status' => 'subscription_paused',
+            'id' => 'unknown_123',
+            'type' => 'unknown_resource',
+            'event_type' => 'unknown.event',
             'created_on' => time(),
             'updated_on' => time(),
-            'billing_template_id' => 'bt_123',
-            'client_id' => 'client_123',
             'is_test' => true,
         ];
 
         $event = WebhookReceived::fromPayload($payload);
 
-        expect($event->billingTemplateClient)->toBeInstanceOf(BillingTemplateClientData::class)
+        expect($event->payment)->toBeNull()
             ->and($event->purchase)->toBeNull()
             ->and($event->payout)->toBeNull();
     });
@@ -332,20 +294,26 @@ describe('WebhookReceived event', function (): void {
         }
     });
 
-    it('correctly identifies recurring and subscription events', function (): void {
+    it('correctly identifies recurring token and additional purchase events', function (): void {
         $event1 = new WebhookReceived('purchase.recurring_token_deleted', ['is_test' => true]);
         expect($event1->isRecurringTokenDeleted())->toBeTrue();
 
-        $event2 = new WebhookReceived('purchase.subscription_charge_failure', ['is_test' => true]);
-        expect($event2->isSubscriptionChargeFailure())->toBeTrue();
+        $event2 = new WebhookReceived('purchase.viewed', ['is_test' => true]);
+        expect($event2->isViewed())->toBeTrue();
+
+        $event3 = new WebhookReceived('purchase.settled', ['is_test' => true]);
+        expect($event3->isSettled())->toBeTrue();
     });
 
-    it('correctly identifies refund and billing events', function (): void {
+    it('correctly identifies refund and chargeback events', function (): void {
         $event1 = new WebhookReceived('payment.refunded', ['is_test' => true]);
         expect($event1->isRefunded())->toBeTrue();
 
-        $event2 = new WebhookReceived('billing_template_client.subscription_billing_cancelled', ['is_test' => true]);
-        expect($event2->isBillingCancelled())->toBeTrue();
+        $event2 = new WebhookReceived('payment.charged_back', ['is_test' => true]);
+        expect($event2->isChargedBack())->toBeTrue();
+
+        $event3 = new WebhookReceived('payment.chargeback_reversed', ['is_test' => true]);
+        expect($event3->isChargebackReversed())->toBeTrue();
     });
 
     it('correctly identifies payout events', function (): void {
@@ -364,8 +332,8 @@ describe('WebhookReceived event', function (): void {
     it('correctly identifies event categories', function (): void {
         expect((new WebhookReceived('purchase.paid', []))->isPurchaseEvent())->toBeTrue();
         expect((new WebhookReceived('payout.success', []))->isPayoutEvent())->toBeTrue();
-        expect((new WebhookReceived('billing_template_client.cancelled', []))->isBillingEvent())->toBeTrue();
         expect((new WebhookReceived('payment.refunded', []))->isPaymentEvent())->toBeTrue();
+        expect((new WebhookReceived('unknown.event', []))->isPurchaseEvent())->toBeFalse();
         expect((new WebhookReceived('purchase.pending_charge', []))->isPendingEvent())->toBeTrue();
     });
 
@@ -373,8 +341,8 @@ describe('WebhookReceived event', function (): void {
         $successEvents = [
             'purchase.paid',
             'purchase.captured',
-            'purchase.released',
             'purchase.preauthorized',
+            'purchase.settled',
             'payout.success',
         ];
 
@@ -387,7 +355,10 @@ describe('WebhookReceived event', function (): void {
     it('correctly identifies failure events', function (): void {
         $failureEvents = [
             'purchase.payment_failure',
-            'purchase.subscription_charge_failure',
+            'purchase.refund_failure',
+            'purchase.capture_failure',
+            'purchase.release_failure',
+            'payment.charged_back',
             'payout.failed',
         ];
 
@@ -403,8 +374,10 @@ describe('WebhookReceived event', function (): void {
             'id' => 'purch_xyz',
             'reference' => 'REF-123',
             'client_id' => 'client_abc',
-            'amount' => 15000,
-            'currency' => 'USD',
+            'purchase' => [
+                'total' => 15000,
+                'currency' => 'USD',
+            ],
             'is_test' => false,
         ];
 

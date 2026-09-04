@@ -28,10 +28,9 @@ final class IssuePassesOnOrderPaid
                 continue;
             }
 
-            $legacyAttributes = $item->getAttribute('attributes') ?? [];
             $holderAttributes = is_array($options) && is_array($options['participants'] ?? null)
                 ? $options['participants']
-                : (is_array($legacyAttributes) ? ($legacyAttributes['participants'] ?? []) : []);
+                : [];
 
             $context = new PassIssuanceContext(
                 ticketType: $ticketType,

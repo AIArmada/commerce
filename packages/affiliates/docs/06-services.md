@@ -278,7 +278,7 @@ $awarded = $service->awardBonuses($bonuses);
 $leaderboard = $service->getLeaderboard($from, $to, 10);
 ```
 
-The service uses approved conversions only and treats `value_minor` as the canonical revenue field, falling back to `total_minor` for legacy records.
+The service uses approved conversions and treats `value_minor` as the revenue field.
 
 ## AttributionModel
 

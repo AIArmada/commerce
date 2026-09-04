@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Tests\Feature;
 
-use AIArmada\Chip\Tests\TestCase;
+use AIArmada\Commerce\Tests\TestCase;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Config;
@@ -47,20 +47,6 @@ abstract class FeatureTestCase extends TestCase
                 $table->timestamps();
             });
         }
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @param  array<string, mixed>  $overrides
-     * @return array<string, mixed>
-     */
-    protected function createWebhookPayload(string $event, array $data, array $overrides = []): array
-    {
-        return array_merge([
-            'event' => $event,
-            'data' => $data,
-            'timestamp' => now()->toISOString(),
-        ], $overrides);
     }
 
     /**

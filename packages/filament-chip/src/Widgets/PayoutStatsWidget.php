@@ -72,18 +72,15 @@ final class PayoutStatsWidget extends BaseWidget
     {
         return (float) SendInstruction::query()
             ->forOwner()
-            ->whereIn('state', ['completed', 'processed'])
+            ->where('state', 'completed')
             ->where('created_at', '>=', $since)
             ->sum('amount');
     }
 
     private function getSuccessRate(): float
     {
-        $successStates = ['completed', 'processed'];
-        $failedStates = ['failed', 'cancelled', 'rejected'];
-
-        $successful = SendInstruction::query()->forOwner()->whereIn('state', $successStates)->count();
-        $failed = SendInstruction::query()->forOwner()->whereIn('state', $failedStates)->count();
+        $successful = SendInstruction::query()->forOwner()->where('state', 'completed')->count();
+        $failed = SendInstruction::query()->forOwner()->whereIn('state', ['rejected', 'deleted'])->count();
 
         $total = $successful + $failed;
 

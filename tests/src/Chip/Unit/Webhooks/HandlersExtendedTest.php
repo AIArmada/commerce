@@ -8,8 +8,6 @@ use AIArmada\Chip\Webhooks\Handlers\PaymentFailedHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchaseCancelledHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchaseRefundedHandler;
-use AIArmada\Chip\Webhooks\Handlers\SendCompletedHandler;
-use AIArmada\Chip\Webhooks\Handlers\SendRejectedHandler;
 
 /**
  * @param  array<string, mixed>  $rawPayload
@@ -124,7 +122,7 @@ describe('PaymentFailedHandler', function (): void {
     it('handles payload with failure reason', function (): void {
         $handler = app(PaymentFailedHandler::class);
         $payload = createTestEnrichedPayload('purchase.payment_failure', [
-            'status' => 'failed',
+            'status' => 'error',
             'failure_reason' => 'Insufficient funds',
         ]);
 
@@ -151,77 +149,6 @@ describe('PurchaseRefundedHandler', function (): void {
     });
 });
 
-describe('SendCompletedHandler', function (): void {
-    it('can be instantiated', function (): void {
-        $handler = app(SendCompletedHandler::class);
-        expect($handler)->toBeInstanceOf(SendCompletedHandler::class);
-    });
-
-    it('returns skipped result for unknown payout', function (): void {
-        $handler = app(SendCompletedHandler::class);
-        $payload = createTestEnrichedPayload('payout.success', [
-            'id' => 'payout-123',
-            'type' => 'payout',
-            'status' => 'success',
-        ]);
-
-        $result = $handler->handle($payload);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
-        expect($result->isSkipped())->toBeTrue();
-    });
-
-    it('handles payout success payload', function (): void {
-        $handler = app(SendCompletedHandler::class);
-        $payload = createTestEnrichedPayload('payout.success', [
-            'id' => 'send-123',
-            'type' => 'send_instruction',
-            'status' => 'success',
-            'amount' => 10000,
-            'currency' => 'MYR',
-        ]);
-
-        $result = $handler->handle($payload);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
-    });
-});
-
-describe('SendRejectedHandler', function (): void {
-    it('can be instantiated', function (): void {
-        $handler = app(SendRejectedHandler::class);
-        expect($handler)->toBeInstanceOf(SendRejectedHandler::class);
-    });
-
-    it('returns skipped result for unknown payout', function (): void {
-        $handler = app(SendRejectedHandler::class);
-        $payload = createTestEnrichedPayload('payout.failed', [
-            'id' => 'payout-123',
-            'type' => 'payout',
-            'status' => 'failed',
-        ]);
-
-        $result = $handler->handle($payload);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
-        expect($result->isSkipped())->toBeTrue();
-    });
-
-    it('handles payout failed payload with reason', function (): void {
-        $handler = app(SendRejectedHandler::class);
-        $payload = createTestEnrichedPayload('payout.failed', [
-            'id' => 'send-123',
-            'type' => 'send_instruction',
-            'status' => 'failed',
-            'failure_reason' => 'Invalid bank account',
-        ]);
-
-        $result = $handler->handle($payload);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
-    });
-});
-
 describe('Handler edge cases', function (): void {
     it('all handlers handle empty payload gracefully', function (): void {
         $handlers = [
@@ -229,8 +156,6 @@ describe('Handler edge cases', function (): void {
             app(PurchaseCancelledHandler::class),
             app(PaymentFailedHandler::class),
             app(PurchaseRefundedHandler::class),
-            app(SendCompletedHandler::class),
-            app(SendRejectedHandler::class),
         ];
 
         $events = [
@@ -238,8 +163,6 @@ describe('Handler edge cases', function (): void {
             'purchase.cancelled',
             'purchase.payment_failure',
             'payment.refunded',
-            'payout.success',
-            'payout.failed',
         ];
 
         foreach ($handlers as $index => $handler) {

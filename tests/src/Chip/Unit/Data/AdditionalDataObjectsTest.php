@@ -327,9 +327,10 @@ describe('EnrichedWebhookPayload data object', function (): void {
     it('can be created from payload', function (): void {
         $payload = [
             'id' => 'purch_123',
+            'type' => 'purchase',
             'client_id' => 'client_abc',
             'status' => 'paid',
-            'created' => '2024-01-15T10:00:00Z',
+            'created_on' => '2024-01-15T10:00:00Z',
         ];
 
         $enriched = EnrichedWebhookPayload::fromPayload('purchase.paid', $payload);
@@ -342,12 +343,11 @@ describe('EnrichedWebhookPayload data object', function (): void {
             ->and($enriched->eventTimestamp)->toBeInstanceOf(CarbonImmutable::class);
     });
 
-    it('handles nested data structure', function (): void {
+    it('uses canonical purchase and client fields', function (): void {
         $payload = [
-            'data' => [
-                'id' => 'purch_nested',
-                'client_id' => 'client_nested',
-            ],
+            'id' => 'purch_nested',
+            'type' => 'purchase',
+            'client_id' => 'client_nested',
         ];
 
         $enriched = EnrichedWebhookPayload::fromPayload('purchase.paid', $payload);

@@ -54,8 +54,9 @@ Add the `Billable` trait to your User model:
 
 ```php
 use AIArmada\CashierChip\Billing\Billable;
+use AIArmada\CashierChip\Contracts\BillableContract;
 
-class User extends Authenticatable
+class User extends Authenticatable implements BillableContract
 {
     use Billable;
 }

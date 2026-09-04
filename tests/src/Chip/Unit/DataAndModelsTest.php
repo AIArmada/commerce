@@ -23,7 +23,7 @@ describe('ChipSendService', function (): void {
     });
 
     it('lists accounts', function (): void {
-        $data = [['id' => 'account-1']];
+        $data = ['results' => [['id' => 1]]];
         $this->client->shouldReceive('get')->with('send/accounts')->once()->andReturn($data);
 
         expect($this->service->listAccounts())->toBe($data);
@@ -33,12 +33,12 @@ describe('ChipSendService', function (): void {
         $responseData = [
             'id' => 1,
             'amount' => 100.00,
-            'currency' => 'MYR',
             'bank_account_id' => 1,
             'description' => 'Test',
             'reference' => 'REF123',
             'email' => 'test@example.com',
-            'state' => 'pending',
+            'state' => 'received',
+            'send_recipient_receipt' => false,
             'created_at' => now()->toIso8601String(),
             'updated_at' => now()->toIso8601String(),
         ];
@@ -47,15 +47,14 @@ describe('ChipSendService', function (): void {
             ->once()
             ->with('send/send_instructions', Mockery::on(function ($data) {
                 return $data['amount'] === '100.00' &&
-                    $data['currency'] === 'MYR' &&
+                    ! array_key_exists('currency', $data) &&
                     $data['email'] === 'test@example.com';
             }))
             ->andReturn($responseData);
 
         $result = $this->service->createSendInstruction(
             10000,
-            'MYR',
-            'bank-1',
+            1,
             'Test',
             'REF123',
             'test@example.com'
@@ -67,8 +66,7 @@ describe('ChipSendService', function (): void {
     it('validates send instruction parameters', function (): void {
         $this->service->createSendInstruction(
             -100, // Invalid amount
-            'MYR',
-            'bank-1',
+            1,
             'Test',
             'REF123',
             'test@example.com'
@@ -78,8 +76,7 @@ describe('ChipSendService', function (): void {
     it('validates email in send instruction', function (): void {
         $this->service->createSendInstruction(
             10000,
-            'MYR',
-            'bank-1',
+            1,
             'Test',
             'REF123',
             'invalid-email'
@@ -90,24 +87,24 @@ describe('ChipSendService', function (): void {
         $responseData = [
             'id' => 1,
             'amount' => 100.00,
-            'currency' => 'MYR',
             'bank_account_id' => 1,
             'description' => 'Test',
             'reference' => 'REF123',
             'email' => 'test@example.com',
-            'state' => 'pending',
+            'state' => 'received',
+            'send_recipient_receipt' => false,
             'created_at' => now()->toIso8601String(),
             'updated_at' => now()->toIso8601String(),
         ];
 
-        $this->client->shouldReceive('get')->with('send/send_instructions/instruction-1')->once()->andReturn($responseData);
+        $this->client->shouldReceive('get')->with('send/send_instructions/1')->once()->andReturn($responseData);
 
-        $result = $this->service->getSendInstruction('instruction-1');
+        $result = $this->service->getSendInstruction(1);
         expect($result)->toBeInstanceOf(SendInstructionData::class);
     });
 
     it('lists send instructions', function (): void {
-        $data = ['data' => []];
+        $data = ['results' => []];
         $this->client->shouldReceive('get')->with('send/send_instructions')->once()->andReturn($data);
 
         expect($this->service->listSendInstructions())->toBe($data);
@@ -119,19 +116,19 @@ describe('ChipSendService', function (): void {
             'currency' => 'MYR',
             'fee_type' => 'transaction',
             'transaction_type' => 'transfer',
-            'amount' => 10000,
-            'fee' => 100,
-            'net_amount' => 9900,
-            'status' => 'active',
+            'amount' => 100,
+            'fee' => 1,
+            'net_amount' => 99,
+            'status' => 'approved',
             'approvals_required' => 1,
             'approvals_received' => 0,
             'created_at' => now()->toIso8601String(),
             'updated_at' => now()->toIso8601String(),
         ];
 
-        $this->client->shouldReceive('get')->with('send/send_limits/limit-1')->once()->andReturn($responseData);
+        $this->client->shouldReceive('get')->with('send/send_limits/1')->once()->andReturn($responseData);
 
-        $result = $this->service->getSendLimit('limit-1');
+        $result = $this->service->getSendLimit(1);
         expect($result)->toBeInstanceOf(SendLimitData::class);
     });
 
@@ -144,6 +141,7 @@ describe('ChipSendService', function (): void {
             'status' => 'pending',
             'created_at' => now()->toIso8601String(),
             'updated_at' => now()->toIso8601String(),
+            'reference' => null,
             'is_debiting_account' => false,
             'is_crediting_account' => true,
         ];
@@ -153,7 +151,7 @@ describe('ChipSendService', function (): void {
             ->with('send/bank_accounts', Mockery::hasKey('bank_code'))
             ->andReturn($responseData);
 
-        $result = $this->service->createBankAccount('MAYBANK', '1234567890', 'John Doe');
+        $result = $this->service->createBankAccount('MAYBANK', '1234567890', 'John Doe', 'recipient-1');
 
         expect($result)->toBeInstanceOf(BankAccountData::class);
     });
@@ -164,88 +162,50 @@ describe('ChipSendService', function (): void {
             'account_number' => '1234567890',
             'bank_code' => 'MAYBANK',
             'name' => 'John Doe',
-            'status' => 'active',
+            'status' => 'verified',
             'created_at' => now()->toIso8601String(),
             'updated_at' => now()->toIso8601String(),
+            'reference' => null,
             'is_debiting_account' => false,
             'is_crediting_account' => true,
         ];
 
-        $this->client->shouldReceive('get')->with('send/bank_accounts/bank-1')->once()->andReturn($responseData);
+        $this->client->shouldReceive('get')->with('send/bank_accounts/1')->once()->andReturn($responseData);
 
-        $result = $this->service->getBankAccount('bank-1');
-        expect($result)->toBeInstanceOf(BankAccountData::class);
-    });
-
-    it('updates bank account', function (): void {
-        $responseData = [
-            'id' => 1,
-            'account_number' => '1234567890',
-            'bank_code' => 'MAYBANK',
-            'name' => 'John Doe Updated',
-            'status' => 'active',
-            'created_at' => now()->toIso8601String(),
-            'updated_at' => now()->toIso8601String(),
-            'is_debiting_account' => false,
-            'is_crediting_account' => true,
-        ];
-
-        $this->client->shouldReceive('put')->with('send/bank_accounts/bank-1', ['name' => 'John Doe Updated'])->once()->andReturn($responseData);
-
-        $result = $this->service->updateBankAccount('bank-1', ['name' => 'John Doe Updated']);
+        $result = $this->service->getBankAccount(1);
         expect($result)->toBeInstanceOf(BankAccountData::class);
     });
 
     it('deletes bank account', function (): void {
-        $this->client->shouldReceive('delete')->with('send/bank_accounts/bank-1')->once()->andReturn([]);
+        $this->client->shouldReceive('delete')->with('send/bank_accounts/1')->once()->andReturn([]);
 
-        $this->service->deleteBankAccount('bank-1');
+        $this->service->deleteBankAccount(1);
     });
 
     it('lists bank accounts', function (): void {
-        $data = ['data' => []];
+        $data = ['results' => []];
         $this->client->shouldReceive('get')->with('send/bank_accounts')->once()->andReturn($data);
 
         expect($this->service->listBankAccounts())->toBe($data);
     });
 
-    it('cancels send instruction', function (): void {
-        $responseData = [
-            'id' => 1,
-            'state' => 'cancelled',
-            'amount' => 100.00,
-            'currency' => 'MYR',
-            'bank_account_id' => 1,
-            'description' => 'Test',
-            'reference' => 'REF123',
-            'email' => 'test@example.com',
-            'created_at' => now()->toIso8601String(),
-            'updated_at' => now()->toIso8601String(),
-        ];
-
-        $this->client->shouldReceive('post')->with('send/send_instructions/instruction-1/cancel')->once()->andReturn($responseData);
-
-        $result = $this->service->cancelSendInstruction('instruction-1');
-        expect($result)->toBeInstanceOf(SendInstructionData::class);
-    });
-
     it('manages groups', function (): void {
-        $data = ['id' => 'group-1', 'name' => 'Test Group'];
+        $data = ['id' => 1, 'name' => 'Test Group'];
 
         $this->client->shouldReceive('post')->with('send/groups', $data)->once()->andReturn($data);
         expect($this->service->createGroup($data))->toBe($data);
 
-        $this->client->shouldReceive('get')->with('send/groups/group-1')->once()->andReturn($data);
-        expect($this->service->getGroup('group-1'))->toBe($data);
+        $this->client->shouldReceive('get')->with('send/groups/1')->once()->andReturn($data);
+        expect($this->service->getGroup(1))->toBe($data);
 
-        $this->client->shouldReceive('put')->with('send/groups/group-1', ['name' => 'Updated'])->once()->andReturn(['id' => 'group-1', 'name' => 'Updated']);
-        expect($this->service->updateGroup('group-1', ['name' => 'Updated']))->toBe(['id' => 'group-1', 'name' => 'Updated']);
+        $this->client->shouldReceive('patch')->with('send/groups/1', ['name' => 'Updated'])->once()->andReturn(['id' => 1, 'name' => 'Updated']);
+        expect($this->service->updateGroup(1, ['name' => 'Updated']))->toBe(['id' => 1, 'name' => 'Updated']);
 
-        $this->client->shouldReceive('delete')->with('send/groups/group-1')->once();
-        $this->service->deleteGroup('group-1');
+        $this->client->shouldReceive('delete')->with('send/groups/1')->once();
+        $this->service->deleteGroup(1);
 
-        $this->client->shouldReceive('get')->with('send/groups')->once()->andReturn([$data]);
-        expect($this->service->listGroups())->toBe([$data]);
+        $this->client->shouldReceive('get')->with('send/groups')->once()->andReturn(['results' => []]);
+        expect($this->service->listGroups())->toBe(['results' => []]);
     });
 
     it('manages send webhooks', function (): void {
@@ -255,37 +215,37 @@ describe('ChipSendService', function (): void {
             'public_key' => 'pk_123',
             'callback_url' => 'https://example.com/webhook',
             'email' => 'test@example.com',
-            'event_hooks' => ['payment.success'],
+            'event_hooks' => ['send_instruction_status'],
             'created_at' => now()->toIso8601String(),
             'updated_at' => now()->toIso8601String(),
         ];
 
-        $this->client->shouldReceive('post')->with('send/webhooks', Mockery::type('array'))->once()->andReturn($webhookData);
-        expect($this->service->createSendWebhook(['url' => 'https://example.com/webhook']))->toBeInstanceOf(SendWebhookData::class);
+        $this->client->shouldReceive('post')->with('webhooks', Mockery::type('array'))->once()->andReturn($webhookData);
+        expect($this->service->createSendWebhook(['name' => 'Webhook 1']))->toBeInstanceOf(SendWebhookData::class);
 
-        $this->client->shouldReceive('get')->with('send/webhooks/webhook-1')->once()->andReturn($webhookData);
-        expect($this->service->getSendWebhook('webhook-1'))->toBeInstanceOf(SendWebhookData::class);
+        $this->client->shouldReceive('get')->with('webhooks/1')->once()->andReturn($webhookData);
+        expect($this->service->getSendWebhook(1))->toBeInstanceOf(SendWebhookData::class);
 
-        $this->client->shouldReceive('put')->with('send/webhooks/webhook-1', Mockery::type('array'))->once()->andReturn($webhookData);
-        expect($this->service->updateSendWebhook('webhook-1', ['url' => 'https://new.com']))->toBeInstanceOf(SendWebhookData::class);
+        $this->client->shouldReceive('patch')->with('webhooks/1', Mockery::type('array'))->once()->andReturn($webhookData);
+        expect($this->service->updateSendWebhook(1, ['event_hooks' => ['bank_account_status']]))->toBeInstanceOf(SendWebhookData::class);
 
-        $this->client->shouldReceive('delete')->with('send/webhooks/webhook-1')->once();
-        $this->service->deleteSendWebhook('webhook-1');
+        $this->client->shouldReceive('delete')->with('webhooks/1')->once();
+        $this->service->deleteSendWebhook(1);
 
-        $this->client->shouldReceive('get')->with('send/webhooks')->once()->andReturn([$webhookData]);
+        $this->client->shouldReceive('get')->with('webhooks')->once()->andReturn(['results' => [$webhookData]]);
         $list = $this->service->listSendWebhooks();
-        expect($list[0])->toBeInstanceOf(SendWebhookData::class);
+        expect($list['results'][0])->toBeInstanceOf(SendWebhookData::class);
     });
 
     it('deletes send instruction and resends webhooks', function (): void {
-        $this->client->shouldReceive('delete')->with('send/send_instructions/instruction-1')->once();
-        $this->service->deleteSendInstruction('instruction-1');
+        $this->client->shouldReceive('delete')->with('send/send_instructions/1')->once();
+        $this->service->deleteSendInstruction(1);
 
-        $this->client->shouldReceive('post')->with('send/send_instructions/instruction-1/resend_webhook')->once()->andReturn(['success' => true]);
-        expect($this->service->resendSendInstructionWebhook('instruction-1'))->toBe(['success' => true]);
+        $this->client->shouldReceive('post')->with('send/send_instructions/1/resend_webhook_event')->once()->andReturn(['success' => true]);
+        expect($this->service->resendSendInstructionWebhook(1))->toBe(['success' => true]);
 
-        $this->client->shouldReceive('post')->with('send/bank_accounts/bank-1/resend_webhook')->once()->andReturn(['success' => true]);
-        expect($this->service->resendBankAccountWebhook('bank-1'))->toBe(['success' => true]);
+        $this->client->shouldReceive('post')->with('send/bank_accounts/1/resend_webhook_event')->once()->andReturn(['success' => true]);
+        expect($this->service->resendBankAccountWebhook(1))->toBe(['success' => true]);
     });
 });
 
@@ -335,23 +295,15 @@ describe('Client Model', function (): void {
 
 describe('BankAccount Model', function (): void {
     it('returns status color and label', function (): void {
-        $account = new BankAccount(['status' => 'active']);
+        $account = new BankAccount(['status' => 'verified']);
         expect($account->statusColor())->toBe('success');
-        expect($account->statusLabel())->toBe('Active');
+        expect($account->statusLabel())->toBe('Verified');
 
         $account->status = 'pending';
         expect($account->statusColor())->toBe('warning');
 
         $account->status = 'rejected';
         expect($account->statusColor())->toBe('danger');
-    });
-
-    it('checks if active', function (): void {
-        $account = new BankAccount(['status' => 'active']);
-        expect($account->isActive)->toBeTrue();
-
-        $account->status = 'pending';
-        expect($account->isActive)->toBeFalse();
     });
 
     it('has correct table name', function (): void {
@@ -375,7 +327,7 @@ describe('SendInstruction Model', function (): void {
         $instruction->state = 'received';
         expect($instruction->stateColor())->toBe('warning');
 
-        $instruction->state = 'failed';
+        $instruction->state = 'rejected';
         expect($instruction->stateColor())->toBe('danger');
     });
 
@@ -388,9 +340,9 @@ describe('SendInstruction Model', function (): void {
 describe('SendLimit Model', function (): void {
     it('converts amounts to Money objects', function (): void {
         $limit = new SendLimit([
-            'amount' => 10000,
-            'net_amount' => 9900,
-            'fee' => 100,
+            'amount' => 100,
+            'net_amount' => 99,
+            'fee' => 1,
             'currency' => 'MYR',
         ]);
 
@@ -402,13 +354,13 @@ describe('SendLimit Model', function (): void {
     });
 
     it('returns status color', function (): void {
-        $limit = new SendLimit(['status' => 'active']);
+        $limit = new SendLimit(['status' => 'approved']);
         expect($limit->statusColor())->toBe('success');
 
         $limit->status = 'pending';
         expect($limit->statusColor())->toBe('warning');
 
-        $limit->status = 'blocked';
+        $limit->status = 'expired';
         expect($limit->statusColor())->toBe('danger');
     });
 });

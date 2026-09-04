@@ -6,6 +6,7 @@ namespace App\Models;
 
 use AIArmada\Cashier\Concerns\Billable as UnifiedBillable;
 use AIArmada\CashierChip\Billing\Billable as ChipBillable;
+use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\Orders\Models\Order;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -29,7 +30,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-final class User extends Authenticatable implements FilamentUser
+final class User extends Authenticatable implements BillableContract, FilamentUser
 {
     use ChipBillable;
     use HasFactory;

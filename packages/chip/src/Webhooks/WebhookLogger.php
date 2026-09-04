@@ -28,7 +28,7 @@ class WebhookLogger
         return Webhook::query()
             ->forOwner()
             ->create([
-                'event' => $event,
+                'event_type' => $event,
                 'payload' => $payload,
                 'status' => 'pending',
                 'idempotency_key' => $idempotencyKey,
@@ -58,9 +58,9 @@ class WebhookLogger
         $owner = OwnerContext::resolve();
 
         return hash('sha256', json_encode([
-            'event' => $payload['event_type'] ?? $payload['event'] ?? null,
-            'object_id' => $payload['id'] ?? $payload['data']['id'] ?? null,
-            'created' => $payload['created'] ?? $payload['created_on'] ?? null,
+            'event_type' => $payload['event_type'] ?? null,
+            'object_id' => $payload['id'] ?? null,
+            'created_on' => $payload['created_on'] ?? null,
             'owner_type' => $payload['__owner_type'] ?? $owner?->getMorphClass(),
             'owner_id' => $payload['__owner_id'] ?? ($owner ? (string) $owner->getKey() : null),
         ], JSON_THROW_ON_ERROR));

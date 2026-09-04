@@ -46,11 +46,7 @@ private static function resolveOwner(): ?Model
 }
 ```
 
-### PromotionResource (fallback mode)
-
-Similar pattern using `promotions.features.owner.enabled` config.
-
-If `aiarmada/filament-promotions` is installed, promotion multitenancy behavior moves to the dedicated promotions plugin because Filament Pricing does not register its fallback `PromotionResource` in that combined install.
+Promotion administration and its multitenancy behavior belong to `aiarmada/filament-promotions`. Filament Pricing applies owner scoping only to its own price-list resources and optional product/variant simulator queries.
 
 ## Relation Manager Scoping
 
@@ -112,10 +108,7 @@ The `PricingStatsWidget` applies owner scoping:
 ```php
 $activePriceLists = PriceList::forOwner($owner)->active()->count();
 
-// For promotions
-if (config('promotions.features.owner.enabled', false)) {
-    $promotionQuery = $promotionQuery->forOwner($owner);
-}
+// Promotion administration is scoped by aiarmada/filament-promotions.
 ```
 
 ## Setting Owner Context
@@ -210,7 +203,7 @@ When `include_global` is `true`, queries include records where `owner_type` and 
 
 This is useful for:
 - Default price lists shared across all tenants
-- Global promotions applicable to everyone
+- Global pricing records applicable to everyone
 
 To create global records, clear the owner context first:
 

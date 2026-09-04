@@ -52,10 +52,9 @@ class ListenersTest extends CashierChipTestCase
             'status' => 'paid',
             'recurring_token' => 'tok_123',
             'transaction_data' => [
-                'payment_method' => 'card',
-                'extra' => ['card_brand' => 'Visa', 'card_last_4' => '4242'],
+                'payment_method' => 'visa',
+                'extra' => ['masked_pan' => '**** **** **** 4242'],
             ],
-            'card' => ['brand' => 'Visa', 'last_4' => '4242'],
             'purchase' => ['total' => 1000, 'currency' => 'MYR'],
         ];
 

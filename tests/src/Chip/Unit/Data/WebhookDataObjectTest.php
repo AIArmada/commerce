@@ -8,16 +8,18 @@ use AIArmada\Chip\Data\WebhookData;
 describe('Webhook data object', function (): void {
     it('creates a webhook from array data', function (): void {
         $data = [
-            'event' => 'purchase.paid',
-            'data' => [
-                'id' => 'purchase_123',
-                'amount_in_cents' => 10000,
+            'id' => 'purchase_123',
+            'type' => 'purchase',
+            'event_type' => 'purchase.paid',
+            'created_on' => strtotime('2024-01-01T16:00:00Z'),
+            'updated_on' => strtotime('2024-01-01T16:00:00Z'),
+            'purchase' => [
+                'total' => 10000,
                 'currency' => 'MYR',
-                'status' => 'paid',
+                'products' => [],
             ],
-            'timestamp' => '2024-01-01T16:00:00Z',
+            'status' => 'paid',
             'headers' => ['X-Signature' => 'sig'],
-            'payload' => ['raw' => 'payload'],
             'signature' => 'sig',
             'verified' => true,
             'processed' => true,
@@ -27,17 +29,9 @@ describe('Webhook data object', function (): void {
 
         $webhook = WebhookData::from($data);
 
-        expect($webhook->event)->toBe('purchase.paid');
         expect($webhook->event_type)->toBe('purchase.paid');
-        expect($webhook->data)->toBe([
-            'id' => 'purchase_123',
-            'amount_in_cents' => 10000,
-            'currency' => 'MYR',
-            'status' => 'paid',
-        ]);
-        expect($webhook->timestamp)->toBe('2024-01-01T16:00:00Z');
         expect($webhook->headers)->toBe(['X-Signature' => 'sig']);
-        expect($webhook->payload)->toBe(['raw' => 'payload']);
+        expect($webhook->payload)->toBe($data);
         expect($webhook->signature)->toBe('sig');
         expect($webhook->verified)->toBeTrue();
         expect($webhook->processed)->toBeTrue();
@@ -47,12 +41,13 @@ describe('Webhook data object', function (): void {
 
     it('extracts purchase from webhook data', function (): void {
         $webhook = WebhookData::from([
-            'event' => 'purchase.created',
-            'data' => [
-                'id' => 'purchase_123',
-                'amount_in_cents' => 10000,
+            'id' => 'purchase_123',
+            'type' => 'purchase',
+            'event_type' => 'purchase.created',
+            'purchase' => [
+                'total' => 10000,
                 'currency' => 'MYR',
-                'status' => 'created',
+                'products' => [],
             ],
         ]);
 
@@ -65,11 +60,10 @@ describe('Webhook data object', function (): void {
 
     it('returns null for non-purchase webhook events', function (): void {
         $webhook = WebhookData::from([
-            'event' => 'send_instruction.completed',
-            'data' => [
-                'id' => 'send_123',
-                'status' => 'completed',
-            ],
+            'id' => 'payout_123',
+            'type' => 'payout',
+            'event_type' => 'payout.success',
+            'status' => 'completed',
         ]);
 
         expect($webhook->getPurchase())->toBeNull();

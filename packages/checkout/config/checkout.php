@@ -173,6 +173,7 @@ return [
     'payment' => [
         'default_gateway' => env('CHECKOUT_DEFAULT_GATEWAY', 'chip'),
         'gateway_priority' => ['chip', 'cashier-chip', 'cashier'],
+        'prefer_actor' => (bool) env('CHECKOUT_PREFER_ACTOR', false),
         'retry_limit' => 3,
 
         'gateways' => [

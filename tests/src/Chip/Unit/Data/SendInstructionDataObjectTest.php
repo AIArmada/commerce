@@ -14,6 +14,7 @@ describe('SendInstruction data object', function (): void {
             'email' => 'test@example.com',
             'description' => 'Payment for services',
             'reference' => 'TRANSFER_001',
+            'send_recipient_receipt' => false,
             'created_at' => '2023-07-20T10:41:25.190Z',
             'updated_at' => '2023-07-20T10:41:25.302Z',
         ];
@@ -27,6 +28,7 @@ describe('SendInstruction data object', function (): void {
         expect($instruction->email)->toBe('test@example.com');
         expect($instruction->description)->toBe('Payment for services');
         expect($instruction->reference)->toBe('TRANSFER_001');
+        expect($instruction->send_recipient_receipt)->toBeFalse();
         expect($instruction->created_at)->toBe('2023-07-20T10:41:25.190Z');
     });
 
@@ -39,6 +41,7 @@ describe('SendInstruction data object', function (): void {
             'email' => 'test2@example.com',
             'description' => 'Another payment',
             'reference' => 'TRANSFER_002',
+            'send_recipient_receipt' => true,
             'created_at' => '2023-07-20T11:41:25.190Z',
             'updated_at' => '2023-07-20T11:41:25.302Z',
         ]);
@@ -57,6 +60,7 @@ describe('SendInstruction data object', function (): void {
             'email' => 'ops@example.com',
             'description' => 'Vendor payment',
             'reference' => 'TRANSFER_003',
+            'send_recipient_receipt' => true,
             'receipt_url' => 'https://example.com/receipt.pdf',
             'slug' => 'transfer-003',
             'created_at' => '2023-07-20T12:00:00Z',
@@ -71,6 +75,24 @@ describe('SendInstruction data object', function (): void {
             'reference' => 'TRANSFER_003',
             'receipt_url' => 'https://example.com/receipt.pdf',
             'slug' => 'transfer-003',
+            'send_recipient_receipt' => true,
         ]);
+    });
+
+    it('converts decimal amounts without floating point drift', function (): void {
+        $instruction = SendInstructionData::from([
+            'id' => 53,
+            'bank_account_id' => 3,
+            'amount' => '10.29',
+            'state' => 'received',
+            'email' => 'ops@example.com',
+            'description' => 'Precise vendor payment',
+            'reference' => 'TRANSFER_004',
+            'send_recipient_receipt' => false,
+            'created_at' => '2023-07-20T12:00:00Z',
+            'updated_at' => '2023-07-20T12:05:00Z',
+        ]);
+
+        expect($instruction->getAmountInMinorUnits())->toBe(1029);
     });
 });

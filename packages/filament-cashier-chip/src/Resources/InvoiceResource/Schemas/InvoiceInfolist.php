@@ -169,23 +169,16 @@ final class InvoiceInfolist
             Section::make('Payment Information')
                 ->icon(Heroicon::OutlinedCreditCard)
                 ->schema([
-                    Grid::make(3)
+                    Grid::make(2)
                         ->schema([
-                            TextEntry::make('payment.payment_method_name')
+                            TextEntry::make('transaction_data.payment_method')
                                 ->label('Payment Method')
                                 ->badge()
                                 ->color('primary')
                                 ->placeholder('—'),
 
-                            TextEntry::make('payment.card_brand')
-                                ->label('Card Brand')
-                                ->badge()
-                                ->formatStateUsing(fn (?string $state): ?string => $state !== null ? ucfirst($state) : null)
-                                ->placeholder('—'),
-
-                            TextEntry::make('payment.card_last_4')
-                                ->label('Card')
-                                ->formatStateUsing(fn (?string $state): ?string => $state !== null ? '•••• ' . $state : null)
+                            TextEntry::make('transaction_data.extra.masked_pan')
+                                ->label('Payment Details')
                                 ->placeholder('—'),
                         ]),
 
@@ -206,7 +199,7 @@ final class InvoiceInfolist
                                 ->placeholder('—'),
                         ]),
                 ])
-                ->visible(fn (Purchase $record): bool => $record->status === 'paid')
+                ->visible(fn (Purchase $record): bool => in_array($record->status, ['paid', 'cleared', 'settled'], true))
                 ->collapsible(),
 
             Section::make('Checkout')

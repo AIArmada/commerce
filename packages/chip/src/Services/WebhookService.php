@@ -18,83 +18,63 @@ class WebhookService
      */
     public function verifySignature(Request | string $payloadOrRequest, ?string $signature = null, ?string $publicKey = null): bool
     {
-        if ($payloadOrRequest instanceof Request) {
-            $payload = $payloadOrRequest->getContent();
-            $signature ??= $payloadOrRequest->header('X-Signature');
-        } else {
-            $payload = (string) $payloadOrRequest;
-        }
-
-        // Always verify signatures in production for security
-        // Only allow disabling in non-production environments (testing, development)
-        $shouldVerify = config('chip.webhooks.verify_signature', true);
-        $isProduction = app()->environment('production');
-
-        if (! $shouldVerify && $isProduction) {
-            throw new WebhookVerificationException('Signature verification cannot be disabled in production environment');
-        }
-
-        if (! $shouldVerify) {
-            Log::channel(config('chip.logging.channel'))
-                ->warning('Webhook signature verification is disabled', [
-                    'environment' => app()->environment(),
-                ]);
-
+        if (! $this->assertSignatureVerificationEnabled()) {
             return true;
         }
 
-        if (! $signature) {
-            throw new WebhookVerificationException('Missing signature header');
+        [$payload, $signature] = $this->resolveSignatureInput($payloadOrRequest, $signature);
+
+        return $this->verifyPayloadSignature(
+            payload: $payload,
+            signature: $signature,
+            publicKeys: $this->resolveVerificationPublicKeys($payloadOrRequest, $publicKey),
+            algorithm: OPENSSL_ALGO_SHA256,
+        );
+    }
+
+    /**
+     * Verify a CHIP Collect purchase success callback.
+     *
+     * Success callbacks use the company-wide public key returned by
+     * GET /public_key/. Registered webhooks use their own Webhook.public_key
+     * and are verified by verifySignature().
+     */
+    public function verifySuccessCallbackSignature(Request | string $payloadOrRequest, ?string $signature = null, ?string $publicKey = null): bool
+    {
+        if (! $this->assertSignatureVerificationEnabled()) {
+            return true;
         }
 
-        try {
-            $decodedSignature = base64_decode($signature, true);
-            if ($decodedSignature === false) {
-                throw new WebhookVerificationException('Signature is not valid base64');
-            }
+        [$payload, $signature] = $this->resolveSignatureInput($payloadOrRequest, $signature);
 
-            $publicKeys = $this->resolveVerificationPublicKeys($payloadOrRequest, $publicKey);
+        return $this->verifyPayloadSignature(
+            payload: $payload,
+            signature: $signature,
+            publicKeys: $this->resolveSuccessCallbackPublicKeys($publicKey),
+            algorithm: OPENSSL_ALGO_SHA256,
+        );
+    }
 
-            if ($publicKeys === []) {
-                throw new WebhookVerificationException('No public key configured');
-            }
-
-            $attemptedVerification = false;
-            $lastException = null;
-
-            foreach ($publicKeys as $candidateKey) {
-                try {
-                    $publicKeyResource = openssl_pkey_get_public($this->normalizePublicKey($candidateKey));
-
-                    if (! $publicKeyResource) {
-                        throw new WebhookVerificationException('Invalid public key format');
-                    }
-
-                    $attemptedVerification = true;
-
-                    $verified = openssl_verify($payload, $decodedSignature, $publicKeyResource, OPENSSL_ALGO_SHA256);
-
-                    if ($verified === 1) {
-                        return true;
-                    }
-                } catch (WebhookVerificationException $exception) {
-                    $lastException = $exception;
-                }
-            }
-
-            if (! $attemptedVerification && $lastException instanceof WebhookVerificationException) {
-                throw $lastException;
-            }
-
-            return false;
-        } catch (Throwable $e) {
-            Log::channel(config('chip.logging.channel'))
-                ->error('Webhook signature verification failed', [
-                    'error' => $e->getMessage(),
-                ]);
-
-            throw new WebhookVerificationException('Signature verification failed: ' . $e->getMessage(), 0, $e);
+    /**
+     * Verify a CHIP Send webhook signature.
+     *
+     * CHIP Send uses the dedicated webhook public key and SHA-512. It does not
+     * use the Collect company key or the Collect webhook event envelope.
+     */
+    public function verifySendSignature(Request | string $payloadOrRequest, ?string $signature = null, ?string $publicKey = null): bool
+    {
+        if (! $this->assertSignatureVerificationEnabled()) {
+            return true;
         }
+
+        [$payload, $signature] = $this->resolveSignatureInput($payloadOrRequest, $signature);
+
+        return $this->verifyPayloadSignature(
+            payload: $payload,
+            signature: $signature,
+            publicKeys: $this->resolveSendVerificationPublicKeys($payloadOrRequest, $publicKey),
+            algorithm: OPENSSL_ALGO_SHA512,
+        );
     }
 
     /**
@@ -114,75 +94,94 @@ class WebhookService
             config('chip.cache.ttl.public_key', 86400),
             function () use ($webhookId) {
                 try {
-                    // For webhook-specific requests, try webhook_keys first
-                    if ($webhookId) {
-                        $configuredKeys = $this->allWebhookKeys();
+                    if ($webhookId !== null) {
+                        $configuredKeys = (array) config('chip.webhooks.collect.webhook_keys', []);
+                        $configuredKey = $configuredKeys[$webhookId] ?? null;
 
-                        if (isset($configuredKeys[$webhookId]) && $configuredKeys[$webhookId] !== '') {
-                            return (string) $configuredKeys[$webhookId];
+                        if (is_string($configuredKey) && $configuredKey !== '') {
+                            return $configuredKey;
                         }
 
-                        // Try fetching webhook-specific key from CHIP API
                         $webhook = app(ChipCollectService::class)->getWebhook($webhookId);
-                        $publicKey = (string) ($webhook['public_key'] ?? '');
+                        $publicKey = $webhook['public_key'] ?? null;
 
-                        if ($publicKey !== '') {
-                            return $publicKey;
+                        if (! is_string($publicKey) || $publicKey === '') {
+                            throw new WebhookVerificationException("CHIP Collect webhook {$webhookId} did not return a public key.");
                         }
+
+                        return $publicKey;
                     }
 
-                    // For general requests or when webhook-specific key not found,
-                    // use company public key (mandatory, no fallback)
-                    if (! $webhookId) {
-                        $companyKey = config('chip.collect.public_key');
-                        if ($companyKey) {
-                            return (string) $companyKey;
-                        }
-
-                        // Try fetching company public key from CHIP API
-                        $response = app(ChipCollectClient::class)->get('public_key/');
-
-                        $publicKey = is_array($response)
-                            ? (string) ($response['public_key'] ?? '')
-                            : (string) $response;
-
-                        if ($publicKey !== '') {
-                            return $publicKey;
-                        }
-
-                        throw new WebhookVerificationException('Company public key is required but not configured. Set CHIP_COLLECT_PUBLIC_KEY environment variable.');
-                    }
-                } catch (WebhookVerificationException $e) {
-                    throw $e;
-                } catch (Throwable $e) {
-                    Log::channel(config('chip.logging.channel'))
-                        ->warning('Unable to resolve CHIP public key from API, using fallback', [
-                            'webhook_id' => $webhookId,
-                            'error' => $e->getMessage(),
-                        ]);
-
-                    // Fallback for webhook-specific keys only
-                    if ($webhookId) {
-                        $fallbackKeys = $this->allWebhookKeys();
-                        if (isset($fallbackKeys[$webhookId])) {
-                            return (string) $fallbackKeys[$webhookId];
-                        }
-
-                        throw new WebhookVerificationException("No public key available for webhook ID: {$webhookId}");
-                    }
-
-                    // For company key, check config again
                     $companyKey = config('chip.collect.public_key');
-                    if ($companyKey) {
-                        return (string) $companyKey;
+
+                    if (is_string($companyKey) && $companyKey !== '') {
+                        return $companyKey;
                     }
 
-                    throw new WebhookVerificationException('Company public key is required but not configured. Set CHIP_COLLECT_PUBLIC_KEY environment variable.');
-                }
+                    $response = app(ChipCollectClient::class)->get('public_key/');
 
-                // Should not reach here, but ensure we don't return empty string
-                throw new WebhookVerificationException('Unable to retrieve public key');
+                    if (! is_string($response) || $response === '') {
+                        throw new WebhookVerificationException('CHIP Collect public_key/ did not return a PEM string.');
+                    }
+
+                    return $response;
+                } catch (WebhookVerificationException $exception) {
+                    throw $exception;
+                } catch (Throwable $exception) {
+                    throw new WebhookVerificationException(
+                        'Unable to retrieve the CHIP Collect public key.',
+                        0,
+                        $exception,
+                    );
+                }
             }
+        );
+    }
+
+    /**
+     * Resolve the dedicated CHIP Send webhook public key.
+     *
+     * @throws WebhookVerificationException If the configured webhook cannot be resolved
+     */
+    public function getSendPublicKey(?int $webhookId = null): string
+    {
+        $configuredWebhookId = $webhookId ?? $this->configuredSendWebhookId();
+
+        if ($configuredWebhookId === null) {
+            throw new WebhookVerificationException('A CHIP Send webhook ID or public key is required.');
+        }
+
+        $configuredKeys = (array) config('chip.webhooks.send.webhook_keys', []);
+        $configuredKey = $configuredKeys[$configuredWebhookId] ?? null;
+
+        if (is_string($configuredKey) && $configuredKey !== '') {
+            return $configuredKey;
+        }
+
+        $cacheKey = config('chip.cache.prefix') . "send_public_key:{$configuredWebhookId}";
+
+        return Cache::remember(
+            $cacheKey,
+            config('chip.cache.ttl.public_key', 86400),
+            function () use ($configuredWebhookId): string {
+                try {
+                    $webhook = app(ChipSendService::class)->getSendWebhook($configuredWebhookId);
+
+                    if ($webhook->public_key === '') {
+                        throw new WebhookVerificationException("CHIP Send webhook {$configuredWebhookId} did not return a public key.");
+                    }
+
+                    return $webhook->public_key;
+                } catch (WebhookVerificationException $exception) {
+                    throw $exception;
+                } catch (Throwable $exception) {
+                    throw new WebhookVerificationException(
+                        'Unable to retrieve the CHIP Send webhook public key.',
+                        0,
+                        $exception,
+                    );
+                }
+            },
         );
     }
 
@@ -207,47 +206,167 @@ class WebhookService
         }
 
         if (! $payloadOrRequest instanceof Request) {
-            return [$this->getPublicKey()];
+            throw WebhookVerificationException::missingPublicKey();
         }
 
         $candidateKeys = [];
-        $resolvedWebhookId = $this->resolveWebhookId($payloadOrRequest);
 
-        if ($resolvedWebhookId !== null) {
-            try {
-                $candidateKeys[] = $this->getPublicKey($resolvedWebhookId);
-            } catch (WebhookVerificationException) {
-            }
-        }
-
-        foreach ($this->allWebhookKeys() as $configuredKey) {
+        foreach ((array) config('chip.webhooks.collect.webhook_keys', []) as $configuredKey) {
             if (is_string($configuredKey) && $configuredKey !== '') {
                 $candidateKeys[] = $configuredKey;
             }
         }
 
-        try {
-            $candidateKeys[] = $this->getPublicKey();
-        } catch (WebhookVerificationException $exception) {
-            if ($candidateKeys === []) {
-                throw $exception;
-            }
+        if ($candidateKeys === []) {
+            throw new WebhookVerificationException('No CHIP Collect webhook public key is configured.');
         }
 
         return array_values(array_unique($candidateKeys));
     }
 
     /**
-     * Merge Collect and Send webhook key maps.
-     *
-     * @return array<string, string>
+     * @return array<int, string>
      */
-    protected function allWebhookKeys(): array
+    protected function resolveSuccessCallbackPublicKeys(?string $publicKey = null): array
     {
-        return array_merge(
-            (array) config('chip.webhooks.collect.webhook_keys', []),
+        if (is_string($publicKey) && $publicKey !== '') {
+            return [$publicKey];
+        }
+
+        return [$this->getPublicKey()];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function resolveSendVerificationPublicKeys(Request | string $payloadOrRequest, ?string $publicKey = null): array
+    {
+        if (is_string($publicKey) && $publicKey !== '') {
+            return [$publicKey];
+        }
+
+        if (! $payloadOrRequest instanceof Request) {
+            throw new WebhookVerificationException('A CHIP Send webhook public key is required.');
+        }
+
+        $configuredWebhookId = $this->configuredSendWebhookId();
+
+        if ($configuredWebhookId !== null) {
+            return [$this->getSendPublicKey($configuredWebhookId)];
+        }
+
+        $candidateKeys = array_values(array_filter(
             (array) config('chip.webhooks.send.webhook_keys', []),
-        );
+            static fn (mixed $configuredKey): bool => is_string($configuredKey) && $configuredKey !== '',
+        ));
+
+        if ($candidateKeys === []) {
+            throw new WebhookVerificationException('No CHIP Send webhook public key is configured.');
+        }
+
+        return array_values(array_unique($candidateKeys));
+    }
+
+    /**
+     * @return array{0: string, 1: ?string}
+     */
+    private function resolveSignatureInput(Request | string $payloadOrRequest, ?string $signature): array
+    {
+        if ($payloadOrRequest instanceof Request) {
+            return [$payloadOrRequest->getContent(), $signature ?? $payloadOrRequest->header('X-Signature')];
+        }
+
+        return [(string) $payloadOrRequest, $signature];
+    }
+
+    /**
+     * @param  array<int, string>  $publicKeys
+     */
+    private function verifyPayloadSignature(string $payload, ?string $signature, array $publicKeys, int $algorithm): bool
+    {
+        if (! $signature) {
+            throw new WebhookVerificationException('Missing signature header');
+        }
+
+        try {
+            $decodedSignature = base64_decode($signature, true);
+            if ($decodedSignature === false) {
+                throw new WebhookVerificationException('Signature is not valid base64');
+            }
+
+            if ($publicKeys === []) {
+                throw new WebhookVerificationException('No public key configured');
+            }
+
+            $attemptedVerification = false;
+            $lastException = null;
+
+            foreach ($publicKeys as $candidateKey) {
+                try {
+                    $publicKeyResource = openssl_pkey_get_public($this->normalizePublicKey($candidateKey));
+
+                    if (! $publicKeyResource) {
+                        throw new WebhookVerificationException('Invalid public key format');
+                    }
+
+                    $attemptedVerification = true;
+
+                    if (openssl_verify($payload, $decodedSignature, $publicKeyResource, $algorithm) === 1) {
+                        return true;
+                    }
+                } catch (WebhookVerificationException $exception) {
+                    $lastException = $exception;
+                }
+            }
+
+            if (! $attemptedVerification && $lastException instanceof WebhookVerificationException) {
+                throw $lastException;
+            }
+
+            return false;
+        } catch (Throwable $e) {
+            Log::channel(config('chip.logging.channel', 'stack'))
+                ->error('Webhook signature verification failed', [
+                    'error' => $e->getMessage(),
+                ]);
+
+            throw new WebhookVerificationException('Signature verification failed: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
+    private function assertSignatureVerificationEnabled(): bool
+    {
+        $shouldVerify = config('chip.webhooks.verify_signature', true);
+
+        if (! $shouldVerify && app()->environment('production')) {
+            throw new WebhookVerificationException('Signature verification cannot be disabled in production environment');
+        }
+
+        if (! $shouldVerify) {
+            Log::channel(config('chip.logging.channel', 'stack'))
+                ->warning('Webhook signature verification is disabled', [
+                    'environment' => app()->environment(),
+                ]);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function configuredSendWebhookId(): ?int
+    {
+        $webhookId = config('chip.webhooks.send.webhook_id');
+
+        if (is_int($webhookId)) {
+            return $webhookId;
+        }
+
+        if (is_string($webhookId) && ctype_digit($webhookId)) {
+            return (int) $webhookId;
+        }
+
+        return null;
     }
 
     protected function normalizePublicKey(string $publicKey): string
@@ -255,28 +374,5 @@ class WebhookService
         return str_contains($publicKey, 'BEGIN PUBLIC KEY')
             ? $publicKey
             : "-----BEGIN PUBLIC KEY-----\n" . chunk_split(str_replace(["\n", "\r", ' '], '', $publicKey), 64, "\n") . '-----END PUBLIC KEY-----';
-    }
-
-    protected function resolveWebhookId(Request $request): ?string
-    {
-        $headerCandidates = [
-            'X-Webhook-Id',
-            'X-Chip-Webhook-Id',
-            'Webhook-Id',
-        ];
-
-        foreach ($headerCandidates as $header) {
-            $value = $request->header($header);
-
-            if (is_string($value) && $value !== '') {
-                return $value;
-            }
-        }
-
-        $payloadWebhookId = $request->input('webhook_id');
-
-        return is_string($payloadWebhookId) && $payloadWebhookId !== ''
-            ? $payloadWebhookId
-            : null;
     }
 }

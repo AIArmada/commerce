@@ -8,6 +8,7 @@ use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Enums\PurchaseStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -187,7 +188,17 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      */
     public function open(): bool
     {
-        return in_array($this->purchase->status, ['created', 'pending', 'pending_execute', 'pending_capture'], true);
+        return in_array($this->purchaseStatus(), [
+            PurchaseStatus::CREATED,
+            PurchaseStatus::SENT,
+            PurchaseStatus::VIEWED,
+            PurchaseStatus::OVERDUE,
+            PurchaseStatus::PENDING_EXECUTE,
+            PurchaseStatus::PENDING_CHARGE,
+            PurchaseStatus::PENDING_CAPTURE,
+            PurchaseStatus::PENDING_RELEASE,
+            PurchaseStatus::PENDING_REFUND,
+        ], true);
     }
 
     /**
@@ -203,7 +214,10 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      */
     public function voided(): bool
     {
-        return $this->purchase->isCancelled();
+        return in_array($this->purchaseStatus(), [
+            PurchaseStatus::CANCELLED,
+            PurchaseStatus::RELEASED,
+        ], true);
     }
 
     /**
@@ -227,7 +241,11 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      */
     public function isUncollectible(): bool
     {
-        return in_array($this->purchase->status, ['failed', 'expired'], true);
+        return in_array($this->purchaseStatus(), [
+            PurchaseStatus::ERROR,
+            PurchaseStatus::BLOCKED,
+            PurchaseStatus::EXPIRED,
+        ], true);
     }
 
     /**
@@ -449,5 +467,10 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
         $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
 
         return $formatter->formatCurrency($amount / 100, $currency);
+    }
+
+    private function purchaseStatus(): PurchaseStatus
+    {
+        return PurchaseStatus::from($this->purchase->status);
     }
 }

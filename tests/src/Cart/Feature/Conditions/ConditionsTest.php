@@ -212,15 +212,15 @@ describe('Condition Calculations', function (): void {
     });
 });
 
-describe('Condition Compatibility', function (): void {
+describe('Condition totals', function (): void {
     beforeEach(function (): void {
         Cart::clear();
     });
 
-    it('handles missing features from legacy implementations', function (): void {
+    it('calculates the base subtotal independently from conditions', function (): void {
         Cart::add('item', 'Item', 100.00, 1);
 
-        // Get subtotal without conditions (legacy feature)
+        // Capture the base subtotal before adding a tax condition.
         $subtotalWithoutConditions = Cart::subtotalWithoutConditions();
 
         Cart::addTax('VAT', '10%');

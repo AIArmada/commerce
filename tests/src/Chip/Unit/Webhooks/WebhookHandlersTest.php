@@ -8,8 +8,6 @@ use AIArmada\Chip\Webhooks\Handlers\PaymentFailedHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchaseCancelledHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchaseRefundedHandler;
-use AIArmada\Chip\Webhooks\Handlers\SendCompletedHandler;
-use AIArmada\Chip\Webhooks\Handlers\SendRejectedHandler;
 use AIArmada\Chip\Webhooks\Handlers\WebhookHandler;
 
 describe('WebhookHandler interface implementations', function (): void {
@@ -65,29 +63,6 @@ describe('WebhookHandler interface implementations', function (): void {
         });
     });
 
-    describe('SendCompletedHandler', function (): void {
-        it('can be instantiated', function (): void {
-            $handler = app(SendCompletedHandler::class);
-            expect($handler)->toBeInstanceOf(SendCompletedHandler::class);
-        });
-
-        it('implements WebhookHandler interface', function (): void {
-            $handler = app(SendCompletedHandler::class);
-            expect($handler)->toBeInstanceOf(WebhookHandler::class);
-        });
-    });
-
-    describe('SendRejectedHandler', function (): void {
-        it('can be instantiated', function (): void {
-            $handler = app(SendRejectedHandler::class);
-            expect($handler)->toBeInstanceOf(SendRejectedHandler::class);
-        });
-
-        it('implements WebhookHandler interface', function (): void {
-            $handler = app(SendRejectedHandler::class);
-            expect($handler)->toBeInstanceOf(WebhookHandler::class);
-        });
-    });
 });
 
 describe('WebhookResult DTO', function (): void {

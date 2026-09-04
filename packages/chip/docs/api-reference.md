@@ -27,7 +27,7 @@ Authorization: Bearer {CHIP_COLLECT_API_KEY}
 ```http
 Authorization: Bearer {CHIP_SEND_API_KEY}
 epoch: {unix_timestamp}
-checksum: {hmac_sha256(epoch, CHIP_SEND_API_SECRET)}
+checksum: {hmac_sha512(epoch + CHIP_SEND_API_KEY, CHIP_SEND_API_SECRET)}
 ```
 
 ## ChipGateway
@@ -109,52 +109,53 @@ use AIArmada\Chip\Facades\ChipSend;
 // Send Instructions
 ChipSend::createSendInstruction(
     int $amountInCents,
-    string $currency,
-    string $recipientBankAccountId,
+    int $recipientBankAccountId,
     string $description,
     string $reference,
-    string $email
+    string $email,
+    bool $sendRecipientReceipt = false
 ): SendInstructionData
 
-ChipSend::getSendInstruction(string $id): SendInstructionData
+ChipSend::getSendInstruction(int $id): SendInstructionData
 ChipSend::listSendInstructions(array $filters = []): array
-ChipSend::cancelSendInstruction(string $id): SendInstructionData
-ChipSend::deleteSendInstruction(string $id): void
-ChipSend::resendSendInstructionWebhook(string $id): array
+ChipSend::deleteSendInstruction(int $id): void
+ChipSend::resendSendInstructionWebhook(int $id): array
 
 // Bank Accounts
 ChipSend::createBankAccount(
     string $bankCode,
     string $accountNumber,
     string $accountHolderName,
-    ?string $reference = null
+    string $reference
 ): BankAccountData
 
-ChipSend::getBankAccount(string $id): BankAccountData
+ChipSend::getBankAccount(int $id): BankAccountData
 ChipSend::listBankAccounts(array $filters = []): array
-ChipSend::updateBankAccount(string $id, array $data): BankAccountData
-ChipSend::deleteBankAccount(string $id): void
-ChipSend::resendBankAccountWebhook(string $id): array
+ChipSend::deleteBankAccount(int $id): void
+ChipSend::resendBankAccountWebhook(int $id): array
 
 // Send Limits
-ChipSend::getSendLimit(int|string $id): SendLimitData
+ChipSend::getSendLimit(int $id): SendLimitData
+ChipSend::increaseBudgetAllocation(int|float $amount): SendLimitData
+ChipSend::listSendLimits(array $filters = []): array
+ChipSend::resendApprovalRequest(int $id): array
 
 // Groups
 ChipSend::createGroup(array $data): array
-ChipSend::getGroup(string $id): array
+ChipSend::getGroup(int $id): array
 ChipSend::listGroups(array $filters = []): array
-ChipSend::updateGroup(string $id, array $data): array
-ChipSend::deleteGroup(string $id): void
+ChipSend::updateGroup(int $id, array $data): array
+ChipSend::deleteGroup(int $id): void
 
 // Accounts
 ChipSend::listAccounts(): array
 
 // Webhooks
 ChipSend::createSendWebhook(array $data): SendWebhookData
-ChipSend::getSendWebhook(string $id): SendWebhookData
+ChipSend::getSendWebhook(int $id): SendWebhookData
 ChipSend::listSendWebhooks(array $filters = []): array
-ChipSend::updateSendWebhook(string $id, array $data): SendWebhookData
-ChipSend::deleteSendWebhook(string $id): void
+ChipSend::updateSendWebhook(int $id, array $data): SendWebhookData
+ChipSend::deleteSendWebhook(int $id): void
 ```
 
 ## PurchaseBuilder
@@ -255,6 +256,7 @@ $instruction->state: string
 $instruction->email: string
 $instruction->description: string
 $instruction->reference: string
+$instruction->send_recipient_receipt: bool
 $instruction->receipt_url: ?string
 
 $instruction->getAmountInMinorUnits(): int
@@ -272,7 +274,7 @@ $instruction->isPending(): bool
 ### BankAccount
 
 ```php
-$account->id: string
+$account->id: int
 $account->bank_code: string
 $account->account_number: string
 $account->name: string
@@ -294,22 +296,15 @@ $action->execute(string $event, array $payload, ?Model $owner = null): WebhookRe
 
 Dispatches a webhook event through the `WebhookRouter` with optional owner scoping. Returns a `WebhookResult` with `wasHandled(): bool` and `wasSkipped(): bool`.
 
-### HandleSendInstructionWebhookAction
+### SendWebhookReceived
 
 ```php
-use AIArmada\Chip\Actions\HandleSendInstructionWebhookAction;
+use AIArmada\Chip\Events\SendWebhookReceived;
 
-$action = app(HandleSendInstructionWebhookAction::class);
-
-$action->execute(
-    EnrichedWebhookPayload $payload,
-    SendInstructionState $targetState,
-    string $eventClass,
-    array $eventArgs = [],
-): WebhookResult
+SendWebhookReceived::$payload: array<string, mixed>
 ```
 
-Updates the local send instruction state from a webhook payload and dispatches the typed event. Returns `WebhookResult::skipped()` when the send instruction is not found locally.
+The dedicated CHIP Send webhook route verifies the raw request with the Send webhook's SHA-512 RSA signature and dispatches the verified JSON object unchanged. The payload shape depends on the configured Send `event_hooks` value; no synthetic Send status event is created by the package.
 
 ### RunChipPurchaseDocGenerationAction
 

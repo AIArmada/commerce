@@ -26,7 +26,7 @@ beforeEach(function (): void {
     config()->set('customers.features.owner.enabled', false);
 });
 
-it('reuses snapshot participants and falls back to the registrant when needed', function (): void {
+it('reuses snapshot participants and uses the purchaser when none were assigned', function (): void {
     OwnerContext::withOwner(null, function (): void {
         $customer = Customer::create([
             'first_name' => 'Maya',
@@ -44,7 +44,7 @@ it('reuses snapshot participants and falls back to the registrant when needed', 
         ]);
 
         $snapshotTicketType = createEventTicketType($occurrence, ['price' => 1500]);
-        $fallbackTicketType = createEventTicketType($occurrence, ['price' => 1500]);
+        $purchaserTicketType = createEventTicketType($occurrence, ['price' => 1500]);
 
         $order = Order::factory()->create([
             'customer_type' => $customer->getMorphClass(),
@@ -68,15 +68,15 @@ it('reuses snapshot participants and falls back to the registrant when needed', 
         OrderItem::query()->create([
             'id' => (string) Str::uuid(),
             'order_id' => $order->id,
-            'purchasable_type' => $fallbackTicketType->getMorphClass(),
-            'purchasable_id' => $fallbackTicketType->id,
-            'name' => $fallbackTicketType->name,
-            'sku' => 'FALLBACK-' . Str::upper(Str::random(8)),
+            'purchasable_type' => $purchaserTicketType->getMorphClass(),
+            'purchasable_id' => $purchaserTicketType->id,
+            'name' => $purchaserTicketType->name,
+            'sku' => 'PURCHASER-' . Str::upper(Str::random(8)),
             'quantity' => 2,
-            'unit_price' => $fallbackTicketType->price,
+            'unit_price' => $purchaserTicketType->price,
             'discount_amount' => 0,
             'tax_amount' => 0,
-            'currency' => $fallbackTicketType->currency,
+            'currency' => $purchaserTicketType->currency,
         ]);
 
         $session = CheckoutSession::query()->create([
@@ -109,16 +109,16 @@ it('reuses snapshot participants and falls back to the registrant when needed', 
                         ],
                     ],
                     [
-                        'id' => $fallbackTicketType->id,
-                        'name' => $fallbackTicketType->name,
-                        'price' => $fallbackTicketType->price,
+                        'id' => $purchaserTicketType->id,
+                        'name' => $purchaserTicketType->name,
+                        'price' => $purchaserTicketType->price,
                         'quantity' => 2,
                         'attributes' => [
-                            'purchasable_id' => $fallbackTicketType->id,
+                            'purchasable_id' => $purchaserTicketType->id,
                         ],
                         'associated_model' => [
                             'class' => TicketType::class,
-                            'id' => $fallbackTicketType->id,
+                            'id' => $purchaserTicketType->id,
                         ],
                     ],
                 ],
@@ -156,7 +156,7 @@ it('reuses snapshot participants and falls back to the registrant when needed', 
                 'gender' => 'female',
                 'is_primary' => true,
             ],
-        ])->and($capturedByTicketType->get($fallbackTicketType->id)?->pluck('participant')->values()->all())->toBe([
+        ])->and($capturedByTicketType->get($purchaserTicketType->id)?->pluck('participant')->values()->all())->toBe([
             [
                 'name' => 'Maya Jones',
                 'email' => 'maya@example.com',
@@ -171,7 +171,7 @@ it('reuses snapshot participants and falls back to the registrant when needed', 
     });
 });
 
-it('prefers the customer email and phone columns when fallback participants are built', function (): void {
+it('uses the customer email and phone columns when purchaser participants are built', function (): void {
     OwnerContext::withOwner(null, function (): void {
         $customer = Customer::create([
             'first_name' => 'Raw',
@@ -202,7 +202,7 @@ it('prefers the customer email and phone columns when fallback participants are 
             'purchasable_type' => $ticketType->getMorphClass(),
             'purchasable_id' => $ticketType->id,
             'name' => $ticketType->name,
-            'sku' => 'RAW-FALLBACK-' . Str::upper(Str::random(8)),
+            'sku' => 'RAW-PURCHASER-' . Str::upper(Str::random(8)),
             'quantity' => 1,
             'unit_price' => $ticketType->price,
             'discount_amount' => 0,
