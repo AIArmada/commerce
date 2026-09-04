@@ -7,6 +7,7 @@ namespace AIArmada\Events\Support;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Models\EventRegistrationQuestion;
 use AIArmada\Events\Models\EventSubmission;
 
 /**
@@ -32,6 +33,17 @@ final class ModelResolver
     {
         /** @var class-string<EventRegistration> $modelClass */
         $modelClass = config('events.models.registration', EventRegistration::class);
+
+        return $modelClass;
+    }
+
+    /**
+     * @return class-string<EventRegistrationQuestion>
+     */
+    public static function registrationQuestionClass(): string
+    {
+        /** @var class-string<EventRegistrationQuestion> $modelClass */
+        $modelClass = config('events.models.registration_question', EventRegistrationQuestion::class);
 
         return $modelClass;
     }

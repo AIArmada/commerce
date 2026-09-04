@@ -82,6 +82,10 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
             fn (DiscountProposal $p) => $p->toArray(),
             $allocations,
         );
+        $discountData['commitments'] = array_map(
+            static fn (DiscountCommitment $commitment): array => $commitment->toArray(),
+            $this->activeCommitments,
+        );
         $discountData['total_discount'] = $totalDiscount;
         $discountData['applied_at'] = now()->toIso8601String();
 
@@ -102,9 +106,11 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
 
     public function rollback(CheckoutSession $session): void
     {
-        if ($this->activeCommitments !== null && $this->activeCommitments !== []) {
+        $commitments = $this->activeCommitments ?? $this->persistedCommitments($session);
+
+        if ($commitments !== []) {
             $composition = $this->compositionService();
-            $composition->release($session, $this->activeCommitments);
+            $composition->release($session, $commitments);
             $this->activeCommitments = null;
         }
 
@@ -175,5 +181,39 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
                 'captured_at' => now()->toIso8601String(),
             ],
         ]);
+    }
+
+    /**
+     * A redirect-based payment resumes in a new request. Rebuild commitments
+     * from the session so provider reservations can still be released when a
+     * later payment callback fails or the checkout is cancelled.
+     *
+     * @return array<string, DiscountCommitment>
+     */
+    private function persistedCommitments(CheckoutSession $session): array
+    {
+        $rawCommitments = data_get($session->discount_data ?? [], 'commitments', []);
+
+        if (! is_array($rawCommitments)) {
+            return [];
+        }
+
+        $commitments = [];
+
+        foreach ($rawCommitments as $key => $rawCommitment) {
+            if (! is_array($rawCommitment)) {
+                continue;
+            }
+
+            $commitment = DiscountCommitment::fromArray($rawCommitment);
+
+            if ($commitment->providerKey === '' || $commitment->candidateKey === '') {
+                continue;
+            }
+
+            $commitments[is_string($key) ? $key : $commitment->providerKey . ':' . $commitment->candidateKey] = $commitment;
+        }
+
+        return $commitments;
     }
 }

@@ -5,6 +5,7 @@ use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Models\EventRegistrationQuestion;
 use AIArmada\Events\Models\EventSubmission;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Orders\Models\Order;
@@ -28,6 +29,7 @@ return [
         'registration' => EventRegistration::class,
         'attendance' => EventAttendance::class,
         'submission' => EventSubmission::class,
+        'registration_question' => EventRegistrationQuestion::class,
     ],
 
     /* Database */
@@ -49,6 +51,7 @@ return [
             'event_registrations' => env('EVENTS_TABLE_REGISTRATIONS', $tablePrefix . 'event_registrations'),
             'event_registration_participants' => env('EVENTS_TABLE_REGISTRATION_PARTICIPANTS', $tablePrefix . 'event_registration_participants'),
             'event_registration_answers' => env('EVENTS_TABLE_REGISTRATION_ANSWERS', $tablePrefix . 'event_registration_answers'),
+            'event_registration_questions' => env('EVENTS_TABLE_REGISTRATION_QUESTIONS', $tablePrefix . 'event_registration_questions'),
             'event_registration_items' => env('EVENTS_TABLE_REGISTRATION_ITEMS', $tablePrefix . 'event_registration_items'),
             'event_attendances' => env('EVENTS_TABLE_ATTENDANCES', $tablePrefix . 'event_attendances'),
             'event_attendance_logs' => env('EVENTS_TABLE_ATTENDANCE_LOGS', $tablePrefix . 'event_attendance_logs'),
@@ -234,7 +237,7 @@ return [
         ],
         'registration' => [
             'check_in_allowed_statuses' => ['confirmed'],
-            'capacity_blocking_statuses' => ['pending', 'confirmed', 'checked_in', 'no_show'],
+            'capacity_blocking_statuses' => ['pending', 'confirmed', 'refund_pending', 'checked_in', 'no_show'],
             'terminal_statuses' => ['checked_in', 'cancelled', 'refunded', 'no_show'],
             'auto_promote_waitlist' => env('EVENTS_AUTO_PROMOTE_WAITLIST', false),
         ],

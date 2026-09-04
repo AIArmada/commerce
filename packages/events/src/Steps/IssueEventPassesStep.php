@@ -8,9 +8,9 @@ use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\AbstractCheckoutStep;
 use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
-use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
@@ -74,7 +74,8 @@ final class IssueEventPassesStep extends AbstractCheckoutStep
             ->values();
 
         if ($ticketTypeIds->isNotEmpty()) {
-            $registrations = EventRegistration::byOrder($order)
+            $registrationClass = ModelResolver::registrationClass();
+            $registrations = $registrationClass::byOrder($order)
                 ->whereHas(
                     'items',
                     fn ($query) => $query->whereIn('ticket_type_id', $ticketTypeIds->all()),

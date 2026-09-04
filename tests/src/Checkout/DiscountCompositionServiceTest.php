@@ -189,6 +189,67 @@ it('commit delegates to providers by accepted proposals', function (): void {
     expect($commitments['abc']->appliedAmount)->toBe(500);
 });
 
+it('releases earlier provider commitments when a later provider commit fails', function (): void {
+    $session = mockSession();
+    $released = [];
+
+    $firstProvider = new class($released) implements DiscountProvider
+    {
+        public function __construct(private array &$released) {}
+
+        public function providerKey(): string
+        {
+            return 'first';
+        }
+
+        public function evaluate(CheckoutSession $s, array $d): array
+        {
+            return [];
+        }
+
+        public function commit(CheckoutSession $s, array $a): array
+        {
+            return [
+                'first:one' => new DiscountCommitment('first', 'one', 500, 'token-one'),
+            ];
+        }
+
+        public function release(CheckoutSession $s, array $c): void
+        {
+            $this->released[] = array_keys($c);
+        }
+    };
+
+    $secondProvider = new class implements DiscountProvider
+    {
+        public function providerKey(): string
+        {
+            return 'second';
+        }
+
+        public function evaluate(CheckoutSession $s, array $d): array
+        {
+            return [];
+        }
+
+        public function commit(CheckoutSession $s, array $a): array
+        {
+            throw new RuntimeException('Second provider failed');
+        }
+
+        public function release(CheckoutSession $s, array $c): void {}
+    };
+
+    $service = new DiscountCompositionService([$firstProvider, $secondProvider]);
+
+    expect(fn () => $service->commit($session, [
+        new DiscountProposal('first', 'one', 500),
+        new DiscountProposal('second', 'two', 500),
+    ]))->toThrow(RuntimeException::class, 'Second provider failed');
+
+    expect($released)->toBe([['first:one']]);
+});
+
 it('release delegates commitments to providers', function (): void {
     $session = mockSession();
 

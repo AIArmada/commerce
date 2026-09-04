@@ -117,6 +117,7 @@ final class DefaultEventCheckInService implements EventCheckInService
                 'attendance_type' => $data['attendance_type'] ?? 'registered',
                 'checked_in_at' => CarbonImmutable::now(),
                 'check_in_source' => $data['check_in_source'] ?? 'manual',
+                'verified_by_user_id' => $data['verified_by_user_id'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'metadata' => $data['metadata'] ?? null,
             ]);
@@ -125,6 +126,8 @@ final class DefaultEventCheckInService implements EventCheckInService
                 'event_attendance_id' => $attendance->id,
                 'action' => 'checked_in',
                 'source' => $data['check_in_source'] ?? 'manual',
+                'performed_by_type' => $data['performed_by_type'] ?? null,
+                'performed_by_id' => $data['performed_by_id'] ?? null,
                 'occurred_at' => CarbonImmutable::now(),
             ]);
 

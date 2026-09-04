@@ -111,6 +111,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         //  causing all redirect-based callbacks to fail token validation).
         $paymentData = array_merge($session->payment_data ?? [], [
             'gateway' => $processor->getIdentifier(),
+            'provider' => $result->provider ?? $processor->getIdentifier(),
             'payment_id' => $result->paymentId,
             'transaction_id' => $result->transactionId,
             'status' => $result->status->value,
@@ -170,6 +171,8 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         $billingData = $session->billing_data ?? [];
         $customer = $session->customer;
         $billable = $session->billable;
+        $paymentMethod = data_get($session->payment_data ?? [], 'payment_method');
+        $provider = data_get($session->payment_data ?? [], 'provider');
 
         $customerName = $billingData['name'] ?? null;
         if ($customerName === null && $customer !== null) {
@@ -216,6 +219,12 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
                 'billable_type' => $session->billable_type,
                 'billable_id' => $session->billable_id,
             ],
+            paymentMethod: is_string($paymentMethod) && mb_trim($paymentMethod) !== ''
+                ? mb_trim($paymentMethod)
+                : null,
+            provider: is_string($provider) && mb_trim($provider) !== ''
+                ? mb_trim($provider)
+                : null,
         );
     }
 

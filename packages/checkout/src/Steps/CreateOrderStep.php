@@ -307,6 +307,9 @@ final class CreateOrderStep extends AbstractCheckoutStep
             ?? $session->payment_id
             ?? 'unknown';
 
+        // Persist the stable checkout processor in OrderPayment::gateway.
+        // Wrapped processors (such as Cashier) keep the concrete provider in
+        // metadata so refunds/status checks can route to the same provider.
         $gateway = $paymentData['gateway']
             ?? $session->selected_payment_gateway
             ?? 'unknown';
@@ -316,6 +319,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
         $metadata = [
             'checkout_session_id' => $session->id,
             'payment_id' => $session->payment_id,
+            'provider' => $paymentData['provider'] ?? $gateway,
             'gateway_response' => $paymentData['gateway_response'] ?? null,
         ];
 

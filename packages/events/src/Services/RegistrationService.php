@@ -11,14 +11,19 @@ use AIArmada\Events\Events\EventRegistrationCancelled;
 use AIArmada\Events\Events\EventRegistrationCompleted;
 use AIArmada\Events\Events\EventRegistrationCreated;
 use AIArmada\Events\Events\EventRegistrationRefunded;
+use AIArmada\Events\Events\EventRegistrationRefundPending;
+use AIArmada\Events\Events\EventRegistrationRefundRestored;
 use AIArmada\Events\Events\EventRegistrationRejected;
 use AIArmada\Events\Events\EventRegistrationWaitlisted;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationParticipant;
 use AIArmada\Events\States\RegistrationStatus\Cancelled;
+use AIArmada\Events\States\RegistrationStatus\CheckedIn;
 use AIArmada\Events\States\RegistrationStatus\Completed;
 use AIArmada\Events\States\RegistrationStatus\Confirmed;
+use AIArmada\Events\States\RegistrationStatus\NoShow;
 use AIArmada\Events\States\RegistrationStatus\Refunded;
+use AIArmada\Events\States\RegistrationStatus\RefundPending;
 use AIArmada\Events\States\RegistrationStatus\Rejected;
 use AIArmada\Events\States\RegistrationStatus\Waitlisted;
 use AIArmada\Events\Support\EventWriteGuard;
@@ -26,6 +31,7 @@ use AIArmada\Events\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final class RegistrationService implements RegistrationServiceInterface
 {
@@ -45,14 +51,36 @@ final class RegistrationService implements RegistrationServiceInterface
 
             if (isset($data['participants'])) {
                 foreach ($data['participants'] as $participantData) {
+                    $participantAnswers = is_array($participantData['answers'] ?? null)
+                        ? $participantData['answers']
+                        : [];
                     $participantFields = array_merge(
-                        Arr::except($participantData, ['email', 'phone', 'company', 'is_purchaser']),
+                        Arr::except($participantData, ['email', 'phone', 'company', 'answers']),
                         $scopeFields,
                     );
                     $participant = $registration->participants()->create($participantFields);
 
                     if ($participant instanceof EventRegistrationParticipant) {
                         $this->syncParticipantContactMethods($participant, $participantData);
+
+                        foreach ($participantAnswers as $answerData) {
+                            if (! is_array($answerData)) {
+                                throw new InvalidArgumentException('Each participant answer must be an array.');
+                            }
+
+                            $participant->answers()->create(array_merge(
+                                Arr::except($answerData, [
+                                    'id',
+                                    'event_registration_id',
+                                    'event_registration_participant_id',
+                                    'event_id',
+                                    'event_occurrence_id',
+                                    'event_session_id',
+                                ]),
+                                ['event_registration_id' => $registration->getKey()],
+                                $scopeFields,
+                            ));
+                        }
                     }
                 }
             }
@@ -190,11 +218,64 @@ final class RegistrationService implements RegistrationServiceInterface
             return;
         }
 
+        $registration->refund_pending_at = null;
         $registration->refunded_at = CarbonImmutable::now();
         $registration->status_reason = $reason;
         $registration->status->transitionTo(Refunded::class);
 
         event(new EventRegistrationRefunded($registration, $reason));
+    }
+
+    public function markRefundPending(EventRegistration $registration, ?string $reason = null): void
+    {
+        EventWriteGuard::findOrFail($registration->event_id);
+
+        if ($registration->status instanceof RefundPending) {
+            if ($registration->refund_pending_at === null) {
+                $registration->update(['refund_pending_at' => CarbonImmutable::now()]);
+            }
+
+            return;
+        }
+
+        $metadata = $registration->metadata ?? [];
+        $metadata['refund']['original_status'] = $registration->status->getValue();
+
+        $registration->refund_pending_at = CarbonImmutable::now();
+        $registration->status_reason = $reason;
+        $registration->metadata = $metadata;
+        $registration->status->transitionTo(RefundPending::class);
+        $registration->save();
+
+        event(new EventRegistrationRefundPending($registration, $reason));
+    }
+
+    public function restoreFromRefundPending(EventRegistration $registration, ?string $reason = null): void
+    {
+        EventWriteGuard::findOrFail($registration->event_id);
+
+        if (! $registration->status instanceof RefundPending) {
+            return;
+        }
+
+        $originalStatus = data_get($registration->metadata ?? [], 'refund.original_status', 'confirmed');
+        $targetState = match ($originalStatus) {
+            'checked_in' => CheckedIn::class,
+            'no_show' => NoShow::class,
+            'completed' => Completed::class,
+            default => Confirmed::class,
+        };
+
+        $metadata = $registration->metadata ?? [];
+        Arr::forget($metadata, 'refund.original_status');
+
+        $registration->refund_pending_at = null;
+        $registration->status_reason = $reason;
+        $registration->metadata = $metadata;
+        $registration->status->transitionTo($targetState);
+        $registration->save();
+
+        event(new EventRegistrationRefundRestored($registration, $reason));
     }
 
     public function createFromOrderItem(array $orderItemData): void

@@ -259,6 +259,34 @@ test('voucher service redeem records fixed discount amount', function (): void {
         ->and($usage?->redeemedBy?->is($order))->toBeTrue();
 });
 
+test('voucher service redeem records the allocated checkout discount and voucher currency', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'REDEEMALLOCATED',
+        'name' => 'Redeem Allocated',
+        'type' => 'fixed',
+        'value' => 500,
+        'currency' => 'USD',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+    $order = Order::factory()->create([
+        'order_number' => 'ORD-REDEEM-ALLOCATED',
+        'subtotal' => 10000,
+        'discount_total' => 300,
+        'grand_total' => 9700,
+        'currency' => 'USD',
+    ]);
+
+    $service->redeem('redeemallocated', (string) $order->id, 300, 'USD');
+
+    $usage = VoucherUsage::where('voucher_id', $voucher->id)->first();
+
+    expect($usage)->not->toBeNull()
+        ->and($usage?->discount_amount)->toBe(300)
+        ->and($usage?->currency)->toBe('USD');
+});
+
 test('voucher service can be used by returns false for non-existent', function (): void {
     $user = new class extends Model
     {

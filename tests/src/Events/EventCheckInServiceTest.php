@@ -6,6 +6,7 @@ use AIArmada\Events\Contracts\EventCheckInService;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
+use Illuminate\Support\Str;
 
 it('checks in an attendee', function (): void {
     $event = Event::factory()->create();
@@ -75,4 +76,25 @@ it('reuses an active participant check-in', function (): void {
 
     expect($second->is($first))->toBeTrue()
         ->and($first->fresh()->logs)->toHaveCount(1);
+});
+
+it('preserves the verifier and performer on a staff-assisted check-in', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $verifierId = (string) Str::uuid();
+
+    $attendance = app(EventCheckInService::class)->checkIn([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+        'attendance_type' => 'registered',
+        'check_in_source' => 'staff_manual',
+        'verified_by_user_id' => $verifierId,
+        'performed_by_type' => 'user',
+        'performed_by_id' => $verifierId,
+    ]);
+    $log = $attendance->fresh()->logs->first();
+
+    expect($attendance->verified_by_user_id)->toBe($verifierId)
+        ->and($log?->performed_by_type)->toBe('user')
+        ->and($log?->performed_by_id)->toBe($verifierId);
 });

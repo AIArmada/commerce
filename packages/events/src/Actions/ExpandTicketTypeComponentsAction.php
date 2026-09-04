@@ -19,9 +19,10 @@ final class ExpandTicketTypeComponentsAction
     ) {}
 
     /**
+     * @param  array<string, mixed>  $options
      * @return Collection<int, EventRegistration>
      */
-    public function handle(EventRegistration $parentRegistration, int $multiplier = 1): Collection
+    public function handle(EventRegistration $parentRegistration, int $multiplier = 1, array $options = []): Collection
     {
         $ticketType = $parentRegistration->items()->first()?->ticketType;
 
@@ -49,6 +50,10 @@ final class ExpandTicketTypeComponentsAction
         $entitlements = $parentRegistration->getPassEntitlements();
         $scopeData = $scope->toRegistrationData();
         $event = $scope->event;
+        $status = $this->registrationStatus($options, $parentRegistration);
+        $source = $this->source($options, $parentRegistration);
+        $paymentStatus = $this->paymentStatus($options, $parentRegistration);
+        $metadata = $this->metadata($options, $parentRegistration);
 
         foreach ($ticketType->components as $component) {
             $componentQuantity = $component->quantity * $multiplier;
@@ -64,10 +69,12 @@ final class ExpandTicketTypeComponentsAction
                     'registrant_type' => $parentRegistration->registrant_type,
                     'registrant_id' => $parentRegistration->registrant_id,
                     'registration_type' => 'component',
-                    'status' => 'confirmed',
-                    'source' => 'order',
+                    'status' => $status,
+                    'source' => $source,
                     'total_participants' => $parentRegistration->total_participants,
                     'total_amount' => 0,
+                    'payment_status' => $paymentStatus,
+                    'metadata' => $metadata,
                     'parent_registration_id' => $parentRegistration->getKey(),
                     'is_bundle_root' => false,
                     'items' => [[
@@ -76,10 +83,25 @@ final class ExpandTicketTypeComponentsAction
                         'unit_price' => 0,
                         'total_price' => 0,
                         'currency' => $componentTicketType->currency,
-                        'status' => 'confirmed',
+                        'status' => $status,
                     ]],
                     'participants' => $parentRegistration->participants->map(
-                        fn ($p) => Arr::only($p->toArray(), ['name', 'email', 'phone']),
+                        fn ($p) => Arr::only($p->toArray(), [
+                            'name',
+                            'email',
+                            'phone',
+                            'participant_type',
+                            'participant_id',
+                            'relationship_to_registrant',
+                            'is_primary',
+                            'is_purchaser',
+                            'age',
+                            'gender',
+                            'status',
+                            'notes',
+                            'metadata',
+                            'answers',
+                        ]),
                     )->toArray(),
                 ]));
 
@@ -101,5 +123,36 @@ final class ExpandTicketTypeComponentsAction
         ]);
 
         return $children;
+    }
+
+    private function registrationStatus(array $options, EventRegistration $parentRegistration): string
+    {
+        $status = $options['status'] ?? $parentRegistration->status->getValue();
+
+        return is_string($status) && in_array($status, ['pending', 'confirmed'], true)
+            ? $status
+            : 'confirmed';
+    }
+
+    private function source(array $options, EventRegistration $parentRegistration): string
+    {
+        $source = $options['source'] ?? $parentRegistration->source;
+
+        return is_string($source) && mb_trim($source) !== '' ? mb_trim($source) : 'order';
+    }
+
+    private function paymentStatus(array $options, EventRegistration $parentRegistration): ?string
+    {
+        $paymentStatus = $options['payment_status'] ?? $parentRegistration->payment_status;
+
+        return is_string($paymentStatus) && mb_trim($paymentStatus) !== '' ? mb_trim($paymentStatus) : null;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function metadata(array $options, EventRegistration $parentRegistration): ?array
+    {
+        $metadata = $options['metadata'] ?? $parentRegistration->metadata;
+
+        return is_array($metadata) ? $metadata : null;
     }
 }

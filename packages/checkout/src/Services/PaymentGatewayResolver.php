@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Services;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Exceptions\MissingPaymentGatewayException;
+use InvalidArgumentException;
 
 final class PaymentGatewayResolver implements PaymentGatewayResolverInterface
 {
@@ -70,6 +71,18 @@ final class PaymentGatewayResolver implements PaymentGatewayResolverInterface
 
     public function register(string $identifier, PaymentProcessorInterface $processor): void
     {
+        $identifier = mb_trim($identifier);
+
+        if ($identifier === '') {
+            throw new InvalidArgumentException('A checkout payment processor must have a non-empty identifier.');
+        }
+
+        if (isset($this->processors[$identifier]) && $this->processors[$identifier] !== $processor) {
+            throw new InvalidArgumentException(
+                "A different checkout payment processor is already registered for [{$identifier}].",
+            );
+        }
+
         $this->processors[$identifier] = $processor;
     }
 }

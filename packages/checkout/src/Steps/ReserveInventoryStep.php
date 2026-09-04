@@ -101,21 +101,31 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
             foreach ($items as $item) {
                 $productId = $item['product_id'] ?? data_get($item, 'attributes.product_id');
                 $variantId = $item['variant_id'] ?? data_get($item, 'attributes.variant_id');
+                $inventoryableType = data_get($item, 'inventoryable_type')
+                    ?? data_get($item, 'attributes.inventoryable_type');
+                $inventoryableId = data_get($item, 'inventoryable_id')
+                    ?? data_get($item, 'attributes.inventoryable_id');
                 $quantity = $item['quantity'] ?? 1;
+
+                $productId ??= $inventoryableId;
 
                 if ($productId === null) {
                     continue;
                 }
 
                 $lines[] = new ReservationLine(
-                    productId: $productId,
-                    variantId: $variantId,
-                    quantity: $quantity,
+                    productId: (string) $productId,
+                    variantId: is_string($variantId) ? $variantId : null,
+                    quantity: (int) $quantity,
+                    inventoryableType: is_string($inventoryableType) ? $inventoryableType : null,
+                    inventoryableId: is_string($inventoryableId) || is_int($inventoryableId)
+                        ? (string) $inventoryableId
+                        : null,
                 );
             }
 
             if ($lines === []) {
-                return $this->failed('No valid items to reserve');
+                return $this->skipped('No inventory-tracked items to reserve');
             }
 
             $outcome = $this->inventoryAdapter->reserve(

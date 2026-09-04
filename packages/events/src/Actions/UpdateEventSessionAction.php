@@ -25,7 +25,7 @@ final class UpdateEventSessionAction
     {
         EventWriteGuard::findOrFail($session->event_id);
 
-        $original = $session->getOriginal();
+        $original = $session->getRawOriginal();
 
         $fillable = $session->getFillable();
         $allowed = array_intersect_key($attributes, array_flip($fillable));
@@ -76,11 +76,15 @@ final class UpdateEventSessionAction
 
         $session->update($allowed);
 
+        $current = $session->getAttributes();
+
         $changes = [];
         foreach ($allowed as $key => $newValue) {
             $oldValue = $original[$key] ?? null;
-            if ($oldValue !== $newValue) {
-                $changes[$key] = ['old' => $oldValue, 'new' => $newValue];
+            $normalizedNewValue = $current[$key] ?? null;
+
+            if ($oldValue !== $normalizedNewValue) {
+                $changes[$key] = ['old' => $oldValue, 'new' => $normalizedNewValue];
             }
         }
 

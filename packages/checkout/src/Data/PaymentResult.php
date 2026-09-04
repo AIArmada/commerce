@@ -21,9 +21,14 @@ final class PaymentResult extends Data
         public array $gatewayResponse = [],
         /** @var array<string, string> */
         public array $errors = [],
+        /**
+         * Concrete provider used by a multi-provider processor (for example,
+         * `stripe` behind the generic `cashier` processor).
+         */
+        public ?string $provider = null,
     ) {}
 
-    public static function success(string $paymentId, ?string $transactionId = null, ?int $amount = null): self
+    public static function success(string $paymentId, ?string $transactionId = null, ?int $amount = null, ?string $provider = null): self
     {
         return new self(
             status: PaymentStatus::Completed,
@@ -31,25 +36,28 @@ final class PaymentResult extends Data
             transactionId: $transactionId,
             amount: $amount,
             message: 'Payment completed successfully',
+            provider: $provider,
         );
     }
 
-    public static function pending(string $paymentId, string $redirectUrl): self
+    public static function pending(string $paymentId, string $redirectUrl, ?string $provider = null): self
     {
         return new self(
             status: PaymentStatus::Pending,
             paymentId: $paymentId,
             redirectUrl: $redirectUrl,
             message: 'Payment pending - redirect required',
+            provider: $provider,
         );
     }
 
-    public static function processing(string $paymentId): self
+    public static function processing(string $paymentId, ?string $provider = null): self
     {
         return new self(
             status: PaymentStatus::Processing,
             paymentId: $paymentId,
             message: 'Payment is being processed',
+            provider: $provider,
         );
     }
 

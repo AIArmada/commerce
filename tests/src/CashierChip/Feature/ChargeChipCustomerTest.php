@@ -119,9 +119,10 @@ describe('ChargeChipCustomer', function (): void {
             }
         });
 
-        $payment = ChargeChipCustomer::run($customer, 5000);
+        $payment = ChargeChipCustomer::run($customer, 5000, options: ['currency' => 'SGD']);
 
         expect($payment)->toBeInstanceOf(Payment::class);
         expect($payment->rawAmount())->toBe(5000);
+        expect($payment->currency())->toBe('SGD');
     });
 });

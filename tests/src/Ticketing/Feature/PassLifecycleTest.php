@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Ticketing\Models\Pass;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Spatie\ModelStates\Exceptions\TransitionNotFound;
@@ -69,6 +70,18 @@ it('blocks invalid transition', function (): void {
 
 it('returns isValid false for expired pass', function (): void {
     $pass = Pass::factory()->create(['status' => 'expired']);
+
+    expect($pass->isValid())->toBeFalse();
+});
+
+it('returns isValid false when its registration has been refunded', function (): void {
+    $registration = EventRegistration::factory()->create(['status' => 'refunded']);
+    $pass = Pass::factory()->create([
+        'registration_type' => $registration->getMorphClass(),
+        'registration_id' => $registration->getKey(),
+        'status' => 'activated',
+    ]);
+    $pass->setRelation('registration', $registration);
 
     expect($pass->isValid())->toBeFalse();
 });

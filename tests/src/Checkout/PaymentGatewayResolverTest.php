@@ -20,6 +20,21 @@ describe('PaymentGatewayResolver', function (): void {
         expect($resolver->hasGateway('test'))->toBeTrue();
     });
 
+    it('rejects conflicting registrations for the same identifier', function (): void {
+        $resolver = new PaymentGatewayResolver(null, ['test']);
+        $resolver->register('test', createMockProcessor('test'));
+
+        expect(fn () => $resolver->register('test', createMockProcessor('test')))
+            ->toThrow(InvalidArgumentException::class);
+    });
+
+    it('rejects an empty processor identifier', function (): void {
+        $resolver = new PaymentGatewayResolver(null, []);
+
+        expect(fn () => $resolver->register('   ', createMockProcessor('test')))
+            ->toThrow(InvalidArgumentException::class);
+    });
+
     it('can resolve a registered processor', function (): void {
         $resolver = new PaymentGatewayResolver(null, ['test']);
         $processor = createMockProcessor('test');

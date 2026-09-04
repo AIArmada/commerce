@@ -76,6 +76,11 @@ interface PaymentContract extends Arrayable, Jsonable
     public function isCanceled(): bool;
 
     /**
+     * Determine if the payment was refunded.
+     */
+    public function isRefunded(): bool;
+
+    /**
      * Determine if the payment requires action (e.g., 3DS).
      */
     public function requiresAction(): bool;

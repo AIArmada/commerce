@@ -165,7 +165,9 @@ return [
     | checkout package references their respective package configs directly
     | to avoid configuration mismatches.
     |
-    | Gateway options: 'chip', 'stripe', 'cashier', 'cashier-chip'
+    | Gateway options: 'chip', 'stripe', 'cashier', 'cashier-chip'. Optional
+    | provider packages can contribute a PaymentProcessorInterface by binding
+    | and tagging it with `checkout.payment_processors`.
     |
     */
     'payment' => [

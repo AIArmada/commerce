@@ -52,6 +52,7 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonImmutable|null $cancelled_at
  * @property CarbonImmutable|null $rejected_at
  * @property CarbonImmutable|null $waitlisted_at
+ * @property CarbonImmutable|null $refund_pending_at
  * @property CarbonImmutable|null $refunded_at
  * @property CarbonImmutable|null $expired_at
  * @property string|null $status_reason
@@ -86,6 +87,7 @@ class EventRegistration extends Model
     public const array CAPACITY_BLOCKING_STATUSES = [
         'pending',
         'confirmed',
+        'refund_pending',
         'checked_in',
         'no_show',
     ];
@@ -98,6 +100,7 @@ class EventRegistration extends Model
         'external_order_id', 'external_order_type', 'payment_status',
         'registered_at', 'approved_at', 'completed_at', 'cancelled_at', 'rejected_at',
         'waitlisted_at', 'refunded_at', 'expired_at',
+        'refund_pending_at',
         'status_reason', 'notes',
         'parent_registration_id', 'is_bundle_root', 'pass_entitlements',
         'metadata',
@@ -138,6 +141,7 @@ class EventRegistration extends Model
             'cancelled_at' => 'immutable_datetime',
             'rejected_at' => 'immutable_datetime',
             'waitlisted_at' => 'immutable_datetime',
+            'refund_pending_at' => 'immutable_datetime',
             'refunded_at' => 'immutable_datetime',
             'expired_at' => 'immutable_datetime',
             'metadata' => 'array',

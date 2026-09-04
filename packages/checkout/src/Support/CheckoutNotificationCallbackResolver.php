@@ -28,6 +28,7 @@ final readonly class CheckoutNotificationCallbackResolver
     public function extractPaymentStatus(array $payload): PaymentStatus
     {
         $status = Arr::get($payload, 'status') ?? Arr::get($payload, 'data.object.status');
+        $status = is_string($status) ? mb_strtolower(mb_trim($status)) : '';
 
         return match ($status) {
             'paid', 'completed', 'succeeded', 'complete' => PaymentStatus::Completed,
@@ -35,6 +36,8 @@ final readonly class CheckoutNotificationCallbackResolver
             'failed', 'error', 'payment_failed' => PaymentStatus::Failed,
             'cancelled', 'canceled', 'expired' => PaymentStatus::Cancelled,
             'refunded' => PaymentStatus::Refunded,
+            'partially_refunded' => PaymentStatus::PartiallyRefunded,
+            'pending_refund', 'attempted_refund' => PaymentStatus::Processing,
             default => PaymentStatus::Processing,
         };
     }

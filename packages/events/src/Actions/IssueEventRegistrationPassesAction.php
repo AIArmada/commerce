@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
+use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
@@ -18,6 +19,9 @@ use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class IssueEventRegistrationPassesAction
@@ -31,61 +35,63 @@ final class IssueEventRegistrationPassesAction
     /** @return Collection<int, Pass> */
     public function handle(EventRegistration $registration): Collection
     {
-        EventWriteGuard::findOrFail($registration->event_id);
+        return DB::transaction(function () use ($registration): Collection {
+            EventWriteGuard::findOrFail($registration->event_id);
 
-        $registration->loadMissing(
-            'items.ticketType.ticketable',
-            'participants.contactMethods',
-            'event.seatMaps',
-            'occurrence.seatMaps',
-            'session.seatMaps',
-        );
-
-        $scope = $this->resolveScope($registration);
-        $issued = new Collection;
-
-        if ($registration->items->isEmpty()) {
-            $ticketType = $this->ensureFreeTicketType($scope);
-
-            $passes = $this->issueForRegistration(
-                registration: $registration,
-                ticketType: $ticketType,
-                quantity: 1,
-                metadata: ['issued_from' => 'free_registration'],
+            $registration->loadMissing(
+                'items.ticketType.ticketable',
+                'participants.contactMethods',
+                'event.seatMaps',
+                'occurrence.seatMaps',
+                'session.seatMaps',
             );
 
-            return $passes;
-        }
+            $registration->setRelation('passes', $registration->passes()->lockForUpdate()->get());
 
-        foreach ($registration->items as $item) {
-            $ticketType = $item->ticketType;
+            $scope = $this->resolveScope($registration);
+            $issued = new Collection;
 
-            if (! $ticketType instanceof TicketType) {
-                throw new InvalidArgumentException('Registration items must reference a TicketType.');
+            if ($registration->items->isEmpty()) {
+                $ticketType = $this->ensureFreeTicketType($scope);
+
+                return $this->issueForRegistration(
+                    registration: $registration,
+                    ticketType: $ticketType,
+                    quantity: 1,
+                    metadata: ['issued_from' => 'free_registration'],
+                );
             }
 
-            $ticketType->loadMissing('ticketable');
+            foreach ($registration->items as $item) {
+                $ticketType = $item->ticketType;
 
-            if (! EventTicketScope::belongsToRegistrationScope($ticketType, $scope)) {
-                throw new InvalidArgumentException('Registration items must reference a ticket type that belongs to the same event scope.');
+                if (! $ticketType instanceof TicketType) {
+                    throw new InvalidArgumentException('Registration items must reference a TicketType.');
+                }
+
+                $ticketType->loadMissing('ticketable');
+
+                if (! EventTicketScope::belongsToRegistrationScope($ticketType, $scope)) {
+                    throw new InvalidArgumentException('Registration items must reference a ticket type that belongs to the same event scope.');
+                }
+
+                $quantity = max(1, $item->quantity * max(1, $ticketType->admits_quantity));
+
+                $passes = $this->issueForRegistration(
+                    registration: $registration,
+                    ticketType: $ticketType,
+                    quantity: $quantity,
+                    metadata: array_filter([
+                        'registration_item_id' => $item->getKey(),
+                        'ticket_type_id' => $item->ticket_type_id,
+                    ], static fn (mixed $value): bool => $value !== null),
+                );
+
+                $issued = $issued->merge($passes);
             }
 
-            $quantity = max(1, $item->quantity * max(1, $ticketType->admits_quantity));
-
-            $passes = $this->issueForRegistration(
-                registration: $registration,
-                ticketType: $ticketType,
-                quantity: $quantity,
-                metadata: array_filter([
-                    'registration_item_id' => $item->getKey(),
-                    'ticket_type_id' => $item->ticket_type_id,
-                ], static fn (mixed $value): bool => $value !== null),
-            );
-
-            $issued = $issued->merge($passes);
-        }
-
-        return $issued->values();
+            return $issued->values();
+        });
     }
 
     private function resolveScope(EventRegistration $registration): EventRegistrationScope
@@ -129,22 +135,35 @@ final class IssueEventRegistrationPassesAction
         int $quantity,
         array $metadata = [],
     ): Collection {
-        return $this->issuePasses->handle(new PassIssuanceContext(
+        $existing = $registration->passes
+            ->filter(fn (Pass $pass): bool => (string) $pass->ticket_type_id === (string) $ticketType->getKey())
+            ->values();
+        $remaining = max(0, $quantity - $existing->count());
+
+        if ($remaining === 0) {
+            return $existing;
+        }
+
+        $passes = $this->issuePasses->handle(new PassIssuanceContext(
             ticketType: $ticketType,
-            quantity: $quantity,
-            holderAttributes: $this->holderAttributesFor($registration, $quantity),
+            quantity: $remaining,
+            holderAttributes: $this->holderAttributesFor($registration, $remaining, $existing->count()),
             metadata: $metadata,
             registrationType: $registration->getMorphClass(),
             registrationId: $registration->getKey(),
             occurrenceId: $registration->event_occurrence_id,
             sessionId: $registration->event_session_id,
         ));
+
+        $registration->setRelation('passes', $registration->passes->merge($passes));
+
+        return $existing->merge($passes)->values();
     }
 
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function holderAttributesFor(EventRegistration $registration, int $quantity): array
+    private function holderAttributesFor(EventRegistration $registration, int $quantity, int $offset = 0): array
     {
         $holders = $registration->participants
             ->map(fn (EventRegistrationParticipant $participant): array => array_filter([
@@ -161,15 +180,19 @@ final class IssueEventRegistrationPassesAction
             return [];
         }
 
-        if (count($holders) === 1 && $quantity > 1) {
-            return array_fill(0, $quantity, $holders[0]);
+        if ($quantity < 1) {
+            return [];
         }
 
-        while (count($holders) < $quantity) {
-            $holders[] = $holders[0];
+        $holderCount = count($holders);
+        $start = max(0, $offset) % $holderCount;
+        $assigned = [];
+
+        for ($index = 0; $index < $quantity; $index++) {
+            $assigned[] = $holders[($start + $index) % $holderCount];
         }
 
-        return array_slice($holders, 0, $quantity);
+        return $assigned;
     }
 
     private function resolveParticipantEmail(EventRegistrationParticipant $participant): ?string
@@ -186,11 +209,32 @@ final class IssueEventRegistrationPassesAction
             return null;
         }
 
-        $contactMethod = $participant->contactMethods()
-            ->where('type', 'email')
-            ->orderByDesc('is_primary')
-            ->orderBy('sort_order')
-            ->first();
+        $contactMethod = null;
+
+        if ($participant->relationLoaded('contactMethods')) {
+            /** @var EloquentCollection<int, ContactMethod> $contactMethods */
+            $contactMethods = $participant->getRelation('contactMethods');
+
+            $contactMethod = $contactMethods
+                ->filter(static fn (ContactMethod $contactMethod): bool => $contactMethod->type === 'email')
+                ->sort(function (ContactMethod $left, ContactMethod $right): int {
+                    return ($right->is_primary <=> $left->is_primary)
+                        ?: ($left->sort_order <=> $right->sort_order);
+                })
+                ->first();
+        } else {
+            /** @var MorphMany $contactMethods */
+            $contactMethods = $participant->contactMethods();
+            $contactMethod = $contactMethods
+                ->where('type', 'email')
+                ->orderByDesc('is_primary')
+                ->orderBy('sort_order')
+                ->first();
+        }
+
+        if (! $contactMethod instanceof ContactMethod) {
+            return null;
+        }
 
         $value = $contactMethod?->normalized_value ?? $contactMethod?->value;
 

@@ -219,3 +219,45 @@ it('dispatches voucher applied events for live cart checkout voucher application
             && $event->voucher->code === 'EVENT10',
     );
 });
+
+it('does not dispatch voucher application events during discount evaluation', function (): void {
+    Cart::clear();
+    Cart::clearConditions();
+    Cart::clearMetadata();
+    Cart::clearVouchers();
+
+    Cart::add('sku-evaluate-voucher', 'Evaluate Voucher Product', 10000, 1, ['sku' => 'EVALUATE-001']);
+
+    Voucher::query()->create([
+        'code' => 'EVALUATE10',
+        'name' => 'Evaluate Voucher',
+        'type' => VoucherType::Percentage,
+        'value' => 1000,
+        'currency' => 'USD',
+        'status' => 'active',
+        'starts_at' => now()->subDay(),
+        'expires_at' => now()->addDay(),
+    ]);
+
+    $session = new CheckoutSession;
+    $session->id = 'session-evaluate-voucher';
+    $session->cart_id = 'cart-evaluate-voucher';
+    $session->subtotal = 10000;
+    $session->currency = 'USD';
+    $session->billing_data = [];
+    $session->cart_snapshot = ['metadata' => []];
+
+    $liveCart = app('cart')->getCurrentCart();
+    $cartManager = mock(CartManagerInterface::class);
+    $cartManager->shouldReceive('getById')
+        ->once()
+        ->with('cart-evaluate-voucher')
+        ->andReturn($liveCart);
+
+    Event::fake([VoucherApplied::class]);
+
+    $result = (new VouchersAdapter)->evaluate($session, ['voucher_codes' => ['EVALUATE10']]);
+
+    expect($result)->toHaveCount(1);
+    Event::assertNotDispatched(VoucherApplied::class);
+});

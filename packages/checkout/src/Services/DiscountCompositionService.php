@@ -8,6 +8,8 @@ use AIArmada\Checkout\Contracts\DiscountProvider;
 use AIArmada\Checkout\Data\DiscountCommitment;
 use AIArmada\Checkout\Data\DiscountProposal;
 use AIArmada\Checkout\Models\CheckoutSession;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 final class DiscountCompositionService
 {
@@ -77,19 +79,34 @@ final class DiscountCompositionService
 
         $commitments = [];
 
-        foreach ($this->providers as $provider) {
-            $providerAccepted = array_values(array_filter(
-                $accepted,
-                fn (DiscountProposal $p) => $p->providerKey === $provider->providerKey(),
-            ));
+        try {
+            foreach ($this->providers as $provider) {
+                $providerAccepted = array_values(array_filter(
+                    $accepted,
+                    fn (DiscountProposal $p) => $p->providerKey === $provider->providerKey(),
+                ));
 
-            if ($providerAccepted === []) {
-                continue;
+                if ($providerAccepted === []) {
+                    continue;
+                }
+
+                foreach ($provider->commit($session, $providerAccepted) as $key => $commitment) {
+                    $commitments[$key] = $commitment;
+                }
+            }
+        } catch (Throwable $exception) {
+            if ($commitments !== []) {
+                try {
+                    $this->release($session, $commitments);
+                } catch (Throwable $cleanupException) {
+                    Log::error('Discount commitment cleanup failed after provider commit failure', [
+                        'exception' => $cleanupException,
+                        'original_exception' => $exception,
+                    ]);
+                }
             }
 
-            foreach ($provider->commit($session, $providerAccepted) as $key => $commitment) {
-                $commitments[$key] = $commitment;
-            }
+            throw $exception;
         }
 
         return $commitments;
@@ -100,6 +117,8 @@ final class DiscountCompositionService
      */
     public function release(CheckoutSession $session, array $commitments): void
     {
+        $firstException = null;
+
         foreach ($this->providers as $provider) {
             $providerCommitments = array_filter(
                 $commitments,
@@ -110,7 +129,15 @@ final class DiscountCompositionService
                 continue;
             }
 
-            $provider->release($session, $providerCommitments);
+            try {
+                $provider->release($session, $providerCommitments);
+            } catch (Throwable $exception) {
+                $firstException ??= $exception;
+            }
+        }
+
+        if ($firstException instanceof Throwable) {
+            throw $firstException;
         }
     }
 }

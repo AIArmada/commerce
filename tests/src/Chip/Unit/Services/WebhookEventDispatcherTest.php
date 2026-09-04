@@ -10,6 +10,7 @@ use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Events\PurchaseCreated;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
+use AIArmada\CommerceSupport\Events\PaymentRefunded as CommercePaymentRefunded;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
@@ -208,6 +209,28 @@ describe('WebhookEventDispatcher::dispatch', function (): void {
         $dispatcher->dispatch('payment.refunded', $payload);
 
         Event::assertDispatched(PaymentRefunded::class, fn (PaymentRefunded $event): bool => $event->getPurchaseId() === 'purchase-123');
+        Event::assertDispatched(CommercePaymentRefunded::class, fn (CommercePaymentRefunded $event): bool => $event->provider === 'chip'
+            && $event->paymentId === 'payment-123'
+            && $event->relatedPaymentId === 'purchase-123'
+            && $event->amount === 1000
+            && $event->currency === 'MYR');
+    });
+
+    it('uses nested payment metadata when top-level metadata is empty', function (): void {
+        $dispatcher = new WebhookEventDispatcher;
+        $payload = createMinimalPaymentPayload();
+        $payload['metadata'] = [];
+        $payload['payment']['metadata'] = [
+            'order_id' => 'order-123',
+            'refund_id' => 'refund-123',
+        ];
+
+        $dispatcher->dispatch('payment.refunded', $payload);
+
+        Event::assertDispatched(CommercePaymentRefunded::class, fn (CommercePaymentRefunded $event): bool => $event->metadata === [
+            'order_id' => 'order-123',
+            'refund_id' => 'refund-123',
+        ]);
     });
 
     it('skips malformed payment.refunded payloads that have no payment details', function (): void {

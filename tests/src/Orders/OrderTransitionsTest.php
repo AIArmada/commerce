@@ -145,7 +145,7 @@ describe('Order Transitions', function (): void {
     });
 
     describe('RefundProcessed Transition', function (): void {
-        it('transitions from Returned to Refunded', function (): void {
+        it('keeps a partially refunded order open and closes it after the balance is returned', function (): void {
             $order = Order::create([
                 'order_number' => 'ORD-TRANS5-' . uniqid(),
                 'status' => Returned::class,
@@ -158,9 +158,15 @@ describe('Order Transitions', function (): void {
             $result = $transition->handle();
 
             expect($result)->toBe($order);
-            expect($order->status)->toBeInstanceOf(Refunded::class);
+            expect($order->status)->toBeInstanceOf(Returned::class);
             expect($order->refunds)->toHaveCount(1);
             expect($order->refunds->first()->amount)->toBe(5000);
+
+            $transition = new RefundProcessed($order, 5000, 'ref_txn_124', 'Customer request');
+            $transition->handle();
+
+            expect($order->status)->toBeInstanceOf(Refunded::class)
+                ->and($order->refunds)->toHaveCount(2);
         });
     });
 });

@@ -56,10 +56,11 @@ final class ChipProcessor implements PaymentProcessorInterface
                 return PaymentResult::pending(
                     paymentId: $purchaseId,
                     redirectUrl: $checkoutUrl,
+                    provider: 'chip',
                 );
             }
 
-            return PaymentResult::processing($purchaseId);
+            return PaymentResult::processing($purchaseId, 'chip');
         } catch (Throwable $e) {
             return PaymentResult::failed($e->getMessage());
         }
@@ -80,6 +81,7 @@ final class ChipProcessor implements PaymentProcessorInterface
                 transactionId: $payload['transaction_id'] ?? null,
                 amount: $payload['purchase']['total'] ?? null,
                 gatewayResponse: $payload,
+                provider: 'chip',
             );
         } catch (Throwable $e) {
             return PaymentResult::failed($e->getMessage());
@@ -102,13 +104,15 @@ final class ChipProcessor implements PaymentProcessorInterface
             $purchase = Chip::getPurchase($paymentId);
 
             $paymentStatus = $this->statusMapper->fromPurchaseStatus($purchase->status);
+            $gatewayResponse = $purchase->toArray();
 
             return new PaymentResult(
                 status: $paymentStatus,
                 paymentId: $paymentId,
                 transactionId: $purchase->reference_generated,
                 amount: $purchase->purchase->total->getAmount(),
-                gatewayResponse: (array) $purchase,
+                gatewayResponse: $gatewayResponse,
+                provider: 'chip',
             );
         } catch (Throwable $e) {
             return PaymentResult::failed($e->getMessage(), [], $paymentId);

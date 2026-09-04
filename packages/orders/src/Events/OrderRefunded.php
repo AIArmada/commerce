@@ -21,6 +21,8 @@ final class OrderRefunded
         public Order $order,
         public int $amount,
         public string $reason,
+        /** @var array<string, mixed> */
+        public array $metadata = [],
     ) {
         $this->hydrateOrderOwnerTuple($order);
     }

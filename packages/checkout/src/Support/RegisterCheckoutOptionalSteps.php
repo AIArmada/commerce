@@ -15,7 +15,7 @@ use AIArmada\Checkout\Steps\ReserveInventoryStep;
 use AIArmada\Inventory\InventoryServiceProvider;
 use AIArmada\Promotions\PromotionsServiceProvider;
 use AIArmada\Tax\TaxServiceProvider;
-use AIArmada\Vouchers\VouchersServiceProvider;
+use AIArmada\Vouchers\VoucherServiceProvider;
 
 final class RegisterCheckoutOptionalSteps
 {
@@ -75,7 +75,7 @@ final class RegisterCheckoutOptionalSteps
     private function hasDiscountPackages(): bool
     {
         return class_exists(PromotionsServiceProvider::class)
-            || class_exists(VouchersServiceProvider::class);
+            || class_exists(VoucherServiceProvider::class);
     }
 
     private function isDiscountsEnabled(): bool

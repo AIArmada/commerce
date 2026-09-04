@@ -130,6 +130,12 @@ describe('Order State Machine - Full Coverage', function (): void {
             // Returned -> Refunded (via RefundProcessed transition)
             $transition = new RefundProcessed($order, 5000, 'ref_txn_123', 'Customer return');
             $order = $transition->handle();
+            expect($order->status)->toBeInstanceOf(Returned::class);
+
+            // A second partial refund closes the order once the full amount
+            // has been returned.
+            $transition = new RefundProcessed($order, 5000, 'ref_txn_124', 'Customer return');
+            $order = $transition->handle();
             expect($order->status)->toBeInstanceOf(Refunded::class);
         });
     });

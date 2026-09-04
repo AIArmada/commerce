@@ -7,6 +7,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Http\RedirectResponse;
@@ -20,15 +21,15 @@ class ChipPayment implements PaymentContract
     /**
      * The payment instance.
      */
-    protected Payment | PurchaseData $payment;
+    protected Payment | PaymentData | PurchaseData $payment;
 
     /**
      * Create a new CHIP payment wrapper.
      */
     public function __construct(mixed $payment)
     {
-        if (! $payment instanceof Payment && ! $payment instanceof PurchaseData) {
-            throw new InvalidArgumentException('ChipPayment expects an instance of ' . Payment::class . ' or ' . PurchaseData::class);
+        if (! $payment instanceof Payment && ! $payment instanceof PaymentData && ! $payment instanceof PurchaseData) {
+            throw new InvalidArgumentException('ChipPayment expects an instance of ' . Payment::class . ', ' . PaymentData::class . ', or ' . PurchaseData::class);
         }
 
         $this->payment = $payment;
@@ -41,6 +42,10 @@ class ChipPayment implements PaymentContract
     {
         if ($this->payment instanceof Payment) {
             return $this->payment->id();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->getPaymentId() ?? '';
         }
 
         return $this->payment->id;
@@ -63,6 +68,14 @@ class ChipPayment implements PaymentContract
             return $this->payment->isPending();
         }
 
+        if ($this->payment instanceof PaymentData) {
+            return in_array($this->payment->status, [
+                'pending',
+                'pending_execute',
+                'pending_refund',
+            ], true);
+        }
+
         // CHIP pending statuses
         return in_array($this->payment->status, [
             'created',
@@ -83,6 +96,10 @@ class ChipPayment implements PaymentContract
             return $this->payment->isSucceeded();
         }
 
+        if ($this->payment instanceof PaymentData) {
+            return in_array($this->payment->status, ['paid', 'cleared', 'settled', 'refunded'], true);
+        }
+
         // CHIP paid statuses
         return in_array($this->payment->status, ['paid', 'cleared', 'settled']);
     }
@@ -94,6 +111,10 @@ class ChipPayment implements PaymentContract
     {
         if ($this->payment instanceof Payment) {
             return $this->payment->isFailed();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return in_array($this->payment->status, ['failed', 'error', 'blocked'], true);
         }
 
         // CHIP failure statuses
@@ -109,6 +130,10 @@ class ChipPayment implements PaymentContract
             return $this->payment->isExpired();
         }
 
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->status === 'expired';
+        }
+
         return $this->payment->status === 'expired';
     }
 
@@ -119,6 +144,10 @@ class ChipPayment implements PaymentContract
     {
         if ($this->payment instanceof Payment) {
             return $this->payment->isCancelled();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return in_array($this->payment->status, ['cancelled', 'canceled'], true);
         }
 
         return $this->payment->status === 'cancelled';
@@ -141,6 +170,10 @@ class ChipPayment implements PaymentContract
             return $this->payment->isRefunded();
         }
 
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->status === 'refunded' || $this->payment->payment_type === 'refund';
+        }
+
         return $this->payment->status === 'refunded';
     }
 
@@ -153,6 +186,10 @@ class ChipPayment implements PaymentContract
             return $this->payment->status() === 'hold';
         }
 
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->status === 'hold';
+        }
+
         return $this->payment->status === 'hold';
     }
 
@@ -163,6 +200,10 @@ class ChipPayment implements PaymentContract
     {
         if ($this->payment instanceof Payment) {
             return $this->payment->status() === 'preauthorized';
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return false;
         }
 
         return $this->payment->status === 'preauthorized';
@@ -186,6 +227,10 @@ class ChipPayment implements PaymentContract
             return $this->payment->requiresRedirect();
         }
 
+        if ($this->payment instanceof PaymentData) {
+            return false;
+        }
+
         // Requires redirect if created/pending and has checkout URL
         return in_array($this->payment->status, ['created', 'viewed'])
             && ! empty($this->payment->checkout_url);
@@ -200,6 +245,10 @@ class ChipPayment implements PaymentContract
             return $this->payment->checkoutUrl();
         }
 
+        if ($this->payment instanceof PaymentData) {
+            return null;
+        }
+
         return $this->payment->checkout_url;
     }
 
@@ -212,6 +261,10 @@ class ChipPayment implements PaymentContract
             $purchase = $this->payment->asChipPurchase();
 
             return $purchase->invoice_url ?? null;
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return null;
         }
 
         return $this->payment->invoice_url;
@@ -240,6 +293,10 @@ class ChipPayment implements PaymentContract
             return $this->payment->currency();
         }
 
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->getCurrency();
+        }
+
         return $this->payment->purchase->currency;
     }
 
@@ -252,6 +309,10 @@ class ChipPayment implements PaymentContract
             return $this->payment->amount();
         }
 
+        if ($this->payment instanceof PaymentData) {
+            return MoneyFormatter::formatMinorWithCode($this->rawAmount(), $this->currency());
+        }
+
         return MoneyFormatter::formatMinorWithCode($this->rawAmount(), $this->currency());
     }
 
@@ -262,6 +323,10 @@ class ChipPayment implements PaymentContract
     {
         if ($this->payment instanceof Payment) {
             return $this->payment->rawAmount();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->getAmountInCents();
         }
 
         // CHIP returns amount in decimal, convert to cents
@@ -277,6 +342,10 @@ class ChipPayment implements PaymentContract
     {
         if ($this->payment instanceof Payment) {
             return $this->payment->status();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->status ?? ($this->payment->payment_type === 'refund' ? 'refunded' : 'processing');
         }
 
         return $this->payment->status;
@@ -327,13 +396,17 @@ class ChipPayment implements PaymentContract
             return $this->payment->recurringToken();
         }
 
+        if ($this->payment instanceof PaymentData) {
+            return null;
+        }
+
         return $this->payment->recurring_token;
     }
 
     /**
      * Get the underlying payment.
      */
-    public function asGatewayPayment(): Payment | PurchaseData
+    public function asGatewayPayment(): Payment | PaymentData | PurchaseData
     {
         return $this->payment;
     }

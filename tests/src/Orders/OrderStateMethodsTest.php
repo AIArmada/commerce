@@ -443,7 +443,7 @@ describe('Order State Methods - Direct Class Testing', function (): void {
             expect($order->status->isFinal())->toBeFalse();
         });
 
-        it('cannot refund', function (): void {
+        it('can refund before fulfillment', function (): void {
             $order = Order::create([
                 'order_number' => 'ORD-PROC-REFUND-' . uniqid(),
                 'status' => Processing::class,
@@ -452,7 +452,7 @@ describe('Order State Methods - Direct Class Testing', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            expect($order->status->canRefund())->toBeFalse();
+            expect($order->status->canRefund())->toBeTrue();
         });
 
         it('cannot modify', function (): void {

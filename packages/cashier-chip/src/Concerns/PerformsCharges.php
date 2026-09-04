@@ -41,8 +41,13 @@ trait PerformsCharges // @phpstan-ignore trait.unused
 
         $metadata = $this->billableMetadata($options['metadata'] ?? null);
 
+        $currency = $options['currency'] ?? $this->preferredCurrency();
+        $currency = is_string($currency) && $currency !== ''
+            ? mb_strtoupper($currency)
+            : $this->preferredCurrency();
+
         $builder = Cashier::chip()->purchase()
-            ->currency($this->preferredCurrency());
+            ->currency($currency);
 
         // Add the product
         $productName = $options['product_name'] ?? 'One-time charge';
@@ -65,6 +70,10 @@ trait PerformsCharges // @phpstan-ignore trait.unused
 
         if (isset($options['failure_url'])) {
             $builder->failureUrl($options['failure_url']);
+        }
+
+        if (isset($options['cancel_url'])) {
+            $builder->cancelUrl($options['cancel_url']);
         }
 
         if (isset($options['reference'])) {
@@ -127,9 +136,13 @@ trait PerformsCharges // @phpstan-ignore trait.unused
     public function createPayment(int $amount, array $options = []): Payment
     {
         $metadata = $this->billableMetadata($options['metadata'] ?? null);
+        $currency = $options['currency'] ?? $this->preferredCurrency();
+        $currency = is_string($currency) && $currency !== ''
+            ? mb_strtoupper($currency)
+            : $this->preferredCurrency();
 
         $builder = Cashier::chip()->purchase()
-            ->currency($options['currency'] ?? $this->preferredCurrency());
+            ->currency($currency);
 
         // Add the product
         $productName = $options['product_name'] ?? 'Payment';

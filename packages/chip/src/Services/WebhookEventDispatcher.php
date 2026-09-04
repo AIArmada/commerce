@@ -31,6 +31,7 @@ use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
 use AIArmada\Chip\Events\PurchaseReleased;
 use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
+use AIArmada\CommerceSupport\Events\PaymentRefunded as CommercePaymentRefunded;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -194,5 +195,36 @@ class WebhookEventDispatcher
         $this->syncPurchaseRefundState->handle($payment);
 
         PaymentRefunded::dispatch($payment, $payload);
+
+        CommercePaymentRefunded::dispatch(
+            provider: 'chip',
+            paymentId: $payment->getPaymentId() ?? (is_string($payload['id'] ?? null) ? $payload['id'] : null),
+            relatedPaymentId: $payment->getRelatedPurchaseId(),
+            amount: $payment->getAmountInCents(),
+            currency: $payment->getCurrency(),
+            reference: $payment->getReference(),
+            metadata: $this->refundMetadata($payload),
+            payload: $payload,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function refundMetadata(array $payload): array
+    {
+        $metadata = $payload['metadata'] ?? [];
+        $paymentMetadata = data_get($payload, 'payment.metadata');
+
+        if (is_array($metadata) && $metadata !== []) {
+            return $metadata;
+        }
+
+        if (is_array($paymentMetadata) && $paymentMetadata !== []) {
+            return $paymentMetadata;
+        }
+
+        return is_array($metadata) ? $metadata : [];
     }
 }

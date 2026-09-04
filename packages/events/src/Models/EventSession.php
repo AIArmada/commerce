@@ -12,6 +12,7 @@ use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Concerns\RegistersEventMedia;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Ticketing\Enums\PricingMode;
 use AIArmada\Ticketing\Models\Pass;
@@ -79,6 +80,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventTimeExpression> $timeExpressions
  * @property-read Collection<int, EventEligibilityRule> $eligibilityRules
  * @property-read Collection<int, EventRegistration> $registrations
+ * @property-read Collection<int, EventRegistrationQuestion> $registrationQuestions
  * @property-read Collection<int, EventRegistrationParticipant> $participants
  * @property-read Collection<int, EventAttendance> $attendances
  * @property-read Collection<int, Pass> $passes
@@ -161,7 +163,7 @@ final class EventSession extends Model implements HasMedia
      */
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Event::class);
+        return $this->belongsTo(ModelResolver::eventClass());
     }
 
     /**
@@ -186,6 +188,18 @@ final class EventSession extends Model implements HasMedia
     public function registrations(): HasMany
     {
         return $this->hasMany(EventRegistration::class, 'event_session_id');
+    }
+
+    /**
+     * @return HasMany<EventRegistrationQuestion, $this>
+     */
+    public function registrationQuestions(): HasMany
+    {
+        /* @phpstan-ignore argument.templateType */
+        return $this->hasMany(ModelResolver::registrationQuestionClass(), 'event_session_id')
+            ->where('event_id', $this->event_id)
+            ->where('event_occurrence_id', $this->event_occurrence_id)
+            ->ordered();
     }
 
     /**

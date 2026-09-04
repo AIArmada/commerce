@@ -10,10 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 
 final class LinkChipCustomerFromCheckoutCompletion
 {
-    public function __construct(
-        private readonly ChipCustomerBridge $customerBridge,
-    ) {}
-
     public function handle(object $event): void
     {
         $session = $event->session ?? null;
@@ -45,7 +41,10 @@ final class LinkChipCustomerFromCheckoutCompletion
         }
 
         $this->handleWithinSessionOwnerContext($session, function () use ($payload, $session): void {
-            $this->customerBridge->linkCustomer(
+            // Resolve the bridge only after a completed CHIP checkout has been
+            // identified. This keeps free/non-CHIP checkout usable when CHIP
+            // credentials are intentionally not configured.
+            app(ChipCustomerBridge::class)->linkCustomer(
                 $session,
                 $payload,
                 'checkout_completed',

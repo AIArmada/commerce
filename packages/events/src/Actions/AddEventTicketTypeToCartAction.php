@@ -55,7 +55,14 @@ final class AddEventTicketTypeToCartAction
             ));
         }
 
-        $mergedAttributes = $this->buildAttributes($ticketType, $participants, $extraAttributes, $existingItem);
+        $inventoryConfigured = $this->inventoryConfigured($ticketType);
+        $mergedAttributes = $this->buildAttributes(
+            $ticketType,
+            $participants,
+            $extraAttributes,
+            $existingItem,
+            $inventoryConfigured,
+        );
 
         if ($ticketType->max_quantity !== null && $totalQuantity > $ticketType->max_quantity) {
             throw new InvalidArgumentException(sprintf(
@@ -80,7 +87,7 @@ final class AddEventTicketTypeToCartAction
             ));
         }
 
-        if (! $skipQuotaValidation && class_exists(InventoryLevel::class)) {
+        if (! $skipQuotaValidation && $inventoryConfigured) {
             if (! $ticketType->hasInventory($totalQuantity)) {
                 throw new InvalidArgumentException(sprintf(
                     '"%s" is sold out or has insufficient stock.',
@@ -107,6 +114,7 @@ final class AddEventTicketTypeToCartAction
         array $participants,
         array $extraAttributes,
         ?CartItem $existingItem,
+        bool $inventoryConfigured,
     ): array {
         $mergedParticipants = $participants;
 
@@ -120,7 +128,7 @@ final class AddEventTicketTypeToCartAction
 
         $scopeIds = EventTicketScope::ids($ticketType);
 
-        return array_merge([
+        $attributes = [
             'purchasable_type' => TicketType::class,
             'purchasable_id' => $ticketType->getKey(),
             'ticket_type_id' => $ticketType->getKey(),
@@ -129,7 +137,22 @@ final class AddEventTicketTypeToCartAction
             'event_session_id' => $scopeIds['event_session_id'],
             'code' => $ticketType->code,
             'participants' => $mergedParticipants,
-        ], $extraAttributes);
+        ];
+
+        if ($inventoryConfigured) {
+            // An absent inventory level means unlimited inventory for a
+            // ticket type. Only mark configured ticket types for checkout
+            // reservation so an unlimited ticket is not treated as sold out.
+            $attributes['inventoryable_type'] = $ticketType->getMorphClass();
+            $attributes['inventoryable_id'] = (string) $ticketType->getKey();
+        }
+
+        return array_merge($attributes, $extraAttributes);
+    }
+
+    private function inventoryConfigured(TicketType $ticketType): bool
+    {
+        return class_exists(InventoryLevel::class) && $ticketType->inventoryLevels()->exists();
     }
 
     /**

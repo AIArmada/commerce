@@ -59,6 +59,21 @@ class CheckoutReservationServiceTest extends InventoryTestCase
         expect($allocations->sum('quantity'))->toBe(3);
     }
 
+    public function test_reserve_resolves_a_polymorphic_inventoryable_line(): void
+    {
+        $lines = [new ReservationLine(
+            productId: 'not-a-product-id',
+            quantity: 3,
+            inventoryableType: InventoryItem::class,
+            inventoryableId: (string) $this->item->getKey(),
+        )];
+
+        $outcome = $this->reservationService->reserve('ref-polymorphic', $lines, 900);
+
+        expect($outcome->state)->toBe('reserved')
+            ->and(InventoryAllocation::query()->where('cart_id', 'ref-polymorphic')->sum('quantity'))->toBe(3);
+    }
+
     public function test_commit_transitions_group_and_deducts_stock(): void
     {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 4)];

@@ -36,6 +36,40 @@ it('creates individual registration', function (): void {
     expect($registration->items)->toHaveCount(1);
 });
 
+it('persists answers supplied for each participant', function (): void {
+    $event = Event::factory()->create();
+
+    $registration = app(RegistrationServiceInterface::class)->register([
+        'event_id' => $event->id,
+        'registration_type' => 'individual',
+        'status' => 'pending',
+        'source' => 'website',
+        'total_participants' => 1,
+        'participants' => [
+            [
+                'name' => 'Amina Participant',
+                'answers' => [
+                    [
+                        'field_key' => 'meal_preference',
+                        'question' => 'Meal preference',
+                        'answer' => 'Vegetarian',
+                        'metadata' => ['question_type' => 'select'],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $answer = $registration->participants()->firstOrFail()->answers()->first();
+
+    expect($answer)->not->toBeNull()
+        ->and($answer?->field_key)->toBe('meal_preference')
+        ->and($answer?->question)->toBe('Meal preference')
+        ->and($answer?->answer)->toBe('Vegetarian')
+        ->and($answer?->event_id)->toBe($event->id)
+        ->and($answer?->event_registration_participant_id)->not->toBeNull();
+});
+
 it('rolls back the registration when a child record fails', function (): void {
     $event = Event::factory()->create();
 

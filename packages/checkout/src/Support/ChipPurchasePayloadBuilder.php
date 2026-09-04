@@ -25,11 +25,12 @@ final readonly class ChipPurchasePayloadBuilder
                 ],
                 'currency' => $request->currency,
             ],
-            'client' => [
+            'client' => array_filter([
                 'email' => $request->customerEmail,
                 'full_name' => $request->customerName,
                 'phone' => $request->customerPhone,
-            ],
+            ], static fn (mixed $value): bool => $value !== null
+                && (! is_string($value) || mb_trim($value) !== '')),
             'reference' => $session->id,
             'success_redirect' => $request->successUrl,
             'failure_redirect' => $request->failureUrl,

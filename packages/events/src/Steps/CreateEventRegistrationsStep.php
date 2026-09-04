@@ -13,6 +13,7 @@ use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class CreateEventRegistrationsStep extends AbstractCheckoutStep
 {
@@ -74,6 +75,8 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
 
             $ticketType = $purchasable;
 
+            $this->markEventFulfillment($orderItem);
+
             $target = $this->resolveRegistrationTarget($ticketType);
 
             if ($target === null) {
@@ -91,7 +94,7 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
                 $target,
                 $orderItem,
                 $participants,
-                $order->getRelation('customer'),
+                $this->resolveRegistrant($session, $order),
             );
 
             $created++;
@@ -170,11 +173,53 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
         return $participants;
     }
 
+    private function resolveRegistrant(CheckoutSession $session, Model $order): ?Model
+    {
+        $actor = data_get($session->payment_data ?? [], 'checkout_actor');
+
+        if (is_array($actor)) {
+            $type = $actor['type'] ?? null;
+            $id = $actor['id'] ?? null;
+
+            if (is_string($type) && $type !== '' && (is_string($id) || is_int($id))) {
+                $modelClass = Relation::getMorphedModel($type) ?? $type;
+
+                if (class_exists($modelClass) && is_a($modelClass, Model::class, true)) {
+                    /** @var class-string<Model> $modelClass */
+                    $registrant = $modelClass::query()->find((string) $id);
+
+                    if ($registrant instanceof Model) {
+                        return $registrant;
+                    }
+                }
+            }
+        }
+
+        $customer = $order->getRelation('customer');
+
+        return $customer instanceof Model ? $customer : null;
+    }
+
     private function resolveRegistrationTarget(TicketType $ticketType): ?Model
     {
         $ticketType->loadMissing('ticketable');
 
         return EventTicketScope::target($ticketType);
+    }
+
+    private function markEventFulfillment(mixed $orderItem): void
+    {
+        $options = $orderItem->getAttribute('options');
+
+        $options = is_array($options) ? $options : [];
+
+        if (($options['event_fulfillment'] ?? null) === 'event_registration') {
+            return;
+        }
+
+        $orderItem->forceFill([
+            'options' => [...$options, 'event_fulfillment' => 'event_registration'],
+        ])->save();
     }
 
     private function resolveCustomerEmail(mixed $customer): ?string

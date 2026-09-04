@@ -10,6 +10,7 @@ use AIArmada\Events\Exceptions\NotFreeEventException;
 use AIArmada\Events\Exceptions\OpenDoorRegistrationBlockedException;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\States\OccurrenceStatus\Cancelled;
 
@@ -53,6 +54,34 @@ it('registers multiple participants', function (): void {
         );
 
         expect($registrations)->toHaveCount(2);
+    });
+});
+
+it('returns the same registration batch for an idempotent retry', function (): void {
+    OwnerContext::withOwner(null, function (): void {
+        $event = Event::factory()->free()->published()->create();
+        $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+        $participants = [
+            ['name' => 'Alice', 'email' => 'alice@example.com', 'is_primary' => true],
+            ['name' => 'Bob', 'email' => 'bob@example.com'],
+        ];
+
+        $action = app(RegisterForFreeAction::class);
+        $first = $action->execute(
+            target: $occurrence,
+            participants: $participants,
+            options: ['idempotency_key' => 'checkout-attempt-1'],
+        );
+        $retry = $action->execute(
+            target: $occurrence,
+            participants: $participants,
+            options: ['idempotency_key' => 'checkout-attempt-1'],
+        );
+
+        expect($first)->toHaveCount(2)
+            ->and($retry)->toHaveCount(2)
+            ->and($retry->pluck('id')->all())->toBe($first->pluck('id')->all())
+            ->and(EventRegistration::query()->where('event_occurrence_id', $occurrence->id)->count())->toBe(2);
     });
 });
 

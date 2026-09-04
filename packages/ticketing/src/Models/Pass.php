@@ -197,8 +197,29 @@ class Pass extends Model
             $status = $status::getMorphClass();
         }
 
+        $registration = $this->registration;
+
+        if ($registration instanceof Model) {
+            $registrationStatus = $registration->getAttribute('status');
+            $registrationStatus = is_object($registrationStatus) && method_exists($registrationStatus, 'getValue')
+                ? $registrationStatus->getValue()
+                : $registrationStatus;
+
+            if (in_array($registrationStatus, [
+                'refund_pending',
+                'refunded',
+                'cancelled',
+                'canceled',
+                'rejected',
+                'expired',
+            ], true)) {
+                return false;
+            }
+        }
+
         return ! in_array($status, [
             'used',
+            'cancelled',
             'revoked',
             'voided',
             'expired',

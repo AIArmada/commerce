@@ -9,6 +9,8 @@ use AIArmada\Checkout\Actions\CheckoutFinalizer;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
+use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
+use AIArmada\Checkout\Contracts\ProviderAwarePaymentProcessorInterface;
 use AIArmada\Checkout\Contracts\SessionDataTransformerInterface;
 use AIArmada\Checkout\Data\CheckoutResult;
 use AIArmada\Checkout\Data\PaymentResult;
@@ -330,7 +332,8 @@ final class CheckoutService implements CheckoutServiceInterface
             $processor = $this->paymentResolver->resolve($gateway);
             $paymentResult = $processor->handleCallback($payload);
         } elseif (! empty($payload)) {
-            $status = $payload['status'] ?? $payload['data']['object']['status'] ?? null;
+            $status = $payload['status'] ?? data_get($payload, 'data.object.status');
+            $status = is_string($status) ? mb_strtolower(mb_trim($status)) : null;
 
             $paymentResult = match ($status) {
                 'paid', 'completed', 'succeeded', 'complete' => PaymentResult::success($session->payment_id ?? 'unknown'),
@@ -349,7 +352,7 @@ final class CheckoutService implements CheckoutServiceInterface
         } elseif ($this->paymentResolver !== null && $session->payment_id !== null) {
             $gateway = $session->selected_payment_gateway;
             $processor = $this->paymentResolver->resolve($gateway);
-            $paymentResult = $processor->checkStatus($session->payment_id);
+            $paymentResult = $this->checkPaymentStatus($processor, $session);
         }
 
         if ($paymentResult !== null) {
@@ -363,6 +366,7 @@ final class CheckoutService implements CheckoutServiceInterface
                     'verified_at' => now()->toIso8601String(),
                     'payment_id' => $paymentResult->paymentId ?? $session->payment_id,
                     'transaction_id' => $paymentResult->transactionId ?? ($session->payment_data['transaction_id'] ?? null),
+                    'provider' => $paymentResult->provider ?? ($session->payment_data['provider'] ?? null),
                     'amount' => $paymentResult->amount ?? ($session->payment_data['amount'] ?? null),
                     'currency' => $paymentResult->currency ?? ($session->payment_data['currency'] ?? $session->currency),
                     'gateway_response' => $paymentResult->gatewayResponse !== []
@@ -376,13 +380,37 @@ final class CheckoutService implements CheckoutServiceInterface
             return CheckoutResult::failed($session, 'Payment could not be verified');
         }
 
-        $this->dispatchPaymentCompleted($session);
+        // A redirect callback resumes outside processCheckout's transaction.
+        // Keep order creation, event fulfillment, voucher redemption, and
+        // checkout completion atomic so a post-payment integration failure
+        // leaves the session retryable instead of completed without fulfillment.
+        return DB::transaction(function () use ($session): CheckoutResult {
+            $this->dispatchPaymentCompleted($session);
 
-        $session->setStepState('process_payment', StepStatus::Completed);
-        $session->transitionStatus(Processing::class);
-        $session->update(['payment_redirect_url' => null]);
+            $session->setStepState('process_payment', StepStatus::Completed);
+            $session->transitionStatus(Processing::class);
+            $session->update(['payment_redirect_url' => null]);
 
-        return $this->continueFromStep($session, 'process_payment');
+            return $this->continueFromStep($session, 'process_payment');
+        });
+    }
+
+    private function checkPaymentStatus(
+        PaymentProcessorInterface $processor,
+        CheckoutSession $session,
+    ): PaymentResult {
+        $provider = data_get($session->payment_data ?? [], 'provider');
+
+        if (
+            is_string($provider)
+            && $provider !== ''
+            && $processor instanceof ProviderAwarePaymentProcessorInterface
+            && $provider !== $processor->getIdentifier()
+        ) {
+            return $processor->checkStatusForProvider($provider, $session->payment_id ?? '');
+        }
+
+        return $processor->checkStatus($session->payment_id ?? '');
     }
 
     private function transformSessionData(CheckoutSession $session): void

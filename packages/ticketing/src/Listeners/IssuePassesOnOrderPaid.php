@@ -22,12 +22,21 @@ final class IssuePassesOnOrderPaid
                 continue;
             }
 
-            $attributes = $item->getAttribute('attributes') ?? [];
+            $options = $item->getAttribute('options') ?? [];
+
+            if (is_array($options) && ($options['event_fulfillment'] ?? null) === 'event_registration') {
+                continue;
+            }
+
+            $legacyAttributes = $item->getAttribute('attributes') ?? [];
+            $holderAttributes = is_array($options) && is_array($options['participants'] ?? null)
+                ? $options['participants']
+                : (is_array($legacyAttributes) ? ($legacyAttributes['participants'] ?? []) : []);
 
             $context = new PassIssuanceContext(
                 ticketType: $ticketType,
                 quantity: $item->quantity,
-                holderAttributes: $attributes['participants'] ?? [],
+                holderAttributes: $holderAttributes,
                 metadata: ['order_id' => $order->getKey(), 'order_item_id' => $item->getKey()],
             );
 

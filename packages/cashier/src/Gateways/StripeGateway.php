@@ -22,6 +22,7 @@ use AIArmada\Cashier\Gateways\Stripe\StripePaymentMethod;
 use AIArmada\Cashier\Gateways\Stripe\StripeSubscription;
 use AIArmada\Cashier\Gateways\Stripe\StripeSubscriptionBuilder;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Cashier;
 use Laravel\Cashier\Payment;
@@ -117,11 +118,22 @@ class StripeGateway extends AbstractGateway
      */
     public function charge(BillableContract $billable, int $amount, #[SensitiveParameter] ?string $paymentMethod = null, array $options = []): PaymentContract
     {
+        $chargeOptions = Arr::except($options, [
+            'success_url',
+            'failure_url',
+            'cancel_url',
+            'redirect_urls',
+            'product_name',
+            'reference',
+        ]);
+
         $payment = PaymentOperationLimiter::run(
             $this->name(),
             'charge',
             $billable,
-            fn (): mixed => $this->callBillableMethod($billable, 'charge', [$amount, $paymentMethod, $options]),
+            fn (): mixed => $paymentMethod !== null
+                ? $this->callBillableMethod($billable, 'charge', [$amount, $paymentMethod, $chargeOptions])
+                : $this->callBillableMethod($billable, 'pay', [$amount, $chargeOptions]),
         );
 
         return new StripePayment($payment);

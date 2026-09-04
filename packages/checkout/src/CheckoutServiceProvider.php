@@ -11,7 +11,9 @@ use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\StepContributor;
+use AIArmada\Checkout\Events\CheckoutCompleted;
 use AIArmada\Checkout\Exceptions\MissingPaymentGatewayException;
+use AIArmada\Checkout\Listeners\RedeemVouchersOnCheckoutCompleted;
 use AIArmada\Checkout\Services\CheckoutService;
 use AIArmada\Checkout\Services\CheckoutStepRegistry;
 use AIArmada\Checkout\Services\PaymentGatewayResolver;
@@ -28,9 +30,11 @@ use AIArmada\Checkout\Support\CheckoutStepOrderPolicy;
 use AIArmada\Checkout\Support\ChipIntegrationRegistrar;
 use AIArmada\Checkout\Support\RegisterBuiltInPaymentProcessors;
 use AIArmada\Checkout\Support\RegisterCheckoutOptionalSteps;
+use AIArmada\Checkout\Support\RegisterTaggedPaymentProcessors;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
+use AIArmada\Vouchers\VoucherServiceProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
@@ -80,8 +84,14 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         $this->registerDefaultSteps();
         $this->registerOptionalIntegrations();
 
-        // Defer freeze until after all providers have booted and contributed steps.
-        $this->app->booted(fn () => $this->freezeStepRegistry());
+        // Defer optional payment discovery and the step freeze until after all
+        // providers have booted. This lets provider packages register tagged
+        // processors regardless of service-provider load order.
+        $this->app->booted(function (): void {
+            $resolver = $this->app->make(PaymentGatewayResolver::class);
+            app(RegisterTaggedPaymentProcessors::class)->register($resolver);
+            $this->freezeStepRegistry();
+        });
     }
 
     protected function validateStepConfiguration(): void
@@ -188,6 +198,7 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         app(RegisterCheckoutOptionalSteps::class)->register($registry);
 
         $this->registerChipIntegration();
+        $this->registerVoucherIntegration();
 
         $order = $registry->getOrder();
         if (! empty($order)) {
@@ -293,6 +304,16 @@ final class CheckoutServiceProvider extends PackageServiceProvider
     {
         $registrar = new ChipIntegrationRegistrar;
         $registrar->register();
+    }
+
+    protected function registerVoucherIntegration(): void
+    {
+        if (! class_exists(VoucherServiceProvider::class)) {
+            return;
+        }
+
+        $this->app->make(Dispatcher::class)
+            ->listen(CheckoutCompleted::class, RedeemVouchersOnCheckoutCompleted::class);
     }
 
     protected function freezeStepRegistry(): void

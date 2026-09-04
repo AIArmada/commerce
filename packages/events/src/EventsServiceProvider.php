@@ -33,6 +33,7 @@ use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;
 use AIArmada\Events\Contracts\EventReferenceResolver;
 use AIArmada\Events\Contracts\EventRegistrationEligibility;
+use AIArmada\Events\Contracts\EventRegistrationQuestionResolver;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\EventScheduleResolver;
 use AIArmada\Events\Contracts\EventSearchEngine;
@@ -56,12 +57,14 @@ use AIArmada\Events\Listeners\DispatchEventChangeNoticeNotifications;
 use AIArmada\Events\Listeners\IssueEventPassesOnFreeRegistrationConfirmed;
 use AIArmada\Events\Listeners\ObserveEventTicketTypePricingConsistency;
 use AIArmada\Events\Listeners\ReleaseSeatsOnRegistrationRefunded;
+use AIArmada\Events\Listeners\RestoreTicketInventoryOnRegistrationRefunded;
 use AIArmada\Events\Listeners\RevokePassesOnRegistrationCancelled;
 use AIArmada\Events\Listeners\RevokePassesOnRegistrationRefunded;
 use AIArmada\Events\Listeners\SyncEventOrderCompletionOnRegistrationCheckedIn;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderCanceled;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderPaid;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderRefunded;
+use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderRefundFailed;
 use AIArmada\Events\Models\EventApprovalRequest;
 use AIArmada\Events\Models\EventAttribute;
 use AIArmada\Events\Models\EventAudience;
@@ -93,6 +96,7 @@ use AIArmada\Events\Resolvers\DefaultEventDisplayTimezoneResolver;
 use AIArmada\Events\Resolvers\DefaultEventOrderItemFulfillmentResolver;
 use AIArmada\Events\Resolvers\DefaultEventReferenceResolver;
 use AIArmada\Events\Resolvers\DefaultEventRegistrationEligibility;
+use AIArmada\Events\Resolvers\DefaultEventRegistrationQuestionResolver;
 use AIArmada\Events\Resolvers\DefaultEventRegistrationScopeResolver;
 use AIArmada\Events\Resolvers\DefaultEventSearchPayloadResolver;
 use AIArmada\Events\Resolvers\DefaultEventSearchRelationProvider;
@@ -121,6 +125,7 @@ use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
 use AIArmada\Orders\Events\OrderCanceled;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderRefunded;
+use AIArmada\Orders\Events\OrderRefundFailed;
 use AIArmada\Ticketing\Events\PassIssued;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -185,6 +190,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->bind(EventTranslationProvider::class, NullEventTranslationProvider::class);
 
         $this->app->bind(EventRegistrationScopeResolver::class, DefaultEventRegistrationScopeResolver::class);
+        $this->app->bind(EventRegistrationQuestionResolver::class, DefaultEventRegistrationQuestionResolver::class);
         $this->app->bind(EventRegistrationEligibility::class, DefaultEventRegistrationEligibility::class);
 
         $this->app->singleton(RegisterForFreeAction::class);
@@ -218,6 +224,7 @@ final class EventsServiceProvider extends PackageServiceProvider
 
         $dispatcher->listen(EventRegistrationRefunded::class, RevokePassesOnRegistrationRefunded::class);
         $dispatcher->listen(EventRegistrationRefunded::class, ReleaseSeatsOnRegistrationRefunded::class);
+        $dispatcher->listen(EventRegistrationRefunded::class, RestoreTicketInventoryOnRegistrationRefunded::class);
 
         if (CommerceIntegration::aiArmadaOrderFulfillmentAvailable()) {
             $this->app->bind(EventOrderItemFulfillmentResolver::class, $this->fulfillmentResolverClass());
@@ -227,6 +234,7 @@ final class EventsServiceProvider extends PackageServiceProvider
             $dispatcher->listen(OrderPaid::class, SyncEventOrderRegistrationsOnOrderPaid::class);
             $dispatcher->listen(OrderCanceled::class, SyncEventOrderRegistrationsOnOrderCanceled::class);
             $dispatcher->listen(OrderRefunded::class, SyncEventOrderRegistrationsOnOrderRefunded::class);
+            $dispatcher->listen(OrderRefundFailed::class, SyncEventOrderRegistrationsOnOrderRefundFailed::class);
             $dispatcher->listen(RegistrationCheckedIn::class, SyncEventOrderCompletionOnRegistrationCheckedIn::class);
         }
 

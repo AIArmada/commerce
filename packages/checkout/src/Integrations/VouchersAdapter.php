@@ -16,6 +16,7 @@ use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
 use Illuminate\Support\Facades\Event;
+use Throwable;
 
 final class VouchersAdapter implements DiscountProvider
 {
@@ -30,7 +31,7 @@ final class VouchersAdapter implements DiscountProvider
      * @param  array<string>  $codes
      * @return array{applied: array<array<string, mixed>>, discount: int}
      */
-    public function applyVouchers(CheckoutSession $session, array $codes): array
+    public function applyVouchers(CheckoutSession $session, array $codes, bool $reserve = true): array
     {
         if (! interface_exists(VoucherServiceInterface::class)) {
             return ['applied' => [], 'discount' => 0];
@@ -59,14 +60,22 @@ final class VouchersAdapter implements DiscountProvider
 
             // Calculate discount
             $voucher = $validation['voucher'];
+
+            if (! is_array($voucher)) {
+                continue;
+            }
+
             $discount = $this->calculateVoucherDiscount($voucher, (int) $session->subtotal, $liveCart);
 
             if ($discount > 0) {
                 // Reserve the voucher
-                $voucherService->reserve($code, $session->id);
+                if ($reserve) {
+                    $voucherService->reserve($code, $session->id);
+                }
 
-                // Dispatch VoucherApplied to trigger AttachAffiliateFromVoucher listener
-                if ($liveCart !== null && class_exists(VoucherApplied::class)) {
+                // Dispatch only for an actual cart application. Discount evaluation must stay
+                // side-effect free because it can run repeatedly during checkout retries.
+                if ($reserve && $liveCart !== null && class_exists(VoucherApplied::class)) {
                     Event::dispatch(new VoucherApplied($liveCart, VoucherData::fromArray($voucher)));
                 }
 
@@ -228,7 +237,7 @@ final class VouchersAdapter implements DiscountProvider
     public function evaluate(CheckoutSession $session, array $discountData): array
     {
         $codes = $discountData['voucher_codes'] ?? [];
-        $result = $this->applyVouchers($session, $codes);
+        $result = $this->applyVouchers($session, is_array($codes) ? $codes : [], reserve: false);
         $proposals = [];
 
         foreach ($result['applied'] as $applied) {
@@ -260,7 +269,23 @@ final class VouchersAdapter implements DiscountProvider
             return [];
         }
 
-        $this->redeemVouchers($codes, (string) ($session->order_id ?? $session->getKey()));
+        $sessionId = (string) $session->getKey();
+        $reservedCodes = [];
+
+        try {
+            foreach (array_values(array_unique($codes)) as $code) {
+                $this->voucherService()->reserve($code, $sessionId);
+                $reservedCodes[] = $code;
+            }
+
+            $this->dispatchVoucherAppliedEvents($session, $codes);
+        } catch (Throwable $exception) {
+            foreach ($reservedCodes as $reservedCode) {
+                $this->releaseVoucher($reservedCode, $sessionId);
+            }
+
+            throw $exception;
+        }
 
         $commitments = [];
         foreach ($accepted as $proposal) {
@@ -277,13 +302,43 @@ final class VouchersAdapter implements DiscountProvider
         return $commitments;
     }
 
+    /**
+     * Dispatch cart-application events after a checkout commitment is reserved.
+     *
+     * @param  array<string>  $codes
+     */
+    private function dispatchVoucherAppliedEvents(CheckoutSession $session, array $codes): void
+    {
+        if (! class_exists(VoucherApplied::class)) {
+            return;
+        }
+
+        $cart = $this->cartResolver()->resolveVoucherValidationContext($session);
+
+        if (! $cart instanceof Cart) {
+            return;
+        }
+
+        $voucherService = $this->voucherService();
+
+        foreach (array_values(array_unique($codes)) as $code) {
+            $voucher = $voucherService->find($code);
+
+            if ($voucher instanceof VoucherData) {
+                Event::dispatch(new VoucherApplied($cart, $voucher));
+            }
+        }
+    }
+
+    private function voucherService(): VoucherServiceInterface
+    {
+        return app(VoucherServiceInterface::class);
+    }
+
     public function release(CheckoutSession $session, array $commitments): void
     {
-        // ponytail: release clears cache reservation only; committed voucher usage
-        // is permanent and cannot be rolled back. This is intentional — voucher
-        // redemption is the point-of-no-return. If a downstream step fails after
-        // voucher commit, the voucher is consumed but order may not materialize.
-        // Add compensating redemption-reversal when loss-prevention requires it.
+        // Redemption happens from CheckoutCompleted, after an order exists.
+        // Rollback therefore only clears the temporary reservation.
         $sessionId = (string) $session->getKey();
 
         foreach ($commitments as $commitment) {

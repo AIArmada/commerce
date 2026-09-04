@@ -32,6 +32,7 @@ use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationAnswer;
 use AIArmada\Events\Models\EventRegistrationItem;
 use AIArmada\Events\Models\EventRegistrationParticipant;
+use AIArmada\Events\Models\EventRegistrationQuestion;
 use AIArmada\Events\Models\EventSearchDocument;
 use AIArmada\Events\Models\EventSeriesItem;
 use AIArmada\Events\Models\EventSeriesRule;
@@ -189,6 +190,7 @@ final class EventOwnerScope implements Scope
             EventRegistrationAnswer::class => 'registration.event',
             EventRegistrationItem::class => 'registration.event',
             EventRegistrationParticipant::class => 'registration.event',
+            EventRegistrationQuestion::class => 'event',
             EventSearchDocument::class => 'event',
             EventSeriesItem::class => 'series',
             EventSeriesRule::class => 'series',

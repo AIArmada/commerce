@@ -75,6 +75,7 @@ final class CashierChipProcessor implements PaymentProcessorInterface
                 transactionId: $payload['transaction_id'] ?? null,
                 amount: $payload['amount'] ?? null,
                 gatewayResponse: $payload,
+                provider: 'chip',
             );
         } catch (Throwable $e) {
             return PaymentResult::failed($e->getMessage());
@@ -97,13 +98,16 @@ final class CashierChipProcessor implements PaymentProcessorInterface
             $purchase = Chip::getPurchase($paymentId);
 
             $paymentStatus = $this->statusMapper->fromPurchaseStatus($purchase->status);
+            $gatewayResponse = $purchase->toArray();
 
             return new PaymentResult(
                 status: $paymentStatus,
                 paymentId: $paymentId,
                 transactionId: $purchase->reference_generated,
                 amount: $purchase->purchase->total->getAmount(),
-                gatewayResponse: (array) $purchase,
+                currency: $purchase->getCurrency(),
+                gatewayResponse: $gatewayResponse,
+                provider: 'chip',
             );
         } catch (Throwable $e) {
             return PaymentResult::failed($e->getMessage(), [], $paymentId);
@@ -117,8 +121,10 @@ final class CashierChipProcessor implements PaymentProcessorInterface
             'product_name' => $request->description,
             'success_url' => $request->successUrl,
             'failure_url' => $request->failureUrl,
+            'cancel_url' => $request->cancelUrl,
             'metadata' => $request->metadata,
             'reference' => $request->description,
+            'currency' => $request->currency,
         ]);
 
         $checkoutUrl = $payment->purchase->checkout_url;
@@ -128,10 +134,11 @@ final class CashierChipProcessor implements PaymentProcessorInterface
             return PaymentResult::pending(
                 paymentId: $purchaseId,
                 redirectUrl: $checkoutUrl,
+                provider: 'chip',
             );
         }
 
-        return PaymentResult::processing($purchaseId);
+        return PaymentResult::processing($purchaseId, 'chip');
     }
 
     private function createGuestPayment(CheckoutSession $session, PaymentRequest $request): PaymentResult
@@ -147,9 +154,10 @@ final class CashierChipProcessor implements PaymentProcessorInterface
             return PaymentResult::pending(
                 paymentId: $purchaseId,
                 redirectUrl: $checkoutUrl,
+                provider: 'chip',
             );
         }
 
-        return PaymentResult::processing($purchaseId);
+        return PaymentResult::processing($purchaseId, 'chip');
     }
 }

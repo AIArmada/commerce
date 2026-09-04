@@ -75,6 +75,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventInvolvement> $involvements
  * @property-read Collection<int, EventAccessPolicy> $accessPolicies
  * @property-read Collection<int, EventRegistration> $registrations
+ * @property-read Collection<int, EventRegistrationQuestion> $registrationQuestions
  * @property-read Collection<int, TicketType> $ticketTypes
  * @property-read Collection<int, Pass> $passes
  * @property-read Collection<int, EventAttendance> $attendances
@@ -274,6 +275,22 @@ class Event extends Model implements HasMedia, TicketableInterface
     {
         /* @phpstan-ignore argument.templateType */
         return $this->hasMany(static::registrationModelClass(), 'event_id');
+    }
+
+    /**
+     * Event-level participant questions. Occurrence and session questions are
+     * exposed through their respective relations and resolved by the question
+     * resolver when a registration target is known.
+     *
+     * @return HasMany<EventRegistrationQuestion, $this>
+     */
+    public function registrationQuestions(): HasMany
+    {
+        /* @phpstan-ignore argument.templateType */
+        return $this->hasMany(ModelResolver::registrationQuestionClass(), 'event_id')
+            ->whereNull('event_occurrence_id')
+            ->whereNull('event_session_id')
+            ->ordered();
     }
 
     /**

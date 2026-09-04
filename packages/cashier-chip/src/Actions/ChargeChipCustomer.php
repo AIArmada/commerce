@@ -43,8 +43,13 @@ final class ChargeChipCustomer
 
         $metadata = $this->billableMetadata($billable, $options['metadata'] ?? null);
 
+        $currency = $options['currency'] ?? $billable->preferredCurrency();
+        $currency = is_string($currency) && $currency !== ''
+            ? mb_strtoupper($currency)
+            : $billable->preferredCurrency();
+
         $builder = Cashier::chip()->purchase()
-            ->currency($billable->preferredCurrency());
+            ->currency($currency);
 
         $productName = $options['product_name'] ?? 'One-time charge';
         $builder->addProductCents($productName, $amount);
@@ -64,6 +69,10 @@ final class ChargeChipCustomer
 
         if (isset($options['failure_url'])) {
             $builder->failureUrl($options['failure_url']);
+        }
+
+        if (isset($options['cancel_url'])) {
+            $builder->cancelUrl($options['cancel_url']);
         }
 
         if (isset($options['reference'])) {

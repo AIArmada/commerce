@@ -22,7 +22,7 @@ enum PaymentStatus: string
     public function isFinal(): bool
     {
         return match ($this) {
-            self::Completed, self::Failed, self::Refunded, self::Cancelled => true,
+            self::Completed, self::Failed, self::Refunded, self::PartiallyRefunded, self::Cancelled => true,
             default => false,
         };
     }

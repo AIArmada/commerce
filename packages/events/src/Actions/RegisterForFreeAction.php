@@ -19,10 +19,13 @@ use AIArmada\Events\States\RegistrationStatus\Confirmed;
 use AIArmada\Events\States\RegistrationStatus\Interested;
 use AIArmada\Events\Support\EventRegistrationScope;
 use AIArmada\Events\Support\EventWriteGuard;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Ticketing\Enums\PricingMode;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
+use RuntimeException;
 
 final class RegisterForFreeAction
 {
@@ -30,6 +33,7 @@ final class RegisterForFreeAction
         private readonly EventRegistrationScopeResolver $scopeResolver,
         private readonly EventRegistrationEligibility $eligibility,
         private readonly RegistrationServiceInterface $registrations,
+        private readonly LockEventRegistrationScopeAction $lockScope,
     ) {}
 
     /**
@@ -57,15 +61,25 @@ final class RegisterForFreeAction
             $this->throwOpenDoorException($scope);
         }
 
-        $withPass = $scope->requiresRegistration()
-            ? true
-            : ($options['with_pass'] ?? $scope->shouldIssuePasses);
+        // A free ticket purchased through checkout is confirmed now, while
+        // pass issuance is deferred to the checkout fulfillment step. This
+        // prevents the same admission pass from being issued twice.
+        $deferPassIssuance = (bool) ($options['defer_pass_issuance'] ?? false);
+        $withPass = $deferPassIssuance
+            ? false
+            : ($scope->requiresRegistration()
+                ? true
+                : ($options['with_pass'] ?? $scope->shouldIssuePasses));
 
-        $status = $withPass ? Confirmed::name() : Interested::name();
-        $source = $withPass ? 'free_rsvp' : 'free_optional_rsvp';
+        $status = ($withPass || $deferPassIssuance) ? Confirmed::name() : Interested::name();
+        $source = $deferPassIssuance
+            ? 'order'
+            : ($withPass ? 'free_rsvp' : 'free_optional_rsvp');
+        $idempotencyKey = $this->idempotencyKey($options);
 
         $scopeData = $scope->toRegistrationData();
         $registrations = DB::transaction(function () use (
+            $idempotencyKey,
             $participants,
             $registrant,
             $scope,
@@ -73,7 +87,14 @@ final class RegisterForFreeAction
             $source,
             $status,
         ): Collection {
-            $this->lockCapacityScope($scope);
+            $this->lockScope->handle($scope);
+
+            $existing = $this->findIdempotentRegistrations($scope, $idempotencyKey, count($participants));
+
+            if ($existing !== null) {
+                return $existing;
+            }
+
             $this->checkCapacity($scope, count($participants));
 
             $registrations = new Collection;
@@ -89,6 +110,11 @@ final class RegisterForFreeAction
                     'total_amount' => null,
                     'currency' => null,
                     'payment_status' => null,
+                    'metadata' => $idempotencyKey === null ? null : [
+                        'registration' => [
+                            'idempotency_key' => $idempotencyKey,
+                        ],
+                    ],
                     'participants' => [$participant],
                 ])));
             }
@@ -103,23 +129,71 @@ final class RegisterForFreeAction
         return $registrations;
     }
 
-    private function lockCapacityScope(EventRegistrationScope $scope): void
-    {
-        if ($scope->session !== null) {
-            $scope->session->newQuery()
-                ->whereKey($scope->session->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            return;
+    /**
+     * @return Collection<int, EventRegistration>|null
+     */
+    private function findIdempotentRegistrations(
+        EventRegistrationScope $scope,
+        ?string $idempotencyKey,
+        int $expectedCount,
+    ): ?Collection {
+        if ($idempotencyKey === null) {
+            return null;
         }
+
+        $registrationClass = ModelResolver::registrationClass();
+        $query = $registrationClass::query()
+            ->where('event_id', $scope->event->getKey());
 
         if ($scope->occurrence !== null) {
-            $scope->occurrence->newQuery()
-                ->whereKey($scope->occurrence->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
+            $query->where('event_occurrence_id', $scope->occurrence->getKey());
+        } else {
+            $query->whereNull('event_occurrence_id');
         }
+
+        if ($scope->session !== null) {
+            $query->where('event_session_id', $scope->session->getKey());
+        } else {
+            $query->whereNull('event_session_id');
+        }
+
+        $existing = $query->get()->filter(
+            static fn (EventRegistration $registration): bool => data_get(
+                $registration->metadata ?? [],
+                'registration.idempotency_key',
+            ) === $idempotencyKey,
+        )->values();
+
+        if ($existing->isEmpty()) {
+            return null;
+        }
+
+        if ($existing->count() !== $expectedCount) {
+            throw new RuntimeException('The idempotency key is already associated with an incomplete registration batch.');
+        }
+
+        return $existing;
+    }
+
+    private function idempotencyKey(array $options): ?string
+    {
+        $key = $options['idempotency_key'] ?? null;
+
+        if ($key === null) {
+            return null;
+        }
+
+        if (! is_string($key) || mb_trim($key) === '') {
+            throw new InvalidArgumentException('The registration idempotency key must be a non-empty string.');
+        }
+
+        $key = mb_trim($key);
+
+        if (mb_strlen($key) > 255) {
+            throw new InvalidArgumentException('The registration idempotency key may not exceed 255 characters.');
+        }
+
+        return $key;
     }
 
     private function checkCapacity(EventRegistrationScope $scope, int $participantCount): void

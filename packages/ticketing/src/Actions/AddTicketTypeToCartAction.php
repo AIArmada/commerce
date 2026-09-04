@@ -6,6 +6,7 @@ namespace AIArmada\Ticketing\Actions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\Ticketing\Support\Integration\TicketingIntegration;
 use InvalidArgumentException;
@@ -50,7 +51,14 @@ final class AddTicketTypeToCartAction
             ));
         }
 
-        $mergedAttributes = $this->buildAttributes($ticketType, $participants, $extraAttributes, $existingItem);
+        $inventoryConfigured = $this->inventoryConfigured($ticketType);
+        $mergedAttributes = $this->buildAttributes(
+            $ticketType,
+            $participants,
+            $extraAttributes,
+            $existingItem,
+            $inventoryConfigured,
+        );
 
         if ($ticketType->max_quantity !== null && $totalQuantity > $ticketType->max_quantity) {
             throw new InvalidArgumentException(sprintf(
@@ -75,7 +83,7 @@ final class AddTicketTypeToCartAction
             ));
         }
 
-        if (! $skipQuotaValidation && TicketingIntegration::inventoryAvailable()) {
+        if (! $skipQuotaValidation && $inventoryConfigured) {
             if (! $ticketType->hasInventory($totalQuantity)) {
                 throw new InvalidArgumentException(sprintf(
                     '"%s" is sold out or has insufficient stock.',
@@ -99,6 +107,7 @@ final class AddTicketTypeToCartAction
         array $participants,
         array $extraAttributes,
         ?CartItem $existingItem,
+        bool $inventoryConfigured,
     ): array {
         $mergedParticipants = $participants;
 
@@ -109,12 +118,29 @@ final class AddTicketTypeToCartAction
             }
         }
 
-        return array_merge([
+        $attributes = [
             'purchasable_type' => TicketType::class,
             'purchasable_id' => $ticketType->getKey(),
             'code' => $ticketType->code,
             'participants' => $mergedParticipants,
-        ], $extraAttributes);
+        ];
+
+        if ($inventoryConfigured) {
+            // An absent inventory level means unlimited inventory for a
+            // ticket type. Only mark configured ticket types for checkout
+            // reservation so an unlimited ticket is not treated as sold out.
+            $attributes['inventoryable_type'] = $ticketType->getMorphClass();
+            $attributes['inventoryable_id'] = (string) $ticketType->getKey();
+        }
+
+        return array_merge($attributes, $extraAttributes);
+    }
+
+    private function inventoryConfigured(TicketType $ticketType): bool
+    {
+        return TicketingIntegration::inventoryAvailable()
+            && class_exists(InventoryLevel::class)
+            && $ticketType->inventoryLevels()->exists();
     }
 
     /** @param array<string, mixed> $attributes */

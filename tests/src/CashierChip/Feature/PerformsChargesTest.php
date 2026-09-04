@@ -37,6 +37,14 @@ class PerformsChargesTest extends CashierChipTestCase
         $this->assertTrue($payment->rawAmount() >= 0);
     }
 
+    public function test_it_can_override_the_billable_default_currency()
+    {
+        $payment = $this->user->charge(1000, null, ['currency' => 'SGD']);
+
+        $this->assertInstanceOf(Payment::class, $payment);
+        $this->assertSame('SGD', $payment->currency());
+    }
+
     public function test_it_can_refund_charge()
     {
         $payment = $this->user->charge(1000);

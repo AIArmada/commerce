@@ -37,6 +37,7 @@ return new class extends Migration
             $table->timestampTz('rejected_at')->nullable();
             $table->timestampTz('waitlisted_at')->nullable();
             $table->timestampTz('refunded_at')->nullable()->index();
+            $table->timestampTz('refund_pending_at')->nullable()->index();
             $table->timestampTz('expired_at')->nullable();
             $table->text('status_reason')->nullable();
             $table->text('notes')->nullable();

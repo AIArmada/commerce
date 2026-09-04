@@ -494,9 +494,15 @@ describe('OrderService', function (): void {
             $result = $service->processRefund($order, 5000, 'ref_txn_123', 'Customer return');
 
             expect($result)->toBe($order);
-            expect($order->status)->toBeInstanceOf(Refunded::class);
+            expect($order->status)->toBeInstanceOf(Returned::class);
             expect($order->refunds)->toHaveCount(1);
             expect($order->refunds->first()->amount)->toBe(5000);
+
+            $result = $service->processRefund($order, 5000, 'ref_txn_124', 'Customer return');
+
+            expect($result)->toBe($order);
+            expect($order->status)->toBeInstanceOf(Refunded::class);
+            expect($order->refunds)->toHaveCount(2);
         });
     });
 });

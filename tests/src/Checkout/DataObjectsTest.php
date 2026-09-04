@@ -12,6 +12,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Checkout\States\Completed;
 use AIArmada\Checkout\States\PaymentFailed;
+use AIArmada\Checkout\Support\ChipPurchasePayloadBuilder;
 
 describe('StepResult', function (): void {
     it('can create a success result', function (): void {
@@ -116,6 +117,7 @@ describe('PaymentRequest', function (): void {
             failureUrl: 'https://example.com/failure',
             cancelUrl: 'https://example.com/cancel',
             metadata: ['order_id' => 'order_123'],
+            provider: 'stripe',
         );
 
         expect($request->amount)->toBe(10000)
@@ -124,7 +126,9 @@ describe('PaymentRequest', function (): void {
             ->and($request->description)->toBe('Test payment')
             ->and($request->customerEmail)->toBe('test@example.com')
             ->and($request->customerName)->toBe('Test User')
-            ->and($request->metadata)->toBe(['order_id' => 'order_123']);
+            ->and($request->metadata)->toBe(['order_id' => 'order_123'])
+            ->and($request->provider)->toBe('stripe');
+
     });
 
     it('can be created from array', function (): void {
@@ -136,13 +140,15 @@ describe('PaymentRequest', function (): void {
             'customer_email' => 'user@example.com',
             'customer_name' => 'John Doe',
             'metadata' => ['source' => 'checkout'],
+            'provider' => 'stripe',
         ]);
 
         expect($request->amount)->toBe(5000)
             ->and($request->currency)->toBe('USD')
             ->and($request->gateway)->toBe('stripe')
             ->and($request->customerEmail)->toBe('user@example.com')
-            ->and($request->customerName)->toBe('John Doe');
+            ->and($request->customerName)->toBe('John Doe')
+            ->and($request->provider)->toBe('stripe');
     });
 
     it('uses default currency from config', function (): void {
@@ -153,6 +159,55 @@ describe('PaymentRequest', function (): void {
         ]);
 
         expect($request->currency)->toBe('SGD');
+    });
+});
+
+describe('ChipPurchasePayloadBuilder', function (): void {
+    it('omits optional client fields when they are not provided', function (): void {
+        $session = new CheckoutSession;
+        $session->id = 'session_without_phone';
+
+        $request = new PaymentRequest(
+            amount: 1000,
+            currency: 'MYR',
+            gateway: 'chip',
+            description: 'Test payment',
+            customerEmail: 'test@example.com',
+            customerName: 'Test User',
+            customerPhone: null,
+            successUrl: 'https://example.com/success',
+            failureUrl: 'https://example.com/failure',
+            cancelUrl: 'https://example.com/cancel',
+        );
+
+        $payload = (new ChipPurchasePayloadBuilder)->build($session, $request);
+
+        expect($payload['client'])->toBe([
+            'email' => 'test@example.com',
+            'full_name' => 'Test User',
+        ]);
+    });
+
+    it('keeps a provided client phone number', function (): void {
+        $session = new CheckoutSession;
+        $session->id = 'session_with_phone';
+
+        $request = new PaymentRequest(
+            amount: 1000,
+            currency: 'MYR',
+            gateway: 'chip',
+            description: 'Test payment',
+            customerEmail: 'test@example.com',
+            customerName: 'Test User',
+            customerPhone: '+60123456789',
+            successUrl: 'https://example.com/success',
+            failureUrl: 'https://example.com/failure',
+            cancelUrl: 'https://example.com/cancel',
+        );
+
+        $payload = (new ChipPurchasePayloadBuilder)->build($session, $request);
+
+        expect($payload['client']['phone'])->toBe('+60123456789');
     });
 });
 

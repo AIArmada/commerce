@@ -40,9 +40,13 @@ describe('RegisterOrderRefund', function (): void {
         $result = OwnerContext::withOwner(null, fn (): Order => $action->execute($order, 5000, 'ref_txn_1', 'Partial refund'));
 
         expect($result)->toBe($order);
-        expect($order->status)->toBeInstanceOf(Refunded::class);
+        expect($order->status)->not->toBeInstanceOf(Refunded::class);
         expect($order->refunds)->toHaveCount(1);
         expect($order->refunds->first()->amount)->toBe(5000);
+
+        $action->execute($order, 5000, 'ref_txn_2', 'Remaining refund');
+
+        expect($order->status)->toBeInstanceOf(Refunded::class);
     });
 
     it('throws when order cannot be refunded', function (): void {
@@ -58,5 +62,31 @@ describe('RegisterOrderRefund', function (): void {
 
         expect(fn () => $action->execute($order, 5000, 'txn_fail', 'Not possible'))
             ->toThrow(RuntimeException::class, 'cannot be refunded');
+    });
+
+    it('returns the existing pending refund for a repeated transaction id', function (): void {
+        $order = Order::create([
+            'order_number' => 'ORD-IDEMPOTENT-' . uniqid(),
+            'status' => Returned::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+
+        OrderPayment::create([
+            'order_id' => $order->id,
+            'gateway' => 'stripe',
+            'amount' => 10000,
+            'currency' => 'MYR',
+            'status' => PaymentStatus::Completed,
+            'paid_at' => now(),
+        ]);
+
+        $action = new RegisterOrderRefund;
+        $first = $action->createPending($order, 5000, 'same-key', 'Duplicate-safe refund');
+        $second = $action->createPending($order, 5000, 'same-key', 'Duplicate-safe refund');
+
+        expect($second->getKey())->toBe($first->getKey())
+            ->and($order->refresh()->refunds()->count())->toBe(1);
     });
 });

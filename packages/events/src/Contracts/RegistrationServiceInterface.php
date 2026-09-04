@@ -22,5 +22,9 @@ interface RegistrationServiceInterface
 
     public function refund(EventRegistration $registration, ?string $reason = null): void;
 
+    public function markRefundPending(EventRegistration $registration, ?string $reason = null): void;
+
+    public function restoreFromRefundPending(EventRegistration $registration, ?string $reason = null): void;
+
     public function createFromOrderItem(array $orderItemData): void;
 }

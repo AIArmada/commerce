@@ -21,6 +21,8 @@ final class PaymentRequest extends Data
         public ?string $cancelUrl = null,
         /** @var array<string, mixed> */
         public array $metadata = [],
+        public ?string $paymentMethod = null,
+        public ?string $provider = null,
     ) {}
 
     /**
@@ -40,6 +42,8 @@ final class PaymentRequest extends Data
             failureUrl: $data['failure_url'] ?? null,
             cancelUrl: $data['cancel_url'] ?? null,
             metadata: $data['metadata'] ?? [],
+            paymentMethod: $data['payment_method'] ?? null,
+            provider: $data['provider'] ?? null,
         );
     }
 }

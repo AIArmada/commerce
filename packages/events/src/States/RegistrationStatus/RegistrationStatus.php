@@ -28,6 +28,7 @@ abstract class RegistrationStatus extends State implements HasColor
             ->allowTransition(Confirmed::class, Refunded::class)
             ->allowTransition(Confirmed::class, Expired::class)
             ->allowTransition(Confirmed::class, Completed::class)
+            ->allowTransition(Confirmed::class, RefundPending::class)
             ->allowTransition(Waitlisted::class, Pending::class)
             ->allowTransition(Waitlisted::class, Confirmed::class)
             ->allowTransition(Waitlisted::class, Cancelled::class)
@@ -39,6 +40,14 @@ abstract class RegistrationStatus extends State implements HasColor
             ->allowTransition(Interested::class, Completed::class)
             ->allowTransition(CheckedIn::class, Completed::class)
             ->allowTransition(CheckedIn::class, NoShow::class)
+            ->allowTransition(CheckedIn::class, RefundPending::class)
+            ->allowTransition(NoShow::class, RefundPending::class)
+            ->allowTransition(Completed::class, RefundPending::class)
+            ->allowTransition(RefundPending::class, Confirmed::class)
+            ->allowTransition(RefundPending::class, CheckedIn::class)
+            ->allowTransition(RefundPending::class, NoShow::class)
+            ->allowTransition(RefundPending::class, Completed::class)
+            ->allowTransition(RefundPending::class, Refunded::class)
             ->allowTransition(Refunded::class, Cancelled::class);
     }
 
@@ -53,6 +62,7 @@ abstract class RegistrationStatus extends State implements HasColor
             'checked_in' => 'Checked In',
             'no_show' => 'No Show',
             'interested' => 'Interested',
+            'refund_pending' => 'Refund Pending',
             'refunded' => 'Refunded',
             'completed' => 'Completed',
             'expired' => 'Expired',
@@ -66,6 +76,7 @@ abstract class RegistrationStatus extends State implements HasColor
             Pending::class,
             Confirmed::class,
             CheckedIn::class,
+            RefundPending::class,
             NoShow::class,
         ];
     }
@@ -96,7 +107,7 @@ abstract class RegistrationStatus extends State implements HasColor
     public function getColor(): string
     {
         return match (static::name()) {
-            'pending', 'waitlisted', 'interested' => 'warning',
+            'pending', 'waitlisted', 'interested', 'refund_pending' => 'warning',
             'confirmed', 'completed', 'checked_in' => 'success',
             'cancelled', 'rejected', 'refunded', 'no_show', 'expired' => 'danger',
             default => 'gray',
