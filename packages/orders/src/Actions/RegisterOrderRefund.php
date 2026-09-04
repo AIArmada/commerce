@@ -48,12 +48,15 @@ final class RegisterOrderRefund
 
             $existingRefund = $order->refunds()
                 ->where('transaction_id', $transactionId)
-                ->whereIn('status', [RefundStatus::Pending, RefundStatus::Completed])
                 ->first();
 
             if ($existingRefund instanceof OrderRefund) {
                 if ($existingRefund->isPending()) {
                     throw new RuntimeException("Refund transaction {$transactionId} is already pending.");
+                }
+
+                if ($existingRefund->isFailed()) {
+                    throw new RuntimeException("Refund transaction {$transactionId} has already failed.");
                 }
 
                 return $order;
@@ -98,10 +101,13 @@ final class RegisterOrderRefund
             // unrefundable before the retry arrives.
             $existingRefund = $lockedOrder->refunds()
                 ->where('transaction_id', $transactionId)
-                ->whereIn('status', [RefundStatus::Pending, RefundStatus::Completed])
                 ->first();
 
             if ($existingRefund instanceof OrderRefund) {
+                if ($existingRefund->isFailed()) {
+                    throw new RuntimeException("Refund transaction {$transactionId} has already failed.");
+                }
+
                 return $existingRefund;
             }
 
@@ -136,6 +142,35 @@ final class RegisterOrderRefund
                 'reason' => $reason,
                 'metadata' => $metadata,
             ]);
+        });
+    }
+
+    public function claimPendingSubmission(OrderRefund $refund): bool
+    {
+        $order = $refund->order;
+
+        if (! $order instanceof Order) {
+            throw new RuntimeException('The refund must belong to an order.');
+        }
+
+        $this->assertOwnerBoundaryForMutation($order, __METHOD__);
+
+        return DB::transaction(function () use ($refund): bool {
+            /** @var OrderRefund|null $lockedRefund */
+            $lockedRefund = $refund->newQuery()
+                ->lockForUpdate()
+                ->find($refund->getKey());
+
+            if (! $lockedRefund instanceof OrderRefund
+                || ! $lockedRefund->isPending()
+                || $lockedRefund->hasProviderSubmissionStarted()) {
+                return false;
+            }
+
+            $lockedRefund->provider_submission_started_at = now();
+            $lockedRefund->save();
+
+            return true;
         });
     }
 

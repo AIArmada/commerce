@@ -1403,6 +1403,7 @@ abstract class TestCase extends Orchestra
             $table->json('metadata')->nullable();
             $table->timestamp('refunded_at')->nullable();
             $table->timestampTz('failed_at')->nullable();
+            $table->timestampTz('provider_submission_started_at')->nullable();
             $table->timestamps();
         });
 

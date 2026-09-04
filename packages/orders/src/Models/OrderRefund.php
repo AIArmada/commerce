@@ -36,6 +36,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property array|null $metadata
  * @property CarbonInterface|null $refunded_at
  * @property CarbonInterface|null $failed_at
+ * @property CarbonInterface|null $provider_submission_started_at
  * @property CarbonInterface $created_at
  * @property CarbonInterface $updated_at
  * @property-read Order $order
@@ -73,6 +74,7 @@ final class OrderRefund extends Model implements Auditable
         'metadata',
         'refunded_at',
         'failed_at',
+        'provider_submission_started_at',
     ];
 
     /**
@@ -139,6 +141,11 @@ final class OrderRefund extends Model implements Auditable
         return $this->status === RefundStatus::Failed;
     }
 
+    public function hasProviderSubmissionStarted(): bool
+    {
+        return $this->provider_submission_started_at !== null;
+    }
+
     public function markAsCompleted(?string $transactionId = null): self
     {
         $this->status = RefundStatus::Completed;
@@ -180,6 +187,7 @@ final class OrderRefund extends Model implements Auditable
             'metadata' => 'array',
             'refunded_at' => 'immutable_datetime',
             'failed_at' => 'immutable_datetime',
+            'provider_submission_started_at' => 'immutable_datetime',
         ];
     }
 

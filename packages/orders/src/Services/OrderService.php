@@ -130,6 +130,11 @@ final class OrderService implements OrderServiceInterface
         return (new RegisterOrderRefund)->createPending($order, $amount, $transactionId, $reason, $metadata);
     }
 
+    public function claimPendingRefundSubmission(OrderRefund $refund): bool
+    {
+        return (new RegisterOrderRefund)->claimPendingSubmission($refund);
+    }
+
     public function completePendingRefund(OrderRefund $refund, ?string $transactionId = null): Order
     {
         return (new RegisterOrderRefund)->completePending($refund, $transactionId);

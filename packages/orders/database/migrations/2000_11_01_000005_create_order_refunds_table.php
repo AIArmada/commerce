@@ -31,6 +31,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampTz('refunded_at')->nullable();
             $table->timestampTz('failed_at')->nullable();
+            $table->timestampTz('provider_submission_started_at')->nullable();
             $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
 

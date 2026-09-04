@@ -89,4 +89,57 @@ describe('RegisterOrderRefund', function (): void {
         expect($second->getKey())->toBe($first->getKey())
             ->and($order->refresh()->refunds()->count())->toBe(1);
     });
+
+    it('claims a pending refund submission only once', function (): void {
+        $order = Order::create([
+            'order_number' => 'ORD-REF-CLAIM-' . uniqid(),
+            'status' => Returned::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+
+        OrderPayment::create([
+            'order_id' => $order->id,
+            'gateway' => 'stripe',
+            'amount' => 10000,
+            'currency' => 'MYR',
+            'status' => PaymentStatus::Completed,
+            'paid_at' => now(),
+        ]);
+
+        $action = new RegisterOrderRefund;
+        $refund = $action->createPending($order, 5000, 'claim-key', 'Claimed refund');
+
+        expect($action->claimPendingSubmission($refund))->toBeTrue()
+            ->and($action->claimPendingSubmission($refund))->toBeFalse()
+            ->and($refund->fresh()->hasProviderSubmissionStarted())->toBeTrue();
+    });
+
+    it('does not create another refund after a transaction has failed', function (): void {
+        $order = Order::create([
+            'order_number' => 'ORD-REF-FAILED-' . uniqid(),
+            'status' => Returned::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+
+        OrderPayment::create([
+            'order_id' => $order->id,
+            'gateway' => 'stripe',
+            'amount' => 10000,
+            'currency' => 'MYR',
+            'status' => PaymentStatus::Completed,
+            'paid_at' => now(),
+        ]);
+
+        $action = new RegisterOrderRefund;
+        $refund = $action->createPending($order, 5000, 'failed-key', 'Failed refund');
+        $refund->markAsFailed('Provider rejected the refund.');
+
+        expect(fn () => $action->createPending($order, 5000, 'failed-key', 'Retry refund'))
+            ->toThrow(RuntimeException::class, 'has already failed')
+            ->and($order->refresh()->refunds()->count())->toBe(1);
+    });
 });
