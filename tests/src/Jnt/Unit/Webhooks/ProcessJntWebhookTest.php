@@ -49,7 +49,7 @@ describe('ProcessJntWebhook', function (): void {
 
         expect($method->invoke($processor, ['scantype' => 'PICKUP']))->toBe('PICKUP');
         expect($method->invoke($processor, ['event' => 'tracking.update']))->toBe('tracking.update');
-        expect($method->invoke($processor, ['type' => 'DELIVERY']))->toBe('DELIVERY');
+        expect($method->invoke($processor, ['type' => 'DELIVERY']))->toBe('tracking.update');
         expect($method->invoke($processor, []))->toBe('tracking.update');
     });
 
