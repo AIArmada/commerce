@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.database.tables.categories', 'product_categories'), function (Blueprint $table): void {
+        commerce_schema_create_if_missing(config('products.database.tables.categories', 'product_categories'), function (Blueprint $table): void {
             $jsonColumnType = commerce_json_column_type('products', 'jsonb');
 
             $table->uuid('id')->primary();

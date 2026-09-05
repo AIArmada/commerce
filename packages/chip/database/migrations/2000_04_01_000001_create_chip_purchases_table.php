@@ -14,7 +14,7 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::create($tablePrefix . 'purchases', function (Blueprint $table): void {
+        commerce_schema_create_if_missing($tablePrefix . 'purchases', function (Blueprint $table): void {
             // Core API fields - exact match with CHIP API
             $table->uuid('id')->primary();
             $table->string('type')->default('purchase');

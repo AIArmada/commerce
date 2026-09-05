@@ -7,6 +7,7 @@ namespace AIArmada\Chip\Actions\Purchases;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Models\Purchase;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -58,7 +59,7 @@ final class SyncPurchaseRefundState
             'status' => PurchaseStatus::REFUNDED->value,
             'refund_amount_minor' => $cumulativeRefundAmount,
             'refundable_amount' => $purchaseTotal > 0 ? max(0, $purchaseTotal - $cumulativeRefundAmount) : 0,
-            'refunded_at' => now(),
+            'refunded_at' => CarbonImmutable::now(),
         ])->save();
 
         return $purchase->refresh();

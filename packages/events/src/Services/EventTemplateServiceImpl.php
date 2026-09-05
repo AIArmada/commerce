@@ -14,6 +14,7 @@ use AIArmada\Events\Models\EventTemplate;
 use AIArmada\Events\Models\EventTemplateItem;
 use AIArmada\Events\Support\EventWriteGuard;
 use AIArmada\Events\Support\Normalization\EventContentNormalizer;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -89,7 +90,7 @@ final class EventTemplateServiceImpl implements EventTemplateService
             $occurrence = $this->createOccurrence->handle($event, [
                 'title' => $payload['title'] ?? $template->name,
                 'slug' => $payload['slug'] ?? null,
-                'starts_at' => $payload['starts_at'] ?? now()->addDay(),
+                'starts_at' => $payload['starts_at'] ?? CarbonImmutable::now()->addDay(),
                 'ends_at' => $payload['ends_at'] ?? null,
                 'timezone' => $payload['timezone'] ?? null,
                 'visibility' => $payload['visibility'] ?? null,
@@ -128,7 +129,7 @@ final class EventTemplateServiceImpl implements EventTemplateService
                 'slug' => $payload['slug'] ?? null,
                 'summary' => $payload['summary'] ?? $template->description,
                 'description' => $payload['description'] ?? null,
-                'starts_at' => $payload['starts_at'] ?? now(),
+                'starts_at' => $payload['starts_at'] ?? CarbonImmutable::now(),
                 'ends_at' => $payload['ends_at'] ?? null,
                 'timezone' => $payload['timezone'] ?? null,
                 'visibility' => $payload['visibility'] ?? null,
@@ -151,7 +152,7 @@ final class EventTemplateServiceImpl implements EventTemplateService
                 $this->createOccurrence->handle($event, [
                     'title' => $payload['title'] ?? "Occurrence {$item->item_key}",
                     'slug' => $payload['slug'] ?? null,
-                    'starts_at' => $payload['starts_at'] ?? now()->addDay(),
+                    'starts_at' => $payload['starts_at'] ?? CarbonImmutable::now()->addDay(),
                     'ends_at' => $payload['ends_at'] ?? null,
                     'timezone' => $payload['timezone'] ?? null,
                     'visibility' => $payload['visibility'] ?? null,
@@ -175,7 +176,7 @@ final class EventTemplateServiceImpl implements EventTemplateService
                     'slug' => $payload['slug'] ?? null,
                     'summary' => $payload['summary'] ?? null,
                     'description' => $payload['description'] ?? null,
-                    'starts_at' => $payload['starts_at'] ?? now(),
+                    'starts_at' => $payload['starts_at'] ?? CarbonImmutable::now(),
                     'ends_at' => $payload['ends_at'] ?? null,
                     'timezone' => $payload['timezone'] ?? null,
                     'visibility' => $payload['visibility'] ?? null,

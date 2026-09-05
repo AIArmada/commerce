@@ -8,6 +8,7 @@ use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -56,7 +57,7 @@ final class ActiveSubscriptionsWidget extends Widget
                 ->where('user_id', $userIdentifier)
                 ->where(function ($query): void {
                     $query->whereNull('ends_at')
-                        ->orWhere('ends_at', '>', now());
+                        ->orWhere('ends_at', '>', CarbonImmutable::now());
                 })
                 ->orderByDesc('created_at')
                 ->limit($limit)
@@ -74,7 +75,7 @@ final class ActiveSubscriptionsWidget extends Widget
                 ->where('billable_id', (string) $user->getKey())
                 ->where(function ($query): void {
                     $query->whereNull('ends_at')
-                        ->orWhere('ends_at', '>', now());
+                        ->orWhere('ends_at', '>', CarbonImmutable::now());
                 })
                 ->orderByDesc('created_at')
                 ->limit($limit)

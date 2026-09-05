@@ -157,8 +157,10 @@ it('covers resource pages and read-only list base class', function (): void {
         ]);
     });
 
-    app()->instance(ChipSendService::class, new class($bankAccount, $sendInstruction)
+    $chipSendService = new class($bankAccount, $sendInstruction)
     {
+        public int $amountInCents = 0;
+
         public function __construct(private BankAccount $bankAccount, private SendInstruction $sendInstruction) {}
 
         public function createBankAccount(string $bankCode, string $accountNumber, string $accountHolderName, string $reference): BankAccount
@@ -168,6 +170,8 @@ it('covers resource pages and read-only list base class', function (): void {
 
         public function createSendInstruction(int $amountInCents, int $recipientBankAccountId, string $description, string $reference, string $email, bool $sendRecipientReceipt = false): SendInstruction
         {
+            $this->amountInCents = $amountInCents;
+
             return $this->sendInstruction;
         }
 
@@ -177,7 +181,9 @@ it('covers resource pages and read-only list base class', function (): void {
         {
             return [];
         }
-    });
+    };
+
+    app()->instance(ChipSendService::class, $chipSendService);
 
     $createBank = new CreateBankAccount;
 
@@ -197,7 +203,7 @@ it('covers resource pages and read-only list base class', function (): void {
     $mutate = (new ReflectionClass($createPayout))->getMethod('mutateFormDataBeforeCreate');
 
     $data = $mutate->invoke($createPayout, [
-        'amount' => 1.23,
+        'amount' => '1.23',
         'bank_account_id' => '10',
         'description' => 'Test',
         'reference' => 'ref',
@@ -205,6 +211,7 @@ it('covers resource pages and read-only list base class', function (): void {
     ]);
 
     expect($data)->toHaveKey('id')->toHaveKey('state');
+    expect($chipSendService->amountInCents)->toBe(123);
 
     OwnerContext::withOwner(null, function (): void {
         BankAccount::query()->create([

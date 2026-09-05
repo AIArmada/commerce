@@ -131,6 +131,7 @@ test('it can mark doc as paid', function (): void {
 
     expect($doc->isPaid())->toBeFalse();
 
+    $doc->markAsSent();
     $doc->markAsPaid();
     $doc->refresh();
 
@@ -147,6 +148,7 @@ test('it can check if doc is overdue', function (): void {
         'due_date' => now()->subDay(),
     ]));
 
+    $doc->markAsSent();
     expect($doc->isOverdue())->toBeTrue();
 
     $doc->markAsPaid();

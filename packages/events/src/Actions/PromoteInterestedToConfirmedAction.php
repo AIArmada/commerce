@@ -10,6 +10,7 @@ use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\States\RegistrationStatus\Confirmed;
 use AIArmada\Events\States\RegistrationStatus\Interested;
 use AIArmada\Events\Support\EventWriteGuard;
+use Carbon\CarbonImmutable;
 
 final class PromoteInterestedToConfirmedAction
 {
@@ -43,7 +44,7 @@ final class PromoteInterestedToConfirmedAction
             );
         }
 
-        $registration->approved_at = now();
+        $registration->approved_at = CarbonImmutable::now();
         $registration->status->transitionTo(Confirmed::class);
 
         $registration->refresh();

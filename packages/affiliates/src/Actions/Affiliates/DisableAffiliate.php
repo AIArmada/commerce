@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Actions\Affiliates;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Disabled;
+use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class DisableAffiliate
@@ -15,7 +16,7 @@ final class DisableAffiliate
     public function handle(Affiliate $affiliate): Affiliate
     {
         $affiliate->status = new Disabled($affiliate);
-        $affiliate->deactivated_at = now();
+        $affiliate->deactivated_at = CarbonImmutable::now();
         $affiliate->save();
 
         return $affiliate;

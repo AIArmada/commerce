@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support\Links;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
 
@@ -18,8 +19,8 @@ final class AffiliateLinkGenerator
 
         $parameter = (string) config('affiliates.links.parameter', 'aff');
         $expires = $ttlSeconds === null
-            ? (int) now()->addMinutes((int) config('affiliates.links.default_ttl_minutes', 60 * 24 * 7))->timestamp
-            : (int) now()->addSeconds($ttlSeconds)->timestamp;
+            ? (int) CarbonImmutable::now()->addMinutes((int) config('affiliates.links.default_ttl_minutes', 60 * 24 * 7))->timestamp
+            : (int) CarbonImmutable::now()->addSeconds($ttlSeconds)->timestamp;
 
         $query = array_merge($params, [
             $parameter => $affiliateCode,
@@ -41,7 +42,7 @@ final class AffiliateLinkGenerator
         $expires = (int) ($query['aff_exp'] ?? 0);
         $query['aff_exp'] = $expires;
 
-        if (! $signature || $expires < now()->timestamp) {
+        if (! $signature || $expires < CarbonImmutable::now()->timestamp) {
             return false;
         }
 

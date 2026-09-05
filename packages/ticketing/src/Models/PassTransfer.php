@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Ticketing\Database\Factories\PassTransferFactory;
+use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +16,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property string $pass_id
  * @property string|null $from_holder_id
  * @property string|null $to_holder_id
@@ -29,11 +34,26 @@ use Illuminate\Support\Carbon;
 class PassTransfer extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'ticketing.features.owner';
 
     protected static function newFactory(): PassTransferFactory
     {
         return PassTransferFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $transfer): void {
+            TicketingOwnerGuard::assertRelations($transfer, [
+                ['relation' => 'pass', 'required' => true],
+                ['relation' => 'fromHolder'],
+                ['relation' => 'toHolder'],
+            ]);
+        });
     }
 
     public $incrementing = false;

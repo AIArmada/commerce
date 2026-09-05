@@ -15,6 +15,7 @@ use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
@@ -68,12 +69,12 @@ final class AttachAffiliateToCart
             }
 
             $attribution = new AffiliateAttribution($payload);
-            $attribution->first_seen_at = now();
+            $attribution->first_seen_at = CarbonImmutable::now();
         }
 
-        $attribution->last_seen_at = now();
+        $attribution->last_seen_at = CarbonImmutable::now();
         if (isset($payload['cookie_value'])) {
-            $attribution->last_cookie_seen_at = now();
+            $attribution->last_cookie_seen_at = CarbonImmutable::now();
         }
         $attribution->expires_at = $payload['expires_at'];
         $attribution->save();
@@ -104,7 +105,7 @@ final class AttachAffiliateToCart
         $ttl = (int) config('affiliates.tracking.attribution_ttl_days', 30);
 
         if ($ttl > 0) {
-            $expiresAt = now()->addDays($ttl);
+            $expiresAt = CarbonImmutable::now()->addDays($ttl);
         }
 
         $cartIdentifier = $cart?->getIdentifier() ?? ($context['cart_identifier'] ?? null);
@@ -198,7 +199,7 @@ final class AttachAffiliateToCart
                     'content' => $payload['content'] ?? null,
                 ],
             ],
-            'touched_at' => now(),
+            'touched_at' => CarbonImmutable::now(),
         ]);
     }
 

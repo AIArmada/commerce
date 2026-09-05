@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipApplicationApproved;
 use AIArmada\Membership\Models\MembershipApplication;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,9 +24,15 @@ final class ApproveMembershipApplicationAction
     public function handle(MembershipApplication $application, Model $reviewer, MemberRole $role, ?string $note = null): void
     {
         $approvedApplication = DB::transaction(function () use ($application, $note, $reviewer, $role): MembershipApplication {
+            $guardedApplication = OwnerWriteGuard::findOrFailForOwner(
+                MembershipApplication::class,
+                (string) $application->getKey(),
+            );
+
             $lockedApplication = MembershipApplication::query()
                 ->lockForUpdate()
-                ->findOrFail($application->id);
+                ->whereKey($guardedApplication->getKey())
+                ->firstOrFail();
 
             if ($lockedApplication->status !== ApplicationStatus::Pending) {
                 throw new RuntimeException('Only pending membership applications can be approved.');
@@ -35,7 +43,7 @@ final class ApproveMembershipApplicationAction
                 'granted_role' => $role->spatieRoleName(),
                 'reviewer_id' => $reviewer->getKey(),
                 'reviewer_note' => $note,
-                'reviewed_at' => now(),
+                'reviewed_at' => CarbonImmutable::now(),
             ]);
 
             AddMemberAction::make()->handle(

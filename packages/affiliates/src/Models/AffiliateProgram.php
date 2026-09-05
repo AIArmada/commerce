@@ -215,10 +215,10 @@ class AffiliateProgram extends Model implements Auditable
     {
         return $query->where('status', ProgramStatus::Active)
             ->where(function ($q): void {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', CarbonImmutable::now());
             })
             ->where(function ($q): void {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', CarbonImmutable::now());
             });
     }
 

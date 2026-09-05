@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCashierChip\Concerns;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Database\Eloquent\Builder;
 
 trait InteractsWithCashierChipData
@@ -35,7 +36,7 @@ trait InteractsWithCashierChipData
         $currency = config('cashier-chip.currency', 'MYR');
         $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
 
-        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, $precision, '.', ',');
+        return mb_strtoupper($currency) . ' ' . MoneyFormatter::decimalFromMinor($amount, $currency, $precision);
     }
 
     protected function normalizeToMonthly(int $amount, string $interval, int $count): int

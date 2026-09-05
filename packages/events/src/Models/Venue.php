@@ -9,9 +9,9 @@ use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Events\Database\Factories\VenueFactory;
 use AIArmada\Events\Models\Concerns\Addressable;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -66,8 +66,8 @@ class Venue extends Model implements HasMedia
     use HasContactMethods;
     use HasFactory;
     use HasSocialProfiles;
+    use HasUuids;
     use InteractsWithMedia;
-    use UsesEventUuid;
 
     protected $fillable = [
         'parent_venue_id',

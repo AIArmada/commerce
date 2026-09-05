@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
 final class FastConversionRule implements FraudRule
@@ -52,7 +53,7 @@ final class FastConversionRule implements FraudRule
                     'min_seconds' => $minSeconds,
                 ],
                 'status' => FraudSignalStatus::Detected,
-                'detected_at' => now(),
+                'detected_at' => CarbonImmutable::now(),
             ]);
         }
 

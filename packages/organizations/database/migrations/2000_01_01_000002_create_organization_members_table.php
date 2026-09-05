@@ -16,9 +16,10 @@ return new class extends Migration
             return;
         }
 
-        Schema::create($tableName, function (Blueprint $table): void {
-            $table->uuid('organization_id')->index();
-            $table->uuid('user_id')->index();
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('organization_id')->index();
+            $table->foreignUuid('user_id')->index();
             $table->string('role')->index();
             $table->timestampTz('joined_at')->nullable();
             $table->timestampsTz();

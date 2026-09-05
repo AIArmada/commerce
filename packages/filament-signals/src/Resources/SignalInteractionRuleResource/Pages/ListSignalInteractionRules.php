@@ -11,6 +11,7 @@ use AIArmada\FilamentSignals\Support\InteractionRuleScanner;
 use AIArmada\FilamentSignals\Support\SignalsModelReferenceGuard;
 use AIArmada\Signals\Models\SignalInteractionRule;
 use AIArmada\Signals\Models\TrackedProperty;
+use Carbon\CarbonImmutable;
 use Filament\Actions;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Placeholder;
@@ -481,7 +482,7 @@ final class ListSignalInteractionRules extends ListRecords
         OwnerCache::put($this->scanPreviewOwner(), $this->scanPreviewLogicalKey(), [
             'candidates' => $candidates,
             'meta' => $meta,
-        ], now()->addMinutes(30));
+        ], CarbonImmutable::now()->addMinutes(30));
     }
 
     /**

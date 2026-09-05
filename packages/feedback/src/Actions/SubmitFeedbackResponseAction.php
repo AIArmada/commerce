@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
@@ -30,19 +31,25 @@ final class SubmitFeedbackResponseAction
     public function execute(SubmitFeedbackResponseData $data): FeedbackResponse
     {
         return DB::transaction(function () use ($data): FeedbackResponse {
-            /** @var FeedbackForm $form */
+            $guardedForm = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $data->formId);
             $form = FeedbackForm::with('questions.options')
                 ->lockForUpdate()
-                ->findOrFail($data->formId);
+                ->whereKey($guardedForm->getKey())
+                ->firstOrFail();
 
             $this->assertFormAcceptingSubmissions($form, $data);
             $this->assertSubmittedQuestionsBelongToForm($form, $data);
 
             $invitation = null;
             if ($data->invitationId !== null) {
+                $guardedInvitation = OwnerWriteGuard::findOrFailForOwner(
+                    FeedbackInvitation::class,
+                    $data->invitationId,
+                );
                 $invitation = FeedbackInvitation::query()
                     ->lockForUpdate()
-                    ->findOrFail($data->invitationId);
+                    ->whereKey($guardedInvitation->getKey())
+                    ->firstOrFail();
                 $this->assertInvitationValid($invitation, $form);
             }
 

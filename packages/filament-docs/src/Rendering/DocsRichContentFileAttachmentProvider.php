@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Rendering;
 
 use AIArmada\Docs\Support\DocRichContentStorage;
+use Carbon\CarbonImmutable;
 use Filament\Forms\Components\RichEditor\FileAttachmentProviders\Contracts\FileAttachmentProvider;
 use Filament\Forms\Components\RichEditor\RichContentAttribute;
 use Illuminate\Support\Facades\Storage;
@@ -42,7 +43,7 @@ final class DocsRichContentFileAttachmentProvider implements FileAttachmentProvi
             try {
                 return $storage->temporaryUrl(
                     $file,
-                    now()->addMinutes(config('filament.temporary_file_url_expiry_minutes', 30))->endOfHour(),
+                    CarbonImmutable::now()->addMinutes(config('filament.temporary_file_url_expiry_minutes', 30))->endOfHour(),
                 );
             } catch (Throwable) {
                 return null;

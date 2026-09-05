@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('seating', 'json');
 
-        Schema::create(config('seating.database.tables.seat_sections', 'seat_sections'), function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing(config('seating.database.tables.seat_sections', 'seat_sections'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
             $table->uuid('seat_map_id')->index();

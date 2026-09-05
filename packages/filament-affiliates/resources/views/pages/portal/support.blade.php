@@ -161,7 +161,7 @@
 
                         <div class="fia-portal-field">
                             <label class="fia-portal-label">{{ __('Total') }}</label>
-                            <p>{{ $document['currency'] }} {{ number_format($document['total_amount_minor'] / 100, 2) }}</p>
+                            <p>{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($document['total_amount_minor'], $document['currency']) }}</p>
                         </div>
                     </div>
 

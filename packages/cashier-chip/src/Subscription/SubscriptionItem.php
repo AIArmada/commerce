@@ -92,7 +92,7 @@ class SubscriptionItem extends Model
      */
     final public function scopeForOwner(Builder $query, Model | string | null $owner = null, ?bool $includeGlobal = null): Builder
     {
-        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
             return $query;
         }
 
@@ -112,7 +112,7 @@ class SubscriptionItem extends Model
     protected static function booted(): void
     {
         static::creating(function (self $item): void {
-            if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+            if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
                 return;
             }
 

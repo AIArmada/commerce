@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Events;
 
 use AIArmada\FilamentCart\Models\Cart;
+use Carbon\CarbonImmutable;
 
 final readonly class CartAbandoned
 {
@@ -26,7 +27,7 @@ final readonly class CartAbandoned
 
     public static function fromCart(Cart $cart): self
     {
-        $occurredAt = $cart->checkout_abandoned_at?->toAtomString() ?? now()->toAtomString();
+        $occurredAt = $cart->checkout_abandoned_at?->toAtomString() ?? CarbonImmutable::now()->toAtomString();
 
         return new self(
             sourceEventId: sprintf('cart-abandoned:%s:%s', $cart->id, $cart->checkout_abandoned_at?->getTimestamp() ?? time()),

@@ -32,6 +32,13 @@ class TitleCategory extends Model
         'sort_order',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (TitleCategory $category): void {
+            $category->titles()->get()->each->delete();
+        });
+    }
+
     public function getTable(): string
     {
         return config('persons.database.tables.title_categories', 'title_categories');

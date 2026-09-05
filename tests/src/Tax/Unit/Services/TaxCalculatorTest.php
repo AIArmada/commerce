@@ -11,6 +11,8 @@ use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Services\TaxCalculator;
+use AIArmada\Tax\Settings\TaxSettings;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class TaxCalculatorTest extends TaxTestCase
@@ -106,6 +108,8 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_tax_with_zero_rate_fallback(): void
     {
+        config(['tax.features.zone_resolution.unknown_zone_behavior' => 'zero']);
+
         // No zones or rates configured
         $result = $this->calculator->calculateTax(10000, 'standard');
 
@@ -115,6 +119,8 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_tax_with_tax_inclusive_pricing(): void
     {
+        $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
+
         config(['tax.defaults.prices_include_tax' => true]);
 
         $zone = TaxZone::create([
@@ -259,6 +265,8 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_shipping_tax_enabled(): void
     {
+        $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
+
         config(['tax.defaults.calculate_tax_on_shipping' => true]);
 
         $zone = TaxZone::create([
@@ -282,6 +290,8 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_shipping_tax_disabled(): void
     {
+        $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
+
         config(['tax.defaults.calculate_tax_on_shipping' => false]);
 
         $result = $this->calculator->calculateShippingTax(5000);
@@ -368,6 +378,8 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_tax_disabled_does_not_throw_when_unknown_zone_behavior_is_error(): void
     {
+        $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
+
         config(['tax.features.enabled' => false]);
         config(['tax.features.zone_resolution.unknown_zone_behavior' => 'error']);
 

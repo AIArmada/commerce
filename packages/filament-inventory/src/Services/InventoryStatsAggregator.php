@@ -9,6 +9,7 @@ use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
@@ -67,7 +68,7 @@ final class InventoryStatsAggregator
      */
     public function movementStats(int $days = 30): array
     {
-        $since = now()->subDays($days);
+        $since = CarbonImmutable::now()->subDays($days);
 
         $movementQuery = InventoryOwnerScope::applyToMovementQuery(InventoryMovement::query());
 

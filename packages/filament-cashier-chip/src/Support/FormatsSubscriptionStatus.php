@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Support;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 
 /**
  * Shared subscription status formatting utilities.
@@ -85,6 +86,6 @@ trait FormatsSubscriptionStatus
         $currency = config('cashier-chip.currency', 'MYR');
         $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
 
-        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, $precision, '.', ',');
+        return mb_strtoupper($currency) . ' ' . MoneyFormatter::decimalFromMinor($amount, $currency, $precision);
     }
 }

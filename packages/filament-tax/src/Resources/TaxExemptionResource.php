@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource\Pages;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource\Schemas\TaxExemptionForm;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource\Tables\TaxExemptionsTable;
@@ -42,7 +43,7 @@ final class TaxExemptionResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @phpstan-ignore return.type (template type not preserved through helper) */
-        return parent::getEloquentQuery();
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
     }
 
     public static function form(Schema $schema): Schema
@@ -69,7 +70,7 @@ final class TaxExemptionResource extends Resource
     {
         $now = CarbonImmutable::now();
 
-        $expiring = self::getModel()::query()
+        $expiring = OwnerUiScope::apply(self::getModel()::query(), includeGlobal: false)
             ->whereNotNull('expires_at')
             ->where('expires_at', '>=', $now)
             ->where('expires_at', '<=', $now->addDays(30))

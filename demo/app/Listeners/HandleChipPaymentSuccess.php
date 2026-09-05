@@ -239,7 +239,7 @@ final class HandleChipPaymentSuccess
                     'sorting_code' => (string) ($shippingAddress->city ?? 'Demo Hub'),
                     'package_quantity' => max(1, (int) $order->items->sum('quantity')),
                     'package_weight' => number_format($packageWeightGrams / 1000, 2, '.', ''),
-                    'package_value' => number_format($order->grand_total / 100, 2, '.', ''),
+                    'package_value_minor' => $order->grand_total,
                     'goods_type' => 'PACKAGE',
                     'ordered_at' => now(),
                     'last_synced_at' => now(),
@@ -259,7 +259,7 @@ final class HandleChipPaymentSuccess
                     'receiver' => [
                         'name' => $shippingAddress->getFullName(),
                         'phone' => $shippingAddress->phone,
-                        'address' => trim(implode(', ', array_filter([
+                        'address' => mb_trim(implode(', ', array_filter([
                             $shippingAddress->line1,
                             $shippingAddress->line2,
                         ]))),

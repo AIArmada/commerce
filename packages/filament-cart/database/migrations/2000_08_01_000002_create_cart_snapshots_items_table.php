@@ -18,7 +18,7 @@ return new class extends Migration
         $tableName = $tables['snapshot_items'] ?? $tablePrefix . 'snapshot_items';
         $jsonType = (string) commerce_json_column_type('cart', 'jsonb');
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('cart_id');
             $table->string('item_id')->index(); // The original cart item ID
@@ -46,8 +46,8 @@ return new class extends Migration
             && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
-                DB::statement("CREATE INDEX {$tableName}_attributes_gin_index ON {$tableName} USING GIN (attributes)");
-                DB::statement("CREATE INDEX {$tableName}_conditions_gin_index ON {$tableName} USING GIN (conditions)");
+                DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_attributes_gin_index ON {$tableName} USING GIN (attributes)");
+                DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_conditions_gin_index ON {$tableName} USING GIN (conditions)");
             });
         }
     }

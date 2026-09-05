@@ -22,23 +22,24 @@ use RuntimeException;
 final class TransitionDeliveryAction
 {
     private const ALLOWED_TRANSITIONS = [
-        'pending' => ['scheduled', 'queued', 'suppressed', 'cancelled'],
-        'scheduled' => ['queued', 'cancelled'],
-        'queued' => ['sending', 'cancelled', 'expired'],
-        'sending' => ['accepted', 'sent', 'failed', 'cancelled'],
-        'accepted' => ['sent', 'failed'],
-        'sent' => ['received', 'delivered', 'bounced', 'complained', 'failed'],
-        'received' => ['delivered', 'bounced'],
-        'delivered' => ['opened', 'bounced', 'complained'],
-        'opened' => ['read', 'clicked', 'replied'],
-        'read' => ['clicked', 'replied'],
-        'clicked' => ['replied'],
-        'bounced' => ['suppressed'],
-        'complained' => ['suppressed'],
+        'pending' => ['scheduled', 'queued', 'suppressed', 'unsubscribed', 'cancelled'],
+        'scheduled' => ['queued', 'unsubscribed', 'cancelled'],
+        'queued' => ['sending', 'unsubscribed', 'cancelled', 'expired'],
+        'sending' => ['accepted', 'sent', 'unsubscribed', 'failed', 'cancelled'],
+        'accepted' => ['sent', 'unsubscribed', 'failed'],
+        'sent' => ['received', 'delivered', 'unsubscribed', 'bounced', 'complained', 'failed'],
+        'received' => ['delivered', 'unsubscribed', 'bounced'],
+        'delivered' => ['opened', 'unsubscribed', 'bounced', 'complained'],
+        'opened' => ['read', 'clicked', 'unsubscribed', 'replied'],
+        'read' => ['clicked', 'unsubscribed', 'replied'],
+        'clicked' => ['unsubscribed', 'replied'],
+        'bounced' => ['suppressed', 'unsubscribed'],
+        'complained' => ['suppressed', 'unsubscribed'],
         'suppressed' => [],
         'failed' => [],
         'cancelled' => [],
         'expired' => [],
+        'unsubscribed' => [],
     ];
 
     private const STATUS_EVENT_MAP = [
@@ -71,6 +72,7 @@ final class TransitionDeliveryAction
         'cancelled' => 'cancelled_at',
         'expired' => 'expired_at',
         'suppressed' => 'suppressed_at',
+        'unsubscribed' => 'unsubscribed_at',
     ];
 
     public function handle(

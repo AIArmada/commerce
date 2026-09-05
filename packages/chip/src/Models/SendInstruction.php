@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -21,10 +23,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class SendInstruction extends ChipIntegerModel
 {
-    /** @return Attribute<float, never> */
-    public function amountNumeric(): Attribute
+    public function amountMoney(): Attribute
     {
-        return Attribute::get(fn (): float => (float) $this->amount);
+        return Attribute::get(function (): ?Money {
+            $currency = (string) config('chip.defaults.currency', 'MYR');
+            $amountInMinorUnits = MoneyFormatter::majorToMinor((string) $this->amount, $currency);
+
+            return $this->toMoney($amountInMinorUnits, $currency);
+        });
     }
 
     /**

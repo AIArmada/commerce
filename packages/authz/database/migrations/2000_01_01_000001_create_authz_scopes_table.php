@@ -12,7 +12,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(authz_table('scopes'), function (Blueprint $table): void {
+        commerce_schema_create_if_missing(authz_table('scopes'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('scopeable_type');
             $table->uuid('scopeable_id');

@@ -34,6 +34,13 @@ class CredentialDefinition extends Model
         'language_code',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (CredentialDefinition $definition): void {
+            $definition->assignments()->get()->each->delete();
+        });
+    }
+
     public function getTable(): string
     {
         return config('persons.database.tables.credential_definitions', 'credential_definitions');

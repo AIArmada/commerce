@@ -11,6 +11,7 @@ use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\States\VoucherStatus;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
 final class VoucherStatsAggregator
@@ -31,7 +32,7 @@ final class VoucherStatsAggregator
             'total' => $this->vouchers()->count(),
             'active' => $this->vouchers()->where('status', VoucherStatus::normalize(Active::class))->count(),
             'upcoming' => $this->vouchers()
-                ->where('starts_at', '>', now())
+                ->where('starts_at', '>', CarbonImmutable::now())
                 ->count(),
             'expired' => $this->vouchers()->where('status', VoucherStatus::normalize(Expired::class))->count(),
             'manual_redemptions' => $this->usages()->where('channel', VoucherUsage::CHANNEL_MANUAL)->count(),

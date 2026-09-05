@@ -38,6 +38,13 @@ class SeatMap extends Model
         return SeatMapFactory::new();
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (self $seatMap): void {
+            $seatMap->sections()->each(fn (SeatSection $section): mixed => $section->delete());
+        });
+    }
+
     public $incrementing = false;
 
     protected $keyType = 'string';

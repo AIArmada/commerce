@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationAccepted;
 use AIArmada\Membership\Models\MembershipInvitation;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,9 +25,15 @@ final class AcceptInvitationAction
             : $user->getAttribute('email');
 
         $acceptedInvitation = DB::transaction(function () use ($invitation, $user, $userEmail): MembershipInvitation {
+            $guardedInvitation = OwnerWriteGuard::findOrFailForOwner(
+                MembershipInvitation::class,
+                (string) $invitation->getKey(),
+            );
+
             $lockedInvitation = MembershipInvitation::query()
                 ->lockForUpdate()
-                ->findOrFail($invitation->id);
+                ->whereKey($guardedInvitation->getKey())
+                ->firstOrFail();
 
             if (! $lockedInvitation->isValid()) {
                 throw new RuntimeException('Invitation is no longer valid.');
@@ -42,7 +50,7 @@ final class AcceptInvitationAction
             }
 
             $lockedInvitation->update([
-                'accepted_at' => now(),
+                'accepted_at' => CarbonImmutable::now(),
                 'accepted_by' => $user->getKey(),
             ]);
 

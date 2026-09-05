@@ -10,6 +10,7 @@ use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\P
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\ListAffiliateOfferCategories;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Schemas\AffiliateOfferCategoryForm;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Tables\AffiliateOfferCategoriesTable;
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -31,6 +32,16 @@ final class AffiliateOfferCategoryResource extends Resource
     protected static ?string $pluralModelLabel = 'Categories';
 
     protected static ?string $tenantOwnershipRelationshipName = null;
+
+    public static function canViewAny(): bool
+    {
+        return NetworkAdminAccess::allows();
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {

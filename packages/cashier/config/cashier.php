@@ -24,6 +24,13 @@ return [
     'currency' => $currency,
     'locale' => env('CASHIER_LOCALE', 'en'),
 
+    'database' => [
+        'tables' => [
+            'unified_invoices' => 'cashier_unified_invoices',
+            'unified_subscriptions' => 'cashier_unified_subscriptions',
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Credentials / Gateways

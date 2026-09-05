@@ -13,6 +13,7 @@ return [
     */
     'database' => [
         'table_prefix' => env('CHECKOUT_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', '')),
+        'json_column_type' => env('CHECKOUT_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'checkout_sessions' => 'checkout_sessions',
         ],

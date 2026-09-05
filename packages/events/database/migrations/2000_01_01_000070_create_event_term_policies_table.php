@@ -16,7 +16,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('event_term_id')->index();
             $table->string('policy_code', 64);

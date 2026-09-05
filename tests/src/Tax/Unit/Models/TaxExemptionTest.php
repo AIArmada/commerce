@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Tax\Tests\Unit\Models;
 
 use AIArmada\Commerce\Tests\Tax\TaxTestCase;
-use AIArmada\Tax\Enums\ExemptionStatus;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxZone;
-use Carbon\Carbon;
+use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
+use AIArmada\Tax\States\TaxExemptionState\PendingState;
+use AIArmada\Tax\States\TaxExemptionState\RejectedState;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -30,17 +32,17 @@ class TaxExemptionTest extends TaxTestCase
             'tax_zone_id' => $zone->id,
             'reason' => 'Non-profit organization',
             'certificate_number' => 'CERT-123',
-            'status' => ExemptionStatus::Approved,
-            'verified_at' => now(),
+            'status' => ApprovedState::class,
+            'verified_at' => CarbonImmutable::now(),
             'verified_by' => 'admin-1',
-            'starts_at' => now(),
-            'expires_at' => now()->addYear(),
+            'starts_at' => CarbonImmutable::now(),
+            'expires_at' => CarbonImmutable::now()->addYear(),
         ]);
 
         $this->assertInstanceOf(TaxExemption::class, $exemption);
         $this->assertEquals('customer-123', $exemption->exemptable_id);
         $this->assertEquals('Non-profit organization', $exemption->reason);
-        $this->assertEquals(ExemptionStatus::Approved, $exemption->status);
+        $this->assertInstanceOf(ApprovedState::class, $exemption->status);
     }
 
     public function test_active_scope(): void
@@ -50,14 +52,14 @@ class TaxExemptionTest extends TaxTestCase
         $uuid3 = '550e8400-e29b-41d4-a716-446655440003';
         $uuid4 = '550e8400-e29b-41d4-a716-446655440004';
 
-        $now = \Illuminate\Support\Carbon::now();
+        $now = CarbonImmutable::now();
 
         // Approved exemption within date range
         TaxExemption::create([
             'exemptable_id' => $uuid1,
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Active exemption',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
             'starts_at' => $now->copy()->subDays(5),
             'expires_at' => $now->copy()->addDays(5),
         ]);
@@ -67,7 +69,7 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => $uuid2,
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Pending exemption',
-            'status' => ExemptionStatus::Pending,
+            'status' => PendingState::class,
         ]);
 
         // Expired exemption
@@ -75,7 +77,7 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => $uuid3,
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Expired exemption',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
             'starts_at' => $now->copy()->subDays(20),
             'expires_at' => $now->copy()->subDays(10),
         ]);
@@ -85,7 +87,7 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => $uuid4,
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Future exemption',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
             'starts_at' => $now->copy()->addDays(10),
             'expires_at' => $now->copy()->addDays(20),
         ]);
@@ -102,14 +104,14 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Pending',
-            'status' => ExemptionStatus::Pending,
+            'status' => PendingState::class,
         ]);
 
         TaxExemption::create([
             'exemptable_id' => 'customer-2',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Approved',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
         ]);
 
         $pending = TaxExemption::pending()->get();
@@ -124,14 +126,14 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Approved',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
         ]);
 
         TaxExemption::create([
             'exemptable_id' => 'customer-2',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Rejected',
-            'status' => ExemptionStatus::Rejected,
+            'status' => RejectedState::class,
         ]);
 
         $approved = TaxExemption::approved()->get();
@@ -151,7 +153,7 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_type' => 'App\\Models\\Customer',
             'tax_zone_id' => $zone1->id,
             'reason' => 'Zone specific',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
         ]);
 
         // Exemption for all zones (null zone_id)
@@ -160,7 +162,7 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_type' => 'App\\Models\\Customer',
             'tax_zone_id' => null,
             'reason' => 'All zones',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
         ]);
 
         $zone1Exemptions = TaxExemption::forZone($zone1->id)->get();
@@ -184,7 +186,7 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_type' => 'App\\Models\\Customer',
             'tax_zone_id' => $zone->id,
             'reason' => 'Test exemption',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
         ]);
 
         $this->assertInstanceOf(TaxZone::class, $exemption->taxZone);
@@ -197,14 +199,14 @@ class TaxExemptionTest extends TaxTestCase
 
     public function test_is_active_method(): void
     {
-        $now = \Illuminate\Support\Carbon::now();
+        $now = CarbonImmutable::now();
 
         // Active exemption
         $active = TaxExemption::create([
             'exemptable_id' => 'customer-active',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Active test',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
             'starts_at' => $now->copy()->subDay(),
             'expires_at' => $now->copy()->addDay(),
         ]);
@@ -214,7 +216,7 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => 'customer-pending',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Pending test',
-            'status' => ExemptionStatus::Pending,
+            'status' => PendingState::class,
         ]);
 
         // Expired exemption
@@ -222,7 +224,7 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => 'customer-expired',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Expired test',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
             'expires_at' => $now->copy()->subDay(),
         ]);
 
@@ -231,7 +233,7 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => 'customer-future',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Future test',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
             'starts_at' => $now->copy()->addDay(),
         ]);
 
@@ -243,8 +245,8 @@ class TaxExemptionTest extends TaxTestCase
 
     public function test_is_expired_method(): void
     {
-        $expired = new TaxExemption(['expires_at' => now()->subDay()]);
-        $notExpired = new TaxExemption(['expires_at' => now()->addDay()]);
+        $expired = new TaxExemption(['expires_at' => CarbonImmutable::now()->subDay()]);
+        $notExpired = new TaxExemption(['expires_at' => CarbonImmutable::now()->addDay()]);
         $noExpiry = new TaxExemption(['expires_at' => null]);
 
         $this->assertTrue($expired->isExpired());
@@ -254,9 +256,9 @@ class TaxExemptionTest extends TaxTestCase
 
     public function test_status_helper_methods(): void
     {
-        $pending = new TaxExemption(['status' => ExemptionStatus::Pending]);
-        $approved = new TaxExemption(['status' => ExemptionStatus::Approved]);
-        $rejected = new TaxExemption(['status' => ExemptionStatus::Rejected]);
+        $pending = new TaxExemption(['status' => PendingState::class]);
+        $approved = new TaxExemption(['status' => ApprovedState::class]);
+        $rejected = new TaxExemption(['status' => RejectedState::class]);
 
         $this->assertTrue($pending->isPending());
         $this->assertTrue($approved->isApproved());
@@ -273,13 +275,13 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Test',
-            'status' => ExemptionStatus::Pending,
+            'status' => PendingState::class,
         ]);
 
         $result = $exemption->approve();
 
         $this->assertSame($exemption, $result);
-        $this->assertEquals(ExemptionStatus::Approved, $exemption->status);
+        $this->assertInstanceOf(ApprovedState::class, $exemption->status);
         $this->assertNotNull($exemption->verified_at);
     }
 
@@ -289,13 +291,13 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Test',
-            'status' => ExemptionStatus::Pending,
+            'status' => PendingState::class,
         ]);
 
         $result = $exemption->reject('Invalid certificate');
 
         $this->assertSame($exemption, $result);
-        $this->assertEquals(ExemptionStatus::Rejected, $exemption->status);
+        $this->assertInstanceOf(RejectedState::class, $exemption->status);
         $this->assertEquals('Invalid certificate', $exemption->rejection_reason);
     }
 
@@ -323,15 +325,15 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Test',
-            'status' => ExemptionStatus::Approved,
+            'status' => ApprovedState::class,
             'verified_at' => '2024-01-01 12:00:00',
             'starts_at' => '2024-01-01 00:00:00',
             'expires_at' => '2024-12-31 23:59:59',
         ]);
 
-        $this->assertInstanceOf(Carbon::class, $exemption->verified_at);
-        $this->assertInstanceOf(Carbon::class, $exemption->starts_at);
-        $this->assertInstanceOf(Carbon::class, $exemption->expires_at);
+        $this->assertInstanceOf(CarbonImmutable::class, $exemption->verified_at);
+        $this->assertInstanceOf(CarbonImmutable::class, $exemption->starts_at);
+        $this->assertInstanceOf(CarbonImmutable::class, $exemption->expires_at);
     }
 
     public function test_attributes_defaults(): void
@@ -342,7 +344,7 @@ class TaxExemptionTest extends TaxTestCase
             'reason' => 'Test',
         ]);
 
-        $this->assertEquals(ExemptionStatus::Pending, $exemption->status);
+        $this->assertInstanceOf(PendingState::class, $exemption->status);
     }
 
     public function test_activity_logging(): void
@@ -351,10 +353,10 @@ class TaxExemptionTest extends TaxTestCase
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Activity test',
-            'status' => ExemptionStatus::Pending,
+            'status' => PendingState::class,
         ]);
 
-        $exemption->update(['status' => ExemptionStatus::Approved]);
+        $exemption->update(['status' => ApprovedState::class]);
 
         // Activity logging is configured but we can't easily test it without more setup
         // This test ensures the trait is applied and doesn't break

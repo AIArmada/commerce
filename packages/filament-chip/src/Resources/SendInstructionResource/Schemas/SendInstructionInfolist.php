@@ -42,7 +42,7 @@ final class SendInstructionInfolist
                         ->schema([
                             TextEntry::make('amount')
                                 ->label('Amount')
-                                ->formatStateUsing(fn ($state): string => MoneyFormatter::formatMajor((float) $state, config('filament-chip.default_currency', 'MYR')))
+                                ->formatStateUsing(fn ($state): string => MoneyFormatter::formatMajor((string) $state, config('filament-chip.default_currency', 'MYR')))
                                 ->size('lg')
                                 ->weight(FontWeight::Bold),
 

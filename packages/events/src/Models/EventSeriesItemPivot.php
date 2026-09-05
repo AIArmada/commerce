@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  */
 final class EventSeriesItemPivot extends Pivot
 {
-    use UsesEventUuid;
+    use HasUuids;
 
     public $incrementing = false;
 

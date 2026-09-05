@@ -208,6 +208,10 @@ final class Doc extends Model implements Auditable
 
     public function markAsPaid(?string $notes = null): void
     {
+        if (! $this->canBePaid()) {
+            return;
+        }
+
         $oldStatus = $this->status;
 
         $this->update([

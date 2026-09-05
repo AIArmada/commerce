@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -100,10 +101,10 @@ class AffiliateCommissionRule extends Model implements Auditable
     {
         return $query->where('is_active', true)
             ->where(function ($q): void {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', CarbonImmutable::now());
             })
             ->where(function ($q): void {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', CarbonImmutable::now());
             });
     }
 

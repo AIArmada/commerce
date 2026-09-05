@@ -15,6 +15,7 @@ use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Subscription\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -75,7 +76,7 @@ class RenewSubscriptionsCommand extends Command
         $query = (new Subscription)->scopeForOwner($query);
         $query->whereActive()
             ->whereNotNull('next_billing_at')
-            ->where('next_billing_at', '<=', now()->subHours($graceHours))
+            ->where('next_billing_at', '<=', CarbonImmutable::now()->subHours($graceHours))
             ->select('id')
             ->orderBy('id')
             ->chunkById(max(1, (int) config('cashier-chip.renewals.chunk_size', 100)), function ($subscriptions) use ($dryRun, &$summary): void {
@@ -199,7 +200,7 @@ class RenewSubscriptionsCommand extends Command
             $lockedSubscription->forceFill([
                 'chip_status' => SubscriptionStatus::Active,
                 'next_billing_at' => $nextBillingAt,
-                'renewed_at' => now(),
+                'renewed_at' => CarbonImmutable::now(),
                 'past_due_at' => null,
             ])->save();
             $lockedAttempt->forceFill([
@@ -207,7 +208,7 @@ class RenewSubscriptionsCommand extends Command
                 'purchase_id' => $payment->id(),
                 'last_error_code' => null,
                 'lease_expires_at' => null,
-                'completed_at' => now(),
+                'completed_at' => CarbonImmutable::now(),
             ])->save();
 
             return true;
@@ -225,7 +226,7 @@ class RenewSubscriptionsCommand extends Command
             'purchase_id' => $purchaseId,
             'last_error_code' => $code,
             'lease_expires_at' => null,
-            'updated_at' => now(),
+            'updated_at' => CarbonImmutable::now(),
         ]);
     }
 
@@ -235,8 +236,8 @@ class RenewSubscriptionsCommand extends Command
             'status' => 'skipped',
             'last_error_code' => $code,
             'lease_expires_at' => null,
-            'completed_at' => now(),
-            'updated_at' => now(),
+            'completed_at' => CarbonImmutable::now(),
+            'updated_at' => CarbonImmutable::now(),
         ]);
     }
 
@@ -253,14 +254,14 @@ class RenewSubscriptionsCommand extends Command
                 'status' => 'failed',
                 'last_error_code' => $code,
                 'lease_expires_at' => null,
-                'completed_at' => now(),
+                'completed_at' => CarbonImmutable::now(),
             ])->save();
 
             if ($subscription instanceof Subscription) {
                 Subscription::query()->withoutGlobalScopes()->whereKey($subscription->id)->update([
                     'chip_status' => SubscriptionStatus::PastDue,
-                    'past_due_at' => now(),
-                    'updated_at' => now(),
+                    'past_due_at' => CarbonImmutable::now(),
+                    'updated_at' => CarbonImmutable::now(),
                 ]);
             }
 

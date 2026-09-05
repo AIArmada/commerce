@@ -11,8 +11,11 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -33,47 +36,60 @@ final class CreateAffiliate
      */
     public function handle(array $data, ?Model $owner = null): Affiliate
     {
-        return DB::transaction(function () use ($data, $owner): Affiliate {
-            $approvalMode = $this->getApprovalMode();
-            $status = $this->determineStatus($data, $approvalMode);
+        $codeProvided = array_key_exists('code', $data) && $data['code'] !== null;
+        $attempts = $codeProvided ? 1 : 3;
 
-            $affiliate = new Affiliate([
-                'code' => $data['code'] ?? $this->generateCode->handle($data['name'] ?? ''),
-                'name' => $data['name'],
-                'description' => $data['description'] ?? null,
-                'status' => $status,
-                'commission_type' => $data['commission_type'] ?? $this->getDefaultCommissionType(),
-                'commission_rate' => $data['commission_rate'] ?? $this->getDefaultCommissionRate(),
-                'currency' => $data['currency'] ?? config('affiliates.currency.default', 'USD'),
-                'parent_affiliate_id' => $data['parent_affiliate_id'] ?? null,
-                'metadata' => $data['metadata'] ?? [],
-            ]);
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            try {
+                return DB::transaction(function () use ($data, $owner): Affiliate {
+                    $approvalMode = $this->getApprovalMode();
+                    $status = $this->determineStatus($data, $approvalMode);
 
-            if ($owner) {
-                $affiliate->owner_type = $owner->getMorphClass();
-                $affiliate->owner_id = $owner->getKey();
+                    $affiliate = new Affiliate([
+                        'code' => $data['code'] ?? $this->generateCode->handle($data['name'] ?? ''),
+                        'name' => $data['name'],
+                        'description' => $data['description'] ?? null,
+                        'status' => $status,
+                        'commission_type' => $data['commission_type'] ?? $this->getDefaultCommissionType(),
+                        'commission_rate' => $data['commission_rate'] ?? $this->getDefaultCommissionRate(),
+                        'currency' => $data['currency'] ?? config('affiliates.currency.default', 'USD'),
+                        'parent_affiliate_id' => $data['parent_affiliate_id'] ?? null,
+                        'metadata' => $data['metadata'] ?? [],
+                    ]);
+
+                    if ($owner) {
+                        $affiliate->owner_type = $owner->getMorphClass();
+                        $affiliate->owner_id = $owner->getKey();
+                    }
+
+                    if ($status === Active::class) {
+                        $affiliate->activated_at = CarbonImmutable::now();
+                    }
+
+                    $affiliate->save();
+
+                    if ($email = $data['contact_email'] ?? null) {
+                        OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::email($email, 'general')));
+                    }
+
+                    if ($website = $data['website_url'] ?? null) {
+                        OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::website($website)));
+                    }
+
+                    if ($phone = $data['phone'] ?? null) {
+                        OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::phone($phone, countryCode: 'MY', purpose: 'general')));
+                    }
+
+                    return $affiliate;
+                });
+            } catch (QueryException $exception) {
+                if ($codeProvided || ! $this->isUniqueConstraintViolation($exception) || $attempt === $attempts) {
+                    throw $exception;
+                }
             }
+        }
 
-            if ($status === Active::class) {
-                $affiliate->activated_at = now();
-            }
-
-            $affiliate->save();
-
-            if ($email = $data['contact_email'] ?? null) {
-                OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::email($email, 'general')));
-            }
-
-            if ($website = $data['website_url'] ?? null) {
-                OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::website($website)));
-            }
-
-            if ($phone = $data['phone'] ?? null) {
-                OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::phone($phone, countryCode: 'MY', purpose: 'general')));
-            }
-
-            return $affiliate;
-        });
+        throw new LogicException('Unable to generate a unique affiliate code.');
     }
 
     private function getApprovalMode(): RegistrationApprovalMode
@@ -114,5 +130,10 @@ final class CreateAffiliate
     private function getDefaultCommissionRate(): int
     {
         return (int) config('affiliates.registration.default_commission_rate', 1000);
+    }
+
+    private function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
     }
 }

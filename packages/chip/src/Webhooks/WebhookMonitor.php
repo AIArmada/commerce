@@ -19,7 +19,7 @@ class WebhookMonitor
      */
     public function getHealth(?CarbonImmutable $since = null): WebhookHealth
     {
-        $since ??= now()->subDay();
+        $since ??= CarbonImmutable::now()->subDay();
 
         $webhooks = Webhook::query()
             ->forOwner()
@@ -47,7 +47,7 @@ class WebhookMonitor
      */
     public function getEventDistribution(?CarbonImmutable $since = null): array
     {
-        $since ??= now()->subDay();
+        $since ??= CarbonImmutable::now()->subDay();
 
         return Webhook::query()
             ->forOwner()
@@ -65,7 +65,7 @@ class WebhookMonitor
      */
     public function getFailureBreakdown(?CarbonImmutable $since = null): array
     {
-        $since ??= now()->subDay();
+        $since ??= CarbonImmutable::now()->subDay();
 
         return Webhook::query()
             ->forOwner()
@@ -86,7 +86,7 @@ class WebhookMonitor
      */
     public function getHourlyVolume(?CarbonImmutable $since = null): array
     {
-        $since ??= now()->subDay();
+        $since ??= CarbonImmutable::now()->subDay();
 
         // Fetch raw data and group in PHP for database portability
         $webhooks = Webhook::query()

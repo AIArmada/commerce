@@ -9,8 +9,8 @@ use AIArmada\Affiliates\Events\AffiliateRankChanged;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 final class RankQualificationService
@@ -108,9 +108,9 @@ final class RankQualificationService
      *
      * @return array{personal_sales: int, team_sales: int, active_downlines: int, lifetime_value: int}
      */
-    public function calculateMetrics(Affiliate $affiliate, ?Carbon $from = null): array
+    public function calculateMetrics(Affiliate $affiliate, ?CarbonImmutable $from = null): array
     {
-        $from ??= now()->subDays(30);
+        $from ??= CarbonImmutable::now()->subDays(30);
         $cacheKey = $this->buildMetricsCacheKey($affiliate, $from);
 
         if (isset($this->metricsCache[$cacheKey])) {
@@ -147,7 +147,7 @@ final class RankQualificationService
     /**
      * Build cache key for metrics lookup.
      */
-    private function buildMetricsCacheKey(Affiliate $affiliate, Carbon $from): string
+    private function buildMetricsCacheKey(Affiliate $affiliate, CarbonImmutable $from): string
     {
         return $affiliate->id . ':' . $from->toDateString();
     }
@@ -192,7 +192,7 @@ final class RankQualificationService
             'from_rank_id' => $oldRank?->id,
             'to_rank_id' => $newRank?->id,
             'reason' => $reason,
-            'qualified_at' => now(),
+            'qualified_at' => CarbonImmutable::now(),
         ]);
 
         $affiliate->update(['rank_id' => $newRank?->id]);

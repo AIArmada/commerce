@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Exceptions;
 
 use AIArmada\Cart\Cart;
+use Carbon\CarbonImmutable;
 use Exception;
 
 final class CartConflictException extends CartException
@@ -126,7 +127,7 @@ final class CartConflictException extends CartException
             'version_difference' => $this->getVersionDifference(),
             'is_minor_conflict' => $this->isMinorConflict(),
             'resolution_suggestions' => $this->getResolutionSuggestions(),
-            'timestamp' => now()->toISOString(),
+            'timestamp' => CarbonImmutable::now()->toISOString(),
         ];
     }
 }

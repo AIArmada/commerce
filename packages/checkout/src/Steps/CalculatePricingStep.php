@@ -9,6 +9,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Pricing\Contracts\Priceable;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Pricing\PricingServiceProvider;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
 final class CalculatePricingStep extends AbstractCheckoutStep
@@ -67,7 +68,7 @@ final class CalculatePricingStep extends AbstractCheckoutStep
         }
 
         $pricingData['subtotal'] = $subtotal;
-        $pricingData['calculated_at'] = now()->toIso8601String();
+        $pricingData['calculated_at'] = CarbonImmutable::now()->toIso8601String();
 
         $session->update([
             'pricing_data' => $pricingData,

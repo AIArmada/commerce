@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Actions\Conversions;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
+use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class MatureConversion
@@ -38,7 +39,7 @@ final class MatureConversion
         $conversion->update([
             'status' => ApprovedConversion::class,
             'metadata' => array_merge($conversion->metadata ?? [], [
-                'matured_at' => now()->toIso8601String(),
+                'matured_at' => CarbonImmutable::now()->toIso8601String(),
             ]),
         ]);
 

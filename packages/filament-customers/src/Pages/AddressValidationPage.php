@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Address;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -85,7 +86,7 @@ class AddressValidationPage extends Page
             return;
         }
 
-        $address->update(['verified_at' => now()]);
+        $address->update(['verified_at' => CarbonImmutable::now()]);
 
         Notification::make()
             ->title('Address validated successfully')

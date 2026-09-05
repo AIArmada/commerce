@@ -9,6 +9,7 @@ use AIArmada\Ticketing\Events\PassTransferred;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 use AIArmada\Ticketing\Models\PassTransfer;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -25,7 +26,7 @@ final class DefaultPassTransferService implements PassTransferServiceInterface
 
             if ($previousHolder !== null) {
                 $previousHolder->is_current = false;
-                $previousHolder->transferred_at = now();
+                $previousHolder->transferred_at = CarbonImmutable::now();
                 $previousHolder->save();
             }
 
@@ -52,7 +53,7 @@ final class DefaultPassTransferService implements PassTransferServiceInterface
             return false;
         }
 
-        if ($pass->transfer_expires_at !== null && now()->isAfter($pass->transfer_expires_at)) {
+        if ($pass->transfer_expires_at !== null && CarbonImmutable::now()->isAfter($pass->transfer_expires_at)) {
             return false;
         }
 

@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\DemandPeriodType;
 use AIArmada\Inventory\Models\InventoryDemandHistory;
 use AIArmada\Inventory\Models\InventoryLocation;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Demand Product']);
@@ -264,7 +264,7 @@ describe('InventoryDemandHistory', function (): void {
                 'order_count' => 1,
             ]);
 
-            expect($history->period_date)->toBeInstanceOf(Carbon::class);
+            expect($history->period_date)->toBeInstanceOf(CarbonImmutable::class);
         });
 
         it('casts metadata to array', function (): void {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Invoice;
 
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\Chip\Data\ProductData;
@@ -16,7 +17,6 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use JsonSerializable;
-use NumberFormatter;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -461,12 +461,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      */
     protected function formatAmount(int $amount): string
     {
-        $currency = $this->currency();
-        $locale = config('cashier-chip.currency_locale', 'ms_MY');
-
-        $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
-
-        return $formatter->formatCurrency($amount / 100, $currency);
+        return Cashier::formatAmount($amount, $this->currency());
     }
 
     private function purchaseStatus(): PurchaseStatus

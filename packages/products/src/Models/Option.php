@@ -212,7 +212,7 @@ class Option extends Model implements Auditable
 
         static::saving(function (Option $option): void {
             if ($option->isDirty('visibility')) {
-                $option->hidden_at = $option->visibility === Visibility::Hidden->value ? now() : null;
+                $option->hidden_at = $option->visibility === Visibility::Hidden->value ? CarbonImmutable::now() : null;
             }
         });
 

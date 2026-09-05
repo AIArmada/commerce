@@ -59,7 +59,7 @@ describe('FieldNameConverter', function (): void {
                 [
                     'name' => 'Widget',
                     'quantity' => 2,
-                    'price' => 50.00,
+                    'priceMinor' => 5000,
                     'description' => 'Test product',
                     'weight' => 200,
                 ],
@@ -72,8 +72,8 @@ describe('FieldNameConverter', function (): void {
         expect($converted['items'][0])->not->toHaveKey('name');
         expect($converted['items'][0])->toHaveKey('number', 2);
         expect($converted['items'][0])->not->toHaveKey('quantity');
-        expect($converted['items'][0])->toHaveKey('itemValue', 50.00);
-        expect($converted['items'][0])->not->toHaveKey('price');
+        expect($converted['items'][0])->toHaveKey('itemValue', '50.00');
+        expect($converted['items'][0])->not->toHaveKey('priceMinor');
         expect($converted['items'][0])->toHaveKey('itemDesc', 'Test product');
         expect($converted['items'][0])->not->toHaveKey('description');
         expect($converted['items'][0])->toHaveKey('weight', 200);
@@ -84,7 +84,7 @@ describe('FieldNameConverter', function (): void {
             'packageInfo' => [
                 'quantity' => 1,
                 'weight' => 1.5,
-                'value' => 99.99,
+                'valueMinor' => 9999,
                 'goodsType' => 'ITN8',
                 'length' => 30,
                 'width' => 20,
@@ -96,8 +96,8 @@ describe('FieldNameConverter', function (): void {
 
         expect($converted['packageInfo'])->toHaveKey('packageQuantity', 1);
         expect($converted['packageInfo'])->not->toHaveKey('quantity');
-        expect($converted['packageInfo'])->toHaveKey('packageValue', 99.99);
-        expect($converted['packageInfo'])->not->toHaveKey('value');
+        expect($converted['packageInfo'])->toHaveKey('packageValue', '99.99');
+        expect($converted['packageInfo'])->not->toHaveKey('valueMinor');
         expect($converted['packageInfo'])->toHaveKey('weight', 1.5);
         expect($converted['packageInfo'])->toHaveKey('goodsType', 'ITN8');
     });
@@ -118,7 +118,7 @@ describe('FieldNameConverter', function (): void {
                 [
                     'name' => 'Product 1',
                     'quantity' => 2,
-                    'price' => 50.00,
+                    'priceMinor' => 5000,
                     'weight' => 200,
                     'description' => 'Description 1',
                 ],
@@ -126,7 +126,7 @@ describe('FieldNameConverter', function (): void {
             'packageInfo' => [
                 'quantity' => 1,
                 'weight' => 1.5,
-                'value' => 100.00,
+                'valueMinor' => 10000,
                 'goodsType' => 'ITN8',
             ],
         ];
@@ -150,18 +150,18 @@ describe('FieldNameConverter', function (): void {
         // Items
         expect($converted['items'][0])->toHaveKey('itemName', 'Product 1');
         expect($converted['items'][0])->toHaveKey('number', 2);
-        expect($converted['items'][0])->toHaveKey('itemValue', 50.00);
+        expect($converted['items'][0])->toHaveKey('itemValue', '50.00');
         expect($converted['items'][0])->toHaveKey('itemDesc', 'Description 1');
         expect($converted['items'][0])->not->toHaveKey('name');
         expect($converted['items'][0])->not->toHaveKey('quantity');
-        expect($converted['items'][0])->not->toHaveKey('price');
+        expect($converted['items'][0])->not->toHaveKey('priceMinor');
         expect($converted['items'][0])->not->toHaveKey('description');
 
         // PackageInfo
         expect($converted['packageInfo'])->toHaveKey('packageQuantity', 1);
-        expect($converted['packageInfo'])->toHaveKey('packageValue', 100.00);
+        expect($converted['packageInfo'])->toHaveKey('packageValue', '100.00');
         expect($converted['packageInfo'])->not->toHaveKey('quantity');
-        expect($converted['packageInfo'])->not->toHaveKey('value');
+        expect($converted['packageInfo'])->not->toHaveKey('valueMinor');
     });
 
     it('preserves API field names when no clean names present', function (): void {

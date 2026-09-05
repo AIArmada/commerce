@@ -145,13 +145,9 @@ class Subscriptions extends Page
 
     public function formatAmount(int $amount): string
     {
-        if (class_exists('\AIArmada\CashierChip\Billing\Cashier')) {
-            return Cashier::formatAmount($amount);
-        }
-
         $currency = config('cashier-chip.currency', 'MYR');
 
-        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, 2, '.', ',');
+        return Cashier::formatAmount($amount, $currency);
     }
 
     /**

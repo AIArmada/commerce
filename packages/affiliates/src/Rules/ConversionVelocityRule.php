@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
 final class ConversionVelocityRule implements FraudRule
@@ -48,7 +49,7 @@ final class ConversionVelocityRule implements FraudRule
                     'date' => today()->toDateString(),
                 ],
                 'status' => FraudSignalStatus::Detected,
-                'detected_at' => now(),
+                'detected_at' => CarbonImmutable::now(),
             ]);
         }
 

@@ -22,7 +22,21 @@ final class DocDownloadController
         $ownerEnabled = (bool) config('docs.owner.enabled', false);
 
         if ($doc instanceof Doc) {
-            $docModel = $doc;
+            if ($ownerEnabled) {
+                try {
+                    /** @var Doc $docModel */
+                    $docModel = OwnerWriteGuard::findOrFailForOwner(
+                        Doc::class,
+                        (string) $doc->getKey(),
+                        OwnerContext::CURRENT,
+                        (bool) config('docs.owner.include_global', false),
+                    );
+                } catch (AuthorizationException) {
+                    throw new NotFoundHttpException('Document not found.');
+                }
+            } else {
+                $docModel = $doc;
+            }
         } else {
             $includeGlobal = (bool) config('docs.owner.include_global', false);
 

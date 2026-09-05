@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventRegistrationFactory;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\RegistrationStatus\Completed;
 use AIArmada\Events\States\RegistrationStatus\Pending;
 use AIArmada\Events\States\RegistrationStatus\RegistrationStatus as RegistrationStatusState;
@@ -16,6 +15,7 @@ use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,7 +26,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 use Spatie\ModelStates\HasStates;
 
 /**
@@ -81,15 +80,14 @@ class EventRegistration extends Model
     use HasFactory;
 
     use HasStates;
+    use HasUuids;
     use Notifiable;
-    use UsesEventUuid;
 
     public const array CAPACITY_BLOCKING_STATUSES = [
         'pending',
         'confirmed',
         'refund_pending',
         'checked_in',
-        'no_show',
     ];
 
     protected $fillable = [
@@ -116,9 +114,8 @@ class EventRegistration extends Model
         self::creating(function (EventRegistration $registration): void {
             if (blank($registration->registration_no)) {
                 $prefix = (string) config('events.codes.registration_prefix', 'REG');
-                $length = max(6, (int) config('events.codes.registration_length', 10));
 
-                $registration->registration_no = $prefix . '-' . mb_strtoupper(Str::random($length));
+                $registration->registration_no = $prefix . '-' . mb_strtoupper((string) $registration->getKey());
             }
 
             if ($registration->registered_at === null) {

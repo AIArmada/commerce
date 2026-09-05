@@ -183,7 +183,7 @@ final class PaymentMethodStore implements PaymentMethodStoreInterface
 
     private function assertBillableWriteAllowed(Model $billable): void
     {
-        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
             return;
         }
 

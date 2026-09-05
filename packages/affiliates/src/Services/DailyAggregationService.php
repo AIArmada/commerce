@@ -7,14 +7,14 @@ namespace AIArmada\Affiliates\Services;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 final class DailyAggregationService
 {
     /**
      * Aggregate statistics for all affiliates on a given date.
      */
-    public function aggregate(Carbon $date): int
+    public function aggregate(CarbonImmutable $date): int
     {
         $affiliateCount = 0;
 
@@ -32,7 +32,7 @@ final class DailyAggregationService
     /**
      * Aggregate statistics for a specific affiliate on a date.
      */
-    public function aggregateForAffiliate(Affiliate $affiliate, Carbon $date): AffiliateDailyStat
+    public function aggregateForAffiliate(Affiliate $affiliate, CarbonImmutable $date): AffiliateDailyStat
     {
         $touchpointStats = AffiliateTouchpoint::query()
             ->where('affiliate_id', $affiliate->id)
@@ -90,14 +90,14 @@ final class DailyAggregationService
     /**
      * Backfill statistics for a date range.
      */
-    public function backfill(Carbon $startDate, Carbon $endDate): int
+    public function backfill(CarbonImmutable $startDate, CarbonImmutable $endDate): int
     {
         $totalProcessed = 0;
-        $currentDate = $startDate->copy();
+        $currentDate = $startDate;
 
         while ($currentDate->lte($endDate)) {
             $totalProcessed += $this->aggregate($currentDate);
-            $currentDate->addDay();
+            $currentDate = $currentDate->addDay();
         }
 
         return $totalProcessed;
@@ -108,7 +108,7 @@ final class DailyAggregationService
      *
      * @return array<string, mixed>
      */
-    public function getAggregatedStats(Affiliate $affiliate, Carbon $from, Carbon $to): array
+    public function getAggregatedStats(Affiliate $affiliate, CarbonImmutable $from, CarbonImmutable $to): array
     {
         $stats = AffiliateDailyStat::query()
             ->where('affiliate_id', $affiliate->id)
@@ -130,7 +130,7 @@ final class DailyAggregationService
     /**
      * @return array<string, mixed>
      */
-    private function buildBreakdown(Affiliate $affiliate, Carbon $date): array
+    private function buildBreakdown(Affiliate $affiliate, CarbonImmutable $date): array
     {
         $bySource = AffiliateTouchpoint::query()
             ->where('affiliate_id', $affiliate->id)

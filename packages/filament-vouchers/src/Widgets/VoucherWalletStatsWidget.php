@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherWallet;
+use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -86,7 +87,7 @@ final class VoucherWalletStatsWidget extends BaseWidget
     private function getWalletTrend(): array
     {
         $data = [];
-        $now = now();
+        $now = CarbonImmutable::now();
 
         $wallets = $this->wallets();
 

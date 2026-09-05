@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Support;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonImmutable;
 
 final readonly class UnifiedInvoice
@@ -46,7 +47,7 @@ final readonly class UnifiedInvoice
 
     public static function fromChip(object $invoice, string $userId): self
     {
-        $createdAt = $invoice->created_at ?? now();
+        $createdAt = $invoice->created_at ?? CarbonImmutable::now();
 
         return new self(
             id: (string) ($invoice->id ?? $invoice->getKey()),
@@ -66,15 +67,7 @@ final readonly class UnifiedInvoice
 
     public function formattedAmount(): string
     {
-        $symbol = match ($this->currency) {
-            'MYR' => 'RM',
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            default => $this->currency . ' ',
-        };
-
-        return $symbol . number_format($this->amount / 100, 2);
+        return MoneyFormatter::formatMinor($this->amount, $this->currency);
     }
 
     /**

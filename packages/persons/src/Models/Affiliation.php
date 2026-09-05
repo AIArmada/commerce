@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -43,16 +44,24 @@ class Affiliation extends Model
 
     protected static function booted(): void
     {
+        static::deleting(function (Affiliation $affiliation): void {
+            $affiliation->roles()->get()->each->delete();
+        });
+
         static::saved(function (Affiliation $affiliation): void {
             if (! $affiliation->is_primary) {
                 return;
             }
 
-            static::query()
-                ->where('affiliatable_type', $affiliation->affiliatable_type)
-                ->where('affiliatable_id', $affiliation->affiliatable_id)
-                ->whereKeyNot($affiliation->getKey())
-                ->update(['is_primary' => false]);
+            DB::transaction(function () use ($affiliation): void {
+                $affiliation->affiliatable()->lockForUpdate()->firstOrFail();
+
+                static::query()
+                    ->where('affiliatable_type', $affiliation->affiliatable_type)
+                    ->where('affiliatable_id', $affiliation->affiliatable_id)
+                    ->whereKeyNot($affiliation->getKey())
+                    ->update(['is_primary' => false]);
+            });
         });
     }
 

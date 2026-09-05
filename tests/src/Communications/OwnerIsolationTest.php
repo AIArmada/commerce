@@ -3,12 +3,19 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Communications\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Data\ProviderEventData;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
+use AIArmada\Communications\Enums\DeliveryStatus;
+use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationBatch;
+use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Models\CommunicationRecipient;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -128,5 +135,45 @@ it('blocks cross-owner writes', function (): void {
 
     expect(fn () => OwnerContext::withOwner($ownerB, function () use ($commA): void {
         $commA->update(['purpose' => 'hacked-by-b']);
+    }))->toThrow(AuthorizationException::class);
+});
+
+it('blocks provider events from mutating another owner delivery', function (): void {
+    $ownerA = CommunicationsTestOwner::query()->create(['name' => 'Provider Owner A']);
+    $ownerB = CommunicationsTestOwner::query()->create(['name' => 'Provider Owner B']);
+
+    $delivery = OwnerContext::withOwner($ownerA, function (): CommunicationDelivery {
+        $communication = Communication::create([
+            'direction' => CommunicationDirection::Outbound,
+            'category' => CommunicationCategory::Transactional,
+            'priority' => CommunicationPriority::Normal,
+            'purpose' => 'provider-cross-owner',
+            'status' => CommunicationStatus::Draft,
+        ]);
+        $recipient = CommunicationRecipient::create([
+            'communication_id' => $communication->id,
+            'role' => RecipientRole::To,
+        ]);
+
+        return CommunicationDelivery::create([
+            'communication_id' => $communication->id,
+            'recipient_id' => $recipient->id,
+            'channel' => 'mail',
+            'provider' => 'array',
+            'status' => DeliveryStatus::Pending,
+            'attempt_count' => 0,
+            'max_attempts' => 3,
+        ]);
+    });
+
+    expect(fn () => OwnerContext::withOwner($ownerB, function () use ($delivery): void {
+        app(ApplyProviderEventAction::class)->handle(new ProviderEventData(
+            provider: 'array',
+            providerEventId: 'cross-owner-event',
+            providerMessageId: null,
+            eventType: 'delivery',
+            occurredAt: CarbonImmutable::now(),
+            deliveryId: $delivery->id,
+        ));
     }))->toThrow(AuthorizationException::class);
 });

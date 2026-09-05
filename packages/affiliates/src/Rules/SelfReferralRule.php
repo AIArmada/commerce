@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
 final class SelfReferralRule implements FraudRule
@@ -45,7 +46,7 @@ final class SelfReferralRule implements FraudRule
                     'conversion_owner_id' => $conversion->owner_id,
                 ],
                 'status' => FraudSignalStatus::Detected,
-                'detected_at' => now(),
+                'detected_at' => CarbonImmutable::now(),
             ]);
         }
 

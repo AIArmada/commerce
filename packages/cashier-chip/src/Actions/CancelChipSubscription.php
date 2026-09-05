@@ -8,7 +8,7 @@ use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Subscription\Subscription;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class CancelChipSubscription
@@ -19,7 +19,7 @@ final class CancelChipSubscription
     {
         $subscription->forceFill([
             'chip_status' => SubscriptionStatus::Canceled,
-            'ends_at' => Carbon::now(),
+            'ends_at' => CarbonImmutable::now(),
         ])->save();
 
         SubscriptionCanceled::dispatch($subscription);

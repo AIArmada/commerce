@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.database.tables.collection_product', 'collection_product'), function (Blueprint $table): void {
+        commerce_schema_create_if_missing(config('products.database.tables.collection_product', 'collection_product'), function (Blueprint $table): void {
             $table->foreignUuid('collection_id');
             $table->foreignUuid('product_id');
 

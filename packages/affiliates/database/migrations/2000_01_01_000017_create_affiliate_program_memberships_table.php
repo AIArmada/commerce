@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tableName = config('affiliates.database.tables.program_memberships', 'affiliate_program_memberships');
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('affiliate_id');
             $table->foreignUuid('program_id');

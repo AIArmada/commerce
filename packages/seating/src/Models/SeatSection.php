@@ -37,6 +37,14 @@ class SeatSection extends Model
         return SeatSectionFactory::new();
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (self $section): void {
+            $section->seats()->each(fn (Seat $seat): mixed => $seat->delete());
+            $section->allocations()->each(fn (SeatAllocation $allocation): mixed => $allocation->delete());
+        });
+    }
+
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -79,5 +87,11 @@ class SeatSection extends Model
     public function seats(): HasMany
     {
         return $this->hasMany(Seat::class, 'seat_section_id');
+    }
+
+    /** @return HasMany<SeatAllocation, $this> */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(SeatAllocation::class, 'seat_section_id');
     }
 }

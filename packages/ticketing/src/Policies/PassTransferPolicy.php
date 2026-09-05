@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Policies;
 
 use AIArmada\Ticketing\Models\Pass;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Auth\User;
 
 final class PassTransferPolicy
@@ -15,7 +16,7 @@ final class PassTransferPolicy
             return false;
         }
 
-        if ($pass->transfer_expires_at !== null && now()->isAfter($pass->transfer_expires_at)) {
+        if ($pass->transfer_expires_at !== null && CarbonImmutable::now()->isAfter($pass->transfer_expires_at)) {
             return false;
         }
 

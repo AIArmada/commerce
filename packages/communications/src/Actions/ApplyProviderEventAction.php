@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Data\ProviderEventData;
 use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Enums\DeliveryStatus;
@@ -63,9 +64,15 @@ final class ApplyProviderEventAction
         }
 
         return DB::transaction(function () use ($eventData, $eventType): CommunicationDelivery {
+            /** @var CommunicationDelivery $delivery */
+            $delivery = OwnerWriteGuard::findOrFailForOwner(
+                CommunicationDelivery::class,
+                $eventData->deliveryId,
+            );
             $delivery = CommunicationDelivery::query()
+                ->whereKey($delivery->getKey())
                 ->lockForUpdate()
-                ->findOrFail($eventData->deliveryId);
+                ->firstOrFail();
 
             $event = $this->recordEvent($eventData, $delivery);
 

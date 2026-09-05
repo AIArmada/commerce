@@ -15,9 +15,9 @@ use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\States\Active;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Carbon;
 
 test('AffiliateActivated event can be constructed with an affiliate', function (): void {
     $affiliate = Affiliate::create([
@@ -175,7 +175,7 @@ test('AffiliateTierUpgraded event allows null fromTier for initial tier assignme
 });
 
 test('DailyStatsAggregated event can be constructed with date and count', function (): void {
-    $date = Carbon::parse('2024-01-15');
+    $date = CarbonImmutable::parse('2024-01-15');
 
     $event = new DailyStatsAggregated($date, 150);
 

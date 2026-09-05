@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('seating', 'json');
 
-        Schema::create(config('seating.database.tables.seat_allocations', 'seat_allocations'), function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing(config('seating.database.tables.seat_allocations', 'seat_allocations'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
             $table->uuid('seat_id')->nullable();
@@ -24,12 +24,12 @@ return new class extends Migration
             $table->timestampTz('revoked_at')->nullable();
             $table->string('released_by_type')->nullable();
             $table->string('released_by_id')->nullable();
-            $table->string('state')->default('active')->index();
+            $table->string('status')->default('active')->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 
-            $table->index(['seat_id', 'state']);
-            $table->index(['seat_section_id', 'state'], 'sa_section_state_idx');
+            $table->index(['seat_id', 'status']);
+            $table->index(['seat_section_id', 'status'], 'sa_section_status_idx');
             $table->index(['released_by_type', 'released_by_id'], 'sa_released_by_idx');
         });
     }

@@ -8,6 +8,7 @@ use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Models\Title;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 
 final class ReorderTitleAction
 {
@@ -200,6 +201,12 @@ final class ReorderTitleAction
     /** @param Collection<int, Title> $titles */
     private function positionOf(Collection $titles, Title $title): int
     {
-        return $titles->search(fn (Title $item): bool => $item->is($title)) + 1;
+        $position = $titles->search(fn (Title $item): bool => $item->is($title));
+
+        if ($position === false) {
+            throw new LogicException('The title was not found in its ordering scope.');
+        }
+
+        return $position + 1;
     }
 }

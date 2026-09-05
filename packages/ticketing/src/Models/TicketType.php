@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryMovement;
@@ -11,6 +13,7 @@ use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Ticketing\Database\Factories\TicketTypeFactory;
 use AIArmada\Ticketing\Enums\PricingMode;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;
+use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,6 +28,8 @@ use Illuminate\Support\Collection;
 
 /**
  * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property string $ticketable_type
  * @property string $ticketable_id
  * @property string $name
@@ -60,11 +65,24 @@ use Illuminate\Support\Collection;
 class TicketType extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'ticketing.features.owner';
 
     protected static function newFactory(): TicketTypeFactory
     {
         return TicketTypeFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $ticketType): void {
+            TicketingOwnerGuard::assertRelations($ticketType, [
+                ['relation' => 'ticketable', 'required' => true],
+            ]);
+        });
     }
 
     public $incrementing = false;
@@ -300,10 +318,5 @@ class TicketType extends Model
         }
 
         return PricingMode::Free;
-    }
-
-    public function getKey(): string
-    {
-        return $this->id;
     }
 }

@@ -6,10 +6,10 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventLocationFactory;
 use AIArmada\Events\Models\Concerns\Addressable;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -68,7 +68,7 @@ final class EventLocation extends Model
 {
     use Addressable;
     use HasFactory;
-    use UsesEventUuid;
+    use HasUuids;
 
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',

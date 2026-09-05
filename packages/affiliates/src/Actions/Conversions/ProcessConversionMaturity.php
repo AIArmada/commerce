@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Actions\Conversions;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
+use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -29,7 +30,7 @@ final class ProcessConversionMaturity
 
         $conversions = AffiliateConversion::query()
             ->where('status', QualifiedConversion::value())
-            ->where('occurred_at', '<=', now()->subDays($maturityDays))
+            ->where('occurred_at', '<=', CarbonImmutable::now()->subDays($maturityDays))
             ->with('affiliate')
             ->get();
 

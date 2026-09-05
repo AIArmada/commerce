@@ -179,7 +179,7 @@ final class ViewSubscription extends ViewRecord
                     DateTimePicker::make('trial_ends_at')
                         ->label('New Trial End Date')
                         ->required()
-                        ->minDate(now())
+                        ->minDate(CarbonImmutable::now())
                         ->default(fn (): CarbonImmutable => CarbonImmutable::now()->addDays(14)),
                 ])
                 ->visible(function (): bool {

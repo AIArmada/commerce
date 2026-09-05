@@ -10,6 +10,7 @@ use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResourc
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Schemas\AffiliateOfferApplicationForm;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Schemas\AffiliateOfferApplicationInfolist;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Tables\AffiliateOfferApplicationsTable;
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -29,6 +30,16 @@ final class AffiliateOfferApplicationResource extends Resource
     protected static ?string $modelLabel = 'Application';
 
     protected static ?string $pluralModelLabel = 'Applications';
+
+    public static function canViewAny(): bool
+    {
+        return NetworkAdminAccess::allows();
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {

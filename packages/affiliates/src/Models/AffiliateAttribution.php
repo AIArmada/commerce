@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -163,7 +164,7 @@ class AffiliateAttribution extends Model
         return $query->where(function (Builder $builder): void {
             $builder
                 ->whereNull('expires_at')
-                ->orWhere('expires_at', '>', now());
+                ->orWhere('expires_at', '>', CarbonImmutable::now());
         });
     }
 
@@ -183,7 +184,7 @@ class AffiliateAttribution extends Model
 
     public function refreshLastSeen(): void
     {
-        $this->last_seen_at = now();
+        $this->last_seen_at = CarbonImmutable::now();
 
         if ($this->isDirty('last_seen_at')) {
             $this->save();

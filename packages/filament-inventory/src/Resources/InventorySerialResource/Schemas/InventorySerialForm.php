@@ -7,6 +7,7 @@ namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -103,7 +104,7 @@ final class InventorySerialForm
                         ->schema([
                             DatePicker::make('received_at')
                                 ->label('Received Date')
-                                ->default(now()),
+                                ->default(CarbonImmutable::now()),
 
                             DatePicker::make('sold_at')
                                 ->label('Sold Date'),

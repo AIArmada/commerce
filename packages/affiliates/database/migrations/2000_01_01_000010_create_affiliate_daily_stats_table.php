@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tableName = config('affiliates.database.tables.daily_stats', 'affiliate_daily_stats');
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('affiliate_id');
             $table->date('date');

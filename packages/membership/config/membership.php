@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'database' => [
+        'json_column_type' => env('MEMBERSHIP_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'applications' => env('MEMBERSHIP_TABLE_APPLICATIONS', 'membership_applications'),
             'invitations' => env('MEMBERSHIP_TABLE_INVITATIONS', 'membership_invitations'),

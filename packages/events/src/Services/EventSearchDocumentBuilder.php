@@ -15,6 +15,7 @@ use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSearchDocument;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Support\EventOwnerScope;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -236,7 +237,7 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
             'body' => $this->resolveBodyForTarget($target),
             'facets' => $this->buildFacets($target),
             'keywords' => null,
-            'indexed_at' => now(),
+            'indexed_at' => CarbonImmutable::now(),
             'status' => 'active',
             'metadata' => $target->metadata ?? null,
         ];

@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -46,11 +47,11 @@ final class ClickVelocityRule implements FraudRule
                     'ip_address' => $context['ip_address'],
                 ],
                 'status' => FraudSignalStatus::Detected,
-                'detected_at' => now(),
+                'detected_at' => CarbonImmutable::now(),
             ]);
         }
 
-        Cache::put($cacheKey, $currentCount + 1, now()->addHour());
+        Cache::put($cacheKey, $currentCount + 1, CarbonImmutable::now()->addHour());
 
         return null;
     }

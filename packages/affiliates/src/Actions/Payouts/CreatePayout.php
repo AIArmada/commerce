@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -70,8 +71,8 @@ final class CreatePayout
                 'status' => 'claimed',
                 'amount_minor' => $total,
                 'currency' => $currency,
-                'claimed_at' => now(),
-                'lease_expires_at' => now()->addMinutes(5),
+                'claimed_at' => CarbonImmutable::now(),
+                'lease_expires_at' => CarbonImmutable::now()->addMinutes(5),
                 'owner_type' => $ownerType,
                 'owner_id' => $ownerId,
             ]);

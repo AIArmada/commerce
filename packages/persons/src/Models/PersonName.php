@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -41,10 +42,14 @@ class PersonName extends Model
                 return;
             }
 
-            static::query()
-                ->where('person_id', $name->person_id)
-                ->whereKeyNot($name->getKey())
-                ->update(['is_primary' => false]);
+            DB::transaction(function () use ($name): void {
+                $name->person()->lockForUpdate()->firstOrFail();
+
+                static::query()
+                    ->where('person_id', $name->person_id)
+                    ->whereKeyNot($name->getKey())
+                    ->update(['is_primary' => false]);
+            });
         });
     }
 

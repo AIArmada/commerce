@@ -13,6 +13,10 @@ return [
         'sort' => 50,
     ],
 
+    'authorization' => [
+        'admin_ability' => 'affiliate-network.admin',
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Marketplace

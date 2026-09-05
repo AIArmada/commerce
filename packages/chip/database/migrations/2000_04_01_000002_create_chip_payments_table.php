@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -12,7 +11,7 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::create($tablePrefix . 'payments', function (Blueprint $table): void {
+        commerce_schema_create_if_missing($tablePrefix . 'payments', function (Blueprint $table): void {
             // Core API fields - Payment object structure from CHIP API
             $table->uuid('id')->primary();
             $table->uuid('purchase_id'); // Reference to purchases table

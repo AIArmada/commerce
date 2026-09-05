@@ -281,7 +281,7 @@ class Collection extends Model implements Auditable, HasMedia
             return false;
         }
 
-        $now = now();
+        $now = CarbonImmutable::now();
 
         if ($this->published_at && $now->lt($this->published_at)) {
             return false;
@@ -299,7 +299,7 @@ class Collection extends Model implements Auditable, HasMedia
      */
     public function isScheduled(): bool
     {
-        return $this->published_at && now()->lt($this->published_at);
+        return $this->published_at && CarbonImmutable::now()->lt($this->published_at);
     }
 
     // =========================================================================
@@ -328,7 +328,7 @@ class Collection extends Model implements Auditable, HasMedia
 
     public function scopePublished(Builder $query): Builder
     {
-        $now = now();
+        $now = CarbonImmutable::now();
 
         return $query
             ->where('status', CatalogStatus::Active)

@@ -52,7 +52,7 @@ class WebhookRetryManager
 
         $executeRetry = function () use ($webhook, $retryOwner): WebhookResult {
             $webhook->increment('retry_count');
-            $webhook->update(['last_retry_at' => now()]);
+            $webhook->update(['last_retry_at' => CarbonImmutable::now()]);
 
             try {
                 $payload = is_array($webhook->payload) ? $webhook->payload : [];
@@ -62,7 +62,7 @@ class WebhookRetryManager
                     $webhook->forceFill([
                         'status' => 'processed',
                         'processed' => true,
-                        'processed_at' => now(),
+                        'processed_at' => CarbonImmutable::now(),
                         'last_error' => null,
                     ])->save();
                 } else {

@@ -15,6 +15,7 @@ use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -45,7 +46,7 @@ final class PayoutReconciliationService
                 : mb_strtolower($externalStatus);
             $newStatus = PayoutStatus::fromString($statusClass, $locked);
             $metadata = array_merge($locked->metadata ?? [], array_filter([
-                'reconciled_at' => now()->toIso8601String(),
+                'reconciled_at' => CarbonImmutable::now()->toIso8601String(),
                 'provider_status' => $providerStatus,
                 'external_reference' => $reference,
                 'external_data' => $externalData === [] ? null : $externalData,
@@ -53,9 +54,9 @@ final class PayoutReconciliationService
 
             $locked->forceFill([
                 'status' => $statusClass,
-                'paid_at' => $newStatus->equals(CompletedPayout::class) ? now() : $locked->paid_at,
-                'failed_at' => $newStatus->equals(FailedPayout::class) ? now() : $locked->failed_at,
-                'cancelled_at' => $newStatus->equals(CancelledPayout::class) ? now() : $locked->cancelled_at,
+                'paid_at' => $newStatus->equals(CompletedPayout::class) ? CarbonImmutable::now() : $locked->paid_at,
+                'failed_at' => $newStatus->equals(FailedPayout::class) ? CarbonImmutable::now() : $locked->failed_at,
+                'cancelled_at' => $newStatus->equals(CancelledPayout::class) ? CarbonImmutable::now() : $locked->cancelled_at,
                 'metadata' => $metadata,
             ])->save();
 
@@ -69,7 +70,7 @@ final class PayoutReconciliationService
                     },
                     'provider_reference' => $reference ?: $locked->operation->provider_reference,
                     'last_error_code' => $newStatus->equals(FailedPayout::class) ? 'PROVIDER_RECONCILED_FAILURE' : null,
-                    'completed_at' => $newStatus->equals(CompletedPayout::class) || $newStatus->equals(FailedPayout::class) || $newStatus->equals(CancelledPayout::class) ? now() : null,
+                    'completed_at' => $newStatus->equals(CompletedPayout::class) || $newStatus->equals(FailedPayout::class) || $newStatus->equals(CancelledPayout::class) ? CarbonImmutable::now() : null,
                     'lease_expires_at' => null,
                 ])->save();
             }
@@ -118,7 +119,7 @@ final class PayoutReconciliationService
                 'status' => ApprovedConversion::value(),
                 'affiliate_payout_id' => null,
             ]);
-            $operation->forceFill(['funds_released_at' => now()])->save();
+            $operation->forceFill(['funds_released_at' => CarbonImmutable::now()])->save();
 
             return true;
         }, attempts: 3);
@@ -134,7 +135,7 @@ final class PayoutReconciliationService
                     $operationQuery->whereIn('status', ['submitting', 'submitted', 'unknown']);
                 })->orWhereNotNull('external_reference');
             })
-            ->where('updated_at', '<=', now()->subMinutes(5))
+            ->where('updated_at', '<=', CarbonImmutable::now()->subMinutes(5))
             ->get();
     }
 

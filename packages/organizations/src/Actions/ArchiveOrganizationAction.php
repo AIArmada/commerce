@@ -8,6 +8,7 @@ use AIArmada\Organizations\Contracts\OrganizationAuthorization;
 use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Models\Organization;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -24,7 +25,7 @@ final class ArchiveOrganizationAction
             $from = $organization->status;
 
             if ($from !== OrganizationStatus::Archived) {
-                $organization->transitionToStatus(OrganizationStatus::Archived, now());
+                $organization->transitionToStatus(OrganizationStatus::Archived, CarbonImmutable::now());
                 $organization->save();
                 app(OrganizationLifecycleHook::class)->statusChanged($organization, $from, OrganizationStatus::Archived, $actor);
             }

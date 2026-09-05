@@ -8,10 +8,10 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\BookmarkFactory;
 use AIArmada\Engagement\Enums\BookmarkStatus;
-use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -41,7 +41,7 @@ final class Bookmark extends Model
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
-    use UsesEngagementUuid;
+    use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'engagement.owner';
 

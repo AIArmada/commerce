@@ -9,6 +9,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'database' => [
+        'json_column_type' => env('CART_JSON_COLUMN_TYPE', 'jsonb'),
         'table' => env('CART_DB_TABLE', 'carts'),
         'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
         'ttl' => env('CART_DB_TTL', 60 * 60 * 24 * 30), // 30 days, null to disable

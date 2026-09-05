@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Http\Livewire;
 
 use AIArmada\Communications\Models\NotificationInbox;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,14 +43,14 @@ final class InboxIndex extends Component
         $this->recipientQuery()
             ->where('id', $id)
             ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+            ->update(['read_at' => CarbonImmutable::now()]);
     }
 
     public function markAllAsRead(): void
     {
         $this->recipientQuery()
             ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+            ->update(['read_at' => CarbonImmutable::now()]);
     }
 
     public function archive(string $id): void
@@ -57,7 +58,7 @@ final class InboxIndex extends Component
         $this->recipientQuery()
             ->where('id', $id)
             ->whereNull('archived_at')
-            ->update(['archived_at' => now()]);
+            ->update(['archived_at' => CarbonImmutable::now()]);
     }
 
     public function setFilter(string $filter): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Ticketing\Database\Factories\PassFactory;
 use AIArmada\Ticketing\Events\PassCancelled;
@@ -18,6 +19,7 @@ use AIArmada\Ticketing\States\PassState;
 use AIArmada\Ticketing\States\Revoked;
 use AIArmada\Ticketing\States\Used;
 use AIArmada\Ticketing\States\Voided;
+use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -70,11 +72,25 @@ class Pass extends Model
 {
     use HasFactory;
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'ticketing.features.owner';
 
     protected static function newFactory(): PassFactory
     {
         return PassFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $pass): void {
+            TicketingOwnerGuard::assertRelations($pass, [
+                ['relation' => 'ticketType'],
+                ['relation' => 'ticketable', 'required' => true],
+                ['relation' => 'registration'],
+            ]);
+        });
     }
 
     public $incrementing = false;
@@ -228,19 +244,19 @@ class Pass extends Model
 
     public function markActivated(): void
     {
-        $this->activated_at ??= now();
+        $this->activated_at ??= CarbonImmutable::now();
         $this->status->transitionTo(Activated::class);
     }
 
     public function markUsed(): void
     {
-        $this->used_at ??= now();
+        $this->used_at ??= CarbonImmutable::now();
         $this->status->transitionTo(Used::class);
     }
 
     public function markCancelled(?string $reason = null): void
     {
-        $this->cancelled_at ??= now();
+        $this->cancelled_at ??= CarbonImmutable::now();
         $this->status_reason = $reason;
         $this->status->transitionTo(Cancelled::class);
 
@@ -249,7 +265,7 @@ class Pass extends Model
 
     public function markRevoked(?string $reason = null): void
     {
-        $this->revoked_at ??= now();
+        $this->revoked_at ??= CarbonImmutable::now();
         $this->status_reason = $reason;
         $this->status->transitionTo(Revoked::class);
 
@@ -258,7 +274,7 @@ class Pass extends Model
 
     public function markVoided(?string $reason = null): void
     {
-        $this->voided_at ??= now();
+        $this->voided_at ??= CarbonImmutable::now();
         $this->status_reason = $reason;
         $this->status->transitionTo(Voided::class);
 
@@ -267,7 +283,7 @@ class Pass extends Model
 
     public function markExpired(): void
     {
-        $this->expired_at ??= now();
+        $this->expired_at ??= CarbonImmutable::now();
         $this->status->transitionTo(Expired::class);
 
         Event::dispatch(new PassExpired($this));

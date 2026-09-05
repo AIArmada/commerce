@@ -8,6 +8,7 @@ use AIArmada\Inventory\Actions\ShipInventory;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -65,7 +66,7 @@ final class ShipStockAction
 
                         DatePicker::make('shipped_at')
                             ->label('Ship Date')
-                            ->default(now())
+                            ->default(CarbonImmutable::now())
                             ->required(),
                     ]),
 

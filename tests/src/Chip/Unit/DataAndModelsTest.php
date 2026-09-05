@@ -314,9 +314,11 @@ describe('BankAccount Model', function (): void {
 });
 
 describe('SendInstruction Model', function (): void {
-    it('returns amount numeric', function (): void {
+    it('returns amount as Money without floating point conversion', function (): void {
         $instruction = new SendInstruction(['amount' => '100.50']);
-        expect($instruction->amountNumeric)->toBe(100.50);
+
+        expect($instruction->amountMoney)->toBeInstanceOf(Money::class)
+            ->and($instruction->amountMoney->getAmount())->toBe(10050);
     });
 
     it('returns state label and color', function (): void {
@@ -340,17 +342,19 @@ describe('SendInstruction Model', function (): void {
 describe('SendLimit Model', function (): void {
     it('converts amounts to Money objects', function (): void {
         $limit = new SendLimit([
-            'amount' => 100,
-            'net_amount' => 99,
-            'fee' => 1,
+            'amount' => '100.01',
+            'net_amount' => '99.99',
+            'fee' => '0.02',
             'currency' => 'MYR',
         ]);
 
         expect($limit->amountMoney)->toBeInstanceOf(Money::class);
-        expect($limit->amountMoney->getAmount())->toBe(10000);
+        expect($limit->amountMoney->getAmount())->toBe(10001);
 
         expect($limit->netAmountMoney)->toBeInstanceOf(Money::class);
+        expect($limit->netAmountMoney->getAmount())->toBe(9999);
         expect($limit->feeMoney)->toBeInstanceOf(Money::class);
+        expect($limit->feeMoney->getAmount())->toBe(2);
     });
 
     it('returns status color', function (): void {

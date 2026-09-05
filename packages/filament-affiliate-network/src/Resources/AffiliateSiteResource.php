@@ -10,6 +10,7 @@ use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\Edit
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\ListAffiliateSites;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Schemas\AffiliateSiteForm;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Tables\AffiliateSitesTable;
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -31,6 +32,16 @@ final class AffiliateSiteResource extends Resource
     protected static ?string $pluralModelLabel = 'Sites';
 
     protected static ?string $tenantOwnershipRelationshipName = null;
+
+    public static function canViewAny(): bool
+    {
+        return NetworkAdminAccess::allows();
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {

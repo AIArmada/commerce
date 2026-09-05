@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
+use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Actions\DispatchEventChangeChainAction;
@@ -22,6 +25,14 @@ use AIArmada\Events\Models\EventSubmissionAttachment;
 use AIArmada\Events\Models\EventTemplate;
 use AIArmada\Events\Models\EventTemplateItem;
 use Illuminate\Auth\Access\AuthorizationException;
+
+it('fails closed when an owner-protected child query has no owner context', function (): void {
+    config()->set('events.features.owner.enabled', true);
+    app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
+
+    expect(fn (): int => EventOccurrence::query()->count())
+        ->toThrow(NoCurrentOwnerException::class);
+});
 
 it('isolates event reads and writes by owner', function (): void {
     $ownerA = User::query()->create([

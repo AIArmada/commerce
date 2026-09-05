@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.database.tables.attribute_values', 'product_attribute_values'), function (Blueprint $table): void {
+        commerce_schema_create_if_missing(config('products.database.tables.attribute_values', 'product_attribute_values'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)

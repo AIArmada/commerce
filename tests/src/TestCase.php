@@ -1524,6 +1524,7 @@ abstract class TestCase extends Orchestra
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('ends_at')->nullable();
             $table->timestamps();
+            $table->unique(['price_list_id', 'priceable_type', 'priceable_id', 'min_quantity'], 'prices_unique_per_quantity');
         });
 
         Schema::create('price_tiers', function (Blueprint $table): void {

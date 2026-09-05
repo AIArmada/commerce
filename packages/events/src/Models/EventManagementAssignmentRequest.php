@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Enums\AssignmentRequestStatus;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
 use Eloquent;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -37,7 +37,7 @@ use Illuminate\Support\Carbon;
 final class EventManagementAssignmentRequest extends Model
 {
     use HasFactory;
-    use UsesEventUuid;
+    use HasUuids;
 
     protected $fillable = [
         'manageable_type', 'manageable_id',

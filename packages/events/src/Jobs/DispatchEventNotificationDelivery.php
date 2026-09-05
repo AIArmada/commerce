@@ -7,6 +7,7 @@ namespace AIArmada\Events\Jobs;
 use AIArmada\Events\Models\EventNotificationDelivery;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Services\EventNotificationDispatcher;
+use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -78,7 +79,7 @@ final class DispatchEventNotificationDelivery implements ShouldBeUnique, ShouldQ
 
             $delivery->forceFill([
                 'status' => 'sent',
-                'sent_at' => now(),
+                'sent_at' => CarbonImmutable::now(),
                 'leased_at' => null,
                 'last_error_code' => null,
             ])->save();
@@ -86,7 +87,7 @@ final class DispatchEventNotificationDelivery implements ShouldBeUnique, ShouldQ
         } catch (Throwable $throwable) {
             $delivery->forceFill([
                 'status' => 'failed',
-                'failed_at' => now(),
+                'failed_at' => CarbonImmutable::now(),
                 'leased_at' => null,
                 'last_error_code' => $this->safeCode($throwable),
             ])->save();
@@ -106,7 +107,7 @@ final class DispatchEventNotificationDelivery implements ShouldBeUnique, ShouldQ
 
         $delivery->forceFill([
             'status' => 'dead',
-            'dead_at' => now(),
+            'dead_at' => CarbonImmutable::now(),
             'leased_at' => null,
             'last_error_code' => $delivery->last_error_code ?? $this->safeCode($throwable),
         ])->save();
@@ -124,12 +125,12 @@ final class DispatchEventNotificationDelivery implements ShouldBeUnique, ShouldQ
 
             $leaseSeconds = max(30, (int) config('events.change_notices.delivery.lease_seconds', 120));
 
-            if ($delivery->status === 'processing' && $delivery->leased_at?->isAfter(now()->subSeconds($leaseSeconds))) {
+            if ($delivery->status === 'processing' && $delivery->leased_at?->isAfter(CarbonImmutable::now()->subSeconds($leaseSeconds))) {
                 return null;
             }
 
             if ($delivery->attempt_count >= $delivery->max_attempts) {
-                $delivery->forceFill(['status' => 'dead', 'dead_at' => now(), 'leased_at' => null])->save();
+                $delivery->forceFill(['status' => 'dead', 'dead_at' => CarbonImmutable::now(), 'leased_at' => null])->save();
 
                 return null;
             }
@@ -137,8 +138,8 @@ final class DispatchEventNotificationDelivery implements ShouldBeUnique, ShouldQ
             $delivery->forceFill([
                 'status' => 'processing',
                 'attempt_count' => $delivery->attempt_count + 1,
-                'last_attempt_at' => now(),
-                'leased_at' => now(),
+                'last_attempt_at' => CarbonImmutable::now(),
+                'leased_at' => CarbonImmutable::now(),
             ])->save();
 
             return $delivery;

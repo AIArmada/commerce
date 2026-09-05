@@ -41,6 +41,14 @@ class Seat extends Model
         return SeatFactory::new();
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (self $seat): void {
+            $seat->holds()->each(fn (SeatHold $hold): mixed => $hold->delete());
+            $seat->allocations()->each(fn (SeatAllocation $allocation): mixed => $allocation->delete());
+        });
+    }
+
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -103,7 +111,7 @@ class Seat extends Model
     public function activeAllocation(): HasOne
     {
         return $this->hasOne(SeatAllocation::class, 'seat_id')
-            ->where('state', 'active');
+            ->where('status', 'active');
     }
 
     /** @param Builder<Seat> $query */

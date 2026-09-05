@@ -30,12 +30,12 @@ it('releases active allocations', function (): void {
 
     expect($count)->toBe(1);
     $allocation = SeatAllocation::query()->first();
-    expect($allocation->state)->toBe('released');
+    expect($allocation->status)->toBe('released');
     expect($allocation->released_at)->not->toBeNull();
 });
 
 it('returns zero when no active allocations', function (): void {
-    SeatAllocation::query()->update(['state' => 'released', 'released_at' => now()]);
+    SeatAllocation::query()->update(['status' => 'released', 'released_at' => now()]);
 
     $count = app(ReleaseAllocationsAction::class)->handle(
         allocToType: $this->allocToType,
@@ -46,7 +46,7 @@ it('returns zero when no active allocations', function (): void {
 });
 
 it('does not release revoked allocations', function (): void {
-    SeatAllocation::query()->update(['state' => 'revoked', 'revoked_at' => now()]);
+    SeatAllocation::query()->update(['status' => 'revoked', 'revoked_at' => now()]);
 
     $count = app(ReleaseAllocationsAction::class)->handle(
         allocToType: $this->allocToType,

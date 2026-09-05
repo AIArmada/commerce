@@ -113,7 +113,7 @@ class AffiliateProgramMembership extends Pivot
     {
         $this->update([
             'status' => MembershipStatus::Approved,
-            'approved_at' => now(),
+            'approved_at' => CarbonImmutable::now(),
             'approved_by' => $approvedBy,
             'rejected_at' => null,
             'suspended_at' => null,
@@ -124,7 +124,7 @@ class AffiliateProgramMembership extends Pivot
     {
         $this->update([
             'status' => MembershipStatus::Rejected,
-            'rejected_at' => now(),
+            'rejected_at' => CarbonImmutable::now(),
         ]);
     }
 
@@ -132,7 +132,7 @@ class AffiliateProgramMembership extends Pivot
     {
         $this->update([
             'status' => MembershipStatus::Suspended,
-            'suspended_at' => now(),
+            'suspended_at' => CarbonImmutable::now(),
         ]);
     }
 

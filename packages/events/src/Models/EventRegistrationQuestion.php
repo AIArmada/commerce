@@ -7,9 +7,9 @@ namespace AIArmada\Events\Models;
 use AIArmada\Events\Database\Factories\EventRegistrationQuestionFactory;
 use AIArmada\Events\Enums\EventRegistrationQuestionStatus;
 use AIArmada\Events\Enums\EventRegistrationQuestionType;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,8 +43,8 @@ use Spatie\EloquentSortable\SortableTrait;
 class EventRegistrationQuestion extends Model implements Sortable
 {
     use HasFactory;
+    use HasUuids;
     use SortableTrait;
-    use UsesEventUuid;
 
     /** @var array<string, mixed> */
     public array $sortable = [

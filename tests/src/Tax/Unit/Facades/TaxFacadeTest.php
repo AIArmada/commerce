@@ -11,6 +11,8 @@ use AIArmada\Tax\Facades\Tax;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Services\TaxCalculator;
+use AIArmada\Tax\Settings\TaxSettings;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class TaxFacadeTest extends TaxTestCase
@@ -52,6 +54,8 @@ class TaxFacadeTest extends TaxTestCase
 
     public function test_facade_can_calculate_shipping_tax(): void
     {
+        $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
+
         config(['tax.defaults.calculate_tax_on_shipping' => true]);
 
         $zone = TaxZone::create([
@@ -78,6 +82,8 @@ class TaxFacadeTest extends TaxTestCase
 
     public function test_facade_returns_zero_when_tax_disabled(): void
     {
+        $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
+
         config(['tax.features.enabled' => false]);
 
         $result = Tax::calculateTax(10000);

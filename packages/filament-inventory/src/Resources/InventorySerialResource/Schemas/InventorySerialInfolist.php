@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas;
 
 use AIArmada\Inventory\Models\InventorySerial;
+use Carbon\CarbonImmutable;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -74,7 +75,7 @@ final class InventorySerialInfolist
                             ->color(fn (InventorySerial $record): string => match (true) {
                                 $record->warranty_expires_at === null => 'gray',
                                 $record->warranty_expires_at->isPast() => 'danger',
-                                $record->warranty_expires_at->diffInDays(now()) <= 30 => 'warning',
+                                $record->warranty_expires_at->diffInDays(CarbonImmutable::now()) <= 30 => 'warning',
                                 default => 'success',
                             })
                             ->placeholder('No warranty'),

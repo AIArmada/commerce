@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Resources\InvoiceResource\Pages;
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -130,7 +131,7 @@ final class ViewInvoice extends ViewRecord
                     /** @var Purchase $record */
                     $record = $this->getRecord();
                     $record->status = 'paid';
-                    $record->paid_on = now()->getTimestamp();
+                    $record->paid_on = CarbonImmutable::now()->getTimestamp();
                     $record->save();
 
                     Notification::make()

@@ -7,6 +7,7 @@ namespace AIArmada\Seating\Console\Commands;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Models\SeatHold;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -38,7 +39,7 @@ class ReleaseExpiredHoldsCommand extends Command
         $released = 0;
 
         SeatHold::query()
-            ->where('expires_at', '<', now())
+            ->where('expires_at', '<', CarbonImmutable::now())
             ->whereNull('converted_at')
             ->chunkById($chunk, function (Collection $holds) use (&$released): void {
                 $released += $holds->count();

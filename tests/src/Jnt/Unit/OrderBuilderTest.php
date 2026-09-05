@@ -35,13 +35,13 @@ it('builds a valid order payload', function (): void {
         name: 'Basketball',
         quantity: 2,
         weight: 10,
-        price: 50.00
+        priceMinor: 5000
     );
 
     $packageInfo = new PackageInfoData(
         quantity: 1,
         weight: 10.5,
-        value: 50,
+        valueMinor: 5000,
         goodsType: 'ITN8'
     );
 
@@ -52,6 +52,8 @@ it('builds a valid order payload', function (): void {
         ->receiver($receiver)
         ->addItem($item)
         ->packageInfo($packageInfo)
+        ->insurance(50000)
+        ->cashOnDelivery(19990)
         ->build();
 
     expect($payload)->toBeArray()
@@ -61,7 +63,11 @@ it('builds a valid order payload', function (): void {
         ->and($payload['sender'])->toBeArray()
         ->and($payload['receiver'])->toBeArray()
         ->and($payload['items'])->toHaveCount(1)
-        ->and($payload['packageInfo'])->toBeArray();
+        ->and($payload['packageInfo'])->toBeArray()
+        ->and($payload['items'][0]['itemValue'])->toBe('50.00')
+        ->and($payload['packageInfo']['packageValue'])->toBe('50.00')
+        ->and($payload['offerFeeInfo']['offerValue'])->toBe('500.00')
+        ->and($payload['codInfo']['codValue'])->toBe('199.90');
 });
 
 it('throws exception when orderId is missing', function (): void {

@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 
 final class CurrentOrganizationMiddleware
 {
-    public function handle(Request $request, Closure $next, string $required = 'false'): mixed
+    public function handle(Request $request, Closure $next, string $required = 'true'): mixed
     {
         $organization = app(CurrentOrganizationResolver::class)->resolve();
         $contextRequired = filter_var($required, FILTER_VALIDATE_BOOLEAN)

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventNotificationDeliveryFactory;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,7 +35,7 @@ use Illuminate\Support\Carbon;
 final class EventNotificationDelivery extends Model
 {
     use HasFactory;
-    use UsesEventUuid;
+    use HasUuids;
 
     protected $fillable = [
         'event_notification_batch_id',

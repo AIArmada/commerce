@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -156,7 +157,7 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
                 return false;
             }
 
-            $operation->forceFill(['status' => 'reversed', 'completed_at' => now()])->save();
+            $operation->forceFill(['status' => 'reversed', 'completed_at' => CarbonImmutable::now()])->save();
 
             return true;
         } catch (Throwable $throwable) {
@@ -171,12 +172,19 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
 
     public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
     {
-        return now()->addDays(2);
+        return CarbonImmutable::now()->addDays(2);
     }
 
     public function getFees(int $amountMinor, string $currency): int
     {
-        return (int) ceil($amountMinor * 0.0025) + 25;
+        $percentageFee = intdiv($amountMinor, 10_000) * 25;
+        $remainder = $amountMinor % 10_000;
+
+        if ($remainder > 0) {
+            $percentageFee += intdiv(($remainder * 25) + 9_999, 10_000);
+        }
+
+        return $percentageFee + 25;
     }
 
     public function validateDetails(array $details): array

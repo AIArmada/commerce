@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\FilamentCart\Models\Cart;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -259,7 +260,7 @@ class MarkAbandonedCartsCommand extends Command
      */
     private function abandonedCartsQuery(int $minutes): Builder
     {
-        $cutoff = now()->subMinutes($minutes);
+        $cutoff = CarbonImmutable::now()->subMinutes($minutes);
 
         return Cart::query()->forOwner()
             ->where('items_count', '>', 0)

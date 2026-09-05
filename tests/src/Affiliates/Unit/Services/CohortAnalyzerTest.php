@@ -9,9 +9,9 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\CohortAnalyzer;
 use AIArmada\Affiliates\States\Active;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
 
@@ -20,7 +20,7 @@ beforeEach(function (): void {
     $this->analyzer = new CohortAnalyzer;
 
     // Set fixed time for consistent testing
-    Carbon::setTestNow('2024-06-01 12:00:00');
+    CarbonImmutable::setTestNow('2024-06-01 12:00:00');
 });
 
 test('analyzeMonthly returns correct cohort data', function (): void {
@@ -99,8 +99,8 @@ test('analyzeMonthly returns correct cohort data', function (): void {
     ]);
 
     $results = $this->analyzer->analyzeMonthly(
-        Carbon::parse('2024-01-01'),
-        Carbon::parse('2024-02-29')
+        CarbonImmutable::parse('2024-01-01'),
+        CarbonImmutable::parse('2024-02-29')
     );
 
     // Assert Cohort 2024-01
@@ -190,8 +190,8 @@ test('calculateRetentionCurve returns aggregated data', function (): void {
     ]);
 
     $curve = $this->analyzer->calculateRetentionCurve(
-        Carbon::parse('2024-01-01'),
-        Carbon::parse('2024-02-29'),
+        CarbonImmutable::parse('2024-01-01'),
+        CarbonImmutable::parse('2024-02-29'),
         3
     );
 
@@ -248,8 +248,8 @@ test('calculateLtv returns correct lifetime value metrics', function (): void {
     // Avg per affiliate: 24000
 
     $results = $this->analyzer->calculateLtv(
-        Carbon::parse('2024-01-01'),
-        Carbon::parse('2024-02-29')
+        CarbonImmutable::parse('2024-01-01'),
+        CarbonImmutable::parse('2024-02-29')
     );
 
     expect($results)->toHaveKey('2024-01');
@@ -307,8 +307,8 @@ test('compareCohorts correctly identifies best and worst cohorts', function (): 
     ]);
 
     $comparison = $this->analyzer->compareCohorts(
-        Carbon::parse('2024-01-01'),
-        Carbon::parse('2024-02-29')
+        CarbonImmutable::parse('2024-01-01'),
+        CarbonImmutable::parse('2024-02-29')
     );
 
     expect($comparison['best_cohort'])->toBe('2024-01')
@@ -318,8 +318,8 @@ test('compareCohorts correctly identifies best and worst cohorts', function (): 
 
 test('compareCohorts handles empty data', function (): void {
     $comparison = $this->analyzer->compareCohorts(
-        Carbon::parse('2020-01-01'),
-        Carbon::parse('2020-02-01')
+        CarbonImmutable::parse('2020-01-01'),
+        CarbonImmutable::parse('2020-02-01')
     );
 
     expect($comparison['best_cohort'])->toBeNull()
@@ -370,8 +370,8 @@ test('analyzeBySource groups by canonical attribution source', function (): void
     ]);
 
     $results = $this->analyzer->analyzeBySource(
-        Carbon::parse('2024-01-01'),
-        Carbon::parse('2024-01-31')
+        CarbonImmutable::parse('2024-01-01'),
+        CarbonImmutable::parse('2024-01-31')
     );
 
     // Affiliates without a canonical attribution source default to direct.
@@ -415,8 +415,8 @@ test('analyzeBySource uses value_minor', function (): void {
     ]);
 
     $results = $this->analyzer->analyzeBySource(
-        Carbon::parse('2024-01-01'),
-        Carbon::parse('2024-01-31')
+        CarbonImmutable::parse('2024-01-01'),
+        CarbonImmutable::parse('2024-01-31')
     );
 
     expect($results['legacy_feed']['total_revenue'])->toBe(6000)
@@ -448,8 +448,8 @@ test('analyzeMonthly prefers neutral revenue value over legacy total', function 
     ]);
 
     $results = $this->analyzer->analyzeMonthly(
-        Carbon::parse('2024-01-01'),
-        Carbon::parse('2024-01-31'),
+        CarbonImmutable::parse('2024-01-01'),
+        CarbonImmutable::parse('2024-01-31'),
         1
     );
 

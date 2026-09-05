@@ -7,6 +7,7 @@ namespace AIArmada\FilamentChip\Widgets;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -55,17 +56,17 @@ final class ChipStatsWidget extends BaseWidget
 
     private function getTodayRevenue(): int
     {
-        return $this->getRevenueForPeriod(now()->startOfDay());
+        return $this->getRevenueForPeriod(CarbonImmutable::now()->startOfDay());
     }
 
     private function getWeekRevenue(): int
     {
-        return $this->getRevenueForPeriod(now()->subDays(7));
+        return $this->getRevenueForPeriod(CarbonImmutable::now()->subDays(7));
     }
 
     private function getMonthRevenue(): int
     {
-        return $this->getRevenueForPeriod(now()->startOfMonth());
+        return $this->getRevenueForPeriod(CarbonImmutable::now()->startOfMonth());
     }
 
     private function getRevenueForPeriod(DateTimeInterface $since): int

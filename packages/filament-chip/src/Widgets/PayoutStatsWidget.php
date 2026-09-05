@@ -6,6 +6,7 @@ namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -55,17 +56,17 @@ final class PayoutStatsWidget extends BaseWidget
 
     private function getTodayPayouts(): float
     {
-        return $this->getPayoutsForPeriod(now()->startOfDay());
+        return $this->getPayoutsForPeriod(CarbonImmutable::now()->startOfDay());
     }
 
     private function getWeekPayouts(): float
     {
-        return $this->getPayoutsForPeriod(now()->subDays(7));
+        return $this->getPayoutsForPeriod(CarbonImmutable::now()->subDays(7));
     }
 
     private function getMonthPayouts(): float
     {
-        return $this->getPayoutsForPeriod(now()->startOfMonth());
+        return $this->getPayoutsForPeriod(CarbonImmutable::now()->startOfMonth());
     }
 
     private function getPayoutsForPeriod(DateTimeInterface $since): float

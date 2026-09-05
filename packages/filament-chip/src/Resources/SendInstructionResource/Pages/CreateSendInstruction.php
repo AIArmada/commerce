@@ -6,6 +6,7 @@ namespace AIArmada\FilamentChip\Resources\SendInstructionResource\Pages;
 
 use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Services\ChipSendService;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentChip\Resources\SendInstructionResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
@@ -56,7 +57,10 @@ final class CreateSendInstruction extends CreateRecord
         }
 
         try {
-            $amountInCents = (int) round((float) $data['amount'] * 100);
+            $amountInCents = MoneyFormatter::majorToMinor(
+                (string) $data['amount'],
+                config('chip.defaults.currency', 'MYR'),
+            );
 
             $instruction = $service->createSendInstruction(
                 amountInCents: $amountInCents,

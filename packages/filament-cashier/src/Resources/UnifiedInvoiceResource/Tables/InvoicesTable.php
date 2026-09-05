@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Tables;
 
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\InvoiceStatus;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -112,7 +113,7 @@ class InvoicesTable
                                 }
 
                                 fclose($output);
-                            }, 'invoices-' . now()->format('Y-m-d') . '.csv');
+                            }, 'invoices-' . CarbonImmutable::now()->format('Y-m-d') . '.csv');
                         }),
                 ]),
             ])

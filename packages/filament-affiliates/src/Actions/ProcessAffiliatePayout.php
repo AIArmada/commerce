@@ -14,6 +14,7 @@ use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -55,7 +56,7 @@ final class ProcessAffiliatePayout
                 $method = $affiliate->payoutMethods()->where('is_default', true)->first();
 
                 if ($method === null) {
-                    $locked->forceFill(['status' => FailedPayout::class, 'failed_at' => now()])->save();
+                    $locked->forceFill(['status' => FailedPayout::class, 'failed_at' => CarbonImmutable::now()])->save();
                     $locked->operation->forceFill(['status' => 'failed', 'last_error_code' => 'NO_DEFAULT_PAYOUT_METHOD'])->save();
                     $locked->events()->create([
                         'from_status' => PendingPayout::value(),
@@ -76,7 +77,7 @@ final class ProcessAffiliatePayout
                 $locked->forceFill(['status' => ProcessingPayout::class])->save();
                 $locked->operation->forceFill([
                     'status' => $needsReconciliation ? $locked->operation->status : 'submitting',
-                    'lease_expires_at' => now()->addMinutes(5),
+                    'lease_expires_at' => CarbonImmutable::now()->addMinutes(5),
                 ])->save();
 
                 return [
@@ -142,14 +143,14 @@ final class ProcessAffiliatePayout
                 $locked->forceFill([
                     'status' => CompletedPayout::class,
                     'external_reference' => $reference,
-                    'paid_at' => now(),
+                    'paid_at' => CarbonImmutable::now(),
                     'metadata' => array_merge($locked->metadata ?? [], $metadata),
                 ])->save();
                 $locked->operation->forceFill([
                     'status' => 'completed',
                     'provider_reference' => $reference,
                     'last_error_code' => null,
-                    'completed_at' => now(),
+                    'completed_at' => CarbonImmutable::now(),
                     'lease_expires_at' => null,
                 ])->save();
             } elseif ($result->isPending()) {
@@ -177,12 +178,12 @@ final class ProcessAffiliatePayout
                     'lease_expires_at' => null,
                 ])->save();
             } else {
-                $locked->forceFill(['status' => FailedPayout::class, 'failed_at' => now()])->save();
+                $locked->forceFill(['status' => FailedPayout::class, 'failed_at' => CarbonImmutable::now()])->save();
                 $locked->operation->forceFill([
                     'status' => 'failed',
                     'last_error_code' => $result->failureCode,
                     'lease_expires_at' => null,
-                    'completed_at' => now(),
+                    'completed_at' => CarbonImmutable::now(),
                 ])->save();
             }
 

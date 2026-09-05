@@ -9,6 +9,7 @@ return [
     /* Database */
     'database' => [
         'table_prefix' => $tablePrefix,
+        'json_column_type' => env('MODERATION_JSON_COLUMN_TYPE', 'jsonb'),
 
         'tables' => [
             'blocks' => env('MODERATION_TABLE_BLOCKS', $tablePrefix . 'blocks'),

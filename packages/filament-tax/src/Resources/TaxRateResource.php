@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentTax\Resources\TaxRateResource\Pages;
 use AIArmada\FilamentTax\Resources\TaxRateResource\Schemas\TaxRateForm;
 use AIArmada\FilamentTax\Resources\TaxRateResource\Tables\TaxRatesTable;
@@ -41,7 +42,7 @@ final class TaxRateResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @phpstan-ignore return.type (template type not preserved through helper) */
-        return parent::getEloquentQuery();
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
     }
 
     public static function form(Schema $schema): Schema

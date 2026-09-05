@@ -9,7 +9,7 @@ use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Laravel\Cashier\SubscriptionBuilder;
@@ -110,7 +110,7 @@ class StripeSubscriptionBuilder implements SubscriptionBuilderContract
     public function trialDays(int $trialDays): self
     {
         $this->builder->trialDays($trialDays);
-        $this->trialEnd = Carbon::now()->addDays($trialDays);
+        $this->trialEnd = CarbonImmutable::now()->addDays($trialDays);
 
         return $this;
     }
@@ -185,7 +185,7 @@ class StripeSubscriptionBuilder implements SubscriptionBuilderContract
     public function anchorBillingCycleOn(DateTimeInterface | CarbonInterface $date): self
     {
         if (! $date instanceof CarbonInterface) {
-            $date = Carbon::instance($date);
+            $date = CarbonImmutable::instance($date);
         }
 
         $this->builder->anchorBillingCycleOn($date);

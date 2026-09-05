@@ -11,6 +11,7 @@ return [
     /* Database */
     'database' => [
         'table_prefix' => $tablePrefix,
+        'json_column_type' => env('COMMUNICATIONS_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'batches' => env('COMMUNICATIONS_TABLE_BATCHES', $tablePrefix . 'communication_batches'),
             'threads' => env('COMMUNICATIONS_TABLE_THREADS', $tablePrefix . 'communication_threads'),

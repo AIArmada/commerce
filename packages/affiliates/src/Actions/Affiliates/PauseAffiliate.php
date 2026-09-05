@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Actions\Affiliates;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Paused;
+use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class PauseAffiliate
@@ -15,7 +16,7 @@ final class PauseAffiliate
     public function handle(Affiliate $affiliate): Affiliate
     {
         $affiliate->status = new Paused($affiliate);
-        $affiliate->paused_at = now();
+        $affiliate->paused_at = CarbonImmutable::now();
         $affiliate->save();
 
         return $affiliate;

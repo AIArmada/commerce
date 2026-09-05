@@ -12,6 +12,7 @@ use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -36,6 +37,7 @@ use Spatie\ModelStates\HasStates;
  * @property array<string, mixed>|null $commission_override
  * @property list<array<string, mixed>>|null $upline_levels
  * @property string|null $external_reference
+ * @property string|null $idempotency_key
  * @property string|null $performance_bonus_key
  * @property string|null $conversion_type
  * @property int $subtotal_minor
@@ -88,6 +90,7 @@ class AffiliateConversion extends Model
         'commission_override',
         'upline_levels',
         'external_reference',
+        'idempotency_key',
         'performance_bonus_key',
         'conversion_type',
         'subtotal_minor',
@@ -183,7 +186,7 @@ class AffiliateConversion extends Model
 
         static::created(function (self $conversion): void {
             if (config('affiliates.commissions.auto_approve', false) && $conversion->status->equals(PendingConversion::class)) {
-                $approvedAt = now();
+                $approvedAt = CarbonImmutable::now();
 
                 $conversion->updateQuietly([
                     'status' => ApprovedConversion::class,
@@ -203,7 +206,7 @@ class AffiliateConversion extends Model
 
             if ($newStatus->equals(ApprovedConversion::class)) {
                 if ($conversion->approved_at === null) {
-                    $approvedAt = now();
+                    $approvedAt = CarbonImmutable::now();
 
                     $conversion->updateQuietly(['approved_at' => $approvedAt]);
                     $conversion->approved_at = $approvedAt;
@@ -215,15 +218,15 @@ class AffiliateConversion extends Model
             }
 
             if ($newStatus->equals(RejectedConversion::class) && $conversion->rejected_at === null) {
-                $conversion->updateQuietly(['rejected_at' => now()]);
-                $conversion->rejected_at = now();
+                $conversion->updateQuietly(['rejected_at' => CarbonImmutable::now()]);
+                $conversion->rejected_at = CarbonImmutable::now();
 
                 return;
             }
 
             if ($newStatus->equals(PaidConversion::class) && $conversion->paid_at === null) {
-                $conversion->updateQuietly(['paid_at' => now()]);
-                $conversion->paid_at = now();
+                $conversion->updateQuietly(['paid_at' => CarbonImmutable::now()]);
+                $conversion->paid_at = CarbonImmutable::now();
             }
         });
     }

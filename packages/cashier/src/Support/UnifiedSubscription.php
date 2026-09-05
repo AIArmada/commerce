@@ -34,7 +34,7 @@ final readonly class UnifiedSubscription
         $attributes = $subscription->getAttributes();
         $trialEndsAt = $attributes['trial_ends_at'] ?? null;
         $endsAt = $attributes['ends_at'] ?? null;
-        $createdAt = $attributes['created_at'] ?? now();
+        $createdAt = $attributes['created_at'] ?? CarbonImmutable::now();
 
         return new self(
             id: (string) $subscription->getKey(),
@@ -60,7 +60,7 @@ final readonly class UnifiedSubscription
         $trialEndsAt = $attributes['trial_ends_at'] ?? null;
         $endsAt = $attributes['ends_at'] ?? null;
         $nextBillingAt = $attributes['next_billing_at'] ?? null;
-        $createdAt = $attributes['created_at'] ?? now();
+        $createdAt = $attributes['created_at'] ?? CarbonImmutable::now();
 
         return new self(
             id: (string) $subscription->getKey(),

@@ -63,10 +63,14 @@ $ticketType = app(EnsureTicketTypeAction::class)->handle($workshop, [
     'price' => 50000, // 500.00 in minor units
     'currency' => 'MYR',
     'max_quantity' => 5,
-    'sales_starts_at' => now()->subDay(),
+    'sales_starts_at' => CarbonImmutable::now()->subDay(),
     'sales_ends_at' => $workshop->starts_at,
 ]);
 ```
+
+Create ticketing records inside the current owner context. For an intentional
+global operation, use an explicit `OwnerContext::withOwner(null, ...)` scope;
+ownerless rows are not included in tenant reads.
 
 ### Ticket Type Parameters
 

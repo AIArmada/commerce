@@ -13,7 +13,7 @@ return new class extends Migration
         $tableName = config('affiliates.database.tables.attributions', 'affiliate_attributions');
         $jsonType = commerce_json_column_type('affiliates');
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('affiliate_id')->index();
             $table->string('affiliate_code', 64)->index();

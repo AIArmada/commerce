@@ -42,14 +42,17 @@ it('prevents creating child rows for orders outside the current owner scope', fu
     $ownerB = TestOwnerChild::query()->create(['name' => 'Owner B']);
 
     $orderB = OwnerContext::withOwner($ownerB, function () use ($ownerB): Order {
-        return Order::query()->create([
-            'owner_type' => $ownerB->getMorphClass(),
-            'owner_id' => $ownerB->getKey(),
+        $order = Order::query()->make([
             'status' => Created::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,
         ]);
+
+        $order->assignOwner($ownerB);
+        $order->save();
+
+        return $order;
     });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
@@ -94,14 +97,15 @@ it('auto-assigns child row owner from the parent order', function (): void {
         }
     });
 
-    $orderA = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
+    $orderA = Order::query()->make([
         'status' => Created::class,
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
     ]);
+
+    $orderA->assignOwner($ownerA);
+    $orderA->save();
 
     $item = OrderItem::query()->create([
         'order_id' => $orderA->id,

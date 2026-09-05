@@ -59,6 +59,7 @@ describe('VoucherUsage Model', function (): void {
             $usage = new VoucherUsage;
             $expected = [
                 'voucher_id',
+                'idempotency_key',
                 'discount_amount',
                 'currency',
                 'channel',
@@ -76,6 +77,7 @@ describe('VoucherUsage Model', function (): void {
         it('can be mass assigned', function (): void {
             $usage = new VoucherUsage([
                 'voucher_id' => 'voucher-123',
+                'idempotency_key' => 'usage-123',
                 'discount_amount' => 1500,
                 'currency' => 'MYR',
                 'channel' => VoucherUsage::CHANNEL_AUTOMATIC,
@@ -88,6 +90,7 @@ describe('VoucherUsage Model', function (): void {
             ]);
 
             expect($usage->voucher_id)->toBe('voucher-123')
+                ->and($usage->idempotency_key)->toBe('usage-123')
                 ->and($usage->discount_amount)->toBe(1500)
                 ->and($usage->currency)->toBe('MYR')
                 ->and($usage->channel)->toBe(VoucherUsage::CHANNEL_AUTOMATIC)

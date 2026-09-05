@@ -10,7 +10,7 @@ resolved context by default.
 
 ```php
 'middleware' => [
-    'require_context' => false,
+    'require_context' => true,
 ],
 ```
 

@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
 final class GeoAnomalyRule implements FraudRule
@@ -38,7 +39,7 @@ final class GeoAnomalyRule implements FraudRule
             return null;
         }
 
-        $timeDiff = now()->diffInMinutes($lastTouchpoint->touched_at);
+        $timeDiff = CarbonImmutable::now()->diffInMinutes($lastTouchpoint->touched_at);
 
         if ($timeDiff < 5 && $lastTouchpoint->ip_address !== $context['ip_address']) {
             return AffiliateFraudSignal::create([
@@ -53,7 +54,7 @@ final class GeoAnomalyRule implements FraudRule
                     'time_diff_minutes' => $timeDiff,
                 ],
                 'status' => FraudSignalStatus::Detected,
-                'detected_at' => now(),
+                'detected_at' => CarbonImmutable::now(),
             ]);
         }
 

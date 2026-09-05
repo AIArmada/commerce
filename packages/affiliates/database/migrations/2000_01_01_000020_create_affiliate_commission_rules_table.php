@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tableName = config('affiliates.database.tables.commission_rules', 'affiliate_commission_rules');
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('program_id')->nullable();
             $table->string('name');

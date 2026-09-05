@@ -30,6 +30,7 @@ use AIArmada\Checkout\States\Pending;
 use AIArmada\Checkout\States\Processing;
 use AIArmada\Checkout\Transformers\NullSessionDataTransformer;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -66,7 +67,7 @@ final class CheckoutService implements CheckoutServiceInterface
             'cart_snapshot' => $this->createCartSnapshot($cart),
             'step_states' => $this->initializeStepStates(),
             'current_step' => $this->getFirstStepIdentifier(),
-            'expires_at' => now()->addSeconds(config('checkout.defaults.session_ttl', 86400)),
+            'expires_at' => CarbonImmutable::now()->addSeconds(config('checkout.defaults.session_ttl', 86400)),
         ]);
 
         $this->events->dispatch(new CheckoutStarted($session));
@@ -244,7 +245,7 @@ final class CheckoutService implements CheckoutServiceInterface
             'subtotal' => $subtotal,
             'total' => $total,
             'item_count' => $cart->countItems(),
-            'captured_at' => now()->toIso8601String(),
+            'captured_at' => CarbonImmutable::now()->toIso8601String(),
         ];
     }
 
@@ -363,7 +364,7 @@ final class CheckoutService implements CheckoutServiceInterface
                 'payment_data' => array_merge($session->payment_data ?? [], [
                     'status' => $paymentResult->status->value,
                     'verification_status' => $paymentResult->status->value,
-                    'verified_at' => now()->toIso8601String(),
+                    'verified_at' => CarbonImmutable::now()->toIso8601String(),
                     'payment_id' => $paymentResult->paymentId ?? $session->payment_id,
                     'transaction_id' => $paymentResult->transactionId ?? ($session->payment_data['transaction_id'] ?? null),
                     'provider' => $paymentResult->provider ?? ($session->payment_data['provider'] ?? null),

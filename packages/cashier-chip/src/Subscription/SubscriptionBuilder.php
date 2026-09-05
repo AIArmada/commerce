@@ -14,7 +14,7 @@ use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Services\VoucherService;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Exception;
@@ -166,7 +166,7 @@ class SubscriptionBuilder
      */
     public function trialDays(int $trialDays)
     {
-        $this->trialExpires = Carbon::now()->addDays($trialDays);
+        $this->trialExpires = CarbonImmutable::now()->addDays($trialDays);
 
         return $this;
     }
@@ -256,7 +256,7 @@ class SubscriptionBuilder
      */
     public function anchorBillingCycleOn(DateTimeInterface | CarbonInterface $date)
     {
-        $this->billingCycleAnchor = Carbon::instance($date);
+        $this->billingCycleAnchor = CarbonImmutable::instance($date);
 
         return $this;
     }
@@ -303,7 +303,7 @@ class SubscriptionBuilder
      */
     protected function resolveTenantOwnerAttributes(): array
     {
-        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
             return [];
         }
 
@@ -549,7 +549,7 @@ class SubscriptionBuilder
             return $this->billingCycleAnchor->copy();
         }
 
-        return Carbon::now()->add($this->billingInterval, $this->billingIntervalCount);
+        return CarbonImmutable::now()->add($this->billingInterval, $this->billingIntervalCount);
     }
 
     /**

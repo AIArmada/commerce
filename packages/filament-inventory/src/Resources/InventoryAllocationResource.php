@@ -11,6 +11,7 @@ use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Tables\Inve
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -73,7 +74,7 @@ final class InventoryAllocationResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $expiredCount = self::getEloquentQuery()
-            ->where('expires_at', '<', now())
+            ->where('expires_at', '<', CarbonImmutable::now())
             ->count();
 
         return $expiredCount > 0 ? (string) $expiredCount : null;

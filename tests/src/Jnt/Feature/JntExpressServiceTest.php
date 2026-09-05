@@ -210,13 +210,13 @@ test('creates order with data objects', function (): void {
         name: 'Test Product',
         quantity: '1',
         weight: '1.5',
-        price: '100.00'
+        priceMinor: 10000
     );
 
     $packageInfo = new PackageInfoData(
         quantity: '1',
         weight: '1.5',
-        value: '100.00',
+        valueMinor: 10000,
         goodsType: 'General'
     );
 
@@ -231,13 +231,17 @@ test('creates order with data objects', function (): void {
     expect($result->trackingNumber)->toBe('JT987654321')
         ->and($result->orderId)->toBe('TXN-002');
 
-    // Http::assertSent(function ($request): bool {
-    //     $body = json_decode((string) $request->data()['bizContent'], true);
-    //
-    //     return $body['sender']['name'] === 'John Doe'
-    //         && $body['receiver']['name'] === 'Jane Doe'
-    //         && $body['items'][0]['itemName'] === 'Test Product';
-    // });
+    Http::assertSent(function ($request): bool {
+        $body = json_decode((string) $request->data()['bizContent'], true, 512, JSON_THROW_ON_ERROR);
+
+        return $body['sender']['name'] === 'John Doe'
+            && $body['receiver']['name'] === 'Jane Doe'
+            && $body['items'][0]['itemName'] === 'Test Product'
+            && $body['items'][0]['itemValue'] === '100.00'
+            && $body['packageInfo']['packageValue'] === '100.00'
+            && is_string($body['items'][0]['itemValue'])
+            && is_string($body['packageInfo']['packageValue']);
+    });
 });
 
 test('generates a unique fallback order id when none is provided', function (): void {
@@ -283,13 +287,13 @@ test('generates a unique fallback order id when none is provided', function (): 
         name: 'Fallback ID Product',
         quantity: '1',
         weight: '1.5',
-        price: '100.00'
+        priceMinor: 10000
     );
 
     $packageInfo = new PackageInfoData(
         quantity: '1',
         weight: '1.5',
-        value: '100.00',
+        valueMinor: 10000,
         goodsType: 'General'
     );
 
@@ -348,13 +352,13 @@ test('uses builder pattern', function (): void {
         name: 'Builder Item',
         quantity: '5',
         weight: '2.5',
-        price: '250.00'
+        priceMinor: 25000
     );
 
     $packageInfo = new PackageInfoData(
         quantity: '1',
         weight: '2.5',
-        value: '250.00',
+        valueMinor: 25000,
         goodsType: 'Electronics'
     );
 

@@ -56,7 +56,15 @@ final class BulkTransferPassesAction
             }
 
             $event = new PassesBulkTransferred($passes, $newHolders->first(), $reason);
-            dispatch(new BulkSendTransferNotificationsJob($event));
+            $ownerType = $passes->first()?->owner_type;
+            $ownerId = $passes->first()?->owner_id;
+
+            dispatch(new BulkSendTransferNotificationsJob(
+                event: $event,
+                ownerType: $ownerType,
+                ownerId: $ownerId,
+                ownerIsGlobal: $ownerType === null && $ownerId === null,
+            ))->afterCommit();
 
             return $newHolders;
         });

@@ -12,7 +12,7 @@ use AIArmada\Affiliates\Services\NetworkService;
 use AIArmada\Affiliates\Services\RankQualificationService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->service = app(RankQualificationService::class);
@@ -458,7 +458,7 @@ describe('RankQualificationService', function (): void {
             ]);
 
             // With 90 day lookback
-            $metrics = $this->service->calculateMetrics($this->affiliate, Carbon::now()->subDays(90));
+            $metrics = $this->service->calculateMetrics($this->affiliate, CarbonImmutable::now()->subDays(90));
 
             expect($metrics['personal_sales'])->toBe(8500);
         });

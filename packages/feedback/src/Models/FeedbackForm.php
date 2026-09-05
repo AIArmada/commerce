@@ -8,10 +8,10 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Enums\FeedbackFormVisibility;
-use AIArmada\Feedback\Models\Concerns\UsesFeedbackUuid;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -55,9 +55,19 @@ final class FeedbackForm extends Model
 {
     use HasOwner;
     use HasOwnerScopeConfig;
-    use UsesFeedbackUuid;
+    use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'feedback.owner';
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $form): void {
+            $form->sections()->each(fn (FeedbackSection $section): mixed => $section->delete());
+            $form->questions()->each(fn (FeedbackQuestion $question): mixed => $question->delete());
+            $form->responses()->each(fn (FeedbackResponse $response): mixed => $response->delete());
+            $form->invitations()->each(fn (FeedbackInvitation $invitation): mixed => $invitation->delete());
+        });
+    }
 
     protected $fillable = [
         'name', 'slug', 'purpose', 'status', 'visibility',

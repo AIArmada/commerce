@@ -7,6 +7,7 @@ namespace AIArmada\Tax\Tests\Unit\Models;
 use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Tax\Enums\ZoneType;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use Illuminate\Database\Eloquent\Model;
@@ -505,7 +506,7 @@ class TaxZoneTest extends TaxTestCase
     {
         $zone = new TaxZone(['name' => 'Test', 'code' => 'TEST']);
 
-        $this->assertEquals('country', $zone->type);
+        $this->assertSame(ZoneType::Country, $zone->type);
         $this->assertEquals(0, $zone->priority);
         $this->assertFalse($zone->is_default);
         $this->assertTrue($zone->is_active);

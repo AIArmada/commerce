@@ -7,6 +7,7 @@ namespace AIArmada\Seating\Livewire;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use AIArmada\Seating\Services\SeatLayoutRenderer;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 
@@ -64,14 +65,14 @@ class SeatMap extends Component
             return;
         }
 
-        $now = now();
+        $now = CarbonImmutable::now();
 
         $hasActiveHold = $seat->holds()
             ->where('expires_at', '>', $now)
             ->exists();
 
         $hasActiveAllocation = $seat->allocations()
-            ->where('state', 'active')
+            ->where('status', 'active')
             ->exists();
 
         if ($hasActiveHold || $hasActiveAllocation) {
@@ -120,7 +121,7 @@ class SeatMap extends Component
             ->flatMap(fn ($section) => $section->seats);
 
         $status = [];
-        $now = now();
+        $now = CarbonImmutable::now();
 
         foreach ($seats as $seat) {
             if ($seat->status === 'blocked') {
@@ -136,7 +137,7 @@ class SeatMap extends Component
                 continue;
             }
 
-            $activeAlloc = $seat->allocations->first(fn ($alloc) => $alloc->state === 'active');
+            $activeAlloc = $seat->allocations->first(fn ($alloc) => $alloc->status === 'active');
             if ($activeAlloc !== null) {
                 $status[$seat->id] = 'sold';
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Moderation\Actions;
 
+use AIArmada\CommerceSupport\Contracts\OwnerScopeConfigurable;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Moderation\Contracts\BlocksEntity;
 use AIArmada\Moderation\Enums\BlockReason;
@@ -12,7 +13,6 @@ use AIArmada\Moderation\Models\Block;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 final class BlockEntityAction implements BlocksEntity
 {
@@ -56,10 +56,14 @@ final class BlockEntityAction implements BlocksEntity
             return;
         }
 
-        try {
-            OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
-        } catch (InvalidArgumentException) {
+        if (! $model instanceof OwnerScopeConfigurable && ! method_exists($model::class, 'scopeForOwner')) {
             return;
         }
+
+        if ($model instanceof OwnerScopeConfigurable && ! $model::ownerScopeConfig()->enabled) {
+            return;
+        }
+
+        OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
     }
 }

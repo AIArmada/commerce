@@ -196,10 +196,13 @@ class CheckoutSession extends Model
 
     public function calculateTotals(): void
     {
-        $this->grand_total = $this->subtotal
-            - $this->discount_total
-            + $this->shipping_total
-            + $this->tax_total;
+        $this->grand_total = max(
+            0,
+            $this->subtotal
+                - $this->discount_total
+                + $this->shipping_total
+                + $this->tax_total,
+        );
     }
 
     /**

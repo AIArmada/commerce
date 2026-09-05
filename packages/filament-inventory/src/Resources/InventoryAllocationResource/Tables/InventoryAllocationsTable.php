@@ -8,6 +8,7 @@ use AIArmada\FilamentInventory\Actions\ReleaseAllocationAction;
 use AIArmada\Inventory\Facades\InventoryAllocation as InventoryAllocationFacade;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
@@ -96,8 +97,8 @@ final class InventoryAllocationsTable
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return match ($data['value'] ?? null) {
-                            'active' => $query->where('expires_at', '>', now()),
-                            'expired' => $query->where('expires_at', '<', now()),
+                            'active' => $query->where('expires_at', '>', CarbonImmutable::now()),
+                            'expired' => $query->where('expires_at', '<', CarbonImmutable::now()),
                             default => $query,
                         };
                     }),
@@ -106,8 +107,8 @@ final class InventoryAllocationsTable
                     ->label('Expiring in 15 minutes')
                     ->query(
                         fn (Builder $query): Builder => $query
-                            ->where('expires_at', '>', now())
-                            ->where('expires_at', '<', now()->addMinutes(15))
+                            ->where('expires_at', '>', CarbonImmutable::now())
+                            ->where('expires_at', '<', CarbonImmutable::now()->addMinutes(15))
                     ),
             ])
             ->actions([

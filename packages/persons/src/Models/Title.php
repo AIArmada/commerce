@@ -43,6 +43,13 @@ class Title extends Model
         'description',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Title $title): void {
+            $title->assignments()->get()->each->delete();
+        });
+    }
+
     public function getTable(): string
     {
         return config('persons.database.tables.titles', 'titles');

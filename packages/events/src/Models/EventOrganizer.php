@@ -10,10 +10,10 @@ use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Events\Contracts\CanBeInvolvedInEvents;
 use AIArmada\Events\Contracts\OwnsEvents;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\Traits\CanOrganizeEvents;
 use AIArmada\Events\Traits\HasEventInvolvements;
 use AIArmada\Events\Traits\OwnsEvents as OwnsEventsTrait;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -48,9 +48,9 @@ final class EventOrganizer extends Model implements CanBeInvolvedInEvents, HasMe
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasSocialProfiles;
+    use HasUuids;
     use InteractsWithMedia;
     use OwnsEventsTrait;
-    use UsesEventUuid;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 

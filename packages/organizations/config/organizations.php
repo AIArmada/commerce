@@ -15,6 +15,6 @@ return [
     'resolver' => NullCurrentOrganizationResolver::class,
 
     'middleware' => [
-        'require_context' => false,
+        'require_context' => true,
     ],
 ];

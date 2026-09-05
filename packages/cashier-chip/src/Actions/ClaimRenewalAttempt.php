@@ -7,7 +7,7 @@ namespace AIArmada\CashierChip\Actions;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -19,7 +19,6 @@ final class ClaimRenewalAttempt
     {
         return DB::transaction(function () use ($subscriptionId): ?RenewalAttempt {
             $subscription = Subscription::query()
-                ->withoutGlobalScopes()
                 ->lockForUpdate()
                 ->find($subscriptionId);
 
@@ -41,7 +40,7 @@ final class ClaimRenewalAttempt
                 ->where('subscription_id', $subscription->id)
                 ->where('period_key', $periodKey)
                 ->where('status', 'claimed')
-                ->where('lease_expires_at', '>', now())
+                ->where('lease_expires_at', '>', CarbonImmutable::now())
                 ->exists();
 
             if ($existingClaim) {
@@ -55,7 +54,7 @@ final class ClaimRenewalAttempt
                 'status' => 'claimed',
                 'amount_minor' => $subscription->calculateSubscriptionAmount(),
                 'period_key' => $periodKey,
-                'lease_expires_at' => Carbon::now()->addMinutes($leaseMinutes),
+                'lease_expires_at' => CarbonImmutable::now()->addMinutes($leaseMinutes),
             ]);
         }, 3);
     }

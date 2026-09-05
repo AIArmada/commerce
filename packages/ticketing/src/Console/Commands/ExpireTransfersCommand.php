@@ -7,6 +7,7 @@ namespace AIArmada\Ticketing\Console\Commands;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Models\Pass;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 
 final class ExpireTransfersCommand extends Command
@@ -18,7 +19,7 @@ final class ExpireTransfersCommand extends Command
     public function handle(): int
     {
         $gracePeriod = (int) config('ticketing.transfers.expiry_grace_period', 0);
-        $cutoff = now()->subMinutes($gracePeriod);
+        $cutoff = CarbonImmutable::now()->subMinutes($gracePeriod);
 
         $count = OwnerContext::withOwner(null, fn (): int => (int) (new OwnerBatchRunner(Pass::class))
             ->forEach(fn (): int => Pass::query()

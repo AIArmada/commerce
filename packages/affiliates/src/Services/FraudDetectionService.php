@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -78,7 +79,7 @@ final class FraudDetectionService
         $signals = [];
         $context = [
             'conversion' => $conversion,
-            'timestamp' => now(),
+            'timestamp' => CarbonImmutable::now(),
         ];
 
         foreach ($this->conversionRules as $rule) {
@@ -104,7 +105,7 @@ final class FraudDetectionService
     {
         $signals = AffiliateFraudSignal::query()
             ->where('affiliate_id', $affiliate->id)
-            ->where('detected_at', '>=', now()->subDays(30))
+            ->where('detected_at', '>=', CarbonImmutable::now()->subDays(30))
             ->get();
 
         $totalScore = $signals->sum('risk_points');
@@ -133,7 +134,7 @@ final class FraudDetectionService
             'user_agent' => $request->userAgent(),
             'fingerprint' => $this->generateFingerprint($request),
             'referrer' => $request->header('Referer'),
-            'timestamp' => now(),
+            'timestamp' => CarbonImmutable::now(),
         ];
     }
 

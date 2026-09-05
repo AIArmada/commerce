@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Support;
 
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Database\Eloquent\Model;
 
 final class ChipCustomerBridge
@@ -56,6 +57,16 @@ final class ChipCustomerBridge
      */
     public function linkCustomer(Model $checkoutSession, array $payload, string $source = 'chip_customer_bridge'): void
     {
+        $canonicalCheckoutSession = $this->findModelForCurrentOwner(
+            $checkoutSession::class,
+            (string) $checkoutSession->getKey(),
+        );
+
+        if ($canonicalCheckoutSession === null) {
+            return;
+        }
+
+        $checkoutSession = $canonicalCheckoutSession;
         $customerModel = $this->resolveCustomerModel();
 
         if (! class_exists($customerModel)) {
@@ -75,7 +86,7 @@ final class ChipCustomerBridge
         }
 
         /** @var class-string<Model> $customerModel */
-        $customer = $customerModel::query()->find($customerId);
+        $customer = $this->findModelForCurrentOwner($customerModel, $customerId);
 
         if ($customer === null) {
             return;
@@ -88,6 +99,26 @@ final class ChipCustomerBridge
             'checkout_session_id' => (string) $checkoutSession->getKey(),
             'chip_purchase_id' => $purchaseId,
         ], static fn (mixed $value): bool => $value !== null));
+    }
+
+    /**
+     * @param  class-string<Model>  $modelClass
+     */
+    private function findModelForCurrentOwner(string $modelClass, int | string $id): ?Model
+    {
+        if (method_exists($modelClass, 'ownerScopeConfig')) {
+            if ($modelClass::ownerScopeConfig()->enabled) {
+                return OwnerWriteGuard::findOrFailForOwner($modelClass, $id);
+            }
+
+            return $modelClass::query()->find($id);
+        }
+
+        if (method_exists($modelClass, 'scopeForOwner')) {
+            return OwnerWriteGuard::findOrFailForOwner($modelClass, $id);
+        }
+
+        return $modelClass::query()->find($id);
     }
 
     private function stringValue(mixed $value): ?string

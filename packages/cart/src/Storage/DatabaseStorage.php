@@ -9,6 +9,7 @@ use AIArmada\Cart\Models\CartModel;
 use AIArmada\Cart\Support\CartOwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+use Carbon\CarbonImmutable;
 use Closure;
 use DateTimeInterface;
 use Illuminate\Database\ConnectionInterface as Database;
@@ -364,7 +365,7 @@ final readonly class DatabaseStorage implements StorageInterface
             $updated = $this->baseQuery($oldIdentifier, $instance)
                 ->update([
                     'identifier' => $newIdentifier,
-                    'updated_at' => now(),
+                    'updated_at' => CarbonImmutable::now(),
                 ]);
 
             return $updated > 0;
@@ -435,7 +436,7 @@ final readonly class DatabaseStorage implements StorageInterface
             return false;
         }
 
-        return now()->isAfter($expiresAt);
+        return CarbonImmutable::now()->isAfter($expiresAt);
     }
 
     /**
@@ -447,7 +448,7 @@ final readonly class DatabaseStorage implements StorageInterface
             return null;
         }
 
-        return now()->addSeconds($this->ttl)->toDateTimeString();
+        return CarbonImmutable::now()->addSeconds($this->ttl)->toDateTimeString();
     }
 
     /**
@@ -693,7 +694,7 @@ final readonly class DatabaseStorage implements StorageInterface
                     $ownerColumns->ownerIdColumn => $this->ownerId !== null ? (string) $this->ownerId : null,
                     'owner_scope' => $this->resolveOwnerScope(),
                     'version' => $current->version + 1,
-                    'updated_at' => now(),
+                    'updated_at' => CarbonImmutable::now(),
                     'expires_at' => $this->calculateExpiresAt(),
                 ]);
 
@@ -714,8 +715,8 @@ final readonly class DatabaseStorage implements StorageInterface
                     'owner_scope' => $this->resolveOwnerScope(),
                     'version' => 1,
                     'expires_at' => $this->calculateExpiresAt(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'created_at' => CarbonImmutable::now(),
+                    'updated_at' => CarbonImmutable::now(),
                 ]);
 
                 $this->database->table($this->table)->insert($insertData);

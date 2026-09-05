@@ -7,7 +7,7 @@ namespace AIArmada\CashierChip\Database\Factories;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -38,7 +38,7 @@ final class SubscriptionFactory extends Factory
             'quantity' => null,
             'trial_ends_at' => null,
             'ends_at' => null,
-            'next_billing_at' => Carbon::now()->addMonth(),
+            'next_billing_at' => CarbonImmutable::now()->addMonth(),
             'billing_interval' => 'month',
             'recurring_token' => 'tok_' . Str::random(32),
         ];
@@ -60,11 +60,11 @@ final class SubscriptionFactory extends Factory
     public function billingInterval(string $interval): static
     {
         $nextBillingAt = match ($interval) {
-            'day' => Carbon::now()->addDay(),
-            'week' => Carbon::now()->addWeek(),
-            'month' => Carbon::now()->addMonth(),
-            'year' => Carbon::now()->addYear(),
-            default => Carbon::now()->addMonth(),
+            'day' => CarbonImmutable::now()->addDay(),
+            'week' => CarbonImmutable::now()->addWeek(),
+            'month' => CarbonImmutable::now()->addMonth(),
+            'year' => CarbonImmutable::now()->addYear(),
+            default => CarbonImmutable::now()->addMonth(),
         };
 
         return $this->state([
@@ -122,7 +122,7 @@ final class SubscriptionFactory extends Factory
     {
         return $this->state([
             'chip_status' => SubscriptionStatus::Trialing,
-            'trial_ends_at' => $trialEndsAt ?? Carbon::now()->addDays(14),
+            'trial_ends_at' => $trialEndsAt ?? CarbonImmutable::now()->addDays(14),
         ]);
     }
 
@@ -133,7 +133,7 @@ final class SubscriptionFactory extends Factory
     {
         return $this->state([
             'chip_status' => SubscriptionStatus::Canceled,
-            'ends_at' => Carbon::now(),
+            'ends_at' => CarbonImmutable::now(),
         ]);
     }
 
@@ -144,7 +144,7 @@ final class SubscriptionFactory extends Factory
     {
         return $this->state([
             'chip_status' => SubscriptionStatus::Active,
-            'ends_at' => Carbon::now()->addDays(7),
+            'ends_at' => CarbonImmutable::now()->addDays(7),
         ]);
     }
 

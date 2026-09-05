@@ -112,25 +112,26 @@ describe('TypeTransformer - Context-Aware Methods', function (): void {
         });
     });
 
-    describe('forMoney (MALAYSIAN RINGGIT → 2 decimals)', function (): void {
-        it('converts integer myr to 2-decimal string', function (): void {
-            expect(TypeTransformer::forMoney(150))->toBe('150.00');
-            expect(TypeTransformer::forMoney(1000))->toBe('1000.00');
-            expect(TypeTransformer::forMoney(1))->toBe('1.00');
+    describe('money conversion (MALAYSIAN RINGGIT)', function (): void {
+        it('converts major API values to integer minor units', function (): void {
+            expect(TypeTransformer::moneyToMinor(150))->toBe(15000);
+            expect(TypeTransformer::moneyToMinor('19.90'))->toBe(1990);
+            expect(TypeTransformer::moneyToMinor('0.01'))->toBe(1);
         });
 
-        it('converts float myr to 2-decimal string', function (): void {
-            expect(TypeTransformer::forMoney(19.9))->toBe('19.90');
-            expect(TypeTransformer::forMoney(150.5))->toBe('150.50');
-            expect(TypeTransformer::forMoney(150.456))->toBe('150.46');
-            expect(TypeTransformer::forMoney(0.01))->toBe('0.01');
-            expect(TypeTransformer::forMoney(999999.99))->toBe('999999.99');
+        it('converts integer minor units to exact API strings', function (): void {
+            expect(TypeTransformer::forMoney(15000))->toBe('150.00');
+            expect(TypeTransformer::forMoney(1990))->toBe('19.90');
+            expect(TypeTransformer::forMoney(1))->toBe('0.01');
+            expect(TypeTransformer::forMoney(99999999))->toBe('999999.99');
         });
 
-        it('converts string myr to 2-decimal string', function (): void {
-            expect(TypeTransformer::forMoney('150'))->toBe('150.00');
-            expect(TypeTransformer::forMoney('19.9'))->toBe('19.90');
-            expect(TypeTransformer::forMoney('150.456'))->toBe('150.46');
+        it('rejects API money with more than two decimal places', function (): void {
+            TypeTransformer::moneyToMinor('150.456');
+        })->throws(InvalidArgumentException::class);
+
+        it('formats negative minor units without floating point math', function (): void {
+            expect(TypeTransformer::forMoney(-1990))->toBe('-19.90');
         });
     });
 });
@@ -217,15 +218,15 @@ describe('TypeTransformer - Real-World Scenarios', function (): void {
 
     it('handles money transformation correctly', function (): void {
         // Scenario: Product price RM 19.90
-        expect(TypeTransformer::forMoney(19.9))->toBe('19.90');
+        expect(TypeTransformer::forMoney(1990))->toBe('19.90');
 
         // Scenario: COD amount RM 150 (integer input)
-        expect(TypeTransformer::forMoney(150))->toBe('150.00');
+        expect(TypeTransformer::forMoney(15000))->toBe('150.00');
 
         // Scenario: Declared value RM 1299.99
-        expect(TypeTransformer::forMoney(1299.99))->toBe('1299.99');
+        expect(TypeTransformer::forMoney(129999))->toBe('1299.99');
 
         // Scenario: Small amount RM 0.50
-        expect(TypeTransformer::forMoney(0.50))->toBe('0.50');
+        expect(TypeTransformer::forMoney(50))->toBe('0.50');
     });
 });

@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Steps;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
+use Carbon\CarbonImmutable;
 
 final class ValidateCartStep extends AbstractCheckoutStep
 {
@@ -69,7 +70,7 @@ final class ValidateCartStep extends AbstractCheckoutStep
 
         $snapshot['item_count'] = $snapshot['item_count'] ?? $snapshot['count'] ?? $cart->countItems();
         $snapshot['totals'] = $totals;
-        $snapshot['captured_at'] = now()->toIso8601String();
+        $snapshot['captured_at'] = CarbonImmutable::now()->toIso8601String();
 
         $session->update([
             'cart_snapshot' => $snapshot,

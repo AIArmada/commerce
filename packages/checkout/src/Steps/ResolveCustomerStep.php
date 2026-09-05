@@ -175,14 +175,14 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
         if (empty($billingData) && method_exists($customer, 'getDefaultBillingAddress')) {
             $address = $customer->getDefaultBillingAddress();
             if ($address !== null) {
-                $billingData = $address->toArray();
+                $billingData = $address->attributesToArray();
             }
         }
 
         if (empty($shippingData) && method_exists($customer, 'getDefaultShippingAddress')) {
             $address = $customer->getDefaultShippingAddress();
             if ($address !== null) {
-                $shippingData = $address->toArray();
+                $shippingData = $address->attributesToArray();
             }
         }
 

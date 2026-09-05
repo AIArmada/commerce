@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('affiliates.database.tables.webhook_deliveries', 'affiliate_webhook_deliveries'), function (Blueprint $table): void {
+        commerce_schema_create_if_missing(config('affiliates.database.tables.webhook_deliveries', 'affiliate_webhook_deliveries'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('event_id');
             $table->string('event_type', 64);

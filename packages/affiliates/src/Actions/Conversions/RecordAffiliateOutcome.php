@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -88,7 +89,7 @@ final class RecordAffiliateOutcome
             'sharer_user_id' => Arr::get($payload, 'sharer_user_id', $attribution->sharer_user_id),
             'actor_user_id' => Arr::get($payload, 'actor_user_id'),
             'metadata' => $metadata,
-            'occurred_at' => Arr::get($payload, 'occurred_at', now()),
+            'occurred_at' => Arr::get($payload, 'occurred_at', CarbonImmutable::now()),
             'approved_at' => Arr::get($payload, 'approved_at'),
         ]);
 

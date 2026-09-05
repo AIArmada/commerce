@@ -36,7 +36,6 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -185,7 +184,7 @@ class Subscription extends Model
      */
     final public function scopeForOwner(Builder $query, ?Model $owner = null, ?bool $includeGlobal = null): Builder
     {
-        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
             return $query;
         }
 
@@ -328,7 +327,7 @@ class Subscription extends Model
             $query->whereNull('ends_at')
                 ->orWhere(function ($query): void {
                     $query->whereNotNull('ends_at')
-                        ->where('ends_at', '>', Carbon::now());
+                        ->where('ends_at', '>', CarbonImmutable::now());
                 });
         })->where('chip_status', '!=', SubscriptionStatus::IncompleteExpired)
             ->where('chip_status', '!=', SubscriptionStatus::Unpaid);
@@ -358,7 +357,7 @@ class Subscription extends Model
         $query
             ->where(function (Builder $query): void {
                 $query->whereNull('trial_ends_at')
-                    ->orWhere('trial_ends_at', '<=', Carbon::now());
+                    ->orWhere('trial_ends_at', '<=', CarbonImmutable::now());
             })
             ->whereNull('ends_at');
     }
@@ -401,7 +400,7 @@ class Subscription extends Model
     public function scopeWhereEnded(Builder $query): void
     {
         $query->whereNotNull('ends_at')
-            ->where('ends_at', '<=', Carbon::now());
+            ->where('ends_at', '<=', CarbonImmutable::now());
     }
 
     /**
@@ -417,7 +416,7 @@ class Subscription extends Model
      */
     public function scopeWhereOnTrial(Builder $query): void
     {
-        $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '>', Carbon::now());
+        $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '>', CarbonImmutable::now());
     }
 
     /**
@@ -433,7 +432,7 @@ class Subscription extends Model
      */
     public function scopeExpiredTrial(Builder $query): void
     {
-        $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '<', Carbon::now());
+        $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '<', CarbonImmutable::now());
     }
 
     /**
@@ -441,7 +440,7 @@ class Subscription extends Model
      */
     public function scopeNotOnTrial(Builder $query): void
     {
-        $query->whereNull('trial_ends_at')->orWhere('trial_ends_at', '<=', Carbon::now());
+        $query->whereNull('trial_ends_at')->orWhere('trial_ends_at', '<=', CarbonImmutable::now());
     }
 
     /**
@@ -457,7 +456,7 @@ class Subscription extends Model
      */
     public function scopeWhereOnGracePeriod(Builder $query): void
     {
-        $query->whereNotNull('ends_at')->where('ends_at', '>', Carbon::now());
+        $query->whereNotNull('ends_at')->where('ends_at', '>', CarbonImmutable::now());
     }
 
     /**
@@ -465,7 +464,7 @@ class Subscription extends Model
      */
     public function scopeNotOnGracePeriod(Builder $query): void
     {
-        $query->whereNull('ends_at')->orWhere('ends_at', '<=', Carbon::now());
+        $query->whereNull('ends_at')->orWhere('ends_at', '<=', CarbonImmutable::now());
     }
 
     /**
@@ -722,10 +721,10 @@ class Subscription extends Model
         if ($this->onTrial()) {
             $this->ends_at = $this->trial_ends_at;
         } else {
-            $this->ends_at = $this->next_billing_at ?? Carbon::now();
+            $this->ends_at = $this->next_billing_at ?? CarbonImmutable::now();
         }
 
-        $this->canceled_at = now();
+        $this->canceled_at = CarbonImmutable::now();
         $this->save();
 
         return $this;
@@ -745,7 +744,7 @@ class Subscription extends Model
         }
 
         $this->ends_at = $endsAt;
-        $this->canceled_at = now();
+        $this->canceled_at = CarbonImmutable::now();
         $this->save();
 
         return $this;
@@ -773,8 +772,8 @@ class Subscription extends Model
     {
         $this->forceFill([
             'chip_status' => SubscriptionStatus::Canceled,
-            'ends_at' => now(),
-            'canceled_at' => now(),
+            'ends_at' => CarbonImmutable::now(),
+            'canceled_at' => CarbonImmutable::now(),
         ])->save();
     }
 
@@ -945,7 +944,7 @@ class Subscription extends Model
             'coupon_id' => $couponId,
             'coupon_discount' => $discount,
             'coupon_duration' => $coupon->duration(),
-            'coupon_applied_at' => Carbon::now(),
+            'coupon_applied_at' => CarbonImmutable::now(),
         ])->save();
 
         // Record coupon usage
@@ -1128,7 +1127,7 @@ class Subscription extends Model
     {
         $this->forceFill([
             'chip_status' => SubscriptionStatus::Paused,
-            'paused_at' => now(),
+            'paused_at' => CarbonImmutable::now(),
         ])->save();
 
         return $this;
@@ -1191,7 +1190,7 @@ class Subscription extends Model
     protected static function booted(): void
     {
         static::creating(function (self $subscription): void {
-            if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+            if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
                 return;
             }
 

@@ -37,6 +37,6 @@ final class UnifiedInvoiceRecord extends Model
 
     public function getTable(): string
     {
-        return 'purchases';
+        return (string) config('cashier.database.tables.unified_invoices', 'cashier_unified_invoices');
     }
 }

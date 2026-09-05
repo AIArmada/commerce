@@ -10,7 +10,7 @@ use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Auth\Access\AuthorizationException;
 
 uses(MembershipTestCase::class);
 
@@ -79,7 +79,7 @@ it('rejects cross-owner membership mutations and owner mass assignment', functio
     expect(fn () => OwnerContext::withOwner(
         $ownerA,
         fn () => RevokeInvitationAction::run($invitationB, $ownerA),
-    ))->toThrow(ModelNotFoundException::class);
+    ))->toThrow(AuthorizationException::class);
 
     $invitation = new MembershipInvitation;
     $invitation->fill([

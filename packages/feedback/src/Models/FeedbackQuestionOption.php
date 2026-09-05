@@ -6,8 +6,8 @@ namespace AIArmada\Feedback\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Feedback\Models\Concerns\UsesFeedbackUuid;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -29,7 +29,7 @@ final class FeedbackQuestionOption extends Model
 {
     use HasOwner;
     use HasOwnerScopeConfig;
-    use UsesFeedbackUuid;
+    use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'feedback.owner';
 

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventSubmissionFactory;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\EventModerationStatus\EventModerationStatus as EventModerationStatusState;
 use AIArmada\Events\Support\ModelResolver;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,7 +40,7 @@ class EventSubmission extends Model
 {
     use HasFactory;
     use HasStates;
-    use UsesEventUuid;
+    use HasUuids;
 
     protected $fillable = [
         'submitter_type', 'submitter_id',

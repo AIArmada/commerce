@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Tables;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\FilamentCashierChip\Support\FormatsSubscriptionStatus;
+use Carbon\CarbonImmutable;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\IconColumn;
@@ -152,9 +153,9 @@ final class SubscriptionTable
                     ->trueLabel('On Trial')
                     ->falseLabel('Not On Trial')
                     ->queries(
-                        true: fn (Builder $query): Builder => $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '>', now()),
+                        true: fn (Builder $query): Builder => $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '>', CarbonImmutable::now()),
                         false: fn (Builder $query): Builder => $query->where(function (Builder $q): void {
-                            $q->whereNull('trial_ends_at')->orWhere('trial_ends_at', '<=', now());
+                            $q->whereNull('trial_ends_at')->orWhere('trial_ends_at', '<=', CarbonImmutable::now());
                         }),
                     ),
 
@@ -171,7 +172,7 @@ final class SubscriptionTable
                 Filter::make('on_grace_period')
                     ->label('On Grace Period')
                     ->toggle()
-                    ->query(fn (Builder $query): Builder => $query->whereNotNull('ends_at')->where('ends_at', '>', now())),
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('ends_at')->where('ends_at', '>', CarbonImmutable::now())),
 
                 Filter::make('past_due')
                     ->label('Past Due')

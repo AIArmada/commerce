@@ -123,7 +123,7 @@ it('generates pass numbers that are unique across owners', function (): void {
         'pass_no' => 'PASS-DUPLICAT',
     ]));
 
-    $ticketType = createTicketTypeForTest();
+    $ticketType = OwnerContext::withOwner($ownerB, fn (): TicketType => createTicketTypeForTest());
 
     Str::createRandomStringsUsingSequence([
         'DUPLICAT',

@@ -220,7 +220,7 @@ it('formats non-USD currencies with correct symbols', function (): void {
 
     expect($eur->formattedAmount())->toBe('€12.34');
     expect($gbp->formattedAmount())->toBe('£12.34');
-    expect($unknown->formattedAmount())->toBe('JPY 12.34');
+    expect($unknown->formattedAmount())->toBe('¥1,234');
 });
 
 it('keeps paidAt null when Stripe paid transition timestamp is missing', function (): void {

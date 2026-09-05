@@ -9,6 +9,7 @@ use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatHold;
 use AIArmada\Seating\Models\SeatMap;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,7 @@ class EnsureSeatHoldAction
 
         return DB::transaction(function () use ($map, $quantity, $heldByType, $heldById, $reference, $categoryPreferences, $mode): Collection {
             $ttlMinutes = (int) config('seating.holds.ttl_minutes', 15);
-            $expiresAt = now()->addMinutes($ttlMinutes);
+            $expiresAt = CarbonImmutable::now()->addMinutes($ttlMinutes);
             $holds = new Collection;
 
             for ($i = 0; $i < $quantity; $i++) {
@@ -93,7 +94,7 @@ class EnsureSeatHoldAction
             ->whereHas('section', fn (Builder $query): Builder => $query->where('seat_map_id', $map->id))
             ->where('status', 'available')
             ->whereNotIn('id', $already->pluck('seat_id')->all())
-            ->whereDoesntHave('holds', fn (Builder $query): Builder => $query->where('expires_at', '>', now()))
+            ->whereDoesntHave('holds', fn (Builder $query): Builder => $query->where('expires_at', '>', CarbonImmutable::now()))
             ->orderBy('seat_section_id')
             ->orderBy('row_number')
             ->orderBy('column_number')

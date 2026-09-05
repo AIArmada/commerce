@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('ticketing', 'jsonb');
 
-        Schema::create(config('ticketing.database.tables.pass_transfers', 'ticket_pass_transfers'), function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing(config('ticketing.database.tables.pass_transfers', 'ticket_pass_transfers'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->uuid('pass_id')->index();
             $table->uuid('from_holder_id')->nullable()->index();
@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('transferred_by_type')->nullable();
             $table->string('transferred_by_id')->nullable();
             $table->{$jsonType}('metadata')->nullable();
+            $table->nullableMorphs('owner');
             $table->timestampsTz();
 
             $table->index(['pass_id', 'created_at']);

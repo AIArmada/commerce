@@ -13,7 +13,7 @@ return new class extends Migration
         $tableName = config('affiliates.database.tables.conversions', 'affiliate_conversions');
         $jsonType = commerce_json_column_type('affiliates');
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('affiliate_id')->index();
             $table->foreignUuid('affiliate_attribution_id')->nullable()->index();
@@ -29,6 +29,7 @@ return new class extends Migration
             $table->{$jsonType}('commission_override')->nullable();
             $table->{$jsonType}('upline_levels')->nullable();
             $table->string('external_reference', 120)->nullable();
+            $table->string('idempotency_key', 64)->nullable()->unique();
             $table->string('conversion_type', 64)->nullable();
             $table->string('performance_bonus_key', 160)->nullable()->unique();
             $table->unsignedBigInteger('subtotal_minor')->default(0);

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventRegistrationItemFactory;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,7 +39,7 @@ use Illuminate\Support\Carbon;
 final class EventRegistrationItem extends Model
 {
     use HasFactory;
-    use UsesEventUuid;
+    use HasUuids;
 
     protected $fillable = [
         'event_registration_id',

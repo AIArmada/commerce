@@ -144,7 +144,7 @@ final class Cashier
             return null;
         }
 
-        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
             return static::findBillable($chipId);
         }
 
@@ -187,7 +187,7 @@ final class Cashier
             ->where('billable_id', (string) $billable->getKey())
             ->where('type', $subscriptionType);
 
-        if ((bool) config('cashier-chip.features.owner.enabled', true) && OwnerContext::resolve() === null) {
+        if ((bool) config('cashier-chip.features.owner.enabled', false) && OwnerContext::resolve() === null) {
             return null;
         }
 

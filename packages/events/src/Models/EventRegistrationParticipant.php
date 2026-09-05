@@ -6,9 +6,9 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Events\Database\Factories\EventRegistrationParticipantFactory;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -45,7 +45,7 @@ final class EventRegistrationParticipant extends Model
 {
     use HasContactMethods;
     use HasFactory;
-    use UsesEventUuid;
+    use HasUuids;
 
     protected $fillable = [
         'event_registration_id',

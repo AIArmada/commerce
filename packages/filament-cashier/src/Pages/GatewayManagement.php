@@ -9,6 +9,7 @@ use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -78,7 +79,7 @@ final class GatewayManagement extends Page
                 'icon' => $detector->getIcon($gateway),
                 'status' => $health['status'],
                 'statusColor' => $health['color'],
-                'lastCheck' => now()->format('Y-m-d H:i:s'),
+                'lastCheck' => CarbonImmutable::now()->format('Y-m-d H:i:s'),
                 'message' => $health['message'],
             ];
         })->values();

@@ -13,6 +13,7 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Collection;
 use RuntimeException;
@@ -69,8 +70,8 @@ final class ProgramService
             'program_id' => $program->id,
             'tier_id' => $defaultTier?->id,
             'status' => $status,
-            'applied_at' => now(),
-            'approved_at' => $status === MembershipStatus::Approved ? now() : null,
+            'applied_at' => CarbonImmutable::now(),
+            'approved_at' => $status === MembershipStatus::Approved ? CarbonImmutable::now() : null,
         ]);
 
         if ($status === MembershipStatus::Approved) {

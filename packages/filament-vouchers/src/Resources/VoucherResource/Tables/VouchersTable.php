@@ -15,6 +15,7 @@ use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\States\Paused;
 use AIArmada\Vouchers\States\VoucherStatus;
+use Carbon\CarbonImmutable;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -218,7 +219,7 @@ final class VouchersTable
                 Filter::make('active_now')
                     ->label('Active right now')
                     ->query(static function ($query) {
-                        $now = now();
+                        $now = CarbonImmutable::now();
 
                         return $query
                             ->where('status', VoucherStatus::normalize(Active::class))

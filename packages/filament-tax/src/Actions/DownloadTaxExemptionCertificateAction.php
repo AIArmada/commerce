@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Actions;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Tax\Models\TaxExemption;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -14,7 +16,15 @@ final class DownloadTaxExemptionCertificateAction
 {
     public function execute(TaxExemption $exemption): StreamedResponse
     {
-        if (! TaxExemption::query()->whereKey($exemption->getKey())->exists()) {
+        try {
+            $visible = OwnerUiScope::apply(TaxExemption::query(), includeGlobal: false)
+                ->whereKey($exemption->getKey())
+                ->exists();
+        } catch (AuthorizationException) {
+            $visible = false;
+        }
+
+        if (! $visible) {
             throw new NotFoundHttpException('Certificate document not found.');
         }
 

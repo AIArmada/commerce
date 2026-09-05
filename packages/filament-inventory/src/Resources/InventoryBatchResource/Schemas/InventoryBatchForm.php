@@ -6,6 +6,7 @@ namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Schemas;
 
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -90,7 +91,7 @@ final class InventoryBatchForm
 
                             DatePicker::make('received_at')
                                 ->label('Received Date')
-                                ->default(now()),
+                                ->default(CarbonImmutable::now()),
                         ]),
                 ]),
 

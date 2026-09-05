@@ -15,6 +15,7 @@ use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\FilamentAddressing\Rules\AddressAreasBelongToCountry;
 use AIArmada\FilamentAddressing\Rules\StateBelongsToCountry;
+use Carbon\CarbonImmutable;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 
@@ -121,10 +122,10 @@ class AddressFormSchema
                                     'contains',
                                 )
                                 ->where(function ($query): void {
-                                    $query->whereNull('valid_from')->orWhereDate('valid_from', '<=', now());
+                                    $query->whereNull('valid_from')->orWhereDate('valid_from', '<=', CarbonImmutable::now());
                                 })
                                 ->where(function ($query): void {
-                                    $query->whereNull('valid_until')->orWhereDate('valid_until', '>=', now());
+                                    $query->whereNull('valid_until')->orWhereDate('valid_until', '>=', CarbonImmutable::now());
                                 });
                         });
                     }

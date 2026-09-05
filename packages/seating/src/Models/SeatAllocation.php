@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property CarbonImmutable|null $revoked_at
  * @property string|null $released_by_type
  * @property string|null $released_by_id
- * @property string $state
+ * @property string $status
  * @property array|null $metadata
  */
 class SeatAllocation extends Model
@@ -48,7 +48,7 @@ class SeatAllocation extends Model
     protected $keyType = 'string';
 
     protected $attributes = [
-        'state' => 'active',
+        'status' => 'active',
     ];
 
     protected $fillable = [
@@ -62,7 +62,7 @@ class SeatAllocation extends Model
         'revoked_at',
         'released_by_type',
         'released_by_id',
-        'state',
+        'status',
         'metadata',
     ];
 
@@ -83,7 +83,7 @@ class SeatAllocation extends Model
 
     public function isActive(): bool
     {
-        return $this->state === 'active';
+        return $this->status === 'active';
     }
 
     /** @return BelongsTo<Seat, $this> */
@@ -111,8 +111,8 @@ class SeatAllocation extends Model
     public function release(?string $releasedByType = null, ?string $releasedById = null): void
     {
         $this->update([
-            'state' => 'released',
-            'released_at' => now(),
+            'status' => 'released',
+            'released_at' => CarbonImmutable::now(),
             'released_by_type' => $releasedByType ?? $this->released_by_type,
             'released_by_id' => $releasedById ?? $this->released_by_id,
         ]);
@@ -120,6 +120,6 @@ class SeatAllocation extends Model
 
     public function revoke(): void
     {
-        $this->update(['state' => 'revoked', 'revoked_at' => now()]);
+        $this->update(['status' => 'revoked', 'revoked_at' => CarbonImmutable::now()]);
     }
 }

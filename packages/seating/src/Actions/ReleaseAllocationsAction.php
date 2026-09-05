@@ -22,7 +22,7 @@ class ReleaseAllocationsAction
         $allocations = SeatAllocation::query()
             ->where('allocated_to_type', $allocToType)
             ->where('allocated_to_id', $allocToId)
-            ->where('state', 'active')
+            ->where('status', 'active')
             ->get();
 
         foreach ($allocations as $allocation) {

@@ -9,6 +9,7 @@ use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
+use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
 /**
@@ -72,7 +73,7 @@ final readonly class RecordCommissionForOrder
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,
                 ],
-                'occurred_at' => $order->paid_at ?? now(),
+                'occurred_at' => $order->paid_at ?? CarbonImmutable::now(),
             ]);
         });
     }

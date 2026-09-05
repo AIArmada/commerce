@@ -32,11 +32,11 @@ it('creates allocation when under capacity', function (): void {
 it('throws when section is at capacity', function (): void {
     SeatAllocation::factory()->create([
         'seat_section_id' => $this->section->id,
-        'state' => 'active',
+        'status' => 'active',
     ]);
     SeatAllocation::factory()->create([
         'seat_section_id' => $this->section->id,
-        'state' => 'active',
+        'status' => 'active',
     ]);
 
     app(EnsureSectionAllocationAction::class)->handle(

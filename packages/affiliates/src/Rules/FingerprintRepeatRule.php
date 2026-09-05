@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
 final class FingerprintRepeatRule implements FraudRule
@@ -33,7 +34,7 @@ final class FingerprintRepeatRule implements FraudRule
         $existingCount = AffiliateTouchpoint::query()
             ->where('affiliate_id', $affiliate->id)
             ->where('fingerprint', $context['fingerprint'])
-            ->where('touched_at', '>=', now()->subHours(24))
+            ->where('touched_at', '>=', CarbonImmutable::now()->subHours(24))
             ->count();
 
         if ($existingCount >= $threshold) {
@@ -49,7 +50,7 @@ final class FingerprintRepeatRule implements FraudRule
                     'threshold' => $threshold,
                 ],
                 'status' => FraudSignalStatus::Detected,
-                'detected_at' => now(),
+                'detected_at' => CarbonImmutable::now(),
             ]);
         }
 

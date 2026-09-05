@@ -8,6 +8,7 @@ use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Subscription;
@@ -94,7 +95,7 @@ final class GatewayBreakdownWidget extends ChartWidget
                     ->with('items')
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', now());
+                            ->orWhere('ends_at', '>', CarbonImmutable::now());
                     });
 
                 $stripeQuery->chunk(200, function (Collection $chunk) use (&$stripeRevenue): void {
@@ -122,7 +123,7 @@ final class GatewayBreakdownWidget extends ChartWidget
                     ->with('items')
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', now());
+                            ->orWhere('ends_at', '>', CarbonImmutable::now());
                     });
 
                 $chipQuery->chunk(200, function (Collection $chunk) use (&$chipRevenue): void {

@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\PayoutStatus;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Support\Str;
 
@@ -39,7 +40,7 @@ final class ManualPayoutProcessor implements PayoutProcessorInterface
 
     public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
     {
-        return now()->addDays(5);
+        return CarbonImmutable::now()->addDays(5);
     }
 
     public function getFees(int $amountMinor, string $currency): int

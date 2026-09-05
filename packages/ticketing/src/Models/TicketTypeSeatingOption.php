@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Models\SeatSection;
 use AIArmada\Ticketing\Database\Factories\TicketTypeSeatingOptionFactory;
+use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +17,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property string $ticket_type_id
  * @property string|null $seat_section_id
  * @property string|null $seat_category
@@ -28,11 +33,25 @@ use Illuminate\Support\Carbon;
 class TicketTypeSeatingOption extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'ticketing.features.owner';
 
     protected static function newFactory(): TicketTypeSeatingOptionFactory
     {
         return TicketTypeSeatingOptionFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $option): void {
+            TicketingOwnerGuard::assertRelations($option, [
+                ['relation' => 'ticketType', 'required' => true],
+                ['relation' => 'section'],
+            ]);
+        });
     }
 
     public $incrementing = false;

@@ -1,22 +1,25 @@
 <?php
 
-require_once __DIR__.'/vendor/autoload.php';
+declare(strict_types=1);
 
-$app = require_once __DIR__.'/bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+require_once __DIR__ . '/vendor/autoload.php';
+
+$app = require_once __DIR__ . '/bootstrap/app.php';
+$app->make(Kernel::class)->bootstrap();
 
 use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Services\JntExpressService;
+use Illuminate\Contracts\Console\Kernel;
 
 echo "=== JNT API Test (Using Official Sample) ===\n\n";
 
 // Show config
-echo 'Environment: '.config('jnt.environment')."\n";
-echo 'Customer Code: '.config('jnt.customer_code')."\n";
-echo 'API Account: '.config('jnt.api_account')."\n";
-echo 'Base URL: '.config('jnt.base_urls.'.config('jnt.environment'))."\n\n";
+echo 'Environment: ' . config('jnt.environment') . "\n";
+echo 'Customer Code: ' . config('jnt.customer_code') . "\n";
+echo 'API Account: ' . config('jnt.api_account') . "\n";
+echo 'Base URL: ' . config('jnt.base_urls.' . config('jnt.environment')) . "\n\n";
 
 try {
     $jnt = app(JntExpressService::class);
@@ -51,7 +54,7 @@ try {
             name: 'basketball',
             quantity: 2,
             weight: 10,
-            price: 50.00,
+            priceMinor: 5000,
             englishName: 'basketball',
             description: 'This is a basketball',
             currency: 'USD'
@@ -60,7 +63,7 @@ try {
             name: 'phone',
             quantity: 1,
             weight: 100,
-            price: 4000.00,
+            priceMinor: 400000,
             englishName: 'phone',
             description: 'This is a phone',
             currency: 'USD'
@@ -70,21 +73,21 @@ try {
     $packageInfo = new PackageInfoData(
         quantity: 10,
         weight: 10.0,
-        value: 880.00,
+        valueMinor: 88000,
         goodsType: 'ITN2',
         length: 10.0,
         width: 10.0,
         height: null
     );
 
-    $result = $jnt->createOrder($sender, $receiver, $items, $packageInfo, 'YLTEST'.date('YmdHis'));
+    $result = $jnt->createOrder($sender, $receiver, $items, $packageInfo, 'YLTEST' . date('YmdHis'));
     echo "SUCCESS!\n";
-    echo 'Tracking Number: '.($result->trackingNumber ?? 'N/A')."\n";
-    echo 'Order ID: '.($result->orderId ?? 'N/A')."\n";
+    echo 'Tracking Number: ' . ($result->trackingNumber ?? 'N/A') . "\n";
+    echo 'Order ID: ' . ($result->orderId ?? 'N/A') . "\n";
 } catch (Exception $e) {
-    echo 'ERROR: '.$e->getMessage()."\n";
+    echo 'ERROR: ' . $e->getMessage() . "\n";
 
     if (method_exists($e, 'getApiResponse')) {
-        echo 'API Response: '.json_encode($e->getApiResponse(), JSON_PRETTY_PRINT)."\n";
+        echo 'API Response: ' . json_encode($e->getApiResponse(), JSON_PRETTY_PRINT) . "\n";
     }
 }

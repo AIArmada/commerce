@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateNetwork;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -109,7 +109,7 @@ final class NetworkService
     /**
      * Get team sales for a given period.
      */
-    public function getTeamSales(Affiliate $affiliate, ?Carbon $from = null, ?Carbon $to = null): int
+    public function getTeamSales(Affiliate $affiliate, ?CarbonImmutable $from = null, ?CarbonImmutable $to = null): int
     {
         if (! $this->isEnabled()) {
             return 0;

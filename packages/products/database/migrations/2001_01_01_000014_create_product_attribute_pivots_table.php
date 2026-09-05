@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         // Attribute to AttributeGroup pivot
-        Schema::create(config('products.database.tables.attribute_attribute_group', 'product_attribute_attribute_group'), function (Blueprint $table): void {
+        commerce_schema_create_if_missing(config('products.database.tables.attribute_attribute_group', 'product_attribute_attribute_group'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('attribute_id');
             $table->foreignUuid('attribute_group_id');
@@ -23,7 +23,7 @@ return new class extends Migration
         });
 
         // Attribute to AttributeSet pivot
-        Schema::create(config('products.database.tables.attribute_attribute_set', 'product_attribute_attribute_set'), function (Blueprint $table): void {
+        commerce_schema_create_if_missing(config('products.database.tables.attribute_attribute_set', 'product_attribute_attribute_set'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('attribute_id');
             $table->foreignUuid('attribute_set_id');
@@ -35,7 +35,7 @@ return new class extends Migration
         });
 
         // AttributeGroup to AttributeSet pivot
-        Schema::create(config('products.database.tables.attribute_group_attribute_set', 'product_attribute_group_attribute_set'), function (Blueprint $table): void {
+        commerce_schema_create_if_missing(config('products.database.tables.attribute_group_attribute_set', 'product_attribute_group_attribute_set'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('attribute_group_id');
             $table->foreignUuid('attribute_set_id');

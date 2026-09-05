@@ -50,7 +50,7 @@ final class SendInstructionTable
 
                 TextColumn::make('amount')
                     ->label('Amount')
-                    ->formatStateUsing(fn (?string $state): string => MoneyFormatter::formatMajor((float) ($state ?? 0), config('filament-chip.default_currency', 'MYR')))
+                    ->formatStateUsing(fn (?string $state): string => MoneyFormatter::formatMajor($state ?? '0', config('filament-chip.default_currency', 'MYR')))
                     ->weight(FontWeight::SemiBold)
                     ->sortable(),
 

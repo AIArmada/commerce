@@ -74,14 +74,14 @@ final class JntOrderTable
                     ->suffix(' kg')
                     ->sortable()
                     ->toggleable(),
-                TextColumn::make('package_value')
+                TextColumn::make('package_value_minor')
                     ->label('Value')
-                    ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
+                    ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMinor($state, 'MYR'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('cod_value')
+                TextColumn::make('cod_value_minor')
                     ->label('COD')
-                    ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
+                    ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMinor($state, 'MYR'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->placeholder('—'),

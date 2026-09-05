@@ -9,10 +9,10 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
-use AIArmada\Feedback\Models\Concerns\UsesFeedbackUuid;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -46,6 +46,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read FeedbackForm $form
  * @property-read FeedbackInvitation|null $invitation
  * @property-read Collection<int, FeedbackAnswer> $answers
+ * @property-read Collection<int, FeedbackTestimonial> $testimonials
  * @property-read Model|Eloquent $subject
  * @property-read Model|Eloquent $respondent
  */
@@ -55,9 +56,17 @@ final class FeedbackResponse extends Model
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasSocialProfiles;
-    use UsesFeedbackUuid;
+    use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'feedback.owner';
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $response): void {
+            $response->answers()->each(fn (FeedbackAnswer $answer): mixed => $answer->delete());
+            $response->testimonials()->each(fn (FeedbackTestimonial $testimonial): mixed => $testimonial->delete());
+        });
+    }
 
     protected $fillable = [
         'feedback_form_id', 'feedback_invitation_id',
@@ -107,6 +116,11 @@ final class FeedbackResponse extends Model
     public function answers(): HasMany
     {
         return $this->hasMany(FeedbackAnswer::class, 'feedback_response_id');
+    }
+
+    public function testimonials(): HasMany
+    {
+        return $this->hasMany(FeedbackTestimonial::class, 'feedback_response_id');
     }
 
     public function subject(): MorphTo

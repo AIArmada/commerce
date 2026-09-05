@@ -44,25 +44,31 @@ it('scopes Order::forOwner() to current owner plus global and excludes corrupt p
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
     $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
-        return Order::query()->create([
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
+        $order = Order::query()->make([
             'status' => Created::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,
         ]);
+
+        $order->assignOwner($ownerA);
+        $order->save();
+
+        return $order;
     });
 
     $orderB = OwnerContext::withOwner($ownerB, function () use ($ownerB): Order {
-        return Order::query()->create([
-            'owner_type' => $ownerB->getMorphClass(),
-            'owner_id' => $ownerB->getKey(),
+        $order = Order::query()->make([
             'status' => Created::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,
         ]);
+
+        $order->assignOwner($ownerB);
+        $order->save();
+
+        return $order;
     });
 
     $orderGlobal = OwnerContext::withOwner(null, function (): Order {
@@ -132,14 +138,17 @@ it('returns strict global-only when owner resolver returns null', function (): v
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
 
     $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
-        return Order::query()->create([
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
+        $order = Order::query()->make([
             'status' => Created::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,
         ]);
+
+        $order->assignOwner($ownerA);
+        $order->save();
+
+        return $order;
     });
 
     $orderGlobal = OwnerContext::withOwner(null, function (): Order {
@@ -218,14 +227,15 @@ it('rejects explicit owner that does not match current owner context', function 
         }
     });
 
-    expect(fn (): Order => Order::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
+    expect(fn (): Order => tap(Order::query()->make([
         'status' => Created::class,
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
-    ]))->toThrow(AuthorizationException::class);
+    ]), function (Order $order) use ($ownerB): void {
+        $order->assignOwner($ownerB);
+        $order->save();
+    }))->toThrow(AuthorizationException::class);
 });
 
 it('auto-assigns owner on create when enabled', function (): void {

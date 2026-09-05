@@ -189,23 +189,23 @@ final class JntOrderInfolist
                 ->schema([
                     Grid::make(4)
                         ->schema([
-                            TextEntry::make('package_value')
+                            TextEntry::make('package_value_minor')
                                 ->label('Declared Value')
-                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
+                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMinor($state, 'MYR'))
                                 ->placeholder('—'),
-                            TextEntry::make('insurance_value')
+                            TextEntry::make('insurance_value_minor')
                                 ->label('Insurance')
-                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
+                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMinor($state, 'MYR'))
                                 ->placeholder('—'),
-                            TextEntry::make('cod_value')
+                            TextEntry::make('cod_value_minor')
                                 ->label('Cash on Delivery')
-                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
+                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMinor($state, 'MYR'))
                                 ->color('warning')
                                 ->weight(FontWeight::SemiBold)
                                 ->placeholder('—'),
-                            TextEntry::make('offer_value')
+                            TextEntry::make('offer_value_minor')
                                 ->label('Offer Value')
-                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
+                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMinor($state, 'MYR'))
                                 ->placeholder('—'),
                         ]),
                 ])
@@ -289,9 +289,9 @@ final class JntOrderInfolist
                             TextEntry::make('weight_grams')
                                 ->label('Weight')
                                 ->formatStateUsing(fn (int $state): string => number_format($state / 1000, 2) . ' kg'),
-                            TextEntry::make('unit_price')
+                            TextEntry::make('unit_price_minor')
                                 ->label('Unit Price')
-                                ->formatStateUsing(fn ($state, JntOrderItem $record): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, $record->currency ?: 'MYR')),
+                                ->formatStateUsing(fn ($state, JntOrderItem $record): ?string => blank($state) ? null : MoneyFormatter::formatMinor($state, $record->currency ?: 'MYR')),
                             TextEntry::make('description')
                                 ->label('Description')
                                 ->columnSpanFull()

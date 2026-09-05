@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\States\CompletedPayout;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 final class TaxDocumentService
@@ -69,7 +70,7 @@ final class TaxDocumentService
             'total_amount_minor' => $totalPayouts,
             'currency' => $affiliate->currency ?? 'USD',
             'document_path' => $documentPath,
-            'generated_at' => now(),
+            'generated_at' => CarbonImmutable::now(),
         ]);
     }
 
@@ -115,7 +116,7 @@ final class TaxDocumentService
     {
         $document->update([
             'status' => 'sent',
-            'sent_at' => now(),
+            'sent_at' => CarbonImmutable::now(),
         ]);
 
         return $document;
@@ -135,7 +136,7 @@ final class TaxDocumentService
         $document->update([
             'document_path' => $documentPath,
             'status' => 'generated',
-            'generated_at' => now(),
+            'generated_at' => CarbonImmutable::now(),
         ]);
 
         return $document;

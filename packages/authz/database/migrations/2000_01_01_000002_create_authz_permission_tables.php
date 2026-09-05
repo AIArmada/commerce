@@ -28,7 +28,7 @@ return new class extends Migration
         $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
         $teamForeignKey = $columnNames['team_foreign_key'] ?? 'team_id';
 
-        Schema::create($permissionTable, function (Blueprint $table): void {
+        commerce_schema_create_if_missing($permissionTable, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('guard_name');
@@ -37,7 +37,7 @@ return new class extends Migration
             $table->unique(['name', 'guard_name']);
         });
 
-        Schema::create($roleTable, function (Blueprint $table) use ($teams, $teamForeignKey): void {
+        commerce_schema_create_if_missing($roleTable, function (Blueprint $table) use ($teams, $teamForeignKey): void {
             $table->uuid('id')->primary();
 
             if ($teams) {
@@ -58,7 +58,7 @@ return new class extends Migration
             $table->unique(['name', 'guard_name']);
         });
 
-        Schema::create($modelHasPermissionsTable, function (Blueprint $table) use ($permissionColumnName, $modelMorphKey, $teams, $teamForeignKey): void {
+        commerce_schema_create_if_missing($modelHasPermissionsTable, function (Blueprint $table) use ($permissionColumnName, $modelMorphKey, $teams, $teamForeignKey): void {
             $table->uuid($permissionColumnName);
             $table->string('model_type');
             $table->uuid($modelMorphKey);
@@ -75,7 +75,7 @@ return new class extends Migration
             $table->primary([$permissionColumnName, $modelMorphKey, 'model_type'], 'model_has_permissions_permission_model_type_primary');
         });
 
-        Schema::create($modelHasRolesTable, function (Blueprint $table) use ($roleColumnName, $modelMorphKey, $teams, $teamForeignKey): void {
+        commerce_schema_create_if_missing($modelHasRolesTable, function (Blueprint $table) use ($roleColumnName, $modelMorphKey, $teams, $teamForeignKey): void {
             $table->uuid($roleColumnName);
             $table->string('model_type');
             $table->uuid($modelMorphKey);
@@ -92,7 +92,7 @@ return new class extends Migration
             $table->primary([$roleColumnName, $modelMorphKey, 'model_type'], 'model_has_roles_role_model_type_primary');
         });
 
-        Schema::create($roleHasPermissionsTable, function (Blueprint $table) use ($roleColumnName, $permissionColumnName): void {
+        commerce_schema_create_if_missing($roleHasPermissionsTable, function (Blueprint $table) use ($roleColumnName, $permissionColumnName): void {
             $table->uuid($permissionColumnName);
             $table->uuid($roleColumnName);
 

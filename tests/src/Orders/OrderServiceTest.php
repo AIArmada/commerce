@@ -340,15 +340,15 @@ describe('OrderService', function (): void {
 
             $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
 
-            $order = Order::create([
+            $order = new Order([
                 'order_number' => 'ORD-SVC-MUT-NOCTX-' . uniqid(),
                 'status' => PendingPayment::class,
                 'currency' => 'MYR',
                 'subtotal' => 10000,
                 'grand_total' => 10000,
-                'owner_type' => $ownerA->getMorphClass(),
-                'owner_id' => (string) $ownerA->getKey(),
             ]);
+            $order->assignOwner($ownerA);
+            $order->save();
 
             config()->set('orders.owner.enabled', true);
 
@@ -379,15 +379,15 @@ describe('OrderService', function (): void {
             $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
             $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-            $order = Order::create([
+            $order = new Order([
                 'order_number' => 'ORD-SVC-MUT-XOWNER-' . uniqid(),
                 'status' => PendingPayment::class,
                 'currency' => 'MYR',
                 'subtotal' => 10000,
                 'grand_total' => 10000,
-                'owner_type' => $ownerA->getMorphClass(),
-                'owner_id' => (string) $ownerA->getKey(),
             ]);
+            $order->assignOwner($ownerA);
+            $order->save();
 
             config()->set('orders.owner.enabled', true);
 

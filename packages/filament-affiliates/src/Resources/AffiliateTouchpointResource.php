@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTouchpointResource\Pages\ListAffiliateTouchpoints;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTouchpointResource\Pages\ViewAffiliateTouchpoint;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -115,7 +116,7 @@ final class AffiliateTouchpointResource extends Resource
             ])
             ->filters([
                 Tables\Filters\Filter::make('recent')
-                    ->query(fn (Builder $query): Builder => $query->where('touched_at', '>=', now()->subDays(7))),
+                    ->query(fn (Builder $query): Builder => $query->where('touched_at', '>=', CarbonImmutable::now()->subDays(7))),
             ])
             ->defaultSort('touched_at', 'desc');
     }

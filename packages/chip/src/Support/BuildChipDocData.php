@@ -13,6 +13,7 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Refunded;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 
 final class BuildChipDocData
@@ -33,7 +34,7 @@ final class BuildChipDocData
         return new DocData(
             docType: $docType->value,
             status: DocStatus::fromString(Paid::class),
-            issueDate: now(),
+            issueDate: CarbonImmutable::now(),
             dueDate: null,
             subtotalMinor: $amount,
             taxAmountMinor: 0,
@@ -97,7 +98,7 @@ final class BuildChipDocData
         return new DocData(
             docType: $docType->value,
             status: DocStatus::fromString(Refunded::class),
-            issueDate: now(),
+            issueDate: CarbonImmutable::now(),
             dueDate: null,
             subtotalMinor: $amount,
             taxAmountMinor: 0,

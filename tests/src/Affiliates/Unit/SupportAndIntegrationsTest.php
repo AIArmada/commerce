@@ -15,7 +15,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 // CartIntegrationRegistrar Tests
@@ -208,8 +208,8 @@ test('AffiliateCommissionRule getTable returns configured table', function (): v
 
 // Carbon date usage in services
 test('Date ranges work correctly with Carbon', function (): void {
-    $from = Carbon::now()->subMonth()->startOfMonth();
-    $to = Carbon::now()->endOfMonth();
+    $from = CarbonImmutable::now()->subMonth()->startOfMonth();
+    $to = CarbonImmutable::now()->endOfMonth();
 
     expect($from->isBefore($to))->toBeTrue();
     expect($from->diffInDays($to))->toBeGreaterThan(0);

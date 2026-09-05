@@ -18,6 +18,7 @@ use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Stringable;
@@ -67,7 +68,11 @@ final class RecordAffiliateConversion
             $weights = [$affiliate->getKey() => 1.0];
         }
 
+        $conversionType = (string) ($payload['conversion_type'] ?? 'purchase');
+        $externalReference = $payload['external_reference'] ?? null;
+        $channel = $payload['channel'] ?? $attribution?->channel;
         $conversions = [];
+        $firstConversion = null;
 
         foreach ($weights as $affiliateId => $weight) {
             $weight = max(0, (float) $weight);
@@ -84,7 +89,10 @@ final class RecordAffiliateConversion
                 $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot,
             );
 
-            $conversion = AffiliateConversion::create([
+            $affiliateId = (string) ($beneficiary?->getKey() ?? $affiliateId);
+            $ownerType = $beneficiary?->owner_type ?? $affiliate->owner_type;
+            $ownerId = $beneficiary?->owner_id ?? $affiliate->owner_id;
+            $conversionAttributes = [
                 'affiliate_id' => $beneficiary?->getKey() ?? $affiliateId,
                 'affiliate_code' => $beneficiary?->code ?? $affiliate->code,
                 'affiliate_attribution_id' => $attribution?->getKey(),
@@ -98,23 +106,48 @@ final class RecordAffiliateConversion
                 'voucher_code' => $payload['voucher_code'] ?? $attribution?->voucher_code,
                 'commission_override' => $payload['commission_override'] ?? $attribution?->commission_override,
                 'upline_levels' => $payload['upline_levels'] ?? $attribution?->upline_levels,
-                'external_reference' => $payload['external_reference'] ?? null,
-                'conversion_type' => $payload['conversion_type'] ?? 'purchase',
+                'external_reference' => $externalReference,
+                'conversion_type' => $conversionType,
                 'subtotal_minor' => $subtotalMinor ?? 0,
                 'value_minor' => $portionRevenue,
                 'commission_minor' => $portionCommission,
                 'commission_currency' => $payload['commission_currency'] ?? $affiliate->currency,
                 'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
-                'channel' => $payload['channel'] ?? $attribution?->channel,
+                'channel' => $channel,
                 'origin' => $payload['origin'] ?? $attribution?->origin,
                 'sharer_user_id' => $payload['sharer_user_id'] ?? $attribution?->sharer_user_id,
                 'actor_user_id' => $payload['actor_user_id'] ?? null,
                 'metadata' => $conversionMetadata,
-                'owner_type' => $beneficiary?->owner_type ?? $affiliate->owner_type,
-                'owner_id' => $beneficiary?->owner_id ?? $affiliate->owner_id,
-                'occurred_at' => $payload['occurred_at'] ?? now(),
-                'approved_at' => $autoApprove ? now() : null,
-            ]);
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerId,
+                'occurred_at' => $payload['occurred_at'] ?? CarbonImmutable::now(),
+                'approved_at' => $autoApprove ? CarbonImmutable::now() : null,
+            ];
+
+            $idempotencyKey = $this->resolveIdempotencyKey(
+                $externalReference,
+                $affiliateId,
+                $conversionType,
+                $channel,
+                $ownerType,
+                $ownerId,
+            );
+
+            if ($idempotencyKey !== null) {
+                $conversionAttributes['idempotency_key'] = $idempotencyKey;
+                $conversion = AffiliateConversion::query()->createOrFirst(
+                    ['idempotency_key' => $idempotencyKey],
+                    $conversionAttributes,
+                );
+            } else {
+                $conversion = AffiliateConversion::create($conversionAttributes);
+            }
+
+            $firstConversion ??= AffiliateConversionData::fromModel($conversion);
+
+            if (! $conversion->wasRecentlyCreated) {
+                continue;
+            }
 
             $this->accounting->handle($conversion);
 
@@ -130,9 +163,11 @@ final class RecordAffiliateConversion
             }
         }
 
-        $this->allocateUpline->handle($conversions, $autoApprove, $statusEnum, $attribution?->getKey());
+        if ($conversions !== []) {
+            $this->allocateUpline->handle($conversions, $autoApprove, $statusEnum, $attribution?->getKey());
+        }
 
-        return $conversions[0];
+        return $firstConversion;
     }
 
     private function resolveCommission(
@@ -282,5 +317,27 @@ final class RecordAffiliateConversion
     private function shouldDispatch(string $flag): bool
     {
         return (bool) config("affiliates.events.{$flag}", true);
+    }
+
+    private function resolveIdempotencyKey(
+        mixed $externalReference,
+        string $affiliateId,
+        string $conversionType,
+        mixed $channel,
+        ?string $ownerType,
+        ?string $ownerId,
+    ): ?string {
+        if (! is_string($externalReference) || mb_trim($externalReference) === '') {
+            return null;
+        }
+
+        return hash('sha256', implode('|', [
+            $ownerType ?? '',
+            $ownerId ?? '',
+            $affiliateId,
+            $conversionType,
+            is_string($channel) ? $channel : '',
+            $externalReference,
+        ]));
     }
 }

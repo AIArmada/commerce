@@ -17,7 +17,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
 
             $table->nullableUuidMorphs('owner');

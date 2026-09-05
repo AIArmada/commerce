@@ -7,6 +7,7 @@ namespace AIArmada\FilamentInventory\Actions;
 use AIArmada\Inventory\Actions\ReceiveInventory;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -59,7 +60,7 @@ final class ReceiveStockAction
 
                         DatePicker::make('received_at')
                             ->label('Received Date')
-                            ->default(now())
+                            ->default(CarbonImmutable::now())
                             ->required(),
                     ]),
 

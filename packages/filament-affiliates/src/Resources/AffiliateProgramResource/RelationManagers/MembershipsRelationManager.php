@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Relatio
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -46,7 +47,7 @@ final class MembershipsRelationManager extends RelationManager
 
             DateTimePicker::make('applied_at')
                 ->required()
-                ->default(now()),
+                ->default(CarbonImmutable::now()),
 
             DateTimePicker::make('approved_at'),
 
@@ -96,7 +97,7 @@ final class MembershipsRelationManager extends RelationManager
                     ->action(function (AffiliateProgramMembership $record): void {
                         $record->update([
                             'status' => MembershipStatus::Approved,
-                            'approved_at' => now(),
+                            'approved_at' => CarbonImmutable::now(),
                         ]);
 
                         Notification::make()
@@ -113,7 +114,7 @@ final class MembershipsRelationManager extends RelationManager
                     ->action(function (AffiliateProgramMembership $record): void {
                         $record->update([
                             'status' => MembershipStatus::Rejected,
-                            'rejected_at' => now(),
+                            'rejected_at' => CarbonImmutable::now(),
                         ]);
 
                         Notification::make()

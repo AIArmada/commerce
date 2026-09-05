@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Events;
 
 use AIArmada\FilamentCart\Models\Cart;
+use Carbon\CarbonImmutable;
 
 final readonly class CartSnapshotSynced
 {
@@ -39,7 +40,7 @@ final readonly class CartSnapshotSynced
             uniqueItemCount: $cart->items_count,
             itemCount: $cart->items_count,
             currency: $cart->currency,
-            occurredAt: now()->toAtomString(),
+            occurredAt: CarbonImmutable::now()->toAtomString(),
         );
     }
 }

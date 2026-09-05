@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Services\ProgramService;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Notifications\Notification;
@@ -46,7 +47,9 @@ class PortalPrograms extends PortalPage
             return;
         }
 
-        $program = AffiliateProgram::query()->find($programId);
+        $program = OwnerUiScope::apply(AffiliateProgram::query(), includeGlobal: false)
+            ->whereKey($programId)
+            ->first();
 
         if (! $program) {
             Notification::make()
@@ -96,7 +99,9 @@ class PortalPrograms extends PortalPage
             return;
         }
 
-        $program = AffiliateProgram::query()->find($programId);
+        $program = OwnerUiScope::apply(AffiliateProgram::query(), includeGlobal: false)
+            ->whereKey($programId)
+            ->first();
 
         if (! $program) {
             Notification::make()

@@ -8,6 +8,8 @@ use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -78,7 +80,7 @@ final class PayPalProcessor implements PayoutProcessorInterface
                 'items' => [[
                     'recipient_type' => 'EMAIL',
                     'amount' => [
-                        'value' => number_format($netAmount / 100, 2, '.', ''),
+                        'value' => str_replace(',', '', MoneyFormatter::decimalFromMinor($netAmount, $payout->currency)),
                         'currency' => mb_strtoupper($payout->currency),
                     ],
                     'sender_item_id' => $providerOperationId,
@@ -152,12 +154,14 @@ final class PayPalProcessor implements PayoutProcessorInterface
 
     public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
     {
-        return now()->addDays(1);
+        return CarbonImmutable::now()->addDays(1);
     }
 
     public function getFees(int $amountMinor, string $currency): int
     {
-        return min((int) ceil($amountMinor * 0.02), 100);
+        $amountMinor = max(0, $amountMinor);
+
+        return min(intdiv(($amountMinor * 2) + 99, 100), 100);
     }
 
     public function validateDetails(array $details): array

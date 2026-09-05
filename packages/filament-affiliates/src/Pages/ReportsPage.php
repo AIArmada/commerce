@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Pages;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -102,17 +103,17 @@ final class ReportsPage extends Page implements HasForms
         $service = app(AffiliateReportService::class);
 
         $startDate = match ($this->period) {
-            'week' => now()->subWeek(),
-            'month' => now()->subMonth(),
-            'quarter' => now()->subQuarter(),
-            'year' => now()->subYear(),
-            'custom' => $this->startDate ? now()->parse($this->startDate) : now()->subMonth(),
-            default => now()->subMonth(),
+            'week' => CarbonImmutable::now()->subWeek(),
+            'month' => CarbonImmutable::now()->subMonth(),
+            'quarter' => CarbonImmutable::now()->subQuarter(),
+            'year' => CarbonImmutable::now()->subYear(),
+            'custom' => $this->startDate ? CarbonImmutable::parse($this->startDate) : CarbonImmutable::now()->subMonth(),
+            default => CarbonImmutable::now()->subMonth(),
         };
 
         $endDate = $this->period === 'custom' && $this->endDate
-            ? now()->parse($this->endDate)
-            : now();
+            ? CarbonImmutable::parse($this->endDate)
+            : CarbonImmutable::now();
 
         $this->reportData = [
             'summary' => $service->getSummary($startDate, $endDate),

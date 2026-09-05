@@ -7,7 +7,7 @@ namespace AIArmada\Events\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Events\Database\Factories\EventItineraryFactory;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,7 +33,7 @@ final class EventItinerary extends Model
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
-    use UsesEventUuid;
+    use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 

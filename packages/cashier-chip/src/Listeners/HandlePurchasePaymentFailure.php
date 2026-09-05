@@ -13,7 +13,7 @@ class HandlePurchasePaymentFailure
 {
     public function handle(PurchasePaymentFailure $event): void
     {
-        if ((bool) config('cashier-chip.features.owner.enabled', true) && OwnerContext::resolve() === null) {
+        if ((bool) config('cashier-chip.features.owner.enabled', false) && OwnerContext::resolve() === null) {
             return;
         }
 
@@ -25,7 +25,7 @@ class HandlePurchasePaymentFailure
             return;
         }
 
-        $billable = (bool) config('cashier-chip.features.owner.enabled', true)
+        $billable = (bool) config('cashier-chip.features.owner.enabled', false)
             ? Cashier::findBillableForWebhook($clientId)
             : Cashier::findBillable($clientId);
 

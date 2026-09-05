@@ -8,6 +8,7 @@ use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationSent;
 use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -31,7 +32,7 @@ final class InviteMemberAction
             'role' => $role->spatieRoleName(),
             'token' => MembershipInvitation::tokenForStorage($token),
             'invited_by' => $inviter->getKey(),
-            'expires_at' => $expiresAt ?? now()->addDays(
+            'expires_at' => $expiresAt ?? CarbonImmutable::now()->addDays(
                 (int) config('membership.invitations.default_expiry_days', 14)
             ),
         ]);

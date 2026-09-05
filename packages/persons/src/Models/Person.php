@@ -56,6 +56,16 @@ class Person extends Model
         'published_at',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Person $person): void {
+            $person->names()->get()->each->delete();
+            $person->titleAssignments()->get()->each->delete();
+            $person->credentialAssignments()->get()->each->delete();
+            $person->affiliations()->get()->each->delete();
+        });
+    }
+
     public function getTable(): string
     {
         return config('persons.database.tables.persons', 'persons');
@@ -103,7 +113,9 @@ class Person extends Model
         /** @var EloquentCollection<int, TitleAssignment> $assignments */
         $assignments->loadMissing('title.category');
         $assignments = $assignments
-            ->filter(fn (TitleAssignment $assignment): bool => $assignment->status === AssignmentStatus::Active)
+            ->filter(fn (TitleAssignment $assignment): bool => $assignment->status === AssignmentStatus::Active
+                && $assignment->title !== null
+                && $assignment->title->category !== null)
             ->values();
 
         $before = $assignments

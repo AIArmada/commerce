@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Moderation\Actions;
 
+use AIArmada\CommerceSupport\Contracts\OwnerScopeConfigurable;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Moderation\Contracts\RecordsModerationAction;
 use AIArmada\Moderation\Enums\ModerationActionType;
 use AIArmada\Moderation\Models\ModerationAction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 final class RecordModerationAction implements RecordsModerationAction
 {
@@ -46,10 +46,14 @@ final class RecordModerationAction implements RecordsModerationAction
             return;
         }
 
-        try {
-            OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
-        } catch (InvalidArgumentException) {
+        if (! $model instanceof OwnerScopeConfigurable && ! method_exists($model::class, 'scopeForOwner')) {
             return;
         }
+
+        if ($model instanceof OwnerScopeConfigurable && ! $model::ownerScopeConfig()->enabled) {
+            return;
+        }
+
+        OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
     }
 }

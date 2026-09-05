@@ -49,7 +49,7 @@ describe('JntOrder model', function (): void {
         $casts = $order->getCasts();
 
         expect($casts['package_quantity'])->toBe('integer');
-        expect($casts['pickup_start_at'])->toBe('datetime');
+        expect($casts['pickup_start_at'])->toBe('immutable_datetime');
         expect($casts['sender'])->toBe('array');
         expect($casts['receiver'])->toBe('array');
         expect($casts['metadata'])->toBe('array');
@@ -139,7 +139,7 @@ describe('JntOrderItem model', function (): void {
         expect($fillable)->toContain('description');
         expect($fillable)->toContain('quantity');
         expect($fillable)->toContain('weight_grams');
-        expect($fillable)->toContain('unit_price');
+        expect($fillable)->toContain('unit_price_minor');
         expect($fillable)->toContain('currency');
         expect($fillable)->toContain('metadata');
     });
@@ -162,10 +162,10 @@ describe('JntOrderItem model', function (): void {
 
     it('calculates total price', function (): void {
         $item = new JntOrderItem;
-        $item->unit_price = '25.50';
+        $item->unit_price_minor = 2550;
         $item->quantity = 3;
 
-        expect($item->getTotalPrice())->toBe(76.5);
+        expect($item->getTotalPriceMinor())->toBe(7650);
     });
 
     it('defines order relationship', function (): void {
@@ -272,7 +272,7 @@ describe('JntTrackingEvent model', function (): void {
         $event = new JntTrackingEvent;
         $casts = $event->getCasts();
 
-        expect($casts['scan_time'])->toBe('datetime');
+        expect($casts['scan_time'])->toBe('immutable_datetime');
         expect($casts['scan_network_id'])->toBe('integer');
         expect($casts['payload'])->toBe('array');
     });
@@ -361,7 +361,7 @@ describe('JntWebhookLog model', function (): void {
 
         expect($casts['headers'])->toBe('array');
         expect($casts['payload'])->toBe('array');
-        expect($casts['processed_at'])->toBe('datetime');
+        expect($casts['processed_at'])->toBe('immutable_datetime');
     });
 
     it('checks if webhook is processed', function (): void {

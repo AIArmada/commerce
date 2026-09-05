@@ -78,7 +78,7 @@ describe('OrderBuilder - Required Fields Validation', function (): void {
                 name: 'Test Item',
                 quantity: 1,
                 weight: 500,
-                price: 10.00,
+                priceMinor: 1000,
                 description: 'Test Description'
             ));
 
@@ -107,12 +107,12 @@ describe('OrderBuilder - Field Format Validation', function (): void {
                 name: 'Test Item',
                 quantity: 1,
                 weight: 500,
-                price: 10.00
+                priceMinor: 1000
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 1.0,
-                value: 10.00,
+                valueMinor: 1000,
                 goodsType: GoodsType::PACKAGE
             ));
 
@@ -139,12 +139,12 @@ describe('OrderBuilder - Field Format Validation', function (): void {
                 name: 'Test Item',
                 quantity: 1,
                 weight: 500,
-                price: 10.00
+                priceMinor: 1000
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 1.0,
-                value: 10.00,
+                valueMinor: 1000,
                 goodsType: GoodsType::PACKAGE
             ));
 
@@ -173,12 +173,12 @@ describe('OrderBuilder - Field Range Validation', function (): void {
                 name: 'Test Item',
                 quantity: 1,
                 weight: 500,
-                price: 10.00
+                priceMinor: 1000
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 0.001, // Too low
-                value: 10.00,
+                valueMinor: 1000,
                 goodsType: GoodsType::PACKAGE
             ));
 
@@ -205,12 +205,12 @@ describe('OrderBuilder - Field Range Validation', function (): void {
                 name: 'Test Item',
                 quantity: 1,
                 weight: 500,
-                price: 10.00
+                priceMinor: 1000
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 1000.00, // Too high
-                value: 10.00,
+                valueMinor: 1000,
                 goodsType: GoodsType::PACKAGE
             ));
 
@@ -237,12 +237,12 @@ describe('OrderBuilder - Field Range Validation', function (): void {
                 name: 'Test Item',
                 quantity: 0, // Too low
                 weight: 500,
-                price: 10.00
+                priceMinor: 1000
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 1.0,
-                value: 10.00,
+                valueMinor: 1000,
                 goodsType: GoodsType::PACKAGE
             ));
 
@@ -269,12 +269,12 @@ describe('OrderBuilder - Field Range Validation', function (): void {
                 name: 'Test Item',
                 quantity: 1,
                 weight: 0, // Too low
-                price: 10.00
+                priceMinor: 1000
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 1.0,
-                value: 10.00,
+                valueMinor: 1000,
                 goodsType: GoodsType::PACKAGE
             ));
 
@@ -301,17 +301,17 @@ describe('OrderBuilder - Field Range Validation', function (): void {
                 name: 'Test Item',
                 quantity: 1,
                 weight: 500,
-                price: 0.001 // Too low
+                priceMinor: 0 // Too low
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 1.0,
-                value: 10.00,
+                valueMinor: 1000,
                 goodsType: GoodsType::PACKAGE
             ));
 
         expect(fn (): array => $builder->build())
-            ->toThrow(JntException::class, 'Item #1 price must be between 0.01 and 999,999.99');
+            ->toThrow(JntException::class, 'Item #1 price must be between 1 and 999,999,999 minor units.');
     });
 });
 
@@ -335,12 +335,12 @@ describe('OrderBuilder - Field Length Validation', function (): void {
                 name: 'Test Item',
                 quantity: 1,
                 weight: 500,
-                price: 10.00
+                priceMinor: 1000
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 1.0,
-                value: 10.00,
+                valueMinor: 1000,
                 goodsType: GoodsType::PACKAGE
             ));
 
@@ -367,12 +367,12 @@ describe('OrderBuilder - Field Length Validation', function (): void {
                 name: 'Test Item',
                 quantity: 1,
                 weight: 500,
-                price: 10.00
+                priceMinor: 1000
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 1.0,
-                value: 10.00,
+                valueMinor: 1000,
                 goodsType: GoodsType::PACKAGE
             ));
 
@@ -399,13 +399,13 @@ describe('OrderBuilder - Field Length Validation', function (): void {
                 name: 'Test Item',
                 quantity: 1,
                 weight: 500,
-                price: 10.00,
+                priceMinor: 1000,
                 description: str_repeat('A', 501) // 501 characters
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 1.0,
-                value: 10.00,
+                valueMinor: 1000,
                 goodsType: GoodsType::PACKAGE
             ));
 
@@ -432,12 +432,12 @@ describe('OrderBuilder - Field Length Validation', function (): void {
                 name: 'Test Item',
                 quantity: 1,
                 weight: 500,
-                price: 10.00
+                priceMinor: 1000
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 1.0,
-                value: 10.00,
+                valueMinor: 1000,
                 goodsType: GoodsType::PACKAGE
             ))
             ->remark(str_repeat('A', 301)); // 301 characters (max is 300)
@@ -467,13 +467,13 @@ describe('OrderBuilder - Valid Order', function (): void {
                 name: 'Test Product',
                 quantity: 2,
                 weight: 500,
-                price: 25.50,
+                priceMinor: 2550,
                 description: 'Test product description'
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 1,
                 weight: 1.5,
-                value: 51.00,
+                valueMinor: 5100,
                 goodsType: GoodsType::PACKAGE,
                 length: 30.0,
                 width: 20.0,
@@ -513,13 +513,13 @@ describe('OrderBuilder - Valid Order', function (): void {
                 name: 'Test',
                 quantity: 999, // Max quantity
                 weight: 999999, // Max weight in grams
-                price: 999999.99, // Max price
+                priceMinor: 999999999, // Max J&T item value
                 description: str_repeat('C', 500) // Max description length
             ))
             ->packageInfo(new PackageInfoData(
                 quantity: 999, // Max quantity
                 weight: 999.99, // Max weight in kg
-                value: 999999.99, // Max value
+                valueMinor: 99999999, // Max value
                 goodsType: GoodsType::PACKAGE,
                 length: 999.99, // Max length
                 width: 999.99, // Max width

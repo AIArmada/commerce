@@ -11,8 +11,8 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -44,18 +44,18 @@ final class CohortAnalyzer
      * }>
      */
     public function analyzeMonthly(
-        ?Carbon $from = null,
-        ?Carbon $to = null,
+        ?CarbonImmutable $from = null,
+        ?CarbonImmutable $to = null,
         int $monthsToTrack = 12
     ): array {
-        $from = $from ?? now()->subYear()->startOfMonth();
-        $to = $to ?? now()->endOfMonth();
+        $from = $from ?? CarbonImmutable::now()->subYear()->startOfMonth();
+        $to = $to ?? CarbonImmutable::now()->endOfMonth();
 
         $cohorts = $this->getCohorts($from, $to);
         $results = [];
 
         foreach ($cohorts as $cohortMonth => $affiliateIds) {
-            $cohortDate = Carbon::parse($cohortMonth . '-01');
+            $cohortDate = CarbonImmutable::parse($cohortMonth . '-01');
             $affiliates = Affiliate::whereIn('id', $affiliateIds)->get();
 
             $monthlyBreakdown = $this->calculateMonthlyBreakdown(
@@ -115,8 +115,8 @@ final class CohortAnalyzer
      * }>
      */
     public function calculateRetentionCurve(
-        ?Carbon $from = null,
-        ?Carbon $to = null,
+        ?CarbonImmutable $from = null,
+        ?CarbonImmutable $to = null,
         int $maxMonths = 12
     ): array {
         $cohortData = $this->analyzeMonthly($from, $to, $maxMonths);
@@ -172,8 +172,8 @@ final class CohortAnalyzer
      * }>
      */
     public function calculateLtv(
-        ?Carbon $from = null,
-        ?Carbon $to = null
+        ?CarbonImmutable $from = null,
+        ?CarbonImmutable $to = null
     ): array {
         $cohortData = $this->analyzeMonthly($from, $to);
         $ltvData = [];
@@ -207,7 +207,7 @@ final class CohortAnalyzer
      *     trend: string
      * }
      */
-    public function compareCohorts(?Carbon $from = null, ?Carbon $to = null): array
+    public function compareCohorts(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): array
     {
         $cohortData = $this->analyzeMonthly($from, $to);
 
@@ -281,10 +281,10 @@ final class CohortAnalyzer
      *     conversion_rate: float
      * }>
      */
-    public function analyzeBySource(?Carbon $from = null, ?Carbon $to = null): array
+    public function analyzeBySource(?CarbonImmutable $from = null, ?CarbonImmutable $to = null): array
     {
-        $from = $from ?? now()->subYear();
-        $to = $to ?? now();
+        $from = $from ?? CarbonImmutable::now()->subYear();
+        $to = $to ?? CarbonImmutable::now();
 
         $affiliatesTable = (new Affiliate)->getTable();
         $conversionsTable = (new AffiliateConversion)->getTable();
@@ -336,7 +336,7 @@ final class CohortAnalyzer
      *
      * @return Collection<string, array<int, string>>
      */
-    private function getCohorts(Carbon $from, Carbon $to): Collection
+    private function getCohorts(CarbonImmutable $from, CarbonImmutable $to): Collection
     {
         $affiliatesTable = (new Affiliate)->getTable();
         $driver = ConnectionDriver::name(DB::connection());
@@ -368,7 +368,7 @@ final class CohortAnalyzer
      */
     private function calculateMonthlyBreakdown(
         array $affiliateIds,
-        Carbon $cohortDate,
+        CarbonImmutable $cohortDate,
         int $monthsToTrack
     ): array {
         $breakdown = [];

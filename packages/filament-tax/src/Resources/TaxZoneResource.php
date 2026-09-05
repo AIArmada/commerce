@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentTax\Resources\TaxZoneResource\Pages;
 use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers;
 use AIArmada\FilamentTax\Resources\TaxZoneResource\Schemas\TaxZoneForm;
@@ -41,7 +42,7 @@ final class TaxZoneResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
+        $query = OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
 
         /** @phpstan-ignore return.type (template type not preserved through helper) */
         return $query->withCount([

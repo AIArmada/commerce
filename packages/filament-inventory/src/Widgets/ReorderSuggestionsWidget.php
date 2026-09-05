@@ -8,6 +8,7 @@ use AIArmada\FilamentInventory\Actions\ApproveReorderSuggestionAction;
 use AIArmada\FilamentInventory\Actions\RejectReorderSuggestionAction;
 use AIArmada\Inventory\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -81,7 +82,7 @@ final class ReorderSuggestionsWidget extends TableWidget
                     ->color(fn (?InventoryReorderSuggestion $record): string => match (true) {
                         $record?->expected_stockout_date === null => 'gray',
                         $record->expected_stockout_date->isPast() => 'danger',
-                        $record->expected_stockout_date->diffInDays(now()) <= 7 => 'warning',
+                        $record->expected_stockout_date->diffInDays(CarbonImmutable::now()) <= 7 => 'warning',
                         default => 'gray',
                     }),
 

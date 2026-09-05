@@ -11,9 +11,9 @@ describe('SendLimit data object', function (): void {
             'currency' => 'MYR',
             'fee_type' => 'flat',
             'transaction_type' => 'out',
-            'amount' => 123.45,
-            'fee' => 1,
-            'net_amount' => 122.45,
+            'amount' => '123.45',
+            'fee' => '1.00',
+            'net_amount' => '122.45',
             'status' => 'approved',
             'approvals_required' => 2,
             'approvals_received' => 1,
@@ -29,7 +29,7 @@ describe('SendLimit data object', function (): void {
             ->and($limit->fee_type)->toBe('flat')
             ->and($limit->transaction_type)->toBe('out')
             ->and($limit->amount)->toBe(123.45)
-            ->and($limit->fee)->toBe(1)
+            ->and($limit->fee)->toBe(1.0)
             ->and($limit->net_amount)->toBe(122.45)
             ->and($limit->status)->toBe('approved')
             ->and($limit->approvals_required)->toBe(2)

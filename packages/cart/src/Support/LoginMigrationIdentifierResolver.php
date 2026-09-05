@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Support;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 
 class LoginMigrationIdentifierResolver
@@ -74,7 +75,7 @@ class LoginMigrationIdentifierResolver
             Cache::put(
                 LoginMigrationCacheKey::make($identifier),
                 $sessionId,
-                now()->addMinutes($ttlMinutes)
+                CarbonImmutable::now()->addMinutes($ttlMinutes)
             );
         }
     }

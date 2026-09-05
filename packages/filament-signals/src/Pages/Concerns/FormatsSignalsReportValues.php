@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Pages\Concerns;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentSignals\Support\SignalsUiConfig;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
@@ -13,7 +14,9 @@ trait FormatsSignalsReportValues
 {
     public function formatMoney(int $minor): string
     {
-        return config('signals.defaults.currency', 'MYR') . ' ' . number_format($minor / 100, 2, '.', ',');
+        $currency = (string) config('signals.defaults.currency', 'MYR');
+
+        return mb_strtoupper($currency) . ' ' . MoneyFormatter::decimalFromMinor($minor, $currency);
     }
 
     protected function formatAggregateTimestamp(mixed $state): ?string

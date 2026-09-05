@@ -10,6 +10,7 @@ use AIArmada\Checkout\Exceptions\InventoryException;
 use AIArmada\Checkout\Integrations\InventoryAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Inventory\Data\ReservationLine;
+use Carbon\CarbonImmutable;
 use Throwable;
 
 final class ReserveInventoryStep extends AbstractCheckoutStep
@@ -140,7 +141,7 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
                 'state' => $outcome->state,
                 'expires_at' => $outcome->expiresAt,
             ];
-            $pricingData['reservations_expire_at'] = $outcome->expiresAt ?? now()->addSeconds($reservationTtl)->toIso8601String();
+            $pricingData['reservations_expire_at'] = $outcome->expiresAt ?? CarbonImmutable::now()->addSeconds($reservationTtl)->toIso8601String();
 
             $session->update(['pricing_data' => $pricingData]);
 

@@ -34,6 +34,7 @@ return [
 
     /* Database */
     'database' => [
+        'json_column_type' => env('EVENTS_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'events' => env('EVENTS_TABLE_EVENTS', $tablePrefix . 'events'),
             'event_occurrences' => env('EVENTS_TABLE_OCCURRENCES', $tablePrefix . 'event_occurrences'),
@@ -225,7 +226,6 @@ return [
     /* Codes */
     'codes' => [
         'registration_prefix' => env('EVENTS_REGISTRATION_PREFIX', 'REG'),
-        'registration_length' => (int) env('EVENTS_REGISTRATION_LENGTH', 10),
     ],
 
     /* Lifecycle configuration */
@@ -237,7 +237,7 @@ return [
         ],
         'registration' => [
             'check_in_allowed_statuses' => ['confirmed'],
-            'capacity_blocking_statuses' => ['pending', 'confirmed', 'refund_pending', 'checked_in', 'no_show'],
+            'capacity_blocking_statuses' => ['pending', 'confirmed', 'refund_pending', 'checked_in'],
             'terminal_statuses' => ['checked_in', 'cancelled', 'refunded', 'no_show'],
             'auto_promote_waitlist' => env('EVENTS_AUTO_PROMOTE_WAITLIST', false),
         ],

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCashier\Widgets;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Laravel\Cashier\Subscription;
@@ -34,7 +35,7 @@ final class TotalSubscribersWidget extends StatsOverviewWidget
                 $totals['stripe'] = OwnerScopedQuery::apply(Subscription::query())
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', now());
+                            ->orWhere('ends_at', '>', CarbonImmutable::now());
                     })
                     ->count();
             }
@@ -45,7 +46,7 @@ final class TotalSubscribersWidget extends StatsOverviewWidget
                 $totals['chip'] = OwnerScopedQuery::apply($subscriptionModel::query())
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', now());
+                            ->orWhere('ends_at', '>', CarbonImmutable::now());
                     })
                     ->count();
             }

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCashier\Widgets;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Laravel\Cashier\Subscription;
@@ -23,9 +24,9 @@ final class UnifiedChurnWidget extends StatsOverviewWidget
         $canceledThisMonth = 0;
         $canceledLastMonth = 0;
 
-        $startOfMonth = now()->startOfMonth();
-        $startOfLastMonth = now()->subMonth()->startOfMonth();
-        $endOfLastMonth = now()->subMonth()->endOfMonth();
+        $startOfMonth = CarbonImmutable::now()->startOfMonth();
+        $startOfLastMonth = CarbonImmutable::now()->subMonth()->startOfMonth();
+        $endOfLastMonth = CarbonImmutable::now()->subMonth()->endOfMonth();
 
         // Count Stripe cancellations
         if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {

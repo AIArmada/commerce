@@ -18,7 +18,7 @@ return new class extends Migration
         $workflowsTable = $tables['workflows'] ?? $prefix . 'workflows';
         $workflowStepsTable = $tables['workflow_steps'] ?? $prefix . 'workflow_steps';
 
-        Schema::create($workflowsTable, function (Blueprint $table) use ($jsonColumnType): void {
+        commerce_schema_create_if_missing($workflowsTable, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->string('name');
@@ -31,7 +31,7 @@ return new class extends Migration
             $table->index(['is_active', 'doc_type', 'priority']);
         });
 
-        Schema::create($workflowStepsTable, function (Blueprint $table) use ($jsonColumnType): void {
+        commerce_schema_create_if_missing($workflowStepsTable, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->foreignUuid('workflow_id');

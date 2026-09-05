@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Services\NetworkService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Paused;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     config(['affiliates.network.enabled' => true]);
@@ -364,8 +364,8 @@ describe('NetworkService', function (): void {
                 'occurred_at' => now()->subMonths(2),
             ]);
 
-            $from = Carbon::now()->startOfMonth();
-            $to = Carbon::now()->endOfMonth();
+            $from = CarbonImmutable::now()->startOfMonth();
+            $to = CarbonImmutable::now()->endOfMonth();
 
             $teamSales = $this->service->getTeamSales($this->rootAffiliate, $from, $to);
 

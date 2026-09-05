@@ -98,7 +98,7 @@ final class BuildContactLinksAction
         // Remove + for wa.me path
         $cleaned = mb_ltrim($phone, '+');
 
-        return 'https://wa.me/' . $cleaned;
+        return 'https://wa.me/' . rawurlencode($cleaned);
     }
 
     private function buildWebsite(string $url): ?string

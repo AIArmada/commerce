@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tableName = config('affiliates.database.tables.tax_documents', 'affiliate_tax_documents');
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('affiliate_id')->index();
             $table->string('document_type');

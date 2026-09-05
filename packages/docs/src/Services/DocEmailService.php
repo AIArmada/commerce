@@ -78,13 +78,19 @@ final class DocEmailService
     /**
      * Send a reminder for an overdue document.
      */
-    public function sendReminder(Doc $doc, string $recipientEmail): DocEmail
+    public function sendReminder(Doc $doc, string $recipientEmail, array $metadata = []): DocEmail
     {
         $template = $this->findTemplate($doc, 'reminder');
 
-        return $this->send($doc, $recipientEmail, null, $template, [
-            'days_overdue' => $doc->due_date?->diffInDays(CarbonImmutable::now()),
-        ]);
+        return $this->send(
+            doc: $doc,
+            recipientEmail: $recipientEmail,
+            template: $template,
+            variables: [
+                'days_overdue' => $doc->due_date?->diffInDays(CarbonImmutable::now(), false),
+            ],
+            metadata: array_merge(['reminder_type' => 'overdue'], $metadata),
+        );
     }
 
     /**

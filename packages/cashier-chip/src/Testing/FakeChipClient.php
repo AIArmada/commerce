@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Testing;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
 /**
@@ -64,8 +65,8 @@ class FakeChipClient
             'tax_number' => $data['tax_number'] ?? null,
             'notes' => $data['notes'] ?? null,
             'metadata' => $data['metadata'] ?? [],
-            'created_on' => now()->getTimestamp(),
-            'updated_on' => now()->getTimestamp(),
+            'created_on' => CarbonImmutable::now()->getTimestamp(),
+            'updated_on' => CarbonImmutable::now()->getTimestamp(),
         ], $data);
 
         $this->clients[$id] = $client;
@@ -99,7 +100,7 @@ class FakeChipClient
         }
 
         $this->clients[$clientId] = array_merge($this->clients[$clientId], $data);
-        $this->clients[$clientId]['updated_on'] = now()->getTimestamp();
+        $this->clients[$clientId]['updated_on'] = CarbonImmutable::now()->getTimestamp();
 
         return $this->clients[$clientId];
     }
@@ -130,13 +131,13 @@ class FakeChipClient
             'success_callback' => $data['success_callback'] ?? null,
             'creator_agent' => $data['creator_agent'] ?? 'FakeChipClient',
             'reference' => $data['reference'] ?? null,
-            'issued' => now()->toIso8601String(),
+            'issued' => CarbonImmutable::now()->toIso8601String(),
             'due' => $data['due'] ?? null,
             'metadata' => $data['metadata'] ?? [],
             'platform' => $data['platform'] ?? 'api',
             'send_receipt' => $data['send_receipt'] ?? false,
-            'created_on' => now()->getTimestamp(),
-            'updated_on' => now()->getTimestamp(),
+            'created_on' => CarbonImmutable::now()->getTimestamp(),
+            'updated_on' => CarbonImmutable::now()->getTimestamp(),
         ], $data);
 
         $products = [];
@@ -170,7 +171,7 @@ class FakeChipClient
         }
 
         $this->purchases[$purchaseId]['status'] = 'cancelled';
-        $this->purchases[$purchaseId]['updated_on'] = now()->getTimestamp();
+        $this->purchases[$purchaseId]['updated_on'] = CarbonImmutable::now()->getTimestamp();
 
         return $this->purchases[$purchaseId];
     }
@@ -183,7 +184,7 @@ class FakeChipClient
 
         $purchase = $this->purchases[$purchaseId];
         $refundAmount = $amount ?? $purchase['purchase']['total'];
-        $now = now()->getTimestamp();
+        $now = CarbonImmutable::now()->getTimestamp();
 
         $this->purchases[$purchaseId]['status'] = 'refunded';
         $this->purchases[$purchaseId]['refunded_amount'] = $refundAmount;
@@ -249,11 +250,11 @@ class FakeChipClient
             'fee_amount' => 0,
             'pending_amount' => 0,
             'description' => null,
-            'paid_on' => now()->getTimestamp(),
+            'paid_on' => CarbonImmutable::now()->getTimestamp(),
             'remote_paid_on' => null,
             'pending_unfreeze_on' => null,
         ];
-        $this->purchases[$purchaseId]['updated_on'] = now()->getTimestamp();
+        $this->purchases[$purchaseId]['updated_on'] = CarbonImmutable::now()->getTimestamp();
 
         return $this->purchases[$purchaseId];
     }
@@ -266,7 +267,7 @@ class FakeChipClient
 
         $this->purchases[$purchaseId]['status'] = 'paid';
         $this->purchases[$purchaseId]['captured_amount'] = $amount ?? $this->purchases[$purchaseId]['purchase']['total'];
-        $this->purchases[$purchaseId]['updated_on'] = now()->getTimestamp();
+        $this->purchases[$purchaseId]['updated_on'] = CarbonImmutable::now()->getTimestamp();
 
         return $this->purchases[$purchaseId];
     }
@@ -278,7 +279,7 @@ class FakeChipClient
         }
 
         $this->purchases[$purchaseId]['status'] = 'released';
-        $this->purchases[$purchaseId]['updated_on'] = now()->getTimestamp();
+        $this->purchases[$purchaseId]['updated_on'] = CarbonImmutable::now()->getTimestamp();
 
         return $this->purchases[$purchaseId];
     }
@@ -299,11 +300,11 @@ class FakeChipClient
             'fee_amount' => 0,
             'pending_amount' => 0,
             'description' => null,
-            'paid_on' => $paidOn ?? now()->getTimestamp(),
+            'paid_on' => $paidOn ?? CarbonImmutable::now()->getTimestamp(),
             'remote_paid_on' => null,
             'pending_unfreeze_on' => null,
         ];
-        $this->purchases[$purchaseId]['updated_on'] = now()->getTimestamp();
+        $this->purchases[$purchaseId]['updated_on'] = CarbonImmutable::now()->getTimestamp();
 
         return $this->purchases[$purchaseId];
     }
@@ -371,8 +372,8 @@ class FakeChipClient
             'type' => 'client_recurring_token',
             'payment_method' => $data['payment_method'] ?? 'visa',
             'description' => $data['description'] ?? '**** **** **** 4242',
-            'created_on' => now()->getTimestamp(),
-            'updated_on' => now()->getTimestamp(),
+            'created_on' => CarbonImmutable::now()->getTimestamp(),
+            'updated_on' => CarbonImmutable::now()->getTimestamp(),
         ], $data ?? []);
 
         $effectiveTokenId = isset($token['id']) && is_string($token['id']) && $token['id'] !== ''
@@ -415,7 +416,7 @@ class FakeChipClient
             'events' => $data['events'] ?? ['*'],
             'active' => $data['active'] ?? true,
             'brand_id' => $this->brandId,
-            'created_on' => now()->getTimestamp(),
+            'created_on' => CarbonImmutable::now()->getTimestamp(),
         ];
 
         $this->webhooks[$id] = $webhook;
@@ -465,9 +466,9 @@ class FakeChipClient
         $this->purchases[$purchaseId]['payment'] = [
             'method' => 'card',
             'psp' => 'test-psp',
-            'paid_on' => now()->getTimestamp(),
+            'paid_on' => CarbonImmutable::now()->getTimestamp(),
         ];
-        $this->purchases[$purchaseId]['updated_on'] = now()->getTimestamp();
+        $this->purchases[$purchaseId]['updated_on'] = CarbonImmutable::now()->getTimestamp();
 
         return $this->purchases[$purchaseId];
     }
@@ -482,9 +483,9 @@ class FakeChipClient
         $this->purchases[$purchaseId]['payment'] = [
             'method' => 'card',
             'error' => $reason,
-            'failed_on' => now()->getTimestamp(),
+            'failed_on' => CarbonImmutable::now()->getTimestamp(),
         ];
-        $this->purchases[$purchaseId]['updated_on'] = now()->getTimestamp();
+        $this->purchases[$purchaseId]['updated_on'] = CarbonImmutable::now()->getTimestamp();
 
         return $this->purchases[$purchaseId];
     }

@@ -14,6 +14,7 @@ use AIArmada\FilamentCart\Database\Factories\CartFactory;
 use AIArmada\FilamentCart\Events\CartAbandoned;
 use AIArmada\FilamentCart\Events\CartCheckoutStarted;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -323,7 +324,7 @@ class Cart extends Model
     #[Scope]
     protected function recent(Builder $query, int $days = 7): void
     {
-        $query->where('updated_at', '>=', now()->subDays($days));
+        $query->where('updated_at', '>=', CarbonImmutable::now()->subDays($days));
     }
 
     /**
@@ -384,14 +385,14 @@ class Cart extends Model
     {
         if ($this->checkout_started_at === null) {
             $this->update([
-                'checkout_started_at' => now(),
-                'last_activity_at' => now(),
+                'checkout_started_at' => CarbonImmutable::now(),
+                'last_activity_at' => CarbonImmutable::now(),
             ]);
 
             event(CartCheckoutStarted::fromCart($this));
         } else {
             $this->update([
-                'last_activity_at' => now(),
+                'last_activity_at' => CarbonImmutable::now(),
             ]);
         }
 
@@ -405,7 +406,7 @@ class Cart extends Model
     {
         if ($this->checkout_abandoned_at === null) {
             $this->update([
-                'checkout_abandoned_at' => now(),
+                'checkout_abandoned_at' => CarbonImmutable::now(),
             ]);
 
             event(CartAbandoned::fromCart($this));
@@ -419,7 +420,7 @@ class Cart extends Model
      */
     public function touchActivity(): static
     {
-        $this->update(['last_activity_at' => now()]);
+        $this->update(['last_activity_at' => CarbonImmutable::now()]);
 
         return $this;
     }

@@ -18,7 +18,7 @@ return new class extends Migration
         // Phase 2: Payments
         $paymentsTable = $tables['doc_payments'] ?? $tablePrefix . 'payments';
         if (! Schema::hasTable($paymentsTable)) {
-            Schema::create($paymentsTable, function (Blueprint $table) use ($paymentsTable, $jsonType): void {
+            commerce_schema_create_if_missing($paymentsTable, function (Blueprint $table) use ($paymentsTable, $jsonType): void {
                 $table->uuid('id')->primary();
                 $table->nullableUuidMorphs('owner');
                 $table->string('status', 50)->default('paid');
@@ -42,7 +42,7 @@ return new class extends Migration
         // Phase 3: Email Templates
         $emailTemplatesTable = $tables['doc_email_templates'] ?? $tablePrefix . 'email_templates';
         if (! Schema::hasTable($emailTemplatesTable)) {
-            Schema::create($emailTemplatesTable, function (Blueprint $table) use ($emailTemplatesTable): void {
+            commerce_schema_create_if_missing($emailTemplatesTable, function (Blueprint $table) use ($emailTemplatesTable): void {
                 $table->uuid('id')->primary();
                 $table->string('name');
                 $table->string('slug');
@@ -63,7 +63,7 @@ return new class extends Migration
         // Phase 3: Email Logs
         $emailsTable = $tables['doc_emails'] ?? $tablePrefix . 'emails';
         if (! Schema::hasTable($emailsTable)) {
-            Schema::create($emailsTable, function (Blueprint $table) use ($emailsTable, $jsonType): void {
+            commerce_schema_create_if_missing($emailsTable, function (Blueprint $table) use ($emailsTable, $jsonType): void {
                 $table->uuid('id')->primary();
                 $table->nullableUuidMorphs('owner');
                 $table->foreignUuid('doc_id');
@@ -93,7 +93,7 @@ return new class extends Migration
         // Phase 4: Versions
         $versionsTable = $tables['doc_versions'] ?? $tablePrefix . 'versions';
         if (! Schema::hasTable($versionsTable)) {
-            Schema::create($versionsTable, function (Blueprint $table) use ($versionsTable, $jsonType): void {
+            commerce_schema_create_if_missing($versionsTable, function (Blueprint $table) use ($versionsTable, $jsonType): void {
                 $table->uuid('id')->primary();
                 $table->nullableUuidMorphs('owner');
                 $table->foreignUuid('doc_id');
@@ -114,7 +114,7 @@ return new class extends Migration
         // Phase 4: Approvals
         $approvalsTable = $tables['doc_approvals'] ?? $tablePrefix . 'approvals';
         if (! Schema::hasTable($approvalsTable)) {
-            Schema::create($approvalsTable, function (Blueprint $table) use ($approvalsTable): void {
+            commerce_schema_create_if_missing($approvalsTable, function (Blueprint $table) use ($approvalsTable): void {
                 $table->uuid('id')->primary();
                 $table->nullableUuidMorphs('owner');
                 $table->foreignUuid('doc_id');
@@ -137,7 +137,7 @@ return new class extends Migration
         // Phase 5: E-Invoice Submissions
         $einvoiceTable = $tables['doc_einvoice_submissions'] ?? $tablePrefix . 'einvoice_submissions';
         if (! Schema::hasTable($einvoiceTable)) {
-            Schema::create($einvoiceTable, function (Blueprint $table) use ($einvoiceTable, $jsonType): void {
+            commerce_schema_create_if_missing($einvoiceTable, function (Blueprint $table) use ($einvoiceTable, $jsonType): void {
                 $table->uuid('id')->primary();
                 $table->nullableUuidMorphs('owner');
                 $table->foreignUuid('doc_id');

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Ticketing\Database\Factories\TicketTypeComponentFactory;
+use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +16,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property string $parent_ticket_type_id
  * @property string $component_ticket_type_id
  * @property int $quantity
@@ -25,11 +30,25 @@ use Illuminate\Support\Carbon;
 class TicketTypeComponent extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'ticketing.features.owner';
 
     protected static function newFactory(): TicketTypeComponentFactory
     {
         return TicketTypeComponentFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $component): void {
+            TicketingOwnerGuard::assertRelations($component, [
+                ['relation' => 'parentTicketType', 'required' => true],
+                ['relation' => 'componentTicketType', 'required' => true],
+            ]);
+        });
     }
 
     public $incrementing = false;

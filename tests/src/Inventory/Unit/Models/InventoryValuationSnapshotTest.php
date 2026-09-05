@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryValuationSnapshot;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create();
@@ -369,7 +369,7 @@ describe('InventoryValuationSnapshot', function (): void {
                 'sku_count' => 5,
             ]);
 
-            expect($snapshot->snapshot_date)->toBeInstanceOf(Carbon::class);
+            expect($snapshot->snapshot_date)->toBeInstanceOf(CarbonImmutable::class);
         });
 
         it('casts integer fields correctly', function (): void {

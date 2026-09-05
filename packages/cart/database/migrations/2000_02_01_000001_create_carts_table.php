@@ -17,7 +17,7 @@ return new class extends Migration
         $tableName = config('cart.database.table', 'carts');
         $jsonType = (string) commerce_json_column_type('cart', 'jsonb');
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('identifier')->index();
             $table->string('owner_scope')->default('global');
@@ -97,19 +97,18 @@ return new class extends Migration
 
     private function addMySQLIndexes(string $tableName): void
     {
-        DB::statement("
-            CREATE INDEX idx_carts_lookup_covering
-            ON `{$tableName}` (owner_type, owner_id, identifier, instance, id, version, updated_at, expires_at)
-        ");
+        $indexes = [
+            'idx_carts_lookup_covering' => '(owner_type, owner_id, identifier, instance, id, version, updated_at, expires_at)',
+            'idx_carts_expired' => '(owner_type, owner_id, expires_at)',
+            'idx_carts_analytics' => '(owner_type, owner_id, updated_at, instance)',
+        ];
 
-        DB::statement("
-            CREATE INDEX idx_carts_expired
-            ON `{$tableName}` (owner_type, owner_id, expires_at)
-        ");
+        foreach ($indexes as $indexName => $columns) {
+            if (Schema::hasIndex($tableName, $indexName)) {
+                continue;
+            }
 
-        DB::statement("
-            CREATE INDEX idx_carts_analytics
-            ON `{$tableName}` (owner_type, owner_id, updated_at, instance)
-        ");
+            DB::statement("CREATE INDEX {$indexName} ON `{$tableName}` {$columns}");
+        }
     }
 };

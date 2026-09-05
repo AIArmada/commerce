@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
+use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -37,8 +38,8 @@ final class ChurnRateWidget extends BaseWidget
 
     private function calculateChurnRate(): float
     {
-        $startOfMonth = now()->startOfMonth();
-        $endOfMonth = now()->endOfMonth();
+        $startOfMonth = CarbonImmutable::now()->startOfMonth();
+        $endOfMonth = CarbonImmutable::now()->endOfMonth();
 
         $startCount = $this->subscriptionQuery()
             ->where('created_at', '<', $startOfMonth)
@@ -63,8 +64,8 @@ final class ChurnRateWidget extends BaseWidget
 
     private function calculatePreviousChurnRate(): float
     {
-        $startOfMonth = now()->subMonth()->startOfMonth();
-        $endOfMonth = now()->subMonth()->endOfMonth();
+        $startOfMonth = CarbonImmutable::now()->subMonth()->startOfMonth();
+        $endOfMonth = CarbonImmutable::now()->subMonth()->endOfMonth();
 
         $startCount = $this->subscriptionQuery()
             ->where('created_at', '<', $startOfMonth)
@@ -133,8 +134,8 @@ final class ChurnRateWidget extends BaseWidget
         $chart = [];
 
         for ($i = 5; $i >= 0; $i--) {
-            $startOfMonth = now()->subMonths($i)->startOfMonth();
-            $endOfMonth = now()->subMonths($i)->endOfMonth();
+            $startOfMonth = CarbonImmutable::now()->subMonths($i)->startOfMonth();
+            $endOfMonth = CarbonImmutable::now()->subMonths($i)->endOfMonth();
 
             $startCount = $this->subscriptionQuery()
                 ->where('created_at', '<', $startOfMonth)

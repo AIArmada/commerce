@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Actions\Affiliates;
 use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
+use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class TouchAffiliateAttribution
@@ -34,7 +35,7 @@ final class TouchAffiliateAttribution
         $payload = $this->buildTouchPayload($attribution, $context);
         $this->fillAttribution($attribution, $payload);
 
-        $attribution->last_cookie_seen_at = now();
+        $attribution->last_cookie_seen_at = CarbonImmutable::now();
         $attribution->save();
 
         return AffiliateAttributionData::fromModel($attribution);
@@ -43,7 +44,7 @@ final class TouchAffiliateAttribution
     private function buildTouchPayload(AffiliateAttribution $attribution, array $context): array
     {
         $ttl = (int) config('affiliates.tracking.attribution_ttl_days', 30);
-        $expiresAt = $ttl > 0 ? now()->addDays($ttl) : null;
+        $expiresAt = $ttl > 0 ? CarbonImmutable::now()->addDays($ttl) : null;
 
         $payload = [
             'cart_identifier' => $context['cart_identifier'] ?? $attribution->cart_identifier,

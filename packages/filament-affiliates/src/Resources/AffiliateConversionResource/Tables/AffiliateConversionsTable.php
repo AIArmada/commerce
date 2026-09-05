@@ -16,6 +16,7 @@ use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -140,7 +141,7 @@ final class AffiliateConversionsTable
 
         $conversion->status = new $statusClass($conversion);
         $conversion->approved_at = in_array($statusClass, [ApprovedConversion::class, PaidConversion::class], true)
-            ? ($conversion->approved_at ?? now())
+            ? ($conversion->approved_at ?? CarbonImmutable::now())
             : null;
 
         return $conversion->save();

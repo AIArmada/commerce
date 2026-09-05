@@ -12,7 +12,6 @@ use AIArmada\Events\Database\Factories\EventFactory;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Enums\ScheduleKind;
 use AIArmada\Events\Models\Concerns\RegistersEventMedia;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\EventStatus\EventStatus as EventStatusState;
 use AIArmada\Events\States\EventStatus\Published;
 use AIArmada\Events\Support\ModelResolver;
@@ -25,6 +24,7 @@ use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -106,11 +106,11 @@ class Event extends Model implements HasMedia, TicketableInterface
     use HasOwnerScopeConfig;
     use HasSocialProfiles;
     use HasStates;
+    use HasUuids;
     use InteractsWithMedia, RegistersEventMedia {
         RegistersEventMedia::registerMediaCollections insteadof InteractsWithMedia;
         RegistersEventMedia::registerMediaConversions insteadof InteractsWithMedia;
     }
-    use UsesEventUuid;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 
@@ -647,6 +647,6 @@ class Event extends Model implements HasMedia, TicketableInterface
     {
         $this->escalations()
             ->whereNull('resolved_at')
-            ->update(['resolved_at' => now()]);
+            ->update(['resolved_at' => CarbonImmutable::now()]);
     }
 }

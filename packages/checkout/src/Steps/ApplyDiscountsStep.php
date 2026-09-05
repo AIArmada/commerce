@@ -13,6 +13,7 @@ use AIArmada\Checkout\Integrations\PromotionsAdapter;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Services\DiscountCompositionService;
+use Carbon\CarbonImmutable;
 
 final class ApplyDiscountsStep extends AbstractCheckoutStep
 {
@@ -87,7 +88,7 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
             $this->activeCommitments,
         );
         $discountData['total_discount'] = $totalDiscount;
-        $discountData['applied_at'] = now()->toIso8601String();
+        $discountData['applied_at'] = CarbonImmutable::now()->toIso8601String();
 
         $session->update([
             'discount_data' => $discountData,
@@ -178,7 +179,7 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
                 'subtotal' => $subtotal,
                 'total' => $total,
                 'item_count' => $cart->countItems(),
-                'captured_at' => now()->toIso8601String(),
+                'captured_at' => CarbonImmutable::now()->toIso8601String(),
             ],
         ]);
     }

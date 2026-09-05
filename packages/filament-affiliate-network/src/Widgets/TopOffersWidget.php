@@ -8,6 +8,7 @@ use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -15,6 +16,11 @@ use Filament\Widgets\TableWidget as BaseWidget;
 final class TopOffersWidget extends BaseWidget
 {
     protected static ?int $sort = 2;
+
+    public static function canView(): bool
+    {
+        return NetworkAdminAccess::allows();
+    }
 
     protected int | string | array $columnSpan = 'full';
 

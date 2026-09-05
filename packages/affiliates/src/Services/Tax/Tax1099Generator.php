@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Services\Tax;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;
 
 final class Tax1099Generator
@@ -21,7 +22,7 @@ final class Tax1099Generator
             '1099-NEC-%s-%s-%s.pdf',
             $year,
             $affiliate->id,
-            now()->format('Ymd')
+            CarbonImmutable::now()->format('Ymd')
         );
 
         $path = "tax-documents/{$year}/{$filename}";

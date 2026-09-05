@@ -52,14 +52,15 @@ it('scopes child reads to current owner plus global (items/payments/notes)', fun
         }
     });
 
-    $orderA = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
+    $orderA = Order::query()->make([
         'status' => Created::class,
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
     ]);
+
+    $orderA->assignOwner($ownerA);
+    $orderA->save();
 
     $itemA = $orderA->items()->create([
         'name' => 'Item A',
@@ -128,14 +129,15 @@ it('scopes child reads to current owner plus global (items/payments/notes)', fun
         }
     });
 
-    $orderB = Order::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
+    $orderB = Order::query()->make([
         'status' => Created::class,
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
     ]);
+
+    $orderB->assignOwner($ownerB);
+    $orderB->save();
 
     $itemB = $orderB->items()->create([
         'name' => 'Item B',
@@ -200,14 +202,15 @@ it('can exclude global rows for child reads when includeGlobal is false', functi
         }
     });
 
-    $orderA = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
+    $orderA = Order::query()->make([
         'status' => Created::class,
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
     ]);
+
+    $orderA->assignOwner($ownerA);
+    $orderA->save();
 
     $itemA = $orderA->items()->create([
         'name' => 'Item A',

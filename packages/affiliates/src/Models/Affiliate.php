@@ -18,6 +18,7 @@ use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Vouchers\Models\Voucher;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -298,7 +299,7 @@ class Affiliate extends Model implements Auditable
             ->whereNull('released_at')
             ->where(function ($query): void {
                 $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
+                    ->orWhere('expires_at', '>', CarbonImmutable::now());
             })
             ->exists();
     }

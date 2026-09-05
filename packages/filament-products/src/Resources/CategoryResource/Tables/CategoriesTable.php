@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentProducts\Resources\CategoryResource;
 use AIArmada\Products\Models\Category;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -124,7 +125,7 @@ class CategoriesTable
                         ->icon('heroicon-o-eye-slash')
                         ->action(function (Collection $records): void {
                             $records->each(function (Category $record): void {
-                                $record->update(['status' => 'hidden', 'hidden_at' => now()]);
+                                $record->update(['status' => 'hidden', 'hidden_at' => CarbonImmutable::now()]);
                             });
                         }),
                 ]),

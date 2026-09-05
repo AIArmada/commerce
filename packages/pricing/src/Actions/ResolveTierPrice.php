@@ -24,6 +24,7 @@ final class ResolveTierPrice
         $query = PriceTier::query()
             ->where('tierable_type', $tierableType)
             ->where('tierable_id', $tierableId)
+            ->where('is_active', true)
             ->forQuantity($quantity)
             ->when(is_string($priceListId) && $priceListId !== '', function ($q) use ($priceListId): void {
                 $q->where(function ($inner) use ($priceListId): void {

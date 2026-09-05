@@ -7,6 +7,7 @@ $tablePrefix = env('TICKETING_TABLE_PREFIX', 'ticket_');
 return [
     'database' => [
         'table_prefix' => $tablePrefix,
+        'json_column_type' => env('TICKETING_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'ticket_types' => env('TICKETING_TICKET_TYPES_TABLE', 'ticket_types'),
             'ticket_type_components' => env('TICKETING_TICKET_TYPE_COMPONENTS_TABLE', 'ticket_type_components'),
@@ -34,6 +35,11 @@ return [
     ],
     'features' => [
         'auto_issue_passes' => env('TICKETING_AUTO_ISSUE_PASSES', true),
+        'owner' => [
+            'enabled' => env('TICKETING_OWNER_ENABLED', true),
+            'include_global' => false,
+            'auto_assign_on_create' => env('TICKETING_OWNER_AUTO_ASSIGN', true),
+        ],
     ],
     'events' => [
         'pricing_consistency_check' => env('TICKETING_PRICING_CONSISTENCY_CHECK', true),

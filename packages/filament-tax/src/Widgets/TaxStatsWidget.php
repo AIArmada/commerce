@@ -8,6 +8,7 @@ use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,7 +54,7 @@ final class TaxStatsWidget extends BaseWidget
      */
     private function getAggregatedStats(): array
     {
-        $now = now();
+        $now = CarbonImmutable::now();
 
         // All queries scoped by owner to ensure multitenancy safety
         $zoneCount = TaxZone::query()

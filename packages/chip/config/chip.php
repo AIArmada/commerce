@@ -28,6 +28,7 @@ return [
     */
     'database' => [
         'table_prefix' => env('CHIP_TABLE_PREFIX', 'chip_'),
+        'json_column_type' => env('CHIP_JSON_COLUMN_TYPE', 'jsonb'),
     ],
 
     /*

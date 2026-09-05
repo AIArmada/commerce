@@ -6,10 +6,11 @@ namespace AIArmada\Feedback\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Feedback\Models\Concerns\UsesFeedbackUuid;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string $id
@@ -34,7 +35,7 @@ final class FeedbackAnswer extends Model
 {
     use HasOwner;
     use HasOwnerScopeConfig;
-    use UsesFeedbackUuid;
+    use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'feedback.owner';
 
@@ -45,6 +46,13 @@ final class FeedbackAnswer extends Model
         'score',
         'metadata',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $answer): void {
+            $answer->testimonials()->each(fn (FeedbackTestimonial $testimonial): mixed => $testimonial->delete());
+        });
+    }
 
     public function getTable(): string
     {
@@ -74,5 +82,10 @@ final class FeedbackAnswer extends Model
     public function question(): BelongsTo
     {
         return $this->belongsTo(FeedbackQuestion::class, 'feedback_question_id');
+    }
+
+    public function testimonials(): HasMany
+    {
+        return $this->hasMany(FeedbackTestimonial::class, 'feedback_answer_id');
     }
 }

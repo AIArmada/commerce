@@ -13,7 +13,7 @@ return new class extends Migration
         $ticketsTable = config('affiliates.database.tables.support_tickets', 'affiliate_support_tickets');
         $messagesTable = config('affiliates.database.tables.support_messages', 'affiliate_support_messages');
 
-        Schema::create($ticketsTable, function (Blueprint $table): void {
+        commerce_schema_create_if_missing($ticketsTable, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('affiliate_id')->index();
             $table->string('subject');
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->timestampsTz();
         });
 
-        Schema::create($messagesTable, function (Blueprint $table): void {
+        commerce_schema_create_if_missing($messagesTable, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('ticket_id')->index();
             $table->foreignUuid('affiliate_id')->nullable()->index();

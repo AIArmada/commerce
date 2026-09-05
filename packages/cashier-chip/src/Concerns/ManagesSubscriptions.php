@@ -7,7 +7,7 @@ namespace AIArmada\CashierChip\Concerns;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -17,7 +17,7 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
     /**
      * Get the model-level generic trial end timestamp, if the billable model supports it.
      */
-    private function genericTrialEndsAtValue(): ?Carbon
+    private function genericTrialEndsAtValue(): ?CarbonImmutable
     {
         if (! $this->supportsGenericTrialAttribute()) {
             return null;
@@ -25,16 +25,16 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
 
         $trialEndsAt = $this->getAttribute('trial_ends_at');
 
-        if ($trialEndsAt instanceof Carbon) {
+        if ($trialEndsAt instanceof CarbonImmutable) {
             return $trialEndsAt;
         }
 
         if ($trialEndsAt instanceof DateTimeInterface) {
-            return Carbon::instance($trialEndsAt);
+            return CarbonImmutable::instance($trialEndsAt);
         }
 
         if (is_string($trialEndsAt) && $trialEndsAt !== '') {
-            return Carbon::parse($trialEndsAt);
+            return CarbonImmutable::parse($trialEndsAt);
         }
 
         return null;
@@ -110,7 +110,7 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
      */
     public function scopeOnGenericTrial(Builder $query): void
     {
-        $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '>', Carbon::now());
+        $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '>', CarbonImmutable::now());
     }
 
     /**
@@ -126,13 +126,13 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
      */
     public function scopeHasExpiredGenericTrial(Builder $query): void
     {
-        $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '<', Carbon::now());
+        $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '<', CarbonImmutable::now());
     }
 
     /**
      * Get the ending date of the trial.
      *
-     * @return \Illuminate\Support\Carbon|null
+     * @return CarbonImmutable|null
      */
     public function trialEndsAt(string $type = 'default')
     {

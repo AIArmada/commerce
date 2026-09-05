@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Ticketing\Database\Factories\PassHolderFactory;
+use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -16,6 +19,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property string $pass_id
  * @property string|null $holder_type
  * @property string|null $holder_id
@@ -32,11 +37,25 @@ use Illuminate\Support\Carbon;
 class PassHolder extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'ticketing.features.owner';
 
     protected static function newFactory(): PassHolderFactory
     {
         return PassHolderFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $holder): void {
+            TicketingOwnerGuard::assertRelations($holder, [
+                ['relation' => 'pass', 'required' => true],
+                ['relation' => 'holder'],
+            ]);
+        });
     }
 
     public $incrementing = false;

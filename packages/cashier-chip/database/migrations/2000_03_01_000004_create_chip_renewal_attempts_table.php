@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('cashier-chip.database.tables.renewal_attempts', 'chip_renewal_attempts');
+        $tableName = config('cashier-chip.database.tables.renewal_attempts', 'cashier_chip_renewal_attempts');
 
-        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->uuid('subscription_id');
             $table->string('status')->default('claimed')->index();

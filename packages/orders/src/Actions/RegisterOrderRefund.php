@@ -13,6 +13,7 @@ use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Orders\Support\RefundAllocationValidator;
 use AIArmada\Orders\Transitions\RefundCompleted;
 use AIArmada\Orders\Transitions\RefundProcessed;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
@@ -167,7 +168,7 @@ final class RegisterOrderRefund
                 return false;
             }
 
-            $lockedRefund->provider_submission_started_at = now();
+            $lockedRefund->provider_submission_started_at = CarbonImmutable::now();
             $lockedRefund->save();
 
             return true;

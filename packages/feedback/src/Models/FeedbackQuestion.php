@@ -6,9 +6,9 @@ namespace AIArmada\Feedback\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Feedback\Models\Concerns\UsesFeedbackUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -44,7 +44,7 @@ final class FeedbackQuestion extends Model
 {
     use HasOwner;
     use HasOwnerScopeConfig;
-    use UsesFeedbackUuid;
+    use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'feedback.owner';
 
@@ -55,6 +55,14 @@ final class FeedbackQuestion extends Model
         'validation_rules', 'visibility_rules', 'scoring_rules',
         'settings', 'metadata',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $question): void {
+            $question->options()->each(fn (FeedbackQuestionOption $option): mixed => $option->delete());
+            $question->answers()->each(fn (FeedbackAnswer $answer): mixed => $answer->delete());
+        });
+    }
 
     public function getTable(): string
     {

@@ -8,6 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Events\Concerns\HasCartEventData;
 use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
+use Carbon\CarbonImmutable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -119,7 +120,7 @@ final class CartConditionRemoved implements CartEventInterface
             'impact' => $this->getConditionImpact(),
             'lost_savings' => $this->getLostSavings(),
             'reason' => $this->reason,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => CarbonImmutable::now()->toISOString(),
         ];
     }
 }

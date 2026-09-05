@@ -13,6 +13,7 @@ use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -301,7 +302,7 @@ final class PriceSimulator extends Page
 
                         Forms\Components\DateTimePicker::make('effective_date')
                             ->label('Effective Date')
-                            ->default(now())
+                            ->default(CarbonImmutable::now())
                             ->native(false)
                             ->helperText('Simulate pricing at a specific date/time'),
                     ])

@@ -104,12 +104,12 @@ final class NotificationInboxService
         $this->recipientRelation($recipient)
             ->where('id', $id)
             ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+            ->update(['read_at' => CarbonImmutable::now()]);
     }
 
     public function markAllAsRead(MorphMany $recipient): void
     {
-        $recipient->whereNull('read_at')->update(['read_at' => now()]);
+        $recipient->whereNull('read_at')->update(['read_at' => CarbonImmutable::now()]);
     }
 
     public function archive(MorphMany | Model $recipient, string $id): void
@@ -117,7 +117,7 @@ final class NotificationInboxService
         $this->recipientRelation($recipient)
             ->where('id', $id)
             ->whereNull('archived_at')
-            ->update(['archived_at' => now()]);
+            ->update(['archived_at' => CarbonImmutable::now()]);
     }
 
     public function prune(?CarbonInterface $before = null): int

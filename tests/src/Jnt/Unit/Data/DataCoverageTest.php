@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Enums\GoodsType;
@@ -22,7 +23,7 @@ describe('PackageInfoData', function (): void {
 
         expect($packageInfo->quantity)->toBe(5);
         expect($packageInfo->weight)->toBe(2.5);
-        expect($packageInfo->value)->toBe(100.0);
+        expect($packageInfo->valueMinor)->toBe(10000);
         expect($packageInfo->goodsType)->toBe(GoodsType::PACKAGE);
         expect($packageInfo->length)->toBe(10.0);
     });
@@ -31,7 +32,7 @@ describe('PackageInfoData', function (): void {
         $packageInfo = new PackageInfoData(
             quantity: 2,
             weight: 3.5,
-            value: 50.0,
+            valueMinor: 5000,
             goodsType: GoodsType::DOCUMENT,
             length: 15.0,
             width: 20.0,
@@ -52,7 +53,7 @@ describe('PackageInfoData', function (): void {
         $packageInfo = new PackageInfoData(
             quantity: 1,
             weight: 1.0,
-            value: 10.0,
+            valueMinor: 1000,
             goodsType: 'ITN8',
             length: 10.0,
             width: 10.0,
@@ -67,7 +68,7 @@ describe('PackageInfoData', function (): void {
         $packageInfo = new PackageInfoData(
             quantity: 1,
             weight: 1.0,
-            value: 10.0,
+            valueMinor: 1000,
             goodsType: 'ITN8',
         );
 
@@ -78,7 +79,7 @@ describe('PackageInfoData', function (): void {
         $packageInfo = new PackageInfoData(
             quantity: 1,
             weight: 2.0, // Existing weight > Volumetric (0.2)
-            value: 10.0,
+            valueMinor: 1000,
             goodsType: 'ITN8',
             length: 10.0,
             width: 10.0,
@@ -92,7 +93,7 @@ describe('PackageInfoData', function (): void {
         $packageInfo = new PackageInfoData(
             quantity: 1,
             weight: 0.1, // Existing weight < Volumetric (0.2)
-            value: 10.0,
+            valueMinor: 1000,
             goodsType: 'ITN8',
             length: 10.0,
             width: 10.0,
@@ -106,7 +107,7 @@ describe('PackageInfoData', function (): void {
         $packageInfo = new PackageInfoData(
             quantity: 1,
             weight: 5.0,
-            value: 10.0,
+            valueMinor: 1000,
             goodsType: 'ITN8',
         );
 
@@ -117,7 +118,7 @@ describe('PackageInfoData', function (): void {
         $doc = new PackageInfoData(
             quantity: 1,
             weight: 1.0,
-            value: 1.0,
+            valueMinor: 100,
             goodsType: GoodsType::DOCUMENT,
         );
         expect($doc->isDocument())->toBeTrue();
@@ -125,10 +126,26 @@ describe('PackageInfoData', function (): void {
         $parcel = new PackageInfoData(
             quantity: 1,
             weight: 1.0,
-            value: 1.0,
+            valueMinor: 100,
             goodsType: GoodsType::PACKAGE,
         );
         expect($parcel->isDocument())->toBeFalse();
+    });
+});
+
+describe('ItemData', function (): void {
+    it('round-trips API money as integer minor units', function (): void {
+        $item = ItemData::fromApiArray([
+            'itemName' => 'Widget',
+            'number' => '3',
+            'weight' => '250',
+            'itemValue' => '19.99',
+            'itemCurrency' => 'MYR',
+        ]);
+
+        expect($item->priceMinor)->toBe(1999)
+            ->and($item->getTotalValueMinor())->toBe(5997)
+            ->and($item->toApiArray()['itemValue'])->toBe('19.99');
     });
 });
 

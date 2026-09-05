@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -84,7 +85,7 @@ class AffiliatePayoutMethod extends Model implements Auditable
     public function verify(): void
     {
         $this->update([
-            'verified_at' => now(),
+            'verified_at' => CarbonImmutable::now(),
         ]);
     }
 

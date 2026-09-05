@@ -18,7 +18,7 @@ return new class extends Migration
         $tableName = config('cart.database.conditions_table', 'conditions');
         $jsonType = (string) commerce_json_column_type('cart', 'jsonb');
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('owner_scope')->default('global');
 
@@ -73,9 +73,9 @@ return new class extends Migration
             $jsonType === 'jsonb'
             && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
-            DB::statement("CREATE INDEX {$tableName}_attributes_gin_index ON \"{$tableName}\" USING GIN (\"attributes\")");
-            DB::statement("CREATE INDEX {$tableName}_rules_gin_index ON \"{$tableName}\" USING GIN (\"rules\")");
-            DB::statement("CREATE INDEX {$tableName}_target_definition_gin_index ON \"{$tableName}\" USING GIN (\"target_definition\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_attributes_gin_index ON \"{$tableName}\" USING GIN (\"attributes\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_rules_gin_index ON \"{$tableName}\" USING GIN (\"rules\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_target_definition_gin_index ON \"{$tableName}\" USING GIN (\"target_definition\")");
         }
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'database' => [
+        'json_column_type' => env('SEATING_JSON_COLUMN_TYPE', 'json'),
         'tables' => [
             'seat_maps' => env('SEATING_TABLE_SEAT_MAPS', 'seat_maps'),
             'seat_sections' => env('SEATING_TABLE_SEAT_SECTIONS', 'seat_sections'),

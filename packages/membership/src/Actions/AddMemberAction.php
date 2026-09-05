@@ -9,8 +9,10 @@ use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Services\MembershipRoleSyncService;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class AddMemberAction
@@ -49,11 +51,23 @@ final class AddMemberAction
             }
 
             /** @phpstan-ignore method.notFound */
+            $membershipTable = $subject->membersTable();
+
+            $pivotData = [
+                'role' => $role->spatieRoleName(),
+                'joined_at' => CarbonImmutable::now(),
+            ];
+
+            if (
+                $existingMember === null
+                && $subject->getConnection()->getSchemaBuilder()->hasColumn($membershipTable, 'id')
+            ) {
+                $pivotData['id'] = (string) Str::uuid();
+            }
+
+            /** @phpstan-ignore method.notFound */
             $subject->members()->syncWithoutDetaching([
-                $user->getKey() => [
-                    'role' => $role->spatieRoleName(),
-                    'joined_at' => now(),
-                ],
+                $user->getKey() => $pivotData,
             ]);
 
             $oldRole = is_string($existingRole)

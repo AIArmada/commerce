@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Widgets;
 
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -11,6 +12,11 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 final class NetworkStatsWidget extends StatsOverviewWidget
 {
     protected static ?int $sort = 1;
+
+    public static function canView(): bool
+    {
+        return NetworkAdminAccess::allows();
+    }
 
     protected function getStats(): array
     {

@@ -76,7 +76,7 @@ final class StoredPaymentMethod extends Model
      */
     final public function scopeForOwner(Builder $query, ?Model $owner = null, ?bool $includeGlobal = null): Builder
     {
-        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
             return $query;
         }
 

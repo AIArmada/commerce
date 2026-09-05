@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -12,13 +11,13 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('events', 'jsonb');
 
-        Schema::create(config('events.database.tables.event_registrations', 'event_registrations'), function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing(config('events.database.tables.event_registrations', 'event_registrations'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->uuid('event_id')->index();
-            $table->uuid('event_occurrence_id')->nullable()->index();
-            $table->uuid('event_session_id')->nullable()->index();
+            $table->foreignUuid('event_id')->index();
+            $table->foreignUuid('event_occurrence_id')->nullable()->index();
+            $table->foreignUuid('event_session_id')->nullable()->index();
             $table->string('registrant_type')->nullable()->index();
-            $table->uuid('registrant_id')->nullable()->index();
+            $table->foreignUuid('registrant_id')->nullable()->index();
             $table->index(['registrant_type', 'registrant_id']);
             $table->string('registration_no')->unique();
             $table->string('registration_type')->index();
@@ -44,7 +43,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 
-            $table->string('parent_registration_id', 36)->nullable()->index();
+            $table->foreignUuid('parent_registration_id')->nullable()->index();
             $table->boolean('is_bundle_root')->default(false)->index();
             $table->{$jsonType}('pass_entitlements')->nullable();
         });

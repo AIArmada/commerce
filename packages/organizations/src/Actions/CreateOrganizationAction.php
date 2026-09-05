@@ -10,6 +10,7 @@ use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Enums\OrganizationVisibility;
 use AIArmada\Organizations\Models\Organization;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -33,7 +34,7 @@ final class CreateOrganizationAction
             }
 
             $slug = $this->uniqueSlug((string) ($attributes['slug'] ?? Str::slug($name)));
-            $now = now();
+            $now = CarbonImmutable::now();
 
             $organization = Organization::query()->create([
                 'name' => $name,

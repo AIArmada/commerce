@@ -132,8 +132,8 @@ final class JntShippingSeeder extends Seeder
         $senderCity = $this->malaysianCities[array_rand($this->malaysianCities)];
         $receiverCity = $this->malaysianCities[array_rand($this->malaysianCities)];
 
-        $orderId = 'ORD-'.Str::upper(Str::random(8));
-        $trackingNumber = 'JT'.rand(600000000000, 699999999999);
+        $orderId = 'ORD-' . Str::upper(Str::random(8));
+        $trackingNumber = 'JT' . rand(600000000000, 699999999999);
 
         $order = JntOrder::create([
             'order_id' => $orderId,
@@ -147,7 +147,7 @@ final class JntShippingSeeder extends Seeder
             'sorting_code' => $receiverCity['hub'],
             'package_quantity' => rand(1, 3),
             'package_weight' => (string) (rand(100, 5000) / 100),
-            'package_value' => (string) (rand(5000, 100000) / 100),
+            'package_value_minor' => rand(5000, 100000),
             'goods_type' => 'PACKAGE',
             'ordered_at' => now()->subDays($deliveredDaysAgo + rand(1, 5)),
             'last_synced_at' => now()->subHours(rand(1, 24)),
@@ -168,8 +168,8 @@ final class JntShippingSeeder extends Seeder
             ],
             'receiver' => [
                 'name' => fake()->name(),
-                'phone' => '+60'.rand(100000000, 199999999),
-                'address' => fake()->streetAddress().', '.fake()->buildingNumber(),
+                'phone' => '+60' . rand(100000000, 199999999),
+                'address' => fake()->streetAddress() . ', ' . fake()->buildingNumber(),
                 'city' => $receiverCity['city'],
                 'state' => $receiverCity['state'],
                 'postcode' => $receiverCity['postcode'],
@@ -198,7 +198,7 @@ final class JntShippingSeeder extends Seeder
                 ]),
                 'quantity' => rand(1, 2),
                 'weight_grams' => rand(100, 2000),
-                'unit_price' => rand(5000, 500000),
+                'unit_price_minor' => rand(5000, 500000),
                 'currency' => 'MYR',
             ]);
         }
@@ -333,10 +333,10 @@ final class JntShippingSeeder extends Seeder
         $receiver = $order->receiver ?? [];
 
         return match ($stage) {
-            'PICKUP' => ($sender['city'] ?? 'Origin').' Hub',
-            'DEPARTED' => ($sender['city'] ?? 'Origin').' Sorting Center',
-            'ARRIVED' => ($receiver['city'] ?? 'Destination').' Hub',
-            'ON_DELIVERY' => ($receiver['city'] ?? 'Destination').' - Delivery Vehicle',
+            'PICKUP' => ($sender['city'] ?? 'Origin') . ' Hub',
+            'DEPARTED' => ($sender['city'] ?? 'Origin') . ' Sorting Center',
+            'ARRIVED' => ($receiver['city'] ?? 'Destination') . ' Hub',
+            'ON_DELIVERY' => ($receiver['city'] ?? 'Destination') . ' - Delivery Vehicle',
             'DELIVERED' => $receiver['address'] ?? 'Recipient Address',
             default => 'J&T Express Hub',
         };

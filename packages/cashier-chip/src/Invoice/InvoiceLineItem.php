@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Invoice;
 
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Chip\Data\ProductData;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonSerializable;
-use NumberFormatter;
 
 /**
  * @implements Arrayable<string, mixed>
@@ -153,11 +153,6 @@ class InvoiceLineItem implements Arrayable, Jsonable, JsonSerializable
      */
     protected function formatAmount(int $amount): string
     {
-        $currency = $this->currency();
-        $locale = config('cashier-chip.currency_locale', 'ms_MY');
-
-        $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
-
-        return $formatter->formatCurrency($amount / 100, $currency);
+        return Cashier::formatAmount($amount, $this->currency());
     }
 }

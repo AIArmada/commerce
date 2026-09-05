@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
+use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -56,7 +57,7 @@ final class ActiveSubscribersWidget extends BaseWidget
     {
         return $this->subscriptionQuery()
             ->where('chip_status', SubscriptionStatus::Active->value)
-            ->where('created_at', '<', now()->subMonth())
+            ->where('created_at', '<', CarbonImmutable::now()->subMonth())
             ->count();
     }
 
@@ -98,7 +99,7 @@ final class ActiveSubscribersWidget extends BaseWidget
         $chart = [];
 
         for ($i = 5; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
+            $date = CarbonImmutable::now()->subMonths($i);
             $endOfMonth = $date->copy()->endOfMonth();
 
             $count = $this->subscriptionQuery()

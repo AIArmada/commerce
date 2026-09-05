@@ -10,6 +10,7 @@ use AIArmada\Events\Jobs\DispatchEventNotificationDelivery;
 use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventNotificationDelivery;
 use AIArmada\Events\Models\EventRegistration;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -46,9 +47,9 @@ final class EventNotificationDispatcher implements EventChangeNoticeNotification
 
             $locked->deliveries()
                 ->whereNotIn('status', ['sent', 'dead'])
-                ->update(['status' => 'cancelled', 'leased_at' => null, 'updated_at' => now()]);
+                ->update(['status' => 'cancelled', 'leased_at' => null, 'updated_at' => CarbonImmutable::now()]);
 
-            $locked->forceFill(['status' => 'cancelled', 'cancelled_at' => now()])->save();
+            $locked->forceFill(['status' => 'cancelled', 'cancelled_at' => CarbonImmutable::now()])->save();
         }, attempts: 3);
     }
 
@@ -167,7 +168,7 @@ final class EventNotificationDispatcher implements EventChangeNoticeNotification
 
         $batch->forceFill([
             'status' => $status,
-            'sent_at' => $status === 'sent' ? now() : null,
+            'sent_at' => $status === 'sent' ? CarbonImmutable::now() : null,
         ])->save();
     }
 }

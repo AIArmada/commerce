@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Jobs;
 use AIArmada\Affiliates\Models\AffiliateWebhookDelivery;
 use AIArmada\CommerceSupport\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
+use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -75,7 +76,7 @@ final class DispatchAffiliateWebhook implements ShouldQueue
 
             $delivery->forceFill([
                 'status' => 'sent',
-                'sent_at' => now(),
+                'sent_at' => CarbonImmutable::now(),
                 'leased_at' => null,
                 'response_status' => $response->status(),
                 'last_error_code' => null,
@@ -102,7 +103,7 @@ final class DispatchAffiliateWebhook implements ShouldQueue
 
         $delivery->forceFill([
             'status' => 'dead',
-            'dead_at' => now(),
+            'dead_at' => CarbonImmutable::now(),
             'leased_at' => null,
             'last_error_code' => $delivery->last_error_code ?? $this->safeErrorCode($throwable),
         ])->save();
@@ -119,12 +120,12 @@ final class DispatchAffiliateWebhook implements ShouldQueue
 
             $leaseSeconds = max(30, (int) config('affiliates.webhooks.delivery.lease_seconds', 120));
 
-            if ($delivery->status === 'processing' && $delivery->leased_at?->isAfter(now()->subSeconds($leaseSeconds))) {
+            if ($delivery->status === 'processing' && $delivery->leased_at?->isAfter(CarbonImmutable::now()->subSeconds($leaseSeconds))) {
                 return null;
             }
 
             if ($delivery->attempt_count >= $delivery->max_attempts) {
-                $delivery->forceFill(['status' => 'dead', 'dead_at' => now(), 'leased_at' => null])->save();
+                $delivery->forceFill(['status' => 'dead', 'dead_at' => CarbonImmutable::now(), 'leased_at' => null])->save();
 
                 return null;
             }
@@ -132,8 +133,8 @@ final class DispatchAffiliateWebhook implements ShouldQueue
             $delivery->forceFill([
                 'status' => 'processing',
                 'attempt_count' => $delivery->attempt_count + 1,
-                'leased_at' => now(),
-                'last_attempt_at' => now(),
+                'leased_at' => CarbonImmutable::now(),
+                'last_attempt_at' => CarbonImmutable::now(),
             ])->save();
 
             return $delivery;

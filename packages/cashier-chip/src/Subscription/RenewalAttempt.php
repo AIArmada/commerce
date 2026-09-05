@@ -40,7 +40,7 @@ class RenewalAttempt extends Model
 
     public function getTable(): string
     {
-        return config('cashier-chip.database.tables.renewal_attempts', 'chip_renewal_attempts');
+        return config('cashier-chip.database.tables.renewal_attempts', 'cashier_chip_renewal_attempts');
     }
 
     protected function casts(): array

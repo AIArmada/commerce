@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCart\Widgets;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCart\Models\Cart;
+use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -21,9 +22,9 @@ final class CartStatsWidget extends BaseWidget
     protected function getStats(): array
     {
         $base = Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords());
-        $recentCutoff = now()->subMinutes(30);
+        $recentCutoff = CarbonImmutable::now()->subMinutes(30);
         $highValueThreshold = (int) config('filament-cart.analytics.high_value_threshold_minor', 10000);
-        $yesterday = now()->subDay();
+        $yesterday = CarbonImmutable::now()->subDay();
 
         $activeCarts = (clone $base)->where('last_activity_at', '>=', $recentCutoff)->count();
         $cartsWithItems = (clone $base)->where('items_count', '>', 0)->where('last_activity_at', '>=', $recentCutoff)->count();
@@ -85,7 +86,7 @@ final class CartStatsWidget extends BaseWidget
     {
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i);
+            $date = CarbonImmutable::now()->subDays($i);
             $count = Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
                 ->where('items_count', '>', 0)
                 ->whereDate('updated_at', $date->toDateString())

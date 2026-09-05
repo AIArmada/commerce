@@ -191,7 +191,7 @@ class AttributeGroup extends Model implements Auditable
 
         static::saving(function (AttributeGroup $group): void {
             if ($group->isDirty('visibility')) {
-                $group->hidden_at = $group->visibility === Visibility::Hidden->value ? now() : null;
+                $group->hidden_at = $group->visibility === Visibility::Hidden->value ? CarbonImmutable::now() : null;
             }
         });
 

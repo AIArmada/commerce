@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
+use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -41,11 +42,11 @@ final class MRRWidget extends BaseWidget
     {
         return $this->subscriptionQuery()
             ->whereActive()
-            ->with('items')
+            ->withSum('items', 'unit_amount')
             ->get()
             ->sum(function (Subscription $subscription): int {
                 $monthlyAmount = $this->normalizeToMonthly(
-                    $subscription->items->sum('unit_amount') * ($subscription->quantity ?? 1),
+                    (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
                     $subscription->billing_interval ?? 'month',
                     $subscription->billing_interval_count ?? 1
                 );
@@ -62,12 +63,12 @@ final class MRRWidget extends BaseWidget
     {
         return $this->subscriptionQuery()
             ->where('chip_status', SubscriptionStatus::Active->value)
-            ->where('created_at', '<', now()->subMonth())
-            ->with('items')
+            ->where('created_at', '<', CarbonImmutable::now()->subMonth())
+            ->withSum('items', 'unit_amount')
             ->get()
             ->sum(function (Subscription $subscription): int {
                 return $this->normalizeToMonthly(
-                    $subscription->items->sum('unit_amount') * ($subscription->quantity ?? 1),
+                    (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
                     $subscription->billing_interval ?? 'month',
                     $subscription->billing_interval_count ?? 1
                 );
@@ -120,7 +121,7 @@ final class MRRWidget extends BaseWidget
         $chart = [];
 
         for ($i = 5; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
+            $date = CarbonImmutable::now()->subMonths($i);
             $startOfMonth = $date->copy()->startOfMonth();
             $endOfMonth = $date->copy()->endOfMonth();
 
@@ -131,11 +132,11 @@ final class MRRWidget extends BaseWidget
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>=', $startOfMonth);
                 })
-                ->with('items')
+                ->withSum('items', 'unit_amount')
                 ->get()
                 ->sum(function (Subscription $subscription): int {
                     return $this->normalizeToMonthly(
-                        $subscription->items->sum('unit_amount') * ($subscription->quantity ?? 1),
+                        (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
                         $subscription->billing_interval ?? 'month',
                         $subscription->billing_interval_count ?? 1
                     );

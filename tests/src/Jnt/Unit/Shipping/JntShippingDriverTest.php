@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\TrackingData as JntTrackingData;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
@@ -242,6 +243,59 @@ describe('validateAddress', function (): void {
 });
 
 describe('createShipment', function (): void {
+    it('keeps shipping money in the J&T wire format', function (): void {
+        $captured = [];
+
+        $this->jntService->shouldReceive('createOrder')
+            ->once()
+            ->withArgs(function (...$arguments) use (&$captured): bool {
+                $captured = $arguments;
+
+                return true;
+            })
+            ->andReturn(new OrderData(orderId: 'REF-MONEY', trackingNumber: 'JNT-MONEY-1'));
+
+        $this->jntService->shouldReceive('printOrder')
+            ->once()
+            ->with('REF-MONEY', 'JNT-MONEY-1')
+            ->andReturn([]);
+
+        $shipment = ShipmentData::from([
+            'reference' => 'REF-MONEY',
+            'carrierCode' => 'jnt',
+            'serviceCode' => 'EZ',
+            'origin' => [
+                'name' => 'Sender',
+                'phone' => '+60123456789',
+                'line1' => '123 Main St',
+                'postcode' => '50000',
+                'country' => 'MYS',
+            ],
+            'destination' => [
+                'name' => 'Receiver',
+                'phone' => '+60198765432',
+                'line1' => '456 Second St',
+                'postcode' => '47810',
+                'country' => 'MYS',
+            ],
+            'items' => [[
+                'name' => 'Widget',
+                'quantity' => 1,
+                'weight' => 500,
+                'declaredValue' => 1999,
+            ]],
+            'declaredValue' => 1999,
+            'codAmount' => 19990,
+        ]);
+
+        $result = $this->driver->createShipment($shipment);
+
+        expect($result->success)->toBeTrue()
+            ->and($captured[2][0]->priceMinor)->toBe(1999)
+            ->and($captured[3]->valueMinor)->toBe(1999)
+            ->and($captured[5]['codInfo']['codValue'])->toBe('199.90');
+    });
+
     it('returns unknown outcome on network timeout for create shipment', function (): void {
         $this->jntService->shouldReceive('createOrder')
             ->once()

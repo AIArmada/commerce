@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -114,8 +115,8 @@ class AffiliateCommissionPromotion extends Model implements Auditable
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('starts_at', '<=', now())
-            ->where('ends_at', '>=', now())
+        return $query->where('starts_at', '<=', CarbonImmutable::now())
+            ->where('ends_at', '>=', CarbonImmutable::now())
             ->where(function ($q): void {
                 $q->whereNull('max_uses')
                     ->orWhereColumn('current_uses', '<', 'max_uses');

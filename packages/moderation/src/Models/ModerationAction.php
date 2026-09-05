@@ -7,8 +7,8 @@ namespace AIArmada\Moderation\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Moderation\Enums\ModerationActionType;
-use AIArmada\Moderation\Models\Concerns\UsesModerationUuid;
 use Eloquent;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -34,7 +34,7 @@ class ModerationAction extends Model
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
-    use UsesModerationUuid;
+    use HasUuids;
 
     protected $fillable = [
         'actionable_type', 'actionable_id',

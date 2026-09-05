@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Services;
 
 use AIArmada\FilamentCart\Models\Cart;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -37,7 +38,7 @@ final class CartDownloadService
             'items' => $cart->items,
             'conditions' => $cart->conditions,
             'metadata' => $cart->metadata,
-            'exported_at' => now()->toISOString(),
+            'exported_at' => CarbonImmutable::now()->toISOString(),
         ];
     }
 

@@ -40,6 +40,6 @@ final class UnifiedSubscriptionRecord extends Model
 
     public function getTable(): string
     {
-        return 'subscriptions';
+        return (string) config('cashier.database.tables.unified_subscriptions', 'cashier_unified_subscriptions');
     }
 }

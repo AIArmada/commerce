@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -76,7 +77,7 @@ final class AbandonedCartsWidget extends BaseWidget
     {
         return Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
             ->whereNotNull('checkout_abandoned_at')
-            ->where('checkout_abandoned_at', '>=', now()->subDays(7));
+            ->where('checkout_abandoned_at', '>=', CarbonImmutable::now()->subDays(7));
     }
 
     private function getCustomerEmail(Cart $record): string

@@ -8,8 +8,8 @@ use AIArmada\Affiliates\Events\DailyStatsAggregated;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\DailyAggregationService;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
-use Illuminate\Support\Carbon;
 
 final class AggregateDailyStatsCommand extends Command
 {
@@ -28,8 +28,8 @@ final class AggregateDailyStatsCommand extends Command
         }
 
         $date = $this->option('date')
-            ? Carbon::parse($this->option('date'))
-            : now()->subDay();
+            ? CarbonImmutable::parse($this->option('date'))
+            : CarbonImmutable::now()->subDay();
 
         $this->info("Aggregating stats for {$date->toDateString()}...");
 
@@ -50,12 +50,12 @@ final class AggregateDailyStatsCommand extends Command
     private function handleBackfill(DailyAggregationService $service): int
     {
         $from = $this->option('from')
-            ? Carbon::parse($this->option('from'))
-            : now()->subDays(30);
+            ? CarbonImmutable::parse($this->option('from'))
+            : CarbonImmutable::now()->subDays(30);
 
         $to = $this->option('to')
-            ? Carbon::parse($this->option('to'))
-            : now()->subDay();
+            ? CarbonImmutable::parse($this->option('to'))
+            : CarbonImmutable::now()->subDay();
 
         $this->info("Backfilling stats from {$from->toDateString()} to {$to->toDateString()}...");
 

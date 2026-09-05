@@ -8,6 +8,8 @@ This guide covers the shipped marketplace resources and the admin flows around t
 
 The plugin provides four Filament resources.
 
+The site, offer, category, application, merchant dashboard, and network widget surfaces require the configured `affiliate-network.admin` ability. The marketplace page is the only intentionally non-admin surface.
+
 ## AffiliateSiteResource
 
 Manage merchant sites/domains.

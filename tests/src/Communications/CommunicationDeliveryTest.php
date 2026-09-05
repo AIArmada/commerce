@@ -152,6 +152,16 @@ test('suppressed deliveries persist their lifecycle timestamp', function (): voi
         ->and($delivery->suppressed_at)->not->toBeNull();
 });
 
+test('unsubscribe transitions persist their lifecycle timestamp', function (): void {
+    $delivery = app(TransitionDeliveryAction::class)->handle(
+        $this->delivery,
+        DeliveryStatus::Unsubscribed,
+    );
+
+    expect($delivery->status)->toBe(DeliveryStatus::Unsubscribed)
+        ->and($delivery->unsubscribed_at)->not->toBeNull();
+});
+
 test('unsubscribe provider events use unsubscribed_at', function (): void {
     $delivery = app(ApplyProviderEventAction::class)->handle(new ProviderEventData(
         provider: 'test',

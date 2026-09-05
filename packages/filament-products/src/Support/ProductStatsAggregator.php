@@ -9,6 +9,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
+use Carbon\CarbonImmutable;
 
 final class ProductStatsAggregator
 {
@@ -21,9 +22,9 @@ final class ProductStatsAggregator
             $totalCategories = Category::query()->forOwner()->count();
             $totalCollections = Collection::query()->forOwner()->visible()->count();
 
-            $lastWeekProducts = Product::query()->forOwner()->where('created_at', '>=', now()->subWeek())->count();
+            $lastWeekProducts = Product::query()->forOwner()->where('created_at', '>=', CarbonImmutable::now()->subWeek())->count();
             $previousWeekProducts = Product::query()->forOwner()
-                ->whereBetween('created_at', [now()->subWeeks(2), now()->subWeek()])
+                ->whereBetween('created_at', [CarbonImmutable::now()->subWeeks(2), CarbonImmutable::now()->subWeek()])
                 ->count();
 
             $trend = $previousWeekProducts > 0

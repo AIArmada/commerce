@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
+use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -18,7 +19,7 @@ final class AttentionRequiredWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        $now = now();
+        $now = CarbonImmutable::now();
         $inThreeDays = $now->copy()->addDays(3);
 
         $trialsEndingSoon = $this->subscriptionQuery()

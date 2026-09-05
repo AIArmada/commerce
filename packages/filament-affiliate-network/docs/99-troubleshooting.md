@@ -43,6 +43,16 @@ php artisan filament:install
 
 ## Resource Issues
 
+### Network Admin Surfaces Return 403
+
+The network-wide resources and merchant dashboard require the ability configured at `filament-affiliate-network.authorization.admin_ability`.
+
+Define that ability in the host application's authorization layer before registering the plugin:
+
+```php
+Gate::define('affiliate-network.admin', fn (User $user): bool => $user->is_admin);
+```
+
 ### Empty Tables
 
 **Symptoms:** Resources show no data.

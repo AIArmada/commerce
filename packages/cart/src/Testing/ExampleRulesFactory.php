@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Testing;
 
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
+use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
 /**
@@ -54,8 +55,8 @@ final class ExampleRulesFactory implements RulesFactoryInterface
                     $startTime = $metadata['start_time'] ?? '09:00';
                     $endTime = $metadata['end_time'] ?? '17:00';
 
-                    return now()->format('H:i') >= $startTime &&
-                           now()->format('H:i') <= $endTime;
+                    return CarbonImmutable::now()->format('H:i') >= $startTime &&
+                           CarbonImmutable::now()->format('H:i') <= $endTime;
                 },
             ],
 
@@ -77,14 +78,14 @@ final class ExampleRulesFactory implements RulesFactoryInterface
                 function ($cart) use ($metadata) {
                     $targetDay = $metadata['day_of_week'] ?? 'Monday';
 
-                    return now()->format('l') === $targetDay;
+                    return CarbonImmutable::now()->format('l') === $targetDay;
                 },
             ],
 
             'seasonal_discount' => [
                 function ($cart) use ($metadata) {
                     $season = $metadata['season'] ?? 'winter';
-                    $currentMonth = (int) now()->format('n');
+                    $currentMonth = (int) CarbonImmutable::now()->format('n');
 
                     return match ($season) {
                         'spring' => in_array($currentMonth, [3, 4, 5]),

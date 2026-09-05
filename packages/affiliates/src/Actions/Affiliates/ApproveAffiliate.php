@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Actions\Affiliates;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
+use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -25,7 +26,7 @@ final class ApproveAffiliate
         }
 
         $affiliate->status = new Active($affiliate);
-        $affiliate->activated_at = now();
+        $affiliate->activated_at = CarbonImmutable::now();
         $affiliate->deactivated_at = null;
         $affiliate->paused_at = null;
         $affiliate->save();

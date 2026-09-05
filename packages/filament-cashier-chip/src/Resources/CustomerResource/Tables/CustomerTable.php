@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Tables;
 
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
@@ -162,7 +163,7 @@ final class CustomerTable
                         }
 
                         return $query->whereNotNull('trial_ends_at')
-                            ->where('trial_ends_at', '>', now());
+                            ->where('trial_ends_at', '>', CarbonImmutable::now());
                     }),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->actions([

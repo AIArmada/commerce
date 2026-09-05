@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\InvoiceResource\Schemas;
 
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;
@@ -257,6 +258,6 @@ final class InvoiceInfolist
         $currency = $currency ?? config('cashier-chip.currency', 'MYR');
         $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
 
-        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, $precision, '.', ',');
+        return mb_strtoupper($currency) . ' ' . MoneyFormatter::decimalFromMinor($amount, $currency, $precision);
     }
 }

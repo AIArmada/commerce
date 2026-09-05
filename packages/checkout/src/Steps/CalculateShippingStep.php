@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Steps;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Integrations\ShippingAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
+use Carbon\CarbonImmutable;
 
 final class CalculateShippingStep extends AbstractCheckoutStep
 {
@@ -78,7 +79,7 @@ final class CalculateShippingStep extends AbstractCheckoutStep
                 'carrier' => $cartShipping['carrier'] ?? null,
                 'service' => $cartShipping['service'] ?? null,
                 'estimated_days' => $cartShipping['estimated_days'] ?? null,
-                'calculated_at' => now()->toIso8601String(),
+                'calculated_at' => CarbonImmutable::now()->toIso8601String(),
             ]);
 
             $selectedMethod = $cartShipping['carrier'] !== null
@@ -138,7 +139,7 @@ final class CalculateShippingStep extends AbstractCheckoutStep
             'source' => 'shipping_adapter',
             'available_rates' => $rates,
             'selected_rate' => $selectedRate,
-            'calculated_at' => now()->toIso8601String(),
+            'calculated_at' => CarbonImmutable::now()->toIso8601String(),
         ]);
 
         if ($this->shippingAdapter->hasJntIntegration() && $this->shouldUseJnt($selectedRate)) {

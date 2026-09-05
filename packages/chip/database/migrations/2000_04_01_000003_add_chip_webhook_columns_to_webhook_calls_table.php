@@ -20,7 +20,11 @@ return new class extends Migration
 
         $jsonType = (string) commerce_json_column_type('chip', 'jsonb');
 
-        Schema::table('webhook_calls', function (Blueprint $table) use ($jsonType): void {
+        $hasOwnerType = Schema::hasColumn('webhook_calls', 'owner_type');
+        $hasOwnerId = Schema::hasColumn('webhook_calls', 'owner_id');
+        $hasOwnerIndex = Schema::hasIndex('webhook_calls', 'webhook_calls_owner_type_owner_id_index');
+
+        Schema::table('webhook_calls', function (Blueprint $table) use ($jsonType, $hasOwnerType, $hasOwnerId, $hasOwnerIndex): void {
             if (! Schema::hasColumn('webhook_calls', 'title')) {
                 $table->string('title', 100)->nullable();
             }
@@ -101,8 +105,20 @@ return new class extends Migration
                 $table->integer('updated_on')->nullable();
             }
 
-            if (! Schema::hasColumn('webhook_calls', 'owner_type') && ! Schema::hasColumn('webhook_calls', 'owner_id')) {
+            if (! $hasOwnerType && ! $hasOwnerId) {
                 $table->nullableMorphs('owner');
+            } else {
+                if (! $hasOwnerType) {
+                    $table->string('owner_type')->nullable();
+                }
+
+                if (! $hasOwnerId) {
+                    $table->uuid('owner_id')->nullable();
+                }
+
+                if (! $hasOwnerIndex) {
+                    $table->index(['owner_type', 'owner_id'], 'webhook_calls_owner_type_owner_id_index');
+                }
             }
 
             $this->addIndexIfMissing($table, ['event_type', 'processed'], 'webhook_calls_event_type_processed_idx');

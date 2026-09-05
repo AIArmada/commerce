@@ -130,7 +130,7 @@ class CartModel extends Model implements Auditable
             return false;
         }
 
-        return now()->isAfter($this->expires_at);
+        return CarbonImmutable::now()->isAfter($this->expires_at);
     }
 
     /**
@@ -282,7 +282,7 @@ class CartModel extends Model implements Auditable
             $q->whereNotNull('expired_at')
                 ->orWhere(function (Builder $q2): void {
                     $q2->whereNotNull('expires_at')
-                        ->where('expires_at', '<', now());
+                        ->where('expires_at', '<', CarbonImmutable::now());
                 });
         });
     }
@@ -298,7 +298,7 @@ class CartModel extends Model implements Auditable
         $query->whereNull('expired_at')
             ->where(function (Builder $q): void {
                 $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
+                    ->orWhere('expires_at', '>', CarbonImmutable::now());
             });
     }
 
@@ -353,7 +353,7 @@ class CartModel extends Model implements Auditable
     #[Scope]
     protected function inactiveFor(Builder $query, int $minutes): void
     {
-        $threshold = now()->subMinutes($minutes);
+        $threshold = CarbonImmutable::now()->subMinutes($minutes);
         $query->where('updated_at', '<', $threshold);
     }
 

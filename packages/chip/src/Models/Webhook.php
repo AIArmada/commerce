@@ -162,7 +162,7 @@ class Webhook extends WebhookCall
         $this->forceFill([
             'status' => 'processed',
             'processed' => true,
-            'processed_at' => now(),
+            'processed_at' => CarbonImmutable::now(),
             'processing_time_ms' => $processingTimeMs,
         ])->save();
 

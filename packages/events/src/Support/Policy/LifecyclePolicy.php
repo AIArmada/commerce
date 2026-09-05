@@ -39,7 +39,7 @@ final class LifecyclePolicy
 
     public function isCapacityBlocking(EventRegistration $registration): bool
     {
-        $statuses = config('events.lifecycle.registration.capacity_blocking_statuses', ['pending', 'confirmed', 'checked_in', 'no_show']);
+        $statuses = config('events.lifecycle.registration.capacity_blocking_statuses', ['pending', 'confirmed', 'checked_in']);
 
         return in_array($registration->status->getValue(), $statuses, true);
     }

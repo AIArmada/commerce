@@ -8,6 +8,7 @@ use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Pages\Page;
 use UnitEnum;
 
@@ -94,7 +95,7 @@ class CartDashboard extends Page
 
         return Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
             ->whereNotNull('checkout_abandoned_at')
-            ->where('checkout_abandoned_at', '>=', now()->subDay())
+            ->where('checkout_abandoned_at', '>=', CarbonImmutable::now()->subDay())
             ->count();
     }
 }

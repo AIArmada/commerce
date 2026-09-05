@@ -16,6 +16,7 @@ use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -579,7 +580,7 @@ class ProductsTable
 
         return response()->streamDownload(function () use ($csv): void {
             echo $csv->toString();
-        }, 'products-export-' . now()->format('Y-m-d-His') . '.csv', [
+        }, 'products-export-' . CarbonImmutable::now()->format('Y-m-d-His') . '.csv', [
             'Content-Type' => 'text/csv',
         ]);
     }

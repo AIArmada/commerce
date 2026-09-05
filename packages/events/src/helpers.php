@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Str;
-
 if (! function_exists('events_table')) {
     function events_table(string $key): string
     {
@@ -15,15 +13,5 @@ if (! function_exists('events_json_type')) {
     function events_json_type(): string
     {
         return (string) commerce_json_column_type('events', 'jsonb');
-    }
-}
-
-if (! function_exists('event_registration_no')) {
-    function event_registration_no(?string $prefix = null): string
-    {
-        $prefix ??= config('events.codes.registration_prefix', 'REG');
-        $length = (int) config('events.codes.registration_length', 10);
-
-        return $prefix . '-' . mb_strtoupper(Str::random(max(6, $length)));
     }
 }

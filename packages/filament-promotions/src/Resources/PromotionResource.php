@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPromotions\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\CreatePromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\EditPromotion;
@@ -124,7 +125,7 @@ final class PromotionResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<Promotion> $query */
-        $query = parent::getEloquentQuery();
+        $query = OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
 
         return $query;
     }

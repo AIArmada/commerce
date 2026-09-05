@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Override;
 
@@ -239,11 +240,18 @@ final class ContactMethod extends Model
             return;
         }
 
-        ContactMethod::query()
-            ->where('contactable_type', $this->contactable_type)
-            ->where('contactable_id', $this->contactable_id)
-            ->where('id', '!=', $this->id)
-            ->update(['is_primary' => false]);
+        DB::transaction(function (): void {
+            if ($this->contactable_type !== null && $this->contactable_id !== null) {
+                $this->contactable()->lockForUpdate()->first();
+            }
+
+            ContactMethod::query()
+                ->where('contactable_type', $this->contactable_type)
+                ->where('contactable_id', $this->contactable_id)
+                ->where('id', '!=', $this->id)
+                ->lockForUpdate()
+                ->update(['is_primary' => false]);
+        });
     }
 
     private function guardContactableOwner(): void

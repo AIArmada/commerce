@@ -10,6 +10,7 @@ return [
     */
     'database' => [
         'table_prefix' => env('CASHIER_CHIP_TABLE_PREFIX', 'cashier_chip_'),
+        'json_column_type' => env('CASHIER_CHIP_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => (static function (): array {
             $prefix = env('CASHIER_CHIP_TABLE_PREFIX', 'cashier_chip_');
 
@@ -17,6 +18,7 @@ return [
                 'subscriptions' => $prefix . 'subscriptions',
                 'subscription_items' => $prefix . 'subscription_items',
                 'payment_methods' => $prefix . 'payment_methods',
+                'renewal_attempts' => $prefix . 'renewal_attempts',
             ];
         })(),
     ],

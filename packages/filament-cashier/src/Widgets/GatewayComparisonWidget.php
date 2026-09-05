@@ -6,10 +6,13 @@ namespace AIArmada\FilamentCashier\Widgets;
 
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Collection;
 use Laravel\Cashier\Subscription;
 
 final class GatewayComparisonWidget extends ChartWidget
@@ -35,7 +38,7 @@ final class GatewayComparisonWidget extends ChartWidget
 
             // Generate last 6 months labels
             $labels = collect(range(5, 0))->map(function ($monthsAgo) {
-                return now()->subMonths($monthsAgo)->format('M Y');
+                return CarbonImmutable::now()->subMonths($monthsAgo)->format('M Y');
             })->toArray();
 
             $datasets = [];
@@ -98,11 +101,11 @@ final class GatewayComparisonWidget extends ChartWidget
 
         // Generate data for last 6 months
         for ($i = 5; $i >= 0; $i--) {
-            $startOfMonth = now()->subMonths($i)->startOfMonth();
-            $endOfMonth = now()->subMonths($i)->endOfMonth();
+            $startOfMonth = CarbonImmutable::now()->subMonths($i)->startOfMonth();
+            $endOfMonth = CarbonImmutable::now()->subMonths($i)->endOfMonth();
 
             $revenue = $this->getRevenueForPeriod($gateway, $startOfMonth, $endOfMonth);
-            $data[] = round($revenue / 100, 2); // Convert cents to dollars
+            $data[] = round($revenue / 100, 2);
         }
 
         return $data;
@@ -113,25 +116,50 @@ final class GatewayComparisonWidget extends ChartWidget
         $detector = app(GatewayDetector::class);
 
         if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            return OwnerScopedQuery::apply(Subscription::query())
+            $revenue = 0;
+
+            OwnerScopedQuery::apply(Subscription::query())
+                ->with('items')
                 ->whereBetween('created_at', [$start, $end])
                 ->where(function ($query) use ($end): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', $end);
                 })
-                ->count() * 2900; // Approximate average subscription value
+                ->chunk(200, function (Collection $subscriptions) use (&$revenue): void {
+                    foreach ($subscriptions as $subscription) {
+                        $unified = UnifiedSubscription::fromStripe($subscription);
+
+                        if ($unified->status->isActive()) {
+                            $revenue += $unified->amount;
+                        }
+                    }
+                });
+
+            return $revenue;
         }
 
         if ($gateway === 'chip' && $detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
+            $revenue = 0;
 
-            return OwnerScopedQuery::apply($subscriptionModel::query())
+            OwnerScopedQuery::apply($subscriptionModel::query())
+                ->with('items')
                 ->whereBetween('created_at', [$start, $end])
                 ->where(function ($query) use ($end): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', $end);
                 })
-                ->count() * 9900; // Approximate average subscription value in MYR cents
+                ->chunk(200, function (Collection $subscriptions) use (&$revenue): void {
+                    foreach ($subscriptions as $subscription) {
+                        $unified = UnifiedSubscription::fromChip($subscription);
+
+                        if ($unified->status->isActive()) {
+                            $revenue += $unified->amount;
+                        }
+                    }
+                });
+
+            return $revenue;
         }
 
         return 0;

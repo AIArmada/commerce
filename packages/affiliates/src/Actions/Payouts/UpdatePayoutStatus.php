@@ -11,6 +11,7 @@ use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -43,15 +44,15 @@ final class UpdatePayoutStatus
             $payout->status = $newStatus;
 
             if ($newStatus->equals(CompletedPayout::class) && $payout->paid_at === null) {
-                $payout->paid_at = now();
+                $payout->paid_at = CarbonImmutable::now();
             }
 
             if ($newStatus->equals(FailedPayout::class) && $payout->failed_at === null) {
-                $payout->failed_at = now();
+                $payout->failed_at = CarbonImmutable::now();
             }
 
             if ($newStatus->equals(CancelledPayout::class) && $payout->cancelled_at === null) {
-                $payout->cancelled_at = now();
+                $payout->cancelled_at = CarbonImmutable::now();
             }
 
             $payout->save();

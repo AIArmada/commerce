@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('ticketing', 'jsonb');
 
-        Schema::create(config('ticketing.database.tables.ticket_types', 'ticket_types'), function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing(config('ticketing.database.tables.ticket_types', 'ticket_types'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->uuid('ticketable_id');
             $table->string('ticketable_type');
@@ -32,6 +32,7 @@ return new class extends Migration
             $table->string('visibility')->index();
             $table->integer('sort_order')->default(0)->index();
             $table->{$jsonType}('metadata')->nullable();
+            $table->nullableMorphs('owner');
             $table->timestampsTz();
 
             $table->index(['ticketable_id', 'ticketable_type']);

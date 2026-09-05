@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Steps;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Integrations\TaxAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
+use Carbon\CarbonImmutable;
 
 final class CalculateTaxStep extends AbstractCheckoutStep
 {
@@ -54,7 +55,7 @@ final class CalculateTaxStep extends AbstractCheckoutStep
             'tax_rate' => $taxResult['rate'] ?? 0,
             'taxable_amount' => $taxResult['taxable_amount'] ?? 0,
             'tax_exempt' => $taxResult['exempt'] ?? false,
-            'calculated_at' => now()->toIso8601String(),
+            'calculated_at' => CarbonImmutable::now()->toIso8601String(),
         ];
 
         $taxTotal = $taxResult['total'] ?? 0;

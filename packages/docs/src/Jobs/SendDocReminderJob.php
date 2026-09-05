@@ -131,14 +131,15 @@ final class SendDocReminderJob implements ShouldQueue
                     recipientName: $recipientName,
                     template: $emailService->findTemplate($doc, 'due_soon'),
                     variables: [
-                        'days_until_due' => $doc->due_date?->diffInDays(CarbonImmutable::now()),
+                        'days_until_due' => CarbonImmutable::now()->diffInDays($doc->due_date, false),
                     ],
+                    metadata: ['reminder_type' => 'due_soon'],
                 );
 
                 Log::info('SendDocReminderJob: Due soon reminder sent', [
                     'doc_id' => $doc->id,
                     'doc_number' => $doc->doc_number,
-                    'days_until_due' => $doc->due_date?->diffInDays(CarbonImmutable::now()),
+                    'days_until_due' => CarbonImmutable::now()->diffInDays($doc->due_date, false),
                 ]);
             } catch (Throwable $e) {
                 Log::error('SendDocReminderJob: Failed to send due soon reminder', [
@@ -166,7 +167,7 @@ final class SendDocReminderJob implements ShouldQueue
                 Log::info('SendDocReminderJob: Overdue reminder sent', [
                     'doc_id' => $doc->id,
                     'doc_number' => $doc->doc_number,
-                    'days_overdue' => $doc->due_date?->diffInDays(CarbonImmutable::now()),
+                    'days_overdue' => $doc->due_date?->diffInDays(CarbonImmutable::now(), false),
                 ]);
             } catch (Throwable $e) {
                 Log::error('SendDocReminderJob: Failed to send overdue reminder', [
@@ -187,7 +188,10 @@ final class SendDocReminderJob implements ShouldQueue
         return $this->getScopedDocsQuery()
             ->whereIn('status', [Sent::value(), Pending::value()])
             ->whereNotNull('due_date')
-            ->whereDate('due_date', '=', $dueDate->toDateString())
+            ->whereDate('due_date', '<=', $dueDate->toDateString())
+            ->whereDoesntHave('emails', function (Builder $query): void {
+                $query->where('metadata->reminder_type', 'due_soon');
+            })
             ->whereJsonContainsKey('customer_data->email')
             ->get();
     }
@@ -202,7 +206,10 @@ final class SendDocReminderJob implements ShouldQueue
         return $this->getScopedDocsQuery()
             ->where('status', Overdue::value())
             ->whereNotNull('due_date')
-            ->whereDate('due_date', '=', $overdueDate->toDateString())
+            ->whereDate('due_date', '<=', $overdueDate->toDateString())
+            ->whereDoesntHave('emails', function (Builder $query): void {
+                $query->where('metadata->reminder_type', 'overdue');
+            })
             ->whereJsonContainsKey('customer_data->email')
             ->get();
     }

@@ -10,6 +10,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
@@ -29,7 +30,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
             ? OwnerContext::resolve()
             : null;
 
-        $now = now()->toImmutable();
+        $now = CarbonImmutable::now()->toImmutable();
         $startOfMonth = $now->startOfMonth();
         $lastMonthStart = $now->subMonth()->startOfMonth();
         $lastMonthEnd = $lastMonthStart->endOfMonth();

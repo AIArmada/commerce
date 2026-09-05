@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('pricing.database.tables.price_lists', 'price_lists'), function (Blueprint $table): void {
+        commerce_schema_create_if_missing(config('pricing.database.tables.price_lists', 'price_lists'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('slug')->unique();

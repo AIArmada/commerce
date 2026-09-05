@@ -122,7 +122,7 @@ class AffiliateFraudSignal extends Model implements Auditable
     {
         $this->update([
             'status' => FraudSignalStatus::Reviewed,
-            'reviewed_at' => now(),
+            'reviewed_at' => CarbonImmutable::now(),
             'reviewed_by' => $reviewedBy,
         ]);
     }
@@ -131,9 +131,9 @@ class AffiliateFraudSignal extends Model implements Auditable
     {
         $this->update([
             'status' => FraudSignalStatus::Dismissed,
-            'reviewed_at' => now(),
+            'reviewed_at' => CarbonImmutable::now(),
             'reviewed_by' => $reviewedBy,
-            'dismissed_at' => now(),
+            'dismissed_at' => CarbonImmutable::now(),
         ]);
     }
 
@@ -141,9 +141,9 @@ class AffiliateFraudSignal extends Model implements Auditable
     {
         $this->update([
             'status' => FraudSignalStatus::Confirmed,
-            'reviewed_at' => now(),
+            'reviewed_at' => CarbonImmutable::now(),
             'reviewed_by' => $reviewedBy,
-            'confirmed_at' => now(),
+            'confirmed_at' => CarbonImmutable::now(),
         ]);
     }
 

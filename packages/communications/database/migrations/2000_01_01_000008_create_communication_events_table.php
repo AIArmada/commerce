@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -12,7 +11,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('communications', 'jsonb');
 
-        Schema::create(config('communications.database.tables.events', 'communication_events'), function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing(config('communications.database.tables.events', 'communication_events'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->foreignUuid('communication_id');
@@ -36,7 +35,7 @@ return new class extends Migration
 
             $table->index(['delivery_id', 'occurred_at']);
             $table->index(['communication_id', 'occurred_at']);
-            $table->index(['provider', 'provider_event_id']);
+            $table->unique(['provider', 'provider_event_id']);
             $table->index(['provider', 'provider_message_id']);
         });
     }

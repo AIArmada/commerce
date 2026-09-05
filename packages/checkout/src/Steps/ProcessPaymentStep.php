@@ -13,6 +13,7 @@ use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Checkout\States\PaymentFailed;
 use AIArmada\Checkout\States\PaymentProcessing;
 use AIArmada\Checkout\States\Processing;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -68,7 +69,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         if ($session->grand_total <= 0) {
             $paymentData = array_merge($session->payment_data ?? [], [
                 'type' => 'free_order',
-                'processed_at' => now()->toIso8601String(),
+                'processed_at' => CarbonImmutable::now()->toIso8601String(),
             ]);
 
             $session->update([
@@ -118,7 +119,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             'amount' => $result->amount ?? $session->grand_total,
             'currency' => $result->currency ?? $session->currency,
             'gateway_response' => $result->gatewayResponse,
-            'processed_at' => now()->toIso8601String(),
+            'processed_at' => CarbonImmutable::now()->toIso8601String(),
         ]);
 
         $session->update([
@@ -303,7 +304,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
 
         $callbackToken = Str::random(40);
         $paymentData['callback_token'] = $callbackToken;
-        $paymentData['callback_token_created_at'] = now()->toIso8601String();
+        $paymentData['callback_token_created_at'] = CarbonImmutable::now()->toIso8601String();
 
         $session->update(['payment_data' => $paymentData]);
 

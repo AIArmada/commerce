@@ -13,7 +13,6 @@ use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\Tag;
 use Illuminate\Database\Query\Builder;
@@ -35,11 +34,11 @@ final class PerformanceBonusService
     }
 
     public function calculateBonuses(
-        ?Carbon $from = null,
-        ?Carbon $to = null
+        ?CarbonImmutable $from = null,
+        ?CarbonImmutable $to = null
     ): array {
-        $from = $from ?? now()->startOfMonth();
-        $to = $to ?? now()->endOfMonth();
+        $from = $from ?? CarbonImmutable::now()->startOfMonth();
+        $to = $to ?? CarbonImmutable::now()->endOfMonth();
 
         $bonuses = [];
 
@@ -49,8 +48,8 @@ final class PerformanceBonusService
             }
 
             $ruleBonuses = $rule->calculate(
-                CarbonImmutable::createFromInterface($from),
-                CarbonImmutable::createFromInterface($to),
+                $from,
+                $to,
             );
 
             foreach ($ruleBonuses as $bonus) {
@@ -73,7 +72,7 @@ final class PerformanceBonusService
                     continue;
                 }
 
-                $period = (string) ($bonus['metrics']['period'] ?? now()->format('Y-m'));
+                $period = (string) ($bonus['metrics']['period'] ?? CarbonImmutable::now()->format('Y-m'));
                 $performanceBonusKey = implode(':', [
                     'performance-bonus',
                     $affiliate->id,
@@ -104,7 +103,7 @@ final class PerformanceBonusService
                         'subtotal_minor' => 0,
                         'commission_minor' => $bonus['amount_minor'],
                         'status' => ApprovedConversion::class,
-                        'occurred_at' => now(),
+                        'occurred_at' => CarbonImmutable::now(),
                         'metadata' => [
                             'type' => 'performance_bonus',
                             'bonus_type' => $bonus['bonus_type'],
@@ -126,12 +125,12 @@ final class PerformanceBonusService
     }
 
     public function getLeaderboard(
-        ?Carbon $from = null,
-        ?Carbon $to = null,
+        ?CarbonImmutable $from = null,
+        ?CarbonImmutable $to = null,
         int $limit = 10
     ): Collection {
-        $from = $from ?? now()->startOfMonth();
-        $to = $to ?? now()->endOfMonth();
+        $from = $from ?? CarbonImmutable::now()->startOfMonth();
+        $to = $to ?? CarbonImmutable::now()->endOfMonth();
 
         $conversionsTable = (new AffiliateConversion)->getTable();
         $affiliatesTable = (new Affiliate)->getTable();

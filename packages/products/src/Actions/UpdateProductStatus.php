@@ -5,18 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Products\Actions;
 
 use AIArmada\Products\Enums\ProductStatus;
-use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Models\Product;
 use Carbon\CarbonImmutable;
 
 final class UpdateProductStatus
 {
-    /**
-     * Tracks whether a status transition is already being handled.
-     * Prevents the model booted listener from dispatching a duplicate event.
-     */
-    private static bool $handlingStatusChange = false;
-
     public function execute(Product $product, ProductStatus $newStatus): Product
     {
         $oldStatus = $product->status;
@@ -37,15 +30,7 @@ final class UpdateProductStatus
             ProductStatus::Draft => $this->transitionToDraft($product),
         };
 
-        static::$handlingStatusChange = true;
-
-        try {
-            $product->save();
-        } finally {
-            static::$handlingStatusChange = false;
-        }
-
-        event(new ProductStatusChanged($product, $oldStatus, $newStatus));
+        $product->save();
 
         return $product->fresh();
     }
@@ -53,15 +38,6 @@ final class UpdateProductStatus
     public function __invoke(Product $product, ProductStatus $newStatus): Product
     {
         return $this->execute($product, $newStatus);
-    }
-
-    /**
-     * Returns true when a status change is being performed by this Action.
-     * Used by the model booted listener to avoid duplicate event dispatch.
-     */
-    public static function isHandlingStatusChange(): bool
-    {
-        return static::$handlingStatusChange;
     }
 
     private function transitionToActive(Product $product, CarbonImmutable $now): void

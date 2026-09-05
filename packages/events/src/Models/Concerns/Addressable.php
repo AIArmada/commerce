@@ -7,6 +7,7 @@ namespace AIArmada\Events\Models\Concerns;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable as AddressablePivot;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -41,7 +42,7 @@ trait Addressable
     public function getPrimaryAddressData(): ?AddressData
     {
         if ($this->shouldUseAddressing()) {
-            $now = now();
+            $now = CarbonImmutable::now();
 
             $address = $this->addresses()
                 ->where('addressables.is_primary', true)
@@ -84,7 +85,7 @@ trait Addressable
 
     protected function addressToData(Address $address): AddressData
     {
-        return AddressData::from($address->toArray());
+        return AddressData::from($address->attributesToArray());
     }
 
     protected function buildAddressDataFromFlatColumns(): AddressData

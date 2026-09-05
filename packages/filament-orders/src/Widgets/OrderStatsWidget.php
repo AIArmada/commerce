@@ -9,10 +9,10 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
+use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 
@@ -35,7 +35,7 @@ final class OrderStatsWidget extends StatsOverviewWidget
         $owner = OwnerContext::resolve();
         $ownerKey = $owner ? ($owner->getMorphClass() . ':' . $owner->getKey()) : 'global';
 
-        $now = Carbon::now()->toImmutable();
+        $now = CarbonImmutable::now();
         $today = $now->startOfDay();
         $yesterday = $today->subDay();
         $thisMonth = $now->startOfMonth();

@@ -15,7 +15,6 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
-use Throwable;
 
 final class ValidatePromoCodeAction
 {
@@ -58,12 +57,7 @@ final class ValidatePromoCodeAction
         }
 
         $voucherService = app(VoucherServiceInterface::class);
-
-        try {
-            $validation = $voucherService->validate($code, $context);
-        } catch (Throwable) {
-            return null;
-        }
+        $validation = $voucherService->validate($code, $context);
 
         $voucherData = $this->resolveVoucherData($validation, $code, $voucherService);
 
@@ -102,19 +96,15 @@ final class ValidatePromoCodeAction
             return null;
         }
 
-        try {
-            $targetingContext = $context instanceof Cart
-                ? TargetingContext::fromCart($context, ['currency' => $currency])
-                : new TargetingContext(
-                    cart: (object) ['subtotal' => $subtotal],
-                    metadata: ['currency' => $currency],
-                );
+        $targetingContext = $context instanceof Cart
+            ? TargetingContext::fromCart($context, ['currency' => $currency])
+            : new TargetingContext(
+                cart: (object) ['subtotal' => $subtotal],
+                metadata: ['currency' => $currency],
+            );
 
-            $promotionService = app(PromotionServiceInterface::class);
-            $promotion = $promotionService->findApplicableCodePromotion($code, $targetingContext);
-        } catch (Throwable) {
-            return null;
-        }
+        $promotionService = app(PromotionServiceInterface::class);
+        $promotion = $promotionService->findApplicableCodePromotion($code, $targetingContext);
 
         if (! $promotion instanceof Promotion) {
             return null;

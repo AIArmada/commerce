@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.database.tables.variant_options', 'product_variant_options'), function (Blueprint $table): void {
+        commerce_schema_create_if_missing(config('products.database.tables.variant_options', 'product_variant_options'), function (Blueprint $table): void {
             $table->foreignUuid('variant_id');
             $table->foreignUuid('option_value_id');
 

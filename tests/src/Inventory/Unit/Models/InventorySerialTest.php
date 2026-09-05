@@ -13,7 +13,7 @@ use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\Reserved;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Sold;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 class InventorySerialTest extends InventoryTestCase
 {
@@ -394,7 +394,7 @@ class InventorySerialTest extends InventoryTestCase
         ]);
 
         expect($serial->unit_cost_minor)->toBeInt();
-        expect($serial->warranty_expires_at)->toBeInstanceOf(Carbon::class);
+        expect($serial->warranty_expires_at)->toBeInstanceOf(CarbonImmutable::class);
         expect($serial->metadata)->toBeArray();
     }
 

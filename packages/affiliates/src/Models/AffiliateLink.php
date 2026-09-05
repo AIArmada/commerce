@@ -169,7 +169,7 @@ class AffiliateLink extends Model implements Auditable
 
     public function deactivate(): void
     {
-        $this->update(['deactivated_at' => now()]);
+        $this->update(['deactivated_at' => CarbonImmutable::now()]);
     }
 
     public function activate(): void

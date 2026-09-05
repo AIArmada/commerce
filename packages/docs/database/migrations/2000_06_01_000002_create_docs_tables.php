@@ -19,7 +19,7 @@ return new class extends Migration
         $shareLinksTable = $tables['doc_share_links'] ?? $tablePrefix . 'doc_share_links';
         $statusTable = $tables['doc_status_histories'] ?? $tablePrefix . 'doc_status_histories';
 
-        Schema::create($templatesTable, function (Blueprint $table) use ($templatesTable): void {
+        commerce_schema_create_if_missing($templatesTable, function (Blueprint $table) use ($templatesTable): void {
             $jsonType = (string) commerce_json_column_type('docs', 'jsonb');
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
@@ -38,7 +38,7 @@ return new class extends Migration
             $table->unique(['owner_scope', 'slug'], $templatesTable . '_owner_slug_unique');
         });
 
-        Schema::create($docsTable, function (Blueprint $table) use ($docsTable): void {
+        commerce_schema_create_if_missing($docsTable, function (Blueprint $table) use ($docsTable): void {
             $jsonType = (string) commerce_json_column_type('docs', 'jsonb');
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
@@ -75,7 +75,7 @@ return new class extends Migration
             $table->index('due_date', $docsTable . '_due_date_index');
         });
 
-        Schema::create($shareLinksTable, function (Blueprint $table) use ($shareLinksTable): void {
+        commerce_schema_create_if_missing($shareLinksTable, function (Blueprint $table) use ($shareLinksTable): void {
             $jsonType = (string) commerce_json_column_type('docs', 'jsonb');
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
@@ -93,7 +93,7 @@ return new class extends Migration
             $table->index('revoked_at', $shareLinksTable . '_revoked_at_index');
         });
 
-        Schema::create($statusTable, function (Blueprint $table) use ($statusTable): void {
+        commerce_schema_create_if_missing($statusTable, function (Blueprint $table) use ($statusTable): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->foreignUuid('doc_id');

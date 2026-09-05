@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Events;
 
 use AIArmada\Cart\Events\Concerns\HasCartEventData;
 use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
+use Carbon\CarbonImmutable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -111,7 +112,7 @@ final class CartDestroyed implements CartEventInterface
             'cart_id' => $this->cartId,
             'owner_type' => $this->owner_type,
             'owner_id' => $this->owner_id !== null ? (string) $this->owner_id : null,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => CarbonImmutable::now()->toISOString(),
         ];
     }
 }

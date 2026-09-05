@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
@@ -23,17 +24,26 @@ class SendLimit extends ChipIntegerModel
 {
     public function amountMoney(): Attribute
     {
-        return Attribute::get(fn (): ?Money => $this->toMoney((int) round((float) $this->amount * 100), $this->currency));
+        return Attribute::get(fn (): ?Money => $this->toMoney(
+            MoneyFormatter::majorToMinor((string) $this->amount, (string) $this->currency),
+            (string) $this->currency,
+        ));
     }
 
     public function netAmountMoney(): Attribute
     {
-        return Attribute::get(fn (): ?Money => $this->toMoney((int) round((float) $this->net_amount * 100), $this->currency));
+        return Attribute::get(fn (): ?Money => $this->toMoney(
+            MoneyFormatter::majorToMinor((string) $this->net_amount, (string) $this->currency),
+            (string) $this->currency,
+        ));
     }
 
     public function feeMoney(): Attribute
     {
-        return Attribute::get(fn (): ?Money => $this->toMoney((int) round((float) $this->fee * 100), $this->currency));
+        return Attribute::get(fn (): ?Money => $this->toMoney(
+            MoneyFormatter::majorToMinor((string) $this->fee, (string) $this->currency),
+            (string) $this->currency,
+        ));
     }
 
     public function statusColor(): string

@@ -9,14 +9,13 @@
 declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
         $jsonType = commerce_json_column_type('engagement', 'jsonb');
-        Schema::create(config('engagement.database.tables.bookmark_collection_items', 'bookmark_collection_items'), function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing(config('engagement.database.tables.bookmark_collection_items', 'bookmark_collection_items'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->uuid('bookmark_collection_id')->index();
             $table->uuid('bookmark_id')->index();

@@ -6,6 +6,7 @@ namespace AIArmada\FilamentOrders\Widgets;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
+use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
@@ -50,7 +51,7 @@ final class OrderStatusDistributionWidget extends ChartWidget
         $cacheKey = sprintf('filament-orders.status-distribution.%s.%s', $ownerKey, $includeGlobal ? 'with-global' : 'owner-only');
 
         /** @var array<string, int> $countsByStatus */
-        $countsByStatus = Cache::remember($cacheKey, now()->addSeconds(30), function () use ($includeGlobal): array {
+        $countsByStatus = Cache::remember($cacheKey, CarbonImmutable::now()->addSeconds(30), function () use ($includeGlobal): array {
             return Order::query()
                 ->forOwner(includeGlobal: $includeGlobal)
                 ->select('status', DB::raw('COUNT(*) as aggregate'))

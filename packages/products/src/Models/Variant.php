@@ -517,7 +517,7 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
 
         static::saving(function (Variant $variant): void {
             if ($variant->isDirty('is_enabled')) {
-                $variant->deactivated_at = $variant->is_enabled ? null : now();
+                $variant->deactivated_at = $variant->is_enabled ? null : CarbonImmutable::now();
             }
         });
 

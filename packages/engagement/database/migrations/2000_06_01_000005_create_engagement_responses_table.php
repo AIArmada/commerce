@@ -9,14 +9,13 @@
 declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
         $jsonType = commerce_json_column_type('engagement', 'jsonb');
-        Schema::create(config('engagement.database.tables.responses', 'responses'), function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing(config('engagement.database.tables.responses', 'responses'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('responder_type')->index();
             $table->uuid('responder_id')->index();

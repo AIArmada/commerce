@@ -18,7 +18,7 @@ return new class extends Migration
 
         $jsonType = commerce_json_column_type('events', 'jsonb');
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('owner_type')->nullable()->index();
             $table->string('owner_id')->nullable()->index();

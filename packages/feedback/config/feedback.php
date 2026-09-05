@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'database' => [
         'table_prefix' => '',
+        'json_column_type' => env('FEEDBACK_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'forms' => 'feedback_forms',
             'sections' => 'feedback_sections',

@@ -8,6 +8,7 @@ use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\StaleSeatHoldException;
 use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Seating\Models\SeatHold;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -44,8 +45,8 @@ class ConvertHoldsToAllocationsAction
                     'allocated_to_type' => $allocToType,
                     'allocated_to_id' => $allocToId,
                     'reference' => $reference,
-                    'allocated_at' => now(),
-                    'state' => 'active',
+                    'allocated_at' => CarbonImmutable::now(),
+                    'status' => 'active',
                 ]);
 
                 $hold->markConverted();

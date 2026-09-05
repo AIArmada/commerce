@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Actions\Affiliates;
 
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Cart\Cart;
+use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class DetachAffiliateFromCart
@@ -18,6 +19,6 @@ final class DetachAffiliateFromCart
             ->where('cart_identifier', $cart->getIdentifier())
             ->where('cart_instance', $cart->instance())
             ->active()
-            ->update(['expires_at' => now()]);
+            ->update(['expires_at' => CarbonImmutable::now()]);
     }
 }

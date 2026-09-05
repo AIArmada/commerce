@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Support\Webhooks;
 use AIArmada\Affiliates\Jobs\DispatchAffiliateWebhook;
 use AIArmada\Affiliates\Models\AffiliateWebhookDelivery;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use JsonException;
@@ -25,7 +26,7 @@ class WebhookDispatcher
             'type' => $type,
             'id' => $eventId,
             'data' => $payload,
-            'sent_at' => now()->toIso8601String(),
+            'sent_at' => CarbonImmutable::now()->toIso8601String(),
         ];
         $bodyJson = $this->encode($body);
         $secret = config('affiliates.webhooks.signature_secret');
@@ -63,7 +64,7 @@ class WebhookDispatcher
                 'signature' => $signature,
                 'status' => 'pending',
                 'max_attempts' => max(1, (int) config('affiliates.webhooks.delivery.max_attempts', 5)),
-                'available_at' => now(),
+                'available_at' => CarbonImmutable::now(),
                 'owner_type' => $owner?->getMorphClass(),
                 'owner_id' => $owner?->getKey(),
             ]);

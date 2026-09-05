@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -92,8 +93,8 @@ final class AllocateUplineCommissions
                         ],
                         'owner_type' => $current->owner_type,
                         'owner_id' => $current->owner_id,
-                        'occurred_at' => now(),
-                        'approved_at' => $autoApprove ? now() : null,
+                        'occurred_at' => CarbonImmutable::now(),
+                        'approved_at' => $autoApprove ? CarbonImmutable::now() : null,
                     ]);
 
                     $this->accounting->handle($model);

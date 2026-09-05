@@ -9,6 +9,7 @@ use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Collection;
@@ -75,7 +76,7 @@ final class TotalMrrWidget extends StatsOverviewWidget
                     ->with('items')
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', now());
+                            ->orWhere('ends_at', '>', CarbonImmutable::now());
                     });
 
                 $stripeQuery->chunk(200, function (Collection $chunk) use (&$count, &$mrrByCurrency): void {
@@ -98,7 +99,7 @@ final class TotalMrrWidget extends StatsOverviewWidget
                     ->with('items')
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', now());
+                            ->orWhere('ends_at', '>', CarbonImmutable::now());
                     });
 
                 $chipQuery->chunk(200, function (Collection $chunk) use (&$count, &$mrrByCurrency): void {

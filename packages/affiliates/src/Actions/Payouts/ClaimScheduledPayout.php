@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -41,7 +42,7 @@ final class ClaimScheduledPayout
         if ($affiliate->payoutHolds()
             ->whereNull('released_at')
             ->where(static function ($query): void {
-                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', CarbonImmutable::now());
             })
             ->exists()) {
             return false;
@@ -85,7 +86,7 @@ final class ClaimScheduledPayout
             $activeHold = $affiliate->payoutHolds()
                 ->whereNull('released_at')
                 ->where(function ($query): void {
-                    $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                    $query->whereNull('expires_at')->orWhere('expires_at', '>', CarbonImmutable::now());
                 })
                 ->lockForUpdate()
                 ->first();
@@ -123,8 +124,8 @@ final class ClaimScheduledPayout
                 'amount_minor' => $amountMinor,
                 'currency' => mb_strtoupper($balance->currency),
                 'payout_sequence' => $sequence,
-                'claimed_at' => now(),
-                'lease_expires_at' => now()->addMinutes(5),
+                'claimed_at' => CarbonImmutable::now(),
+                'lease_expires_at' => CarbonImmutable::now()->addMinutes(5),
                 'owner_type' => $affiliate->owner_type,
                 'owner_id' => $affiliate->owner_id,
             ]);
@@ -140,7 +141,7 @@ final class ClaimScheduledPayout
                 'conversion_count' => count($conversionIds),
                 'currency' => mb_strtoupper($balance->currency),
                 'status' => PendingPayout::value(),
-                'scheduled_at' => now(),
+                'scheduled_at' => CarbonImmutable::now(),
             ]);
 
             $balance->forceFill([

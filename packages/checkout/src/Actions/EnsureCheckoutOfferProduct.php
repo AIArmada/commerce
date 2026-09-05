@@ -19,9 +19,10 @@ final class EnsureCheckoutOfferProduct
     public function handle(CheckoutOfferProductData $offer): Product
     {
         return OwnerContext::withOwner(null, function () use ($offer): Product {
-            $product = Product::query()->firstOrNew([
-                'slug' => $offer->productSlug,
-            ]);
+            $product = Product::query()->createOrFirst(
+                ['slug' => $offer->productSlug],
+                ['name' => $offer->name],
+            );
             $supportsVariants = $offer->supportsVariants ?? $offer->productType->supportsVariantsByDefault();
             $tracksInventory = $offer->tracksInventory ?? $offer->productType->tracksInventoryByDefault();
 
@@ -47,7 +48,7 @@ final class EnsureCheckoutOfferProduct
             $product->supports_variants = $supportsVariants;
             $product->tracks_inventory = $tracksInventory;
 
-            if (! $product->exists && $product->published_at === null) {
+            if ($product->wasRecentlyCreated && $product->published_at === null) {
                 $product->published_at = CarbonImmutable::now();
             }
 
@@ -55,9 +56,10 @@ final class EnsureCheckoutOfferProduct
                 $product->save();
             }
 
-            $priceList = PriceList::query()->firstOrNew([
-                'slug' => $offer->priceListSlug,
-            ]);
+            $priceList = PriceList::query()->createOrFirst(
+                ['slug' => $offer->priceListSlug],
+                ['name' => $offer->priceListName],
+            );
 
             $priceList->fill([
                 'name' => $offer->priceListName,
@@ -72,12 +74,19 @@ final class EnsureCheckoutOfferProduct
                 $priceList->save();
             }
 
-            $price = Price::query()->firstOrNew([
-                'price_list_id' => $priceList->getKey(),
-                'priceable_type' => $product->getMorphClass(),
-                'priceable_id' => $product->getKey(),
-                'min_quantity' => 1,
-            ]);
+            $price = Price::query()->createOrFirst(
+                [
+                    'price_list_id' => $priceList->getKey(),
+                    'priceable_type' => $product->getMorphClass(),
+                    'priceable_id' => $product->getKey(),
+                    'min_quantity' => 1,
+                ],
+                [
+                    'amount' => $offer->priceAmount,
+                    'compare_amount' => $offer->compareAmount,
+                    'currency' => $offer->currency,
+                ],
+            );
 
             $price->fill([
                 'amount' => $offer->priceAmount,

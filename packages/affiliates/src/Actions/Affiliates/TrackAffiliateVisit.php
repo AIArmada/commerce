@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -69,10 +70,10 @@ final class TrackAffiliateVisit
             }
 
             $attribution = new AffiliateAttribution($payload);
-            $attribution->first_seen_at = now();
+            $attribution->first_seen_at = CarbonImmutable::now();
         }
 
-        $attribution->last_cookie_seen_at = now();
+        $attribution->last_cookie_seen_at = CarbonImmutable::now();
         $attribution->expires_at = $payload['expires_at'];
         $attribution->save();
 
@@ -85,7 +86,7 @@ final class TrackAffiliateVisit
         $ttl = (int) config('affiliates.tracking.attribution_ttl_days', 30);
 
         if ($ttl > 0) {
-            $expiresAt = now()->addDays($ttl);
+            $expiresAt = CarbonImmutable::now()->addDays($ttl);
         }
 
         $subjectType = $context['subject_type'] ?? null;
@@ -208,7 +209,7 @@ final class TrackAffiliateVisit
         $hits = (int) Cache::store()->increment($key);
 
         if ($hits === 1) {
-            Cache::store()->put($key, $hits, now()->addMinutes($decay));
+            Cache::store()->put($key, $hits, CarbonImmutable::now()->addMinutes($decay));
         }
 
         return $hits > $max;

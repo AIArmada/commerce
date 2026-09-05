@@ -56,7 +56,7 @@ it('prevents cross-tenant writes via order_id on child models', function (): voi
         'name' => 'Widget',
         'quantity' => 1,
         'weight_grams' => 100,
-        'unit_price' => '10.00',
+        'unit_price_minor' => 1000,
         'currency' => 'MYR',
     ]))->toThrow(InvalidArgumentException::class);
 
@@ -82,7 +82,7 @@ it('prevents cross-tenant writes via order_id on child models', function (): voi
         'name' => 'Widget',
         'quantity' => 1,
         'weight_grams' => 100,
-        'unit_price' => '10.00',
+        'unit_price_minor' => 1000,
         'currency' => 'MYR',
     ]);
 

@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -124,7 +125,7 @@ class PriceList extends Model implements Auditable
      */
     public function scopeActive(Builder $query): Builder
     {
-        $now = now();
+        $now = CarbonImmutable::now();
 
         return $query->where('is_active', true)
             ->where(function ($q) use ($now): void {
@@ -182,7 +183,7 @@ class PriceList extends Model implements Auditable
             return false;
         }
 
-        $now = now();
+        $now = CarbonImmutable::now();
 
         if ($this->starts_at && $this->starts_at > $now) {
             return false;

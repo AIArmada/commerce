@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Enums\TaxDocumentStatus;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -105,7 +106,7 @@ class AffiliateTaxDocument extends Model implements Auditable
         $this->update([
             'status' => TaxDocumentStatus::Generated,
             'document_path' => $path,
-            'generated_at' => now(),
+            'generated_at' => CarbonImmutable::now(),
         ]);
     }
 
@@ -113,7 +114,7 @@ class AffiliateTaxDocument extends Model implements Auditable
     {
         $this->update([
             'status' => TaxDocumentStatus::Sent,
-            'sent_at' => now(),
+            'sent_at' => CarbonImmutable::now(),
         ]);
     }
 

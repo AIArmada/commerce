@@ -9,6 +9,7 @@ use AIArmada\Cart\Models\CartItem;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\Ticketing\Support\Integration\TicketingIntegration;
+use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -69,14 +70,14 @@ final class AddTicketTypeToCartAction
             ));
         }
 
-        if ($ticketType->sales_starts_at !== null && now()->isBefore($ticketType->sales_starts_at)) {
+        if ($ticketType->sales_starts_at !== null && CarbonImmutable::now()->isBefore($ticketType->sales_starts_at)) {
             throw new InvalidArgumentException(sprintf(
                 'Sales for "%s" have not started yet.',
                 $ticketType->name,
             ));
         }
 
-        if ($ticketType->sales_ends_at !== null && now()->isAfter($ticketType->sales_ends_at)) {
+        if ($ticketType->sales_ends_at !== null && CarbonImmutable::now()->isAfter($ticketType->sales_ends_at)) {
             throw new InvalidArgumentException(sprintf(
                 'Sales for "%s" have ended.',
                 $ticketType->name,

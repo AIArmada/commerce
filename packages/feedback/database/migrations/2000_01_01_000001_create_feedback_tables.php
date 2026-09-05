@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -17,7 +16,7 @@ return new class extends Migration
         };
 
         // feedback_forms
-        Schema::create(config('feedback.database.tables.forms', 'feedback_forms'), function (Blueprint $table) use ($addJsonColumn): void {
+        commerce_schema_create_if_missing(config('feedback.database.tables.forms', 'feedback_forms'), function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 
@@ -52,7 +51,7 @@ return new class extends Migration
         });
 
         // feedback_sections
-        Schema::create(config('feedback.database.tables.sections', 'feedback_sections'), function (Blueprint $table) use ($addJsonColumn): void {
+        commerce_schema_create_if_missing(config('feedback.database.tables.sections', 'feedback_sections'), function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 
@@ -71,7 +70,7 @@ return new class extends Migration
         });
 
         // feedback_questions
-        Schema::create(config('feedback.database.tables.questions', 'feedback_questions'), function (Blueprint $table) use ($addJsonColumn): void {
+        commerce_schema_create_if_missing(config('feedback.database.tables.questions', 'feedback_questions'), function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 
@@ -102,7 +101,7 @@ return new class extends Migration
         });
 
         // feedback_question_options
-        Schema::create(config('feedback.database.tables.question_options', 'feedback_question_options'), function (Blueprint $table) use ($addJsonColumn): void {
+        commerce_schema_create_if_missing(config('feedback.database.tables.question_options', 'feedback_question_options'), function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 
@@ -121,7 +120,7 @@ return new class extends Migration
         });
 
         // feedback_responses
-        Schema::create(config('feedback.database.tables.responses', 'feedback_responses'), function (Blueprint $table) use ($addJsonColumn): void {
+        commerce_schema_create_if_missing(config('feedback.database.tables.responses', 'feedback_responses'), function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 
@@ -156,7 +155,7 @@ return new class extends Migration
         });
 
         // feedback_answers
-        Schema::create(config('feedback.database.tables.answers', 'feedback_answers'), function (Blueprint $table) use ($addJsonColumn): void {
+        commerce_schema_create_if_missing(config('feedback.database.tables.answers', 'feedback_answers'), function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 
@@ -183,7 +182,7 @@ return new class extends Migration
         });
 
         // feedback_invitations
-        Schema::create(config('feedback.database.tables.invitations', 'feedback_invitations'), function (Blueprint $table) use ($addJsonColumn): void {
+        commerce_schema_create_if_missing(config('feedback.database.tables.invitations', 'feedback_invitations'), function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 
@@ -210,7 +209,7 @@ return new class extends Migration
         });
 
         // feedback_templates
-        Schema::create(config('feedback.database.tables.templates', 'feedback_templates'), function (Blueprint $table) use ($addJsonColumn): void {
+        commerce_schema_create_if_missing(config('feedback.database.tables.templates', 'feedback_templates'), function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 
@@ -233,7 +232,7 @@ return new class extends Migration
         });
 
         // feedback_testimonials
-        Schema::create(config('feedback.database.tables.testimonials', 'feedback_testimonials'), function (Blueprint $table) use ($addJsonColumn): void {
+        commerce_schema_create_if_missing(config('feedback.database.tables.testimonials', 'feedback_testimonials'), function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 

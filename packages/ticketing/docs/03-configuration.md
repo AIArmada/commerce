@@ -91,12 +91,26 @@ Use the `commerce_json_column_type('ticketing', 'jsonb')` helper in migrations.
 ```php
 'features' => [
     'auto_issue_passes' => env('TICKETING_AUTO_ISSUE_PASSES', true),
+    'owner' => [
+        'enabled' => env('TICKETING_OWNER_ENABLED', true),
+        'include_global' => false,
+        'auto_assign_on_create' => env('TICKETING_OWNER_AUTO_ASSIGN', true),
+    ],
 ],
 ```
 
 | Key | Description |
 |-----|-------------|
 | `auto_issue_passes` | Automatically issue passes when an order is paid (requires `aiarmada/orders`) |
+| `owner.enabled` | Enforce the current `commerce-support` owner context on ticketing models |
+| `owner.include_global` | Whether owner-scoped reads include global rows; ticketing keeps this disabled |
+| `owner.auto_assign_on_create` | Assign the current owner to newly-created ticketing rows |
+
+Ticket types, components, product and seating options, passes, pass holders, and
+pass transfers are owner-scoped. Owner context is required for owner-enabled
+reads and writes; global operations must be wrapped in an explicit
+`OwnerContext::withOwner(null, ...)` scope. Existing rows with no owner are not
+implicitly visible to tenants.
 
 ## Events
 
@@ -123,6 +137,8 @@ TICKETING_TRANSFER_EXPIRY_GRACE=0
 TICKETING_FROM_ADDRESS=tickets@example.com
 TICKETING_FROM_NAME=Ticketing
 TICKETING_AUTO_ISSUE_PASSES=true
+TICKETING_OWNER_ENABLED=true
+TICKETING_OWNER_AUTO_ASSIGN=true
 TICKETING_PRICING_CONSISTENCY_CHECK=true
 ```
 
@@ -171,9 +187,14 @@ Schema::table('ticket_passes', function (Blueprint $table) {
 
 ### Owner Scoping
 
-Owner context is provided by `commerce-support`. Passes store the owner tuple directly; ticket types are scoped through their ticketable model, and pass holders/transfers are scoped through their pass.
+Owner context is provided by `commerce-support`. All ticketing models store the
+owner tuple directly and enforce it through the shared owner scope. Related
+ticketable, product, variant, section, holder, and registration models are
+validated when they are owner-aware.
 
-Cross-tenant access requires an explicit opt-out such as `withoutOwnerScope()` on owner-aware models, or an owner-safe query on the related ticketable/pass model.
+Cross-tenant access is not available through ordinary package queries. A system
+operation must explicitly select the required owner context or use the shared
+owner-scope opt-out in code that is intentionally cross-tenant.
 
 ## Read next
 

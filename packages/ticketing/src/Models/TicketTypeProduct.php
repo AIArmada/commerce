@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Ticketing\Database\Factories\TicketTypeProductFactory;
+use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,6 +18,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property string|null $ticket_type_id
  * @property string|null $product_type
  * @property string|null $product_id
@@ -33,11 +38,26 @@ use Illuminate\Support\Carbon;
 class TicketTypeProduct extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'ticketing.features.owner';
 
     protected static function newFactory(): TicketTypeProductFactory
     {
         return TicketTypeProductFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $product): void {
+            TicketingOwnerGuard::assertRelations($product, [
+                ['relation' => 'ticketType'],
+                ['relation' => 'product'],
+                ['relation' => 'variant'],
+            ]);
+        });
     }
 
     public $incrementing = false;

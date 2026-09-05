@@ -10,6 +10,7 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Support\CartOwnerScope;
+use Carbon\CarbonImmutable;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -241,7 +242,7 @@ final class MigrateGuestCartToUserAction
 
         $sourceQuery->update([
             'merged_into_id' => $targetCart->id,
-            'updated_at' => now(),
+            'updated_at' => CarbonImmutable::now(),
         ]);
     }
 

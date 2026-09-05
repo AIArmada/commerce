@@ -8,6 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Events\Concerns\HasCartEventData;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
+use Carbon\CarbonImmutable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -98,7 +99,7 @@ final class ItemAdded implements CartEventInterface
             'price' => $this->item->price,
             'identifier' => $this->cart->getIdentifier(),
             'instance_name' => $this->cart->instance(),
-            'timestamp' => now()->toISOString(),
+            'timestamp' => CarbonImmutable::now()->toISOString(),
         ];
     }
 }

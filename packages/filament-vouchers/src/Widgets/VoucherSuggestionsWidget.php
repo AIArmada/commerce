@@ -14,6 +14,7 @@ use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\VoucherStatus;
+use Carbon\CarbonImmutable;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
@@ -81,11 +82,11 @@ final class VoucherSuggestionsWidget extends Widget
                 ->where('status', VoucherStatus::normalize(Active::class))
                 ->where(function ($query): void {
                     $query->whereNull('starts_at')
-                        ->orWhere('starts_at', '<=', now());
+                        ->orWhere('starts_at', '<=', CarbonImmutable::now());
                 })
                 ->where(function ($query): void {
                     $query->whereNull('expires_at')
-                        ->orWhere('expires_at', '>=', now());
+                        ->orWhere('expires_at', '>=', CarbonImmutable::now());
                 })
                 ->where(function ($query): void {
                     // Unlimited usage, or still has remaining uses.

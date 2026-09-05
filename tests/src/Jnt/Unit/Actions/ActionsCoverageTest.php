@@ -51,14 +51,14 @@ describe('CreateOrder action', function (): void {
                 name: 'Test Product',
                 quantity: 1,
                 weight: 500,
-                price: 29.99,
+                priceMinor: 2999,
             ),
         ];
 
         $packageInfo = new PackageInfoData(
             quantity: 1,
             weight: 500,
-            value: 29.99,
+            valueMinor: 2999,
             goodsType: 'ITN8',
             length: 10,
             width: 10,

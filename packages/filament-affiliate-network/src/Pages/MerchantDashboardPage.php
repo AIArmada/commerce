@@ -10,6 +10,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use AIArmada\FilamentAffiliateNetwork\Widgets\NetworkStatsWidget;
 use AIArmada\FilamentAffiliateNetwork\Widgets\TopOffersWidget;
 use BackedEnum;
@@ -30,6 +31,21 @@ final class MerchantDashboardPage extends Page
     protected static ?string $slug = 'affiliate-network/merchant-dashboard';
 
     protected string $view = 'filament-affiliate-network::pages.merchant-dashboard';
+
+    public static function canAccess(): bool
+    {
+        return parent::canAccess() && NetworkAdminAccess::allows();
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
+
+    public function mount(): void
+    {
+        abort_unless(static::canAccess(), 403);
+    }
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {

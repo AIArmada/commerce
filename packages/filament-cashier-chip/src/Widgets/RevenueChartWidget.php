@@ -7,8 +7,8 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Carbon;
 
 final class RevenueChartWidget extends ChartWidget
 {
@@ -83,7 +83,7 @@ final class RevenueChartWidget extends ChartWidget
         $newRevenue = [];
 
         for ($i = 11; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i);
+            $date = CarbonImmutable::now()->subMonths($i);
             $labels[] = $date->format('M Y');
 
             $startOfMonth = $date->copy()->startOfMonth();
@@ -96,11 +96,11 @@ final class RevenueChartWidget extends ChartWidget
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>=', $startOfMonth);
                 })
-                ->with('items')
+                ->withSum('items', 'unit_amount')
                 ->get()
                 ->sum(function (Subscription $subscription): int {
                     return $this->normalizeToMonthly(
-                        $subscription->items->sum('unit_amount') * ($subscription->quantity ?? 1),
+                        (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
                         $subscription->billing_interval ?? 'month',
                         $subscription->billing_interval_count ?? 1
                     );
@@ -110,11 +110,11 @@ final class RevenueChartWidget extends ChartWidget
 
             $newSubscriptionsRevenue = $this->subscriptionQuery()
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->with('items')
+                ->withSum('items', 'unit_amount')
                 ->get()
                 ->sum(function (Subscription $subscription): int {
                     return $this->normalizeToMonthly(
-                        $subscription->items->sum('unit_amount') * ($subscription->quantity ?? 1),
+                        (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
                         $subscription->billing_interval ?? 'month',
                         $subscription->billing_interval_count ?? 1
                     );

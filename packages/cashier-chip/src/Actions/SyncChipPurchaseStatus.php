@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\Chip\Data\PurchaseData;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -104,7 +105,7 @@ final class SyncChipPurchaseStatus
 
             $subscription->forceFill([
                 'chip_status' => 'active',
-                'next_billing_at' => now()->add($interval, $count),
+                'next_billing_at' => CarbonImmutable::now()->add($interval, $count),
             ])->save();
         }
     }

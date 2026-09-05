@@ -21,7 +21,7 @@ return new class extends Migration
         $itemsTable = $tables['subscription_items'] ?? $tablePrefix . 'subscription_items';
 
         if (! Schema::hasTable($subscriptionsTable)) {
-            Schema::create($subscriptionsTable, function (Blueprint $table) use ($subscriptionsTable): void {
+            commerce_schema_create_if_missing($subscriptionsTable, function (Blueprint $table) use ($subscriptionsTable): void {
                 $table->uuid('id')->primary();
                 $table->nullableUuidMorphs('owner');
                 $table->uuidMorphs('billable');
@@ -59,7 +59,7 @@ return new class extends Migration
         }
 
         if (! Schema::hasTable($itemsTable)) {
-            Schema::create($itemsTable, function (Blueprint $table): void {
+            commerce_schema_create_if_missing($itemsTable, function (Blueprint $table): void {
                 $table->uuid('id')->primary();
                 $table->nullableUuidMorphs('owner');
                 $table->foreignUuid('subscription_id');

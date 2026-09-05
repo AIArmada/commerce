@@ -17,7 +17,7 @@ return new class extends Migration
         $sequencesTable = $tables['doc_sequences'] ?? $tablePrefix . 'sequences';
         $numbersTable = $tables['sequence_numbers'] ?? $tablePrefix . 'sequence_numbers';
 
-        Schema::create($sequencesTable, function (Blueprint $table) use ($sequencesTable): void {
+        commerce_schema_create_if_missing($sequencesTable, function (Blueprint $table) use ($sequencesTable): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('doc_type');
@@ -35,7 +35,7 @@ return new class extends Migration
             $table->index('owner_type', $sequencesTable . '_owner_type_index');
         });
 
-        Schema::create($numbersTable, function (Blueprint $table) use ($numbersTable): void {
+        commerce_schema_create_if_missing($numbersTable, function (Blueprint $table) use ($numbersTable): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->foreignUuid('doc_sequence_id');

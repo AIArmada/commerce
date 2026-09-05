@@ -13,7 +13,6 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
 use AIArmada\Pricing\Models\Price;
-use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Contracts\Buyable;
 use AIArmada\Products\Contracts\Inventoryable;
 use AIArmada\Products\Contracts\Priceable;
@@ -378,6 +377,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         return SlugOptions::create()
             ->generateSlugsFrom('name')
             ->saveSlugsTo('slug')
+            ->preventOverwrite()
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan((int) config('products.seo.slug_max_length', 100));
     }
@@ -458,7 +458,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     public function activate(): self
     {
         $this->status = ProductStatus::Active;
-        $this->published_at ??= now();
+        $this->published_at ??= CarbonImmutable::now();
         $this->deactivated_at = null;
         $this->archived_at = null;
         $this->save();
@@ -469,7 +469,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     public function archive(): self
     {
         $this->status = ProductStatus::Archived;
-        $this->archived_at = now();
+        $this->archived_at = CarbonImmutable::now();
         $this->deactivated_at = null;
         $this->save();
 
@@ -479,7 +479,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     public function disable(): self
     {
         $this->status = ProductStatus::Disabled;
-        $this->deactivated_at = now();
+        $this->deactivated_at = CarbonImmutable::now();
         $this->archived_at = null;
         $this->save();
 
@@ -826,7 +826,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::updated(function (Product $product): void {
-            if ($product->wasChanged('status') && ! UpdateProductStatus::isHandlingStatusChange()) {
+            if ($product->wasChanged('status')) {
                 /** @var ProductStatus|null $oldStatus */
                 $oldStatus = $product->getOriginal('status');
                 $newStatus = $product->status;

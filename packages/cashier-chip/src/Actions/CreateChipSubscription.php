@@ -10,7 +10,7 @@ use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -89,7 +89,7 @@ final class CreateChipSubscription
                 'coupon_id' => $couponId,
                 'coupon_discount' => $couponDiscount,
                 'coupon_duration' => $couponDuration,
-                'coupon_applied_at' => $couponId ? Carbon::now() : null,
+                'coupon_applied_at' => $couponId ? CarbonImmutable::now() : null,
             ]);
 
             $effectiveRecurringToken = $recurringToken ?? $owner->defaultPaymentMethod()?->id();

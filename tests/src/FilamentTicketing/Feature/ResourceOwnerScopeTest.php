@@ -14,6 +14,7 @@ use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 use AIArmada\Ticketing\Models\PassTransfer;
 use AIArmada\Ticketing\Models\TicketType;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -54,14 +55,14 @@ it('scopes ticketing resources to the current owner', function (): void {
     $ticketableA = OwnerContext::withOwner($ownerA, fn (): OwnedTicketable => OwnedTicketable::query()->create(['name' => 'Owner A ticketable']));
     $ticketableB = OwnerContext::withOwner($ownerB, fn (): OwnedTicketable => OwnedTicketable::query()->create(['name' => 'Owner B ticketable']));
 
-    $ticketTypeA = TicketType::factory()->create([
+    $ticketTypeA = OwnerContext::withOwner($ownerA, fn (): TicketType => TicketType::factory()->create([
         'ticketable_type' => $ticketableA->getMorphClass(),
         'ticketable_id' => $ticketableA->id,
-    ]);
-    $ticketTypeB = TicketType::factory()->create([
+    ]));
+    $ticketTypeB = OwnerContext::withOwner($ownerB, fn (): TicketType => TicketType::factory()->create([
         'ticketable_type' => $ticketableB->getMorphClass(),
         'ticketable_id' => $ticketableB->id,
-    ]);
+    ]));
 
     $passA = OwnerContext::withOwner($ownerA, fn (): Pass => Pass::factory()->create([
         'ticketable_type' => $ticketableA->getMorphClass(),
@@ -74,19 +75,23 @@ it('scopes ticketing resources to the current owner', function (): void {
         'ticket_type_id' => $ticketTypeB->id,
     ]));
 
-    $holderA = PassHolder::factory()->create(['pass_id' => $passA->id]);
-    $holderB = PassHolder::factory()->create(['pass_id' => $passB->id]);
+    $holderA = OwnerContext::withOwner($ownerA, fn (): PassHolder => PassHolder::factory()->create(['pass_id' => $passA->id]));
+    $holderB = OwnerContext::withOwner($ownerB, fn (): PassHolder => PassHolder::factory()->create(['pass_id' => $passB->id]));
 
-    $transferA = PassTransfer::factory()->create([
-        'pass_id' => $passA->id,
-        'from_holder_id' => $holderA->id,
-        'to_holder_id' => PassHolder::factory()->create(['pass_id' => $passA->id])->id,
-    ]);
-    $transferB = PassTransfer::factory()->create([
-        'pass_id' => $passB->id,
-        'from_holder_id' => $holderB->id,
-        'to_holder_id' => PassHolder::factory()->create(['pass_id' => $passB->id])->id,
-    ]);
+    $transferA = OwnerContext::withOwner($ownerA, function () use ($passA, $holderA): PassTransfer {
+        return PassTransfer::factory()->create([
+            'pass_id' => $passA->id,
+            'from_holder_id' => $holderA->id,
+            'to_holder_id' => PassHolder::factory()->create(['pass_id' => $passA->id])->id,
+        ]);
+    });
+    $transferB = OwnerContext::withOwner($ownerB, function () use ($passB, $holderB): PassTransfer {
+        return PassTransfer::factory()->create([
+            'pass_id' => $passB->id,
+            'from_holder_id' => $holderB->id,
+            'to_holder_id' => PassHolder::factory()->create(['pass_id' => $passB->id])->id,
+        ]);
+    });
 
     expect(OwnerContext::withOwner($ownerA, fn (): array => TicketTypeResource::getEloquentQuery()->pluck('id')->all()))
         ->toBe([$ticketTypeA->id])
@@ -103,4 +108,24 @@ it('scopes ticketing resources to the current owner', function (): void {
         ->toBe([$transferA->id])
         ->and(OwnerContext::withOwner($ownerB, fn (): array => PassTransferResource::getEloquentQuery()->pluck('id')->all()))
         ->toBe([$transferB->id]);
+});
+
+it('blocks direct child writes that reference another owner', function (): void {
+    $ownerA = User::query()->create([
+        'name' => 'Owner A',
+        'email' => 'filament-ticketing-write-owner-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Owner B',
+        'email' => 'filament-ticketing-write-owner-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    $passB = OwnerContext::withOwner($ownerB, fn (): Pass => Pass::factory()->create());
+
+    expect(fn () => OwnerContext::withOwner($ownerA, fn () => PassHolder::factory()->create([
+        'pass_id' => $passB->id,
+    ])))->toThrow(AuthorizationException::class);
 });

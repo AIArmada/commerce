@@ -6,7 +6,6 @@ namespace AIArmada\Membership\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Database\Eloquent\Model;
-use InvalidArgumentException;
 
 final class MembershipSubjectGuard
 {
@@ -16,9 +15,6 @@ final class MembershipSubjectGuard
             return;
         }
 
-        try {
-            OwnerWriteGuard::findOrFailForOwner($subject::class, $subject->getKey());
-        } catch (InvalidArgumentException) {
-        }
+        OwnerWriteGuard::findOrFailForOwner($subject::class, $subject->getKey());
     }
 }

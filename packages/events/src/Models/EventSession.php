@@ -10,7 +10,6 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Database\Factories\EventSessionFactory;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Concerns\RegistersEventMedia;
-use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Seating\Models\SeatMap;
@@ -21,6 +20,7 @@ use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -95,11 +95,11 @@ final class EventSession extends Model implements HasMedia
     use HasFactory;
     use HasSocialProfiles;
     use HasStates;
+    use HasUuids;
     use InteractsWithMedia, RegistersEventMedia {
         RegistersEventMedia::registerMediaCollections insteadof InteractsWithMedia;
         RegistersEventMedia::registerMediaConversions insteadof InteractsWithMedia;
     }
-    use UsesEventUuid;
 
     public const DRAFT = 'draft';
 

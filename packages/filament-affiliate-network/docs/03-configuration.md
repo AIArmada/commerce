@@ -15,6 +15,10 @@ return [
         'sort' => 50,
     ],
 
+    'authorization' => [
+        'admin_ability' => 'affiliate-network.admin',
+    ],
+
     'marketplace' => [
         'show_commission_rates' => true,
         'show_cookie_duration' => true,
@@ -30,6 +34,18 @@ return [
 |-----|-------------|---------|
 | `group` | Navigation group name | `Affiliate Network` |
 | `sort` | Navigation sort order | `50` |
+
+### Authorization
+
+| Key | Description | Default |
+|-----|-------------|---------|
+| `admin_ability` | Gate ability required for the network-wide resources, merchant dashboard, and reporting widgets | `affiliate-network.admin` |
+
+The host application must authorize this ability. The guarded surfaces intentionally bypass tenant scopes because they are global network administration surfaces.
+
+```php
+Gate::define('affiliate-network.admin', fn (User $user): bool => $user->is_admin);
+```
 
 ### Marketplace
 

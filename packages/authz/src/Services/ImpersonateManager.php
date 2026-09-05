@@ -16,7 +16,7 @@ use Throwable;
  * ImpersonateManager service.
  *
  * Manages user impersonation using session-based state tracking.
- * Uses custom SessionGuard methods to avoid CSRF token regeneration.
+ * Uses custom SessionGuard methods to switch identities without auth events.
  */
 class ImpersonateManager
 {
@@ -127,11 +127,15 @@ class ImpersonateManager
             $this->writeImpersonationState($from, $sourceGuardName, $targetGuardName, $backTo);
             $this->switchIdentity($sourceGuardName, $targetGuardName, $to);
             $this->app['events']->dispatch(new TakeImpersonation($from, $to));
-            $this->rotateSessionId();
             session()->save();
         } catch (Throwable $exception) {
-            $this->restoreUser($from, $sourceGuardName);
-            session()->forget('password_hash_' . $targetGuardName);
+            $this->clearGuardIdentity($targetGuardName);
+            $restored = $this->restoreUser($from, $sourceGuardName);
+
+            if (! $restored) {
+                $this->clearGuardIdentity($sourceGuardName);
+            }
+
             $this->clear();
             session()->save();
             report($exception);
@@ -173,11 +177,18 @@ class ImpersonateManager
             $this->app['events']->dispatch(new LeaveImpersonation($impersonator, $impersonated));
             $this->clear();
             session()->forget('password_hash_' . $impersonatedGuardName);
-            $this->rotateSessionId();
             session()->save();
         } catch (Throwable $exception) {
-            $this->restoreUser($impersonated, $impersonatedGuardName);
-            $this->writeImpersonationState($impersonator, $impersonatorGuardName, $impersonatedGuardName, $backTo);
+            $this->clearGuardIdentity($impersonatorGuardName);
+            $restored = $this->restoreUser($impersonated, $impersonatedGuardName);
+
+            if ($restored) {
+                $this->writeImpersonationState($impersonator, $impersonatorGuardName, $impersonatedGuardName, $backTo);
+            } else {
+                $this->clearGuardIdentity($impersonatedGuardName);
+                $this->clear();
+            }
+
             session()->save();
             report($exception);
 
@@ -294,6 +305,7 @@ class ImpersonateManager
         }
 
         $this->updatePasswordHashInSession($target, $targetGuardName);
+        $this->rotateSessionId();
     }
 
     private function rotateSessionId(): void
@@ -359,7 +371,7 @@ class ImpersonateManager
         session()->put('password_hash_' . $guardName, $hashedPassword);
     }
 
-    private function restoreUser(Authenticatable $user, string $guardName): void
+    private function restoreUser(Authenticatable $user, string $guardName): bool
     {
         try {
             $guard = $this->app['auth']->guard($guardName);
@@ -369,10 +381,29 @@ class ImpersonateManager
             } else {
                 $guard->setUser($user);
                 session()->put($this->getAuthSessionKey($guardName), $user->getAuthIdentifier());
+                session()->migrate(true);
             }
 
             $this->updatePasswordHashInSession($user, $guardName);
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return false;
         }
+
+        return true;
+    }
+
+    private function clearGuardIdentity(string $guardName): void
+    {
+        try {
+            $guard = $this->app['auth']->guard($guardName);
+            $guard->setUser(null);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        session()->forget($this->getAuthSessionKey($guardName));
+        session()->forget('password_hash_' . $guardName);
     }
 }

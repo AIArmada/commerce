@@ -68,7 +68,7 @@ class SeatHold extends Model
 
     public function isExpired(): bool
     {
-        return now()->greaterThan($this->expires_at);
+        return $this->expires_at?->isPast() ?? false;
     }
 
     /** @return BelongsTo<Seat, $this> */
@@ -84,7 +84,7 @@ class SeatHold extends Model
 
     public function markConverted(): void
     {
-        $this->update(['converted_at' => now()]);
+        $this->update(['converted_at' => CarbonImmutable::now()]);
     }
 
     public function heldBy(): MorphTo

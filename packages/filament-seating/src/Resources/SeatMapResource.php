@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSeating\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use BackedEnum;
 use Filament\Actions\EditAction;
@@ -40,7 +41,8 @@ final class SeatMapResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->withCount('sections');
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false)
+            ->withCount('sections');
     }
 
     public static function form(Schema $schema): Schema

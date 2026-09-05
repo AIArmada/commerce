@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Traits;
 
 use AIArmada\Communications\Models\NotificationInbox;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasInbox
@@ -35,14 +36,14 @@ trait HasInbox
         $this->notificationInboxes()
             ->where('id', $inboxId)
             ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+            ->update(['read_at' => CarbonImmutable::now()]);
     }
 
     public function markAllAsRead(): void
     {
         $this->notificationInboxes()
             ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+            ->update(['read_at' => CarbonImmutable::now()]);
     }
 
     public function archiveRead(): void
@@ -50,7 +51,7 @@ trait HasInbox
         $this->notificationInboxes()
             ->whereNotNull('read_at')
             ->whereNull('archived_at')
-            ->where('created_at', '<', now()->subDays(30))
-            ->update(['archived_at' => now()]);
+            ->where('created_at', '<', CarbonImmutable::now()->subDays(30))
+            ->update(['archived_at' => CarbonImmutable::now()]);
     }
 }
