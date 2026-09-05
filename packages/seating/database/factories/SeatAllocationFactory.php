@@ -19,7 +19,7 @@ final class SeatAllocationFactory extends Factory
             'seat_id' => Seat::factory(),
             'allocated_to_type' => 'pass',
             'allocated_to_id' => (string) Str::orderedUuid(),
-            'state' => 'active',
+            'status' => 'active',
             'allocated_at' => now(),
         ];
     }
@@ -27,7 +27,7 @@ final class SeatAllocationFactory extends Factory
     public function released(): self
     {
         return $this->state(fn (): array => [
-            'state' => 'released',
+            'status' => 'released',
             'released_at' => now(),
         ]);
     }
@@ -35,7 +35,7 @@ final class SeatAllocationFactory extends Factory
     public function revoked(): self
     {
         return $this->state(fn (): array => [
-            'state' => 'revoked',
+            'status' => 'revoked',
             'revoked_at' => now(),
         ]);
     }

@@ -85,9 +85,10 @@ describe('CancelShipment Action', function (): void {
         $manager->shouldReceive('driver')->with('null')->andReturn($mockDriver);
 
         $action = new CancelShipment($manager);
-        $result = $action->handle($shipment, 'Carrier unavailable');
+        expect(fn () => $action->handle($shipment, 'Carrier unavailable'))
+            ->toThrow(RuntimeException::class, 'Carrier API unavailable');
 
-        expect($result->status)->not->toBeInstanceOf(Cancelled::class);
+        expect($shipment->refresh()->status)->not->toBeInstanceOf(Cancelled::class);
 
         $operation = ShipmentOperation::where('shipment_id', $shipment->id)
             ->where('operation_type', 'cancel')

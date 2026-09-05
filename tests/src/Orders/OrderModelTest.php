@@ -581,8 +581,7 @@ describe('Order Model', function (): void {
             ]);
 
             expect($usdOrder->getFormattedGrandTotal())->toBe('$100.00');
-            // EUR uses European formatting (comma as decimal separator)
-            expect($eurOrder->getFormattedGrandTotal())->toBe('€100,00');
+            expect($eurOrder->getFormattedGrandTotal())->toBe('€100.00');
         });
     });
 

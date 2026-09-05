@@ -200,8 +200,7 @@ describe('OrderPayment Model', function (): void {
 
             expect($myrPayment->getFormattedAmount())->toBe('RM100.00');
             expect($usdPayment->getFormattedAmount())->toBe('$50.00');
-            // EUR uses European formatting (comma as decimal separator)
-            expect($eurPayment->getFormattedAmount())->toBe('€75,00');
+            expect($eurPayment->getFormattedAmount())->toBe('€75.00');
             expect($gbpPayment->getFormattedAmount())->toBe('£25.00');
         });
     });

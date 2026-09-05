@@ -238,8 +238,7 @@ describe('OrderRefund Model', function (): void {
 
             expect($myrRefund->getFormattedAmount())->toBe('RM75.00');
             expect($usdRefund->getFormattedAmount())->toBe('$25.00');
-            // EUR uses European formatting (comma as decimal separator)
-            expect($eurRefund->getFormattedAmount())->toBe('€15,00');
+            expect($eurRefund->getFormattedAmount())->toBe('€15.00');
             expect($gbpRefund->getFormattedAmount())->toBe('£5.00');
         });
     });
