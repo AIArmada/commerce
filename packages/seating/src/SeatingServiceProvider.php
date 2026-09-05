@@ -22,6 +22,7 @@ final class SeatingServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->runsMigrations()
+            ->discoversMigrations()
             ->hasCommand(ReleaseExpiredHoldsCommand::class);
     }
 

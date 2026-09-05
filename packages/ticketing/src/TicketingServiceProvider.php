@@ -40,6 +40,7 @@ final class TicketingServiceProvider extends PackageServiceProvider
             ->name('ticketing')
             ->hasConfigFile()
             ->runsMigrations()
+            ->discoversMigrations()
             ->hasCommands([
                 ExpireTransfersCommand::class,
             ]);
