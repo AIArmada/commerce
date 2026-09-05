@@ -25,3 +25,13 @@ CommerceNavigation (from commerce-support) reads config on every panel render
        ↓
 Group/item overrides applied to navigation
 ```
+
+## What else ships here
+
+- Read-only reference-data resources: `CurrencyResource`, `LanguageResource`, `TimezoneResource` (browse `commerce-support` seed data; edits belong to seeds/config, not here)
+- Config `filament-commerce-support.php`: `navigation`, `resources`
+
+## What this package does not own
+
+- Owner primitives, contracts, or the `CommerceNavigation` engine itself — see `aiarmada/commerce-support`
+- Any domain package's resources, tables, or business rules

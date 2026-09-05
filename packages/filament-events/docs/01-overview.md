@@ -49,6 +49,13 @@ Use this package for:
 | `VenueResource` | `Venue` | Manage physical venue/contact details |
 | `EventRegistrationResource` | `EventRegistration` | View registrations and participant data |
 | `EventAttendanceResource` | `EventAttendance` | View check-in and attendance records |
+| `VenueSpaceResource` | `VenueSpace` | Manage bookable spaces within a venue |
+| `EventParticipantResource` | `EventRegistrationParticipant` | Manage registration participants |
+| `EventChangeLogResource` | `EventChangeLog` | Audit log of event changes |
+| `EventTemplateResource` | `EventTemplate` | Reusable event templates |
+| `EventTaxonomyResource` / `EventTermResource` | `EventTaxonomy` / `EventTerm` | Classification taxonomies and terms |
+
+Bulk import/export is supported via `Actions\Importer\*` (registrations, sessions) and `Actions\Exporter\*` (events, occurrences, sessions, registrations, attendances, venues).
 
 ## Custom Pages
 

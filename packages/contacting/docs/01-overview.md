@@ -40,7 +40,6 @@ This package allows any model to have:
 - `HasSocialProfiles` — add to any Eloquent model to enable social profiles
 
 ## Main Actions
-
 - `CreateContactMethodAction` — create contact methods with normalization
 - `UpdateContactMethodAction` — update existing contact methods
 - `SetPrimaryContactMethodAction` — set primary contact for a type/purpose
@@ -74,3 +73,7 @@ class Customer extends Model
     use HasContactMethods;
 }
 ```
+
+## Owner scoping
+
+All three models (`ContactMethod`, `SocialProfile`, `ContactSnapshot`) are owner-scoped via `HasOwner`. Behavior is controlled by `contacting.features.owner` (`enabled`, `include_global`, `auto_assign`). Cross-tenant reads must opt out explicitly; `DB::table()` paths need `OwnerQuery` handling.

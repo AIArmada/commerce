@@ -1,49 +1,48 @@
 ---
-title: Filament Feedback Package Context
-package: aiarmada/filament-feedback
+title: Filament Feedback Context
+package: filament-feedback
 status: active
 surface: filament
 family: feedback
+keywords:
+  - filament
+  - surveys-ui
+  - nps
 ---
 
+# Filament Feedback Context
+
 ## Snapshot
-
-Composer package: `aiarmada/filament-feedback`.
-
-This package is the Filament v5 admin adapter for `aiarmada/feedback`.
-
-Start code search in:
-
-- `packages/filament-feedback/src/Resources`
-- `packages/filament-feedback/src/Pages`
-- `packages/filament-feedback/src/Widgets`
-- `packages/filament-feedback/src/Support`
-- `packages/filament-feedback/config/filament-feedback.php`
-
-Related packages:
-
-- `aiarmada/feedback`
-- `aiarmada/commerce-support`
-- `aiarmada/events`
-- `aiarmada/certificates`
-- `aiarmada/engagement`
+- Composer: `aiarmada/filament-feedback`
+- Role: Filament admin for surveys/responses/invitations/templates/testimonials + NPS dashboards.
+- Triggers: filament, surveys-ui, nps
+- Search first: `src/Resources, src/Pages, src/Widgets, config, docs`
+- Related: `feedback`, `commerce-support`
+- Paired: `feedback` (core domain owner)
 
 ## Read next
-
-- `docs/01-overview.md`
-- `docs/03-configuration.md`
-- `docs/04-usage.md`
-- `docs/99-troubleshooting.md`
-- `docs/02-installation.md`
-- `../feedback/CONTEXT.md`
-- `../commerce-support/CONTEXT.md`
+1. `docs/01-overview.md`
+2. `docs/03-configuration.md`
+3. `docs/04-usage.md`
+4. `docs/99-troubleshooting.md`
+5. `../feedback/CONTEXT.md` when the change crosses UI/domain
+6. `docs/02-installation.md` when setup or publishing changes are involved
 
 ## Guardrails
+- Adapter only: no domain models/actions/calculations. Keep all business rules in `feedback`.
+- Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope).
+- If behavior or calculations change, move them to `feedback` and keep this package UI-only.
+- Update `docs/*.md` in the same pass when public behavior or config changes.
 
-This package is an adapter only.
+## Decide fast
+- Use when: Feedback admin UI.
+- Skip when: Scoring/analytics actions — see feedback.
+- Owner/security: OwnerUiScope in queries.
 
-Do not create core feedback domain tables here.
+## Key surfaces
+- Resources: `FeedbackFormResource`, `FeedbackInvitationResource`, `FeedbackResponseResource`, `FeedbackTemplateResource`, `FeedbackTestimonialResource`
+- Config `filament-feedback.php`: `navigation`, `group`, `resources`, `enabled`, `feedback_form`, `feedback_response`, `feedback_invitation`, `feedback_template`, `feedback_testimonial`, `navigation_sort`
 
-Do not implement scoring, submission, invitation token validation, or testimonial state transitions here.
-
-All Filament resources, actions, widgets, exports, and relation managers must be owner-scoped and must call core package Actions for writes.
+## Docs map
+- Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
+- Deep dives: none — the five canonical docs cover this package

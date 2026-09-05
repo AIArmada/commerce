@@ -1,49 +1,49 @@
 ---
 title: Filament Contacting Context
-package: aiarmada/filament-contacting
+package: filament-contacting
 status: active
 surface: filament
-family: contacting
+family: foundation
+keywords:
+  - filament
+  - contacts-ui
+  - relation-manager
 ---
 
 # Filament Contacting Context
 
 ## Snapshot
-
-Composer package: `aiarmada/filament-contacting`.
-
-Role: Filament v5 adapter for `aiarmada/contacting`. Provides resources, relation managers, form schemas, table schemas, infolists, and optional import/export UI for contact methods, social profiles, and read-only contact snapshots.
-
-Start search paths:
-
-- `packages/filament-contacting/src`
-- `packages/filament-contacting/config`
-- `packages/filament-contacting/docs`
-- `packages/filament-contacting/tests`
-
-Related packages:
-
-- `packages/contacting`
-- `packages/commerce-support`, when owner scoping is enabled
-- consuming Filament packages that embed contact/social relation managers
+- Composer: `aiarmada/filament-contacting`
+- Role: Filament adapter for contact methods/social/snapshots; relation-managers-first, resources off by default.
+- Triggers: filament, contacts-ui, relation-manager
+- Search first: `src/Resources, src/Schemas, config, docs`
+- Related: `contacting`, `commerce-support`
+- Paired: `contacting` (core domain owner)
 
 ## Read next
-
-- `docs/01-overview.md`
-- `docs/03-configuration.md`
-- `docs/04-usage.md`
-- `docs/99-troubleshooting.md`
-- `docs/02-installation.md`
-- `../contacting/CONTEXT.md`
+1. `docs/01-overview.md`
+2. `docs/03-configuration.md`
+3. `docs/04-usage.md`
+4. `docs/99-troubleshooting.md`
+5. `../contacting/CONTEXT.md` when the change crosses UI/domain
+6. `docs/02-installation.md` when setup or publishing changes are involved
 
 ## Guardrails
+- Adapter only: no domain models/actions/calculations. Keep all business rules in `contacting`.
+- Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope).
+- If behavior or calculations change, move them to `contacting` and keep this package UI-only.
+- Update `docs/*.md` in the same pass when public behavior or config changes.
 
-This package is an adapter. It does not own contact/social models, migrations, normalization, verification, primary selection, snapshots, or communication sending.
+## Decide fast
+- Use when: Admin UI for contact points.
+- Skip when: Normalization rules — see contacting.
+- Owner/security: OwnerUiScope in all 3 resources.
 
-Call core `aiarmada/contacting` Actions/Services for domain behavior.
+## Key surfaces
+- Resources: `ContactMethodResource`, `ContactSnapshotResource`, `SocialProfileResource`
+- Actions/Services: `Support/ContactingFilamentConfig`, `Support/GuardsContactingUi`, `Support/ResolvesContactingModels`
+- Config `filament-contacting.php`: `navigation`, `group`, `sort`, `icons`, `contact_methods`, `social_profiles`, `contact_snapshots`, `tables`, `default_pagination`, `show_owner_columns`
 
-Filament tenancy is not a security boundary. Resource queries, relation managers, and action handlers must remain owner-safe when core contacting models are owner-scoped.
-
-Snapshots are read-only by default.
-
-When public UI behavior or config changes, update docs in the same pass.
+## Docs map
+- Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
+- Deep dives: none — the five canonical docs cover this package

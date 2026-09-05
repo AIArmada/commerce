@@ -21,3 +21,16 @@ projections, and domain-specific authorization policy.
 - Ownership transfers are transactional.
 - The final owner cannot leave or be removed.
 - Public queries must use the `public()` scope.
+
+## What this package owns
+
+- Model `Organization` (the org IS the tenant — no `HasOwner` on the model itself)
+- Actions `CreateOrganization`, `ArchiveOrganization`, `RestoreOrganization`, `SuspendOrganization`, `MakeOrganizationPublic`, `MakeOrganizationPrivate`, `TransferOrganizationOwnership`
+- `Resolvers/*` + `CurrentOrganizationMiddleware` — establishes the `OwnerContext` consumed by owner-aware packages
+- Config `organizations.php`: `database`, `resolver`, `middleware` (`require_context`)
+
+## Related packages
+
+- `aiarmada/membership` — applications, invitations, member pivots, role sync for org subjects
+- `aiarmada/filament-organizations` — Filament admin (`OrganizationResource`)
+- `aiarmada/commerce-support` — the `OwnerContext`/`OwnerScope` primitives this package feeds

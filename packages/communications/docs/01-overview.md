@@ -30,6 +30,16 @@ The package complements Laravel Notifications in two modes:
 - **Managed mode**: creates the communication aggregate first, then invokes Laravel Notifications
 - **Inbox mode**: creates a communication record and an inbox row for in-app notification surfaces
 
+## Scale
+
+The domain ships 17 models, 31 actions, and 14 services (see `src/Actions/`, `src/Services/`). Channel integrations resolve through null-driver defaults (`NullRenderer`, `NullRateLimiter`, `NullSuppression`, `NullPreference`, `NullConsent`, `NullQuietHours`, `NullDestination`, `NullAudit`, `NullSnapshot`) — override only what the host app needs.
+
+## Related packages
+
+- `aiarmada/filament-communications` — read-focused ops UI (messages, deliveries, threads, templates, preferences, suppressions, batches)
+- `aiarmada/contacting` — the contact points (emails/phones/socials) messages are addressed to
+- `aiarmada/commerce-support` — owner scoping and shared primitives
+
 ## Package principles
 
 - Laravel Notifications is the notification API — not replaced

@@ -30,9 +30,9 @@ The `aiarmada/cashier` package is the unified multi-gateway billing abstraction 
 
 ## Main models services or surfaces
 
-- **Core surfaces** — unified subscription, invoice, checkout, and one-off payment APIs across installed gateways
-- **Wrapper traits** — billable helpers that compose gateway-specific traits into one interface
-- **Integration seams** — customer-model registration and gateway detection or delegation
+- **Core surfaces** — unified subscription, invoice, checkout, and one-off payment APIs across installed gateways (`Actions\CreateSubscription`, `CancelSubscription`, `CreatePayment`, `RefundPayment`, `SyncWebhook`)
+- **Wrapper traits** — billable helpers that compose gateway-specific traits into one interface (see `src/Concerns/`; 12 `src/Contracts/` define the seams)
+- **Integration seams** — customer-model registration and gateway detection or delegation (`Support\GatewayDetector`, `Gateways\Stripe|Chip`, `Checkout/`)
 
 ## Owner scoping and security notes
 

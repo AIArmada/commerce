@@ -1,64 +1,50 @@
 ---
 title: Filament Addressing Context
-package: aiarmada/filament-addressing
+package: filament-addressing
 status: current
 surface: filament
-family: addressing
+family: foundation
+keywords:
+  - filament
+  - admin
+  - address-ui
+  - import-export
 ---
 
+# Filament Addressing Context
+
 ## Snapshot
-
-Composer package: `aiarmada/filament-addressing`.
-
-This package is the Filament v5 adapter for `aiarmada/addressing`. It provides optional admin resources, relation managers, form schemas, table columns, and import/export surfaces for the core addressing domain.
-
-Start searches in:
-
-- `packages/filament-addressing/src`
-- `packages/filament-addressing/config`
-- `packages/filament-addressing/docs`
-- `packages/addressing/CONTEXT.md`
-- `packages/addressing/docs`
-
-Related packages:
-
-- `aiarmada/addressing`
-- `commerce-support` for owner scoping primitives
-- sibling `filament-*` packages for conventions
+- Composer: `aiarmada/filament-addressing`
+- Role: Filament v5 admin for addressing: countries/states/cities/areas/postcodes, import/export, schemas.
+- Triggers: filament, admin, address-ui, import-export
+- Search first: `src/Resources, src/Schemas, src/Tables, config, docs`
+- Related: `addressing`, `commerce-support`
+- Paired: `addressing` (core domain owner)
 
 ## Read next
-
-- `docs/01-overview.md`
-- `docs/03-configuration.md`
-- `docs/04-usage.md`
-- `docs/99-troubleshooting.md`
-- `docs/02-installation.md`
-- `../addressing/CONTEXT.md`
-- `../addressing/docs/01-overview.md`
-- `../addressing/docs/04-usage.md`
+1. `docs/01-overview.md`
+2. `docs/03-configuration.md`
+3. `docs/04-usage.md`
+4. `docs/99-troubleshooting.md`
+5. `../addressing/CONTEXT.md` when the change crosses UI/domain
+6. `docs/02-installation.md` when setup or publishing changes are involved
 
 ## Guardrails
+- Adapter only: no domain models/actions/calculations. Keep all business rules in `addressing`.
+- Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope).
+- If behavior or calculations change, move them to `addressing` and keep this package UI-only.
+- Update `docs/*.md` in the same pass when public behavior or config changes.
 
-This package is an adapter, not a domain owner.
+## Decide fast
+- Use when: Admin UI for address reference data.
+- Skip when: Domain rules — see addressing.
+- Owner/security: No owner scope (core unscoped).
 
-It owns:
+## Key surfaces
+- Resources: `AddressAreaResource`, `AddressCityResource`, `AddressCountryResource`, `AddressResource`, `AddressSnapshotResource`, `AddressStateResource`, `PostalCodeResource`
+- Actions/Services: `Support/GuardsAddressingUi`, `Support/ResolvesAddressingResources`, `Support/SingleAddressAreaSource`
+- Config `filament-addressing.php`: `navigation`, `enabled`, `group`, `sort`, `icons`, `countries`, `states`, `cities`, `areas`, `addresses`
 
-- Filament plugin registration.
-- Addressing admin resources.
-- Reusable Filament schemas and tables.
-- Optional relation managers.
-- Filament import/export wiring.
-
-It does not own:
-
-- Address models.
-- Address migrations.
-- Country data.
-- Area import contracts.
-- Address formatting, normalization, snapshots, or geocoding.
-- Tenant ownership primitives.
-- Event, venue, customer, shipping, cashier, or tax address workflows.
-
-When a change crosses core addressing and Filament boundaries, read both contexts before editing.
-
-Country and area reference data are global by default. Central address and snapshot resources are disabled by default because they may expose owner-scoped or historical data.
+## Docs map
+- Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
+- Deep dives: none — the five canonical docs cover this package

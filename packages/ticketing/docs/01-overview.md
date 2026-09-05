@@ -51,6 +51,7 @@ Use this package when you need to sell tickets for events, workshops, courses, o
 - `PassTransfer` — Audit log of pass transfers
 - `TicketTypeComponent` — Split ticket pricing components
 - `TicketTypeProduct` — Bundle products linked to ticket types
+- `TicketTypeSeatingOption` — Per-ticket-type seating preferences linking into `aiarmada/seating`
 
 ### Actions
 

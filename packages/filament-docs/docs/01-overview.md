@@ -30,6 +30,8 @@ The `aiarmada/filament-docs` package is the Filament admin adapter for `aiarmada
 - **Pages** — aging report and pending approvals
 - **Widgets** — doc stats, quick actions, recent documents, revenue chart, and status breakdown
 - **Actions** — payment recording and email sending
+- **Exports** — `Exports\DocExporter` for document lists
+- **Rendering** — `Rendering\FilamentRichContentRenderer` for rich content previews (render/numbering rules stay in core)
 
 ## Owner scoping and security notes
 

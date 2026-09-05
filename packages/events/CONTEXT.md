@@ -4,28 +4,48 @@ package: events
 status: current
 surface: domain
 family: analytics-and-events
+keywords:
+  - event
+  - venue
+  - occurrence
+  - registration
+  - check-in
+  - waitlist
 ---
 
 # Events Context
 
 ## Snapshot
 - Composer: `aiarmada/events`
-- Role: Event definitions, scheduling, venues, registrations, check-in, attendance, and change workflows, with ticketing and seating integrated through sibling packages.
-- Search first: `src/Models`, `src/Actions`, `src/Services`, `src/Support`, `src/Resolvers`, `src/Listeners`, `src/Events`, `src/Console/Commands`, `src/Steps`, `src/Data`, `config`, `docs`
-- Related: `ticketing`, `seating`, `filament-events`, `commerce-support`, `engagement`, `products`, `customers`, `orders`
+- Role: Events domain: series/venues/occurrences/sessions, registrations, check-in, change workflows (60+ models).
+- Triggers: event, venue, occurrence, registration, check-in, waitlist
+- Search first: `src/Models, src/Actions, src/Services, config, docs`
+- Related: `filament-events`, `products`, `customers`, `orders`
+- Paired: `filament-events` (Filament admin adapter)
 
 ## Read next
 1. `docs/01-overview.md`
 2. `docs/03-configuration.md`
 3. `docs/04-usage.md`
 4. `docs/99-troubleshooting.md`
-5. `../filament-events/CONTEXT.md` when admin UI changes are involved
+5. `../filament-events/CONTEXT.md` when the change crosses UI/domain
 6. `docs/02-installation.md` when setup or publishing changes are involved
 
 ## Guardrails
-- Owns event-domain models, actions, services, resolvers, listeners, events, console commands, and persistence rules.
-- Keep ticket types, passes, pass transfers, seat layouts, seat holds, and seat allocations in `ticketing` / `seating`; only keep event-scoped orchestration here.
-- Keep Filament resources, pages, widgets, relation managers, and admin-only workflow actions in `filament-events`.
-- Preserve owner-aware queries, explicit owner context, and polymorphic integrations.
-- Prefer actions and workflow services for orchestration; keep models and listeners thin.
+- Owns models, actions, services, events, calculations, and persistence rules.
+- If admin UI changes too, audit `filament-events`.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
+
+## Decide fast
+- Use when: Event scheduling, venues, registrations, attendance.
+- Skip when: Ticket inventory/pricing — see ticketing; seat maps — see seating.
+- Owner/security: Owner-scoped with EventOwnerScope family.
+
+## Key surfaces
+- Models: `Event`, `EventAccessPolicy`, `EventApprovalRequest`, `EventAttendance`, `EventAttendanceLog`, `EventAttribute`, `EventAudience`, `EventAudienceProfile`, `EventAvailabilityBlock`, `EventChangeLog`
+- Actions/Services: `Actions/AddEventTicketTypeToCartAction`, `Actions/AllocateEventSeatsOnPassIssued`, `Actions/ApproveAssignmentRequestAction`, `Actions/ArchiveEventRegistrationQuestionAction`, `Actions/AutoAddRequiredTicketBundlesAction`, `Actions/BackfillEventContentAction`, `Actions/BatchCreateOccurrencesAction`, `Actions/CancelAssignmentRequestAction`
+- Config `events.php`: `enabled`, `include_global`, `auto_assign_on_create`, `models`, `event`, `registration`, `attendance`, `submission`, `registration_question`, `database`
+
+## Docs map
+- Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
+- Deep dives: `05-taxonomy-hierarchy.md`

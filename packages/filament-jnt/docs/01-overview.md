@@ -28,9 +28,10 @@ The `aiarmada/filament-jnt` package is the Filament admin adapter for `aiarmada/
 
 ## Main resources actions or surfaces
 
-- **Resources** — `JntOrderResource`, `JntTrackingEventResource`, and `JntWebhookLogResource`
-- **Actions** — cancel order and sync tracking
-- **Widgets** — `JntStatsWidget`
+- **Resources** — `JntOrderResource`, `JntTrackingEventResource`, and `JntWebhookLogResource` (on `BaseJntResource`)
+- **Actions** — cancel order, sync tracking, and `PrintAwbTableAction` for AWB printing
+- **Widgets** — `JntStatsWidget` (backed by `Support\JntStatsAggregator`; nav badges via `NavigationBadgeHelper`)
+- **Policies** — `JntOrderPolicy`, `JntTrackingEventPolicy`, `JntWebhookLogPolicy`
 
 ## Owner scoping and security notes
 

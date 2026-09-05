@@ -13,3 +13,25 @@ title: Authz Overview
 - Session-based impersonation services and Blade directives
 
 Filament resources and UI behavior belong to `aiarmada/filament-authz`.
+
+## What this package owns
+
+- `Services\PermissionKeyBuilder` — canonical `resource.action[.scope]` key construction
+- `Services\WildcardPermissionResolver` — wildcard (`*`) matching for Gate checks
+- `Services\ImpersonateManager` — session-based impersonation lifecycle
+- `Support\AuthzScopeContext`, `AuthzScopeResolver`, `AuthzScopeTeamResolver` — scope → team resolution
+- `Support\ImpersonationScopeGuard`, `Support\CommandProhibitor`, `Support\UserRoleChecker` — guard rails
+- `Models\Concerns` — `HasAuthzScope`, `ScopesAuthzTenancy`, `SyncsRolePermissions` traits for hosts
+- Config `authz.php`: `database`, `super_admin_role`, `guards`, `users`, `wildcard_permissions`, `permissions`, `custom_permissions`, `sync`, `scopes`, `impersonate`
+
+## What this package does not own
+
+- The `Role` / `Permission` / `AuthzScope` Eloquent models themselves — those live in `aiarmada/commerce-support`
+- Filament resources, pages, or widgets — see `aiarmada/filament-authz`
+- Tenant row scoping via `HasOwner` — this package uses Spatie teams + `AuthzScope`, not the owner tuple
+
+## Related packages
+
+- `aiarmada/commerce-support` — owns the `Role`/`Permission` models and owner primitives
+- `aiarmada/filament-authz` — Filament UI (roles/users discovery, impersonation buttons)
+- `aiarmada/membership` — team-scoped role sync for member pivots

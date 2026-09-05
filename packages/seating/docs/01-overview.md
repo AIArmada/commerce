@@ -16,3 +16,16 @@ The `aiarmada/seating` package provides venue seat layout modeling, seat hold an
 - **Livewire Component** — interactive seat picking with status visualization
 - **Console Command** — `seating:release-expired-holds` to clean up stale holds
 - **Seating Modes** — `none`, `general_admission`, `assigned`, `hybrid` via `SeatingMode` enum
+
+## What this package owns
+
+- Models `SeatMap`, `SeatSection`, `Seat`, `SeatHold`, `SeatAllocation` (all owner-scoped via `seating.owner`)
+- Actions `ResolveSeatMapForHostAction`, `EnsureSeatHoldAction`, `EnsureSectionAllocationAction`, `ConvertHoldsToAllocationsAction`, `ReleaseAllocationsAction`
+- `SeatAllocatorInterface` contract with `DefaultSeatAllocator` and `NullSeatAllocator`, plus `SeatLayoutRenderer`
+- Config `seating.php`: `database`, `holds` (TTL), `owner`, `modes`, `scheduling`
+
+## What this package does not own
+
+- Ticket issuance, passes, or transfers — see `aiarmada/ticketing`
+- Event scheduling or registrations — see `aiarmada/events`
+- Admin UI — see `aiarmada/filament-seating` (`SeatMapResource`, editor + occupancy pages, overview widget)

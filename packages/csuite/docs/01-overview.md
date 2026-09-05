@@ -21,7 +21,7 @@ The `aiarmada/commerce` metapackage bundles a curated set of Commerce packages s
 
 ## Related packages
 
-- [`aiarmada/cart`](../../cart/docs/01-overview.md), [`aiarmada/inventory`](../../inventory/docs/01-overview.md), [`aiarmada/vouchers`](../../vouchers/docs/01-overview.md), [`aiarmada/chip`](../../chip/docs/01-overview.md), [`aiarmada/cashier`](../../cashier/docs/01-overview.md), [`aiarmada/cashier-chip`](../../cashier-chip/docs/01-overview.md), [`aiarmada/docs`](../../docs/docs/01-overview.md), and [`aiarmada/jnt`](../../jnt/docs/01-overview.md) — core packages currently bundled by the metapackage
+- [`aiarmada/cart`](../../cart/docs/01-overview.md), [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md), [`aiarmada/inventory`](../../inventory/docs/01-overview.md), [`aiarmada/vouchers`](../../vouchers/docs/01-overview.md), [`aiarmada/chip`](../../chip/docs/01-overview.md), [`aiarmada/cashier`](../../cashier/docs/01-overview.md), [`aiarmada/cashier-chip`](../../cashier-chip/docs/01-overview.md), [`aiarmada/docs`](../../docs/docs/01-overview.md), and [`aiarmada/jnt`](../../jnt/docs/01-overview.md) — core packages currently bundled by the metapackage (full list: `packages/csuite/composer.json`)
 - The bundled Filament packages and `aiarmada/filament-authz` for admin surfaces included in the metapackage
 
 ## Main models services or surfaces

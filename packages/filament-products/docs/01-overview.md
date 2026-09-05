@@ -14,7 +14,7 @@ Use this package when you need a Filament admin UI for catalog management: produ
 
 - The `FilamentProductsPlugin` panel plugin
 - Catalog resources such as products, categories, collections, and attribute management
-- Optional bulk-edit and import/export pages controlled by package config
+- Feature-flagged resources (collections, attributes) controlled by package config
 - Product/catalog dashboard widgets for admin reporting
 - Filament-side owner-safe query and submitted-ID validation for catalog administration
 
@@ -37,8 +37,7 @@ Use this package when you need a Filament admin UI for catalog management: produ
 - `CategoryResource`
 - `CollectionResource` when enabled
 - `AttributeResource`, `AttributeGroupResource`, and `AttributeSetResource`
-- `BulkEditProducts` and `ImportExportProducts` pages when enabled
-- Product stats, category distribution, product type distribution, and top-selling widgets
+- Product stats, category distribution, product type distribution, and top-selling widgets (see `src/Widgets/`; there is no `src/Pages/` directory — bulk-edit/import-export pages do not exist in this package)
 
 ## What it includes
 
@@ -48,8 +47,6 @@ Use this package when you need a Filament admin UI for catalog management: produ
 - `AttributeResource` when the attributes feature is enabled
 - `AttributeGroupResource`
 - `AttributeSetResource`
-- `BulkEditProducts` page when enabled
-- `ImportExportProducts` page when enabled
 - dashboard widgets for product stats, category distribution, product type distribution, and top-selling products
 
 ## Owner-aware by default

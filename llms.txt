@@ -1,0 +1,37 @@
+# AIArmada Commerce
+
+> Laravel commerce monorepo: 67 packages (domain + Filament admin + gateways + analytics). Money is minor units + currency. `filament-*` packages are adapters, not domain owners. Owner safety is never UI-only.
+
+## Start here (fastest first)
+
+- [CONTEXT.md](CONTEXT.md) — 30-second AI dispatch + owning-package chooser
+- [PACKAGES.md](PACKAGES.md) — 60-second picker: all 67 packages, 1 line + triggers each
+- [CONTEXT-MAP.md](CONTEXT-MAP.md) — detailed routing rules, invariants, family map
+- [docs/ai/package-index.json](docs/ai/package-index.json) — greppable index: keywords, use-when, pairs, owner scope
+- [docs/ai/package-manifests.json](docs/ai/package-manifests.json) — full manifest: composer names, canonical docs, related packages
+- [docs/ai/01-overview.md](docs/ai/01-overview.md) — retrieval-layer guide
+- [docs/index.md](docs/index.md) — canonical docs index
+
+## How to pick a package (LLM recipe)
+
+1. Grep `docs/ai/package-index.json` for your keywords (e.g. `cart`, `payout`, `seat`, `webhook`).
+2. Read the top 1–2 `packages/<pkg>/CONTEXT.md` files (`Decide fast` section says use-when / skip-when).
+3. Read that package's `docs/01-overview.md`, then config/usage/troubleshooting as needed.
+4. Crossing UI + domain? Read both the core and the paired `filament-*` contexts.
+
+## Packages by family
+
+- Foundation: `commerce-support`, `authz`, `membership`, `organizations`, `addressing`, `contacting` (+ `filament-*` adapters)
+- Communications: `communications` (+ adapter)
+- Governance: `moderation` · Knowledge: `references`
+- Catalog & identity: `persons`, `customers`, `products`, `inventory`, `pricing`, `tax`, `ticketing` (+ adapters)
+- Growth: `promotions`, `vouchers`, `affiliates`, `affiliate-network`, `growth`, `engagement`, `feedback` (+ adapters)
+- Checkout: `cart`, `checkout`, `orders`, `shipping`, `jnt` (+ adapters)
+- Payments & documents: `chip`, `cashier`, `cashier-chip`, `docs` (+ adapters)
+- Analytics & events: `events`, `signals` (+ adapters) · Venue: `seating` (+ adapter) · Bundle: `csuite`
+
+## Rules
+
+- `packages/*/docs/*.md` are canonical; if code and docs disagree, fix the docs in the same pass.
+- Core packages own models/services/calculations; `filament-*` owns UI only.
+- Validate submitted IDs server-side in owner scope; `DB::table()` paths need explicit owner handling.

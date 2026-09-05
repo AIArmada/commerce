@@ -45,9 +45,41 @@ Use it for:
 - the local docs read order,
 - high-signal folders to inspect first.
 
+### `PACKAGES.md`
+
+The 60-second package picker at the repo root.
+
+Use it for:
+
+- one-line summaries of all 67 packages,
+- keyword triggers per package,
+- paired-package discovery at a glance,
+- decision shortcuts for commonly confused pairs (persons vs customers, promotions vs vouchers, events vs seating vs ticketing).
+
+### `llms.txt`
+
+The LLM entrypoint at the repo root.
+
+Use it for:
+
+- the shortest possible repo summary,
+- the read order for fast routing,
+- the package-picking recipe (grep index → read 1–2 contexts → read overview).
+
+### `docs/ai/package-index.json`
+
+The lightweight machine index (one object per package).
+
+Use it for:
+
+- grepping keywords and triggers without loading the full manifest,
+- use-when / skip-when decisions,
+- owner-scope checks before touching queries,
+- paired-package and docs-path lookup.
+
 ### `docs/ai/package-manifests.json`
 
-The machine-readable package manifest layer.
+The machine-readable package manifest layer (schema v3: adds `keywords`, `use_when`, `owner_scoped` per package).
 
 Use it for:
 
@@ -77,11 +109,13 @@ These skills are designed to reduce ambiguity when an assistant needs to:
 ## Recommended read order for assistants
 
 1. [`../../CONTEXT.md`](../../CONTEXT.md)
-2. [`../../CONTEXT-MAP.md`](../../CONTEXT-MAP.md)
-3. [`package-manifests.json`](package-manifests.json)
-4. the target package’s `../../packages/<pkg>/CONTEXT.md`
-5. the target package’s `01-overview.md`
-6. the target package’s installation, configuration, usage, and troubleshooting pages
+2. [`../../PACKAGES.md`](../../PACKAGES.md)
+3. [`../../llms.txt`](../../llms.txt)
+4. [`package-index.json`](package-index.json)
+5. [`package-manifests.json`](package-manifests.json)
+6. the target package’s `../../packages/<pkg>/CONTEXT.md`
+7. the target package’s `01-overview.md`
+8. the target package’s installation, configuration, usage, and troubleshooting pages
 
 ## Manifest schema summary
 
@@ -93,6 +127,9 @@ Each manifest entry is intentionally small and retrieval-friendly.
 | `surface` | High-level package role such as `foundation`, `domain`, `filament`, `gateway`, `analytics`, or `bundle` |
 | `family` | Package family grouping used in this monorepo |
 | `paired_package` | Closest paired package, usually core ↔ Filament |
+| `keywords` | Trigger keywords for fast matching (also in `package-index.json` and `CONTEXT.md` frontmatter) |
+| `use_when` | One-line use-when for quick routing decisions |
+| `owner_scoped` | Whether the package's models use owner scoping (false for shared/global packages by design) |
 | `summary` | One-line ownership summary |
 | `canonical_docs` | Canonical docs paths for overview, installation, configuration, usage, and troubleshooting |
 | `related_packages` | Adjacent packages commonly read together |

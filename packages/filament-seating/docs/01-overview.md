@@ -8,10 +8,10 @@ Filament admin UI for managing venue seat layouts: seat maps, sections, occupanc
 
 ## What it owns
 
-- Filament resource for `SeatMap` CRUD
-- Seat map overview dashboard widget
-
-> **Planned:** Visual seat map editor, occupancy viewer, and admin-only workflow actions for seat layout configuration are stubbed but not yet implemented.
+- Filament resource for `SeatMap` CRUD (`SeatMapResource`)
+- Visual seat map editor page (`Pages\SeatMapEditor`)
+- Occupancy viewer page (`Pages\SeatMapOccupancy`)
+- Seat map overview dashboard widget (`Widgets\SeatMapOverview`)
 
 ## What it does NOT own
 

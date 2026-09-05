@@ -1,53 +1,51 @@
 ---
-title: Feedback Package Context
-package: aiarmada/feedback
+title: Feedback Context
+package: feedback
 status: active
 surface: core
 family: feedback
+keywords:
+  - survey
+  - response
+  - invitation
+  - nps
+  - testimonial
+  - analytics
 ---
 
+# Feedback Context
+
 ## Snapshot
-
-Composer package: `aiarmada/feedback`.
-
-This package owns the core feedback, survey, response, invitation, scoring, analytics, and testimonial domain.
-
-Start code search in:
-
-- `packages/feedback/src/Models`
-- `packages/feedback/src/Actions`
-- `packages/feedback/src/Analytics`
-- `packages/feedback/src/Events`
-- `packages/feedback/database/migrations`
-- `packages/feedback/config/feedback.php`
-
-Related packages:
-
-- `aiarmada/commerce-support`
-- `aiarmada/filament-feedback`
-- `aiarmada/events`
-- `aiarmada/certificates`
-- `aiarmada/engagement`
-- `aiarmada/contacting`
+- Composer: `aiarmada/feedback`
+- Role: Surveys, responses, invitations, scoring/analytics, testimonials with lifecycle management.
+- Triggers: survey, response, invitation, nps, testimonial, analytics
+- Search first: `src/Models, src/Actions, config, docs`
+- Related: `commerce-support`, `filament-feedback`, `events`, `engagement`, `contacting`
+- Paired: `filament-feedback` (Filament admin adapter)
 
 ## Read next
-
-- `docs/01-overview.md`
-- `docs/03-configuration.md`
-- `docs/04-usage.md`
-- `docs/99-troubleshooting.md`
-- `docs/02-installation.md`
-- `../commerce-support/CONTEXT.md`
-- `../filament-feedback/CONTEXT.md`
+1. `docs/01-overview.md`
+2. `docs/03-configuration.md`
+3. `docs/04-usage.md`
+4. `docs/99-troubleshooting.md`
+5. `../filament-feedback/CONTEXT.md` when the change crosses UI/domain
+6. `docs/02-installation.md` when setup or publishing changes are involved
 
 ## Guardrails
+- Owns models, actions, services, events, calculations, and persistence rules.
+- If admin UI changes too, audit `filament-feedback`.
+- Update `docs/*.md` in the same pass when public behavior or config changes.
 
-This package owns the feedback domain only.
+## Decide fast
+- Use when: Collecting or analyzing survey feedback.
+- Skip when: Social reactions — see engagement.
+- Owner/security: Owner-scoped (all models; feedback.owner).
 
-Do not put Filament resources, pages, widgets, or admin UI here.
+## Key surfaces
+- Models: `FeedbackAnswer`, `FeedbackForm`, `FeedbackInvitation`, `FeedbackQuestion`, `FeedbackQuestionOption`, `FeedbackResponse`, `FeedbackSection`, `FeedbackTemplate`, `FeedbackTestimonial`
+- Actions/Services: `Actions/ApproveFeedbackTestimonialAction`, `Actions/ArchiveFeedbackFormAction`, `Actions/CalculateFeedbackAnswerScoreAction`, `Actions/CalculateFeedbackFormAnalyticsAction`, `Actions/CalculateFeedbackResponseScoreAction`, `Actions/CloseFeedbackFormAction`, `Actions/CreateFeedbackFormAction`, `Actions/CreateFeedbackFormFromTemplateAction`
+- Config `feedback.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `forms`, `sections`, `questions`, `question_options`, `responses`, `answers`
 
-Do not put certificate eligibility, event attendance, or engagement interaction logic here.
-
-Feedback forms and responses are tenant-owned through `owner_type` / `owner_id` and must enforce owner scoping on every read and write path.
-
-Use UUID primary keys, configurable table names, configurable JSON column type, no database foreign constraints, no database cascades, and no soft deletes.
+## Docs map
+- Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
+- Deep dives: none — the five canonical docs cover this package

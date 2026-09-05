@@ -4,22 +4,30 @@ package: products
 status: current
 surface: domain
 family: catalog-and-identity
+keywords:
+  - product
+  - variant
+  - category
+  - collection
+  - attribute
 ---
 
 # Products Context
 
 ## Snapshot
 - Composer: `aiarmada/products`
-- Role: Catalog products, variants, and product-domain behavior.
-- Search first: `src/Models`, `src/Actions`, `src/Services`, `src/Events`, `config`, `docs`
+- Role: Catalog/PIM source of truth: products, variants, taxonomy, attributes.
+- Triggers: product, variant, category, collection, attribute
+- Search first: `src/Models, src/Actions, config, docs`
 - Related: `filament-products`, `pricing`, `inventory`
+- Paired: `filament-products` (Filament admin adapter)
 
 ## Read next
 1. `docs/01-overview.md`
 2. `docs/03-configuration.md`
 3. `docs/04-usage.md`
 4. `docs/99-troubleshooting.md`
-5. `../filament-products/CONTEXT.md` when admin UI changes are involved
+5. `../filament-products/CONTEXT.md` when the change crosses UI/domain
 6. `docs/02-installation.md` when setup or publishing changes are involved
 
 ## Guardrails
@@ -27,7 +35,16 @@ family: catalog-and-identity
 - If admin UI changes too, audit `filament-products`.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 
+## Decide fast
+- Use when: Catalog modeling or variant generation.
+- Skip when: Pricing — see pricing; stock — see inventory.
+- Owner/security: Owner-scoped (all 10).
 
-## Owner-scoped uniqueness
+## Key surfaces
+- Models: `Attribute`, `AttributeGroup`, `AttributeSet`, `AttributeValue`, `Category`, `Collection`, `Option`, `OptionValue`, `Product`, `Variant`
+- Actions/Services: `Actions/ApplyAttributeChanges`, `Actions/CreateProduct`, `Actions/GenerateVariants`, `Actions/UpdateProduct`, `Actions/UpdateProductStatus`
+- Config `products.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `products`, `variants`, `options`, `option_values`, `variant_options`, `categories`
 
-Global and tenant-owned records use a non-null canonical `owner_scope` key for unique business identifiers. Global rows use `global`; owned rows use a stable SHA-256 value derived from the owner morph and primary key. Nullable owner columns are not part of unique constraints, callers cannot mass-assign the scope key, and model saves recompute it from the effective owner tuple. A business key may be reused by different owners but not duplicated globally or within one owner.
+## Docs map
+- Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
+- Deep dives: `05-models-reference.md`

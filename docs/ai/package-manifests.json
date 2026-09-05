@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "repo": "AIArmada Commerce",
   "context_file": "CONTEXT.md",
   "context_map_file": "CONTEXT-MAP.md",
@@ -15,7 +15,9 @@
       "filament-authz",
       "filament-commerce-support",
       "filament-contacting",
-      "membership"
+      "filament-organizations",
+      "membership",
+      "organizations"
     ],
     "communications": [
       "communications",
@@ -30,57 +32,59 @@
     "catalog-and-identity": [
       "customers",
       "filament-customers",
-      "filament-ticketing",
-      "products",
-      "filament-products",
-      "inventory",
       "filament-inventory",
-      "pricing",
+      "filament-persons",
       "filament-pricing",
-      "tax",
+      "filament-products",
       "filament-tax",
+      "filament-ticketing",
+      "inventory",
+      "persons",
+      "pricing",
+      "products",
+      "tax",
       "ticketing"
     ],
     "growth-and-incentives": [
-      "engagement",
-      "filament-engagement",
-      "promotions",
-      "filament-promotions",
-      "vouchers",
-      "filament-vouchers",
-      "affiliates",
-      "filament-affiliates",
       "affiliate-network",
+      "affiliates",
+      "engagement",
       "filament-affiliate-network",
+      "filament-affiliates",
+      "filament-engagement",
+      "filament-growth",
+      "filament-promotions",
+      "filament-vouchers",
       "growth",
-      "filament-growth"
+      "promotions",
+      "vouchers"
     ],
     "checkout-flow": [
       "cart",
-      "filament-cart",
       "checkout",
-      "orders",
+      "filament-cart",
+      "filament-jnt",
       "filament-orders",
-      "shipping",
       "filament-shipping",
       "jnt",
-      "filament-jnt"
+      "orders",
+      "shipping"
     ],
     "payments-and-documents": [
-      "chip",
-      "filament-chip",
       "cashier",
-      "filament-cashier",
       "cashier-chip",
-      "filament-cashier-chip",
+      "chip",
       "docs",
+      "filament-cashier",
+      "filament-cashier-chip",
+      "filament-chip",
       "filament-docs"
     ],
     "analytics-and-events": [
       "events",
       "filament-events",
-      "signals",
-      "filament-signals"
+      "filament-signals",
+      "signals"
     ],
     "feedback": [
       "feedback",
@@ -110,7 +114,18 @@
       },
       "related_packages": [
         "filament-authz"
-      ]
+      ],
+      "keywords": [
+        "owner-scope",
+        "contracts",
+        "targeting",
+        "webhooks",
+        "health",
+        "money",
+        "primitives"
+      ],
+      "use_when": "Cross-package primitives or owner-boundary questions \u2014 read first.",
+      "owner_scoped": true
     },
     "filament-authz": {
       "composer": "aiarmada/filament-authz",
@@ -127,7 +142,15 @@
       },
       "related_packages": [
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "roles-ui",
+        "impersonation",
+        "discovery"
+      ],
+      "use_when": "Admin UI for roles/users/impersonation.",
+      "owner_scoped": true
     },
     "addressing": {
       "composer": "aiarmada/addressing",
@@ -148,14 +171,27 @@
         "customers",
         "orders",
         "events"
-      ]
+      ],
+      "keywords": [
+        "address",
+        "addresses",
+        "country",
+        "state",
+        "city",
+        "postcode",
+        "area-import",
+        "snapshot",
+        "formatting"
+      ],
+      "use_when": "Storing, validating, formatting, or importing addresses / geographic areas.",
+      "owner_scoped": false
     },
     "filament-addressing": {
       "composer": "aiarmada/filament-addressing",
       "surface": "filament",
       "family": "foundation",
       "paired_package": "addressing",
-      "summary": "Filament v5 adapter for addressing — admin resources, relation managers, form schemas, table columns, and import/export surfaces.",
+      "summary": "Filament v5 adapter for addressing \u2014 admin resources, relation managers, form schemas, table columns, and import/export surfaces.",
       "canonical_docs": {
         "overview": "packages/filament-addressing/docs/01-overview.md",
         "installation": "packages/filament-addressing/docs/02-installation.md",
@@ -166,14 +202,22 @@
       "related_packages": [
         "addressing",
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "admin",
+        "address-ui",
+        "import-export"
+      ],
+      "use_when": "Admin UI for address reference data.",
+      "owner_scoped": false
     },
     "filament-commerce-support": {
       "composer": "aiarmada/filament-commerce-support",
       "surface": "filament",
       "family": "foundation",
       "paired_package": null,
-      "summary": "Filament admin UI for commerce navigation management — runtime override engine and admin settings page.",
+      "summary": "Filament admin UI for commerce navigation management \u2014 runtime override engine and admin settings page.",
       "canonical_docs": {
         "overview": "packages/filament-commerce-support/docs/01-overview.md",
         "installation": "packages/filament-commerce-support/docs/02-installation.md",
@@ -183,14 +227,22 @@
       },
       "related_packages": [
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "navigation",
+        "overrides",
+        "reference-data"
+      ],
+      "use_when": "Runtime nav overrides or reference-data browsing.",
+      "owner_scoped": false
     },
     "filament-contacting": {
       "composer": "aiarmada/filament-contacting",
       "surface": "filament",
       "family": "foundation",
       "paired_package": "contacting",
-      "summary": "Filament v5 adapter for contacting — resources, relation managers, form schemas, table schemas, infolists, and import/export UI for contact methods and social profiles.",
+      "summary": "Filament v5 adapter for contacting \u2014 resources, relation managers, form schemas, table schemas, infolists, and import/export UI for contact methods and social profiles.",
       "canonical_docs": {
         "overview": "packages/filament-contacting/docs/01-overview.md",
         "installation": "packages/filament-contacting/docs/02-installation.md",
@@ -201,7 +253,14 @@
       "related_packages": [
         "contacting",
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "contacts-ui",
+        "relation-manager"
+      ],
+      "use_when": "Admin UI for contact points.",
+      "owner_scoped": true
     },
     "authz": {
       "composer": "aiarmada/authz",
@@ -220,14 +279,25 @@
         "commerce-support",
         "filament-authz",
         "membership"
-      ]
+      ],
+      "keywords": [
+        "roles",
+        "permissions",
+        "wildcard",
+        "scopes",
+        "impersonation",
+        "spatie",
+        "teams"
+      ],
+      "use_when": "Defining permissions, scopes, or impersonation rules.",
+      "owner_scoped": false
     },
     "membership": {
       "composer": "aiarmada/membership",
       "surface": "core",
       "family": "foundation",
       "paired_package": null,
-      "summary": "Polymorphic membership lifecycle — applications, invitations, member pivots, and Spatie role synchronization for any subject model.",
+      "summary": "Polymorphic membership lifecycle \u2014 applications, invitations, member pivots, and Spatie role synchronization for any subject model.",
       "canonical_docs": {
         "overview": "packages/membership/docs/01-overview.md",
         "installation": "packages/membership/docs/02-installation.md",
@@ -238,7 +308,15 @@
       "related_packages": [
         "authz",
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "membership",
+        "invitation",
+        "application",
+        "member-role"
+      ],
+      "use_when": "Join/invite flows for any model.",
+      "owner_scoped": true
     },
     "communications": {
       "composer": "aiarmada/communications",
@@ -257,7 +335,18 @@
         "filament-communications",
         "commerce-support",
         "contacting"
-      ]
+      ],
+      "keywords": [
+        "email",
+        "sms",
+        "notification",
+        "inbox",
+        "template",
+        "suppression",
+        "delivery"
+      ],
+      "use_when": "Sending/recording messages or managing preferences/suppressions.",
+      "owner_scoped": true
     },
     "filament-communications": {
       "composer": "aiarmada/filament-communications",
@@ -275,7 +364,14 @@
       "related_packages": [
         "communications",
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "comms-inbox",
+        "deliveries-ui"
+      ],
+      "use_when": "Comms operations UI.",
+      "owner_scoped": true
     },
     "contacting": {
       "composer": "aiarmada/contacting",
@@ -295,7 +391,17 @@
         "addressing",
         "filament-contacting",
         "communications"
-      ]
+      ],
+      "keywords": [
+        "contact",
+        "phone",
+        "email",
+        "whatsapp",
+        "social-profile",
+        "normalization"
+      ],
+      "use_when": "Storing contact points or social handles on any model.",
+      "owner_scoped": true
     },
     "moderation": {
       "composer": "aiarmada/moderation",
@@ -313,7 +419,15 @@
       "related_packages": [
         "events",
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "block",
+        "ban",
+        "moderation",
+        "report"
+      ],
+      "use_when": "Blocking users/models or logging moderation.",
+      "owner_scoped": true
     },
     "references": {
       "composer": "aiarmada/references",
@@ -331,7 +445,15 @@
       "related_packages": [
         "events",
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "reference",
+        "citation",
+        "bibliography",
+        "slug"
+      ],
+      "use_when": "Citations or reference hierarchies.",
+      "owner_scoped": false
     },
     "customers": {
       "composer": "aiarmada/customers",
@@ -350,7 +472,15 @@
         "filament-customers",
         "pricing",
         "checkout"
-      ]
+      ],
+      "keywords": [
+        "customer",
+        "crm",
+        "segment",
+        "profile"
+      ],
+      "use_when": "Customer records or segmentation.",
+      "owner_scoped": true
     },
     "filament-customers": {
       "composer": "aiarmada/filament-customers",
@@ -368,7 +498,15 @@
       "related_packages": [
         "customers",
         "filament-authz"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "customers-ui",
+        "merge",
+        "segments"
+      ],
+      "use_when": "Customer admin UI.",
+      "owner_scoped": true
     },
     "products": {
       "composer": "aiarmada/products",
@@ -387,7 +525,16 @@
         "filament-products",
         "pricing",
         "inventory"
-      ]
+      ],
+      "keywords": [
+        "product",
+        "variant",
+        "category",
+        "collection",
+        "attribute"
+      ],
+      "use_when": "Catalog modeling or variant generation.",
+      "owner_scoped": true
     },
     "filament-products": {
       "composer": "aiarmada/filament-products",
@@ -405,7 +552,14 @@
       "related_packages": [
         "products",
         "filament-authz"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "catalog-ui",
+        "variants"
+      ],
+      "use_when": "Catalog admin UI.",
+      "owner_scoped": true
     },
     "inventory": {
       "composer": "aiarmada/inventory",
@@ -425,7 +579,17 @@
         "cart",
         "orders",
         "shipping"
-      ]
+      ],
+      "keywords": [
+        "stock",
+        "warehouse",
+        "allocation",
+        "fifo",
+        "replenishment",
+        "reservation"
+      ],
+      "use_when": "Stock, allocation, costing, or replenishment.",
+      "owner_scoped": true
     },
     "filament-inventory": {
       "composer": "aiarmada/filament-inventory",
@@ -443,7 +607,15 @@
       "related_packages": [
         "inventory",
         "filament-authz"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "stock-ui",
+        "transfer",
+        "cycle-count"
+      ],
+      "use_when": "Inventory operations UI.",
+      "owner_scoped": true
     },
     "pricing": {
       "composer": "aiarmada/pricing",
@@ -463,7 +635,15 @@
         "products",
         "promotions",
         "customers"
-      ]
+      ],
+      "keywords": [
+        "price",
+        "price-list",
+        "tier",
+        "resolution"
+      ],
+      "use_when": "Price resolution or list/tier management.",
+      "owner_scoped": true
     },
     "filament-pricing": {
       "composer": "aiarmada/filament-pricing",
@@ -482,7 +662,14 @@
         "pricing",
         "promotions",
         "filament-promotions"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "pricing-ui",
+        "simulator"
+      ],
+      "use_when": "Pricing admin/simulator UI.",
+      "owner_scoped": true
     },
     "tax": {
       "composer": "aiarmada/tax",
@@ -501,7 +688,16 @@
         "filament-tax",
         "checkout",
         "orders"
-      ]
+      ],
+      "keywords": [
+        "tax",
+        "zone",
+        "rate",
+        "exemption",
+        "calculation"
+      ],
+      "use_when": "Tax rules or exemptions.",
+      "owner_scoped": true
     },
     "filament-tax": {
       "composer": "aiarmada/filament-tax",
@@ -519,7 +715,14 @@
       "related_packages": [
         "tax",
         "filament-authz"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "tax-ui",
+        "exemptions"
+      ],
+      "use_when": "Tax configuration UI.",
+      "owner_scoped": true
     },
     "ticketing": {
       "composer": "aiarmada/ticketing",
@@ -540,7 +743,15 @@
         "cart",
         "orders",
         "checkout"
-      ]
+      ],
+      "keywords": [
+        "ticket",
+        "pass",
+        "transfer",
+        "bundle"
+      ],
+      "use_when": "Ticket issuance or transfers.",
+      "owner_scoped": true
     },
     "filament-ticketing": {
       "composer": "aiarmada/filament-ticketing",
@@ -558,14 +769,21 @@
       "related_packages": [
         "ticketing",
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "tickets-ui",
+        "passes"
+      ],
+      "use_when": "Ticket operations UI.",
+      "owner_scoped": true
     },
     "engagement": {
       "composer": "aiarmada/engagement",
       "surface": "domain",
       "family": "growth-and-incentives",
       "paired_package": "filament-engagement",
-      "summary": "Polymorphic engagement interactions — follows, bookmarks, likes, reactions, subscriptions, reminders, shares, and counters for any entity.",
+      "summary": "Polymorphic engagement interactions \u2014 follows, bookmarks, likes, reactions, subscriptions, reminders, shares, and counters for any entity.",
       "canonical_docs": {
         "overview": "packages/engagement/docs/01-overview.md",
         "installation": "packages/engagement/docs/02-installation.md",
@@ -577,7 +795,18 @@
         "commerce-support",
         "filament-engagement",
         "events"
-      ]
+      ],
+      "keywords": [
+        "follow",
+        "bookmark",
+        "like",
+        "reaction",
+        "subscribe",
+        "reminder",
+        "share"
+      ],
+      "use_when": "Social-style interactions on any entity.",
+      "owner_scoped": true
     },
     "filament-engagement": {
       "composer": "aiarmada/filament-engagement",
@@ -595,7 +824,13 @@
       "related_packages": [
         "engagement",
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "engagement-ui"
+      ],
+      "use_when": "Engagement admin UI.",
+      "owner_scoped": true
     },
     "promotions": {
       "composer": "aiarmada/promotions",
@@ -614,7 +849,15 @@
         "filament-promotions",
         "pricing",
         "products"
-      ]
+      ],
+      "keywords": [
+        "promotion",
+        "discount",
+        "campaign",
+        "targeting"
+      ],
+      "use_when": "Discount campaigns.",
+      "owner_scoped": true
     },
     "filament-promotions": {
       "composer": "aiarmada/filament-promotions",
@@ -632,7 +875,13 @@
       "related_packages": [
         "promotions",
         "filament-pricing"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "promotions-ui"
+      ],
+      "use_when": "Promotion admin UI.",
+      "owner_scoped": true
     },
     "vouchers": {
       "composer": "aiarmada/vouchers",
@@ -652,7 +901,16 @@
         "cart",
         "checkout",
         "affiliates"
-      ]
+      ],
+      "keywords": [
+        "voucher",
+        "coupon",
+        "wallet",
+        "redemption",
+        "stacking"
+      ],
+      "use_when": "Coupons, wallets, or stacking rules.",
+      "owner_scoped": true
     },
     "filament-vouchers": {
       "composer": "aiarmada/filament-vouchers",
@@ -670,7 +928,15 @@
       "related_packages": [
         "vouchers",
         "filament-cart"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "vouchers-ui",
+        "wallets",
+        "stacking"
+      ],
+      "use_when": "Voucher admin UI.",
+      "owner_scoped": true
     },
     "affiliates": {
       "composer": "aiarmada/affiliates",
@@ -690,7 +956,18 @@
         "affiliate-network",
         "vouchers",
         "cart"
-      ]
+      ],
+      "keywords": [
+        "affiliate",
+        "commission",
+        "payout",
+        "attribution",
+        "referral",
+        "fraud",
+        "tracking-link"
+      ],
+      "use_when": "Referrals, commissions, payouts, or affiliate fraud review.",
+      "owner_scoped": true
     },
     "filament-affiliates": {
       "composer": "aiarmada/filament-affiliates",
@@ -709,7 +986,15 @@
         "affiliates",
         "affiliate-network",
         "filament-affiliate-network"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "portal",
+        "payout-queue",
+        "fraud-review"
+      ],
+      "use_when": "Affiliate admin or portal UI.",
+      "owner_scoped": true
     },
     "affiliate-network": {
       "composer": "aiarmada/affiliate-network",
@@ -728,7 +1013,17 @@
         "filament-affiliate-network",
         "affiliates",
         "checkout"
-      ]
+      ],
+      "keywords": [
+        "marketplace",
+        "offers",
+        "sites",
+        "merchant-network",
+        "applications",
+        "tracking-links"
+      ],
+      "use_when": "Marketplace / multi-merchant offers and site verification.",
+      "owner_scoped": true
     },
     "filament-affiliate-network": {
       "composer": "aiarmada/filament-affiliate-network",
@@ -746,7 +1041,14 @@
       "related_packages": [
         "affiliate-network",
         "filament-affiliates"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "marketplace-admin",
+        "offers-ui"
+      ],
+      "use_when": "Marketplace admin pages.",
+      "owner_scoped": true
     },
     "growth": {
       "composer": "aiarmada/growth",
@@ -764,7 +1066,16 @@
       "related_packages": [
         "filament-growth",
         "signals"
-      ]
+      ],
+      "keywords": [
+        "experiment",
+        "ab-test",
+        "variant",
+        "assignment",
+        "preset"
+      ],
+      "use_when": "A/B tests and winner measurement.",
+      "owner_scoped": true
     },
     "filament-growth": {
       "composer": "aiarmada/filament-growth",
@@ -783,7 +1094,14 @@
         "growth",
         "signals",
         "filament-signals"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "experiments-ui",
+        "ab-test"
+      ],
+      "use_when": "Experiment admin UI.",
+      "owner_scoped": true
     },
     "cart": {
       "composer": "aiarmada/cart",
@@ -803,7 +1121,17 @@
         "checkout",
         "signals",
         "vouchers"
-      ]
+      ],
+      "keywords": [
+        "cart",
+        "basket",
+        "cart-items",
+        "conditions",
+        "abandonment",
+        "migration"
+      ],
+      "use_when": "Cart CRUD, totals/conditions, guest\u2192user migration.",
+      "owner_scoped": true
     },
     "filament-cart": {
       "composer": "aiarmada/filament-cart",
@@ -822,7 +1150,15 @@
         "cart",
         "signals",
         "filament-signals"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "cart-admin",
+        "abandonment",
+        "monitoring"
+      ],
+      "use_when": "Cart admin/monitoring UI.",
+      "owner_scoped": true
     },
     "checkout": {
       "composer": "aiarmada/checkout",
@@ -844,7 +1180,16 @@
         "chip",
         "cashier",
         "docs"
-      ]
+      ],
+      "keywords": [
+        "checkout",
+        "session",
+        "steps",
+        "payment-resolver",
+        "orchestration"
+      ],
+      "use_when": "End-to-end purchase flow across cart/pricing/shipping/payments/orders.",
+      "owner_scoped": true
     },
     "orders": {
       "composer": "aiarmada/orders",
@@ -864,7 +1209,16 @@
         "checkout",
         "shipping",
         "docs"
-      ]
+      ],
+      "keywords": [
+        "order",
+        "refund",
+        "payment",
+        "invoice",
+        "state-machine"
+      ],
+      "use_when": "Order lifecycle or money movement on orders.",
+      "owner_scoped": true
     },
     "filament-orders": {
       "composer": "aiarmada/filament-orders",
@@ -882,7 +1236,15 @@
       "related_packages": [
         "orders",
         "checkout"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "orders-ui",
+        "timeline",
+        "fulfillment"
+      ],
+      "use_when": "Order admin UI.",
+      "owner_scoped": true
     },
     "shipping": {
       "composer": "aiarmada/shipping",
@@ -902,7 +1264,18 @@
         "jnt",
         "orders",
         "cart"
-      ]
+      ],
+      "keywords": [
+        "shipping",
+        "shipment",
+        "carrier",
+        "zone",
+        "rate",
+        "label",
+        "return"
+      ],
+      "use_when": "Shipping abstraction or custom drivers.",
+      "owner_scoped": true
     },
     "filament-shipping": {
       "composer": "aiarmada/filament-shipping",
@@ -921,7 +1294,15 @@
         "shipping",
         "jnt",
         "filament-jnt"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "shipments-ui",
+        "fulfilment",
+        "rma"
+      ],
+      "use_when": "Shipping operations UI.",
+      "owner_scoped": true
     },
     "jnt": {
       "composer": "aiarmada/jnt",
@@ -940,7 +1321,16 @@
         "filament-jnt",
         "shipping",
         "checkout"
-      ]
+      ],
+      "keywords": [
+        "jnt",
+        "jt-express",
+        "waybill",
+        "tracking",
+        "carrier"
+      ],
+      "use_when": "J&T shipping execution.",
+      "owner_scoped": true
     },
     "filament-jnt": {
       "composer": "aiarmada/filament-jnt",
@@ -959,7 +1349,15 @@
         "jnt",
         "shipping",
         "filament-shipping"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "jnt-ui",
+        "waybill",
+        "tracking"
+      ],
+      "use_when": "J&T operations UI.",
+      "owner_scoped": true
     },
     "chip": {
       "composer": "aiarmada/chip",
@@ -979,7 +1377,18 @@
         "cashier-chip",
         "checkout",
         "docs"
-      ]
+      ],
+      "keywords": [
+        "chip",
+        "collect",
+        "send",
+        "payout",
+        "purchase",
+        "webhook",
+        "malaysia"
+      ],
+      "use_when": "CHIP Collect/Send integration or webhook handling.",
+      "owner_scoped": true
     },
     "filament-chip": {
       "composer": "aiarmada/filament-chip",
@@ -998,7 +1407,14 @@
         "chip",
         "cashier-chip",
         "filament-cashier-chip"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "chip-admin",
+        "purchases-ui"
+      ],
+      "use_when": "CHIP transaction visibility.",
+      "owner_scoped": true
     },
     "cashier": {
       "composer": "aiarmada/cashier",
@@ -1017,7 +1433,17 @@
         "filament-cashier",
         "cashier-chip",
         "chip"
-      ]
+      ],
+      "keywords": [
+        "billing",
+        "subscription",
+        "invoice",
+        "stripe",
+        "multi-gateway",
+        "billable"
+      ],
+      "use_when": "One billing API across Stripe + CHIP.",
+      "owner_scoped": false
     },
     "filament-cashier": {
       "composer": "aiarmada/filament-cashier",
@@ -1036,7 +1462,15 @@
         "cashier",
         "cashier-chip",
         "filament-cashier-chip"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "billing-ui",
+        "mrr",
+        "gateway-compare"
+      ],
+      "use_when": "Billing dashboards/portals.",
+      "owner_scoped": true
     },
     "cashier-chip": {
       "composer": "aiarmada/cashier-chip",
@@ -1055,7 +1489,17 @@
         "filament-cashier-chip",
         "cashier",
         "chip"
-      ]
+      ],
+      "keywords": [
+        "chip-billing",
+        "recurring",
+        "subscription",
+        "renewal",
+        "billable",
+        "webhook"
+      ],
+      "use_when": "Subscriptions billed through CHIP.",
+      "owner_scoped": true
     },
     "filament-cashier-chip": {
       "composer": "aiarmada/filament-cashier-chip",
@@ -1074,7 +1518,14 @@
         "cashier-chip",
         "filament-cashier",
         "chip"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "chip-portal",
+        "subscriptions-ui"
+      ],
+      "use_when": "CHIP subscription admin/portal.",
+      "owner_scoped": true
     },
     "docs": {
       "composer": "aiarmada/docs",
@@ -1094,7 +1545,17 @@
         "orders",
         "checkout",
         "chip"
-      ]
+      ],
+      "keywords": [
+        "document",
+        "invoice-pdf",
+        "numbering",
+        "sequence",
+        "approval",
+        "e-invoice"
+      ],
+      "use_when": "Generating/sending/approving business documents.",
+      "owner_scoped": true
     },
     "filament-docs": {
       "composer": "aiarmada/filament-docs",
@@ -1113,7 +1574,14 @@
         "docs",
         "orders",
         "checkout"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "documents-ui",
+        "approvals-ui"
+      ],
+      "use_when": "Document admin UI.",
+      "owner_scoped": true
     },
     "events": {
       "composer": "aiarmada/events",
@@ -1133,7 +1601,17 @@
         "products",
         "customers",
         "orders"
-      ]
+      ],
+      "keywords": [
+        "event",
+        "venue",
+        "occurrence",
+        "registration",
+        "check-in",
+        "waitlist"
+      ],
+      "use_when": "Event scheduling, venues, registrations, attendance.",
+      "owner_scoped": true
     },
     "filament-events": {
       "composer": "aiarmada/filament-events",
@@ -1151,14 +1629,21 @@
       "related_packages": [
         "events",
         "filament-authz"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "events-ui",
+        "check-in"
+      ],
+      "use_when": "Event operations UI.",
+      "owner_scoped": true
     },
     "seating": {
       "composer": "aiarmada/seating",
       "surface": "domain",
       "family": "venue",
       "paired_package": "filament-seating",
-      "summary": "Venue seat layout — maps, sections, seats, holds, allocations — with a shared seat-allocation contract and Livewire seat-map component.",
+      "summary": "Venue seat layout \u2014 maps, sections, seats, holds, allocations \u2014 with a shared seat-allocation contract and Livewire seat-map component.",
       "canonical_docs": {
         "overview": "packages/seating/docs/01-overview.md",
         "installation": "packages/seating/docs/02-installation.md",
@@ -1170,7 +1655,16 @@
         "filament-seating",
         "ticketing",
         "events"
-      ]
+      ],
+      "keywords": [
+        "seat",
+        "seat-map",
+        "hold",
+        "allocation",
+        "livewire"
+      ],
+      "use_when": "Seat selection, holds, allocations.",
+      "owner_scoped": true
     },
     "filament-seating": {
       "composer": "aiarmada/filament-seating",
@@ -1188,7 +1682,14 @@
       "related_packages": [
         "seating",
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "seat-map",
+        "occupancy"
+      ],
+      "use_when": "Seat-map visual admin.",
+      "owner_scoped": true
     },
     "signals": {
       "composer": "aiarmada/signals",
@@ -1210,7 +1711,16 @@
         "checkout",
         "orders",
         "affiliates"
-      ]
+      ],
+      "keywords": [
+        "analytics",
+        "event-tracking",
+        "funnel",
+        "session",
+        "alert"
+      ],
+      "use_when": "Tracking or reporting behaviour.",
+      "owner_scoped": true
     },
     "filament-signals": {
       "composer": "aiarmada/filament-signals",
@@ -1229,7 +1739,15 @@
         "signals",
         "growth",
         "filament-growth"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "analytics-ui",
+        "funnel",
+        "alerts"
+      ],
+      "use_when": "Analytics dashboards UI.",
+      "owner_scoped": true
     },
     "feedback": {
       "composer": "aiarmada/feedback",
@@ -1250,14 +1768,24 @@
         "events",
         "engagement",
         "contacting"
-      ]
+      ],
+      "keywords": [
+        "survey",
+        "response",
+        "invitation",
+        "nps",
+        "testimonial",
+        "analytics"
+      ],
+      "use_when": "Collecting or analyzing survey feedback.",
+      "owner_scoped": true
     },
     "filament-feedback": {
       "composer": "aiarmada/filament-feedback",
       "surface": "filament",
       "family": "feedback",
       "paired_package": "feedback",
-      "summary": "Filament v5 admin adapter for feedback — survey resources, response management, analytics, and testimonial workflows.",
+      "summary": "Filament v5 admin adapter for feedback \u2014 survey resources, response management, analytics, and testimonial workflows.",
       "canonical_docs": {
         "overview": "packages/filament-feedback/docs/01-overview.md",
         "installation": "packages/filament-feedback/docs/02-installation.md",
@@ -1268,7 +1796,14 @@
       "related_packages": [
         "feedback",
         "commerce-support"
-      ]
+      ],
+      "keywords": [
+        "filament",
+        "surveys-ui",
+        "nps"
+      ],
+      "use_when": "Feedback admin UI.",
+      "owner_scoped": true
     },
     "csuite": {
       "composer": "aiarmada/commerce",
@@ -1290,7 +1825,124 @@
         "chip",
         "docs",
         "jnt"
-      ]
+      ],
+      "keywords": [
+        "bundle",
+        "metapackage",
+        "install",
+        "suite",
+        "starter"
+      ],
+      "use_when": "Installing the preselected suite in one step.",
+      "owner_scoped": false
+    },
+    "organizations": {
+      "composer": "aiarmada/organizations",
+      "surface": "core",
+      "family": "foundation",
+      "paired_package": "filament-organizations",
+      "summary": "Reusable organization aggregate: identity, lifecycle, visibility, ownership invariants, current-org context.",
+      "canonical_docs": {
+        "overview": "packages/organizations/docs/01-overview.md",
+        "installation": "packages/organizations/docs/02-installation.md",
+        "configuration": "packages/organizations/docs/03-configuration.md",
+        "usage": "packages/organizations/docs/04-usage.md",
+        "troubleshooting": "packages/organizations/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "membership",
+        "filament-organizations",
+        "commerce-support"
+      ],
+      "keywords": [
+        "organization",
+        "tenant",
+        "ownership",
+        "transfer",
+        "current-org"
+      ],
+      "use_when": "Tenant aggregate or ownership transfer rules.",
+      "owner_scoped": false
+    },
+    "filament-organizations": {
+      "composer": "aiarmada/filament-organizations",
+      "surface": "filament",
+      "family": "foundation",
+      "paired_package": "organizations",
+      "summary": "Filament admin for organizations: org resource, member/invitation managers, lifecycle actions.",
+      "canonical_docs": {
+        "overview": "packages/filament-organizations/docs/01-overview.md",
+        "installation": "packages/filament-organizations/docs/02-installation.md",
+        "configuration": "packages/filament-organizations/docs/03-configuration.md",
+        "usage": "packages/filament-organizations/docs/04-usage.md",
+        "troubleshooting": "packages/filament-organizations/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "organizations",
+        "membership"
+      ],
+      "keywords": [
+        "filament",
+        "organizations-ui",
+        "members",
+        "invitations"
+      ],
+      "use_when": "Org admin UI.",
+      "owner_scoped": false
+    },
+    "persons": {
+      "composer": "aiarmada/persons",
+      "surface": "domain",
+      "family": "catalog-and-identity",
+      "paired_package": "filament-persons",
+      "summary": "Normalized person identity: canonical persons plus multi-context names, titles, credentials, affiliations (polymorphic).",
+      "canonical_docs": {
+        "overview": "packages/persons/docs/01-overview.md",
+        "installation": "packages/persons/docs/02-installation.md",
+        "configuration": "packages/persons/docs/03-configuration.md",
+        "usage": "packages/persons/docs/04-usage.md",
+        "troubleshooting": "packages/persons/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "commerce-support",
+        "addressing",
+        "filament-persons"
+      ],
+      "keywords": [
+        "person",
+        "identity",
+        "title",
+        "credential",
+        "affiliation",
+        "names"
+      ],
+      "use_when": "Person identity with titles/credentials/affiliations.",
+      "owner_scoped": false
+    },
+    "filament-persons": {
+      "composer": "aiarmada/filament-persons",
+      "surface": "filament",
+      "family": "catalog-and-identity",
+      "paired_package": "persons",
+      "summary": "Filament v5 admin for persons, titles, issuers, and credential definitions.",
+      "canonical_docs": {
+        "overview": "packages/filament-persons/docs/01-overview.md",
+        "installation": "packages/filament-persons/docs/02-installation.md",
+        "configuration": "packages/filament-persons/docs/03-configuration.md",
+        "usage": "packages/filament-persons/docs/04-usage.md",
+        "troubleshooting": "packages/filament-persons/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "persons",
+        "commerce-support"
+      ],
+      "keywords": [
+        "filament",
+        "persons-ui",
+        "titles"
+      ],
+      "use_when": "Person identity admin UI.",
+      "owner_scoped": false
     }
   }
 }

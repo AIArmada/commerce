@@ -4,27 +4,47 @@ package: seating
 status: current
 surface: domain
 family: venue
+keywords:
+  - seat
+  - seat-map
+  - hold
+  - allocation
+  - livewire
 ---
 
 # Seating Context
 
 ## Snapshot
 - Composer: `aiarmada/seating`
-- Role: Venue seat layout (maps, sections, seats, holds, allocations) and the shared seat-allocation contract. Vendor-agnostic — owns no domain-specific data.
-- Search first: `src/Models`, `src/Contracts`, `src/Services`, `src/Livewire`, `database/migrations`, `config`, `docs`
-- Related: `ticketing`, `events`, `filament-seating`
+- Role: Vendor-agnostic seat maps/holds/allocations + Livewire picker + allocator contract.
+- Triggers: seat, seat-map, hold, allocation, livewire
+- Search first: `src/Models, src/Actions, src/Services, config, docs`
+- Related: `filament-seating`, `ticketing`, `events`
+- Paired: `filament-seating` (Filament admin adapter)
 
 ## Read next
 1. `docs/01-overview.md`
 2. `docs/03-configuration.md`
 3. `docs/04-usage.md`
 4. `docs/99-troubleshooting.md`
-5. `../ticketing/CONTEXT.md` when allocation flow is involved
-6. `../events/CONTEXT.md` when event-scoped seat maps are involved
-7. `docs/02-installation.md` when setup or publishing changes
+5. `../filament-seating/CONTEXT.md` when the change crosses UI/domain
+6. `docs/02-installation.md` when setup or publishing changes are involved
 
 ## Guardrails
-- Owns seat layout (Seat, SeatMap, SeatSection, SeatHold, SeatAllocation), the SeatAllocatorInterface contract, the default allocator, and the Livewire SeatMap component.
-- Does NOT own passes, ticket types, registrations, or events. Cross-package linking is via polymorphic `seatable_type`/`seatable_id` on the layout tables.
-- Vendor-agnostic. Domain packages (events, ticketing, future bookings/classes) provide the polymorphic host via their own models.
+- Owns models, actions, services, events, calculations, and persistence rules.
+- If admin UI changes too, audit `filament-seating`.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
+
+## Decide fast
+- Use when: Seat selection, holds, allocations.
+- Skip when: Ticket issuance — see ticketing.
+- Owner/security: Owner-scoped (all 5; seating.owner).
+
+## Key surfaces
+- Models: `Seat`, `SeatAllocation`, `SeatHold`, `SeatMap`, `SeatSection`
+- Actions/Services: `Actions/ConvertHoldsToAllocationsAction`, `Actions/EnsureSeatHoldAction`, `Actions/EnsureSectionAllocationAction`, `Actions/ReleaseAllocationsAction`, `Actions/ResolveSeatMapForHostAction`, `Services/DefaultSeatAllocator`, `Services/NullSeatAllocator`, `Services/SeatLayoutRenderer`
+- Config `seating.php`: `database`, `json_column_type`, `tables`, `seat_maps`, `seat_sections`, `seats`, `seat_holds`, `seat_allocations`, `holds`, `ttl_minutes`
+
+## Docs map
+- Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
+- Deep dives: none — the five canonical docs cover this package
