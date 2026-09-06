@@ -63,15 +63,9 @@ final class TopOffersWidget extends BaseWidget
                     ->formatStateUsing(fn ($state, AffiliateOffer $record): string => MoneyFormatter::formatMinor((int) ($state ?? 0), $record->currency ?? 'USD'))
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('commission_rate')
+                Tables\Columns\TextColumn::make('rate_base_bp')
                     ->label('Commission')
-                    ->formatStateUsing(function (AffiliateOffer $record): string {
-                        if ($record->commission_type === 'percentage') {
-                            return number_format($record->commission_rate / 100, 2) . '%';
-                        }
-
-                        return MoneyFormatter::formatMinor($record->commission_rate, $record->currency ?? 'USD');
-                    }),
+                    ->formatStateUsing(fn (AffiliateOffer $record): string => $record->formattedRate()),
             ])
             ->heading('Top Performing Offers')
             ->paginated(false);

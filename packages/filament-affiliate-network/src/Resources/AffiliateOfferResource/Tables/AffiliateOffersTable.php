@@ -7,7 +7,6 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tab
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Filament\Actions;
@@ -41,16 +40,16 @@ final class AffiliateOffersTable
                     ->badge()
                     ->color(fn (OfferStatus $state): string => $state->color()),
 
-                TextColumn::make('commission_rate')
+                TextColumn::make('rate_base_bp')
                     ->label('Commission')
-                    ->formatStateUsing(function (AffiliateOffer $record): string {
-                        if ($record->commission_type === 'percentage') {
-                            return number_format($record->commission_rate / 100, 2) . '%';
-                        }
-
-                        return MoneyFormatter::formatMinor($record->commission_rate, $record->currency ?? 'USD');
-                    })
+                    ->formatStateUsing(fn (AffiliateOffer $record): string => $record->formattedRate())
                     ->sortable(),
+
+                TextColumn::make('rate_source')
+                    ->label('Rates')
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'manual' ? 'warning' : 'success')
+                    ->toggleable(),
 
                 IconColumn::make('is_featured')
                     ->label('Featured')

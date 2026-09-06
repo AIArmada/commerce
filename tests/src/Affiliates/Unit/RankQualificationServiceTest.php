@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
-use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\Services\UplineService;
 use AIArmada\Affiliates\Services\RankQualificationService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -16,7 +16,7 @@ use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->service = app(RankQualificationService::class);
-    $this->networkService = app(NetworkService::class);
+    $this->uplineService = app(UplineService::class);
 
     $this->affiliate = Affiliate::create([
         'code' => 'RANK-' . uniqid(),

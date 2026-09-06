@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateDailyStat;
-use AIArmada\Affiliates\Models\AffiliateNetwork;
+use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -124,25 +124,25 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
 
     $setOwner($ownerA);
 
-    AffiliateNetwork::addToNetwork($affiliateA, null);
+    AffiliateUpline::addToUpline($affiliateA, null);
 
     $setOwner($ownerB);
 
-    AffiliateNetwork::addToNetwork($affiliateB, null);
+    AffiliateUpline::addToUpline($affiliateB, null);
 
     $setOwner($ownerA);
 
     expect(AffiliateTouchpoint::query()->count())->toBe(1)
         ->and(AffiliateDailyStat::query()->count())->toBe(1)
-        ->and(AffiliateNetwork::query()->where('descendant_id', $affiliateA->getKey())->count())->toBeGreaterThan(0)
-        ->and(AffiliateNetwork::query()->where('descendant_id', $affiliateB->getKey())->count())->toBe(0);
+        ->and(AffiliateUpline::query()->where('descendant_id', $affiliateA->getKey())->count())->toBeGreaterThan(0)
+        ->and(AffiliateUpline::query()->where('descendant_id', $affiliateB->getKey())->count())->toBe(0);
 
     $setOwner($ownerB);
 
     expect(AffiliateTouchpoint::query()->count())->toBe(1)
         ->and(AffiliateDailyStat::query()->count())->toBe(1)
-        ->and(AffiliateNetwork::query()->where('descendant_id', $affiliateB->getKey())->count())->toBeGreaterThan(0)
-        ->and(AffiliateNetwork::query()->where('descendant_id', $affiliateA->getKey())->count())->toBe(0);
+        ->and(AffiliateUpline::query()->where('descendant_id', $affiliateB->getKey())->count())->toBeGreaterThan(0)
+        ->and(AffiliateUpline::query()->where('descendant_id', $affiliateA->getKey())->count())->toBe(0);
 });
 
 final class DerivedTablesOwnerScopingTestOwner extends Model

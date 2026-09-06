@@ -315,7 +315,7 @@ php artisan affiliates:export-payouts --from=2024-01-01 --to=2024-01-31
 
 ## Multi-Level Payouts
 
-For MLM/network structures, distribute commissions to uplines:
+For MLM/upline structures, distribute commissions to uplines:
 
 ```php
 // Configure in config/affiliates.php
@@ -327,20 +327,15 @@ For MLM/network structures, distribute commissions to uplines:
 ],
 ```
 
-When a conversion is recorded, the NetworkService automatically calculates and credits upline affiliates:
+When a conversion is recorded, the UplineService resolves the upline chain so multi-level commissions credit upline affiliates:
 
 ```php
-use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\Services\UplineService;
 
-$networkService = app(NetworkService::class);
+$uplineService = app(UplineService::class);
 
-// Calculate multi-level commissions
-$commissions = $networkService->calculateMultiLevelCommissions(
-    $conversion,
-    $levels = [0.10, 0.05, 0.02],
-);
-
-// Returns array of [affiliate_id => commission_minor]
+// Upline chain for a conversion's affiliate
+$uplines = $uplineService->getUpline($conversion->affiliate);
 ```
 
 

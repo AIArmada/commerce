@@ -13,7 +13,6 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCreativeResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateNetworkResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateRankHistoryResource;
@@ -22,12 +21,13 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTouchpointResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
-use AIArmada\FilamentAffiliates\Widgets\NetworkVisualizationWidget;
 use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
 use AIArmada\FilamentAffiliates\Widgets\PerformanceOverviewWidget;
 use AIArmada\FilamentAffiliates\Widgets\RealTimeActivityWidget;
+use AIArmada\FilamentAffiliates\Widgets\UplineVisualizationWidget;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
@@ -106,8 +106,8 @@ final class FilamentAffiliatesPlugin implements Plugin
             $resources[] = AffiliateTaxDocumentResource::class;
         }
 
-        if ($features['network_visualization']) {
-            $resources[] = AffiliateNetworkResource::class;
+        if ($features['upline_visualization']) {
+            $resources[] = AffiliateUplineResource::class;
         }
 
         if ($features['fraud_monitoring']) {
@@ -166,15 +166,15 @@ final class FilamentAffiliatesPlugin implements Plugin
             $widgets[] = PayoutQueueWidget::class;
         }
 
-        if ($features['network_visualization']) {
-            $widgets[] = NetworkVisualizationWidget::class;
+        if ($features['upline_visualization']) {
+            $widgets[] = UplineVisualizationWidget::class;
         }
 
         return $widgets;
     }
 
     /**
-     * @return array{conversions: bool, payouts: bool, programs: bool, commission_management: bool, links: bool, attribution: bool, ranks: bool, support_compliance: bool, fraud_monitoring: bool, reports: bool, network_visualization: bool, creatives: bool}
+     * @return array{conversions: bool, payouts: bool, programs: bool, commission_management: bool, links: bool, attribution: bool, ranks: bool, support_compliance: bool, fraud_monitoring: bool, reports: bool, upline_visualization: bool, creatives: bool}
      */
     private function getAdminFeatures(): array
     {
@@ -192,7 +192,7 @@ final class FilamentAffiliatesPlugin implements Plugin
             'support_compliance' => (bool) ($configured['support_compliance'] ?? true),
             'fraud_monitoring' => (bool) ($configured['fraud_monitoring'] ?? true),
             'reports' => (bool) ($configured['reports'] ?? true),
-            'network_visualization' => (bool) ($configured['network_visualization'] ?? true),
+            'upline_visualization' => (bool) ($configured['upline_visualization'] ?? true),
             'creatives' => (bool) ($configured['creatives'] ?? true),
         ];
     }

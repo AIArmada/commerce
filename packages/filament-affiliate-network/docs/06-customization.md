@@ -90,7 +90,7 @@ class AffiliateMarketplacePage extends BasePage
         // Only show featured offers with high commission
         return parent::getOffers()
             ->filter(fn ($offer) => $offer->is_featured)
-            ->filter(fn ($offer) => $offer->commission_rate >= 1000);
+            ->filter(fn ($offer) => ($offer->rate_base_bp ?? 0) >= 1000);
     }
 }
 ```
@@ -249,9 +249,7 @@ Edit `resources/views/vendor/filament-affiliate-network/pages/affiliate-marketpl
                     
                     {{-- Commission badge --}}
                     <x-filament::badge color="success">
-                        {{ $offer->commission_type === 'percentage' 
-                            ? number_format($offer->commission_rate / 100, 2) . '%'
-                            : '$' . number_format($offer->commission_rate / 100, 2) }}
+                        {{ $offer->formattedRate() }}
                     </x-filament::badge>
                     
                     {{-- Apply button --}}

@@ -66,7 +66,7 @@ class AffiliateMarketplacePage extends BasePage
     public function getOffers(): Collection
     {
         return parent::getOffers()
-            ->filter(fn ($offer) => $offer->commission_rate >= 500);
+            ->filter(fn ($offer) => ($offer->rate_base_bp ?? 0) >= 500);
     }
 }
 ```

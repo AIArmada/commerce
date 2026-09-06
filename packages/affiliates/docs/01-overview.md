@@ -79,11 +79,11 @@ The `aiarmada/affiliates` package provides a complete affiliate marketing and re
 - **Conversion time analysis**
 - **Blocking thresholds** with auto-suspension
 
-### Network/MLM Support
-- **Hierarchical affiliate networks** with parent-child relationships
+### Upline/MLM Support
+- **Hierarchical affiliate uplines** with parent-child relationships
 - **Multi-level override commissions**
 - **Rank qualification system**
-- **Network visualization** via Filament plugin
+- **Upline visualization** via Filament plugin
 
 ### Reporting & Analytics
 - **Daily stats aggregation**

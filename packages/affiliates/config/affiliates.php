@@ -16,7 +16,7 @@ $tables = [
     'tax_documents' => $tablePrefix . 'tax_documents',
     'touchpoints' => $tablePrefix . 'touchpoints',
     'ranks' => $tablePrefix . 'ranks',
-    'network' => $tablePrefix . 'network',
+    'upline' => $tablePrefix . 'upline',
     'rank_histories' => $tablePrefix . 'rank_histories',
     'daily_stats' => $tablePrefix . 'daily_stats',
     'fraud_signals' => $tablePrefix . 'fraud_signals',
@@ -375,13 +375,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Network / MLM Settings
+    | Upline / MLM Settings
     |--------------------------------------------------------------------------
     */
 
-    'network' => [
-        'enabled' => env('AFFILIATES_NETWORK_ENABLED', true),
-        'max_depth' => env('AFFILIATES_NETWORK_MAX_DEPTH', 10),
+    'upline' => [
+        'enabled' => env('AFFILIATES_UPLINE_ENABLED', true),
+        'max_depth' => env('AFFILIATES_UPLINE_MAX_DEPTH', 10),
     ],
 
     /*
@@ -400,5 +400,20 @@ return [
         'approval_mode' => env('AFFILIATES_REGISTRATION_APPROVAL_MODE', 'admin'), // auto | open | admin
         'default_commission_type' => env('AFFILIATES_REGISTRATION_COMMISSION_TYPE', 'percentage'),
         'default_commission_rate' => env('AFFILIATES_REGISTRATION_COMMISSION_RATE', 1000), // 10% in basis points
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Program Catalog (network sync source)
+    |--------------------------------------------------------------------------
+    |
+    | Read-only snapshot consumed by affiliate-network (shared DB or HTTP).
+    | max_subjects caps snapshot size per program; paginate later if needed.
+    |
+    */
+
+    'catalog' => [
+        'enabled' => env('AFFILIATES_CATALOG_ENABLED', true),
+        'max_subjects' => env('AFFILIATES_CATALOG_MAX_SUBJECTS', 500),
     ],
 ];

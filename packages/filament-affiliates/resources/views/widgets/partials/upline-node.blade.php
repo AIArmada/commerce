@@ -28,7 +28,7 @@
     @if(!empty($node['children']))
         <div class="mt-2">
             @foreach($node['children'] as $child)
-                @include('filament-affiliates::widgets.partials.network-node', ['node' => $child, 'level' => $level + 1])
+                @include('filament-affiliates::widgets.partials.upline-node', ['node' => $child, 'level' => $level + 1])
             @endforeach
         </div>
     @endif

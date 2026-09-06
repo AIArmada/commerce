@@ -18,7 +18,6 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliateNetwork;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
@@ -35,6 +34,7 @@ use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Models\AffiliateTrainingModule;
 use AIArmada\Affiliates\Models\AffiliateTrainingProgress;
+use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Resolvers\DatabaseAffiliateLookup;
 use AIArmada\Affiliates\Rules\ClickVelocityRule;
@@ -52,11 +52,12 @@ use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\DailyAggregationService;
 use AIArmada\Affiliates\Services\FraudDetectionService;
-use AIArmada\Affiliates\Services\NetworkService;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Services\ProgramCatalogService;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Services\UplineService;
 use AIArmada\Affiliates\Strategies\FirstTouchAttribution;
 use AIArmada\Affiliates\Strategies\LastTouchAttribution;
 use AIArmada\Affiliates\Strategies\LinearAttribution;
@@ -104,13 +105,15 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(AffiliateLookup::class, DatabaseAffiliateLookup::class);
         $this->app->singleton(WebhookDispatcher::class);
         $this->app->singleton(AttributionModel::class);
-        $this->app->singleton(NetworkService::class);
+        $this->app->singleton(UplineService::class);
         $this->app->singleton(RankQualificationService::class);
         $this->app->singleton(DailyAggregationService::class);
         $this->app->singleton(FraudDetectionService::class);
         $this->app->singleton(PayoutProcessorFactory::class);
         $this->app->singleton(CommissionRuleEngine::class);
         $this->app->singleton(ProgramService::class);
+        $this->app->singleton(Support\Catalog\PromotableRegistry::class);
+        $this->app->singleton(ProgramCatalogService::class);
         $this->app->singleton(PayoutReconciliationService::class);
 
         $this->registerAttributionStrategies();
@@ -176,7 +179,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             'affiliate_daily_stat' => AffiliateDailyStat::class,
             'affiliate_fraud_signal' => AffiliateFraudSignal::class,
             'affiliate_link' => AffiliateLink::class,
-            'affiliate_network' => AffiliateNetwork::class,
+            'affiliate_upline' => AffiliateUpline::class,
             'affiliate_payout' => AffiliatePayout::class,
             'affiliate_payout_event' => AffiliatePayoutEvent::class,
             'affiliate_payout_hold' => AffiliatePayoutHold::class,

@@ -20,8 +20,8 @@
     "require": {
         "php": "^8.4",
         "aiarmada/commerce-support": "self.version",
-        "spatie/laravel-data": "^4.23",
-        "spatie/laravel-package-tools": "^1.16"
+        "spatie/laravel-data": "^4.23.0",
+        "spatie/laravel-package-tools": "^1.93.1"
     },
     "suggest": {
         "aiarmada/filament-communications": "Filament admin UI for communications.",

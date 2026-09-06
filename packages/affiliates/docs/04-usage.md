@@ -295,7 +295,7 @@ AffiliateStatus::normalize(Disabled::class); // Disabled
 
 Affiliate lifecycle is implemented with Spatie model states, not a backed enum. In write paths you can assign the state class directly, for example `Pending::class` or `Active::class`.
 
-## Affiliate Network / Downlines
+## Affiliate Upline / Downlines
 
 ### Viewing Downlines on the Dashboard
 
@@ -308,7 +308,7 @@ Downlines are loaded via the `children()` relationship on the `Affiliate` model 
 New affiliates can optionally enter a referral code during self-registration. If the code matches an existing affiliate:
 
 - The new affiliate's `parent_affiliate_id` is set to the referrer
-- The `NetworkService::addToNetwork()` is called to build the closure table when network features are enabled
+- The `UplineService::addToUpline()` is called to build the closure table when upline features are enabled
 
 ```php
 // The portal registration form includes a "Referral Code (optional)" field.
@@ -316,24 +316,24 @@ New affiliates can optionally enter a referral code during self-registration. If
 // as a downline of the referring affiliate.
 ```
 
-### Working with the Network Programmatically
+### Working with the Upline Programmatically
 
 ```php
-use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\Services\UplineService;
 
-$network = app(NetworkService::class);
+$upline = app(UplineService::class);
 
 // Get direct downlines
-$downlines = $network->getDirectRecruits($affiliate);
+$downlines = $upline->getDirectRecruits($affiliate);
 
 // Get entire downline tree
-$allDownlines = $network->getDownline($affiliate);
+$allDownlines = $upline->getDownline($affiliate);
 
 // Get upline
-$upline = $network->getUpline($affiliate);
+$ancestors = $upline->getUpline($affiliate);
 
 // Build a tree structure for visualization
-$tree = $network->buildTree($affiliate, $maxDepth = 3);
+$tree = $upline->buildTree($affiliate, $maxDepth = 3);
 ```
 
 ### Querying Affiliates

@@ -29,7 +29,7 @@ Registration is config-driven:
 - `AffiliateRankHistoryResource` (`features.admin.ranks`)
 - `AffiliateSupportTicketResource` (`features.admin.support_compliance`)
 - `AffiliateTaxDocumentResource` (`features.admin.support_compliance`)
-- `AffiliateNetworkResource` (`features.admin.network_visualization`)
+- `AffiliateUplineResource` (`features.admin.upline_visualization`)
 - `AffiliateFraudSignalResource` (`features.admin.fraud_monitoring`)
 
 ## Admin pages
@@ -50,7 +50,7 @@ Registration is config-driven:
 
 - `FraudAlertWidget` (`features.admin.fraud_monitoring`)
 - `PayoutQueueWidget` (`features.admin.payouts`)
-- `NetworkVisualizationWidget` (`features.admin.network_visualization`)
+- `UplineVisualizationWidget` (`features.admin.upline_visualization`)
 
 ## Commission tracking gate behavior
 

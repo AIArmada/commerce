@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateNetwork;
+use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-describe('AffiliateNetwork Model', function (): void {
+describe('AffiliateUpline Model', function (): void {
     beforeEach(function (): void {
         $this->rootAffiliate = Affiliate::create([
             'code' => 'ROOT-001',
@@ -42,33 +42,33 @@ describe('AffiliateNetwork Model', function (): void {
     });
 
     it('can be created with required fields', function (): void {
-        $network = AffiliateNetwork::create([
+        $network = AffiliateUpline::create([
             'ancestor_id' => $this->rootAffiliate->id,
             'descendant_id' => $this->rootAffiliate->id,
             'depth' => 0,
         ]);
 
-        expect($network)->toBeInstanceOf(AffiliateNetwork::class)
+        expect($network)->toBeInstanceOf(AffiliateUpline::class)
             ->and($network->ancestor_id)->toBe($this->rootAffiliate->id)
             ->and($network->descendant_id)->toBe($this->rootAffiliate->id)
             ->and($network->depth)->toBe(0);
     });
 
     it('uses a uuid primary key', function (): void {
-        $network = new AffiliateNetwork;
+        $network = new AffiliateUpline;
 
         expect($network->incrementing)->toBeFalse()
             ->and($network->getKeyName())->toBe('id');
     });
 
     it('does not use timestamps', function (): void {
-        $network = new AffiliateNetwork;
+        $network = new AffiliateUpline;
 
         expect($network->timestamps)->toBeFalse();
     });
 
     it('belongs to ancestor affiliate', function (): void {
-        $network = AffiliateNetwork::create([
+        $network = AffiliateUpline::create([
             'ancestor_id' => $this->rootAffiliate->id,
             'descendant_id' => $this->childAffiliate->id,
             'depth' => 1,
@@ -79,7 +79,7 @@ describe('AffiliateNetwork Model', function (): void {
     });
 
     it('belongs to descendant affiliate', function (): void {
-        $network = AffiliateNetwork::create([
+        $network = AffiliateUpline::create([
             'ancestor_id' => $this->rootAffiliate->id,
             'descendant_id' => $this->childAffiliate->id,
             'depth' => 1,
@@ -90,7 +90,7 @@ describe('AffiliateNetwork Model', function (): void {
     });
 
     it('casts depth as integer', function (): void {
-        $network = AffiliateNetwork::create([
+        $network = AffiliateUpline::create([
             'ancestor_id' => $this->rootAffiliate->id,
             'descendant_id' => $this->childAffiliate->id,
             'depth' => '3',
@@ -110,9 +110,9 @@ describe('AffiliateNetwork Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        AffiliateNetwork::addToNetwork($affiliate);
+        AffiliateUpline::addToUpline($affiliate);
 
-        $selfReference = AffiliateNetwork::query()
+        $selfReference = AffiliateUpline::query()
             ->where('ancestor_id', $affiliate->id)
             ->where('descendant_id', $affiliate->id)
             ->first();
@@ -123,7 +123,7 @@ describe('AffiliateNetwork Model', function (): void {
 
     it('can add affiliate to network with sponsor', function (): void {
         // Add root to network first
-        AffiliateNetwork::addToNetwork($this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->rootAffiliate);
 
         $newAffiliate = Affiliate::create([
             'code' => 'NEW-001',
@@ -135,10 +135,10 @@ describe('AffiliateNetwork Model', function (): void {
             'parent_affiliate_id' => $this->rootAffiliate->id,
         ]);
 
-        AffiliateNetwork::addToNetwork($newAffiliate, $this->rootAffiliate);
+        AffiliateUpline::addToUpline($newAffiliate, $this->rootAffiliate);
 
         // Should have self-reference
-        $selfReference = AffiliateNetwork::query()
+        $selfReference = AffiliateUpline::query()
             ->where('ancestor_id', $newAffiliate->id)
             ->where('descendant_id', $newAffiliate->id)
             ->first();
@@ -147,7 +147,7 @@ describe('AffiliateNetwork Model', function (): void {
             ->and($selfReference->depth)->toBe(0);
 
         // Should have path from root
-        $pathFromRoot = AffiliateNetwork::query()
+        $pathFromRoot = AffiliateUpline::query()
             ->where('ancestor_id', $this->rootAffiliate->id)
             ->where('descendant_id', $newAffiliate->id)
             ->first();
@@ -158,11 +158,11 @@ describe('AffiliateNetwork Model', function (): void {
 
     it('can get ancestors of affiliate', function (): void {
         // Set up network structure
-        AffiliateNetwork::addToNetwork($this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->childAffiliate, $this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->grandchildAffiliate, $this->childAffiliate);
+        AffiliateUpline::addToUpline($this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
 
-        $ancestors = AffiliateNetwork::getAncestors($this->grandchildAffiliate);
+        $ancestors = AffiliateUpline::getAncestors($this->grandchildAffiliate);
 
         expect($ancestors)->toHaveCount(2)
             ->and($ancestors->pluck('id')->toArray())->toContain($this->rootAffiliate->id)
@@ -171,11 +171,11 @@ describe('AffiliateNetwork Model', function (): void {
 
     it('can get descendants of affiliate', function (): void {
         // Set up network structure
-        AffiliateNetwork::addToNetwork($this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->childAffiliate, $this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->grandchildAffiliate, $this->childAffiliate);
+        AffiliateUpline::addToUpline($this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
 
-        $descendants = AffiliateNetwork::getDescendants($this->rootAffiliate);
+        $descendants = AffiliateUpline::getDescendants($this->rootAffiliate);
 
         expect($descendants)->toHaveCount(2)
             ->and($descendants->pluck('id')->toArray())->toContain($this->childAffiliate->id)
@@ -184,12 +184,12 @@ describe('AffiliateNetwork Model', function (): void {
 
     it('can get affiliates at specific depth', function (): void {
         // Set up network structure
-        AffiliateNetwork::addToNetwork($this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->childAffiliate, $this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->grandchildAffiliate, $this->childAffiliate);
+        AffiliateUpline::addToUpline($this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
 
-        $atDepth1 = AffiliateNetwork::getAtDepth($this->rootAffiliate, 1);
-        $atDepth2 = AffiliateNetwork::getAtDepth($this->rootAffiliate, 2);
+        $atDepth1 = AffiliateUpline::getAtDepth($this->rootAffiliate, 1);
+        $atDepth2 = AffiliateUpline::getAtDepth($this->rootAffiliate, 2);
 
         expect($atDepth1)->toHaveCount(1)
             ->and($atDepth1->first()->id)->toBe($this->childAffiliate->id)
@@ -199,11 +199,11 @@ describe('AffiliateNetwork Model', function (): void {
 
     it('can get direct children', function (): void {
         // Set up network structure
-        AffiliateNetwork::addToNetwork($this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->childAffiliate, $this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->grandchildAffiliate, $this->childAffiliate);
+        AffiliateUpline::addToUpline($this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
 
-        $directChildren = AffiliateNetwork::getDirectChildren($this->rootAffiliate);
+        $directChildren = AffiliateUpline::getDirectChildren($this->rootAffiliate);
 
         expect($directChildren)->toHaveCount(1)
             ->and($directChildren->first()->id)->toBe($this->childAffiliate->id);
@@ -211,29 +211,29 @@ describe('AffiliateNetwork Model', function (): void {
 
     it('can get descendant count', function (): void {
         // Set up network structure
-        AffiliateNetwork::addToNetwork($this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->childAffiliate, $this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->grandchildAffiliate, $this->childAffiliate);
+        AffiliateUpline::addToUpline($this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
 
-        $count = AffiliateNetwork::getDescendantCount($this->rootAffiliate);
+        $count = AffiliateUpline::getDescendantCount($this->rootAffiliate);
 
         expect($count)->toBe(2);
     });
 
     it('can remove affiliate from network', function (): void {
         // Set up network structure
-        AffiliateNetwork::addToNetwork($this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->childAffiliate, $this->rootAffiliate);
-        AffiliateNetwork::addToNetwork($this->grandchildAffiliate, $this->childAffiliate);
+        AffiliateUpline::addToUpline($this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
+        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
 
-        AffiliateNetwork::removeFromNetwork($this->childAffiliate);
+        AffiliateUpline::removeFromUpline($this->childAffiliate);
 
         // Child and grandchild paths should be removed
-        $childPaths = AffiliateNetwork::query()
+        $childPaths = AffiliateUpline::query()
             ->where('descendant_id', $this->childAffiliate->id)
             ->count();
 
-        $grandchildPaths = AffiliateNetwork::query()
+        $grandchildPaths = AffiliateUpline::query()
             ->where('descendant_id', $this->grandchildAffiliate->id)
             ->count();
 
@@ -242,8 +242,8 @@ describe('AffiliateNetwork Model', function (): void {
     });
 
     it('uses correct table name from config', function (): void {
-        $network = new AffiliateNetwork;
+        $network = new AffiliateUpline;
 
-        expect($network->getTable())->toBe('affiliate_network');
+        expect($network->getTable())->toBe('affiliate_upline');
     });
 });

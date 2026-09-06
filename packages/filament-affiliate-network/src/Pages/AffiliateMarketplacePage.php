@@ -98,7 +98,7 @@ final class AffiliateMarketplacePage extends Page
                 ->when($this->categoryFilter, fn (Builder $query) => $query->where('category_id', $this->categoryFilter))
                 ->when($this->sortBy === 'featured', fn (Builder $query) => $query->orderByDesc('is_featured')->orderByDesc('created_at'))
                 ->when($this->sortBy === 'newest', fn (Builder $query) => $query->orderByDesc('created_at'))
-                ->when($this->sortBy === 'commission', fn (Builder $query) => $query->orderByDesc('commission_rate'))
+                ->when($this->sortBy === 'commission', fn (Builder $query) => $query->orderByDesc('rate_base_bp'))
                 ->with([
                     'site' => fn ($query) => $query->withoutOwnerScope(),
                     'category' => fn ($query) => $query->withoutOwnerScope(),

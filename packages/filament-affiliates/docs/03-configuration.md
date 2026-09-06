@@ -50,7 +50,7 @@ return [
             'support_compliance' => true,
             'fraud_monitoring' => true,
             'reports' => true,
-            'network_visualization' => true,
+            'upline_visualization' => true,
         ],
     ],
 
@@ -122,7 +122,7 @@ return [
             'affiliate_links' => 66,
             'affiliate_touchpoints' => 67,
             'affiliate_ranks' => 68,
-            'affiliate_network' => 69,
+            'affiliate_upline' => 69,
             'affiliate_rank_histories' => 70,
             'affiliate_support_tickets' => 71,
             'affiliate_tax_documents' => 72,
@@ -218,7 +218,7 @@ Auto-detect and enable integrations:
         'support_compliance' => true,
         'fraud_monitoring' => true,
         'reports' => true,
-        'network_visualization' => true,
+        'upline_visualization' => true,
     ],
 ],
 ```

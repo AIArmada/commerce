@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('affiliates.database.tables.network', 'affiliate_network');
+        $tableName = config('affiliates.database.tables.upline', 'affiliate_upline');
 
         commerce_schema_create_if_missing($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
@@ -28,7 +28,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $tableName = config('affiliates.database.tables.network', 'affiliate_network');
+        $tableName = config('affiliates.database.tables.upline', 'affiliate_upline');
         Schema::dropIfExists($tableName);
     }
 };

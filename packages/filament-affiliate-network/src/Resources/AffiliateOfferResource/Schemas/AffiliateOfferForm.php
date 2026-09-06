@@ -61,19 +61,17 @@ final class AffiliateOfferForm
 
                 Section::make('Commission')
                     ->schema([
-                        Select::make('commission_type')
-                            ->options([
-                                'percentage' => 'Percentage',
-                                'fixed' => 'Fixed Amount',
-                            ])
-                            ->required()
-                            ->default('percentage'),
-
-                        TextInput::make('commission_rate')
+                        TextInput::make('rate_base_bp')
+                            ->label('Base rate (basis points)')
                             ->numeric()
-                            ->required()
-                            ->default(1000)
-                            ->helperText('In basis points (1000 = 10%) or minor units for fixed'),
+                            ->nullable()
+                            ->helperText('Percentage in basis points (1000 = 10%). Leave empty for fixed-only offers.'),
+
+                        TextInput::make('rate_fixed_minor')
+                            ->label('Fixed amount (minor units)')
+                            ->numeric()
+                            ->nullable()
+                            ->helperText('Fixed payout per conversion. Takes precedence for display when set.'),
 
                         TextInput::make('currency')
                             ->maxLength(3)
@@ -84,6 +82,15 @@ final class AffiliateOfferForm
                             ->numeric()
                             ->nullable()
                             ->placeholder('30'),
+
+                        Select::make('rate_source')
+                            ->label('Rate source')
+                            ->options([
+                                'synced' => 'Synced from catalog',
+                                'manual' => 'Manually managed',
+                            ])
+                            ->default('synced')
+                            ->helperText('Editing any rate field flips this to manual; sync then holds rates back until you switch it back.'),
                     ])
                     ->columns(4),
 

@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliateNetwork;
+use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
@@ -39,7 +39,7 @@ it('affiliate core and financial models are auditable and activity loggable', fu
         AffiliateCommissionTemplate::class,
         AffiliateFraudSignal::class,
         AffiliateLink::class,
-        AffiliateNetwork::class,
+        AffiliateUpline::class,
         AffiliatePayout::class,
         AffiliatePayoutEvent::class,
         AffiliatePayoutHold::class,

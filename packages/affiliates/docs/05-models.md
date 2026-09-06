@@ -27,7 +27,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 | `commission_type` | CommissionType | Percentage or fixed |
 | `commission_rate` | int | Rate in basis points or minor units |
 | `currency` | string | ISO currency code |
-| `parent_affiliate_id` | uuid | Parent for MLM networks |
+| `parent_affiliate_id` | uuid | Parent for MLM upline |
 | `default_voucher_code` | string | Default voucher for this affiliate |
 | `contact_email` | string | Contact email |
 | `owner_type` | string | Polymorphic owner type |
@@ -319,11 +319,11 @@ use AIArmada\Affiliates\Models\AffiliateDailyStat;
 | `revenue_minor` | int | Revenue generated |
 | `commission_minor` | int | Commission earned |
 
-## Network Models
+## Upline Models
 
-### AffiliateNetwork
+### AffiliateUpline
 
-Parent-child relationships for MLM structures.
+Parent-child closure table for MLM structures.
 
 ### AffiliateRank
 

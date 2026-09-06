@@ -7,30 +7,30 @@ namespace AIArmada\FilamentAffiliates\Policies;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Illuminate\Foundation\Auth\User;
 
-final class AffiliateNetworkPolicy
+final class AffiliateUplinePolicy
 {
     public function viewAny(User $user): bool
     {
-        return FilamentPermission::hasAbility('affiliate-network.viewAny');
+        return FilamentPermission::hasAbility('affiliate-upline.viewAny');
     }
 
     public function view(User $user, mixed $model): bool
     {
-        return FilamentPermission::hasAbility('affiliate-network.view');
+        return FilamentPermission::hasAbility('affiliate-upline.view');
     }
 
     public function create(User $user): bool
     {
-        return FilamentPermission::hasAbility('affiliate-network.create');
+        return FilamentPermission::hasAbility('affiliate-upline.create');
     }
 
     public function update(User $user, mixed $model): bool
     {
-        return FilamentPermission::hasAbility('affiliate-network.update');
+        return FilamentPermission::hasAbility('affiliate-upline.update');
     }
 
     public function delete(User $user, mixed $model): bool
     {
-        return FilamentPermission::hasAbility('affiliate-network.delete');
+        return FilamentPermission::hasAbility('affiliate-upline.delete');
     }
 }

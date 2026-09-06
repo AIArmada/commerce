@@ -148,13 +148,61 @@ describe('AffiliateOffer Model', function (): void {
     });
 
     describe('casts', function (): void {
-        test('commission_rate is integer', function (): void {
+        test('rate fields cast correctly', function (): void {
             $offer = AffiliateOffer::factory()->forSite($this->site)->create([
-                'commission_rate' => 1500,
+                'rate_base_bp' => 1500,
+                'volume_tiers' => [['min_volume_minor' => 100000, 'rate_bp' => 1800]],
             ]);
 
-            expect($offer->commission_rate)->toBe(1500);
-            expect($offer->commission_rate)->toBeInt();
+            expect($offer->rate_base_bp)->toBe(1500);
+            expect($offer->rate_base_bp)->toBeInt();
+            expect($offer->volume_tiers)->toBe([['min_volume_minor' => 100000, 'rate_bp' => 1800]]);
+            expect($offer->isFixed())->toBeFalse();
+            expect($offer->formattedRate())->toBe('15.00%');
+        });
+
+        test('formattedRate renders fixed amounts', function (): void {
+            $offer = AffiliateOffer::factory()->forSite($this->site)->flatRate(500)->create([
+                'currency' => 'USD',
+            ]);
+
+            expect($offer->isFixed())->toBeTrue();
+            expect($offer->formattedRate())->toContain('5');
+        });
+
+        test('operator rate edits flip the lock to manual', function (): void {
+            $offer = AffiliateOffer::factory()->forSite($this->site)->create([
+                'rate_base_bp' => 1000,
+                'rate_source' => 'synced',
+            ]);
+
+            $offer->update(['rate_base_bp' => 1500]);
+
+            expect($offer->fresh()->rate_source)->toBe('manual');
+            expect($offer->fresh()->rate_base_bp)->toBe(1500);
+        });
+
+        test('explicit unlock clears the checksum for re-apply', function (): void {
+            $offer = AffiliateOffer::factory()->forSite($this->site)->create([
+                'rate_base_bp' => 1500,
+                'rate_source' => 'manual',
+                'source_checksum' => 'abc123',
+            ]);
+
+            $offer->update(['rate_source' => 'synced']);
+
+            expect($offer->fresh()->rate_source)->toBe('synced');
+            expect($offer->fresh()->source_checksum)->toBeNull();
+        });
+
+        test('non-rate edits leave the lock alone', function (): void {
+            $offer = AffiliateOffer::factory()->forSite($this->site)->create([
+                'rate_source' => 'synced',
+            ]);
+
+            $offer->update(['name' => 'Renamed']);
+
+            expect($offer->fresh()->rate_source)->toBe('synced');
         });
 
         test('is_featured is boolean', function (): void {

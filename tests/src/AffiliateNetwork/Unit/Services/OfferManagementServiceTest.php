@@ -62,8 +62,9 @@ describe('OfferManagementService', function (): void {
                 'name' => 'Full Offer',
                 'description' => 'A detailed description',
                 'terms' => 'Terms and conditions',
-                'commission_type' => 'percentage',
-                'commission_rate' => 1500,
+                'rate_base_bp' => 1500,
+                'volume_tiers' => [['min_volume_minor' => 100000, 'rate_bp' => 1800]],
+                'active_promotions' => [['id' => 'promo-1', 'name' => 'Spring', 'ends_at' => null]],
                 'currency' => 'USD',
                 'cookie_days' => 60,
                 'is_featured' => true,
@@ -72,8 +73,9 @@ describe('OfferManagementService', function (): void {
 
             expect($offer->description)->toBe('A detailed description');
             expect($offer->terms)->toBe('Terms and conditions');
-            expect($offer->commission_type)->toBe('percentage');
-            expect($offer->commission_rate)->toBe(1500);
+            expect($offer->rate_base_bp)->toBe(1500);
+            expect($offer->volume_tiers)->toBe([['min_volume_minor' => 100000, 'rate_bp' => 1800]]);
+            expect($offer->active_promotions)->toBe([['id' => 'promo-1', 'name' => 'Spring', 'ends_at' => null]]);
             expect($offer->currency)->toBe('USD');
             expect($offer->cookie_days)->toBe(60);
             expect($offer->is_featured)->toBeTrue();

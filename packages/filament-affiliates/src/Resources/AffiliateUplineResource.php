@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources;
 
-use AIArmada\Affiliates\Models\AffiliateNetwork;
+use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\FilamentAffiliates\Resources\AffiliateNetworkResource\Pages\ListAffiliateNetworks;
-use AIArmada\FilamentAffiliates\Resources\AffiliateNetworkResource\Pages\ViewAffiliateNetwork;
+use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource\Pages\ListAffiliateUplines;
+use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource\Pages\ViewAffiliateUpline;
 use BackedEnum;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -19,19 +19,19 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
-final class AffiliateNetworkResource extends Resource
+final class AffiliateUplineResource extends Resource
 {
-    protected static ?string $model = AffiliateNetwork::class;
+    protected static ?string $model = AffiliateUpline::class;
 
     protected static ?string $tenantOwnershipRelationshipName = 'owner';
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-share';
 
-    protected static ?string $navigationLabel = 'Affiliate Network';
+    protected static ?string $navigationLabel = 'Affiliate Upline';
 
-    protected static ?string $modelLabel = 'Network Link';
+    protected static ?string $modelLabel = 'Upline Link';
 
-    protected static ?string $pluralModelLabel = 'Network Links';
+    protected static ?string $pluralModelLabel = 'Upline Links';
 
     public static function canViewAny(): bool
     {
@@ -65,7 +65,7 @@ final class AffiliateNetworkResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<AffiliateNetwork> $query */
+        /** @var Builder<AffiliateUpline> $query */
         $query = parent::getEloquentQuery()->with(['ancestor', 'descendant']);
 
         if (! (bool) config('affiliates.owner.enabled', false)) {
@@ -107,7 +107,7 @@ final class AffiliateNetworkResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->schema([
-            Section::make('Network Link')
+            Section::make('Upline Link')
                 ->schema([
                     TextEntry::make('ancestor.code')
                         ->label('Ancestor'),
@@ -128,8 +128,8 @@ final class AffiliateNetworkResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListAffiliateNetworks::route('/'),
-            'view' => ViewAffiliateNetwork::route('/{record}'),
+            'index' => ListAffiliateUplines::route('/'),
+            'view' => ViewAffiliateUpline::route('/{record}'),
         ];
     }
 
@@ -140,6 +140,6 @@ final class AffiliateNetworkResource extends Resource
 
     public static function getNavigationSort(): ?int
     {
-        return config('filament-affiliates.resources.navigation_sort.affiliate_network', 68);
+        return config('filament-affiliates.resources.navigation_sort.affiliate_upline', 68);
     }
 }

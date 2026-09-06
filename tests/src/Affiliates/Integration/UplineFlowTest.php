@@ -5,16 +5,16 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Events\AffiliateRankChanged;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateNetwork;
 use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Services\UplineService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Paused;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    config(['affiliates.network.enabled' => true]);
+    config(['affiliates.upline.enabled' => true]);
 
     // Create rank hierarchy with proper schema fields
     $this->bronzeRank = AffiliateRank::create([
@@ -58,12 +58,12 @@ test('affiliate can be added to network without a sponsor', function (): void {
         'currency' => 'USD',
     ]);
 
-    $networkService = app(NetworkService::class);
-    $networkService->addToNetwork($affiliate);
+    $uplineService = app(UplineService::class);
+    $uplineService->addToUpline($affiliate);
 
     // Should have self-referencing entry
     expect(
-        AffiliateNetwork::query()
+        AffiliateUpline::query()
             ->where('ancestor_id', $affiliate->id)
             ->where('descendant_id', $affiliate->id)
             ->where('depth', 0)
@@ -81,8 +81,8 @@ test('affiliate can be added to network with a sponsor', function (): void {
         'currency' => 'USD',
     ]);
 
-    $networkService = app(NetworkService::class);
-    $networkService->addToNetwork($sponsor);
+    $uplineService = app(UplineService::class);
+    $uplineService->addToUpline($sponsor);
 
     $recruit = Affiliate::create([
         'code' => 'RECRUIT-001',
@@ -93,11 +93,11 @@ test('affiliate can be added to network with a sponsor', function (): void {
         'currency' => 'USD',
     ]);
 
-    $networkService->addToNetwork($recruit, $sponsor);
+    $uplineService->addToUpline($recruit, $sponsor);
 
     // Recruit should have sponsor as ancestor at depth 1
     expect(
-        AffiliateNetwork::query()
+        AffiliateUpline::query()
             ->where('ancestor_id', $sponsor->id)
             ->where('descendant_id', $recruit->id)
             ->where('depth', 1)
@@ -110,7 +110,7 @@ test('affiliate can be added to network with a sponsor', function (): void {
 });
 
 test('multi-level network is correctly created', function (): void {
-    $networkService = app(NetworkService::class);
+    $uplineService = app(UplineService::class);
 
     // Create 3-level network: Root -> Level1 -> Level2
     $root = Affiliate::create([
@@ -121,7 +121,7 @@ test('multi-level network is correctly created', function (): void {
         'commission_rate' => 500,
         'currency' => 'USD',
     ]);
-    $networkService->addToNetwork($root);
+    $uplineService->addToUpline($root);
 
     $level1 = Affiliate::create([
         'code' => 'LEVEL1',
@@ -131,7 +131,7 @@ test('multi-level network is correctly created', function (): void {
         'commission_rate' => 500,
         'currency' => 'USD',
     ]);
-    $networkService->addToNetwork($level1, $root);
+    $uplineService->addToUpline($level1, $root);
 
     $level2 = Affiliate::create([
         'code' => 'LEVEL2',
@@ -141,15 +141,15 @@ test('multi-level network is correctly created', function (): void {
         'commission_rate' => 500,
         'currency' => 'USD',
     ]);
-    $networkService->addToNetwork($level2, $level1);
+    $uplineService->addToUpline($level2, $level1);
 
     // Get upline for level2
-    $upline = $networkService->getUpline($level2);
+    $upline = $uplineService->getUpline($level2);
     expect($upline)->toHaveCount(2);
     expect($upline->pluck('id')->toArray())->toEqual([$level1->id, $root->id]);
 
     // Get downline for root (via closure table traversal)
-    $downline = $networkService->getDownline($root);
+    $downline = $uplineService->getDownline($root);
     expect($downline)->toHaveCount(2);
 
     // Root has 1 direct (level1), counts don't propagate automatically through entire upline
@@ -159,7 +159,7 @@ test('multi-level network is correctly created', function (): void {
 });
 
 test('team sales are correctly calculated across network', function (): void {
-    $networkService = app(NetworkService::class);
+    $uplineService = app(UplineService::class);
 
     $root = Affiliate::create([
         'code' => 'LEADER',
@@ -169,7 +169,7 @@ test('team sales are correctly calculated across network', function (): void {
         'commission_rate' => 500,
         'currency' => 'USD',
     ]);
-    $networkService->addToNetwork($root);
+    $uplineService->addToUpline($root);
 
     $member1 = Affiliate::create([
         'code' => 'MEMBER1',
@@ -179,7 +179,7 @@ test('team sales are correctly calculated across network', function (): void {
         'commission_rate' => 500,
         'currency' => 'USD',
     ]);
-    $networkService->addToNetwork($member1, $root);
+    $uplineService->addToUpline($member1, $root);
 
     $member2 = Affiliate::create([
         'code' => 'MEMBER2',
@@ -189,7 +189,7 @@ test('team sales are correctly calculated across network', function (): void {
         'commission_rate' => 500,
         'currency' => 'USD',
     ]);
-    $networkService->addToNetwork($member2, $root);
+    $uplineService->addToUpline($member2, $root);
 
     // Create conversions for team members
     AffiliateConversion::create([
@@ -214,12 +214,12 @@ test('team sales are correctly calculated across network', function (): void {
         'occurred_at' => now(),
     ]);
 
-    $teamSales = $networkService->getTeamSales($root);
+    $teamSales = $uplineService->getTeamSales($root);
     expect($teamSales)->toBe(12500);
 });
 
 test('network tree is correctly built for visualization', function (): void {
-    $networkService = app(NetworkService::class);
+    $uplineService = app(UplineService::class);
 
     $root = Affiliate::create([
         'code' => 'TREE-ROOT',
@@ -230,7 +230,7 @@ test('network tree is correctly built for visualization', function (): void {
         'currency' => 'USD',
         'rank_id' => $this->goldRank->id,
     ]);
-    $networkService->addToNetwork($root);
+    $uplineService->addToUpline($root);
 
     $child1 = Affiliate::create([
         'code' => 'CHILD-1',
@@ -241,9 +241,9 @@ test('network tree is correctly built for visualization', function (): void {
         'currency' => 'USD',
         'rank_id' => $this->silverRank->id,
     ]);
-    $networkService->addToNetwork($child1, $root);
+    $uplineService->addToUpline($child1, $root);
 
-    $tree = $networkService->buildTree($root);
+    $tree = $uplineService->buildTree($root);
 
     expect($tree)->toHaveKeys(['id', 'name', 'code', 'rank', 'status', 'stats', 'children']);
     expect($tree['code'])->toBe('TREE-ROOT');
@@ -255,7 +255,7 @@ test('network tree is correctly built for visualization', function (): void {
 test('rank qualification evaluates correctly', function (): void {
     Event::fake([AffiliateRankChanged::class]);
 
-    $networkService = app(NetworkService::class);
+    $uplineService = app(UplineService::class);
     $rankService = app(RankQualificationService::class);
 
     $affiliate = Affiliate::create([
@@ -267,7 +267,7 @@ test('rank qualification evaluates correctly', function (): void {
         'currency' => 'USD',
         'rank_id' => $this->bronzeRank->id,
     ]);
-    $networkService->addToNetwork($affiliate);
+    $uplineService->addToUpline($affiliate);
 
     // Add recruits to meet silver requirements
     for ($i = 1; $i <= 3; $i++) {
@@ -279,7 +279,7 @@ test('rank qualification evaluates correctly', function (): void {
             'commission_rate' => 500,
             'currency' => 'USD',
         ]);
-        $networkService->addToNetwork($recruit, $affiliate);
+        $uplineService->addToUpline($recruit, $affiliate);
 
         // Add team volume via conversions
         AffiliateConversion::create([
@@ -317,7 +317,7 @@ test('rank qualification evaluates correctly', function (): void {
 test('rank upgrades are processed correctly', function (): void {
     Event::fake([AffiliateRankChanged::class]);
 
-    $networkService = app(NetworkService::class);
+    $uplineService = app(UplineService::class);
     $rankService = app(RankQualificationService::class);
 
     $affiliate = Affiliate::create([
@@ -329,7 +329,7 @@ test('rank upgrades are processed correctly', function (): void {
         'currency' => 'USD',
         'rank_id' => $this->bronzeRank->id,
     ]);
-    $networkService->addToNetwork($affiliate);
+    $uplineService->addToUpline($affiliate);
 
     // Add enough recruits and volume to qualify for Silver
     for ($i = 1; $i <= 2; $i++) {
@@ -341,7 +341,7 @@ test('rank upgrades are processed correctly', function (): void {
             'commission_rate' => 500,
             'currency' => 'USD',
         ]);
-        $networkService->addToNetwork($recruit, $affiliate);
+        $uplineService->addToUpline($recruit, $affiliate);
 
         AffiliateConversion::create([
             'affiliate_id' => $recruit->id,
@@ -378,7 +378,7 @@ test('rank upgrades are processed correctly', function (): void {
 });
 
 test('active downline count is correctly calculated', function (): void {
-    $networkService = app(NetworkService::class);
+    $uplineService = app(UplineService::class);
 
     $root = Affiliate::create([
         'code' => 'ACTIVE-ROOT',
@@ -388,7 +388,7 @@ test('active downline count is correctly calculated', function (): void {
         'commission_rate' => 500,
         'currency' => 'USD',
     ]);
-    $networkService->addToNetwork($root);
+    $uplineService->addToUpline($root);
 
     // Add mix of active and inactive downlines
     $active1 = Affiliate::create([
@@ -399,7 +399,7 @@ test('active downline count is correctly calculated', function (): void {
         'commission_rate' => 500,
         'currency' => 'USD',
     ]);
-    $networkService->addToNetwork($active1, $root);
+    $uplineService->addToUpline($active1, $root);
 
     $inactive = Affiliate::create([
         'code' => 'INACTIVE-1',
@@ -409,7 +409,7 @@ test('active downline count is correctly calculated', function (): void {
         'commission_rate' => 500,
         'currency' => 'USD',
     ]);
-    $networkService->addToNetwork($inactive, $root);
+    $uplineService->addToUpline($inactive, $root);
 
     $active2 = Affiliate::create([
         'code' => 'ACTIVE-2',
@@ -419,8 +419,8 @@ test('active downline count is correctly calculated', function (): void {
         'commission_rate' => 500,
         'currency' => 'USD',
     ]);
-    $networkService->addToNetwork($active2, $root);
+    $uplineService->addToUpline($active2, $root);
 
-    $activeCount = $networkService->getActiveDownlineCount($root);
+    $activeCount = $uplineService->getActiveDownlineCount($root);
     expect($activeCount)->toBe(2);
 });

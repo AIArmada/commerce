@@ -84,6 +84,7 @@ class AffiliateProgram extends Model implements Auditable
         'paused_at',
         'archived_at',
         'commission_type',
+        'currency',
         'cookie_lifetime_days',
         'terms_url',
         'eligibility_rules',

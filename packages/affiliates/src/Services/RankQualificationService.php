@@ -23,7 +23,7 @@ final class RankQualificationService
     private array $metricsCache = [];
 
     public function __construct(
-        private readonly NetworkService $networkService,
+        private readonly UplineService $uplineService,
         private readonly Dispatcher $events
     ) {}
 
@@ -122,9 +122,9 @@ final class RankQualificationService
             fn ($query) => $query->where('occurred_at', '>=', $from)
         );
 
-        $teamSales = $this->networkService->getTeamSales($affiliate, $from);
+        $teamSales = $this->uplineService->getTeamSales($affiliate, $from);
 
-        $activeDownlines = $this->networkService->getActiveDownlineCount($affiliate);
+        $activeDownlines = $this->uplineService->getActiveDownlineCount($affiliate);
 
         $lifetimeValue = $this->sumRevenue($affiliate);
 

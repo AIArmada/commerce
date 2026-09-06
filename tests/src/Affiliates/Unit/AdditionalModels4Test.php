@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Models\AffiliateNetwork;
+use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -59,12 +59,12 @@ test('AffiliateFraudSignal has affiliate relationship', function (): void {
     expect($signal->affiliate())->toBeInstanceOf(BelongsTo::class);
 });
 
-// AffiliateNetwork Tests
-test('AffiliateNetwork relationship tests', function (): void {
-    $network = new AffiliateNetwork;
+// AffiliateUpline Tests
+test('AffiliateUpline relationship tests', function (): void {
+    $network = new AffiliateUpline;
 
     // Verify the model can be instantiated
-    expect($network)->toBeInstanceOf(AffiliateNetwork::class);
+    expect($network)->toBeInstanceOf(AffiliateUpline::class);
 });
 
 // AffiliatePayout Tests

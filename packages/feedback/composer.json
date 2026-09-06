@@ -22,7 +22,7 @@
         "php": "^8.4",
         "aiarmada/commerce-support": "self.version",
         "aiarmada/contacting": "self.version",
-        "spatie/laravel-package-tools": "^1.16"
+        "spatie/laravel-package-tools": "^1.93.1"
     },
     "suggest": {
         "aiarmada/filament-feedback": "Admin panel adapter for managing feedback forms and responses.",

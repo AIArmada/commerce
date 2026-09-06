@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateNetwork;
+use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
@@ -52,8 +52,8 @@ class PortalConversions extends PortalPage implements HasTable
         $query = AffiliateConversion::query()
             ->where('affiliate_id', $affiliateId);
 
-        if (config('affiliates.network.enabled', false)) {
-            $descendantIds = AffiliateNetwork::query()
+        if (config('affiliates.upline.enabled', false)) {
+            $descendantIds = AffiliateUpline::query()
                 ->where('ancestor_id', $affiliateId)
                 ->where('depth', '>', 0)
                 ->pluck('descendant_id')
@@ -76,18 +76,18 @@ class PortalConversions extends PortalPage implements HasTable
                     ->label(__('Affiliate'))
                     ->searchable()
                     ->sortable()
-                    ->visible(fn (): bool => config('affiliates.network.enabled', false)),
+                    ->visible(fn (): bool => config('affiliates.upline.enabled', false)),
 
                 TextColumn::make('voucher_code')
                     ->label(__('Source'))
                     ->badge()
                     ->getStateUsing(function (AffiliateConversion $record) use ($affiliateId): string {
                         if ($record->affiliate_id !== $affiliateId) {
-                            return __('Network');
+                            return __('Upline');
                         }
 
                         return match (true) {
-                            $record->channel === 'upline' => __('Network'),
+                            $record->channel === 'upline' => __('Upline'),
                             $record->voucher_code !== null => __('Voucher'),
                             default => __('Link'),
                         };
@@ -140,17 +140,17 @@ class PortalConversions extends PortalPage implements HasTable
             ? (int) $affiliate->conversions()->count()
             : 0;
 
-        $networkConversions = 0;
+        $uplineConversions = 0;
 
-        if ($affiliate && config('affiliates.network.enabled', false)) {
-            $descendantIds = AffiliateNetwork::query()
+        if ($affiliate && config('affiliates.upline.enabled', false)) {
+            $descendantIds = AffiliateUpline::query()
                 ->where('ancestor_id', $affiliate->getKey())
                 ->where('depth', '>', 0)
                 ->pluck('descendant_id')
                 ->toArray();
 
             if ($descendantIds !== []) {
-                $networkConversions = (int) AffiliateConversion::query()
+                $uplineConversions = (int) AffiliateConversion::query()
                     ->whereIn('affiliate_id', $descendantIds)
                     ->count();
             }
@@ -158,7 +158,7 @@ class PortalConversions extends PortalPage implements HasTable
 
         return [
             'hasAffiliate' => $this->hasAffiliate(),
-            'totalConversions' => $ownConversions + $networkConversions,
+            'totalConversions' => $ownConversions + $uplineConversions,
             'totalEarnings' => $this->getTotalEarnings(),
             'pendingEarnings' => $this->getPendingEarnings(),
         ];

@@ -121,36 +121,30 @@ $signal = $service->recordSignal($affiliate, [
 ]);
 ```
 
-## NetworkService
+## UplineService
 
-Manages affiliate network hierarchies (MLM).
+Manages affiliate upline hierarchies (MLM).
 
 ```php
-use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\Services\UplineService;
 
-$service = app(NetworkService::class);
+$service = app(UplineService::class);
 ```
 
 ### Methods
 
 ```php
+// Add an affiliate under a sponsor
+$service->addToUpline($affiliate, $sponsor);
+
 // Get upline affiliates
-$uplines = $service->getUpline($affiliate, $maxDepth = 10);
+$uplines = $service->getUpline($affiliate);
 
 // Get downline affiliates
-$downlines = $service->getDownline($affiliate, $maxDepth = 10);
+$downlines = $service->getDownline($affiliate);
 
-// Calculate multi-level commissions
-$commissions = $service->calculateMultiLevelCommissions(
-    $conversion,
-    $levels = [0.10, 0.05, 0.02], // 10%, 5%, 2%
-);
-
-// Get network depth
-$depth = $service->getNetworkDepth($affiliate);
-
-// Set parent affiliate
-$service->setParent($affiliate, $parentAffiliate);
+// Team sales for a period
+$teamSales = $service->getTeamSales($affiliate, $from, $to);
 ```
 
 ## RankQualificationService

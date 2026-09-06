@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Services\FraudDetectionService;
-use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\Services\UplineService;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\Services\RankQualificationService;
 use AIArmada\Affiliates\States\Active;
@@ -293,14 +293,14 @@ test('RankQualificationService processAllRankUpgrades returns int', function ():
     expect($result)->toBeGreaterThanOrEqual(0);
 });
 
-// NetworkService Tests
-test('NetworkService can be instantiated', function (): void {
-    $service = app(NetworkService::class);
-    expect($service)->toBeInstanceOf(NetworkService::class);
+// UplineService Tests
+test('UplineService can be instantiated', function (): void {
+    $service = app(UplineService::class);
+    expect($service)->toBeInstanceOf(UplineService::class);
 });
 
-test('NetworkService getDirectRecruits returns collection', function (): void {
-    $service = app(NetworkService::class);
+test('UplineService getDirectRecruits returns collection', function (): void {
+    $service = app(UplineService::class);
 
     $affiliate = Affiliate::create([
         'code' => 'NETWORK001',
@@ -316,8 +316,8 @@ test('NetworkService getDirectRecruits returns collection', function (): void {
     expect($recruits)->toBeInstanceOf(Collection::class);
 });
 
-test('NetworkService getActiveDownlineCount returns int', function (): void {
-    $service = app(NetworkService::class);
+test('UplineService getActiveDownlineCount returns int', function (): void {
+    $service = app(UplineService::class);
 
     $affiliate = Affiliate::create([
         'code' => 'ACTIVE001',
@@ -334,8 +334,8 @@ test('NetworkService getActiveDownlineCount returns int', function (): void {
     expect($count)->toBeGreaterThanOrEqual(0);
 });
 
-test('NetworkService getTeamSales returns int', function (): void {
-    $service = app(NetworkService::class);
+test('UplineService getTeamSales returns int', function (): void {
+    $service = app(UplineService::class);
 
     $affiliate = Affiliate::create([
         'code' => 'TEAM001',

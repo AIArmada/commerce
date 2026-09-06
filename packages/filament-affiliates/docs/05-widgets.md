@@ -18,7 +18,7 @@ title: Widgets
 
 - `FraudAlertWidget` (`filament-affiliates.features.admin.fraud_monitoring`)
 - `PayoutQueueWidget` (`filament-affiliates.features.admin.payouts`)
-- `NetworkVisualizationWidget` (`filament-affiliates.features.admin.network_visualization`)
+- `UplineVisualizationWidget` (`filament-affiliates.features.admin.upline_visualization`)
 
 ## AffiliateStatsWidget
 
@@ -77,7 +77,7 @@ Live conversion activity table.
 - Affiliate + reference + value + commission + status columns
 - Owner-aware query when owner mode is enabled
 
-## NetworkVisualizationWidget
+## UplineVisualizationWidget
 
 Network tree visualization widget (Blade-backed widget view).
 

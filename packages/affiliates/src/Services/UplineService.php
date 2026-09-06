@@ -6,45 +6,45 @@ namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateNetwork;
+use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-final class NetworkService
+final class UplineService
 {
     /**
-     * Add an affiliate to the network under a sponsor.
+     * Add an affiliate to the upline under a sponsor.
      */
-    public function addToNetwork(Affiliate $affiliate, ?Affiliate $sponsor = null): void
+    public function addToUpline(Affiliate $affiliate, ?Affiliate $sponsor = null): void
     {
         if (! $this->isEnabled()) {
             return;
         }
 
         DB::transaction(function () use ($affiliate, $sponsor): void {
-            AffiliateNetwork::addToNetwork($affiliate, $sponsor);
+            AffiliateUpline::addToUpline($affiliate, $sponsor);
 
-            $this->updateNetworkCounts($affiliate);
+            $this->updateUplineCounts($affiliate);
 
             if ($sponsor) {
-                $this->updateNetworkCounts($sponsor);
+                $this->updateUplineCounts($sponsor);
             }
         });
     }
 
     /**
-     * Remove an affiliate from the network.
+     * Remove an affiliate from the upline.
      */
-    public function removeFromNetwork(Affiliate $affiliate): void
+    public function removeFromUpline(Affiliate $affiliate): void
     {
         if (! $this->isEnabled()) {
             return;
         }
 
-        AffiliateNetwork::removeFromNetwork($affiliate);
+        AffiliateUpline::removeFromUpline($affiliate);
     }
 
     /**
@@ -57,10 +57,10 @@ final class NetworkService
         }
 
         DB::transaction(function () use ($affiliate, $newSponsor): void {
-            AffiliateNetwork::moveToNewSponsor($affiliate, $newSponsor);
+            AffiliateUpline::moveToNewSponsor($affiliate, $newSponsor);
 
-            $this->updateNetworkCounts($affiliate);
-            $this->updateNetworkCounts($newSponsor);
+            $this->updateUplineCounts($affiliate);
+            $this->updateUplineCounts($newSponsor);
         });
     }
 
@@ -75,7 +75,7 @@ final class NetworkService
             return collect();
         }
 
-        return AffiliateNetwork::getAncestors($affiliate);
+        return AffiliateUpline::getAncestors($affiliate);
     }
 
     /**
@@ -89,7 +89,7 @@ final class NetworkService
             return collect();
         }
 
-        return AffiliateNetwork::getDescendants($affiliate);
+        return AffiliateUpline::getDescendants($affiliate);
     }
 
     /**
@@ -103,7 +103,7 @@ final class NetworkService
             return collect();
         }
 
-        return AffiliateNetwork::getDirectChildren($affiliate);
+        return AffiliateUpline::getDirectChildren($affiliate);
     }
 
     /**
@@ -115,7 +115,7 @@ final class NetworkService
             return 0;
         }
 
-        $descendantIds = AffiliateNetwork::query()
+        $descendantIds = AffiliateUpline::query()
             ->where('ancestor_id', $affiliate->getKey())
             ->where('depth', '>', 0)
             ->pluck('descendant_id');
@@ -147,7 +147,7 @@ final class NetworkService
             return 0;
         }
 
-        $descendantIds = AffiliateNetwork::query()
+        $descendantIds = AffiliateUpline::query()
             ->where('ancestor_id', $affiliate->getKey())
             ->where('depth', '>', 0)
             ->pluck('descendant_id');
@@ -205,7 +205,7 @@ final class NetworkService
             return [];
         }
 
-        $children = AffiliateNetwork::getDirectChildren($parent);
+        $children = AffiliateUpline::getDirectChildren($parent);
 
         return $children->map(function (Affiliate $child) use ($currentDepth, $maxDepth) {
             return [
@@ -225,12 +225,12 @@ final class NetworkService
 
     private function isEnabled(): bool
     {
-        return (bool) config('affiliates.network.enabled', false);
+        return (bool) config('affiliates.upline.enabled', false);
     }
 
     private function capMaxDepth(int $maxDepth): int
     {
-        $configuredMaxDepth = (int) config('affiliates.network.max_depth', 0);
+        $configuredMaxDepth = (int) config('affiliates.upline.max_depth', 0);
 
         if ($configuredMaxDepth > 0) {
             return min($maxDepth, $configuredMaxDepth);
@@ -239,16 +239,16 @@ final class NetworkService
         return $maxDepth;
     }
 
-    private function updateNetworkCounts(Affiliate $affiliate): void
+    private function updateUplineCounts(Affiliate $affiliate): void
     {
-        $directCount = AffiliateNetwork::query()
+        $directCount = AffiliateUpline::query()
             ->where('ancestor_id', $affiliate->getKey())
             ->where('depth', 1)
             ->count();
 
-        $totalCount = AffiliateNetwork::getDescendantCount($affiliate);
+        $totalCount = AffiliateUpline::getDescendantCount($affiliate);
 
-        $depth = AffiliateNetwork::query()
+        $depth = AffiliateUpline::query()
             ->where('descendant_id', $affiliate->getKey())
             ->max('depth') ?? 0;
 

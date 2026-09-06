@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliateNetwork;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateRank;
@@ -17,6 +16,7 @@ use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\PendingPayout;
@@ -26,7 +26,6 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateNetworkResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\RelationManagers\PayoutEventsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
@@ -49,6 +48,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\RelationManagers\MessagesRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTouchpointResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -474,21 +474,21 @@ it('AffiliateRankResource has navigation sort from config', function (): void {
     expect(AffiliateRankResource::getNavigationSort())->toBe(67);
 });
 
-// AffiliateNetworkResource Tests
-it('AffiliateNetworkResource has correct model', function (): void {
-    expect(AffiliateNetworkResource::getModel())->toBe(AffiliateNetwork::class);
+// AffiliateUplineResource Tests
+it('AffiliateUplineResource has correct model', function (): void {
+    expect(AffiliateUplineResource::getModel())->toBe(AffiliateUpline::class);
 });
 
-it('AffiliateNetworkResource is read-only', function (): void {
-    $network = AffiliateNetwork::make();
+it('AffiliateUplineResource is read-only', function (): void {
+    $network = AffiliateUpline::make();
 
-    expect(AffiliateNetworkResource::canCreate())->toBeFalse()
-        ->and(AffiliateNetworkResource::canEdit($network))->toBeFalse()
-        ->and(AffiliateNetworkResource::canDelete($network))->toBeFalse();
+    expect(AffiliateUplineResource::canCreate())->toBeFalse()
+        ->and(AffiliateUplineResource::canEdit($network))->toBeFalse()
+        ->and(AffiliateUplineResource::canDelete($network))->toBeFalse();
 });
 
-it('AffiliateNetworkResource returns pages array', function (): void {
-    expect(AffiliateNetworkResource::getPages())
+it('AffiliateUplineResource returns pages array', function (): void {
+    expect(AffiliateUplineResource::getPages())
         ->toBeArray()
         ->toHaveKey('index')
         ->toHaveKey('view');

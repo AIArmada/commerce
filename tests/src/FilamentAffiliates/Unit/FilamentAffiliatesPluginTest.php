@@ -12,7 +12,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCreativeResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateNetworkResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateRankHistoryResource;
@@ -23,7 +23,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTouchpointResource;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
-use AIArmada\FilamentAffiliates\Widgets\NetworkVisualizationWidget;
+use AIArmada\FilamentAffiliates\Widgets\UplineVisualizationWidget;
 use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
 use AIArmada\FilamentAffiliates\Widgets\PerformanceOverviewWidget;
 use AIArmada\FilamentAffiliates\Widgets\RealTimeActivityWidget;
@@ -61,7 +61,7 @@ it('registers affiliate resources, pages, and widgets', function (): void {
             AffiliateRankHistoryResource::class,
             AffiliateSupportTicketResource::class,
             AffiliateTaxDocumentResource::class,
-            AffiliateNetworkResource::class,
+            AffiliateUplineResource::class,
             AffiliateFraudSignalResource::class,
             AffiliateCreativeResource::class,
         ])
@@ -87,7 +87,7 @@ it('registers affiliate resources, pages, and widgets', function (): void {
             RealTimeActivityWidget::class,
             FraudAlertWidget::class,
             PayoutQueueWidget::class,
-            NetworkVisualizationWidget::class,
+            UplineVisualizationWidget::class,
         ])
         ->andReturnSelf();
 
@@ -113,7 +113,7 @@ it('skips payout and program admin surfaces when commission tracking is disabled
             AffiliateRankHistoryResource::class,
             AffiliateSupportTicketResource::class,
             AffiliateTaxDocumentResource::class,
-            AffiliateNetworkResource::class,
+            AffiliateUplineResource::class,
             AffiliateFraudSignalResource::class,
             AffiliateCreativeResource::class,
         ])
@@ -137,7 +137,7 @@ it('skips payout and program admin surfaces when commission tracking is disabled
             PerformanceOverviewWidget::class,
             RealTimeActivityWidget::class,
             FraudAlertWidget::class,
-            NetworkVisualizationWidget::class,
+            UplineVisualizationWidget::class,
         ])
         ->andReturnSelf();
 
@@ -165,7 +165,7 @@ it('skips link admin surface when links feature is disabled', function (): void 
             AffiliateRankHistoryResource::class,
             AffiliateSupportTicketResource::class,
             AffiliateTaxDocumentResource::class,
-            AffiliateNetworkResource::class,
+            AffiliateUplineResource::class,
             AffiliateFraudSignalResource::class,
             AffiliateCreativeResource::class,
         ])
@@ -191,7 +191,7 @@ it('skips link admin surface when links feature is disabled', function (): void 
             RealTimeActivityWidget::class,
             FraudAlertWidget::class,
             PayoutQueueWidget::class,
-            NetworkVisualizationWidget::class,
+            UplineVisualizationWidget::class,
         ])
         ->andReturnSelf();
 
@@ -219,7 +219,7 @@ it('skips commission template admin surface when commission management is disabl
             AffiliateRankHistoryResource::class,
             AffiliateSupportTicketResource::class,
             AffiliateTaxDocumentResource::class,
-            AffiliateNetworkResource::class,
+            AffiliateUplineResource::class,
             AffiliateFraudSignalResource::class,
             AffiliateCreativeResource::class,
         ])
@@ -245,7 +245,7 @@ it('skips commission template admin surface when commission management is disabl
             RealTimeActivityWidget::class,
             FraudAlertWidget::class,
             PayoutQueueWidget::class,
-            NetworkVisualizationWidget::class,
+            UplineVisualizationWidget::class,
         ])
         ->andReturnSelf();
 
@@ -272,7 +272,7 @@ it('skips support and compliance admin surfaces when support compliance is disab
             AffiliateTouchpointResource::class,
             AffiliateRankResource::class,
             AffiliateRankHistoryResource::class,
-            AffiliateNetworkResource::class,
+            AffiliateUplineResource::class,
             AffiliateFraudSignalResource::class,
             AffiliateCreativeResource::class,
         ])
@@ -298,7 +298,7 @@ it('skips support and compliance admin surfaces when support compliance is disab
             RealTimeActivityWidget::class,
             FraudAlertWidget::class,
             PayoutQueueWidget::class,
-            NetworkVisualizationWidget::class,
+            UplineVisualizationWidget::class,
         ])
         ->andReturnSelf();
 

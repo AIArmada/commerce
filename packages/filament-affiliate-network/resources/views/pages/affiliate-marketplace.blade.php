@@ -62,11 +62,7 @@
                             <div>
                                 <p class="text-gray-500 dark:text-gray-400">Commission</p>
                                 <p class="font-semibold text-gray-900 dark:text-white">
-                                    @if ($offer->commission_type === 'percentage')
-                                        {{ number_format($offer->commission_rate / 100, 2) }}%
-                                    @else
-                                        {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($offer->commission_rate, $offer->currency ?? 'USD') }}
-                                    @endif
+                                    {{ $offer->formattedRate() }}
                                 </p>
                             </div>
                         @endif

@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
-use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\Services\UplineService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -68,11 +68,11 @@ test('AttributionModel can be instantiated', function (): void {
     expect($model)->toBeInstanceOf(AttributionModel::class);
 });
 
-// NetworkService Tests
-test('NetworkService can be instantiated', function (): void {
-    $service = app(NetworkService::class);
+// UplineService Tests
+test('UplineService can be instantiated', function (): void {
+    $service = app(UplineService::class);
 
-    expect($service)->toBeInstanceOf(NetworkService::class);
+    expect($service)->toBeInstanceOf(UplineService::class);
 });
 
 // AffiliateLinkGenerator Tests

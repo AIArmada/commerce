@@ -5,17 +5,17 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateNetwork;
-use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\Models\AffiliateUpline;
+use AIArmada\Affiliates\Services\UplineService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Paused;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
-    config(['affiliates.network.enabled' => true]);
+    config(['affiliates.upline.enabled' => true]);
 
-    $this->service = app(NetworkService::class);
+    $this->service = app(UplineService::class);
 
     $this->rootAffiliate = Affiliate::create([
         'code' => 'ROOT-' . uniqid(),
@@ -28,8 +28,8 @@ beforeEach(function (): void {
     ]);
 });
 
-describe('NetworkService', function (): void {
-    describe('addToNetwork', function (): void {
+describe('UplineService', function (): void {
+    describe('addToUpline', function (): void {
         test('adds affiliate to network without sponsor', function (): void {
             $affiliate = Affiliate::create([
                 'code' => 'ADD-' . uniqid(),
@@ -41,10 +41,10 @@ describe('NetworkService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->addToNetwork($affiliate);
+            $this->service->addToUpline($affiliate);
 
             // Self-referential entry created
-            $entry = AffiliateNetwork::where('descendant_id', $affiliate->id)
+            $entry = AffiliateUpline::where('descendant_id', $affiliate->id)
                 ->where('ancestor_id', $affiliate->id)
                 ->first();
 
@@ -64,13 +64,13 @@ describe('NetworkService', function (): void {
             ]);
 
             // Add root first
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             // Add child under root
-            $this->service->addToNetwork($affiliate, $this->rootAffiliate);
+            $this->service->addToUpline($affiliate, $this->rootAffiliate);
 
             // Verify relationship
-            $entry = AffiliateNetwork::where('descendant_id', $affiliate->id)
+            $entry = AffiliateUpline::where('descendant_id', $affiliate->id)
                 ->where('ancestor_id', $this->rootAffiliate->id)
                 ->first();
 
@@ -79,7 +79,7 @@ describe('NetworkService', function (): void {
         });
 
         test('updates network counts on sponsor', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $affiliate = Affiliate::create([
                 'code' => 'COUNT-' . uniqid(),
@@ -91,16 +91,16 @@ describe('NetworkService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->addToNetwork($affiliate, $this->rootAffiliate);
+            $this->service->addToUpline($affiliate, $this->rootAffiliate);
 
             $this->rootAffiliate->refresh();
             expect($this->rootAffiliate->direct_downline_count)->toBeGreaterThanOrEqual(1);
         });
     });
 
-    describe('removeFromNetwork', function (): void {
+    describe('removeFromUpline', function (): void {
         test('removes affiliate from network', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $affiliate = Affiliate::create([
                 'code' => 'REMOVE-' . uniqid(),
@@ -112,19 +112,19 @@ describe('NetworkService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->addToNetwork($affiliate, $this->rootAffiliate);
+            $this->service->addToUpline($affiliate, $this->rootAffiliate);
 
-            $this->service->removeFromNetwork($affiliate);
+            $this->service->removeFromUpline($affiliate);
 
             // Check that affiliate's entries are removed
-            $count = AffiliateNetwork::where('descendant_id', $affiliate->id)->count();
+            $count = AffiliateUpline::where('descendant_id', $affiliate->id)->count();
             expect($count)->toBe(0);
         });
     });
 
     describe('changeSponsor', function (): void {
         test('moves affiliate to new sponsor', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $newSponsor = Affiliate::create([
                 'code' => 'NEW-SPONSOR-' . uniqid(),
@@ -135,7 +135,7 @@ describe('NetworkService', function (): void {
                 'commission_rate' => 1000,
                 'currency' => 'USD',
             ]);
-            $this->service->addToNetwork($newSponsor);
+            $this->service->addToUpline($newSponsor);
 
             $affiliate = Affiliate::create([
                 'code' => 'MOVE-' . uniqid(),
@@ -147,13 +147,13 @@ describe('NetworkService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->addToNetwork($affiliate, $this->rootAffiliate);
+            $this->service->addToUpline($affiliate, $this->rootAffiliate);
 
             // Move to new sponsor
             $this->service->changeSponsor($affiliate, $newSponsor);
 
             // Verify new relationship exists
-            $entry = AffiliateNetwork::where('descendant_id', $affiliate->id)
+            $entry = AffiliateUpline::where('descendant_id', $affiliate->id)
                 ->where('ancestor_id', $newSponsor->id)
                 ->where('depth', 1)
                 ->first();
@@ -164,7 +164,7 @@ describe('NetworkService', function (): void {
 
     describe('getUpline', function (): void {
         test('returns collection of ancestors', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $affiliate = Affiliate::create([
                 'code' => 'UPLINE-' . uniqid(),
@@ -176,7 +176,7 @@ describe('NetworkService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->addToNetwork($affiliate, $this->rootAffiliate);
+            $this->service->addToUpline($affiliate, $this->rootAffiliate);
 
             $upline = $this->service->getUpline($affiliate);
 
@@ -185,7 +185,7 @@ describe('NetworkService', function (): void {
         });
 
         test('returns empty collection when no ancestors', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $upline = $this->service->getUpline($this->rootAffiliate);
 
@@ -196,7 +196,7 @@ describe('NetworkService', function (): void {
 
     describe('getDownline', function (): void {
         test('returns collection of descendants', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $affiliate = Affiliate::create([
                 'code' => 'DOWN-' . uniqid(),
@@ -208,7 +208,7 @@ describe('NetworkService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->addToNetwork($affiliate, $this->rootAffiliate);
+            $this->service->addToUpline($affiliate, $this->rootAffiliate);
 
             $downline = $this->service->getDownline($this->rootAffiliate);
 
@@ -227,7 +227,7 @@ describe('NetworkService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->addToNetwork($affiliate);
+            $this->service->addToUpline($affiliate);
 
             $downline = $this->service->getDownline($affiliate);
 
@@ -238,7 +238,7 @@ describe('NetworkService', function (): void {
 
     describe('getDirectRecruits', function (): void {
         test('returns direct children only', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             // Level 1 child
             $child = Affiliate::create([
@@ -250,7 +250,7 @@ describe('NetworkService', function (): void {
                 'commission_rate' => 1000,
                 'currency' => 'USD',
             ]);
-            $this->service->addToNetwork($child, $this->rootAffiliate);
+            $this->service->addToUpline($child, $this->rootAffiliate);
 
             // Level 2 child (grandchild)
             $grandchild = Affiliate::create([
@@ -262,7 +262,7 @@ describe('NetworkService', function (): void {
                 'commission_rate' => 1000,
                 'currency' => 'USD',
             ]);
-            $this->service->addToNetwork($grandchild, $child);
+            $this->service->addToUpline($grandchild, $child);
 
             $recruits = $this->service->getDirectRecruits($this->rootAffiliate);
 
@@ -274,7 +274,7 @@ describe('NetworkService', function (): void {
 
     describe('getTeamSales', function (): void {
         test('returns total sales from downline', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $affiliate = Affiliate::create([
                 'code' => 'SALES-' . uniqid(),
@@ -286,7 +286,7 @@ describe('NetworkService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->addToNetwork($affiliate, $this->rootAffiliate);
+            $this->service->addToUpline($affiliate, $this->rootAffiliate);
 
             // Create conversion for the child
             AffiliateConversion::create([
@@ -316,7 +316,7 @@ describe('NetworkService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->addToNetwork($affiliate);
+            $this->service->addToUpline($affiliate);
 
             $teamSales = $this->service->getTeamSales($affiliate);
 
@@ -324,7 +324,7 @@ describe('NetworkService', function (): void {
         });
 
         test('filters by date range', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $affiliate = Affiliate::create([
                 'code' => 'DATE-' . uniqid(),
@@ -336,7 +336,7 @@ describe('NetworkService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->addToNetwork($affiliate, $this->rootAffiliate);
+            $this->service->addToUpline($affiliate, $this->rootAffiliate);
 
             // In range
             AffiliateConversion::create([
@@ -375,7 +375,7 @@ describe('NetworkService', function (): void {
 
     describe('getActiveDownlineCount', function (): void {
         test('counts only active affiliates', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             // Active child
             $activeChild = Affiliate::create([
@@ -387,7 +387,7 @@ describe('NetworkService', function (): void {
                 'commission_rate' => 1000,
                 'currency' => 'USD',
             ]);
-            $this->service->addToNetwork($activeChild, $this->rootAffiliate);
+            $this->service->addToUpline($activeChild, $this->rootAffiliate);
 
             // Inactive child
             $inactiveChild = Affiliate::create([
@@ -399,7 +399,7 @@ describe('NetworkService', function (): void {
                 'commission_rate' => 1000,
                 'currency' => 'USD',
             ]);
-            $this->service->addToNetwork($inactiveChild, $this->rootAffiliate);
+            $this->service->addToUpline($inactiveChild, $this->rootAffiliate);
 
             $count = $this->service->getActiveDownlineCount($this->rootAffiliate);
 
@@ -407,7 +407,7 @@ describe('NetworkService', function (): void {
         });
 
         test('returns zero when no downline', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $count = $this->service->getActiveDownlineCount($this->rootAffiliate);
 
@@ -417,7 +417,7 @@ describe('NetworkService', function (): void {
 
     describe('buildTree', function (): void {
         test('returns array with correct structure', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $tree = $this->service->buildTree($this->rootAffiliate);
 
@@ -429,7 +429,7 @@ describe('NetworkService', function (): void {
         });
 
         test('includes children in tree', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $child = Affiliate::create([
                 'code' => 'TREE-' . uniqid(),
@@ -441,7 +441,7 @@ describe('NetworkService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->addToNetwork($child, $this->rootAffiliate);
+            $this->service->addToUpline($child, $this->rootAffiliate);
 
             $tree = $this->service->buildTree($this->rootAffiliate);
 
@@ -451,7 +451,7 @@ describe('NetworkService', function (): void {
         });
 
         test('respects max depth', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             // Create a deep chain
             $parent = $this->rootAffiliate;
@@ -465,7 +465,7 @@ describe('NetworkService', function (): void {
                     'commission_rate' => 1000,
                     'currency' => 'USD',
                 ]);
-                $this->service->addToNetwork($child, $parent);
+                $this->service->addToUpline($child, $parent);
                 $parent = $child;
             }
 
@@ -478,7 +478,7 @@ describe('NetworkService', function (): void {
         });
 
         test('includes stats in nodes', function (): void {
-            $this->service->addToNetwork($this->rootAffiliate);
+            $this->service->addToUpline($this->rootAffiliate);
 
             $tree = $this->service->buildTree($this->rootAffiliate);
 
@@ -488,22 +488,22 @@ describe('NetworkService', function (): void {
     });
 });
 
-describe('NetworkService class structure', function (): void {
+describe('UplineService class structure', function (): void {
     test('can be instantiated', function (): void {
-        $service = app(NetworkService::class);
-        expect($service)->toBeInstanceOf(NetworkService::class);
+        $service = app(UplineService::class);
+        expect($service)->toBeInstanceOf(UplineService::class);
     });
 
     test('is declared as final', function (): void {
-        $reflection = new ReflectionClass(NetworkService::class);
+        $reflection = new ReflectionClass(UplineService::class);
         expect($reflection->isFinal())->toBeTrue();
     });
 
     test('has required public methods', function (): void {
-        $reflection = new ReflectionClass(NetworkService::class);
+        $reflection = new ReflectionClass(UplineService::class);
 
-        expect($reflection->hasMethod('addToNetwork'))->toBeTrue();
-        expect($reflection->hasMethod('removeFromNetwork'))->toBeTrue();
+        expect($reflection->hasMethod('addToUpline'))->toBeTrue();
+        expect($reflection->hasMethod('removeFromUpline'))->toBeTrue();
         expect($reflection->hasMethod('changeSponsor'))->toBeTrue();
         expect($reflection->hasMethod('getUpline'))->toBeTrue();
         expect($reflection->hasMethod('getDownline'))->toBeTrue();

@@ -27,7 +27,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Affiliate $ancestor
  * @property-read Affiliate $descendant
  */
-class AffiliateNetwork extends Model implements Auditable
+class AffiliateUpline extends Model implements Auditable
 {
     use HasCommerceAudit;
     use HasOwner;
@@ -167,9 +167,9 @@ class AffiliateNetwork extends Model implements Auditable
     }
 
     /**
-     * Add an affiliate to the network under a sponsor.
+     * Add an affiliate to the upline under a sponsor.
      */
-    public static function addToNetwork(Affiliate $affiliate, ?Affiliate $sponsor = null): void
+    public static function addToUpline(Affiliate $affiliate, ?Affiliate $sponsor = null): void
     {
         // Self-referencing entry (every node points to itself at depth 0)
         static::updateOrCreate(
@@ -209,9 +209,9 @@ class AffiliateNetwork extends Model implements Auditable
     }
 
     /**
-     * Remove an affiliate from the network (and all descendants).
+     * Remove an affiliate from the upline (and all descendants).
      */
-    public static function removeFromNetwork(Affiliate $affiliate): void
+    public static function removeFromUpline(Affiliate $affiliate): void
     {
         // Get all descendants
         $descendantIds = static::query()
@@ -275,7 +275,7 @@ class AffiliateNetwork extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.network', 'affiliate_network');
+        return config('affiliates.database.tables.upline', 'affiliate_upline');
     }
 
     /**

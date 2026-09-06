@@ -21,6 +21,8 @@ title: Public API
 - `GET /api/affiliates/{code}/summary`
 - `POST /api/affiliates/{code}/links`
 - `GET /api/affiliates/{code}/creatives`
+- `GET /api/affiliates/programs`
+- `GET /api/affiliates/programs/{id}/catalog`
 
 ## Link Endpoint
 

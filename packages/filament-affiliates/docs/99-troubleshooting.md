@@ -172,7 +172,7 @@ public function affiliate(): HasOne
 
 - `filament-affiliates.features.admin.fraud_monitoring` (FraudAlertWidget)
 - `filament-affiliates.features.admin.payouts` (PayoutQueueWidget)
-- `filament-affiliates.features.admin.network_visualization` (NetworkVisualizationWidget)
+- `filament-affiliates.features.admin.upline_visualization` (UplineVisualizationWidget)
 
 2. Check authorization:
 

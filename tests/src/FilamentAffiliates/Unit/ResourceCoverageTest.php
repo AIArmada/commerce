@@ -6,7 +6,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource\Schemas\AffiliateFraudSignalInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateNetworkResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\RelationManagers\PayoutEventsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
@@ -241,7 +241,7 @@ it('AffiliateRankResource configures form, table, and infolist contracts', funct
     expect(true)->toBeTrue();
 });
 
-it('AffiliateNetworkResource configures table and infolist contracts', function (): void {
+it('AffiliateUplineResource configures table and infolist contracts', function (): void {
     $table = Mockery::mock(Table::class);
     $table->shouldReceive('columns')->once()->andReturnSelf();
     $table->shouldReceive('defaultSort')->once()->andReturnSelf();
@@ -249,8 +249,8 @@ it('AffiliateNetworkResource configures table and infolist contracts', function 
     $infolist = Mockery::mock(Schema::class);
     $infolist->shouldReceive('schema')->once()->andReturnSelf();
 
-    AffiliateNetworkResource::table($table);
-    AffiliateNetworkResource::infolist($infolist);
+    AffiliateUplineResource::table($table);
+    AffiliateUplineResource::infolist($infolist);
 
     expect(true)->toBeTrue();
 });

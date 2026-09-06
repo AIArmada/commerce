@@ -258,12 +258,12 @@ The package is configured via `config/affiliates.php`. This document reflects th
 ],
 ```
 
-## Network/MLM
+## Upline/MLM
 
 ```php
-'network' => [
-    'enabled' => env('AFFILIATES_NETWORK_ENABLED', false),
-    'max_depth' => env('AFFILIATES_NETWORK_MAX_DEPTH', 10),
+'upline' => [
+    'enabled' => env('AFFILIATES_UPLINE_ENABLED', false),
+    'max_depth' => env('AFFILIATES_UPLINE_MAX_DEPTH', 10),
 ],
 ```
 

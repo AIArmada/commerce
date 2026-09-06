@@ -41,7 +41,7 @@ keywords:
 - Owner/security: Filament adapter; validate IDs server-side.
 
 ## Key surfaces
-- Resources: `AffiliateCommissionTemplateResource`, `AffiliateConversionResource`, `AffiliateCreativeResource`, `AffiliateFraudSignalResource`, `AffiliateLinkResource`, `AffiliateNetworkResource`, `AffiliatePayoutResource`, `AffiliateProgramResource`, `AffiliateRankHistoryResource`, `AffiliateRankResource`
+- Resources: `AffiliateCommissionTemplateResource`, `AffiliateConversionResource`, `AffiliateCreativeResource`, `AffiliateFraudSignalResource`, `AffiliateLinkResource`, `AffiliateUplineResource`, `AffiliatePayoutResource`, `AffiliateProgramResource`, `AffiliateRankHistoryResource`, `AffiliateRankResource`
 - Actions/Services: `Actions/BulkFraudReviewAction`, `Actions/BulkPayoutAction`, `Actions/ProcessAffiliatePayout`, `Actions/UpdateAffiliateFraudSignalStatus`, `Actions/ValidateAffiliateParentAssignment`, `Services/AffiliateStatsAggregator`, `Services/PayoutExportService`
 - Config `filament-affiliates.php`: `navigation`, `group`, `widgets`, `currency`, `features`, `admin`, `conversions`, `payouts`, `programs`, `commission_management`
 

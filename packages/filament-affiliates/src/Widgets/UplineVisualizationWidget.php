@@ -11,7 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
 
-final class NetworkVisualizationWidget extends Widget
+final class UplineVisualizationWidget extends Widget
 {
     public ?string $affiliateId = null;
 
@@ -22,14 +22,14 @@ final class NetworkVisualizationWidget extends Widget
     protected int | string | array $columnSpan = 'full';
 
     /** @var view-string */
-    protected string $view = 'filament-affiliates::widgets.network-visualization';
+    protected string $view = 'filament-affiliates::widgets.upline-visualization';
 
     public function mount(?string $affiliateId = null): void
     {
         $this->affiliateId = $affiliateId;
     }
 
-    public function getNetworkData(): array
+    public function getUplineData(): array
     {
         /** @var Model|null $owner */
         $owner = (bool) config('affiliates.owner.enabled', false)
@@ -70,7 +70,7 @@ final class NetworkVisualizationWidget extends Widget
         return [$this->buildNode($affiliate, 0)];
     }
 
-    public function getNetworkStats(): array
+    public function getUplineStats(): array
     {
         /** @var Model|null $owner */
         $owner = (bool) config('affiliates.owner.enabled', false)

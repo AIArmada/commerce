@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAffiliates\Pages\Portal;
 use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
 use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\Services\UplineService;
 use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -362,8 +362,8 @@ class PortalRegistration extends FilamentRegister
         $affiliate = app(CreateAffiliate::class)->handle($affiliateData, $owner);
 
         if ($referrer) {
-            $networkService = app(NetworkService::class);
-            $networkService->addToNetwork($affiliate, $referrer);
+            $uplineService = app(UplineService::class);
+            $uplineService->addToUpline($affiliate, $referrer);
         }
 
         return $affiliate;

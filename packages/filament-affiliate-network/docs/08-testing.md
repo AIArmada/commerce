@@ -175,8 +175,7 @@ it('can create offer', function () {
             'site_id' => $site->id,
             'name' => 'Summer Sale',
             'slug' => 'summer-sale',
-            'commission_type' => 'percentage',
-            'commission_rate' => 1000,
+            'rate_base_bp' => 1000,
             'status' => AffiliateOffer::STATUS_DRAFT,
         ])
         ->call('create')

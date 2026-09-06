@@ -10,10 +10,10 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
-use AIArmada\FilamentAffiliates\Widgets\NetworkVisualizationWidget;
 use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
 use AIArmada\FilamentAffiliates\Widgets\PerformanceOverviewWidget;
 use AIArmada\FilamentAffiliates\Widgets\RealTimeActivityWidget;
+use AIArmada\FilamentAffiliates\Widgets\UplineVisualizationWidget;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -134,41 +134,41 @@ it('PayoutQueueWidget table heading includes pending count', function (): void {
     expect($heading)->toContain('Pending Payouts');
 });
 
-// NetworkVisualizationWidget Tests
-it('NetworkVisualizationWidget can be instantiated', function (): void {
-    $widget = new NetworkVisualizationWidget;
+// UplineVisualizationWidget Tests
+it('UplineVisualizationWidget can be instantiated', function (): void {
+    $widget = new UplineVisualizationWidget;
 
-    expect($widget)->toBeInstanceOf(NetworkVisualizationWidget::class);
+    expect($widget)->toBeInstanceOf(UplineVisualizationWidget::class);
 });
 
-it('NetworkVisualizationWidget can mount with affiliate id', function (): void {
-    $widget = new NetworkVisualizationWidget;
+it('UplineVisualizationWidget can mount with affiliate id', function (): void {
+    $widget = new UplineVisualizationWidget;
     $widget->mount('test-affiliate-id');
 
     expect($widget->affiliateId)->toBe('test-affiliate-id');
 });
 
-it('NetworkVisualizationWidget can mount without affiliate id', function (): void {
-    $widget = new NetworkVisualizationWidget;
+it('UplineVisualizationWidget can mount without affiliate id', function (): void {
+    $widget = new UplineVisualizationWidget;
     $widget->mount(null);
 
     expect($widget->affiliateId)->toBeNull();
 });
 
-it('NetworkVisualizationWidget has default depth of 3', function (): void {
-    $widget = new NetworkVisualizationWidget;
+it('UplineVisualizationWidget has default depth of 3', function (): void {
+    $widget = new UplineVisualizationWidget;
 
     expect($widget->depth)->toBe(3);
 });
 
-it('NetworkVisualizationWidget returns empty network data for non-existent affiliate', function (): void {
-    $widget = new NetworkVisualizationWidget;
+it('UplineVisualizationWidget returns empty network data for non-existent affiliate', function (): void {
+    $widget = new UplineVisualizationWidget;
     $widget->mount('non-existent-id');
 
-    expect($widget->getNetworkData())->toBeEmpty();
+    expect($widget->getUplineData())->toBeEmpty();
 });
 
-it('NetworkVisualizationWidget returns network stats', function (): void {
+it('UplineVisualizationWidget returns network stats', function (): void {
     Affiliate::create([
         'code' => 'NET-' . Str::uuid(),
         'name' => 'Network Test Affiliate',
@@ -178,8 +178,8 @@ it('NetworkVisualizationWidget returns network stats', function (): void {
         'currency' => 'USD',
     ]);
 
-    $widget = new NetworkVisualizationWidget;
-    $stats = $widget->getNetworkStats();
+    $widget = new UplineVisualizationWidget;
+    $stats = $widget->getUplineStats();
 
     expect($stats)
         ->toBeArray()
@@ -189,7 +189,7 @@ it('NetworkVisualizationWidget returns network stats', function (): void {
         ->toHaveKey('avg_children');
 });
 
-it('NetworkVisualizationWidget returns root affiliates when no affiliate_id', function (): void {
+it('UplineVisualizationWidget returns root affiliates when no affiliate_id', function (): void {
     Affiliate::create([
         'code' => 'ROOT-' . Str::uuid(),
         'name' => 'Root Affiliate',
@@ -200,9 +200,9 @@ it('NetworkVisualizationWidget returns root affiliates when no affiliate_id', fu
         'currency' => 'USD',
     ]);
 
-    $widget = new NetworkVisualizationWidget;
+    $widget = new UplineVisualizationWidget;
     $widget->mount(null);
-    $data = $widget->getNetworkData();
+    $data = $widget->getUplineData();
 
     expect($data)->toBeArray()
         ->and(count($data))->toBeGreaterThanOrEqual(1);
