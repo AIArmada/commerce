@@ -35,7 +35,6 @@ return [
         'enforce' => true,
     ],
     'impersonate' => [
-        'enabled' => env('AUTHZ_IMPERSONATE_ENABLED', true),
         'guard' => env('AUTHZ_IMPERSONATE_GUARD', 'web'),
     ],
 ];

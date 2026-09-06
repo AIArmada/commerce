@@ -8,6 +8,8 @@ use AIArmada\CommerceSupport\Models\Role;
 use Illuminate\Support\Facades\Gate;
 
 beforeEach(function (): void {
+    setPermissionsTeamId(null);
+
     $this->user = User::create([
         'name' => 'Test User',
         'email' => 'gate-test-' . uniqid() . '@example.com',

@@ -21,12 +21,16 @@ trait HasAuthzScope
             $model->ensureAuthzScope();
         });
 
-        static::updated(function ($model): void {
+        static::updated(function (Model $model): void {
+            if (! $model->wasChanged($model->getAuthzScopeLabelAttributes())) {
+                return;
+            }
+
             $model->syncAuthzScopeLabel();
         });
 
-        static::deleted(function ($model): void {
-            $model->authzScope()?->delete();
+        static::deleted(function (Model $model): void {
+            $model->authzScope()->first()?->delete();
         });
     }
 
@@ -58,6 +62,18 @@ trait HasAuthzScope
         }
 
         $scope->forceFill(['label' => $label])->save();
+    }
+
+    /**
+     * Get the attributes that can change the generated scope label.
+     *
+     * Override this when getAuthzScopeLabel() uses different attributes.
+     *
+     * @return list<string>
+     */
+    public function getAuthzScopeLabelAttributes(): array
+    {
+        return [$this->getKeyName(), 'name'];
     }
 
     public function getAuthzScopeLabel(): string

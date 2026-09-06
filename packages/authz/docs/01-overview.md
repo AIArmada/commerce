@@ -35,3 +35,7 @@ Filament resources and UI behavior belong to `aiarmada/filament-authz`.
 - `aiarmada/commerce-support` — owns the `Role`/`Permission` models and owner primitives
 - `aiarmada/filament-authz` — Filament UI (roles/users discovery, impersonation buttons)
 - `aiarmada/membership` — team-scoped role sync for member pivots
+
+The global role configured by `authz.super_admin_role` is checked against a global role assignment even while a request is inside a team scope. Impersonation still requires the target to have an assignment in the active scope when `authz.scopes.enforce` is enabled.
+
+Deleting an Authz scope removes the roles and assignments bound to that scope; global roles and permissions are preserved.

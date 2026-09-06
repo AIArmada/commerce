@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Support\AuthzScopeResolver;
+use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Actions\ApproveAssignmentRequestAction;
 use AIArmada\Events\Actions\CancelAssignmentRequestAction;
@@ -12,6 +14,7 @@ use AIArmada\Events\Models\EventManagementAssignment;
 use AIArmada\Events\Models\EventManagementAssignmentRequest;
 use AIArmada\Events\Models\EventOrganizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -95,4 +98,36 @@ test('assignment requests can be approved and rejected with timestamps', functio
 
     expect($cancelledRequest->status)->toBe(AssignmentRequestStatus::Cancelled)
         ->and($cancelledRequest->cancelled_at)->not->toBeNull();
+});
+
+test('approved assignments sync their configured role to the resolved authz scope', function (): void {
+    config()->set('authz.scopes.enabled', true);
+
+    $manageable = makeEventOrganizer('authz-sync');
+    $requestor = makeCustomer('requestor-authz-sync');
+    $reviewer = makeCustomer('reviewer-authz-sync');
+    $scopeId = AuthzScopeResolver::resolveId($manageable);
+
+    expect($scopeId)->not->toBeNull();
+
+    $role = Role::create([
+        'name' => 'lead',
+        'guard_name' => 'web',
+        'team_id' => $scopeId,
+    ]);
+
+    $request = (new SubmitAssignmentRequestAction)->handle(
+        $manageable,
+        $requestor,
+        'Manage this organizer.',
+    );
+
+    (new ApproveAssignmentRequestAction)->handle($request, $reviewer, 'lead');
+
+    expect(DB::table('model_has_roles')
+        ->where('role_id', $role->getKey())
+        ->where('model_id', $requestor->getKey())
+        ->where('model_type', $requestor->getMorphClass())
+        ->where('team_id', $scopeId)
+        ->exists())->toBeTrue();
 });

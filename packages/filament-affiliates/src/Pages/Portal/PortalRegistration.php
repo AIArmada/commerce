@@ -88,7 +88,7 @@ class PortalRegistration extends FilamentRegister
 
         $this->createAffiliateForUser($user, $data);
 
-        $guard = (string) config('filament-authz.guards.0', 'web');
+        $guard = (string) config('authz.guards.0', 'web');
 
         $permission = Permission::findOrCreate('panel.affiliate', $guard);
         $role = Role::findOrCreate('Affiliate', $guard);

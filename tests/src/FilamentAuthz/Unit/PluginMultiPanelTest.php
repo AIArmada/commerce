@@ -19,25 +19,11 @@ describe('Multi-Panel Support', function (): void {
         expect($plugin->isScopedToTenant())->toBeFalse();
     });
 
-    it('can set tenant ownership relationship', function (): void {
-        $plugin = FilamentAuthzPlugin::make()
-            ->tenantOwnershipRelationshipName('team');
-
-        expect($plugin->getTenantOwnershipRelationshipName())->toBe('team');
-    });
-
     it('can use closure for tenant scoping', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->scopeToTenant(fn () => true);
 
         expect($plugin->isScopedToTenant())->toBeTrue();
-    });
-
-    it('can use closure for tenant relationship', function (): void {
-        $plugin = FilamentAuthzPlugin::make()
-            ->tenantOwnershipRelationshipName(fn () => 'organization');
-
-        expect($plugin->getTenantOwnershipRelationshipName())->toBe('organization');
     });
 
     it('returns null panel when not registered', function (): void {
@@ -46,11 +32,10 @@ describe('Multi-Panel Support', function (): void {
         expect($plugin->getPanel())->toBeNull();
     });
 
-    it('has fluent API for tenant methods', function (): void {
+    it('has a fluent API for tenant scoping', function (): void {
         $plugin = FilamentAuthzPlugin::make();
 
-        $result = $plugin->scopeToTenant()
-            ->tenantOwnershipRelationshipName('teams');
+        $result = $plugin->scopeToTenant();
 
         expect($result)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
@@ -131,8 +116,7 @@ describe('Plugin Configuration', function (): void {
             ->pagesTab()
             ->widgetsTab()
             ->customPermissionsTab()
-            ->scopeToTenant()
-            ->tenantOwnershipRelationshipName('team');
+            ->scopeToTenant();
 
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
         expect($plugin->getNavigationGroup())->toBe('Access Control');
@@ -141,6 +125,5 @@ describe('Plugin Configuration', function (): void {
         expect($plugin->getGridColumns())->toBe(3);
         expect($plugin->getCheckboxListColumns())->toBe(4);
         expect($plugin->isScopedToTenant())->toBeTrue();
-        expect($plugin->getTenantOwnershipRelationshipName())->toBe('team');
     });
 });

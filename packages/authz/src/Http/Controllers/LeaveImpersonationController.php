@@ -15,7 +15,7 @@ class LeaveImpersonationController
             return redirect('/');
         }
 
-        $backTo = $manager->getBackToUrl();
+        $backTo = $manager->getBackTo();
         $manager->leave();
 
         // Always redirect back to origin panel where impersonation began

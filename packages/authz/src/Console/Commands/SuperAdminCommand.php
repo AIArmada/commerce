@@ -11,6 +11,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\PermissionRegistrar;
 
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\password;
@@ -53,17 +54,30 @@ class SuperAdminCommand extends Command
             return self::FAILURE;
         }
 
-        foreach ($guards as $g) {
-            Role::findOrCreate($superAdminRole, $g);
-        }
+        $registrar = app(PermissionRegistrar::class);
+        $originalTeamId = $registrar->teams ? $registrar->getPermissionsTeamId() : null;
 
-        if (method_exists($user, 'assignRole')) {
-            $user->assignRole($superAdminRole);
-            info("✓ Assigned '{$superAdminRole}' role to user: {$this->getUserIdentifier($user)}");
-        } else {
-            warning('User model does not have HasRoles trait. Please add Spatie\\Permission\\Traits\\HasRoles to your User model.');
+        try {
+            if ($registrar->teams) {
+                $registrar->setPermissionsTeamId(null);
+            }
 
-            return self::FAILURE;
+            foreach ($guards as $g) {
+                Role::findOrCreate($superAdminRole, $g);
+            }
+
+            if (method_exists($user, 'assignRole')) {
+                $user->assignRole($superAdminRole);
+                info("✓ Assigned '{$superAdminRole}' role to user: {$this->getUserIdentifier($user)}");
+            } else {
+                warning('User model does not have HasRoles trait. Please add Spatie\\Permission\\Traits\\HasRoles to your User model.');
+
+                return self::FAILURE;
+            }
+        } finally {
+            if ($registrar->teams) {
+                $registrar->setPermissionsTeamId($originalTeamId);
+            }
         }
 
         return self::SUCCESS;

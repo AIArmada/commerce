@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Support;
 
+use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Database\Eloquent\Model;
 
@@ -13,6 +14,15 @@ final class MembershipSubjectGuard
     {
         if (! method_exists($subject::class, 'ownerScopeConfig') && ! method_exists($subject::class, 'scopeForOwner')) {
             return;
+        }
+
+        if (method_exists($subject::class, 'ownerScopeConfig')) {
+            /** @var OwnerScopeConfig $config */
+            $config = $subject::ownerScopeConfig();
+
+            if (! $config->enabled) {
+                return;
+            }
         }
 
         OwnerWriteGuard::findOrFailForOwner($subject::class, $subject->getKey());

@@ -13,6 +13,7 @@ use AIArmada\Authz\Services\WildcardPermissionResolver;
 use AIArmada\Authz\Support\AuthzScopeContext;
 use AIArmada\Authz\Support\AuthzScopeTeamResolver;
 use AIArmada\Authz\Support\UserRoleChecker;
+use AIArmada\Authz\Support\WildcardPermissionCache;
 use AIArmada\CommerceSupport\Models\Permission as AuthzPermission;
 use AIArmada\CommerceSupport\Models\Role as AuthzRole;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -40,6 +41,7 @@ final class AuthzServiceProvider extends ServiceProvider
         $this->configureSpatiePermissions();
 
         $this->app->scoped(AuthzScopeContext::class, static fn (): AuthzScopeContext => new AuthzScopeContext);
+        $this->app->scoped(WildcardPermissionCache::class, static fn (): WildcardPermissionCache => new WildcardPermissionCache);
 
         $this->app->singleton(WildcardPermissionResolver::class);
         $this->app->singleton(PermissionKeyBuilder::class);
@@ -53,8 +55,6 @@ final class AuthzServiceProvider extends ServiceProvider
         $this->app->singleton(ImpersonateManager::class, function ($app): ImpersonateManager {
             return new ImpersonateManager($app);
         });
-
-        $this->app->alias(ImpersonateManager::class, 'impersonate');
 
         $this->registerTeamResolver();
         $this->registerAuthDriver();
@@ -86,15 +86,7 @@ final class AuthzServiceProvider extends ServiceProvider
                     return null;
                 }
 
-                $registrar = app(PermissionRegistrar::class);
-                $teams = $registrar->teams;
-                $registrar->teams = false;
-
-                try {
-                    return UserRoleChecker::hasRole($user, $superAdminRole) ? true : null;
-                } finally {
-                    $registrar->teams = $teams;
-                }
+                return UserRoleChecker::hasGlobalRole($user, $superAdminRole) ? true : null;
             });
         }
 
@@ -105,7 +97,7 @@ final class AuthzServiceProvider extends ServiceProvider
                 }
 
                 $resolver = app(WildcardPermissionResolver::class);
-                $userPermissions = $user->getAllPermissions()->pluck('name')->toArray();
+                $userPermissions = app(WildcardPermissionCache::class)->get($user);
 
                 foreach ($userPermissions as $permission) {
                     if ($resolver->isWildcard($permission) && $resolver->matches($permission, $ability)) {
@@ -230,8 +222,8 @@ final class AuthzServiceProvider extends ServiceProvider
     private function registerBladeDirectives(): void
     {
         $this->app->afterResolving('blade.compiler', function (BladeCompiler $blade): void {
-            $blade->directive('impersonating', function (?string $guard = null): string {
-                return "<?php if (\\AIArmada\\Authz\\is_impersonating({$guard})) : ?>";
+            $blade->directive('impersonating', function (): string {
+                return '<?php if (\\AIArmada\\Authz\\is_impersonating()) : ?>';
             });
 
             $blade->directive('endImpersonating', function (): string {

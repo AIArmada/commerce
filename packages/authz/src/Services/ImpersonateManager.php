@@ -6,10 +6,11 @@ namespace AIArmada\Authz\Services;
 
 use AIArmada\Authz\Events\LeaveImpersonation;
 use AIArmada\Authz\Events\TakeImpersonation;
-use Illuminate\Auth\SessionGuard;
+use AIArmada\Authz\Guard\SessionGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Application;
 use InvalidArgumentException;
+use LogicException;
 use Throwable;
 
 /**
@@ -20,13 +21,13 @@ use Throwable;
  */
 class ImpersonateManager
 {
-    public const SESSION_KEY = 'filament_authz_impersonated_by';
+    public const SESSION_IMPERSONATOR_ID = 'authz_impersonator_id';
 
-    public const SESSION_GUARD = 'filament_authz_impersonator_guard';
+    public const SESSION_IMPERSONATOR_GUARD = 'authz_impersonator_guard';
 
-    public const SESSION_GUARD_USING = 'filament_authz_impersonator_guard_using';
+    public const SESSION_IMPERSONATED_GUARD = 'authz_impersonated_guard';
 
-    public const SESSION_BACK_TO = 'filament_authz_impersonator_back_to';
+    public const SESSION_BACK_TO = 'authz_impersonator_back_to';
 
     public function __construct(
         private readonly Application $app
@@ -37,7 +38,7 @@ class ImpersonateManager
      */
     public function isImpersonating(): bool
     {
-        return session()->has(self::SESSION_KEY);
+        return session()->has(self::SESSION_IMPERSONATOR_ID);
     }
 
     /**
@@ -45,7 +46,7 @@ class ImpersonateManager
      */
     public function getImpersonatorId(): mixed
     {
-        return session(self::SESSION_KEY);
+        return session(self::SESSION_IMPERSONATOR_ID);
     }
 
     /**
@@ -53,15 +54,15 @@ class ImpersonateManager
      */
     public function getImpersonatorGuardName(): ?string
     {
-        return session(self::SESSION_GUARD);
+        return session(self::SESSION_IMPERSONATOR_GUARD);
     }
 
     /**
      * Get the guard name being used for impersonation.
      */
-    public function getImpersonatorGuardUsingName(): ?string
+    public function getImpersonatedGuardName(): ?string
     {
-        return session(self::SESSION_GUARD_USING);
+        return session(self::SESSION_IMPERSONATED_GUARD);
     }
 
     /**
@@ -70,22 +71,6 @@ class ImpersonateManager
     public function getBackTo(): ?string
     {
         return session(self::SESSION_BACK_TO);
-    }
-
-    /**
-     * Alias for getBackTo().
-     */
-    public function getBackToUrl(): ?string
-    {
-        return $this->getBackTo();
-    }
-
-    /**
-     * Alias for getImpersonatorGuardName().
-     */
-    public function getImpersonatorGuard(): ?string
-    {
-        return $this->getImpersonatorGuardName();
     }
 
     /**
@@ -152,7 +137,7 @@ class ImpersonateManager
             return false;
         }
 
-        $impersonatedGuardName = $this->getImpersonatorGuardUsingName();
+        $impersonatedGuardName = $this->getImpersonatedGuardName();
         $impersonatorGuardName = $this->getImpersonatorGuardName();
         $impersonatorId = $this->getImpersonatorId();
         $backTo = $this->getBackTo();
@@ -203,9 +188,9 @@ class ImpersonateManager
      */
     public function clear(): void
     {
-        session()->forget(self::SESSION_KEY);
-        session()->forget(self::SESSION_GUARD);
-        session()->forget(self::SESSION_GUARD_USING);
+        session()->forget(self::SESSION_IMPERSONATOR_ID);
+        session()->forget(self::SESSION_IMPERSONATOR_GUARD);
+        session()->forget(self::SESSION_IMPERSONATED_GUARD);
         session()->forget(self::SESSION_BACK_TO);
     }
 
@@ -255,15 +240,6 @@ class ImpersonateManager
     }
 
     /**
-     * Get the redirect URL for after leaving impersonation.
-     * Always returns to the origin panel where impersonation began.
-     */
-    public function getLeaveRedirectTo(): ?string
-    {
-        return $this->getBackTo();
-    }
-
-    /**
      * Sanitize the back-to URL to prevent open redirect via a controlled Referer header.
      *
      * Accepts relative paths (e.g. /admin) and absolute same-host URLs.
@@ -275,9 +251,9 @@ class ImpersonateManager
         string $targetGuardName,
         ?string $backTo,
     ): void {
-        session()->put(self::SESSION_KEY, $impersonator->getAuthIdentifier());
-        session()->put(self::SESSION_GUARD, $sourceGuardName);
-        session()->put(self::SESSION_GUARD_USING, $targetGuardName);
+        session()->put(self::SESSION_IMPERSONATOR_ID, $impersonator->getAuthIdentifier());
+        session()->put(self::SESSION_IMPERSONATOR_GUARD, $sourceGuardName);
+        session()->put(self::SESSION_IMPERSONATED_GUARD, $targetGuardName);
         session()->forget(self::SESSION_BACK_TO);
 
         if ($backTo !== null) {
@@ -287,22 +263,8 @@ class ImpersonateManager
 
     private function switchIdentity(string $sourceGuardName, string $targetGuardName, Authenticatable $target): void
     {
-        $sourceGuard = $this->app['auth']->guard($sourceGuardName);
-
-        if (method_exists($sourceGuard, 'quietLogout')) {
-            $sourceGuard->quietLogout();
-        } else {
-            $sourceGuard->logout();
-        }
-
-        $targetGuard = $this->app['auth']->guard($targetGuardName);
-
-        if (method_exists($targetGuard, 'quietLogin')) {
-            $targetGuard->quietLogin($target);
-        } else {
-            $targetGuard->setUser($target);
-            session()->put($this->getAuthSessionKey($targetGuardName), $target->getAuthIdentifier());
-        }
+        $this->getSessionGuard($sourceGuardName)->quietLogout();
+        $this->getSessionGuard($targetGuardName)->quietLogin($target);
 
         $this->updatePasswordHashInSession($target, $targetGuardName);
         $this->rotateSessionId();
@@ -341,12 +303,15 @@ class ImpersonateManager
         return $url;
     }
 
-    /**
-     * Get the session key used by Laravel Auth for a guard.
-     */
-    private function getAuthSessionKey(string $guard): string
+    private function getSessionGuard(string $guardName): SessionGuard
     {
-        return 'login_' . $guard . '_' . sha1(SessionGuard::class);
+        $guard = $this->app['auth']->guard($guardName);
+
+        if (! $guard instanceof SessionGuard) {
+            throw new LogicException("Authz impersonation requires the authz session guard; [{$guardName}] is not configured with it.");
+        }
+
+        return $guard;
     }
 
     /**
@@ -363,9 +328,7 @@ class ImpersonateManager
             return;
         }
 
-        /** @var SessionGuard $guard */
-        $guard = $this->app['auth']->guard($guardName);
-
+        $guard = $this->getSessionGuard($guardName);
         $hashedPassword = $guard->hashPasswordForCookie($passwordHash);
 
         session()->put('password_hash_' . $guardName, $hashedPassword);
@@ -374,15 +337,7 @@ class ImpersonateManager
     private function restoreUser(Authenticatable $user, string $guardName): bool
     {
         try {
-            $guard = $this->app['auth']->guard($guardName);
-
-            if (method_exists($guard, 'quietLogin')) {
-                $guard->quietLogin($user);
-            } else {
-                $guard->setUser($user);
-                session()->put($this->getAuthSessionKey($guardName), $user->getAuthIdentifier());
-                session()->migrate(true);
-            }
+            $this->getSessionGuard($guardName)->quietLogin($user);
 
             $this->updatePasswordHashInSession($user, $guardName);
         } catch (Throwable $exception) {
@@ -397,13 +352,11 @@ class ImpersonateManager
     private function clearGuardIdentity(string $guardName): void
     {
         try {
-            $guard = $this->app['auth']->guard($guardName);
-            $guard->setUser(null);
+            $this->getSessionGuard($guardName)->quietLogout();
         } catch (Throwable $exception) {
             report($exception);
         }
 
-        session()->forget($this->getAuthSessionKey($guardName));
         session()->forget('password_hash_' . $guardName);
     }
 }

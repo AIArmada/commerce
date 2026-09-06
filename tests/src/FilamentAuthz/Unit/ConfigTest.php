@@ -12,6 +12,10 @@ describe('config', function (): void {
         expect(config('authz.guards'))->toContain('web');
     });
 
+    it('keeps guard configuration in the core package', function (): void {
+        expect(config('filament-authz'))->not->toHaveKey('guards');
+    });
+
     it('has super admin role configured', function (): void {
         expect(config('authz.super_admin_role'))->toBeString();
         expect(config('authz.super_admin_role'))->not->toBeEmpty();

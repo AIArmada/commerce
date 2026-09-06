@@ -6,6 +6,7 @@ namespace AIArmada\Authz;
 
 use AIArmada\Authz\Services\PermissionKeyBuilder;
 use AIArmada\Authz\Support\AuthzScopeResolver;
+use AIArmada\Authz\Support\WildcardPermissionCache;
 use Closure;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Model;
@@ -91,6 +92,10 @@ class Authz
     protected function flushPermissionCache(?Authorizable $user = null): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        if (app()->bound(WildcardPermissionCache::class)) {
+            app(WildcardPermissionCache::class)->clear();
+        }
 
         $authUser = $user ?? Auth::user();
 

@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Authz;
 
 use AIArmada\Authz\Services\ImpersonateManager;
+use AIArmada\Authz\Support\ImpersonationScopeGuard;
 use AIArmada\Authz\Support\UserRoleChecker;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 if (! function_exists('AIArmada\Authz\is_impersonating')) {
-    function is_impersonating(?string $guard = null): bool
+    function is_impersonating(): bool
     {
         if (! app()->bound(ImpersonateManager::class)) {
             return false;
@@ -45,7 +46,7 @@ if (! function_exists('AIArmada\Authz\can_impersonate')) {
         $superAdminRole = (string) config('authz.super_admin_role', '');
 
         return $superAdminRole !== ''
-            && UserRoleChecker::hasRole($user, $superAdminRole);
+            && UserRoleChecker::hasGlobalRole($user, $superAdminRole);
     }
 }
 
@@ -72,8 +73,11 @@ if (! function_exists('AIArmada\Authz\can_be_impersonated')) {
             return false;
         }
 
-        return ! method_exists($user, 'canBeImpersonated')
-            || (bool) $user->canBeImpersonated();
+        if (method_exists($user, 'canBeImpersonated') && ! $user->canBeImpersonated()) {
+            return false;
+        }
+
+        return ImpersonationScopeGuard::canAccessTarget($user);
     }
 }
 

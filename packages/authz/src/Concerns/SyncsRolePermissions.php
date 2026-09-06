@@ -6,6 +6,7 @@ namespace AIArmada\Authz\Concerns;
 
 use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\CommerceSupport\Models\Role;
+use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -53,8 +54,8 @@ trait SyncsRolePermissions
     /**
      * Sync permissions to the role using Spatie's syncPermissions.
      *
-     * Creates permissions that don't exist yet (e.g., page/widget permissions
-     * that are discovered dynamically but not yet in the database).
+     * Only permissions that already exist for the role's guard can be assigned.
+     * Discovery and permission creation are explicit operations.
      */
     protected function syncPermissionsToRole(): void
     {
@@ -70,9 +71,21 @@ trait SyncsRolePermissions
 
         $guardName = $role->guard_name;
 
-        $permissions = collect($this->permissionNames)->map(
-            fn (string $name) => Permission::findOrCreate($name, $guardName)
-        );
+        $permissions = Permission::query()
+            ->where('guard_name', $guardName)
+            ->whereIn('name', $this->permissionNames)
+            ->get();
+
+        $existingPermissionNames = $permissions
+            ->pluck('name')
+            ->map(static fn (mixed $name): string => (string) $name)
+            ->all();
+
+        $missingPermissionNames = array_values(array_diff($this->permissionNames, $existingPermissionNames));
+
+        if ($missingPermissionNames !== []) {
+            throw PermissionDoesNotExist::create($missingPermissionNames[0], $guardName);
+        }
 
         $role->syncPermissions($permissions);
         app(PermissionRegistrar::class)->forgetCachedPermissions();

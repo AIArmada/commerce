@@ -37,6 +37,7 @@ class ImpersonationCustomUser extends ImpersonationPlainUser
 beforeEach(function (): void {
     config()->set('authz.scopes.enforce', false);
     config()->set('authz.impersonate.guard', 'web');
+    setPermissionsTeamId(null);
 });
 
 describe('ImpersonateController', function (): void {
@@ -85,9 +86,9 @@ describe('ImpersonateController', function (): void {
 
         $response->assertRedirect('/admin');
 
-        expect(session(ImpersonateManager::SESSION_KEY))->toBe($impersonator->getAuthIdentifier())
-            ->and(session(ImpersonateManager::SESSION_GUARD))->toBe('web')
-            ->and(session(ImpersonateManager::SESSION_GUARD_USING))->toBe('web')
+        expect(session(ImpersonateManager::SESSION_IMPERSONATOR_ID))->toBe($impersonator->getAuthIdentifier())
+            ->and(session(ImpersonateManager::SESSION_IMPERSONATOR_GUARD))->toBe('web')
+            ->and(session(ImpersonateManager::SESSION_IMPERSONATED_GUARD))->toBe('web')
             ->and(session(ImpersonateManager::SESSION_BACK_TO))->toBe('/admin')
             ->and(Auth::guard('web')->id())->toBe($target->getAuthIdentifier());
     });
@@ -115,7 +116,7 @@ describe('ImpersonateController', function (): void {
 
         $response->assertForbidden();
 
-        expect(session()->has(ImpersonateManager::SESSION_KEY))->toBeFalse()
+        expect(session()->has(ImpersonateManager::SESSION_IMPERSONATOR_ID))->toBeFalse()
             ->and(Auth::guard('web')->id())->toBe($impersonator->getAuthIdentifier());
     });
 
@@ -143,7 +144,7 @@ describe('ImpersonateController', function (): void {
 
         $response->assertRedirect('/admin');
 
-        expect(session(ImpersonateManager::SESSION_KEY))->toBe($impersonator->getAuthIdentifier())
+        expect(session(ImpersonateManager::SESSION_IMPERSONATOR_ID))->toBe($impersonator->getAuthIdentifier())
             ->and(Auth::guard('web')->id())->toBe($target->getAuthIdentifier());
     });
 
@@ -181,9 +182,9 @@ describe('ImpersonateController', function (): void {
 
         $leaveResponse->assertRedirect('/admin');
 
-        expect(session()->has(ImpersonateManager::SESSION_KEY))->toBeFalse()
-            ->and(session()->has(ImpersonateManager::SESSION_GUARD))->toBeFalse()
-            ->and(session()->has(ImpersonateManager::SESSION_GUARD_USING))->toBeFalse()
+        expect(session()->has(ImpersonateManager::SESSION_IMPERSONATOR_ID))->toBeFalse()
+            ->and(session()->has(ImpersonateManager::SESSION_IMPERSONATOR_GUARD))->toBeFalse()
+            ->and(session()->has(ImpersonateManager::SESSION_IMPERSONATED_GUARD))->toBeFalse()
             ->and(Auth::guard('web')->id())->toBe($impersonator->getAuthIdentifier());
     });
 
@@ -202,9 +203,9 @@ describe('ImpersonateController', function (): void {
 
         $this->actingAs($target);
 
-        session()->put(ImpersonateManager::SESSION_KEY, $impersonator->getAuthIdentifier());
-        session()->put(ImpersonateManager::SESSION_GUARD, 'web');
-        session()->put(ImpersonateManager::SESSION_GUARD_USING, 'web');
+        session()->put(ImpersonateManager::SESSION_IMPERSONATOR_ID, $impersonator->getAuthIdentifier());
+        session()->put(ImpersonateManager::SESSION_IMPERSONATOR_GUARD, 'web');
+        session()->put(ImpersonateManager::SESSION_IMPERSONATED_GUARD, 'web');
         session()->put(ImpersonateManager::SESSION_BACK_TO, 'https://evil.example/owned');
 
         $response = $this->post(route('filament-authz.impersonate.leave'));
@@ -265,8 +266,8 @@ describe('ImpersonateController', function (): void {
         expect($manager->take($impersonator, $target, 'missing-guard'))->toBeFalse()
             ->and($manager->isImpersonating())->toBeFalse()
             ->and(Auth::guard('web')->id())->toBe($impersonator->getAuthIdentifier())
-            ->and(session()->has(ImpersonateManager::SESSION_GUARD))->toBeFalse()
-            ->and(session()->has(ImpersonateManager::SESSION_GUARD_USING))->toBeFalse()
+            ->and(session()->has(ImpersonateManager::SESSION_IMPERSONATOR_GUARD))->toBeFalse()
+            ->and(session()->has(ImpersonateManager::SESSION_IMPERSONATED_GUARD))->toBeFalse()
             ->and(session()->has(ImpersonateManager::SESSION_BACK_TO))->toBeFalse();
     });
 });

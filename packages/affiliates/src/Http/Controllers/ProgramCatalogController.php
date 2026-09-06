@@ -30,7 +30,7 @@ final class ProgramCatalogController extends Controller
                 'program_id' => (string) $p->getKey(),
                 'name' => $p->name,
                 'slug' => $p->slug,
-                'status' => $p->status->value ?? (string) $p->status,
+                'status' => $p->status->value,
                 'currency' => $p->getAttribute('currency') ?? config('affiliates.currency.default', 'MYR'),
                 'cookie_days' => $p->cookie_lifetime_days,
             ])->values()->all(),

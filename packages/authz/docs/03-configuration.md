@@ -33,10 +33,9 @@ return [
         'enforce' => true,
     ],
     'impersonate' => [
-        'enabled' => true,
         'guard' => 'web',
     ],
 ];
 ```
 
-Authz core settings previously stored under `filament-authz.*` now use `authz.*`.
+The `authz.guards` list is the shared default consumed by core commands and the Filament adapter. Every listed guard must exist in `config/auth.php`.

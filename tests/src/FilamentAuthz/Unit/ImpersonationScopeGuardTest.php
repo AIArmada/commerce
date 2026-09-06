@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Authz\Support\ImpersonationScopeGuard;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Models\AuthzScope;
 use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\CommerceSupport\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
+
+use function AIArmada\Authz\can_be_impersonated;
+use function AIArmada\Authz\can_impersonate;
 
 beforeEach(function (): void {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -141,4 +145,47 @@ it('filters user queries to current scope assignments', function (): void {
 
     expect($visibleUserEmails)->toContain('scope-a-member@example.com')
         ->and($visibleUserEmails)->not->toContain('scope-b-member@example.com');
+});
+
+it('keeps the can-be-impersonated helper aligned with scope enforcement', function (): void {
+    config()->set('authz.scopes.enforce', true);
+
+    $actor = User::query()->create([
+        'name' => 'Scope Actor',
+        'email' => 'scope-actor@example.com',
+        'password' => 'secret',
+    ]);
+    $target = User::query()->create([
+        'name' => 'Unassigned Target',
+        'email' => 'unassigned-target@example.com',
+        'password' => 'secret',
+    ]);
+    $owner = app(OwnerResolverInterface::class)->resolve();
+
+    expect($owner)->not->toBeNull();
+
+    setPermissionsTeamId($owner->getKey());
+    $this->actingAs($actor);
+
+    expect(can_be_impersonated($target))->toBeFalse();
+});
+
+it('recognizes a global super admin while a tenant scope is active', function (): void {
+    setPermissionsTeamId(null);
+
+    $actor = User::query()->create([
+        'name' => 'Global Scope Actor',
+        'email' => 'global-scope-actor@example.com',
+        'password' => 'secret',
+    ]);
+    $role = Role::findOrCreate((string) config('authz.super_admin_role'), 'web');
+    $actor->assignRole($role);
+    $owner = app(OwnerResolverInterface::class)->resolve();
+
+    expect($owner)->not->toBeNull();
+
+    setPermissionsTeamId($owner->getKey());
+    $this->actingAs($actor);
+
+    expect(can_impersonate())->toBeTrue();
 });

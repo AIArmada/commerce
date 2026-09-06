@@ -14,10 +14,10 @@ use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\Customers\Models\Customer;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\Customers\Models\Customer;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryBackorder;
 use AIArmada\Inventory\Models\InventoryBatch;
@@ -88,7 +88,6 @@ final class AppServiceProvider extends ServiceProvider
         config()->set('vouchers.owner.enabled', true);
         config()->set('jnt.owner.enabled', true);
         config()->set('affiliates.owner.enabled', true);
-        config()->set('filament-authz.owner.enabled', true);
         config()->set('docs.owner.enabled', true);
 
         // Demo-only: avoid requiring puppeteer (Browsershot) during simulated webhooks.

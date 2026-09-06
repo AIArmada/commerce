@@ -42,10 +42,10 @@ final class SyncManagementAssignmentToAuthzAction
             return;
         }
 
-        $this->assignManagerToScope($manager, $scopeId);
+        $this->assignManagerToScope($manager, $scopeId, $assignment->role);
     }
 
-    private function assignManagerToScope(Model $manager, string | int $scopeId): void
+    private function assignManagerToScope(Model $manager, string | int $scopeId, string $roleName): void
     {
         /** @var class-string<Role> $roleClass */
         $roleClass = (string) config('permission.models.role', Role::class);
@@ -55,7 +55,9 @@ final class SyncManagementAssignmentToAuthzAction
         $teamKey = app(PermissionRegistrar::class)->teamsKey;
 
         $role = $roleClass::query()
-            ->where('name', config('filament-authz.panel_user.name', 'panel_user'))
+            ->where('name', $roleName)
+            ->where('guard_name', (string) config('authz.guards.0', 'web'))
+            ->where($teamKey, $scopeId)
             ->first();
 
         if ($role === null) {
