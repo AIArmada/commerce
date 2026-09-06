@@ -11,17 +11,19 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 /**
  * @mixin Model
  *
+ * @phpstan-require-extends Model
+ *
  * @property-read AuthzScope|null $authzScope
  */
 trait HasAuthzScope
 {
     public static function bootHasAuthzScope(): void
     {
-        static::created(function ($model): void {
+        static::created(function (self $model): void {
             $model->ensureAuthzScope();
         });
 
-        static::updated(function (Model $model): void {
+        static::updated(function (self $model): void {
             if (! $model->wasChanged($model->getAuthzScopeLabelAttributes())) {
                 return;
             }
@@ -29,7 +31,7 @@ trait HasAuthzScope
             $model->syncAuthzScopeLabel();
         });
 
-        static::deleted(function (Model $model): void {
+        static::deleted(function (self $model): void {
             $model->authzScope()->first()?->delete();
         });
     }

@@ -17,8 +17,9 @@ final class MembershipSubjectGuard
         }
 
         if (method_exists($subject::class, 'ownerScopeConfig')) {
-            /** @var OwnerScopeConfig $config */
-            $config = $subject::ownerScopeConfig();
+            /** @var callable(): OwnerScopeConfig $resolveOwnerScopeConfig */
+            $resolveOwnerScopeConfig = [$subject::class, 'ownerScopeConfig'];
+            $config = $resolveOwnerScopeConfig();
 
             if (! $config->enabled) {
                 return;

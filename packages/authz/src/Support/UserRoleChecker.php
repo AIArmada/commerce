@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Support;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -35,6 +37,7 @@ final class UserRoleChecker
         }
 
         $originalTeamId = $registrar->getPermissionsTeamId();
+        $originalOwner = OwnerContext::resolve();
         $hadLoadedRoles = $user instanceof Model && $user->relationLoaded('roles');
         $loadedRoles = $hadLoadedRoles ? $user->getRelation('roles') : null;
 
@@ -47,7 +50,15 @@ final class UserRoleChecker
 
             return (bool) $user->hasRole($role);
         } finally {
-            $registrar->setPermissionsTeamId($originalTeamId);
+            $teamResolverClass = config('permission.team_resolver');
+            $preservesOwnerType = is_string($teamResolverClass)
+                && is_a($teamResolverClass, OwnerContextTeamResolver::class, true);
+
+            $registrar->setPermissionsTeamId(
+                $preservesOwnerType
+                    ? $originalOwner
+                    : $originalTeamId,
+            );
 
             if ($user instanceof Model) {
                 $user->unsetRelation('roles');
