@@ -29,6 +29,19 @@ use AIArmada\Ticketing\Models\TicketType;
 
 /*
 |--------------------------------------------------------------------------
+| Tia Engine (Test Impact Analysis)
+|--------------------------------------------------------------------------
+|
+| Run TIA automatically on local machines, skip on CI so pipelines always
+| execute the full suite. Fetch the shared baseline recorded by the
+| tia-baseline.yml workflow when no local graph exists.
+|
+*/
+
+pest()->tia()->locally()->baselined();
+
+/*
+|--------------------------------------------------------------------------
 | Test Case
 |--------------------------------------------------------------------------
 */

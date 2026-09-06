@@ -1,0 +1,80 @@
+name: TIA Baseline
+
+on:
+  push:
+    branches: [main]
+  schedule: [{ cron: '0 3 * * *' }]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: commerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: commerce_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v6
+        with: { fetch-depth: 0 }
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-tia-baseline-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-tia-baseline-
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run tests
+        run: ./vendor/bin/pest --parallel --tia --coverage --fresh
+
+      - name: Resolve TIA baseline path
+        id: baseline
+        run: echo "path=$(./vendor/bin/pest --baseline)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload TIA baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: pest-tia-baseline
+          path: ${{ steps.baseline.outputs.path }}
+          include-hidden-files: true
+          retention-days: 30
