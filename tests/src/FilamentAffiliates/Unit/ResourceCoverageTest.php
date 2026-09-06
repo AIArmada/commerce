@@ -6,7 +6,6 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource\Schemas\AffiliateFraudSignalInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\RelationManagers\PayoutEventsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
@@ -24,6 +23,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\Pay
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
