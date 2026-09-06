@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\AcceptInvitationAction;
+use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationAccepted;
 use AIArmada\Membership\Models\MembershipInvitation;
@@ -30,12 +31,11 @@ beforeEach(function (): void {
         'email' => 'acceptor@app.com',
         'password' => 'secret',
     ]);
-    $this->invitation = $this->withMembershipOwner(fn (): MembershipInvitation => MembershipInvitation::query()->create([
+    $this->invitation = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'acceptor@app.com',
         'role' => MemberRole::Admin->spatieRoleName(),
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->addDays(7),
     ]));
@@ -84,7 +84,7 @@ it('dispatches MembershipInvitationAccepted event', function (): void {
 });
 
 it('throws on expired invitation', function (): void {
-    $this->invitation->update(['expires_at' => now()->subDay()]);
+    $this->invitation->transitionStatus(InvitationStatus::Expired);
 
     $this->expectException(RuntimeException::class);
 
@@ -95,7 +95,7 @@ it('throws on expired invitation', function (): void {
 });
 
 it('throws on revoked invitation', function (): void {
-    $this->invitation->update(['revoked_at' => now()]);
+    $this->invitation->transitionStatus(InvitationStatus::Revoked, $this->inviter);
 
     $this->expectException(RuntimeException::class);
 
@@ -106,7 +106,7 @@ it('throws on revoked invitation', function (): void {
 });
 
 it('throws on already accepted invitation', function (): void {
-    $this->invitation->update(['accepted_at' => now()]);
+    $this->invitation->transitionStatus(InvitationStatus::Accepted, $this->acceptor);
 
     $this->expectException(RuntimeException::class);
 

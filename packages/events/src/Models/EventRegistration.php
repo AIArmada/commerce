@@ -26,6 +26,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
+use LogicException;
 use Spatie\ModelStates\HasStates;
 
 /**
@@ -54,6 +56,7 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonImmutable|null $refund_pending_at
  * @property CarbonImmutable|null $refunded_at
  * @property CarbonImmutable|null $expired_at
+ * @property CarbonImmutable|null $last_state_change_at
  * @property string|null $status_reason
  * @property string|null $notes
  * @property string|null $parent_registration_id
@@ -93,12 +96,9 @@ class EventRegistration extends Model
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',
         'registrant_type', 'registrant_id',
-        'registration_no', 'registration_type', 'status', 'source',
+        'registration_no', 'registration_type', 'source',
         'total_participants', 'total_amount', 'currency',
         'external_order_id', 'external_order_type', 'payment_status',
-        'registered_at', 'approved_at', 'completed_at', 'cancelled_at', 'rejected_at',
-        'waitlisted_at', 'refunded_at', 'expired_at',
-        'refund_pending_at',
         'status_reason', 'notes',
         'parent_registration_id', 'is_bundle_root', 'pass_entitlements',
         'metadata',
@@ -118,8 +118,20 @@ class EventRegistration extends Model
                 $registration->registration_no = $prefix . '-' . mb_strtoupper((string) $registration->getKey());
             }
 
+            $now = CarbonImmutable::now();
+
             if ($registration->registered_at === null) {
-                $registration->registered_at = CarbonImmutable::now();
+                $registration->registered_at = $now;
+            }
+
+            if ($registration->last_state_change_at === null) {
+                $registration->last_state_change_at = $now;
+            }
+
+            $status = $registration->getAttribute('status');
+
+            if ($status instanceof RegistrationStatusState) {
+                $registration->applyTransitionTimestamp($status::class, $now);
             }
         });
     }
@@ -141,8 +153,80 @@ class EventRegistration extends Model
             'refund_pending_at' => 'immutable_datetime',
             'refunded_at' => 'immutable_datetime',
             'expired_at' => 'immutable_datetime',
+            'last_state_change_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
+    }
+
+    /**
+     * Set the initial registration state before the model is persisted.
+     *
+     * Any registered state may be used for an explicit import or fixture
+     * creation. Every later change must use transitionStatus() so its
+     * lifecycle timestamp is recorded together with the state transition.
+     */
+    public function initializeStatus(RegistrationStatusState | string $status): static
+    {
+        if ($this->exists) {
+            throw new LogicException('An existing registration must use transitionStatus().');
+        }
+
+        $stateClass = $this->resolveRegistrationState($status);
+
+        $now = CarbonImmutable::now();
+        $this->registered_at ??= $now;
+        $this->setAttribute('status', $stateClass);
+        $this->applyTransitionTimestamp($stateClass, $now, true);
+        $this->last_state_change_at ??= $now;
+
+        return $this;
+    }
+
+    /**
+     * Transition a persisted registration and record its lifecycle time.
+     *
+     * Set `$overwriteLifecycleTimestamp` to false when returning from a
+     * temporary state, so the original lifecycle timestamp remains intact.
+     */
+    public function transitionStatus(RegistrationStatusState | string $status, bool $overwriteLifecycleTimestamp = true): static
+    {
+        if (! $this->exists) {
+            throw new LogicException('A new registration must use initializeStatus().');
+        }
+
+        $stateClass = $this->resolveRegistrationState($status);
+        $currentState = $this->getAttribute('status');
+
+        if (! $currentState instanceof RegistrationStatusState) {
+            throw new LogicException('A persisted registration must have a valid status before it can transition.');
+        }
+
+        if ($currentState->equals($stateClass)) {
+            $now = CarbonImmutable::now();
+            $this->applyTransitionTimestamp($stateClass, $now);
+            $this->last_state_change_at ??= $now;
+
+            if ($this->isDirty()) {
+                $this->save();
+            }
+
+            return $this;
+        }
+
+        if (! $currentState->canTransitionTo($stateClass)) {
+            throw new LogicException(sprintf(
+                'The registration cannot transition from [%s] to [%s].',
+                $currentState->getValue(),
+                $stateClass::name(),
+            ));
+        }
+
+        $now = CarbonImmutable::now();
+        $this->applyTransitionTimestamp($stateClass, $now, $overwriteLifecycleTimestamp);
+        $this->last_state_change_at = $now;
+        $currentState->transitionTo($stateClass);
+
+        return $this;
     }
 
     /**
@@ -302,8 +386,7 @@ class EventRegistration extends Model
 
     public function complete(): void
     {
-        $this->completed_at = CarbonImmutable::now();
-        $this->status->transitionTo(Completed::class);
+        $this->transitionStatus(Completed::class);
     }
 
     /**
@@ -423,6 +506,47 @@ class EventRegistration extends Model
     public function promoteFromWaitlist(): void
     {
         $this->waitlisted_at = null;
-        $this->status->transitionTo(Pending::class);
+        $this->transitionStatus(Pending::class);
+    }
+
+    /**
+     * @return class-string<RegistrationStatusState>
+     */
+    private function resolveRegistrationState(RegistrationStatusState | string $status): string
+    {
+        $stateClass = RegistrationStatusState::resolveStateClass($status);
+
+        if (! is_string($stateClass)
+            || ! is_a($stateClass, RegistrationStatusState::class, true)
+            || ! in_array($stateClass, RegistrationStatusState::getStateMapping()->all(), true)) {
+            $statusName = $status instanceof RegistrationStatusState ? $status::name() : $status;
+
+            throw new InvalidArgumentException(sprintf('The registration state [%s] is invalid.', $statusName));
+        }
+
+        return $stateClass;
+    }
+
+    private function applyTransitionTimestamp(string $stateClass, CarbonImmutable $at, bool $overwrite = false): void
+    {
+        $attribute = match ($stateClass::name()) {
+            'confirmed' => 'approved_at',
+            'completed' => 'completed_at',
+            'cancelled' => 'cancelled_at',
+            'rejected' => 'rejected_at',
+            'waitlisted' => 'waitlisted_at',
+            'refund_pending' => 'refund_pending_at',
+            'refunded' => 'refunded_at',
+            'expired' => 'expired_at',
+            default => null,
+        };
+
+        if ($attribute === null) {
+            return;
+        }
+
+        if ($overwrite || $this->getAttribute($attribute) === null) {
+            $this->setAttribute($attribute, $at);
+        }
     }
 }

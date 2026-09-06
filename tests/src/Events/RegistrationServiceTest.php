@@ -8,6 +8,7 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\States\RegistrationStatus\Pending;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event as EventFacade;
 
@@ -34,6 +35,20 @@ it('creates individual registration', function (): void {
     expect($registration->registered_at)->not->toBeNull();
     expect($registration->participants)->toHaveCount(1);
     expect($registration->items)->toHaveCount(1);
+});
+
+it('accepts a registration state object as the initial status', function (): void {
+    $event = Event::factory()->create();
+
+    $registration = app(RegistrationServiceInterface::class)->register([
+        'event_id' => $event->id,
+        'registration_type' => 'individual',
+        'status' => new Pending(new EventRegistration),
+        'source' => 'website',
+        'total_participants' => 1,
+    ]);
+
+    expect($registration->status->getValue())->toBe('pending');
 });
 
 it('persists answers supplied for each participant', function (): void {
@@ -115,6 +130,26 @@ it('records the completion timestamp when completing a registration', function (
         EventRegistrationCompleted::class,
         fn (EventRegistrationCompleted $event): bool => $event->registration->is($registration),
     );
+});
+
+it('preserves the original lifecycle timestamp when restoring a refund-pending registration', function (): void {
+    $event = Event::factory()->create();
+    $registration = EventRegistration::factory()->create([
+        'event_id' => $event->id,
+        'status' => 'confirmed',
+        'approved_at' => now()->subDay(),
+    ]);
+    $approvedAt = $registration->fresh()->approved_at;
+
+    app(RegistrationServiceInterface::class)->markRefundPending($registration, 'Payment provider retry');
+    app(RegistrationServiceInterface::class)->restoreFromRefundPending($registration, 'Payment provider recovered');
+
+    $restored = $registration->fresh();
+
+    expect($restored->status->getValue())->toBe('confirmed')
+        ->and($restored->approved_at)->toEqual($approvedAt)
+        ->and($restored->refund_pending_at)->toBeNull()
+        ->and($restored->last_state_change_at)->not->toBeNull();
 });
 
 it('creates order-item registrations with session scope', function (): void {

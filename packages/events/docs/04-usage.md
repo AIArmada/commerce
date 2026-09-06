@@ -189,7 +189,7 @@ $workflow->reschedule($occurrence, $newStart, $newEnd);
 $workflow->complete($occurrence);
 ```
 
-Direct transitions without side effects:
+Direct model transitions without domain events:
 
 ```php
 use AIArmada\Events\States\EventStatus;
@@ -198,10 +198,10 @@ use AIArmada\Events\States\RegistrationStatus;
 
 $event->status->transitionTo(EventStatus\Published::class);
 $occurrence->status->transitionTo(OccurrenceStatus\Cancelled::class);
-$registration->status->transitionTo(RegistrationStatus\Confirmed::class);
+$registration->transitionStatus(RegistrationStatus\Confirmed::class);
 ```
 
-Use the workflow service when lifecycle timestamps and domain events are needed. Allowed transitions are defined in each state base class's `config()` method under `States/`.
+Use the workflow service when domain events are needed. `transitionStatus()` records a registration lifecycle timestamp, while calling `$registration->status->transitionTo(...)` intentionally bypasses that registration bookkeeping. Allowed transitions are defined in each state base class's `config()` method under `States/`.
 
 ## Managing Occurrences
 
@@ -315,7 +315,7 @@ $registration = app(RegistrationServiceInterface::class)->register([
 ### Registration with occurrence/session-scoped participants
 
 ```php
-$registration = EventRegistration::create([
+$registration = app(RegistrationServiceInterface::class)->register([
     'event_id' => $event->id,
     'event_occurrence_id' => $occurrence->id,
     'event_session_id' => $session->id,

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Membership\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationAccepted;
 use AIArmada\Membership\Models\MembershipInvitation;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -49,10 +49,7 @@ final class AcceptInvitationAction
                 throw new RuntimeException('Invitation contains an invalid membership role.');
             }
 
-            $lockedInvitation->update([
-                'accepted_at' => CarbonImmutable::now(),
-                'accepted_by' => $user->getKey(),
-            ]);
+            $lockedInvitation->transitionStatus(InvitationStatus::Accepted, $user);
 
             AddMemberAction::make()->handle(
                 $lockedInvitation->subject,

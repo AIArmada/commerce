@@ -8,6 +8,9 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase as BaseTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Membership\Models\MembershipInvitation;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -16,6 +19,29 @@ use Spatie\Permission\PermissionRegistrar;
 
 abstract class MembershipTestCase extends BaseTestCase
 {
+    /**
+     * Create a pending invitation through its lifecycle API.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function createInvitation(array $attributes = [], ?string $rawToken = null): MembershipInvitation
+    {
+        $expiresAt = $attributes['expires_at'] ?? null;
+
+        if ($expiresAt !== null && ! $expiresAt instanceof CarbonInterface) {
+            $expiresAt = CarbonImmutable::parse((string) $expiresAt);
+        }
+
+        unset($attributes['expires_at']);
+
+        $invitation = new MembershipInvitation;
+        $invitation->fill($attributes);
+        $invitation->issue($rawToken ?? bin2hex(random_bytes(32)), $expiresAt);
+        $invitation->save();
+
+        return $invitation;
+    }
+
     protected function withMembershipOwner(callable $callback): mixed
     {
         $owner = User::query()
@@ -92,12 +118,15 @@ abstract class MembershipTestCase extends BaseTestCase
             $table->string('email');
             $table->string('role');
             $table->string('token', 64);
+            $table->string('status')->default('pending')->index();
             $table->foreignUuid('invited_by');
             $table->timestampTz('expires_at')->nullable();
+            $table->timestampTz('expired_at')->nullable();
             $table->timestampTz('accepted_at')->nullable();
             $table->foreignUuid('accepted_by')->nullable();
             $table->timestampTz('revoked_at')->nullable();
             $table->foreignUuid('revoked_by')->nullable();
+            $table->timestampTz('last_state_change_at')->nullable()->index();
             $table->timestampsTz();
 
             $table->index(['subject_type', 'subject_id']);

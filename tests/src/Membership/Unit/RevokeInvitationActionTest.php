@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\RevokeInvitationAction;
+use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
@@ -25,12 +26,11 @@ beforeEach(function (): void {
         'email' => 'revoker@app.com',
         'password' => 'secret',
     ]);
-    $this->invitation = $this->withMembershipOwner(fn (): MembershipInvitation => MembershipInvitation::query()->create([
+    $this->invitation = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'invitee@example.com',
         'role' => MemberRole::Admin->spatieRoleName(),
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
     ]));
 });
@@ -47,7 +47,7 @@ it('revokes a pending invitation', function (): void {
 });
 
 it('can revoke an expired invitation', function (): void {
-    $this->invitation->update(['expires_at' => now()->subDay()]);
+    $this->invitation->forceFill(['expires_at' => now()->subDay()])->save();
 
     RevokeInvitationAction::make()->handle(
         invitation: $this->invitation,
@@ -57,11 +57,40 @@ it('can revoke an expired invitation', function (): void {
     expect($this->invitation->fresh()->revoked_at)->not->toBeNull();
 });
 
-it('can revoke regardless of current state', function (): void {
+it('is idempotent for an already revoked invitation', function (): void {
     RevokeInvitationAction::make()->handle(
         invitation: $this->invitation,
         actor: $this->revoker,
     );
 
-    expect($this->invitation->fresh()->revoked_at)->not->toBeNull();
+    $revokedAt = $this->invitation->fresh()->revoked_at;
+
+    RevokeInvitationAction::make()->handle(
+        invitation: $this->invitation,
+        actor: $this->revoker,
+    );
+
+    expect($this->invitation->fresh()->revoked_at)->toEqual($revokedAt);
+});
+
+it('does not revoke an accepted invitation', function (): void {
+    $this->invitation->transitionStatus(InvitationStatus::Accepted, $this->inviter);
+
+    expect(fn () => RevokeInvitationAction::make()->handle(
+        invitation: $this->invitation,
+        actor: $this->revoker,
+    ))->toThrow(LogicException::class);
+
+    expect($this->invitation->fresh()->revoked_at)->toBeNull();
+});
+
+it('does not revoke an invitation whose expiry has been materialized', function (): void {
+    $this->invitation->transitionStatus(InvitationStatus::Expired);
+
+    expect(fn () => RevokeInvitationAction::make()->handle(
+        invitation: $this->invitation,
+        actor: $this->revoker,
+    ))->toThrow(LogicException::class);
+
+    expect($this->invitation->fresh()->revoked_at)->toBeNull();
 });

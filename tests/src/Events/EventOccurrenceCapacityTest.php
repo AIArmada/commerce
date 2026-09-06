@@ -18,7 +18,7 @@ it('counts blocked participants when calculating remaining occurrence capacity',
             'ends_at' => CarbonImmutable::parse('2026-07-01 11:00:00'),
         ]);
 
-        EventRegistration::query()->create([
+        EventRegistration::factory()->create([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'registration_no' => 'REG-PENDING',
@@ -29,7 +29,7 @@ it('counts blocked participants when calculating remaining occurrence capacity',
             'currency' => 'MYR',
         ]);
 
-        EventRegistration::query()->create([
+        EventRegistration::factory()->create([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'registration_no' => 'REG-NO-SHOW',
@@ -40,7 +40,7 @@ it('counts blocked participants when calculating remaining occurrence capacity',
             'currency' => 'MYR',
         ]);
 
-        EventRegistration::query()->create([
+        EventRegistration::factory()->create([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'registration_no' => 'REG-COMPLETED',

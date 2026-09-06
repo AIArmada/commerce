@@ -49,7 +49,7 @@ it('issues and delivers all passes created for matching registrations', function
             'currency' => 'MYR',
         ]);
 
-        $registration = EventRegistration::query()->create([
+        $registration = EventRegistration::factory()->create([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'registration_type' => 'individual',
@@ -129,7 +129,7 @@ it('only issues passes once for duplicate ticket type order items', function ():
             'currency' => 'MYR',
         ]);
 
-        $firstRegistration = EventRegistration::query()->create([
+        $firstRegistration = EventRegistration::factory()->create([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'registration_type' => 'individual',
@@ -155,7 +155,7 @@ it('only issues passes once for duplicate ticket type order items', function ():
             'external_order_item_type' => OrderItem::class,
         ]);
 
-        $secondRegistration = EventRegistration::query()->create([
+        $secondRegistration = EventRegistration::factory()->create([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'registration_type' => 'individual',

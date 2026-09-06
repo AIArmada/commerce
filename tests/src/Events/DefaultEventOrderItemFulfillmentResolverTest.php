@@ -44,7 +44,7 @@ it('resolves order item fulfillment payloads from the registration participants'
             'currency' => 'MYR',
         ]);
 
-        $registration = EventRegistration::query()->create([
+        $registration = EventRegistration::factory()->create([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'registration_type' => 'individual',

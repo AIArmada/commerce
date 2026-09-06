@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Membership\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Models\MembershipInvitation;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,10 +28,7 @@ final class RevokeInvitationAction
                 ->whereKey($guardedInvitation->getKey())
                 ->firstOrFail();
 
-            $lockedInvitation->update([
-                'revoked_at' => CarbonImmutable::now(),
-                'revoked_by' => $actor->getKey(),
-            ]);
+            $lockedInvitation->transitionStatus(InvitationStatus::Revoked, $actor);
         });
     }
 }

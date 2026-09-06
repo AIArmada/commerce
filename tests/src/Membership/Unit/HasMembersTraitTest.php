@@ -6,7 +6,6 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Models\MembershipApplication;
-use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -59,21 +58,19 @@ it('member applications are scoped to the subject', function (): void {
 });
 
 it('member invitations are scoped to the subject', function (): void {
-    $invitation1 = MembershipInvitation::query()->create([
+    $invitation1 = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'user1@app.com',
         'role' => 'admin',
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->user->getKey(),
     ]);
 
-    $invitation2 = MembershipInvitation::query()->create([
+    $invitation2 = $this->createInvitation([
         'subject_type' => $this->subject2->getMorphClass(),
         'subject_id' => $this->subject2->getKey(),
         'email' => 'user2@app.com',
         'role' => 'editor',
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->user->getKey(),
     ]);
 

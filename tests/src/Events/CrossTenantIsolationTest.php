@@ -106,7 +106,7 @@ it('isolates event-bound child reads and writes by owner', function (): void {
         expect(fn () => app(EventLifecycleWorkflow::class)->complete($occurrenceB))
             ->toThrow(AuthorizationException::class);
 
-        expect(fn () => EventRegistration::query()->create([
+        expect(fn () => EventRegistration::factory()->create([
             'event_id' => $eventB->id,
             'registration_type' => 'individual',
             'status' => 'pending',

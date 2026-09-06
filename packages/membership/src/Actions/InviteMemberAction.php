@@ -25,17 +25,21 @@ final class InviteMemberAction
         $tokenLength = max(32, (int) config('membership.invitations.token_length', 64));
         $token = Str::random($tokenLength);
 
-        $invitation = MembershipInvitation::query()->create([
+        $invitation = new MembershipInvitation;
+        $invitation->fill([
             'subject_type' => $subject->getMorphClass(),
             'subject_id' => $subject->getKey(),
             'email' => mb_strtolower($email),
             'role' => $role->spatieRoleName(),
-            'token' => MembershipInvitation::tokenForStorage($token),
             'invited_by' => $inviter->getKey(),
-            'expires_at' => $expiresAt ?? CarbonImmutable::now()->addDays(
+        ]);
+        $invitation->issue(
+            $token,
+            $expiresAt ?? CarbonImmutable::now()->addDays(
                 (int) config('membership.invitations.default_expiry_days', 14)
             ),
-        ]);
+        );
+        $invitation->save();
 
         MembershipInvitationSent::dispatch($invitation, $token);
 

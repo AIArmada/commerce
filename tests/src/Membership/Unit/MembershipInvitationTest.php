@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Membership\Models\MembershipInvitation;
+use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
 
@@ -21,12 +21,11 @@ beforeEach(function (): void {
 });
 
 it('creates a membership invitation', function (): void {
-    $invitation = MembershipInvitation::query()->create([
+    $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'invitee@example.com',
         'role' => 'admin',
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
     ]);
 
@@ -37,12 +36,11 @@ it('creates a membership invitation', function (): void {
 });
 
 it('lowercases email on create', function (): void {
-    $invitation = MembershipInvitation::query()->create([
+    $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'UpperCase@Example.Com',
         'role' => 'editor',
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
     ]);
 
@@ -50,21 +48,19 @@ it('lowercases email on create', function (): void {
 });
 
 it('generates a unique token', function (): void {
-    $invitation1 = MembershipInvitation::query()->create([
+    $invitation1 = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'user1@example.com',
         'role' => 'viewer',
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
     ]);
 
-    $invitation2 = MembershipInvitation::query()->create([
+    $invitation2 = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'user2@example.com',
         'role' => 'viewer',
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
     ]);
 
@@ -73,14 +69,13 @@ it('generates a unique token', function (): void {
 
 it('matches a plaintext token against hashed storage', function (): void {
     $token = 'plain-text-invitation-token';
-    $invitation = MembershipInvitation::query()->create([
+    $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'token@example.com',
         'role' => 'viewer',
-        'token' => MembershipInvitation::tokenForStorage($token),
         'invited_by' => $this->inviter->getKey(),
-    ]);
+    ], $token);
 
     expect($invitation->token)->not->toBe($token)
         ->and($invitation->matchesToken($token))->toBeTrue()
@@ -88,12 +83,11 @@ it('matches a plaintext token against hashed storage', function (): void {
 });
 
 it('has polymorphic subject relationship', function (): void {
-    $invitation = MembershipInvitation::query()->create([
+    $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'test@example.com',
         'role' => 'admin',
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
     ]);
 
@@ -101,12 +95,11 @@ it('has polymorphic subject relationship', function (): void {
 });
 
 it('is valid when not accepted, revoked, or expired', function (): void {
-    $invitation = MembershipInvitation::query()->create([
+    $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'test@example.com',
         'role' => 'admin',
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->addDays(7),
     ]);
@@ -115,12 +108,11 @@ it('is valid when not accepted, revoked, or expired', function (): void {
 });
 
 it('is not valid when expired', function (): void {
-    $invitation = MembershipInvitation::query()->create([
+    $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'test@example.com',
         'role' => 'admin',
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->subDay(),
     ]);
@@ -128,30 +120,65 @@ it('is not valid when expired', function (): void {
     expect($invitation->isValid())->toBeFalse();
 });
 
+it('does not accept an invitation after its expiry deadline', function (): void {
+    $invitation = $this->createInvitation([
+        'subject_type' => $this->subject->getMorphClass(),
+        'subject_id' => $this->subject->getKey(),
+        'email' => 'expired@example.com',
+        'role' => 'admin',
+        'invited_by' => $this->inviter->getKey(),
+        'expires_at' => now()->subDay(),
+    ]);
+
+    expect(fn () => $invitation->transitionStatus(InvitationStatus::Accepted, $this->inviter))
+        ->toThrow(LogicException::class);
+
+    expect($invitation->fresh())
+        ->status->toBe(InvitationStatus::Pending)
+        ->accepted_at->toBeNull();
+});
+
+it('records the actual expiration transition separately from the expiry deadline', function (): void {
+    $invitation = $this->createInvitation([
+        'subject_type' => $this->subject->getMorphClass(),
+        'subject_id' => $this->subject->getKey(),
+        'email' => 'expired@example.com',
+        'role' => 'admin',
+        'invited_by' => $this->inviter->getKey(),
+        'expires_at' => now()->subDay(),
+    ]);
+
+    expect($invitation->expired_at)->toBeNull()
+        ->and($invitation->expireIfDue())->toBeTrue();
+
+    expect($invitation->fresh())
+        ->status->toBe(InvitationStatus::Expired)
+        ->expired_at->not->toBeNull()
+        ->last_state_change_at->not->toBeNull();
+});
+
 it('is not valid when accepted', function (): void {
-    $invitation = MembershipInvitation::query()->create([
+    $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'test@example.com',
         'role' => 'admin',
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
-        'accepted_at' => now(),
     ]);
+    $invitation->transitionStatus(InvitationStatus::Accepted, $this->inviter);
 
     expect($invitation->isValid())->toBeFalse();
 });
 
 it('is not valid when revoked', function (): void {
-    $invitation = MembershipInvitation::query()->create([
+    $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'test@example.com',
         'role' => 'admin',
-        'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
-        'revoked_at' => now(),
     ]);
+    $invitation->transitionStatus(InvitationStatus::Revoked, $this->inviter);
 
     expect($invitation->isValid())->toBeFalse();
 });

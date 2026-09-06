@@ -22,13 +22,14 @@ use AIArmada\Events\States\RegistrationStatus\CheckedIn;
 use AIArmada\Events\States\RegistrationStatus\Completed;
 use AIArmada\Events\States\RegistrationStatus\Confirmed;
 use AIArmada\Events\States\RegistrationStatus\NoShow;
+use AIArmada\Events\States\RegistrationStatus\Pending;
 use AIArmada\Events\States\RegistrationStatus\Refunded;
 use AIArmada\Events\States\RegistrationStatus\RefundPending;
+use AIArmada\Events\States\RegistrationStatus\RegistrationStatus as RegistrationStatusState;
 use AIArmada\Events\States\RegistrationStatus\Rejected;
 use AIArmada\Events\States\RegistrationStatus\Waitlisted;
 use AIArmada\Events\Support\EventWriteGuard;
 use AIArmada\Events\Support\ModelResolver;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -41,7 +42,31 @@ final class RegistrationService implements RegistrationServiceInterface
 
         $registration = DB::transaction(function () use ($data): EventRegistration {
             $registrationClass = ModelResolver::registrationClass();
-            $registration = $registrationClass::create(Arr::except($data, ['items', 'participants', 'answers']));
+            $initialStatus = $data['status'] ?? Pending::class;
+
+            if (! is_string($initialStatus) && ! $initialStatus instanceof RegistrationStatusState) {
+                throw new InvalidArgumentException('The registration status must be a state name or state class.');
+            }
+
+            $registration = new $registrationClass;
+            $registration->fill(Arr::except($data, [
+                'items',
+                'participants',
+                'answers',
+                'status',
+                'registered_at',
+                'approved_at',
+                'completed_at',
+                'cancelled_at',
+                'rejected_at',
+                'waitlisted_at',
+                'refund_pending_at',
+                'refunded_at',
+                'expired_at',
+                'last_state_change_at',
+            ]));
+            $registration->initializeStatus($initialStatus);
+            $registration->save();
 
             $scopeFields = [
                 'event_id' => $registration->event_id,
@@ -111,14 +136,13 @@ final class RegistrationService implements RegistrationServiceInterface
 
         if ($registration->status instanceof Confirmed) {
             if ($registration->approved_at === null) {
-                $registration->update(['approved_at' => CarbonImmutable::now()]);
+                $registration->transitionStatus(Confirmed::class);
             }
 
             return;
         }
 
-        $registration->approved_at = CarbonImmutable::now();
-        $registration->status->transitionTo(Confirmed::class);
+        $registration->transitionStatus(Confirmed::class);
 
         event(new EventRegistrationApproved($registration));
     }
@@ -129,18 +153,15 @@ final class RegistrationService implements RegistrationServiceInterface
 
         if ($registration->status instanceof Cancelled) {
             if ($registration->cancelled_at === null) {
-                $registration->update([
-                    'cancelled_at' => CarbonImmutable::now(),
-                    'status_reason' => $reason,
-                ]);
+                $registration->status_reason = $reason;
+                $registration->transitionStatus(Cancelled::class);
             }
 
             return;
         }
 
-        $registration->cancelled_at = CarbonImmutable::now();
         $registration->status_reason = $reason;
-        $registration->status->transitionTo(Cancelled::class);
+        $registration->transitionStatus(Cancelled::class);
 
         event(new EventRegistrationCancelled($registration, $reason));
     }
@@ -151,18 +172,15 @@ final class RegistrationService implements RegistrationServiceInterface
 
         if ($registration->status instanceof Rejected) {
             if ($registration->rejected_at === null) {
-                $registration->update([
-                    'rejected_at' => CarbonImmutable::now(),
-                    'status_reason' => $reason,
-                ]);
+                $registration->status_reason = $reason;
+                $registration->transitionStatus(Rejected::class);
             }
 
             return;
         }
 
-        $registration->rejected_at = CarbonImmutable::now();
         $registration->status_reason = $reason;
-        $registration->status->transitionTo(Rejected::class);
+        $registration->transitionStatus(Rejected::class);
 
         event(new EventRegistrationRejected($registration, $reason));
     }
@@ -173,14 +191,13 @@ final class RegistrationService implements RegistrationServiceInterface
 
         if ($registration->status instanceof Waitlisted) {
             if ($registration->waitlisted_at === null) {
-                $registration->update(['waitlisted_at' => CarbonImmutable::now()]);
+                $registration->transitionStatus(Waitlisted::class);
             }
 
             return;
         }
 
-        $registration->waitlisted_at = CarbonImmutable::now();
-        $registration->status->transitionTo(Waitlisted::class);
+        $registration->transitionStatus(Waitlisted::class);
 
         event(new EventRegistrationWaitlisted($registration));
     }
@@ -191,14 +208,13 @@ final class RegistrationService implements RegistrationServiceInterface
 
         if ($registration->status instanceof Completed) {
             if ($registration->completed_at === null) {
-                $registration->update(['completed_at' => CarbonImmutable::now()]);
+                $registration->transitionStatus(Completed::class);
             }
 
             return;
         }
 
-        $registration->completed_at = CarbonImmutable::now();
-        $registration->status->transitionTo(Completed::class);
+        $registration->transitionStatus(Completed::class);
 
         event(new EventRegistrationCompleted($registration));
     }
@@ -209,19 +225,16 @@ final class RegistrationService implements RegistrationServiceInterface
 
         if ($registration->status instanceof Refunded) {
             if ($registration->refunded_at === null) {
-                $registration->update([
-                    'refunded_at' => CarbonImmutable::now(),
-                    'status_reason' => $reason,
-                ]);
+                $registration->status_reason = $reason;
+                $registration->transitionStatus(Refunded::class);
             }
 
             return;
         }
 
         $registration->refund_pending_at = null;
-        $registration->refunded_at = CarbonImmutable::now();
         $registration->status_reason = $reason;
-        $registration->status->transitionTo(Refunded::class);
+        $registration->transitionStatus(Refunded::class);
 
         event(new EventRegistrationRefunded($registration, $reason));
     }
@@ -232,7 +245,7 @@ final class RegistrationService implements RegistrationServiceInterface
 
         if ($registration->status instanceof RefundPending) {
             if ($registration->refund_pending_at === null) {
-                $registration->update(['refund_pending_at' => CarbonImmutable::now()]);
+                $registration->transitionStatus(RefundPending::class);
             }
 
             return;
@@ -241,11 +254,9 @@ final class RegistrationService implements RegistrationServiceInterface
         $metadata = $registration->metadata ?? [];
         $metadata['refund']['original_status'] = $registration->status->getValue();
 
-        $registration->refund_pending_at = CarbonImmutable::now();
         $registration->status_reason = $reason;
         $registration->metadata = $metadata;
-        $registration->status->transitionTo(RefundPending::class);
-        $registration->save();
+        $registration->transitionStatus(RefundPending::class);
 
         event(new EventRegistrationRefundPending($registration, $reason));
     }
@@ -269,11 +280,10 @@ final class RegistrationService implements RegistrationServiceInterface
         $metadata = $registration->metadata ?? [];
         Arr::forget($metadata, 'refund.original_status');
 
-        $registration->refund_pending_at = null;
         $registration->status_reason = $reason;
         $registration->metadata = $metadata;
-        $registration->status->transitionTo($targetState);
-        $registration->save();
+        $registration->refund_pending_at = null;
+        $registration->transitionStatus($targetState, overwriteLifecycleTimestamp: false);
 
         event(new EventRegistrationRefundRestored($registration, $reason));
     }
@@ -283,14 +293,14 @@ final class RegistrationService implements RegistrationServiceInterface
         EventWriteGuard::findOrFail($orderItemData['event_id']);
 
         $registrationClass = ModelResolver::registrationClass();
-        $registration = $registrationClass::create([
+        $registration = new $registrationClass;
+        $registration->fill([
             'event_id' => $orderItemData['event_id'],
             'event_occurrence_id' => $orderItemData['event_occurrence_id'] ?? null,
             'event_session_id' => $orderItemData['event_session_id'] ?? null,
             'registrant_type' => $orderItemData['registrant_type'] ?? null,
             'registrant_id' => $orderItemData['registrant_id'] ?? null,
             'registration_type' => $orderItemData['registration_type'] ?? 'standard',
-            'status' => 'pending',
             'source' => 'order',
             'total_participants' => $orderItemData['quantity'] ?? 1,
             'total_amount' => $orderItemData['total_price'] ?? 0,
@@ -298,6 +308,8 @@ final class RegistrationService implements RegistrationServiceInterface
             'external_order_id' => $orderItemData['order_id'] ?? null,
             'external_order_type' => $orderItemData['order_type'] ?? null,
         ]);
+        $registration->initializeStatus(Pending::class);
+        $registration->save();
 
         event(new EventRegistrationCreated($registration));
     }
