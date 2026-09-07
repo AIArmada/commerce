@@ -13,24 +13,18 @@ return new class extends Migration
         $organizationsTable = (string) config('organizations.database.tables.organizations', 'organizations');
         $membersTable = (string) config('organizations.database.tables.members', 'organization_members');
 
-        $organizationsSlugIndex = $organizationsTable . '_slug_index';
         $organizationsSlugUnique = 'organizations_slug_unique';
 
         if (Schema::hasTable($organizationsTable)) {
-            if (Schema::hasIndex($organizationsTable, $organizationsSlugIndex)) {
-                Schema::table($organizationsTable, function (Blueprint $table) use ($organizationsSlugIndex): void {
-                    $table->dropIndex($organizationsSlugIndex);
-                });
-            }
-
-            if (! Schema::hasIndex($organizationsTable, $organizationsSlugUnique)) {
+            if (! Schema::hasIndex($organizationsTable, ['slug'], 'unique')) {
                 Schema::table($organizationsTable, function (Blueprint $table) use ($organizationsSlugUnique): void {
                     $table->unique('slug', $organizationsSlugUnique);
                 });
             }
+
+            $this->dropNonUniqueIndexes($organizationsTable, ['slug']);
         }
 
-        $membersLookupIndex = $membersTable . '_organization_id_user_id_index';
         $membersLookupUnique = 'organization_members_organization_user_unique';
         $membersRoleIndex = 'organization_members_organization_role_index';
 
@@ -38,17 +32,13 @@ return new class extends Migration
             return;
         }
 
-        if (Schema::hasIndex($membersTable, $membersLookupIndex)) {
-            Schema::table($membersTable, function (Blueprint $table) use ($membersLookupIndex): void {
-                $table->dropIndex($membersLookupIndex);
-            });
-        }
-
-        if (! Schema::hasIndex($membersTable, $membersLookupUnique)) {
+        if (! Schema::hasIndex($membersTable, ['organization_id', 'user_id'], 'unique')) {
             Schema::table($membersTable, function (Blueprint $table) use ($membersLookupUnique): void {
                 $table->unique(['organization_id', 'user_id'], $membersLookupUnique);
             });
         }
+
+        $this->dropNonUniqueIndexes($membersTable, ['organization_id', 'user_id']);
 
         if (! Schema::hasIndex($membersTable, $membersRoleIndex)) {
             Schema::table($membersTable, function (Blueprint $table) use ($membersRoleIndex): void {
@@ -62,7 +52,6 @@ return new class extends Migration
         $organizationsTable = (string) config('organizations.database.tables.organizations', 'organizations');
         $membersTable = (string) config('organizations.database.tables.members', 'organization_members');
 
-        $organizationsSlugIndex = $organizationsTable . '_slug_index';
         $organizationsSlugUnique = 'organizations_slug_unique';
 
         if (Schema::hasTable($organizationsTable)) {
@@ -72,7 +61,7 @@ return new class extends Migration
                 });
             }
 
-            if (! Schema::hasIndex($organizationsTable, $organizationsSlugIndex)) {
+            if (! Schema::hasIndex($organizationsTable, ['slug'])) {
                 Schema::table($organizationsTable, function (Blueprint $table): void {
                     $table->index('slug');
                 });
@@ -83,7 +72,6 @@ return new class extends Migration
             return;
         }
 
-        $membersLookupIndex = $membersTable . '_organization_id_user_id_index';
         $membersLookupUnique = 'organization_members_organization_user_unique';
         $membersRoleIndex = 'organization_members_organization_role_index';
 
@@ -99,9 +87,33 @@ return new class extends Migration
             });
         }
 
-        if (! Schema::hasIndex($membersTable, $membersLookupIndex)) {
+        if (! Schema::hasIndex($membersTable, ['organization_id', 'user_id'])) {
             Schema::table($membersTable, function (Blueprint $table): void {
                 $table->index(['organization_id', 'user_id']);
+            });
+        }
+    }
+
+    /**
+     * @param  list<string>  $columns
+     */
+    private function dropNonUniqueIndexes(string $tableName, array $columns): void
+    {
+        foreach (Schema::getIndexes($tableName) as $index) {
+            if (($index['columns'] ?? null) !== $columns
+                || ($index['unique'] ?? false)
+                || ($index['primary'] ?? false)) {
+                continue;
+            }
+
+            $indexName = $index['name'] ?? null;
+
+            if (! is_string($indexName) || $indexName === '') {
+                continue;
+            }
+
+            Schema::table($tableName, function (Blueprint $table) use ($indexName): void {
+                $table->dropIndex($indexName);
             });
         }
     }

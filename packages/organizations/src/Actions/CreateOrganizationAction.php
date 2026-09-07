@@ -16,6 +16,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class CreateOrganizationAction
