@@ -21,17 +21,19 @@ trait Addressable
      */
     public function addresses(): MorphToMany
     {
+        $pivotTable = AddressingTableResolver::resolve('addressables');
+
         if ($this->shouldUseAddressing()) {
             $relation = $this->morphToMany(
                 Address::class,
                 'addressable',
-                AddressingTableResolver::resolve('addressables'),
+                $pivotTable,
             )
                 ->using(AddressablePivot::class)
                 ->withPivot(['id', 'type', 'label', 'is_primary', 'valid_from', 'valid_until', 'owner_type', 'owner_id'])
                 ->withTimestamps()
-                ->orderBy('addressables.is_primary', 'desc')
-                ->orderBy('addressables.created_at', 'desc');
+                ->orderBy("{$pivotTable}.is_primary", 'desc')
+                ->orderBy("{$pivotTable}.created_at", 'desc');
 
             return AddressOwnerGuard::applyToRelation($relation);
         }
@@ -39,7 +41,7 @@ trait Addressable
         return $this->morphToMany(
             Address::class,
             'addressable',
-            AddressingTableResolver::resolve('addressables'),
+            $pivotTable,
         )->whereRaw('1 = 0');
     }
 
@@ -47,16 +49,17 @@ trait Addressable
     {
         if ($this->shouldUseAddressing()) {
             $now = CarbonImmutable::now();
+            $pivotTable = AddressingTableResolver::resolve('addressables');
 
             $address = $this->addresses()
-                ->where('addressables.is_primary', true)
-                ->where(function (Builder $q) use ($now): void {
-                    $q->whereNull('addressables.valid_from')
-                        ->orWhere('addressables.valid_from', '<=', $now);
+                ->where("{$pivotTable}.is_primary", true)
+                ->where(function (Builder $q) use ($now, $pivotTable): void {
+                    $q->whereNull("{$pivotTable}.valid_from")
+                        ->orWhere("{$pivotTable}.valid_from", '<=', $now);
                 })
-                ->where(function (Builder $q) use ($now): void {
-                    $q->whereNull('addressables.valid_until')
-                        ->orWhere('addressables.valid_until', '>=', $now);
+                ->where(function (Builder $q) use ($now, $pivotTable): void {
+                    $q->whereNull("{$pivotTable}.valid_until")
+                        ->orWhere("{$pivotTable}.valid_until", '>=', $now);
                 })
                 ->first();
 
