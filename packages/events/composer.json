@@ -32,6 +32,7 @@
   },
   "suggest": {
     "aiarmada/addressing": "Optional integration",
+    "aiarmada/authz": "Optional integration for scoped management assignments",
     "aiarmada/cart": "Optional integration",
     "aiarmada/checkout": "Enables cart and checkout orchestration for ticket purchasing.",
     "aiarmada/customers": "Enables customer-backed registrants and participants.",

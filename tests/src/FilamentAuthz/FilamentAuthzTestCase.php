@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\FilamentAuthz;
 
+use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Models\Role;
 use AIArmada\Authz\Support\AuthzScopeTeamResolver;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase as BaseTestCase;
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
 use DateInterval;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;

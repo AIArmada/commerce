@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Authz\Concerns\SyncsRolePermissions;
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Models\Role;
 use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 
 it('syncs permissions that already exist for the role guard', function (): void {

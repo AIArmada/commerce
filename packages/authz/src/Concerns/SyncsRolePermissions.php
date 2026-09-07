@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Concerns;
 
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Models\Role;
 use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Spatie\Permission\PermissionRegistrar;
 

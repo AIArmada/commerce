@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Models\Role;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
 use Illuminate\Support\Facades\Gate;
 
 beforeEach(function (): void {

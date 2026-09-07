@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Models\Role;
 
 beforeEach(function (): void {
     // Use single guard for predictable test output

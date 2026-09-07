@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Authz\Console\Commands\SuperAdminCommand;
 use AIArmada\Authz\Console\Commands\SyncAuthzCommand;
 use AIArmada\Authz\Console\Concerns\Prohibitable;
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Models\Role;
 use AIArmada\FilamentAuthz\Console\DiscoverCommand;
 use AIArmada\FilamentAuthz\Console\GeneratePoliciesCommand;
 use AIArmada\FilamentAuthz\Console\SeederCommand;
@@ -84,6 +84,19 @@ describe('SeederCommand', function (): void {
                     'permissions' => ['docs.view'],
                 ],
             ]);
+    });
+
+    it('generates seeders with authz-owned models', function (): void {
+        $command = app(SeederCommand::class);
+        $method = new ReflectionMethod($command, 'generateSeederContent');
+
+        $content = $method->invoke($command, collect(), collect(), 'all');
+
+        expect($content)
+            ->toContain('use AIArmada\\Authz\\Models\\Permission;')
+            ->toContain('use AIArmada\\Authz\\Models\\Role;')
+            ->not->toContain('use Spatie\\Permission\\Models\\Permission;')
+            ->not->toContain('use Spatie\\Permission\\Models\\Role;');
     });
 });
 

@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Models\Role;
 use AIArmada\Cashier\Cashier;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
@@ -14,8 +16,6 @@ use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Inventory\Models\InventoryAllocation;

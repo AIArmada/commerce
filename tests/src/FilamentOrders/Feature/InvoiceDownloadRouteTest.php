@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Models\Permission;
 use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentOrders\FilamentOrdersServiceProvider;
 use AIArmada\Orders\Actions\GenerateInvoice;

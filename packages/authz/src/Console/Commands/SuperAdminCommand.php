@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Authz\Console\Commands;
 
 use AIArmada\Authz\Console\Concerns\Prohibitable;
-use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\Authz\Models\Role;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;

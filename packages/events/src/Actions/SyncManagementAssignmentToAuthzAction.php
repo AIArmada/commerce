@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
+use AIArmada\Authz\Models\Role;
 use AIArmada\Events\Models\EventManagementAssignment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 final class SyncManagementAssignmentToAuthzAction

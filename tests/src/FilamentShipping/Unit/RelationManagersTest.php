@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationManagers\ItemsRelationManager;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers\EventsRelationManager;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers\ItemsRelationManager as ShipmentItemsRelationManager;

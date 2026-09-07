@@ -18,7 +18,7 @@ keywords:
 
 ## Snapshot
 - Composer: `aiarmada/authz`
-- Role: Framework-agnostic Spatie Permission core: UUID schema, scopes, wildcard permissions, impersonation services. Role/Permission models live in commerce-support.
+- Role: Framework-agnostic Spatie Permission core: UUID schema, authz models, scopes, wildcard permissions, and impersonation services.
 - Triggers: roles, permissions, wildcard, scopes, impersonation, spatie, teams
 - Search first: `src/Services, src/Support, config, docs`
 - Related: `commerce-support`, `filament-authz`, `membership`

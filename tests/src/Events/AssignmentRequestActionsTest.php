@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Models\Role;
 use AIArmada\Authz\Support\AuthzScopeResolver;
-use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Actions\ApproveAssignmentRequestAction;
 use AIArmada\Events\Actions\CancelAssignmentRequestAction;

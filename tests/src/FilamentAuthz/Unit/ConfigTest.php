@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Models\AuthzScope;
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\Authz\Models\AuthzScope;
+use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Models\Role;
 
 describe('config', function (): void {
     it('has guards configured', function (): void {

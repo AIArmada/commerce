@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Models\Role;
 use AIArmada\Authz\Services\ImpersonateManager;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\FilamentAuthz\Http\Controllers\ImpersonateController;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Foundation\Auth\User as Authenticatable;

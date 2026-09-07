@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Models;
+namespace AIArmada\Authz\Models;
 
 use BackedEnum;
 use Illuminate\Database\Eloquent\Collection;

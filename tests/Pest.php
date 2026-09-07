@@ -7,6 +7,7 @@ if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSig
 }
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Authz\Models\Role;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Commerce\Tests\Feedback\FeedbackTestCase;
 use AIArmada\Commerce\Tests\FilamentAuthz\FilamentAuthzTestCase;
@@ -18,7 +19,6 @@ use AIArmada\Commerce\Tests\Persons\PersonsTestCase;
 use AIArmada\Commerce\Tests\Products\ProductsTestCase;
 use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;

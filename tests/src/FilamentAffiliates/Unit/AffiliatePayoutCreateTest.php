@@ -7,8 +7,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Authz\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use Illuminate\Support\Facades\DB;
 

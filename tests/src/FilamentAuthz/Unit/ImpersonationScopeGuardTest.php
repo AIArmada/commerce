@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Models\AuthzScope;
+use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Models\Role;
 use AIArmada\Authz\Support\ImpersonationScopeGuard;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Models\AuthzScope;
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 use function AIArmada\Authz\can_be_impersonated;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Services;
 
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Models\Role;
 use AIArmada\Membership\Enums\MemberRole;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;

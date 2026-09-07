@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\FilamentCashierChip;
 
+use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Models\Role;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\CashierChipServiceProvider;
 use AIArmada\CashierChip\Subscription\Subscription;
@@ -12,8 +14,6 @@ use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\TestPanelProvider;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\FilamentCashierChip\FilamentCashierChipServiceProvider;
 use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use BladeUI\Icons\BladeIconsServiceProvider;

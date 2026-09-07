@@ -4,7 +4,7 @@ title: Authz Troubleshooting
 
 ## Roles Use the Wrong Key Type
 
-Ensure `permission.models.role` and `permission.models.permission` have not been overridden with Spatie's integer-key models. Authz registers the UUID-backed Commerce Support models by default.
+Ensure `permission.models.role` and `permission.models.permission` have not been overridden with Spatie's integer-key models. Authz registers its UUID-backed models by default.
 
 ## Scope Is Always Null
 
