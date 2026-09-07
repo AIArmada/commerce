@@ -48,7 +48,7 @@ When this package is installed alongside `aiarmada/filament-pricing`, it is the 
 - **Full CRUD Operations** — Create, view, edit, and delete promotions
 - **Dedicated Admin Surface** — Owns the promotions navigation/resource in combined installs with `aiarmada/filament-pricing`
 - **Rich Data Tables** — Sortable, filterable lists with badges and icons
-- **Promotion Types** — Percentage, fixed amount, and Buy X Get Y with visual indicators
+- **Promotion Types** — Percentage and fixed amount with visual indicators
 - **Usage Statistics** — Monitor promotion redemption counts
 - **Scheduling Display** — View start/end dates clearly
 - **Owner Scoping** — Multi-tenant support for SaaS applications

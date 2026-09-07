@@ -6,7 +6,7 @@ A Filament v5 plugin for managing promotional discounts in your admin panel.
 
 - **Full CRUD** — Create, view, edit, and delete promotions
 - **Rich Table** — Sortable, filterable promotion list with badges
-- **Promotion Types** — Percentage, fixed amount, and Buy X Get Y
+- **Promotion Types** — Percentage and fixed amount
 - **Usage Tracking** — Monitor promotion usage statistics
 - **Owner Scoping** — Multi-tenant support out of the box
 - **Stats Widget** — Dashboard overview of promotion metrics
@@ -88,7 +88,6 @@ The Filament-aware `PromotionType` enum includes:
 |------|-------|------|-------|
 | `Percentage` | Percentage Off | receipt-percent | success |
 | `Fixed` | Fixed Amount | currency-dollar | info |
-| `BuyXGetY` | Buy X Get Y | gift | warning |
 
 ### Stats Widget
 

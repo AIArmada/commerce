@@ -6,8 +6,8 @@ use AIArmada\Promotions\Enums\PromotionType;
 
 describe('PromotionType Enum', function (): void {
     describe('values', function (): void {
-        it('has three cases', function (): void {
-            expect(PromotionType::cases())->toHaveCount(3);
+        it('has two cases', function (): void {
+            expect(PromotionType::cases())->toHaveCount(2);
         });
 
         it('has Percentage case', function (): void {
@@ -18,9 +18,6 @@ describe('PromotionType Enum', function (): void {
             expect(PromotionType::Fixed->value)->toBe('fixed');
         });
 
-        it('has BuyXGetY case', function (): void {
-            expect(PromotionType::BuyXGetY->value)->toBe('buy_x_get_y');
-        });
     });
 
     describe('label', function (): void {
@@ -32,9 +29,6 @@ describe('PromotionType Enum', function (): void {
             expect(PromotionType::Fixed->label())->toBe('Fixed Amount');
         });
 
-        it('returns label for BuyXGetY', function (): void {
-            expect(PromotionType::BuyXGetY->label())->toBe('Buy X Get Y');
-        });
     });
 
     describe('icon', function (): void {
@@ -46,9 +40,6 @@ describe('PromotionType Enum', function (): void {
             expect(PromotionType::Fixed->icon())->toBeString();
         });
 
-        it('returns icon for BuyXGetY', function (): void {
-            expect(PromotionType::BuyXGetY->icon())->toBeString();
-        });
     });
 
     describe('color', function (): void {
@@ -60,8 +51,5 @@ describe('PromotionType Enum', function (): void {
             expect(PromotionType::Fixed->color())->toBe('primary');
         });
 
-        it('returns warning color for BuyXGetY', function (): void {
-            expect(PromotionType::BuyXGetY->color())->toBe('warning');
-        });
     });
 });

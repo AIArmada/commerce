@@ -25,7 +25,7 @@ The promotions table displays:
 | Stack | Stackable status icon |
 
 **Filters:**
-- Type (Percentage, Fixed, BuyXGetY)
+- Type (Percentage, Fixed)
 - Active status
 - Stackable status
 - Has promo code
@@ -100,7 +100,6 @@ $type->color();  // "success"
 |------|-------|------|-------|
 | `Percentage` | Percentage Off | receipt-percent | success (green) |
 | `Fixed` | Fixed Amount | currency-dollar | info (blue) |
-| `BuyXGetY` | Buy X Get Y | gift | warning (yellow) |
 
 ## Stats Widget
 
