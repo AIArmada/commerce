@@ -54,28 +54,34 @@ final class PayoutStatsWidget extends BaseWidget
         return 4;
     }
 
-    private function getTodayPayouts(): float
+    private function getTodayPayouts(): int
     {
         return $this->getPayoutsForPeriod(CarbonImmutable::now()->startOfDay());
     }
 
-    private function getWeekPayouts(): float
+    private function getWeekPayouts(): int
     {
         return $this->getPayoutsForPeriod(CarbonImmutable::now()->subDays(7));
     }
 
-    private function getMonthPayouts(): float
+    private function getMonthPayouts(): int
     {
         return $this->getPayoutsForPeriod(CarbonImmutable::now()->startOfMonth());
     }
 
-    private function getPayoutsForPeriod(DateTimeInterface $since): float
+    private function getPayoutsForPeriod(DateTimeInterface $since): int
     {
-        return (float) SendInstruction::query()
+        $totalMajor = (string) SendInstruction::query()
             ->forOwner()
             ->where('state', 'completed')
             ->where('created_at', '>=', $since)
             ->sum('amount');
+
+        // CHIP stores Send amounts in major units; convert the aggregate once
+        // at the integration boundary with explicit half-up rounding.
+        $scale = 10 ** MoneyFormatter::precisionFor((string) config('filament-chip.default_currency', 'MYR'));
+
+        return (int) round((float) $totalMajor * $scale, 0, PHP_ROUND_HALF_UP);
     }
 
     private function getSuccessRate(): float
@@ -92,8 +98,8 @@ final class PayoutStatsWidget extends BaseWidget
         return round(($successful / $total) * 100, 1);
     }
 
-    private function formatCurrency(float $amount): string
+    private function formatCurrency(int $amountInMinorUnits): string
     {
-        return MoneyFormatter::formatMajor($amount, config('filament-chip.default_currency', 'MYR'));
+        return MoneyFormatter::formatMinor($amountInMinorUnits, (string) config('filament-chip.default_currency', 'MYR'));
     }
 }

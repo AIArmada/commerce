@@ -198,6 +198,14 @@ it('demonstrates money integration with cart package', function (): void {
     expect($cart->count())->toBe(3); // Total quantity: 2 + 1 = 3
 });
 
+it('rounds decimal major-unit prices half-up before storing minor units', function (): void {
+    $cart = createMoneyTestCart('rounding_test');
+
+    $cart->add('rounded-item', 'Rounded Item', '19.995', 1);
+
+    expect($cart->get('rounded-item')->price)->toBe(2000);
+});
+
 it('shows money precision advantages over float arithmetic', function (): void {
     $cart = createMoneyTestCart('precision_test');
 

@@ -57,10 +57,12 @@ final class CreateSendInstruction extends CreateRecord
         }
 
         try {
-            $amountInCents = MoneyFormatter::majorToMinor(
-                (string) $data['amount'],
-                config('chip.defaults.currency', 'MYR'),
-            );
+            $currency = (string) config('chip.defaults.currency', 'MYR');
+            $scale = 10 ** MoneyFormatter::precisionFor($currency);
+
+            // The form receives CHIP's major-unit decimal amount; convert it
+            // once at the boundary with explicit half-up rounding.
+            $amountInCents = (int) round((float) $data['amount'] * $scale, 0, PHP_ROUND_HALF_UP);
 
             $instruction = $service->createSendInstruction(
                 amountInCents: $amountInCents,

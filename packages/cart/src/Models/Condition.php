@@ -11,7 +11,6 @@ use AIArmada\Cart\Database\Factories\ConditionFactory;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -390,13 +389,27 @@ class Condition extends Model implements Auditable
         $rawValue = $this->value;
         $normalized = mb_ltrim($rawValue, '+');
         $formatted = MoneyFormatter::formatMinor(
-            MoneyNormalizer::toCents($normalized),
+            $this->fixedValueToMinor($normalized),
             $this->resolveCurrency(),
         );
 
         return str_starts_with($rawValue, '+')
             ? '+' . $formatted
             : $formatted;
+    }
+
+    /**
+     * Convert the condition's decimal major-unit display syntax to minor units.
+     * Integer strings already represent minor units; decimal strings use
+     * explicit half-up rounding.
+     */
+    private function fixedValueToMinor(string $value): int
+    {
+        if (! str_contains($value, '.')) {
+            return (int) $value;
+        }
+
+        return (int) round((float) $value * 100, 0, PHP_ROUND_HALF_UP);
     }
 
     /**

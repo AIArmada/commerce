@@ -376,6 +376,17 @@ it('handles float prices from string with decimal', function (): void {
     expect($item->price)->toBeInt();
 });
 
+it('rounds decimal major-unit prices half-up at the cart boundary', function (): void {
+    $item = new CartItem(
+        id: 'product-1',
+        name: 'Test Product',
+        price: '19.995',
+        quantity: 1,
+    );
+
+    expect($item->price)->toBe(2000);
+});
+
 it('validates required fields on creation', function (): void {
     expect(fn () => new CartItem(
         id: '',

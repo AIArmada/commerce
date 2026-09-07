@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Models;
 
 use AIArmada\Chip\Models\Concerns\AutoAssignOwnerOnCreate;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -13,6 +14,7 @@ use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use Override;
 
 /**
@@ -114,5 +116,32 @@ abstract class ChipIntegerModel extends Model
         }
 
         return Money::{$currency}($amount);
+    }
+
+    /**
+     * Convert CHIP Send's major-unit decimal boundary to integer minor units.
+     * CHIP returns these values as decimal strings or numeric values. Half-up
+     * rounding is explicit because the package stores and exposes minor units.
+     */
+    protected function convertMajorAmountToMinorUnits(string $amount, string $currency): int
+    {
+        $normalized = mb_trim($amount);
+
+        if ($normalized === '') {
+            return 0;
+        }
+
+        if (! is_numeric($normalized)) {
+            throw new InvalidArgumentException('CHIP Send monetary values must be numeric.');
+        }
+
+        $major = (float) $normalized;
+        if (! is_finite($major)) {
+            throw new InvalidArgumentException('CHIP Send monetary values must be finite.');
+        }
+
+        $scale = 10 ** MoneyFormatter::precisionFor($currency);
+
+        return (int) round($major * $scale, 0, PHP_ROUND_HALF_UP);
     }
 }

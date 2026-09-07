@@ -8,7 +8,6 @@ use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
-use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Support\Collection;
@@ -164,10 +163,39 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
     }
 
     /**
-     * Normalize price to integer cents using the centralized MoneyNormalizer.
+     * Normalize the cart price boundary to integer minor units.
+     *
+     * Integer inputs are already minor units. Decimal float/string inputs are
+     * major units and use explicit half-up rounding at this boundary.
      */
     private function normalizeToInt(int | float | string $price): int
     {
-        return MoneyNormalizer::toCents($price);
+        if (is_int($price)) {
+            return $price;
+        }
+
+        if (is_float($price)) {
+            if (! is_finite($price)) {
+                throw new InvalidCartItemException('Cart item price must be a finite number');
+            }
+
+            return (int) round($price * 100, 0, PHP_ROUND_HALF_UP);
+        }
+
+        $normalized = mb_trim($price);
+        $normalized = str_replace(['$', '€', '£', '¥', '₹', 'RM', '₱', '₩', '฿', '₫', '₪', '₨', 'kr', 'zł', ',', ' '], '', $normalized);
+
+        if ($normalized === '') {
+            return 0;
+        }
+
+        $value = (float) $normalized;
+        if (! is_numeric($normalized) || ! is_finite($value)) {
+            throw new InvalidCartItemException('Cart item price must be a finite number');
+        }
+
+        return str_contains($normalized, '.')
+            ? (int) round($value * 100, 0, PHP_ROUND_HALF_UP)
+            : (int) $normalized;
     }
 }

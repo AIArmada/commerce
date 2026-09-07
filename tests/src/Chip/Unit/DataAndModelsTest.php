@@ -321,6 +321,12 @@ describe('SendInstruction Model', function (): void {
             ->and($instruction->amountMoney->getAmount())->toBe(10050);
     });
 
+    it('rounds major-unit decimal boundaries half-up', function (): void {
+        $instruction = new SendInstruction(['amount' => '100.005']);
+
+        expect($instruction->amountInMinorUnits())->toBe(10001);
+    });
+
     it('returns state label and color', function (): void {
         $instruction = new SendInstruction(['state' => 'completed']);
         expect($instruction->stateLabel)->toBe('Completed');

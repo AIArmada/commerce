@@ -1,4 +1,10 @@
 <x-filament-panels::page>
+    @php
+        // CHIP Send reports payout totals in major units; convert once to
+        // integer minor units with explicit half-up rounding for display.
+        $completedAmountMinor = (int) round((float) ($metrics['completed_amount'] ?? 0) * 100, 0, PHP_ROUND_HALF_UP);
+    @endphp
+
     <div class="space-y-6">
         {{-- Key Metrics --}}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -16,7 +22,7 @@
             <x-filament::section>
                 <div class="text-center">
                     <div class="text-3xl font-bold text-success-600 dark:text-success-400">
-                        {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMajor($metrics['completed_amount'] ?? 0, 'MYR') }}
+                        {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($completedAmountMinor, 'MYR') }}
                     </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">
                         {{ __('Completed Amount') }}
@@ -72,7 +78,7 @@
                             <span class="text-sm font-medium text-success-800 dark:text-success-200">{{ __('Completed') }}</span>
                         </div>
                         <span class="text-lg font-bold text-success-600">
-                            {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMajor($metrics['completed_amount'] ?? 0, 'MYR') }}
+                            {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($completedAmountMinor, 'MYR') }}
                         </span>
                     </div>
 

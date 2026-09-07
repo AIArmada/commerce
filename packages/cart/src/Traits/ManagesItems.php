@@ -13,7 +13,6 @@ use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Exceptions\UnknownModelException;
 use AIArmada\Cart\Models\CartItem;
-use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 
 trait ManagesItems
 {
@@ -374,10 +373,39 @@ trait ManagesItems
     }
 
     /**
-     * Normalize price input to cents (integer) using the centralized MoneyNormalizer.
+     * Normalize a cart price boundary to integer minor units.
+     *
+     * Integer inputs are already minor units. Decimal float/string inputs are
+     * major units and use explicit half-up rounding at this boundary.
      */
     private function normalizePrice(float | int | string | null $price): int
     {
-        return MoneyNormalizer::toCents($price);
+        if ($price === null || is_int($price)) {
+            return $price ?? 0;
+        }
+
+        if (is_float($price)) {
+            if (! is_finite($price)) {
+                throw new InvalidCartItemException('Cart item price must be a finite number');
+            }
+
+            return (int) round($price * 100, 0, PHP_ROUND_HALF_UP);
+        }
+
+        $normalized = mb_trim($price);
+        $normalized = str_replace(['$', '€', '£', '¥', '₹', 'RM', '₱', '₩', '฿', '₫', '₪', '₨', 'kr', 'zł', ',', ' '], '', $normalized);
+
+        if ($normalized === '') {
+            return 0;
+        }
+
+        $value = (float) $normalized;
+        if (! is_numeric($normalized) || ! is_finite($value)) {
+            throw new InvalidCartItemException('Cart item price must be a finite number');
+        }
+
+        return str_contains($normalized, '.')
+            ? (int) round($value * 100, 0, PHP_ROUND_HALF_UP)
+            : (int) $normalized;
     }
 }

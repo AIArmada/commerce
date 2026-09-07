@@ -30,13 +30,17 @@ final class InventoryValuationWidget extends StatsOverviewWidget
         $valuation = $valuationService->getTotalValuation($method);
 
         $currency = config('inventory.defaults.currency', 'MYR');
-        $totalValue = $valuation['total_value'] / 100;
-        $avgCost = $valuation['total_quantity'] > 0
-            ? ($valuation['total_value'] / $valuation['total_quantity']) / 100
+        $totalValueMinor = $valuation['total_value'];
+        /**
+         * ValuationService returns integer minor units; average cost rounds half-up
+         * because a fractional minor unit cannot be represented in money storage.
+         */
+        $averageUnitCostMinor = $valuation['total_quantity'] > 0
+            ? (int) round($valuation['total_value'] / $valuation['total_quantity'], 0, PHP_ROUND_HALF_UP)
             : 0;
 
         return [
-            Stat::make('Total Inventory Value', MoneyFormatter::formatMajor($totalValue, $currency))
+            Stat::make('Total Inventory Value', MoneyFormatter::formatMinor($totalValueMinor, $currency))
                 ->description("Using {$method->shortLabel()} method")
                 ->icon('heroicon-o-banknotes')
                 ->color('success'),
@@ -51,7 +55,7 @@ final class InventoryValuationWidget extends StatsOverviewWidget
                 ->icon('heroicon-o-tag')
                 ->color('primary'),
 
-            Stat::make('Avg Unit Cost', MoneyFormatter::formatMajor($avgCost, $currency))
+            Stat::make('Avg Unit Cost', MoneyFormatter::formatMinor($averageUnitCostMinor, $currency))
                 ->description('Weighted average')
                 ->icon('heroicon-o-calculator')
                 ->color('warning'),

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Models;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 use AIArmada\FilamentCart\Database\Factories\CartConditionFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -198,13 +197,27 @@ final class CartCondition extends Model
         $rawValue = $this->value;
         $normalized = mb_ltrim($rawValue, '+');
         $formatted = MoneyFormatter::formatMinor(
-            MoneyNormalizer::toCents($normalized),
+            $this->fixedValueToMinor($normalized),
             $this->resolveCurrency(),
         );
 
         return str_starts_with($rawValue, '+')
             ? '+' . $formatted
             : $formatted;
+    }
+
+    /**
+     * Convert the condition's decimal major-unit display syntax to minor units.
+     * Integer strings already represent minor units; decimal strings use
+     * explicit half-up rounding.
+     */
+    private function fixedValueToMinor(string $value): int
+    {
+        if (! str_contains($value, '.')) {
+            return (int) $value;
+        }
+
+        return (int) round((float) $value * 100, 0, PHP_ROUND_HALF_UP);
     }
 
     /**

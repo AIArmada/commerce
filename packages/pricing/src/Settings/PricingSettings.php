@@ -79,8 +79,12 @@ class PricingSettings extends Settings
     public function formatAmount(int $amountInMinorUnits): string
     {
         $precision = max(0, $this->decimalPlaces);
-        $scale = 10 ** $precision;
 
-        return MoneyFormatter::formatMajor($amountInMinorUnits / $scale, $this->defaultCurrency, $precision);
+        return MoneyFormatter::formatMinorWithScale(
+            $amountInMinorUnits,
+            $precision,
+            $this->defaultCurrency,
+            $precision,
+        );
     }
 }
