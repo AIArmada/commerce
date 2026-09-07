@@ -212,10 +212,9 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run tests (Pest)
-        # NOTE: `--ci` is required — tests/Pest.php enables TIA via locally(),
-        # and locally() only skips when `--ci` is passed. Without it, TIA
-        # engages on CI and the baselined() fetch fatals every shard.
-        run: vendor/bin/pest --ci --colors=always --parallel --shard=${{ matrix.shard }}/20
+        # Disable TIA explicitly because Pest's parallel test-discovery child
+        # process does not inherit the `--ci` flag.
+        run: vendor/bin/pest --no-tia --colors=always --parallel --shard=${{ matrix.shard }}/20
 
   ci:
     name: CI

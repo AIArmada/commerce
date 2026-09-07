@@ -1,9 +1,5 @@
 # Pricing Audit
 
-## Implementation outcome (migration track, 2026-09-07)
-
-The tier lookup index claim was confirmed. Migration `2026_09_07_073442_add_tierable_lookup_index_to_price_tiers_table.php` adds the `(tierable_type, tierable_id, price_list_id)` index; no other migration-track change was required.
-
 ## Packages Reviewed (bullets)
 
 - `packages/pricing` (`aiarmada/pricing`) — domain owner: price lists, prices, tiers, resolution engine, settings.
@@ -17,15 +13,7 @@ Good money hygiene (integer cents + `MoneyNormalizer`/`FormatsMoney`/`MoneyForma
 
 ## Migration Impact
 
-**Migration Required: YES**
-
-| Table | Change | Type |
-|---|---|---|
-| `price_tiers` | Add composite index `(tierable_type, tierable_id, price_list_id)` (name: `price_tiers_tierable_lookup_idx`) | Additive index migration (new file). Hottest query in the package (`TierResolver::resolve`, `ResolveTierPrice::resolve`) filters exactly on these columns; current migration only indexes `(min_quantity, max_quantity)`, forcing full scans per priced item. |
-| `prices` | No change | — |
-| `price_lists` | No change | — |
-
-No column drops, no constraint changes, no data migration. All other fixes are code/docs-only. The `deactivated_at` fix is a query-scope change (no migration). The single-default fix is app-level (no partial unique index, keeps MySQL compat).
+**Migration Required: NO** — migration track completed 2026-09-07, see `migration-record.md#pricing`
 
 ## Package Responsibilities
 
@@ -225,7 +213,6 @@ No column drops, no constraint changes, no data migration. All other fixes are c
 ## Database Findings
 
 - Rules: uuid PKs PASS; no FK constraints/cascades PASS; `nullableMorphs('owner')` PASS; `timestampsTz` + `timestampTz` PASS; `json_column_type` N/A (no JSON columns — fine).
-- Missing index (High, see Migration Impact): `price_tiers` needs `(tierable_type, tierable_id, price_list_id)`; the existing `(min_quantity, max_quantity)` index does not serve the tier lookup's equality prefix.
 - `prices_unique_per_quantity` unique on `(price_list_id, priceable_type, priceable_id, min_quantity)` is correct and matches the `orderByDesc('min_quantity')` resolution.
 - `price_lists.slug` global unique: with owner mode on, two owners cannot reuse a slug — acceptable, note only.
 - `customer_id`/`segment_id` on `price_lists` are `foreignUuid()->nullable()` with indexes and no constraints — compliant; existence validation is the A8 app-level gap.
@@ -246,7 +233,7 @@ No column drops, no constraint changes, no data migration. All other fixes are c
 
 ## Performance Findings
 
-- Per-item fan-out: up to 5 sequential queries (customer price, segment price, tier, promotion+exists, list+price) per `calculate()` call. Cart/checkout loops multiply by line count. No caching layer. Short-term: add the `price_tiers` composite index (Migration Impact) — highest ROI. Do NOT add a cache now (no measured hotspot; long-lived Octane workers make stale-price bugs likely).
+- Per-item fan-out: up to 5 sequential queries (customer price, segment price, tier, promotion+exists, list+price) per `calculate()` call. Cart/checkout loops multiply by line count. No caching layer. Do NOT add a cache now (no measured hotspot; long-lived Octane workers make stale-price bugs likely).
 - `Price::saving()` adds 1–2 `EXISTS` queries per write — fine for admin writes, note for bulk importers.
 - `PromotionResource`-style badge counts N/A here (`PriceListResource` has no badge — good).
 
@@ -271,9 +258,8 @@ No column drops, no constraint changes, no data migration. All other fixes are c
 2. Rewrite `ApplyPromotionalAdjustment` to delegate to `PromotionServiceInterface` (A4).
 3. Add `deactivated_at` filters (A5) + single-default demotion + tiebreak (A6) + owner validation of customer/segment ids (A8).
 4. Extract `ResolvesEffectiveAt` helper (A7); simplify `PriceList::scopeForOwner` (C1); transaction-wrap `PriceList::deleting` (C3); harden `PriceResultData` currency (C2).
-5. Additive migration: `price_tiers` composite index (Migration Impact).
-6. Filament: guard `PriceSimulator` without products (F1); fix widget owner default (F2); fix nav docs (F3).
-7. Add the Pest coverage listed in Testing Findings (run `./vendor/bin/pest --parallel` scoped to new tests + any root suite covering pricing).
+5. Filament: guard `PriceSimulator` without products (F1); fix widget owner default (F2); fix nav docs (F3).
+6. Add the Pest coverage listed in Testing Findings (run `./vendor/bin/pest --parallel` scoped to new tests + any root suite covering pricing).
 
 ## Files Likely to Change
 
@@ -283,7 +269,6 @@ No column drops, no constraint changes, no data migration. All other fixes are c
 - `packages/pricing/src/Models/Price.php`, `PriceList.php` (scopes, saving validation, transaction, scope simplification)
 - `packages/pricing/src/Support/*.php` (new `ResolvesEffectiveAt`, resolver adoption)
 - `packages/pricing/src/Data/PriceResultData.php` (currency guard)
-- `packages/pricing/database/migrations/` (new index migration)
 - `packages/pricing/docs/*.md`, `packages/pricing/CONTEXT.md`
 - `packages/filament-pricing/src/Pages/PriceSimulator.php`, `src/Widgets/PricingStatsWidget.php`, `docs/05-resources.md`, `docs/06-pages-widgets.md`
 

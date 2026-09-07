@@ -1,9 +1,5 @@
 # Promotions Audit
 
-## Implementation outcome (migration track, 2026-09-07)
-
-The dead strategy and unsupported promotion-type claims were confirmed. Migration `2026_09_07_110000_deactivate_buy_x_get_y_promotions.php` canonicalizes legacy BOGO rows to inactive fixed-zero rows before the enum case is removed; the separate voucher BOGO flow remains live.
-
 ## Packages Reviewed (bullets)
 
 - `packages/promotions` (`aiarmada/promotions`) — domain owner: automatic/code-based discount campaigns, targeting evaluation, voucher issuance bridge, expiry commands.
@@ -13,19 +9,11 @@ Source layout inspected: `src/` (Actions ×5, Console/Commands ×2, Contracts ×
 
 ## Overall Assessment (quality, health, risks, refactor size)
 
-The core discount math (`PromotionService`, `Promotion::calculateDiscount`) is small and money-clean (integer cents), and owner-scoping on the model follows the monorepo contract. But the package carries an unusual amount of dead or inert code for its size: an unregistered stub console command, a never-callable strategy subsystem (would throw if called), a listener that is both unregistered and effect-free, and an advertised `BuyXGetY` type that silently discounts zero everywhere. The one live cross-package flow — usage counting via `OrderPaid` → `CheckoutSession.discount_data` — depends on an undocumented checkout payload shape and fails silently. Refactor size: S (mostly deletions + small enforcement fixes + one data migration if the dead discount type is removed). Highest risk is semantic, not structural: things that look like features and do nothing.
+The core discount math (`PromotionService`, `Promotion::calculateDiscount`) is small and money-clean (integer cents), and owner-scoping on the model follows the monorepo contract. But `per_customer_limit` is never enforced (A5), usage counting races the limit and depends on an undocumented checkout payload shape and fails silently (A6), code lookup is case-insensitive over unnormalized storage (A7), and every evaluation hydrates the whole active set (A8). Refactor size: S (enforcement + targeting fixes, code/docs-only). Highest risk is campaign-budget overshoot and silent usage undercounting on live campaigns.
 
 ## Migration Impact
 
-**Migration Required: YES**
-
-| Table | Change | Type |
-|---|---|---|
-| `promotions` | Data migration: convert existing `type = 'buy_x_get_y'` rows to `is_active = false` (or operator-chosen `fixed` equivalent) then remove the enum case from code. No schema change. | Data-only migration (new file). The type is inert (discounts 0 everywhere, see A3) — leaving rows selectable under a removed case breaks reads. |
-| `promotions` | No column/index/constraint change (`code` unique stays; lookup becomes exact-match on normalized code, A7) | — |
-| `promotionables` | No change (composite PK, no constraints — compliant) | — |
-
-If the team instead implements real BuyXGetY (alternative noted in A3), migration is NO. All other findings are code/docs-only.
+**Migration Required: NO** — migration track completed 2026-09-07, see `migration-record.md#promotions`
 
 ## Package Responsibilities
 
@@ -34,57 +22,6 @@ If the team instead implements real BuyXGetY (alternative noted in A3), migratio
 - Filament adapter owns: promotion CRUD UI, issue-vouchers actions, stats widgets. Must stay UI-only.
 
 ## Architecture Findings (each: Severity Critical/High/Medium/Low, Location files, Problem, Why It Matters, Recommended Fix concrete, Breaking Change YES/NO, Affected Packages list, Required Dependent Changes, Migration Required YES/NO)
-
-### A1 — Strategy subsystem is dead AND would throw if invoked
-
-- Severity: High
-- Location: `src/Actions/ApplyPromotionToCart.php:14-18,29-37` (`#[Tag('promotions.strategy')] iterable $strategies`), `src/Strategies/PercentageStrategy.php`, `src/Strategies/FixedStrategy.php`, `src/Strategies/BuyXGetYStrategy.php`, `src/Contracts/PromotionStrategyInterface.php`.
-- Re-check (hardening pass): verified no `#[Tagged]`/tag registration exists repo-wide (only the `#[Tag]` consumer) and `ApplyPromotionToCart` has zero code callers (only docs/CONTEXT); demoted Critical → High — dead trap with major maintainability cost, but zero live callers so no runtime/data impact.
-- Problem: Nothing in the repo ever tags `promotions.strategy` (verified repo-wide), so `$strategies` is always empty and `resolveStrategy()` always throws `RuntimeException("No strategy found…")`. `ApplyPromotionToCart::handle()` itself has zero callers (verified). The live discount path is `PromotionService::calculateDiscounts()` + `Promotion::calculateDiscount()`, which duplicates the percentage/fixed math inline.
-- Why It Matters: A whole "extensible strategy" architecture exists only as a trap: anyone calling the public Action gets an exception, and the real math lives elsewhere.
-- Recommended Fix: Delete all five files (`ApplyPromotionToCart.php`, the three strategies, `PromotionStrategyInterface.php`). The `match` in `Promotion::calculateDiscount()` is the single discount implementation. Update `docs/` (`05-promotion-service.md`, `01-overview.md`) and `CONTEXT.md` surface lists.
-- Breaking Change: YES (removes public classes) — no internal consumers; update any external references (none in-repo).
-- Affected Packages: none internally. `checkout` does not use it (uses `PromotionServiceInterface`).
-- Required Dependent Changes: none.
-- Migration Required: NO.
-
-### A2 — `BuyXGetY` is advertised but discounts zero on every path
-
-- Severity: High
-- Location: `src/Enums/PromotionType.php:16` (case + label/icon/describe helpers), `src/Models/Promotion.php:337` (`BuyXGetY => 0, // Handled separately`), `src/Services/PromotionService.php:107` (calls the same `calculateDiscount`), `src/Actions/IssueVouchersFromPromotion.php:134,143` (maps to voucher `buy_x_get_y` with value 0).
-- Problem: "Handled separately" is false — repo-wide grep shows no handler: checkout adapters contain zero `buy_x_get_y` references, so a BuyXGetY promotion matches, applies, records usage, and discounts 0. Operators see applied promotions with no effect.
-- Why It Matters: Silent wrong-discount is worse than a missing feature; usage counts burn on zero-value applications.
-- Recommended Fix: Remove the `BuyXGetY` case from `PromotionType` (and its label/icon/describe arms), remove the `match` arm, and remove the voucher-mapping arms (map to `fixed` 0 is meaningless — instead reject issuance for that type before removal lands). Data-migrate existing `buy_x_get_y` rows to `is_active = false` first (Migration Impact). If product insists on BOGO, that is new feature work requiring cart-line-aware evaluation in `PromotionService` — do not half-keep the case.
-- Breaking Change: YES (enum case removal; rows deactivated via migration).
-- Affected Packages: `checkout` (`PromotionsAdapter`, `ValidatePromoCodeAction` — must handle rows disappearing / type gone), `filament-promotions` (form type options), `vouchers` (issuance mapping), `pricing` (`ApplyPromotionalAdjustment` calls `calculateDiscount`).
-- Required Dependent Changes: `checkout/src/Integrations/PromotionsAdapter.php` — no logic change needed (iterates live promotions), but verify no `match` exhaustiveness on `PromotionType`; same for `filament-promotions` form schema and `promotions` docs `05-promotion-service.md`.
-- Migration Required: YES (data migration, see block).
-
-### A3 — `RecomputePromotionEligibilityCommand` is an unregistered stub
-
-- Severity: Medium
-- Location: `src/Console/Commands/RecomputePromotionEligibilityCommand.php` (lists names, changes nothing; name promises recomputation), `src/PromotionsServiceProvider.php:58-63` (registers only `DeactivateExpiredPromotionsCommand`).
-- Re-check (hardening pass): verified file exists and provider registers only `DeactivateExpiredPromotionsCommand`; demoted High → Medium — doubly-dead phantom ops surface with zero runtime effect (pure maintainability).
-- Problem: Doubly dead — does nothing AND is not registered, so `promotions:recompute-eligibility` does not even exist. Anyone scheduling it gets "command not defined".
-- Why It Matters: Phantom ops surface; expiry/eligibility hygiene looks covered but is not.
-- Recommended Fix: Delete the file. If eligibility recomputation is ever real, reintroduce with actual targeting re-evaluation. Document that `promotions:deactivate-expired` is the only command and must be scheduled (it is not self-scheduling — see A9).
-- Breaking Change: NO (command never existed at runtime).
-- Affected Packages: none.
-- Required Dependent Changes: none.
-- Migration Required: NO.
-
-### A4 — `ReevaluatePromotionsOnCartUpdated` is unregistered and effect-free
-
-- Severity: Medium
-- Location: `src/Listeners/ReevaluatePromotionsOnCartUpdated.php:20-37`, `src/Actions/EvaluatePromotionForCart.php`; provider `registerEventListeners()` (`PromotionsServiceProvider.php:35-40`) only wires `OrderPaid`.
-- Re-check (hardening pass): verified provider wires only `OrderPaid → MarkPromotionAsUsedOnOrderPlaced` and no `Event::listen` references the cart listener; demoted High → Medium — dead file misdescribing the architecture, zero runtime effect.
-- Problem: Listener is never registered (verified: no `Event::listen` references it, no DiscoverEvents for it), and even if registered it discards the result — `$this->evaluateAction->handle(…)` returns bool, ignored, no cart mutation, no event. `EvaluatePromotionForCart`'s only caller is this listener.
-- Why It Matters: Looks like live cart integration; is none. Cart promotion state is actually driven by checkout's `PromotionsAdapter`, so this file misdescribes the architecture.
-- Recommended Fix: Delete both files. Cart-time evaluation stays in `checkout` via `PromotionServiceInterface::getApplicablePromotions()` (already the live path).
-- Breaking Change: NO.
-- Affected Packages: `cart` (none — listener never ran).
-- Required Dependent Changes: none.
-- Migration Required: NO.
 
 ### A5 — `per_customer_limit` column is never enforced
 
@@ -190,7 +127,6 @@ If the team instead implements real BuyXGetY (alternative noted in A3), migratio
 
 - Navigation: PASS — nested `navigation.group` (`Marketing`), `getNavigationGroup()`/`getNavigationSort()` from config, no static `$navigationGroup` (verified).
 - Owner/UI scoping: PASS — `PromotionResource::getEloquentQuery()` uses `parent::` + `OwnerUiScope::apply(…, includeGlobal: false)`; permission gates (`FilamentPermission::hasAbility`) + `shouldRegisterNavigation` are correct.
-- F1 — Duplicate issue-vouchers actions (Medium): `Actions/IssuePromotionVouchersAction.php` and `Actions/IssuePromotionVouchersFromListAction.php` both wrap `IssueVouchersFromPromotion::run($promotion, $count, $codePrefix)` with near-identical forms (verified lines 58/61). Delete the list variant; register the remaining action in both header and table contexts (Filament actions are context-agnostic). Update docs `04-usage.md`.
 - F2 — Badge query per render (Low): `getNavigationBadge()` counts active promotions on every navigation render. Acceptable at this table size; revisit only with measured slowness (do not cache prematurely — Octane staleness).
 - F3 — Widgets correctly delegate math to `Support/PromotionPerformanceInsights` (thin). Confirm that class is container-resolvable (constructor deps auto-wire `TargetingEngineInterface`?) and that widget queries apply `forOwner` — verify before shipping, else owner leakage in stats.
 - Dependency direction: PASS — `filament-promotions` requires `promotions`; domain never references Filament. `suggest` blocks for vouchers/filament-cart are accurate.
@@ -204,7 +140,7 @@ If the team instead implements real BuyXGetY (alternative noted in A3), migratio
 
 ## Model / Domain Findings
 
-- `Promotion::calculateDiscount()` is the single live math implementation after A1 — keep it there; `PromotionService::calculateDiscounts()` handles stacking order (non-stackable short-circuit) correctly for fixed/percentage.
+- `Promotion::calculateDiscount()` is the single live math implementation — keep it there; `PromotionService::calculateDiscounts()` handles stacking order (non-stackable short-circuit) correctly for fixed/percentage.
 - `is_stackable` + `priority` semantics are implemented in exactly one place (`calculateDiscounts`) — good; `pricing`'s bridge (pricing audit A4) must call this instead of reimplementing.
 - `conditions` validation in `saving()` via `TargetingEngineInterface` with `[]` → null normalization is correct fail-fast behavior.
 - `issuedVouchers()` graceful-degradation pattern is the file's best idiom — extend it to `products()`/`categories()` (A9).
@@ -225,33 +161,29 @@ If the team instead implements real BuyXGetY (alternative noted in A3), migratio
 
 ## Testing Findings
 
-- Zero tests; one factory (`PromotionFactory`) with no consumers. First tests to add (Pest, `--parallel`): `calculateDiscounts` stacking/priority/cap behavior; code normalization + exact lookup (A7); `incrementUsage` cap race (two concurrent increments past limit → count stays capped); cross-owner isolation via `OwnerScopingContractTests`; `BuyXGetY` removal migration (rows deactivated, enum gone); `MarkPromotionAsUsedOnOrderPlaced` with a fixture `discount_data` payload (A6 contract); command test for `deactivate-expired --dry-run`.
+- Zero tests; one factory (`PromotionFactory`) with no consumers. First tests to add (Pest, `--parallel`): `calculateDiscounts` stacking/priority/cap behavior; code normalization + exact lookup (A7); `incrementUsage` cap race (two concurrent increments past limit → count stays capped); cross-owner isolation via `OwnerScopingContractTests`; `MarkPromotionAsUsedOnOrderPlaced` with a fixture `discount_data` payload (A6 contract); command test for `deactivate-expired --dry-run`.
 
 ## Cross-Package Dependency Impact (table: Dependent Package | Dependency | Impact | Required Change)
 
 | Dependent Package | Dependency | Impact | Required Change |
 |---|---|---|---|
-| `checkout` (`PromotionsAdapter`, `ValidatePromoCodeAction`, `DiscountCodeResolver`, `RegisterCheckoutOptionalSteps`) | `PromotionServiceInterface`, `Promotion` model, `promotions:deactivate-expired` hygiene | A2 (type removal), A5 (new enforcement may reject previously-accepted redemptions), A6 (payload contract documented), A7 (code canonicalization) | Exhaustiveness checks on `PromotionType`; pass customer id into targeting context; contract-test `discount_data` shape; schedule the deactivate command |
-| `pricing` (`ApplyPromotionalAdjustment`) | `Promotion::calculateDiscount`, promotions tables/config | A1/A2 change the math it calls; pricing audit A4 rewrites the bridge anyway | Coordinate: land pricing-A4 delegation on the post-cleanup `PromotionService` API |
-| `vouchers` (`IssueVouchersFromPromotion` target) | `Promotion` model fields | A2 removes the `buy_x_get_y` voucher mapping arm | None after mapping-arm removal (issuance for other types unchanged) |
-| `filament-promotions` | `Promotion` model, actions | A2 (form options), F1 (action merge), C1 (write-path funnel) | Update `PromotionForm` type select + gate product pickers (A9); replace list-action registration |
+| `checkout` (`PromotionsAdapter`, `ValidatePromoCodeAction`, `DiscountCodeResolver`, `RegisterCheckoutOptionalSteps`) | `PromotionServiceInterface`, `Promotion` model, `promotions:deactivate-expired` hygiene | A5 (new enforcement may reject previously-accepted redemptions), A6 (payload contract documented), A7 (code canonicalization) | Pass customer id into targeting context; contract-test `discount_data` shape; schedule the deactivate command |
+| `pricing` (`ApplyPromotionalAdjustment`) | `Promotion::calculateDiscount`, promotions tables/config | Pricing audit A4 rewrites the bridge anyway | Coordinate on the post-cleanup `PromotionService` API |
+| `filament-promotions` | `Promotion` model, actions | C1 (write-path funnel) | Gate product pickers (A9) |
 | `filament-pricing` (`PricingStatsWidget`) | `Promotion::query()->active()` counts | A6/A10 change what "active" contains over time | None (reads live state); fix its owner-default separately (pricing audit F2) |
 | `products` | optional (`products()`/`categories()` relations) | A9 changes missing-package behavior throw → empty | None (strictly more forgiving) |
 
 ## Recommended Refactor Plan (ordered steps)
 
-1. Delete: `ApplyPromotionToCart.php`, `Strategies/*` (3), `Contracts/PromotionStrategyInterface.php`, `Console/Commands/RecomputePromotionEligibilityCommand.php`, `Listeners/ReevaluatePromotionsOnCartUpdated.php`, `Actions/EvaluatePromotionForCart.php`. Update `CONTEXT.md` + docs surface lists.
-2. Remove `BuyXGetY` (A2) + data migration deactivating existing rows; update `PromotionType` helpers, issuance mapping, docs, filament form options.
-3. Enforce `per_customer_limit` (A5); harden `incrementUsage` + listener skip logging + session-ownership check (A6); normalize codes (A7); SQL pre-filters (A8).
-4. Graceful-degrade `products()`/`categories()` (A9); gate filament pickers; memoize `supportsIssuedVoucherTracking` (C2); funnel filament writes through actions (C1); merge duplicate filament issue actions (F1); document the deactivate schedule (A10).
-5. Add the Pest coverage in Testing Findings (`./vendor/bin/pest --parallel` scoped).
+1. Enforce `per_customer_limit` (A5); harden `incrementUsage` + listener skip logging + session-ownership check (A6); normalize codes (A7); SQL pre-filters (A8).
+2. Graceful-degrade `products()`/`categories()` (A9); gate filament pickers; memoize `supportsIssuedVoucherTracking` (C2); funnel filament writes through actions (C1); document the deactivate schedule (A10).
+3. Add the Pest coverage in Testing Findings (`./vendor/bin/pest --parallel` scoped).
 
 ## Files Likely to Change
 
-- `packages/promotions/src/Models/Promotion.php` (code normalization, capped increment, graceful relations, BuyXGetY arm removal)
+- `packages/promotions/src/Models/Promotion.php` (code normalization, capped increment, graceful relations)
 - `packages/promotions/src/Services/PromotionService.php` (per-customer enforcement, pre-filters, exact code lookup)
-- `packages/promotions/src/Enums/PromotionType.php` (case removal)
-- `packages/promotions/src/Actions/IssueVouchersFromPromotion.php` (mapping arm removal)
+- `packages/promotions/src/Actions/IssueVouchersFromPromotion.php` (int-type issuance mapping per vouchers C2)
 - `packages/promotions/src/Listeners/MarkPromotionAsUsedOnOrderPlaced.php` (ownership check + logging)
 - `packages/promotions/database/migrations/` (new data migration)
 - `packages/promotions/docs/*`, `CONTEXT.md`

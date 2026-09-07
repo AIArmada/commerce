@@ -1,9 +1,5 @@
 # Shipping Audit
 
-## Implementation outcome (migration track, 2026-09-07)
-
-The proposed `shipping_rates` owner-column migration was corrected away. Internal rate reads are reached through owner-scoped `ShippingZone` queries/relations, and duplicating the owner tuple on rates would add synchronization burden without a current consumer need.
-
 ## Packages Reviewed
 - `aiarmada/shipping` (`packages/shipping`): `src/` (Actions, Cart, Contracts, Data, Drivers, Enums, Events, Exceptions, Facades, Http/Controllers, Integrations, Models, Policies, Services, States, Strategies, Support), `config/shipping.php`, `database/migrations/` (8 files), `composer.json`, `src/ShippingServiceProvider.php`, `src/ShippingManager.php`, `CONTEXT.md`/`README.md`/`docs/`
 - `aiarmada/filament-shipping` (`packages/filament-shipping`): `src/` (Actions, Pages, Resources, Support, Widgets), `config/filament-shipping.php`, `composer.json`, `CONTEXT.md`/`README.md`/`docs/`
@@ -16,15 +12,7 @@ The proposed `shipping_rates` owner-column migration was corrected away. Interna
 - Refactor size: Medium. ~8–12 files. One narrow additive migration (`shipping_rates` owner columns).
 
 ## Migration Impact
-**Migration Required: YES**
-One additive, nullable-column migration only (A-4): `nullableUuidMorphs('owner')` on `shipping_rates`. No renames, no constraints, no data migration.
-
-| Table | Change | Detail |
-|---|---|---|
-| `shipping_rates` | add `owner_type`/`owner_id` (nullable morphs) | backfill from parent zone's owner on deploy; plain indexes only, no FK constraints (rule-compliant) |
-| all other shipping tables | none | uuid PKs kept; no FK constraints to add/remove (rule-compliant) |
-| `shipment_operations.shipment_id` | none (code-only fix) | stays plain `uuid->index()`; add app-level existence validation instead of DB FK |
-| `shipments.ulid` | none (recommended follow-up only) | keep unique `ulid` column; do not drop without consumer audit |
+**Migration Required: NO** — migration track completed 2026-09-07, see `migration-record.md#shipping`
 
 ## Package Responsibilities
 - Owns: multi-carrier abstraction (`ShippingDriverInterface`, `ShippingManager`), zone/rate domain (`ShippingZone`, `ShippingRate`), shipment lifecycle (`Shipment`, `ShipmentItem`, `ShipmentEvent`, `ShipmentLabel`, `ShipmentOperation`), returns (`ReturnAuthorization`), rate shopping (`RateShoppingEngine`, strategies), free-shipping policy, tracking aggregation, cart bridge (`Cart/CartBridge.php`, `ShippingCondition`), order-fulfillment hook (`Integrations/OrderFulfillmentHandler.php`).
@@ -63,17 +51,6 @@ One additive, nullable-column migration only (A-4): `nullableUuidMorphs('owner')
 - Affected Packages: `shipping`, `filament-shipping`, `checkout`
 - Required Dependent Changes: `checkout/Integrations/ShippingAdapter.php` and `Steps/CalculateShippingStep.php` must run inside session owner context (they mostly do via `CheckoutService::withSessionOwnerContext()` — verify).
 - Migration Required: NO
-
-### A-4 `ShippingRate` has no direct owner columns (through-zone scoping only)
-- Severity: Medium
-- Location: `packages/shipping/src/Models/ShippingRate.php` (no `HasOwner`), `packages/filament-shipping/src/Resources/ShippingRateResource.php:41-58`, `packages/shipping/src/Services/ShippingZoneResolver.php::getApplicableRates()`
-- Problem: `Shipment`, `ShippingZone`, `ReturnAuthorization` use `HasOwner`; `ShippingRate`, `ShipmentItem`, `ShipmentEvent`, `ShipmentLabel`, `ShipmentOperation`, `ReturnAuthorizationItem` do not. Re-check outcome: the audit's original "calls `forOwner()` on the rate query → runtime error" claim was overstated and is corrected here. Verified `ShippingRateResource::getEloquentQuery()` scopes via `whereHas('zone', fn ($q) => $q->forOwner(...))` — the inner query is over `ShippingZone`, which HAS the scope, so this works at runtime (the `@phpstan-ignore` is a generic-type inference suppression, not an admission of failure). Rates are therefore implicitly owner-scoped through their zone. The residual gap is fragility, not leakage: any future query that loads rates directly (`ShippingRate::query()`, `getApplicableRates()` post-zone-load) bypasses owner checks silently, and there is no schema-level owner tuple to filter on.
-- Why It Matters: Implicit scoping holds only while every read path goes through the zone; one direct rates query leaks cross-tenant rates in multi-tenant mode.
-- Recommended Fix: Add `HasOwner` + `HasOwnerScopeConfig` to `ShippingRate` with `nullableUuidMorphs('owner')` backfill (additive migration), defaulting `owner` from the parent zone on create; keep the `whereHas('zone')` Filament scope as defense in depth until backfilled.
-- Breaking Change: NO (additive)
-- Affected Packages: `shipping`, `filament-shipping`
-- Required Dependent Changes: Filament `ShippingRateResource::getEloquentQuery()` keeps its scope; `ShippingZoneResolver::getApplicableRates()` filters rates by owner once columns exist.
-- Migration Required: YES — narrowly scoped: add `nullableUuidMorphs('owner')` to `shipping_rates` only. No other table changes.
 
 ### A-5 N+1 application-level cascades
 - Severity: Medium
@@ -136,7 +113,7 @@ One additive, nullable-column migration only (A-4): `nullableUuidMorphs('owner')
 - D-1 (Compliant): All 8 migrations use `uuid('id')->primary()`; FK columns use `foreignUuid`/`nullableUuidMorphs` with NO `constrained()`/`cascadeOnDelete()` (repo-wide grep for `constrained(|cascadeOnDelete(|->references(|onDelete(` across shipping/tax/checkout/cashier-chip/chip returns empty). App-level cascades in `booted()` — correct per rules.
 - D-2 (Medium): `shipment_operations.shipment_id` is bare `uuid->index()` with no app-level existence check in `ReconcileShipmentOperation`/`ShipShipment`/`CancelShipment` — orphan operations possible. Add `exists:shipments,id`-style validation in the Actions.
 - D-3 (Low): `shipments` carries both uuid PK and unique `ulid` — two identities for one row. Keep (no migration), but standardize new code on the uuid PK and document `ulid` as external/carrier-facing only.
-- D-4 (Low): `shipping_rates` missing owner columns (see A-4). `shipping_zones`/`shipments`/`return_authorizations` correctly have `nullableUuidMorphs('owner')`.
+- D-4 (Low): `shipping_zones`/`shipments`/`return_authorizations` correctly have `nullableUuidMorphs('owner')`.
 - D-5 (Info): `json_column_type` configurable (`shipping.database.json_column_type`, default `jsonb`) — compliant.
 
 ## Model / Domain Findings
@@ -168,14 +145,12 @@ One additive, nullable-column migration only (A-4): `nullableUuidMorphs('owner')
 
 ## Recommended Refactor Plan
 1. Replace `ShippingZoneResolver::applyOwnerScope()` with `OwnerScope`/`forOwner()` + cache invalidation (A-3, C-2: scope binding).
-2. Add direct owner columns to `ShippingRate` (A-4: single additive migration).
-3. Collapse dual status systems to spatie states (A-1).
-4. Fix cascades: query deletes + stop RMA→shipment destruction (A-5).
-5. Extract `RecalculateShipmentWeight` Action; remove/global-scope-fix `setDefaultDriver()` (A-2, C-3).
-6. Move fulfillment thresholds into domain; add Pest suites + cross-tenant tests (T-1).
+2. Collapse dual status systems to spatie states (A-1).
+3. Fix cascades: query deletes + stop RMA→shipment destruction (A-5).
+4. Extract `RecalculateShipmentWeight` Action; remove/global-scope-fix `setDefaultDriver()` (A-2, C-3).
+5. Move fulfillment thresholds into domain; add Pest suites + cross-tenant tests (T-1).
 
 ## Files Likely to Change
-- `packages/shipping/src/Models/ShippingRate.php`
 - `packages/shipping/src/Services/ShippingZoneResolver.php`
 - `packages/shipping/src/ShippingServiceProvider.php` (scoped binding)
 - `packages/shipping/src/ShippingManager.php`

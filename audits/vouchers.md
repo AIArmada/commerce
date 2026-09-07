@@ -1,9 +1,5 @@
 # Vouchers Audit
 
-## Implementation outcome (migration track, 2026-09-07)
-
-The provenance/credit-table cleanup was confirmed: provenance is backfilled, the two dead credit tables and redundant code index are removed, and old readers/API shims are deleted. The adjacent cart, affiliate, and checkout findings were also fixed, including the stale documentation imports.
-
 ## Packages Reviewed (bullets)
 
 - `packages/vouchers` (`aiarmada/vouchers`) — domain owner: issuance, cart-condition redemption, wallets, stacking engine, compound conditions/matchers, usage tracking, affiliate bridge.
@@ -13,21 +9,11 @@ Source layout inspected: `src/` (Actions ×8, Cart, Compound ×12, Concerns, Con
 
 ## Overall Assessment (quality, health, risks, refactor size)
 
-The strongest domain modeling of the four pairs (basis-points percentages, minor-units money, state machine, stacking rules engine, fail-closed targeting) — and the leakiest boundaries. Two cross-package integrations are broken by wrong class names (silently disabled, not loudly), one checkout-safety listener is never registered (its config flag is dead), the flagship `VoucherService::isValid()` bypasses the real validator, and the credit subsystem (assignments/transactions + `HasVouchers` trait) has zero writers. Promotion provenance is stored twice (column + metadata) with three fallback accessors. Refactor size: M (2 one-line namespace fixes live in *other* packages, one listener registration decision, one validity-API consolidation, deletion of the dead credit subsystem + dead stacking factories, one data migration for promotion-source canonicalization). No schema redesign; two table drops.
+The strongest domain modeling of the four pairs (basis-points percentages, minor-units money, state machine, stacking rules engine, fail-closed targeting) — and the leakiest boundaries. The flagship `VoucherService::isValid()` bypasses the real validator, and stacking defaults disagree while unused factories rot. Refactor size: M (one validity-API consolidation, deletion of dead stacking factories). No schema redesign.
 
 ## Migration Impact
 
-**Migration Required: YES**
-
-| Table | Change | Type |
-|---|---|---|
-| `vouchers` | Data migration: backfill `promotion_id` from `metadata->source_promotion_id` where column is null and metadata key exists; afterwards code reads column-only (A6). No schema change. | Data-only migration (new file). |
-| `voucher_assignments` | Drop table (A9 — no writers, see evidence). | Schema migration (new file `drop…` guarded by `Schema::hasTable`). |
-| `voucher_transactions` | Drop table (A9 — no writers). | Schema migration (new file, same guard). |
-| `vouchers` | Drop redundant `index('code')` — the `unique('code')` already indexes it. Optional micro-cleanup; bundle into the same release. | Schema migration (drop index if exists). |
-| `voucher_usage` / `voucher_wallets` | No change. `idempotency_key` migration (000006) stays. | — |
-
-No constraint changes (already constraint-free per rules). Order: backfill migration first, accessor cleanup second, table drops last.
+**Migration Required: NO** — migration track completed 2026-09-07, see `migration-record.md#vouchers`
 
 ## Package Responsibilities
 
@@ -36,43 +22,6 @@ No constraint changes (already constraint-free per rules). Order: backfill migra
 - Filament adapter owns: voucher/usage/wallet CRUD UI, stacking/targeting config pages, cart-assist widgets/actions. Must stay UI-only (mostly true; violations in F-sections).
 
 ## Architecture Findings (each: Severity Critical/High/Medium/Low, Location files, Problem, Why It Matters, Recommended Fix concrete, Breaking Change YES/NO, Affected Packages list, Required Dependent Changes, Migration Required YES/NO)
-
-### A1 — Cart-admin voucher actions silently absent (wrong namespace in another package)
-
-- Severity: High
-- Location: consumer `packages/filament-cart/src/Resources/CartResource/Pages/ViewCart.php:12,67-69` imports `AIArmada\FilamentVouchers\Extensions\CartVoucherActions`; real class is `AIArmada\Vouchers\Filament\Extensions\CartVoucherActions` (`packages/vouchers/src/Filament/Extensions/CartVoucherActions.php:5`).
-- Re-check (hardening pass): both sides verified — wrong import present, real class exists; demoted Critical → High — silently-absent admin feature fixed by a 1-line import, no security/data-loss/transaction defect.
-- Problem: `class_exists(CartVoucherActions::class)` on a nonexistent FQCN is always false, so `applyVoucher`/`showAppliedVouchers` never register. No error, no log — the feature just missing in cart admin. (The `use` of a missing class does not fatal until referenced; `class_exists` swallows it.)
-- Why It Matters: Operators cannot apply/inspect vouchers from the cart screen; the whole `CartVoucherActions` extension (279 lines, owner-scoped) is unreachable.
-- Recommended Fix: In `filament-cart` `ViewCart.php`, change the import to `AIArmada\Vouchers\Filament\Extensions\CartVoucherActions`. Add a smoke test asserting both header actions resolve when both packages installed. Long-term: move `CartVoucherActions` into `filament-vouchers` (it is Filament UI, not domain) and leave a deprecated alias — but the one-line import fix restores the feature now; do the move as step 2 (see F1).
-- Breaking Change: NO (restores intended behavior; the referenced namespace never existed).
-- Affected Packages: `filament-cart` (1-line fix lives there), `filament-vouchers` (widgets referenced by the same page — verify those FQCNs resolve: `AIArmada\FilamentVouchers\Widgets\{AppliedVouchers,QuickApplyVoucher,VoucherSuggestions}Widget` do exist — PASS).
-- Required Dependent Changes: `filament-cart` import fix + smoke test.
-- Migration Required: NO.
-
-### A2 — Affiliates↔vouchers bridge permanently disabled (wrong class names)
-
-- Severity: High
-- Location: `packages/affiliates/src/Support/Integrations/VoucherBridge.php:15,31` checks `AIArmada\FilamentVouchers\Models\Voucher` (no such class — model lives at `AIArmada\Vouchers\Models\Voucher`) and `AIArmada\FilamentVouchers\Resources\VoucherResource` (exists only if filament-vouchers installed).
-- Problem: `$this->available` is always false → `isAvailable()` false → `resolveUrl()` always null. Affiliate→voucher deep links never render. Same silent-`class_exists` failure mode as A1.
-- Why It Matters: Cross-package feature dead on arrival; `filament-affiliates` presumably shows no voucher links with no diagnostic.
-- Recommended Fix: Check `AIArmada\Vouchers\Models\Voucher` for data availability and `AIArmada\FilamentVouchers\Resources\VoucherResource` only for URL resolution (two flags: `hasData`, `hasAdminUi`). Log once (`Log::warning`) when data class is missing but the bridge is enabled in config.
-- Breaking Change: NO.
-- Affected Packages: `affiliates` (fix lives there), `filament-affiliates` (link rendering — verify it calls `VoucherBridge::resolveUrl` and handles null today, which it must already since null is the only observed behavior).
-- Required Dependent Changes: `affiliates` bridge fix + test with both packages installed.
-- Migration Required: NO.
-
-### A3 — Checkout-time revalidation listener never registered; its config flag is dead
-
-- Severity: High
-- Location: `src/Listeners/ValidateVoucherOnCheckout.php` (validates `VoucherCartMetadata::VOUCHER_CODES` on checkout, prunes invalid, throws when `vouchers.checkout.block_on_invalid` true); zero `Event::listen` / provider references repo-wide (verified); `VoucherServiceProvider::packageBooted()` (`:104-130`) registers only `VoucherApplied → IncrementVoucherAppliedCount`.
-- Problem: Stale-discount protection at checkout does not run. `config/vouchers.php:128-130` (`checkout.block_on_invalid`) is read in exactly one place — the dead listener. Any operator enabling it gets nothing.
-- Why It Matters: Voucher revoked/expired/paused between cart-apply and checkout still discounts the order; the config promises a control that does not exist.
-- Recommended Fix: Decide the canonical hook: register the listener against checkout's checkout-started/completed event in `VoucherServiceProvider::packageBooted()` behind `class_exists` on the checkout event (same pattern as inventory's payment integration). If checkout owns that moment instead, delete the listener AND the `checkout` config block and document that `checkout` calls `VoucherValidator::validate()` via `VouchersAdapter`. Do not leave both half-alive.
-- Breaking Change: NO (enables intended behavior; `block_on_invalid` defaults false so default path only prunes metadata).
-- Affected Packages: `checkout` (event contract — confirm event class + payload carries the cart), `cart` (metadata read/write already exists).
-- Required Dependent Changes: `checkout` — none if listener subscribes to the existing event; verify `VouchersAdapter::applyVouchers(reserve:false)` path stays consistent.
-- Migration Required: NO.
 
 ### A4 — `VoucherService::isValid()` is a weaker parallel validator
 
@@ -98,18 +47,6 @@ No constraint changes (already constraint-free per rules). Order: backfill migra
 - Required Dependent Changes: none.
 - Migration Required: NO.
 
-### A6 — Promotion provenance stored twice with triple-fallback readers
-
-- Severity: Medium
-- Location: column `promotion_id` (migration `…000001:58`, fillable, `promotion()` relation `:171-182`, index `:83`) vs `metadata.source_promotion_id/name/code` (written by `promotions` `IssueVouchersFromPromotion::buildVoucherPayload()`); readers `getPromotionSourceId/Name/Code/LabelAttribute()` (`Models/Voucher.php:519-570`) preferring the live relation, then metadata.
-- Problem: Two sources of truth for "which promotion issued this". Rows created before the column existed (or by older promotions versions) only have metadata; newer rows have both; nothing backfills. Every consumer pays fallback complexity.
-- Why It Matters: Reporting (`promotion_id` index queries) misses metadata-only rows; the four accessors are permanent complexity tax.
-- Recommended Fix: Data-migrate (Migration Impact): backfill `promotion_id` from `metadata.source_promotion_id` where null; then simplify accessors to column-only (`$this->promotion?->…`), keeping metadata keys as inert history. Stop writing `source_promotion_*` into metadata for new issuance (keep `promotion_id` only) — change lives in `promotions` `IssueVouchersFromPromotion::buildVoucherPayload()`.
-- Breaking Change: YES (accessor fallback behavior removed; metadata keys stop being written).
-- Affected Packages: `promotions` (issuance payload), `filament-promotions` (`IssuedVouchersRelationManager` reads `promotion_id` — benefits), `filament-vouchers` (promotion-source columns in tables/infolists).
-- Required Dependent Changes: `promotions` payload change in the same release as the backfill.
-- Migration Required: YES (data migration).
-
 ### A7 — Status state-machine vs wall-clock checks diverge; transitions bypass guards
 
 - Severity: Medium
@@ -128,20 +65,8 @@ No constraint changes (already constraint-free per rules). Order: backfill migra
 - Location: `Models/Voucher.php:606-610` (`usages()->delete(); walletEntries()->delete(); transactions()->delete();` — and note `transactions()` targets a table whose only writers are… nothing, see A9).
 - Problem: Partial cascade on mid-way failure orphans usage/wallet rows; also pays for deleting from the dead `voucher_transactions` table.
 - Why It Matters: Orphaned `voucher_usage` rows corrupt `times_used` counts and per-user limits.
-- Recommended Fix: Wrap in `DB::transaction()`; after A9 drops transactions, remove that line.
+- Recommended Fix: Wrap in `DB::transaction()`.
 - Breaking Change: NO. Affected: none. Migration: NO.
-
-### A9 — Credit subsystem (assignments + transactions + `HasVouchers`) has zero writers
-
-- Severity: Medium
-- Location: `src/Models/VoucherAssignment.php`, `src/Models/VoucherTransaction.php`, migrations `2001_04_01_000004/000005`, `src/Traits/HasVouchers.php` (`assignedVouchers()`, `voucherTransactions()` with `@phpstan-ignore trait.unused`), `Models/Voucher.php:158-164` (`transactions()` relation).
-- Problem: Verified repo-wide: no `use …HasVouchers` consumers in `src/` (only README/docs examples), no `VoucherAssignment::`/`VoucherTransaction::` instantiation outside the trait itself. Correction to the original wording: the trait body does contain `attach()` (`HasVouchers.php:117-118`) and `create()` (`:133`) calls, but the trait is unconsumed so those writes never execute. Two tables, two models, one trait maintained for a feature with no live write path. (`VoucherWallet` itself IS live — wallets stay.)
-- Why It Matters: Dead tables attract "harmless" reads that then demand back-compat; migrations/factories/docs rot around them.
-- Recommended Fix: Delete `VoucherAssignment` + `VoucherTransaction` models, `HasVouchers` trait, `Voucher::transactions()` relation, the two migrations' tables via drop migrations (Migration Impact), and any docs sections (`06-voucher-wallet.md` credit-system parts). Keep `VoucherWallet` + `AddVoucherToWallet` (live wallet path).
-- Breaking Change: YES (models/tables removed) — zero in-repo consumers; announce in release notes.
-- Affected Packages: none (no external readers found).
-- Required Dependent Changes: none.
-- Migration Required: YES (two table drops).
 
 ### A10 — Stacking defaults disagree; unused factories rot
 
@@ -207,7 +132,7 @@ No constraint changes (already constraint-free per rules). Order: backfill migra
 - Config: has `json_column_type` + `table_prefix`/`tables` (compliant); `database.tables` + `table_prefix` dual source in `Voucher::getTable()` is redundant but harmless.
 - Money: PASS — cents/basis-points ints, `MoneyFormatter` at display edges. Filament `MoneyHelper` correctly wraps `MoneyNormalizer`/`MoneyFormatter` for form dehydration (keep it — it is adapter-specific, not duplication); one nit: `displayToCents`/`displayToBasisPoints` do `(float)$display * 100` — route through `MoneyNormalizer::toCents()` for consistency.
 - Facade (`Voucher` alias) + `'voucher'` container binding + `provides()` list are coherent.
-- `examples/usage.php` — verify it still matches the post-cleanup API (it references service methods; update if it touches `isValid`/`HasVouchers`).
+- `examples/usage.php` — verify it still matches the post-cleanup API (it references service methods; update if it touches `isValid`).
 
 ## Filament Adapter Findings (thin-adapter check, domain leak, duplication, dependency direction)
 
@@ -215,9 +140,9 @@ No constraint changes (already constraint-free per rules). Order: backfill migra
 
 - Severity: Medium
 - Location: `packages/vouchers/src/Filament/{Exports/VoucherUsageExporter.php, Extensions/CartVoucherActions.php (279 lines), Integrations/FilamentCartBridge.php}`.
-- Problem: Filament actions, tables, notifications, and `FilamentCartBridge` (which references `FilamentCart\*` models/services) live in the domain package, which does not require `filament/*`. Any `filament/*` API drift breaks the domain package's class loading surface; the adapter boundary (`filament-vouchers` owns UI) is violated in both directions (A1's breakage is a symptom: two candidate homes for cart actions).
+- Problem: Filament actions, tables, notifications, and `FilamentCartBridge` (which references `FilamentCart\*` models/services) live in the domain package, which does not require `filament/*`. Any `filament/*` API drift breaks the domain package's class loading surface; the adapter boundary (`filament-vouchers` owns UI) is violated in both directions (two candidate homes for cart actions).
 - Why It Matters: Standalone domain installs carry UI dead weight; the next Filament major bumps the wrong package.
-- Recommended Fix: Move all three files to `filament-vouchers` (`Actions/` or `Support/` + exporter namespace), keeping class names where possible; leave no alias (per no-legacy rule — update the single consumer `filament-cart` ViewCart import in the same pass, which A1 already touches). `vouchers` keeps zero Filament references afterwards (verify with `rg -l 'Filament\\' packages/vouchers/src` → empty).
+- Recommended Fix: Move all three files to `filament-vouchers` (`Actions/` or `Support/` + exporter namespace), keeping class names where possible; leave no alias (per no-legacy rule — update the single consumer `filament-cart` ViewCart import in the same pass). `vouchers` keeps zero Filament references afterwards (verify with `rg -l 'Filament\\' packages/vouchers/src` → empty).
 - Breaking Change: YES (class moves) — consumers updated in-pass (`filament-cart`, `filament-vouchers` provider which singletons `FilamentCartBridge`).
 - Affected Packages: `filament-cart`, `filament-vouchers`.
 - Required Dependent Changes: `FilamentVouchersServiceProvider` singleton registration moves with the class; `ViewCart` import updated.
@@ -242,7 +167,6 @@ No constraint changes (already constraint-free per rules). Order: backfill migra
 ## Database Findings
 
 - Six migrations, uuid PKs, `nullableUuidMorphs('owner')`, jsonb via `commerce_json_column_type`, GIN indexes on pgsql for metadata/targeting/stacking/exclusion — best index discipline of the four pairs. `voucher_usage.idempotency_key` (000006) is the right call.
-- Redundant `index('code')` alongside `unique('code')` (Migration Impact — drop).
 - `promotion_id`/`affiliate_id`/`affiliate_program_id` indexed without constraints — compliant.
 - `applied_count` default 0 unsigned — good; no counter cache for `times_used` by design (A5 keeps it that way, fixes the read path instead).
 - `status` stored as FQCN string with index — consistent with spatie-model-states; `scopeLive` (A7) should be the query habit, not raw `status =` filters.
@@ -258,7 +182,7 @@ No constraint changes (already constraint-free per rules). Order: backfill migra
 
 - Fail-closed targeting, owner-scoped `voucherQuery()`, cross-owner issuance guard (`VoucherAffiliateOwnershipGuard::sanitize` on create/update paths — verified wired in `CreateVoucher`, `UpdateVoucher`, and both filament pages) — good depth.
 - Per-user limits enforced in the validator via `voucher_usage (redeemed_by_type/id)` counts — live, unlike promotions' dead `per_customer_limit`. Keep.
-- Open items: A3 (stale voucher at checkout), A4 (weak parallel validator), A6(c)-analogue — `VoucherService::delete()` deletes by code through the owner-scoped query (safe) but is not wrapped in the same ownership double-check as create/update; add the guard for symmetry. Low.
+- Open items: A4 (weak parallel validator); `VoucherService::delete()` deletes by code through the owner-scoped query (safe) but is not wrapped in the same ownership double-check as create/update — add the guard for symmetry. Low.
 - `NormalizesVoucherCodes` shared normalization — verify validator, service, and filament quick-apply all use it (else `SAVE10` vs `save10` bypasses per-user counts). Pin with a test.
 
 ## Performance Findings
@@ -268,65 +192,53 @@ No constraint changes (already constraint-free per rules). Order: backfill migra
 
 ## Testing Findings
 
-- Zero tests across both packages despite the largest domain surface. Priority order (Pest, `--parallel`): validator matrix (expired/paused/depleted/limit/min-cart/targeting-fail-closed); stacking policy decisions (max count, type restriction, exclusion groups); `IssueVouchersFromPromotion` owner-context behavior incl. global-promotion exception; promotion-source backfill (A6); `scopeLive` vs legacy status filters; A1/A2 regression (cart actions resolve; bridge available with packages installed); code-normalization symmetry; idempotent usage recording (double-submit same `idempotency_key` → one row).
+- Zero tests across both packages despite the largest domain surface. Priority order (Pest, `--parallel`): validator matrix (expired/paused/depleted/limit/min-cart/targeting-fail-closed); stacking policy decisions (max count, type restriction, exclusion groups); `IssueVouchersFromPromotion` owner-context behavior incl. global-promotion exception; `scopeLive` vs legacy status filters; code-normalization symmetry; idempotent usage recording (double-submit same `idempotency_key` → one row).
 
 ## Cross-Package Dependency Impact (table: Dependent Package | Dependency | Impact | Required Change)
 
 | Dependent Package | Dependency | Impact | Required Change |
 |---|---|---|---|
-| `filament-cart` (`ViewCart`) | `CartVoucherActions`, voucher widgets | A1 restores missing actions; F1 moves their home | Fix import (A1); follow the move (F1); add smoke test |
-| `affiliates` (`VoucherBridge`, `VoucherIntegrationRegistrar`, `AttachAffiliateFromVoucher`) | `Voucher` model, `VoucherApplied` event | A2 restores deep links; A11 may add dispatches (more affiliate attributions — intended) | Fix bridge class names; verify attribution counts after A11 |
-| `checkout` (`VouchersAdapter`, `ValidatePromoCodeAction`, `DiscountCodeResolver`, `RedeemVouchersOnCheckoutCompleted`) | `VoucherServiceInterface`, `VoucherData`, `VoucherValidationResult`, `VoucherDiscountCalculator`, stacking | A3 registers checkout-time validation (new behavior on stale codes); A4 removes dead methods with zero in-repo callers; A10 clarifies stacking width | Confirm event/payload for A3; re-run checkout discount tests |
-| `promotions` (`IssueVouchersFromPromotion`) | `VoucherServiceInterface::create`, voucher columns | A6 stops metadata provenance writes | Update issuance payload in same release as backfill |
-| `filament-promotions` (`IssuedVouchersRelationManager`) | `promotion_id` column | A6 backfill makes the relation complete | None (benefits automatically) |
+| `filament-cart` (`ViewCart`) | `CartVoucherActions`, voucher widgets | F1 moves their home | Follow the move (F1); add smoke test |
+| `affiliates` (`VoucherBridge`, `VoucherIntegrationRegistrar`, `AttachAffiliateFromVoucher`) | `Voucher` model, `VoucherApplied` event | A11 may add dispatches (more affiliate attributions — intended) | Verify attribution counts after A11 |
+| `checkout` (`VouchersAdapter`, `ValidatePromoCodeAction`, `DiscountCodeResolver`, `RedeemVouchersOnCheckoutCompleted`) | `VoucherServiceInterface`, `VoucherData`, `VoucherValidationResult`, `VoucherDiscountCalculator`, stacking | A4 removes dead methods with zero in-repo callers; A10 clarifies stacking width | Re-run checkout discount tests |
+| `promotions` (`IssueVouchersFromPromotion`) | `VoucherServiceInterface::create`, voucher columns | C2 int-typed DTO fields | Update issuance mapping in the same pass as C2 |
+| `filament-promotions` (`IssuedVouchersRelationManager`) | `promotion_id` column | Backfill makes the relation complete | None (benefits automatically) |
 | `cashier-chip` (coupons) | none (its `->isValid()` hits are `Coupon::isValid`, a different class — verified) | None | None |
 | `csuite`, `signals` | none (zero voucher references in `src` — verified) | None | None |
-| `filament-vouchers` | domain models/services | A4–A11, F1–F3 | Move-in of `src/Filament/*`; adopt `scopeLive`; align nav-sort default; `MoneyHelper` float→normalizer nit |
+| `filament-vouchers` | domain models/services | A4, A5, A7, A8, A10, A11, F1–F3 | Move-in of `src/Filament/*`; adopt `scopeLive`; align nav-sort default; `MoneyHelper` float→normalizer nit |
 
 ## Recommended Refactor Plan (ordered steps)
 
-1. Fix live breakages in consumers: `filament-cart` import (A1), `affiliates` bridge classes (A2). Add the two regression tests first (they fail now, pass after).
-2. Register-or-delete `ValidateVoucherOnCheckout` + `checkout` config block (A3); consolidate validity API — delete `isValid`/`canBeUsedBy`, migrate checkout/cashier callers (A4).
-3. `withCount('usages')` by default in `voucherQuery()` (A5); transaction-wrap `Voucher::deleting` (A8).
-4. Promotion-source backfill migration + accessor simplification + issuance payload change with `promotions` (A6).
-5. Expiry story decision (command vs time-checks) + `scopeLive` + transition-routed depletion (A7).
-6. Delete credit subsystem + drop migrations (A9); delete dead stacking factories (A10); dispatch-coverage audit for `applied_count` (A11); float→int calculator edge (C1); DTO int types (C2).
-7. Move `src/Filament/*` → `filament-vouchers` (F1); stats parity test (F2); nav-sort default + owners docs (F3); update `examples/usage.php`.
-8. Full Pest suite per Testing Findings (`./vendor/bin/pest --parallel` scoped).
+1. Consolidate validity API — delete `isValid`/`canBeUsedBy`, migrate checkout/cashier callers (A4).
+2. `withCount('usages')` by default in `voucherQuery()` (A5); transaction-wrap `Voucher::deleting` (A8).
+3. Expiry story decision (command vs time-checks) + `scopeLive` + transition-routed depletion (A7).
+4. Delete dead stacking factories (A10); dispatch-coverage audit for `applied_count` (A11); float→int calculator edge (C1); DTO int types (C2).
+5. Move `src/Filament/*` → `filament-vouchers` (F1); stats parity test (F2); nav-sort default + owners docs (F3); update `examples/usage.php`.
+6. Full Pest suite per Testing Findings (`./vendor/bin/pest --parallel` scoped).
 
 ## Files Likely to Change
 
 - `packages/vouchers/src/Concerns/QueriesVouchers.php` (withCount default + contract docblock)
 - `packages/vouchers/src/Services/VoucherService.php` (delete `isValid`/`canBeUsedBy`)
-- `packages/vouchers/src/Models/Voucher.php` (accessors, `scopeLive`, transition-routed depletion, transactional delete, drop `transactions()` post-A9)
-- `packages/vouchers/src/Listeners/ValidateVoucherOnCheckout.php` (register or delete)
+- `packages/vouchers/src/Models/Voucher.php` (accessors, `scopeLive`, transition-routed depletion, transactional delete)
 - `packages/vouchers/src/Stacking/StackingPolicy.php` (delete factories)
 - `packages/vouchers/src/Data/VoucherData.php` (int types)
 - `packages/vouchers/src/Services/VoucherDiscountCalculator.php`, `src/Conditions/VoucherCondition.php` (int boundary)
-- `packages/vouchers/database/migrations/` (backfill + 2 drops + index drop)
 - `packages/vouchers/docs/*`, `examples/usage.php`
 - `packages/filament-cart/src/Resources/CartResource/Pages/ViewCart.php`
-- `packages/affiliates/src/Support/Integrations/VoucherBridge.php`
 - `packages/checkout/src/Integrations/VouchersAdapter.php`, `Actions/ValidatePromoCodeAction.php`, `Integrations/DiscountCodeResolver.php`, `Listeners/RedeemVouchersOnCheckoutCompleted.php`
 - `packages/promotions/src/Actions/IssueVouchersFromPromotion.php`
 - `packages/filament-vouchers/src/**/*` (move-in target + pages/widgets adoption)
 
 ## Files / Code That Should Be Removed (explicit list, no legacy preservation)
 
-- `packages/vouchers/src/Models/VoucherAssignment.php` — zero writers repo-wide.
-- `packages/vouchers/src/Models/VoucherTransaction.php` — zero writers repo-wide.
-- `packages/vouchers/database/migrations/2001_04_01_000004_create_voucher_assignments_table.php` table (via drop migration) — dead table.
-- `packages/vouchers/database/migrations/2001_04_01_000005_create_voucher_transactions_table.php` table (via drop migration) — dead table.
-- `packages/vouchers/src/Traits/HasVouchers.php` — unused (`@phpstan-ignore trait.unused` self-admits it); sole consumer surface was the deleted models.
 - `packages/vouchers/src/Traits/HasVoucherOwnership.php` — verify callers; no external users found (same grep class as `HasVouchers`); delete if the in-package grep confirms zero use.
 - `packages/vouchers/src/Support/CartWithVouchers.php` — superseded by `CartManagerWithVouchers` decorator (verify no remaining refs beyond the trait's `instanceof` checks, then delete both the class and the checks).
 - `packages/vouchers/src/Stacking/StackingPolicy.php::default()/singleVoucher()/unlimited()` — zero callers; `fromConfig()` is the live path.
 - `packages/vouchers/src/Services/VoucherService.php::isValid()/canBeUsedBy()` — weaker parallel validators (A4).
-- `packages/vouchers/src/Listeners/ValidateVoucherOnCheckout.php` OR the `checkout` config block — one of them goes (A3 decision).
 - `packages/vouchers/src/Actions/ValidateVoucherCode.php` — if filament/checkout call sites all use `VoucherValidator` service directly (verify); else keep as the single thin entry and delete the ambiguity by documenting it.
 - `packages/vouchers/src/Filament/*` (3 files) — moved, not duplicated (F1).
-- `vouchers` migration `index('code')` (keep `unique('code')`).
 
 ## Final Recommended Architecture
 
-Domain owns: integer-money models + fail-closed validator as the SOLE validity entry + `VoucherService` (CRUD/apply/remove/validate passthrough) + stacking engine constructed only via `fromConfig()` + wallet/usage tracking with idempotency + affiliate columns with guard. One validity API, one stats definition shared by model accessors and the filament aggregator, one promotion-source column, wall-clock expiry truth with an explicit scheduled sweeper, transactional deletes. All Filament code (including cart-assist actions and the cart bridge) lives in `filament-vouchers`; `filament-cart` and `affiliates` reference real FQCNs with regression tests pinning them. Dead credit subsystem gone, tables dropped, docs updated in the same pass.
+Domain owns: integer-money models + fail-closed validator as the SOLE validity entry + `VoucherService` (CRUD/apply/remove/validate passthrough) + stacking engine constructed only via `fromConfig()` + wallet/usage tracking with idempotency + affiliate columns with guard. One validity API, one stats definition shared by model accessors and the filament aggregator, wall-clock expiry truth with an explicit scheduled sweeper, transactional deletes. All Filament code (including cart-assist actions and the cart bridge) lives in `filament-vouchers`; `filament-cart` and `affiliates` reference real FQCNs with regression tests pinning them.

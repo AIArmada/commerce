@@ -1,9 +1,5 @@
 # signals Audit
 
-## Implementation outcome (migration track, 2026-09-07)
-
-The claimed missing idempotency unique was dropped: `2001_01_01_000004_create_signals_events_table.php:42` already defines it, so no migration or enforcement change was needed.
-
 ## Packages Reviewed (bullets)
 
 - `packages/signals` — privacy-first behavioral analytics: identities/sessions/events, goals/segments/reports, alert rules/logs/deliveries, ingestion pipeline, tracker, 20+ commerce listeners (93 `src/` files, `config/signals.php`, 12 migrations, `routes/api.php`)
@@ -16,12 +12,7 @@ signals is the largest domain package in this review set and the most architectu
 
 ## Migration Impact
 
-**Migration Required: YES**
-
-| Table | Column/Index/Constraint | Data migration | Notes |
-|---|---|---|---|
-| `signals_events` | add unique `['tracked_property_id','idempotency_key']` | none | Index-only; replaces read-then-write dedupe in `CrossTenantQuery::findExistingEvent` (race-prone under double-submit) with unique key + `updateOrCreate` |
-| all other 11 `signals_*` / `signal_alert_deliveries` tables | none proposed | none | uuid PKs verified; no FK constraints (rg clean); idempotency keys and indexes stay as-is |
+**Migration Required: NO** — migration track completed 2026-09-07, see `migration-record.md#signals`
 
 ## Package Responsibilities
 
@@ -118,7 +109,7 @@ signals is the largest domain package in this review set and the most architectu
 ## Database Findings
 
 - 12 migrations all idempotent-shaped (`commerce_schema_create_if_missing` pattern via helpers), uuid PKs, `timestampTz`, configurable JSON — compliant.
-- High-volume tables (`signals_events`, `signals_sessions`) need composite-index review against the actual reporting queries (`tracked_property_id, occurred_at`, `tracked_property_id, event_name, occurred_at`): verify with `EXPLAIN` on production-like volume before adding — do not add speculative indexes. `idempotency_key` uniqueness scope (per property) should be a unique `['tracked_property_id','idempotency_key']` if dedupe is a correctness invariant (currently enforced in `CrossTenantQuery::findExistingEvent` read-then-write — race-prone under double-submit; unique key + `updateOrCreate` is the correct fix, index-only, no data migration).
+- High-volume tables (`signals_events`, `signals_sessions`) need composite-index review against the actual reporting queries (`tracked_property_id, occurred_at`, `tracked_property_id, event_name, occurred_at`): verify with `EXPLAIN` on production-like volume before adding — do not add speculative indexes.
 
 ## Model / Domain Findings
 
@@ -159,12 +150,12 @@ signals is the largest domain package in this review set and the most architectu
 3. A1: split recorder into per-source recorders with strict server-side fields.
 4. A4: consolidate listeners into mapped single listener.
 5. A5+Q1: unify guards and condition object; delegate page logic to domain.
-6. Idempotency unique key migration + rollup-backed long-range reports.
+6. Rollup-backed long-range reports.
 7. Add required tests; run `./vendor/bin/pest --parallel tests/src/Signals tests/src/FilamentSignals`.
 
 ## Files Likely to Change
 
-- `packages/signals/src/Services/CommerceSignalsRecorder.php` (split), `src/Models/Concerns/AutoAssignsSignalOwnerOnCreate.php` (delete), all `src/Models/*.php` (drop trait), `src/Listeners/*.php` (consolidate), `src/Support/CommerceSignalsIntegrationRegistrar.php`, `src/Services/SignalEventCondition*.php`, `src/SignalsServiceProvider.php` (limiter), `routes/api.php`, `config/signals.php`, `database/migrations/2001_01_01_000004_create_signals_events_table.php` (unique key)
+- `packages/signals/src/Services/CommerceSignalsRecorder.php` (split), `src/Models/Concerns/AutoAssignsSignalOwnerOnCreate.php` (delete), all `src/Models/*.php` (drop trait), `src/Listeners/*.php` (consolidate), `src/Support/CommerceSignalsIntegrationRegistrar.php`, `src/Services/SignalEventCondition*.php`, `src/SignalsServiceProvider.php` (limiter), `routes/api.php`, `config/signals.php`
 - `packages/filament-signals/src/Support/SavedSignalReportMutationGuard.php`, `TrackedPropertyMutationGuard.php` (delete), `Resources/SignalInteractionRuleResource/Pages/ListSignalInteractionRules.php` (delegate)
 
 ## Files / Code That Should Be Removed (explicit list, no legacy preservation)
