@@ -15,16 +15,16 @@ it('repairs partial owner columns and indexes idempotently', function (): void {
     ];
 
     $originalTables = [
-        'addressing.tables.addresses' => config('addressing.tables.addresses'),
-        'addressing.tables.addressables' => config('addressing.tables.addressables'),
-        'addressing.tables.snapshots' => config('addressing.tables.snapshots'),
+        'addressing.database.tables.addresses' => config('addressing.database.tables.addresses'),
+        'addressing.database.tables.addressables' => config('addressing.database.tables.addressables'),
+        'addressing.database.tables.snapshots' => config('addressing.database.tables.snapshots'),
     ];
 
     try {
         config([
-            'addressing.tables.addresses' => $tables['addresses'],
-            'addressing.tables.addressables' => $tables['addressables'],
-            'addressing.tables.snapshots' => $tables['snapshots'],
+            'addressing.database.tables.addresses' => $tables['addresses'],
+            'addressing.database.tables.addressables' => $tables['addressables'],
+            'addressing.database.tables.snapshots' => $tables['snapshots'],
         ]);
 
         Schema::create($tables['addresses'], function (Blueprint $table): void {
@@ -69,16 +69,16 @@ it('blocks the cutover when legacy ownerless rows exist', function (): void {
     ];
 
     $originalTables = [
-        'addressing.tables.addresses' => config('addressing.tables.addresses'),
-        'addressing.tables.addressables' => config('addressing.tables.addressables'),
-        'addressing.tables.snapshots' => config('addressing.tables.snapshots'),
+        'addressing.database.tables.addresses' => config('addressing.database.tables.addresses'),
+        'addressing.database.tables.addressables' => config('addressing.database.tables.addressables'),
+        'addressing.database.tables.snapshots' => config('addressing.database.tables.snapshots'),
     ];
 
     try {
         config([
-            'addressing.tables.addresses' => $tables['addresses'],
-            'addressing.tables.addressables' => $tables['addressables'],
-            'addressing.tables.snapshots' => $tables['snapshots'],
+            'addressing.database.tables.addresses' => $tables['addresses'],
+            'addressing.database.tables.addressables' => $tables['addressables'],
+            'addressing.database.tables.snapshots' => $tables['snapshots'],
         ]);
 
         foreach ($tables as $tableName) {
@@ -130,16 +130,16 @@ it('allows fully-owned rows and remains safe to rerun', function (): void {
     ];
 
     $originalTables = [
-        'addressing.tables.addresses' => config('addressing.tables.addresses'),
-        'addressing.tables.addressables' => config('addressing.tables.addressables'),
-        'addressing.tables.snapshots' => config('addressing.tables.snapshots'),
+        'addressing.database.tables.addresses' => config('addressing.database.tables.addresses'),
+        'addressing.database.tables.addressables' => config('addressing.database.tables.addressables'),
+        'addressing.database.tables.snapshots' => config('addressing.database.tables.snapshots'),
     ];
 
     try {
         config([
-            'addressing.tables.addresses' => $tables['addresses'],
-            'addressing.tables.addressables' => $tables['addressables'],
-            'addressing.tables.snapshots' => $tables['snapshots'],
+            'addressing.database.tables.addresses' => $tables['addresses'],
+            'addressing.database.tables.addressables' => $tables['addressables'],
+            'addressing.database.tables.snapshots' => $tables['snapshots'],
         ]);
 
         foreach ($tables as $tableName) {

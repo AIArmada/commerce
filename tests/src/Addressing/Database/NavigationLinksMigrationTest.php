@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Support\AddressingTableResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
-    $this->addressesTable = config('addressing.database.tables.addresses', 'addresses');
-    $this->snapshotsTable = config('addressing.database.tables.snapshots', 'address_snapshots');
+    $this->addressesTable = AddressingTableResolver::resolve('addresses');
+    $this->snapshotsTable = AddressingTableResolver::resolve('snapshots');
 });
 
 it('has latitude on addresses table', function (): void {
