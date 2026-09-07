@@ -142,6 +142,20 @@ reported and taken on trust; code correctness was verified directly.
   old-namespace references repo-wide (including the heavy filament
   consumer surface); `AuthzServiceProvider` owns registration. Stronger
   than the audit asked (no alias release cycle).
+- **Octane lifecycle (follow-up, implemented):** `OwnerContext::flushState()`
+  plus registry `flush()` methods, guarded `RequestReceived`/
+  `RequestTerminated` listener registration (`class_exists` checks — safe
+  without Octane installed), filament `Authz` binding scoped, leak
+  regression tests. Registries verified to be unbound instance arrays, so
+  no bindings were invented; flush is invoked only where bound.
+- **Helpers/stubs (follow-up, implemented with correction):** shipping call
+  sites moved to `MoneyFormatter::symbol()`; `commerce_morph_key()` helper
+  created and both stubs shrunk to straight-line calls; helpers grouped by
+  concern. Correction: `currency_symbol()` RETAINED, not deleted — the
+  audit had the dependency backwards (`MoneyFormatter::symbol()` falls
+  back TO the helper; delegating would recurse). Likewise the audit's
+  "delegate to `ConditionalMigrationLoader`" was wrong-headed (it is purely
+  a migration file loader) — grouping was the right fix.
 - **Dependency-direction guard (new, permanent):**
   `tests/src/CommerceSupport/Architecture/
   CommerceSupportArchitectureTest.php` derives downstream namespaces from
