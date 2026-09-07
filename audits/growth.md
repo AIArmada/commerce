@@ -1,5 +1,9 @@
 # growth Audit
 
+## Implementation outcome (migration track, 2026-09-07)
+
+The proposed growth uniqueness migration was corrected away: assignments use `subject_key`, not `subject_type`/`subject_id`, and experiments already derive owner-specific `owner_scope` keys. Growth now fails fast when its owner mode disagrees with Signals.
+
 ## Packages Reviewed (bullets)
 
 - `packages/growth` — revenue experimentation engine: experiments/variants/assignments, assignment resolution, metrics aggregation, signals integration (28 `src/` files, `config/growth.php`, 3 migrations, no routes, `src/helpers.php`)

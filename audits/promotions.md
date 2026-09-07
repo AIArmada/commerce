@@ -1,5 +1,9 @@
 # Promotions Audit
 
+## Implementation outcome (migration track, 2026-09-07)
+
+The dead strategy and unsupported promotion-type claims were confirmed. Migration `2026_09_07_110000_deactivate_buy_x_get_y_promotions.php` canonicalizes legacy BOGO rows to inactive fixed-zero rows before the enum case is removed; the separate voucher BOGO flow remains live.
+
 ## Packages Reviewed (bullets)
 
 - `packages/promotions` (`aiarmada/promotions`) — domain owner: automatic/code-based discount campaigns, targeting evaluation, voucher issuance bridge, expiry commands.

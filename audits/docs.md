@@ -1,5 +1,9 @@
 # docs Audit
 
+## Implementation outcome (migration track, 2026-09-07)
+
+The `doc_workflows.payload` claim was dropped: the actual configurable table is `docs_workflows` and its JSON column is `rules`. The existing migration resolves the configured JSON type, so no migration was required.
+
 ## Packages Reviewed (bullets)
 
 - `packages/docs` — document generation (invoices/receipts/labels): 15 models, DocService, email/share/tracking controllers, numbering, rendering, spatie model-states, reminders (58 `src/` files, `config/docs.php`, 4 migrations, `routes/docs.php`, seeders + factories)

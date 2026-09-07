@@ -1,5 +1,9 @@
 # Shipping Audit
 
+## Implementation outcome (migration track, 2026-09-07)
+
+The proposed `shipping_rates` owner-column migration was corrected away. Internal rate reads are reached through owner-scoped `ShippingZone` queries/relations, and duplicating the owner tuple on rates would add synchronization burden without a current consumer need.
+
 ## Packages Reviewed
 - `aiarmada/shipping` (`packages/shipping`): `src/` (Actions, Cart, Contracts, Data, Drivers, Enums, Events, Exceptions, Facades, Http/Controllers, Integrations, Models, Policies, Services, States, Strategies, Support), `config/shipping.php`, `database/migrations/` (8 files), `composer.json`, `src/ShippingServiceProvider.php`, `src/ShippingManager.php`, `CONTEXT.md`/`README.md`/`docs/`
 - `aiarmada/filament-shipping` (`packages/filament-shipping`): `src/` (Actions, Pages, Resources, Support, Widgets), `config/filament-shipping.php`, `composer.json`, `CONTEXT.md`/`README.md`/`docs/`

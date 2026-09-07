@@ -1,5 +1,9 @@
 # Persons Audit
 
+## Implementation outcome (migration track, 2026-09-07)
+
+The owner-column and title-uniqueness migration claims were dropped. Persons is explicitly shared identity data with no current `HasOwner` consumer, and the existing title unique supports the transactional reorder algorithm.
+
 ## Packages Reviewed
 - `packages/persons` (`aiarmada/persons`) — core domain: `src/Models` (`Person`, `PersonName`, `Title`, `TitleCategory`, `TitleIssuer`, `TitleAssignment`, `CredentialDefinition`, `CredentialAssignment`, `Affiliation`, `AffiliationRole`), `src/Traits` (`HasTitles`, `HasAffiliations`, `HasCredentials`), `src/Enums` (7: `Gender`, `PersonNameType`, `TitleUsagePosition`, `AffiliationType`, `AssignmentStatus`, `CredentialType`, `IssuerType`), `src/Data` (7 Spatie Data), `src/Actions/ReorderTitleAction.php`, `src/Support/ModelResolver.php`, `src/helpers.php` (`persons_table()`, `persons_register_morph_map()`), `config/persons.php`, `database/migrations/2000_01_01_000010..000019` (10 tables), `database/factories` (10), `database/seeders` (2), `src/PersonsServiceProvider.php`, `CONTEXT.md`, `README.md`, `docs/01..04 + 99`. No `routes/`, no `tests/`.
 - `packages/filament-persons` (`aiarmada/filament-persons`) — Filament adapter: `src/Resources/PersonResource.php` (+ `Schemas/PersonForm.php`, `PersonInfolist.php`, `Tables/PersonsTable.php`, `RelationManagers` ×4, `Pages` ×4), `TitleResource.php`, `TitleIssuerResource.php`, `CredentialDefinitionResource.php` (+ Pages each), `src/FilamentPersonsPlugin.php`, `src/FilamentPersonsServiceProvider.php`, `config/filament-persons.php`, `CONTEXT.md`, `README.md`, `docs/01..04 + 99`. No `routes/`, no `tests/`.

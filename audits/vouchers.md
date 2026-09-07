@@ -1,5 +1,9 @@
 # Vouchers Audit
 
+## Implementation outcome (migration track, 2026-09-07)
+
+The provenance/credit-table cleanup was confirmed: provenance is backfilled, the two dead credit tables and redundant code index are removed, and old readers/API shims are deleted. The adjacent cart, affiliate, and checkout findings were also fixed, including the stale documentation imports.
+
 ## Packages Reviewed (bullets)
 
 - `packages/vouchers` (`aiarmada/vouchers`) — domain owner: issuance, cart-condition redemption, wallets, stacking engine, compound conditions/matchers, usage tracking, affiliate bridge.

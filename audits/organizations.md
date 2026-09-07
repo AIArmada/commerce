@@ -1,5 +1,9 @@
 # Organizations Audit
 
+## Implementation outcome (migration track, 2026-09-07)
+
+The three integrity-index gaps were confirmed. Migration `2026_09_07_074034_add_organization_integrity_indexes.php` adds the slug unique, membership unique, and role lookup index; slug creation retries database uniqueness races.
+
 ## Packages Reviewed
 - `packages/organizations` (`aiarmada/organizations`) — core domain: `src/Models/Organization.php` (sole model; membership rows owned by `aiarmada/membership` via `HasMembers`), `src/Actions` (7: `CreateOrganizationAction`, `TransferOrganizationOwnershipAction`, `ArchiveOrganizationAction`, `RestoreOrganizationAction`, `SuspendOrganizationAction`, `MakeOrganizationPublicAction`, `MakeOrganizationPrivateAction`), `src/Contracts` (6: `OrganizationAuthorization`, `OrganizationProfileExtension`, `OrganizationVisibilityTransitionAuthorizer`, `CurrentOrganizationResolver`, `OrganizationPresentation`, `OrganizationLifecycleHook`), `src/Resolvers` (5: `Default*` ×3, `Null*` ×2), `src/Http/Middleware/CurrentOrganizationMiddleware.php`, `config/organizations.php`, `database/migrations/2000_01_01_000001..000002` (`organizations`, `organization_members`), `src/OrganizationsServiceProvider.php`, `CONTEXT.md`, `docs/01-overview.md`, `03-configuration.md`, `04-usage.md`, `99-troubleshooting.md` (+ `02-installation.md`). No `routes/`, no `tests/`, no factories/seeders.
 - `packages/filament-organizations` (`aiarmada/filament-organizations`) — Filament adapter: `src/Resources/OrganizationResource.php` (+ `RelationManagers/MembersRelationManager.php`, `InvitationsRelationManager.php`, `Pages` ×4), `src/FilamentOrganizationsPlugin.php`, `src/FilamentOrganizationsServiceProvider.php`, `config/filament-organizations.php`, `CONTEXT.md`, `docs`. No `routes/`, no `tests/`.

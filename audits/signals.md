@@ -1,5 +1,9 @@
 # signals Audit
 
+## Implementation outcome (migration track, 2026-09-07)
+
+The claimed missing idempotency unique was dropped: `2001_01_01_000004_create_signals_events_table.php:42` already defines it, so no migration or enforcement change was needed.
+
 ## Packages Reviewed (bullets)
 
 - `packages/signals` — privacy-first behavioral analytics: identities/sessions/events, goals/segments/reports, alert rules/logs/deliveries, ingestion pipeline, tracker, 20+ commerce listeners (93 `src/` files, `config/signals.php`, 12 migrations, `routes/api.php`)

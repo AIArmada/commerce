@@ -1,5 +1,9 @@
 # Pricing Audit
 
+## Implementation outcome (migration track, 2026-09-07)
+
+The tier lookup index claim was confirmed. Migration `2026_09_07_073442_add_tierable_lookup_index_to_price_tiers_table.php` adds the `(tierable_type, tierable_id, price_list_id)` index; no other migration-track change was required.
+
 ## Packages Reviewed (bullets)
 
 - `packages/pricing` (`aiarmada/pricing`) — domain owner: price lists, prices, tiers, resolution engine, settings.
