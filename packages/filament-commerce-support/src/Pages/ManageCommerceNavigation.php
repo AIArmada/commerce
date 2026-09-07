@@ -726,7 +726,7 @@ class ManageCommerceNavigation extends Page
         $userGroups = $settings->groups;
 
         $itemIndex = 0;
-        foreach ($defaults as $class => &$config) {
+        foreach ($defaults as &$config) {
             $config['__item_index'] = $itemIndex++;
             $groupKey = $config['group'];
             $config['__group_sort'] = 9999;
