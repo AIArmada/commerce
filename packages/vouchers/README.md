@@ -277,8 +277,6 @@ $stats = $voucher->getStatistics();
     'vouchers' => 'vouchers',
     'voucher_usage' => 'voucher_usage',
     'voucher_wallets' => 'voucher_wallets',
-    'voucher_assignments' => 'voucher_assignments',
-    'voucher_transactions' => 'voucher_transactions',
 ],
 ```
 

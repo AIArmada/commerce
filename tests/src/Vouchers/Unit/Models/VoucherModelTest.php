@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherTransaction;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\States\Active;
@@ -46,14 +45,6 @@ describe('Voucher Model', function (): void {
 
             expect($relation)->toBeInstanceOf(HasMany::class)
                 ->and($relation->getRelated())->toBeInstanceOf(VoucherWallet::class);
-        });
-
-        it('defines transactions relationship as HasMany', function (): void {
-            $voucher = new Voucher;
-            $relation = $voucher->transactions();
-
-            expect($relation)->toBeInstanceOf(HasMany::class)
-                ->and($relation->getRelated())->toBeInstanceOf(VoucherTransaction::class);
         });
 
         it('defines affiliate relationship as BelongsTo', function (): void {
@@ -420,33 +411,7 @@ describe('Voucher Model', function (): void {
             expect(VoucherWallet::where('voucher_id', $voucher->id)->count())->toBe(0);
         });
 
-        it('deletes transactions when voucher is deleted', function (): void {
-            $voucher = Voucher::create([
-                'name' => 'Cascade Test Voucher',
-                'code' => 'CASCADE-TX-' . uniqid(),
-                'type' => VoucherType::Fixed,
-                'value' => 5000,
-                'currency' => 'MYR',
-                'status' => Active::class,
-            ]);
-
-            $voucher->transactions()->create([
-                'walletable_type' => 'App\\Models\\User',
-                'walletable_id' => 'user-123',
-                'amount' => 1000,
-                'balance' => 1000,
-                'type' => 'credit',
-                'currency' => 'MYR',
-            ]);
-
-            expect(VoucherTransaction::where('voucher_id', $voucher->id)->count())->toBe(1);
-
-            $voucher->delete();
-
-            expect(VoucherTransaction::where('voucher_id', $voucher->id)->count())->toBe(0);
-        });
-
-        it('deletes all related records in a single delete operation', function (): void {
+        it('deletes usage and wallet records in a single delete operation', function (): void {
             $voucher = Voucher::create([
                 'name' => 'Cascade All Test',
                 'code' => 'CASCADE-ALL-' . uniqid(),
@@ -471,24 +436,13 @@ describe('Voucher Model', function (): void {
                 'is_redeemed' => false,
             ]);
 
-            $voucher->transactions()->create([
-                'walletable_type' => 'App\\Models\\User',
-                'walletable_id' => 'user-456',
-                'amount' => 500,
-                'balance' => 500,
-                'type' => 'credit',
-                'currency' => 'MYR',
-            ]);
-
             expect(VoucherUsage::where('voucher_id', $voucher->id)->count())->toBe(1)
-                ->and(VoucherWallet::where('voucher_id', $voucher->id)->count())->toBe(1)
-                ->and(VoucherTransaction::where('voucher_id', $voucher->id)->count())->toBe(1);
+                ->and(VoucherWallet::where('voucher_id', $voucher->id)->count())->toBe(1);
 
             $voucher->delete();
 
             expect(VoucherUsage::where('voucher_id', $voucher->id)->count())->toBe(0)
-                ->and(VoucherWallet::where('voucher_id', $voucher->id)->count())->toBe(0)
-                ->and(VoucherTransaction::where('voucher_id', $voucher->id)->count())->toBe(0);
+                ->and(VoucherWallet::where('voucher_id', $voucher->id)->count())->toBe(0);
         });
     });
 });
