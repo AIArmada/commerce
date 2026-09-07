@@ -12,6 +12,7 @@ use AIArmada\Organizations\Enums\OrganizationVisibility;
 use AIArmada\Organizations\Models\Organization;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -26,31 +27,41 @@ final class CreateOrganizationAction
      */
     public function handle(Model $creator, array $attributes = []): Organization
     {
-        return DB::transaction(function () use ($attributes, $creator): Organization {
-            $name = mb_trim((string) ($attributes['name'] ?? ''));
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            try {
+                return DB::transaction(function () use ($attributes, $creator): Organization {
+                    $name = mb_trim((string) ($attributes['name'] ?? ''));
 
-            if ($name === '') {
-                throw new InvalidArgumentException('An organization name is required.');
+                    if ($name === '') {
+                        throw new InvalidArgumentException('An organization name is required.');
+                    }
+
+                    $slug = $this->uniqueSlug((string) ($attributes['slug'] ?? Str::slug($name)));
+                    $now = CarbonImmutable::now();
+
+                    $organization = Organization::query()->create([
+                        'name' => $name,
+                        'slug' => $slug,
+                        'description' => $attributes['description'] ?? null,
+                        'status' => OrganizationStatus::Active,
+                        'visibility' => OrganizationVisibility::Private,
+                        'created_by' => (string) $creator->getKey(),
+                        'last_state_change_at' => $now,
+                    ]);
+
+                    app(AddMemberAction::class)->handle($organization, $creator, MemberRole::Owner);
+                    app(OrganizationLifecycleHook::class)->created($organization, $creator);
+
+                    return $organization;
+                });
+            } catch (QueryException $exception) {
+                if (! $this->isSlugUniquenessViolation($exception) || $attempt === 2) {
+                    throw $exception;
+                }
             }
+        }
 
-            $slug = $this->uniqueSlug((string) ($attributes['slug'] ?? Str::slug($name)));
-            $now = CarbonImmutable::now();
-
-            $organization = Organization::query()->create([
-                'name' => $name,
-                'slug' => $slug,
-                'description' => $attributes['description'] ?? null,
-                'status' => OrganizationStatus::Active,
-                'visibility' => OrganizationVisibility::Private,
-                'created_by' => (string) $creator->getKey(),
-                'last_state_change_at' => $now,
-            ]);
-
-            app(AddMemberAction::class)->handle($organization, $creator, MemberRole::Owner);
-            app(OrganizationLifecycleHook::class)->created($organization, $creator);
-
-            return $organization;
-        });
+        throw new LogicException('Organization creation failed after retrying slug uniqueness.');
     }
 
     private function uniqueSlug(string $slug): string
@@ -65,5 +76,13 @@ final class CreateOrganizationAction
         }
 
         return $candidate;
+    }
+
+    private function isSlugUniquenessViolation(QueryException $exception): bool
+    {
+        $message = Str::lower($exception->getMessage());
+
+        return in_array((string) $exception->getCode(), ['23000', '23505'], true)
+            && Str::contains($message, 'slug');
     }
 }

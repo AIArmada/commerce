@@ -94,6 +94,13 @@ class Organization extends Model implements MembershipMutationGuard
 
     public function assertMemberCanBeAdded(Model $member, MemberRole $role, ?Model $existingMember): void
     {
+        if ($this->exists) {
+            $this->newQuery()
+                ->whereKey($this->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+        }
+
         $existingRole = $this->memberRole($existingMember);
 
         if ($existingRole === MemberRole::Owner && $role !== MemberRole::Owner) {
