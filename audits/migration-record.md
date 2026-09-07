@@ -79,6 +79,7 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
 - **Tests**: `tests/src/Inventory/Feature/InventoryMigrationsTest.php` pins the old file clean, asserts end-state schema, and proves idempotency via double-`up()`.
 - No `down()` methods (permitted; re-runs guarded, rollbacks manual). Work was uncommitted at review time.
 - Out of scope (still open): A1 serial enum-vs-morph code fix. Data-cleanup assessment RECEIVED 2026-09-07 and independently confirmed: the serials-table migration defaults `status` to the raw slug `'available'` (`000006` line 31) while the model casts to the spatie state (FQCN morphs) and Filament queries raw enum values — three raw-slug writers, so rows may hold non-morph values. Cleanup migration needed only if live rows are affected (unconfirmed, no live DB). The A1 audit finding now carries this as fix step (3).
+- **Falsification note (2026-09-07 reviewer re-derivation):** the A1 FQCN-storage premise was WRONG. Vendor source (`State::getMorphClass()` returns `static::$name ?? static::class`) plus `Available::$name = 'available'` proves the column stores slugs; the deleted enum carried byte-identical values, so badge/filter/form reads and writes were always consistent — the described corruption mechanism could not occur. The genuine defect was duplicated vocabulary only. Implemented as a behavior-preserving unification (enum deleted, Filament on state classes, zero remaining importers). A1 struck from `inventory.md`; package top severity now Medium.
 
 ## Deployment gates
 

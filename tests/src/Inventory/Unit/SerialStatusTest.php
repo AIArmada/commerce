@@ -12,6 +12,8 @@ use AIArmada\Inventory\States\Returned;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Shipped;
 use AIArmada\Inventory\States\Sold;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 test('SerialStatus states are registered', function (): void {
     $states = SerialStatus::classes();
@@ -28,6 +30,67 @@ test('SerialStatus options returns correct array', function (): void {
     expect($options)->toBeArray();
     expect($options)->toHaveKey('available');
     expect($options['available'])->toBe('Available');
+});
+
+test('every former enum value round-trips through the serial state cast', function (): void {
+    $formerEnumValues = [
+        'available',
+        'reserved',
+        'sold',
+        'shipped',
+        'returned',
+        'in_repair',
+        'disposed',
+        'lost',
+        'recalled',
+    ];
+
+    $stateClasses = SerialStatus::classes();
+    $morphValues = array_map(
+        static fn (string $stateClass): string => $stateClass::getMorphClass(),
+        $stateClasses,
+    );
+
+    expect($morphValues)->toEqualCanonicalizing($formerEnumValues);
+
+    foreach ($stateClasses as $stateClass) {
+        $serial = InventorySerial::factory()->create([
+            'status' => $stateClass::getMorphClass(),
+        ]);
+        $reloaded = $serial->fresh();
+
+        expect($reloaded)->toBeInstanceOf(InventorySerial::class);
+
+        if (! $reloaded instanceof InventorySerial) {
+            continue;
+        }
+
+        expect($reloaded->status)->toBeInstanceOf($stateClass);
+        expect($reloaded->status->getValue())->toBe($stateClass::getMorphClass());
+    }
+});
+
+test('the serial status audit query reports no unknown morph values on clean data', function (): void {
+    $knownMorphValues = array_map(
+        static fn (string $stateClass): string => $stateClass::getMorphClass(),
+        SerialStatus::classes(),
+    );
+
+    $unknownCount = DB::table(config('inventory.database.tables.serials', 'inventory_serials'))
+        ->whereNotIn('status', $knownMorphValues)
+        ->count();
+
+    expect($unknownCount)->toBe(0);
+});
+
+test('the shipped serial status default is the canonical morph value', function (): void {
+    $statusColumn = collect(Schema::getColumns(config('inventory.database.tables.serials', 'inventory_serials')))
+        ->firstWhere('name', 'status');
+
+    expect($statusColumn)->toBeArray()
+        ->and(
+            mb_trim((string) ($statusColumn['default'] ?? ''), "'\"")
+        )->toBe(Available::getMorphClass());
 });
 
 test('SerialStatus label returns correct labels', function (): void {

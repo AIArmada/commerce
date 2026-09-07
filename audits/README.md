@@ -34,7 +34,7 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | events | filament-events | No | Yes | High | `events.md` |
 | feedback | filament-feedback | No | Yes | High | `feedback.md` |
 | growth | filament-growth | Done | No | Medium | `growth.md` |
-| inventory | filament-inventory | Done | Yes | Critical | `inventory.md` |
+| inventory | filament-inventory | Done | Yes | Medium | `inventory.md` |
 | jnt | filament-jnt | No | Yes | High | `jnt.md` |
 | orders | filament-orders | No | Yes | Critical | `orders.md` |
 | organizations | filament-organizations | Done | Yes | High | `organizations.md` |
@@ -63,11 +63,11 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 
 All 11 migration packages are closed — 7 implemented, 4 dropped/corrected with evidence. See [`migration-record.md`](migration-record.md). `inventory.md` still rates Critical, but that is the open A1 serial-vocabulary *code* fix, not schema work.
 
-## Highest-Risk Packages (Critical severity, 7)
+## Highest-Risk Packages (Critical severity, 6)
 
-`cashier`, `cashier-chip`, `checkout`, `chip`, `customers`, `inventory`, `orders`.
+`cashier`, `cashier-chip`, `checkout`, `chip`, `customers`, `orders`.
 
-Dominant risk themes: cross-tenant isolation gaps in write paths (orders intake, customer resolver), payment amount/webhook integrity, serial-status corruption (inventory), concurrency-unsafe seat allocation is now High (allocator finding rates Medium, test gap High).
+Dominant risk themes: cross-tenant isolation gaps in write paths (orders intake, customer resolver), payment amount/webhook integrity. (`inventory` dropped off this list: its serial Critical was falsified — slug storage on both sides — and implemented as a duplication cleanup.)
 
 ## Major Cross-Package Architectural Issues (remaining)
 
@@ -84,7 +84,7 @@ Dominant risk themes: cross-tenant isolation gaps in write paths (orders intake,
 
 ## Second pass (hardening) + migration track
 
-- **Severity normalized, no inflation.** Critical is used only for breach-class security holes, corruption/data-loss risks, and broken integrity behavior (7 files, down from 10 — `addressing`/`persons` Criticals resolved by shipped owner morphs; `seating` was High in-file all along).
+- **Severity normalized, no inflation.** Critical is used only for breach-class security holes, corruption/data-loss risks, and broken integrity behavior (6 files, down from 10 — `addressing`/`persons` Criticals resolved by shipped owner morphs; `seating` was High in-file all along; `inventory` A1 falsified, see record).
 - **False claims removed or corrected** (see hardening notes in prior revision; full list in `migration-record.md` deviations).
 - **Migration track completed 2026-09-07.** 10 of 11 migration packages settled: 6 implemented (`pricing`, `organizations`, `addressing`, `vouchers`, `promotions`, + `growth` parity assertion), 4 dropped/corrected with evidence (`signals`, `shipping`, `persons`, `docs`). `inventory` untouched. Details, evidence, commit list (24 commits after base), and deployment gates in [`migration-record.md`](migration-record.md).
 - **Reviewer spot-checks (all held).** Unscoped `findExistingIntake`, zero `HasOwner` in persons, wrong voucher import fixed to the real class, serial enum-vs-morph mismatch, empty-`getPages()` phantom chip resources, enum-removal consistency (zero `PromotionType::BuyXGetY` references repo-wide), guarded checkout-listener registration, boot-time owner-parity assertion.

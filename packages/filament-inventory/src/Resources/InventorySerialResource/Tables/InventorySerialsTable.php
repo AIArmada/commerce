@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Tables;
 
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -46,6 +46,7 @@ final class InventorySerialsTable
 
                 TextColumn::make('status')
                     ->badge()
+                    ->formatStateUsing(fn (InventorySerial $record): string => $record->getStatusEnum()->label())
                     ->color(fn (InventorySerial $record): string => $record->getStatusEnum()->color()),
 
                 TextColumn::make('condition')
@@ -85,9 +86,7 @@ final class InventorySerialsTable
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('status')
-                    ->options(collect(SerialStatus::cases())->mapWithKeys(
-                        fn (SerialStatus $status) => [$status->value => $status->label()]
-                    )),
+                    ->options(SerialStatus::options()),
 
                 SelectFilter::make('condition')
                     ->options(collect(SerialCondition::cases())->mapWithKeys(

@@ -16,8 +16,11 @@ use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\SerialStatus;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
@@ -190,6 +193,49 @@ describe('InventorySerialResource', function (): void {
         $pages = InventorySerialResource::getPages();
         expect($pages)->toHaveKey('index');
         expect($pages)->toHaveKey('view');
+    });
+
+    it('uses state morph values for status filters and form saves', function (): void {
+        InventorySerial::factory()->create([
+            'status' => Available::getMorphClass(),
+        ]);
+
+        expect(InventorySerialResource::getNavigationBadge())->toBe('1');
+
+        $livewire = Mockery::mock(HasTable::class);
+        $table = InventorySerialResource::table(Table::make($livewire));
+        $statusFilter = $table->getFilters()['status'];
+
+        expect($statusFilter->getOptions())->toEqual(SerialStatus::options());
+
+        $filteredCount = $statusFilter->apply(
+            InventorySerialResource::getEloquentQuery(),
+            ['value' => Available::getMorphClass()],
+        )->count();
+
+        expect($filteredCount)->toBe(1);
+
+        $schema = InventorySerialResource::form(Schema::make(filamentInventory_makeSchemaLivewire()));
+        $statusField = collect($schema->getFlatComponents())
+            ->first(fn (mixed $component): bool => $component instanceof Select && $component->getName() === 'status');
+
+        expect($statusField)->toBeInstanceOf(Select::class);
+
+        if (! $statusField instanceof Select) {
+            return;
+        }
+
+        expect($statusField->getOptions())->toEqual(SerialStatus::options())
+            ->and($statusField->getDefaultState())->toBe(Available::getMorphClass());
+
+        $formSerial = InventorySerial::factory()->create([
+            'status' => $statusField->getDefaultState(),
+        ]);
+
+        expect(DB::table(config('inventory.database.tables.serials', 'inventory_serials'))
+            ->where('id', $formSerial->id)
+            ->value('status'))->toBe(Available::getMorphClass());
+        expect($formSerial->fresh()?->status)->toBeInstanceOf(Available::class);
     });
 
     it('does not eager-load a cross-tenant batch', function (): void {

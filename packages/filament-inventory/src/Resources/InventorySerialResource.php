@@ -11,8 +11,8 @@ use AIArmada\FilamentInventory\Resources\InventorySerialResource\Pages\ViewInven
 use AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas\InventorySerialForm;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas\InventorySerialInfolist;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource\Tables\InventorySerialsTable;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -86,7 +86,7 @@ final class InventorySerialResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = self::getEloquentQuery()->where('status', SerialStatus::Available->value)->count();
+        $count = self::getEloquentQuery()->where('status', Available::getMorphClass())->count();
 
         return $count > 0 ? (string) $count : null;
     }

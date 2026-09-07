@@ -9,7 +9,7 @@ Source layout inspected: `src/` (Actions ×16, Cart ×3, Console ×2, Contracts 
 
 ## Overall Assessment (quality, health, risks, refactor size)
 
-The strongest engineering of the four pairs where it counts for money-adjacent stock moves: allocation paths use `DB::transaction()` + `lockForUpdate()`, owner scoping has a dedicated `InventoryOwnerScope` applied in services/reports/resources, and app-level cascades replace DB constraints per repo rules. But the package is oversized for its integration surface and carries one correctness-grade defect: filament serial UI filters/writes enum string values (`'available'`) against a column storing spatie state morphs (FQCNs) — badges/filters match nothing and form saves write invalid states. The migration track closed the dual-quantity cleanup (decimal columns dropped, int canonical) and the reservations/allocations migration split. Refactor size: M (one status-vocabulary unification + filament query fixes + scope/config/trait follow-ups). No redesign of the allocation/costing core — it is sound.
+The strongest engineering of the four pairs where it counts for money-adjacent stock moves: allocation paths use `DB::transaction()` + `lockForUpdate()`, owner scoping has a dedicated `InventoryOwnerScope` applied in services/reports/resources, and app-level cascades replace DB constraints per repo rules. But the package is oversized for its integration surface. Its alleged serial-vocabulary Critical was falsified on re-derivation against vendor source (`State::getMorphClass()` returns the `$name` slug, and the deleted enum carried byte-identical values — reads and writes were always consistent; implemented as a duplication cleanup: enum deleted, Filament pointed at the state classes, behavior-identical). The migration track closed the dual-quantity cleanup (decimal columns dropped, int canonical) and the reservations/allocations migration split. Refactor size: S-M (scope/config/trait follow-ups). No redesign of the allocation/costing core — it is sound.
 
 ## Migration Impact
 
@@ -19,21 +19,9 @@ The strongest engineering of the four pairs where it counts for money-adjacent s
 
 - Owns: stock levels/movements/allocations per location, batch/FEFO + serial lifecycle, costing layers + valuation snapshots, backorders, demand forecast + reorder suggestions, checkout reservations, cart/checkout/orders/payment event wiring.
 - Does NOT own: product catalog (products, via `Inventoryable`), order lifecycle (orders, via events), fulfillment routing UI (shipping), admin UI (filament-inventory).
-- Filament adapter owns: location/level/movement/allocation/batch/serial CRUD, transfer/receive/ship/adjust/cycle-count actions, stock widgets. Must stay UI-only (violations: serial enum vocabulary, stats aggregation duplication).
+- Filament adapter owns: location/level/movement/allocation/batch/serial CRUD, transfer/receive/ship/adjust/cycle-count actions, stock widgets. Must stay UI-only (residual violation: stats aggregation duplication).
 
 ## Architecture Findings (each: Severity Critical/High/Medium/Low, Location files, Problem, Why It Matters, Recommended Fix concrete, Breaking Change YES/NO, Affected Packages list, Required Dependent Changes, Migration Required YES/NO)
-
-### A1 — Filament serial UI speaks enum values; the column stores state morphs (CRITICAL)
-
-- Severity: Critical
-- Location: domain `src/Models/InventorySerial.php:15,77,201-368` (spatie `HasStates`, `States\SerialStatus`, `normalize()` returns FQCN morphs); `src/States/SerialStatus.php:57` + subclasses (`Available`, `Reserved`, `Sold`, …); vs adapter `packages/filament-inventory/src/Resources/InventorySerialResource.php:14,89`, `Tables/InventorySerialsTable.php:8`, `Schemas/InventorySerialForm.php:8` — all import `AIArmada\Inventory\Enums\SerialStatus` (string values `'available'`, `'reserved'`, …).
-- Problem: `getNavigationBadge()` filters `where('status', 'available')` while the column holds e.g. `AIArmada\Inventory\States\Available` → badge always 0/empty. Table filters on the same values match nothing. The form select writes `'available'` into a state-cast attribute → spatie throws or stores garbage on save. The enum ALSO duplicates `label()/color()/isAllocatable()/isInStock()` already defined on the state classes.
-- Why It Matters: Serial admin is non-functional for status workflows (the core of serial tracking); writes may corrupt the column.
-- Recommended Fix: Unify on the spatie states (they carry the transition graph, which the enum lacks). (1) Change the three filament files to import `States\SerialStatus` + subclasses and use `::class`/`getMorphClass()` values with `SerialStatus::options()`-equivalent built from state classes. (2) Delete `src/Enums/SerialStatus.php` after grep-confirming no other users (only the three filament files import it — verified). (3) Align the `status` column default (`000006` serials migration line 31, raw `'available'`) with the morph vocabulary via a new guarded migration — do not edit the shipped file; audit existing rows for raw slugs first, as a data-cleanup migration may be needed (assessed 2026-09-07, unconfirmed without live DB). Re-check (hardening pass): the audit's BackorderStatus half of this fix is REMOVED — no `src/Enums/BackorderStatus.php` exists and repo-wide grep finds zero `Enums\BackorderStatus` importers (`InventoryBackorder` already uses `States\BackorderStatus` exclusively); there is nothing to unify there.
-- Breaking Change: YES (enum deletion; status filter values change from strings to morphs).
-- Affected Packages: `filament-inventory` (3 serial files).
-- Required Dependent Changes: `filament-inventory` serial resource/table/form; docs `04-usage.md` serial-status examples.
-- Migration Required: NO (column values already morphs; only readers/writers change).
 
 ### A4 — `operations` config key missing though model + migration read it
 
@@ -149,7 +137,7 @@ The strongest engineering of the four pairs where it counts for money-adjacent s
 
 ## Filament Adapter Findings (thin-adapter check, domain leak, duplication, dependency direction)
 
-- A1 (serial/backorder vocabulary) is the critical domain leak — UI-defined enum diverging from domain states.
+- Serial vocabulary is unified on the state classes (former A1 — falsified Critical, implemented as duplication cleanup).
 - A6 (parent query bypass) and A7 (stats duplication) above.
 - Policies (`Policies/Inventory{Level,Allocation,ReorderSuggestion}Policy.php`, registered in `FilamentInventoryServiceProvider::packageBooted`) — verify each revalidates owner server-side (not just role checks); movement/batch/serial/location resources have NO policies — confirm intentional (read-heavy resources) or add consistent coverage. Low.
 - Actions (`Actions/*` ×8) correctly delegate to domain Actions (`TransferInventory::run`, `ReleaseStock`, `ApproveReorderSuggestion::run` — verified imports) — thin, keep. Verify each revalidates submitted `location_id` owner-scope server-side (the domain `saving()` hooks are the backstop, but action-level `OwnerWriteGuard`/`ResolveOwnedModelOrFailAction` is the contract).
@@ -188,7 +176,7 @@ The strongest engineering of the four pairs where it counts for money-adjacent s
 
 ## Testing Findings
 
-- Zero tests; 13 factories idle. Priority (Pest, `--parallel`): serial status unification (A1: filament values round-trip through the state cast); `getOrCreateLevel` concurrency (two parallel creates → one row, needs the unique index); allocation race (double-allocate same stock → one wins); owner isolation per model via `OwnerScopingContractTests`; `NearestLocationStrategy` null-coordinates-last (C3); strategy-name resolution for every configured value (A10b); `cacheKeySuffix` in widget cache keys (bleed regression). Migration-equivalence tests for the A2/A3 track work already exist (`tests/src/Inventory/Feature/InventoryMigrationsTest.php`).
+- Coverage started (`SerialStatusTest`, `InventoryMigrationsTest`). Remaining priority (Pest, `--parallel`): `getOrCreateLevel` concurrency (two parallel creates → one row, needs the unique index); allocation race (double-allocate same stock → one wins); owner isolation per model via `OwnerScopingContractTests`; `NearestLocationStrategy` null-coordinates-last (C3); strategy-name resolution for every configured value (A10b); `cacheKeySuffix` in widget cache keys (bleed regression).
 
 ## Cross-Package Dependency Impact (table: Dependent Package | Dependency | Impact | Required Change)
 
@@ -200,22 +188,19 @@ The strongest engineering of the four pairs where it counts for money-adjacent s
 | `shipping` (`OrderFulfillmentHandler`, `FulfillmentLocationService`) | location optimization, `NearestLocationStrategy` | C3 null-handling; A10b strategy naming | Re-verify fulfillment ranking tests |
 | `cashier` (`CartIntegrationRegistrar`, `CartCheckoutBuilder`) | cart/inventory interplay | A8 if they call trait mutators | Grep + migrate to service calls |
 | `cart` (events consumed by inventory listeners) | `CartCleared/Destroyed`, `ItemAdded` | None (listener side only) | None |
-| `filament-inventory` | all domain models/services | A1, A5, A6, A7 land as UI fixes | Per-finding changes above |
+| `filament-inventory` | all domain models/services | A5, A6, A7 land as UI fixes | Per-finding changes above |
 | `commerce-support` (health docs reference) | `LowStockCheck` | A9 may add checks alongside | None (additive) |
 
 ## Recommended Refactor Plan (ordered steps)
 
-1. Unify serial status on spatie states; fix the three filament files; delete `Enums/SerialStatus.php` (A1).
-2. Ship the optional movement composite + levels get-or-create unique (Database (b)(c)).
-3. Config: add `operations` key (A4); reconcile `allocation_strategy` default with registry + name costing adapters (A10).
-4. Reads: demote location-relation scope on hot paths + reconciliation coverage (A5); `parent::` queries in all six resources (A6); aggregator→reports delegation (A7).
-5. Trait split `HasInventory` (A8) with `products`/`checkout`/`cashier` call-site migration; `LocationTreeService` write funnel (C2); null-coordinates-last (C3); reservations janitor + retention docs (A9).
-6. Full Pest suite per Testing Findings (`./vendor/bin/pest --parallel` scoped), incl. `cacheKeySuffix` bleed test and owner-isolation contracts.
+1. Ship the optional movement composite + levels get-or-create unique (Database (b)(c)).
+2. Config: add `operations` key (A4); reconcile `allocation_strategy` default with registry + name costing adapters (A10).
+3. Reads: demote location-relation scope on hot paths + reconciliation coverage (A5); `parent::` queries in all six resources (A6); aggregator→reports delegation (A7).
+4. Trait split `HasInventory` (A8) with `products`/`checkout`/`cashier` call-site migration; `LocationTreeService` write funnel (C2); null-coordinates-last (C3); reservations janitor + retention docs (A9).
+5. Full Pest suite per Testing Findings (`./vendor/bin/pest --parallel` scoped), incl. `cacheKeySuffix` bleed test and owner-isolation contracts.
 
 ## Files Likely to Change
 
-- `packages/filament-inventory/src/Resources/InventorySerialResource*.php` (resource/table/form), docs
-- `packages/inventory/src/Enums/SerialStatus.php` (delete), `Enums/BackorderStatus.php` (verify + delete)
 - `packages/inventory/database/migrations/` (optional movement index/unique only)
 - `packages/inventory/config/inventory.php` (operations key, strategy default)
 - `packages/inventory/src/Services/InventoryService.php` (scope simplification), `Services/Stock/*`, `Services/Costing/*` (named adapters), `Support/InventoryOwnerScope.php` (docs only)
@@ -226,7 +211,6 @@ The strongest engineering of the four pairs where it counts for money-adjacent s
 
 ## Files / Code That Should Be Removed (explicit list, no legacy preservation)
 
-- `packages/inventory/src/Enums/SerialStatus.php` — values never occur in the `status` column; all three importers switch to `States\*` (A1). (Delete only after the importer grep is re-run at implementation time.) No `Enums/BackorderStatus.php` exists — nothing to delete there.
 - `packages/inventory/src/Support/InventoryTraitsUsage.php` — pending runtime-use grep; delete if audit-only (C1).
 - Anonymous costing adapters in `InventoryServiceProvider.php:195-283` — replaced by named classes (A10) (code moves, not behavior).
 - `HasInventory` mutator/cart-coupled methods (list in A8) — moved to service/integration call sites, not preserved on the trait.

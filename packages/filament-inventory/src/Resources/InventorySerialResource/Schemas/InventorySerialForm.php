@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas;
 
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Enums\SerialStatus;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
@@ -53,11 +54,9 @@ final class InventorySerialForm
 
                             Select::make('status')
                                 ->label('Status')
-                                ->options(collect(SerialStatus::cases())->mapWithKeys(
-                                    fn (SerialStatus $status) => [$status->value => $status->label()]
-                                ))
+                                ->options(SerialStatus::options())
                                 ->required()
-                                ->default(SerialStatus::Available->value),
+                                ->default(Available::getMorphClass()),
 
                             Select::make('condition')
                                 ->label('Condition')
