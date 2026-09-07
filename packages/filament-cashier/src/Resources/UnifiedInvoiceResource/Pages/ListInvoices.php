@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages;
 
-use AIArmada\Cashier\Models\UnifiedInvoiceRecord;
+use AIArmada\Cashier\Contracts\BillableContract;
+use AIArmada\Cashier\Contracts\InvoiceContract;
+use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\Cashier\Support\GatewayDetector;
-use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\UnifiedInvoice;
-use AIArmada\Chip\Models\Purchase;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -24,7 +24,7 @@ final class ListInvoices extends ListRecords
     protected static string $resource = UnifiedInvoiceResource::class;
 
     /**
-     * @var Collection<int, UnifiedInvoiceRecord>|null
+     * @var Collection<int, UnifiedInvoice>|null
      */
     protected ?Collection $allInvoices = null;
 
@@ -70,7 +70,7 @@ final class ListInvoices extends ListRecords
 
         foreach ($gateways as $gateway) {
             $tabs[$gateway] = Tab::make($detector->getLabel($gateway))
-                ->badge(fn () => $this->getAllInvoices()->where('gateway', $gateway)->count())
+                ->badge(fn () => $this->getAllInvoices()->filter(fn (UnifiedInvoice $invoice): bool => $invoice->gateway === $gateway)->count())
                 ->badgeColor($detector->getColor($gateway))
                 ->icon($detector->getIcon($gateway));
         }
@@ -103,9 +103,9 @@ final class ListInvoices extends ListRecords
     }
 
     /**
-     * Get all invoices across all gateways.
+     * Get all invoices across all gateways through their gateway clients.
      *
-     * @return Collection<int, UnifiedInvoiceRecord>
+     * @return Collection<int, UnifiedInvoice>
      */
     protected function getAllInvoices(): Collection
     {
@@ -115,15 +115,7 @@ final class ListInvoices extends ListRecords
 
         $user = auth()->user();
 
-        if ($user === null) {
-            $this->allInvoices = collect();
-
-            return $this->allInvoices;
-        }
-
-        $userId = $this->resolveAuthIdentifier($user);
-
-        if ($userId === null) {
+        if (! $user instanceof BillableContract || ! $user instanceof Model) {
             $this->allInvoices = collect();
 
             return $this->allInvoices;
@@ -131,46 +123,18 @@ final class ListInvoices extends ListRecords
 
         $invoices = collect();
         $detector = app(GatewayDetector::class);
-        $billableModel = config('cashier.models.billable', 'App\\Models\\User');
 
-        if (! class_exists($billableModel)) {
-            $this->allInvoices = $invoices;
-
-            return $invoices;
-        }
-
-        $users = OwnerScopedQuery::apply($billableModel::query())
-            ->whereKey($userId)
-            ->limit(1)
-            ->get();
-
-        // Collect Stripe invoices
-        if ($detector->isAvailable('stripe')) {
-            foreach ($users as $user) {
-                if (method_exists($user, 'invoices')) {
-                    try {
-                        $stripeInvoices = $user->invoices(['limit' => 50]);
-                        foreach ($stripeInvoices as $invoice) {
-                            $invoices->push($this->mapUnifiedInvoice(UnifiedInvoice::fromStripe($invoice, (string) $user->getKey())));
-                        }
-                    } catch (Throwable) {
-                        // Silently fail if API is not configured
-                    }
-                }
+        foreach ($detector->availableGateways() as $gateway) {
+            try {
+                $gatewayInvoices = Cashier::gateway($gateway)->invoices($user, ['limit' => 100]);
+            } catch (Throwable) {
+                continue;
             }
-        }
 
-        // Collect CHIP invoices/purchases
-        if ($detector->isAvailable('chip') && class_exists(Purchase::class)) {
-            $chipPurchases = OwnerScopedQuery::apply(Purchase::query())
-                ->where('metadata->billable_type', $user->getMorphClass())
-                ->where('metadata->billable_id', (string) $user->getKey())
-                ->orderByDesc('created_at')
-                ->limit(100)
-                ->get();
-
-            foreach ($chipPurchases as $purchase) {
-                $invoices->push($this->mapUnifiedInvoice(UnifiedInvoice::fromChip($purchase, (string) $user->getKey())));
+            foreach ($gatewayInvoices->take(100) as $invoice) {
+                if ($invoice instanceof InvoiceContract) {
+                    $invoices->push(UnifiedInvoice::fromGateway($invoice, (string) $user->getKey()));
+                }
             }
         }
 
@@ -182,7 +146,7 @@ final class ListInvoices extends ListRecords
     /**
      * Filter invoices based on active tab.
      *
-     * @return Collection<int, UnifiedInvoiceRecord>
+     * @return Collection<int, UnifiedInvoice>
      */
     protected function getFilteredInvoices(): Collection
     {
@@ -190,78 +154,23 @@ final class ListInvoices extends ListRecords
         $activeTab = $this->activeTab;
 
         if ($activeTab && $activeTab !== 'all') {
-            $invoices = $invoices->where('gateway', $activeTab);
+            $invoices = $invoices->filter(fn (UnifiedInvoice $invoice): bool => $invoice->gateway === $activeTab);
         }
 
         // Apply filters from filter form
         $filterData = $this->tableFilters ?? [];
 
         if (isset($filterData['gateway']['value']) && $filterData['gateway']['value']) {
-            $invoices = $invoices->where('gateway', $filterData['gateway']['value']);
+            $gateway = $filterData['gateway']['value'];
+            $invoices = $invoices->filter(fn (UnifiedInvoice $invoice): bool => $invoice->gateway === $gateway);
         }
 
         if (isset($filterData['status']['value']) && $filterData['status']['value']) {
             $invoices = $invoices->filter(
-                fn (UnifiedInvoiceRecord $inv) => $inv->getAttribute('status')->value === $filterData['status']['value']
+                fn (UnifiedInvoice $inv) => $inv->status->value === $filterData['status']['value']
             );
         }
 
         return $invoices->values();
-    }
-
-    protected function mapUnifiedInvoice(UnifiedInvoice $invoice): UnifiedInvoiceRecord
-    {
-        $record = new UnifiedInvoiceRecord;
-        $record->forceFill([
-            'id' => $invoice->gateway . '-' . $invoice->id,
-            'source_id' => $invoice->id,
-            'gateway' => $invoice->gateway,
-            'userId' => $invoice->userId,
-            'number' => $invoice->number,
-            'amount' => $invoice->amount,
-            'formatted_amount' => $invoice->formattedAmount(),
-            'currency' => $invoice->currency,
-            'status' => $invoice->status,
-            'date' => $invoice->date,
-            'dueDate' => $invoice->dueDate,
-            'paidAt' => $invoice->paidAt,
-            'pdf_url' => $invoice->pdfUrl,
-            'gateway_config' => $invoice->gatewayConfig(),
-            'external_dashboard_url' => $invoice->externalDashboardUrl(),
-            'original' => $invoice->original,
-        ]);
-
-        return $record;
-    }
-
-    private function resolveAuthIdentifier(mixed $user): int | string | null
-    {
-        if ($user instanceof Model) {
-            $identifierName = $user->getKeyName();
-            $attributes = $user->getAttributes();
-            $attributeIdentifier = $attributes[$identifierName] ?? null;
-
-            if (is_int($attributeIdentifier) || is_string($attributeIdentifier)) {
-                return $attributeIdentifier;
-            }
-
-            $rawIdentifier = $user->getRawOriginal($identifierName);
-
-            if (is_int($rawIdentifier) || is_string($rawIdentifier)) {
-                return $rawIdentifier;
-            }
-
-            return null;
-        }
-
-        if (is_object($user) && method_exists($user, 'getAuthIdentifier')) {
-            $identifier = $user->getAuthIdentifier();
-
-            if (is_int($identifier) || is_string($identifier)) {
-                return $identifier;
-            }
-        }
-
-        return null;
     }
 }

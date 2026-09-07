@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Tables;
 
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\SubscriptionStatus;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -15,7 +16,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 class SubscriptionsTable
@@ -56,7 +56,7 @@ class SubscriptionsTable
 
                 Tables\Columns\TextColumn::make('formattedAmount')
                     ->label(__('filament-cashier::subscriptions.table.amount'))
-                    ->getStateUsing(fn (Model $record): string => (string) $record->getAttribute('formatted_amount')),
+                    ->getStateUsing(fn (UnifiedSubscription $record): string => $record->formattedAmount()),
 
                 Tables\Columns\TextColumn::make('quantity')
                     ->label(__('filament-cashier::subscriptions.table.quantity'))
@@ -101,20 +101,20 @@ class SubscriptionsTable
                     ->label(__('filament-cashier::subscriptions.actions.cancel'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn (Model $record): bool => $record->getAttribute('status')->isCancelable())
+                    ->visible(fn (UnifiedSubscription $record): bool => $record->status->isCancelable())
                     ->requiresConfirmation()
-                    ->modalHeading(fn (Model $record): string => __('filament-cashier::subscriptions.actions.cancel_heading', [
-                        'gateway' => $record->getAttribute('gateway_config')['label'],
+                    ->modalHeading(fn (UnifiedSubscription $record): string => __('filament-cashier::subscriptions.actions.cancel_heading', [
+                        'gateway' => $record->gatewayConfig()['label'],
                     ]))
                     ->modalDescription(__('filament-cashier::subscriptions.actions.cancel_description'))
-                    ->action(function (Model $record): void {
+                    ->action(function (UnifiedSubscription $record): void {
                         $user = auth()->user();
 
-                        if ($user === null || ! app(SubscriptionPolicy::class)->cancel($user, $record->getAttribute('original'))) {
+                        if ($user === null || ! app(SubscriptionPolicy::class)->cancel($user, $record->original)) {
                             throw new AuthorizationException('Not authorized to cancel this subscription.');
                         }
 
-                        $original = $record->getAttribute('original');
+                        $original = $record->original;
 
                         if (method_exists($original, 'cancel')) {
                             $original->cancel();
@@ -126,16 +126,16 @@ class SubscriptionsTable
                     ->label(__('filament-cashier::subscriptions.actions.resume'))
                     ->icon('heroicon-o-play')
                     ->color('success')
-                    ->visible(fn (Model $record): bool => $record->getAttribute('status')->isResumable())
+                    ->visible(fn (UnifiedSubscription $record): bool => $record->status->isResumable())
                     ->requiresConfirmation()
-                    ->action(function (Model $record): void {
+                    ->action(function (UnifiedSubscription $record): void {
                         $user = auth()->user();
 
-                        if ($user === null || ! app(SubscriptionPolicy::class)->resume($user, $record->getAttribute('original'))) {
+                        if ($user === null || ! app(SubscriptionPolicy::class)->resume($user, $record->original)) {
                             throw new AuthorizationException('Not authorized to resume this subscription.');
                         }
 
-                        $original = $record->getAttribute('original');
+                        $original = $record->original;
 
                         if (method_exists($original, 'resume')) {
                             $original->resume();
@@ -144,11 +144,11 @@ class SubscriptionsTable
                     ->successNotificationTitle(__('filament-cashier::subscriptions.actions.resume_success')),
 
                 Action::make('view_external')
-                    ->label(fn (Model $record): string => __('filament-cashier::subscriptions.actions.view_external', [
-                        'gateway' => $record->getAttribute('gateway_config')['label'],
+                    ->label(fn (UnifiedSubscription $record): string => __('filament-cashier::subscriptions.actions.view_external', [
+                        'gateway' => $record->gatewayConfig()['label'],
                     ]))
                     ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->url(fn (Model $record): string => (string) $record->getAttribute('external_dashboard_url'))
+                    ->url(fn (UnifiedSubscription $record): string => $record->externalDashboardUrl())
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([
@@ -167,8 +167,8 @@ class SubscriptionsTable
 
                             $policy = app(SubscriptionPolicy::class);
 
-                            $records->each(function (Model $record) use ($user, $policy): void {
-                                $original = $record->getAttribute('original');
+                            $records->each(function (UnifiedSubscription $record) use ($user, $policy): void {
+                                $original = $record->original;
 
                                 if (! $policy->cancel($user, $original)) {
                                     throw new AuthorizationException('Not authorized to cancel this subscription.');

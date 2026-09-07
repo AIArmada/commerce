@@ -39,3 +39,8 @@ return [
 ```
 
 The `authz.guards` list is the shared default consumed by core commands and the Filament adapter. Every listed guard must exist in `config/auth.php`.
+
+The `authz.permissions.separator` value must be exactly one non-alphanumeric
+character. The service provider rejects invalid values during application boot.
+When `authz.scopes.enabled` is true, `permission.teams` must also be enabled;
+the provider rejects that incompatible configuration during boot.

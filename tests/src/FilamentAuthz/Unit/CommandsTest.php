@@ -30,6 +30,25 @@ describe('GeneratePoliciesCommand', function (): void {
 
         expect($property->getValue($command))->toContain('authz:policies');
     });
+
+    it('generates owner-aware checks for record policy methods', function (): void {
+        $command = app(GeneratePoliciesCommand::class);
+        $methodsReflection = new ReflectionMethod($command, 'generatePolicyMethods');
+        $stubReflection = new ReflectionMethod($command, 'getPolicyStub');
+
+        $methods = $methodsReflection->invoke($command, 'App\\Models\\Order', [
+            'order.view' => 'View',
+            'order.viewAny' => 'View Any',
+        ]);
+        $stub = $stubReflection->invoke($command);
+
+        expect($methods)
+            ->toContain('isRecordInCurrentOwnerScope($order)')
+            ->toContain("return \$user->can('order.view');")
+            ->and($stub)
+            ->toContain('OwnerWriteGuard::findOrFailForOwner')
+            ->toContain('NoCurrentOwnerException');
+    });
 });
 
 describe('SeederCommand', function (): void {

@@ -87,6 +87,32 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
 - Model hooks and resolver normalization aligned to the same `LOWER(TRIM)` semantics (code record). App-level race closed by the constraint; implementer-reported suites taken on trust.
 - Reviewed in source: index definitions, preflight queries, and driver branches verified.
 
+## Post-track: customers person_id — implemented
+
+- **Migration** `2026_09_08_000001_add_person_id_to_customers_table.php`:
+  nullable uuid `person_id` + index, both guarded, no FK, no backfill, no
+  `down()`. Carries the `Person`↔`Customer` topology link (nullable =
+  unlinked; no auto-merge). The single pre-declared migration exception
+  for the identity track; physical persons/org index work stays deferred
+  under the same rule.
+
+## Post-track: addressing table-name resolver — implemented
+
+- **Shipped-migration deviation (explicitly authorized):** all 17 shipped
+  addressing migrations (`2001_01_01_000001`–`000017`) edited to resolve
+  table names through `AddressingTableResolver::resolve()` instead of the
+  legacy flat `addressing.tables.*` key, plus the 2 track migrations
+  (`2026_09_07_090000`, `2026_09_07_100000`). Mechanical swap only —
+  resolver defaults are byte-identical to the old inline names, guarded
+  helpers (`commerce_schema_create_if_missing`, `hasTable`/`hasColumn`
+  preflights) untouched, no constraints/cascades added. Closed the
+  runtime-vs-migrations split-brain logged as High in `addressing.md`.
+- Verified in source: zero `config('addressing.tables.*')` reads
+  repo-wide; every migration file references the resolver; `config/
+  addressing.php` builds `database.tables` from `AddressingTableResolver::
+  defaults()`. Suites: resolver regression 3 passed,
+  OwnerColumns migration 3 passed, architecture guard 4 passed.
+
 ## Deployment gates
 
 1. **Addressing cutover** — the migration fails closed on ownerless rows by design; on a fresh/dev DB just remove the rows and rerun. Never backfill.

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
@@ -11,6 +12,19 @@ use AIArmada\FilamentCashier\CustomerPortal\Widgets\PaymentMethodsPreviewWidget;
 use AIArmada\FilamentCashier\CustomerPortal\Widgets\RecentInvoicesWidget;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+
+beforeEach(function (): void {
+    app()->register(CashierServiceProvider::class);
+    config()->set('cashier.gateways', [
+        'chip' => [
+            'driver' => 'chip',
+            'label' => 'CHIP',
+            'icon' => 'heroicon-o-cube',
+            'color' => 'emerald',
+            'dashboard_url' => 'https://gate.chip-in.asia',
+        ],
+    ]);
+});
 
 it('formats and returns customer portal invoices and payment methods when CHIP is available', function (): void {
     CashierChip::useSubscriptionModel(ChipSubscription::class);

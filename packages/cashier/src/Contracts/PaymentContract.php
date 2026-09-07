@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Contracts;
 
-use AIArmada\Cashier\Exceptions\IncompletePayment;
+use AIArmada\Cashier\Exceptions\Payment\IncompletePayment;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 

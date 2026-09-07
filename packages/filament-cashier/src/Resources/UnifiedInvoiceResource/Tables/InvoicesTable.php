@@ -6,13 +6,13 @@ namespace AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Tables;
 
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\InvoiceStatus;
+use AIArmada\Cashier\Support\UnifiedInvoice;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -49,7 +49,7 @@ class InvoicesTable
 
                 Tables\Columns\TextColumn::make('formattedAmount')
                     ->label(__('filament-cashier::invoices.table.amount'))
-                    ->getStateUsing(fn (Model $record): string => (string) $record->getAttribute('formatted_amount')),
+                    ->getStateUsing(fn (UnifiedInvoice $record): string => $record->formattedAmount()),
 
                 Tables\Columns\TextColumn::make('date')
                     ->label(__('filament-cashier::invoices.table.date'))
@@ -79,16 +79,16 @@ class InvoicesTable
                 Action::make('download')
                     ->label(__('filament-cashier::invoices.actions.download'))
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn (Model $record): ?string => $record->getAttribute('pdf_url'))
+                    ->url(fn (UnifiedInvoice $record): ?string => $record->pdfUrl)
                     ->openUrlInNewTab()
-                    ->visible(fn (Model $record): bool => $record->getAttribute('pdf_url') !== null),
+                    ->visible(fn (UnifiedInvoice $record): bool => $record->pdfUrl !== null),
 
                 Action::make('view_external')
-                    ->label(fn (Model $record): string => __('filament-cashier::invoices.actions.view_external', [
-                        'gateway' => $record->getAttribute('gateway_config')['label'],
+                    ->label(fn (UnifiedInvoice $record): string => __('filament-cashier::invoices.actions.view_external', [
+                        'gateway' => $record->gatewayConfig()['label'],
                     ]))
                     ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->url(fn (Model $record): string => (string) $record->getAttribute('external_dashboard_url'))
+                    ->url(fn (UnifiedInvoice $record): string => $record->externalDashboardUrl())
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([
@@ -103,12 +103,12 @@ class InvoicesTable
 
                                 foreach ($records as $invoice) {
                                     fputcsv($output, [
-                                        $invoice->getAttribute('number'),
-                                        $invoice->getAttribute('gateway'),
-                                        $invoice->getAttribute('formatted_amount'),
-                                        $invoice->getAttribute('status')->value,
-                                        $invoice->getAttribute('date')->format('Y-m-d'),
-                                        $invoice->getAttribute('paidAt')?->format('Y-m-d') ?? '',
+                                        $invoice->number,
+                                        $invoice->gateway,
+                                        $invoice->formattedAmount(),
+                                        $invoice->status->value,
+                                        $invoice->date->format('Y-m-d'),
+                                        $invoice->paidAt?->format('Y-m-d') ?? '',
                                     ]);
                                 }
 

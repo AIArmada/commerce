@@ -73,16 +73,6 @@ describe('Cashier Static Methods Full Coverage', function (): void {
         });
     });
 
-    describe('ignoreRoutes', function (): void {
-        it('sets registersRoutes to false', function (): void {
-            expect(Cashier::$registersRoutes)->toBeTrue();
-
-            Cashier::ignoreRoutes();
-
-            expect(Cashier::$registersRoutes)->toBeFalse();
-        });
-    });
-
     describe('defaultCurrency', function (): void {
         it('returns configured default currency', function (): void {
             config(['cashier.currency' => 'EUR']);
@@ -249,7 +239,6 @@ describe('Cashier Static Methods Full Coverage', function (): void {
             Cashier::useCustomerModel('App\\Models\\Customer');
             Cashier::deactivatePastDue(false);
             Cashier::deactivateIncomplete(false);
-            Cashier::ignoreRoutes();
             Cashier::formatCurrencyUsing(fn ($amount, $currency, $locale) => 'mutated');
 
             Cashier::restoreOctaneDefaults();
@@ -257,7 +246,6 @@ describe('Cashier Static Methods Full Coverage', function (): void {
             expect(Cashier::$customerModel)->toBe(User::class)
                 ->and(Cashier::$deactivatePastDue)->toBeTrue()
                 ->and(Cashier::$deactivateIncomplete)->toBeTrue()
-                ->and(Cashier::$registersRoutes)->toBeTrue()
                 ->and(Cashier::formatAmount(1000, 'USD', 'en_US'))->not->toBe('mutated');
         });
     });

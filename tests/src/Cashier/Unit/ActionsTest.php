@@ -19,8 +19,9 @@ use AIArmada\Cashier\Events\SubscriptionCanceled;
 use AIArmada\Cashier\Events\SubscriptionCreated;
 use AIArmada\Cashier\Events\WebhookHandled;
 use AIArmada\Cashier\Events\WebhookReceived;
-use AIArmada\Cashier\Exceptions\PaymentFailedException;
+use AIArmada\Cashier\Exceptions\Payment\PaymentFailedException;
 use AIArmada\Cashier\Facades\Cashier;
+use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use Illuminate\Support\Facades\Event;
 
@@ -199,7 +200,7 @@ describe('Actions', function (): void {
     });
 
     describe('SyncWebhook', function (): void {
-        it('dispatches WebhookReceived and WebhookHandled', function (): void {
+        it('dispatches WebhookReceived without WebhookHandled when the gateway does not handle the payload', function (): void {
             $payload = ['type' => 'payment_intent.succeeded', 'data' => []];
             $headers = ['Stripe-Signature' => 'test_sig'];
 
@@ -218,7 +219,28 @@ describe('Actions', function (): void {
             SyncWebhook::run('stripe', $payload, $headers);
 
             Event::assertDispatched(WebhookReceived::class, fn (WebhookReceived $event) => $event->gateway === 'stripe' && $event->payload === $payload);
-            Event::assertDispatched(WebhookHandled::class, fn (WebhookHandled $event) => $event->gateway === 'stripe' && $event->payload === $payload);
+            Event::assertNotDispatched(WebhookHandled::class);
+        });
+
+        it('does not dispatch WebhookHandled for a skipped gateway webhook', function (): void {
+            $payload = ['event_type' => 'unknown.event', 'data' => []];
+
+            $this->gatewayMock->shouldReceive('handleWebhook')
+                ->once()
+                ->with($payload, [])
+                ->andReturn(WebhookResult::skipped('No handler registered.'));
+
+            Cashier::shouldReceive('gateway')
+                ->once()
+                ->with('chip')
+                ->andReturn($this->gatewayMock);
+
+            Event::fake();
+
+            expect(SyncWebhook::run('chip', $payload))->toBeInstanceOf(WebhookResult::class);
+
+            Event::assertDispatched(WebhookReceived::class);
+            Event::assertNotDispatched(WebhookHandled::class);
         });
     });
 });

@@ -23,4 +23,14 @@ describe('FilamentAuthzPlugin', function (): void {
 
         expect($plugin)->toBeInstanceOf(Plugin::class);
     });
+
+    it('scopes plugin state to one container lifecycle', function (): void {
+        $first = app(FilamentAuthzPlugin::class);
+
+        expect(app(FilamentAuthzPlugin::class))->toBe($first);
+
+        app()->forgetScopedInstances();
+
+        expect(app(FilamentAuthzPlugin::class))->not->toBe($first);
+    });
 });

@@ -18,6 +18,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -210,7 +211,7 @@ abstract class AbstractGateway implements GatewayContract
     {
         $currency = $currency ?? $this->currency();
 
-        return Money::$currency($amount, true)->format($this->getLocale());
+        return (new Money($amount, new Currency($currency), false))->format();
     }
 
     /**

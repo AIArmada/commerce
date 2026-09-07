@@ -2,52 +2,53 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Models\UnifiedInvoiceRecord;
-use AIArmada\Cashier\Models\UnifiedSubscriptionRecord;
+use AIArmada\Cashier\Support\InvoiceStatus;
+use AIArmada\Cashier\Support\SubscriptionStatus;
+use AIArmada\Cashier\Support\UnifiedInvoice;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 
 uses(CashierTestCase::class);
 
-describe('MassAssignment', function (): void {
-    it('unified subscription record protects status amount and gateway ids', function (): void {
-        $subscription = new UnifiedSubscriptionRecord([
-            'user_id' => 'user-123',
-            'type' => 'default',
-            'plan_id' => 'basic',
-            'quantity' => 1,
-            'stripe_id' => 'sub_stripe',
-            'chip_id' => 'sub_chip',
-            'status' => 'active',
-            'amount' => 1000,
-        ]);
+describe('Unified records', function (): void {
+    it('uses immutable DTOs instead of table-backed records', function (): void {
+        $subscription = new UnifiedSubscription(
+            id: 'sub_1',
+            gateway: 'chip',
+            userId: 'user-123',
+            type: 'default',
+            planId: 'basic',
+            amount: 1000,
+            currency: 'MYR',
+            quantity: 1,
+            status: SubscriptionStatus::Active,
+            trialEndsAt: null,
+            endsAt: null,
+            nextBillingDate: null,
+            createdAt: CarbonImmutable::now(),
+            original: new class extends Model {},
+        );
 
-        $this->assertSame('user-123', $subscription->user_id);
-        $this->assertSame('default', $subscription->type);
-        $this->assertSame('basic', $subscription->plan_id);
-        $this->assertSame(1, $subscription->quantity);
-        $this->assertNull($subscription->stripe_id);
-        $this->assertNull($subscription->chip_id);
-        $this->assertNull($subscription->status);
-        $this->assertNull($subscription->amount);
-    });
+        $invoice = new UnifiedInvoice(
+            id: 'in_1',
+            gateway: 'chip',
+            userId: 'user-123',
+            number: 'INV-1',
+            amount: 1000,
+            currency: 'MYR',
+            status: InvoiceStatus::Paid,
+            date: CarbonImmutable::now(),
+            dueDate: null,
+            paidAt: null,
+            pdfUrl: null,
+            original: new stdClass,
+        );
 
-    it('unified invoice record protects status amount and gateway ids', function (): void {
-        $invoice = new UnifiedInvoiceRecord([
-            'user_id' => 'user-123',
-            'number' => 'INV-1',
-            'currency' => 'MYR',
-            'stripe_id' => 'in_stripe',
-            'chip_id' => 'purchase_chip',
-            'status' => 'paid',
-            'amount' => 1000,
-        ]);
-
-        $this->assertSame('user-123', $invoice->user_id);
-        $this->assertSame('INV-1', $invoice->number);
-        $this->assertSame('MYR', $invoice->currency);
-        $this->assertNull($invoice->stripe_id);
-        $this->assertNull($invoice->chip_id);
-        $this->assertNull($invoice->status);
-        $this->assertNull($invoice->amount);
+        expect((new ReflectionClass($subscription))->isReadOnly())->toBeTrue()
+            ->and((new ReflectionClass($invoice))->isReadOnly())->toBeTrue()
+            ->and($subscription->id)->toBe('sub_1')
+            ->and($invoice->number)->toBe('INV-1');
     });
 });

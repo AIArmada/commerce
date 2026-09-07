@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier;
 
 use AIArmada\Cashier\Contracts\GatewayContract;
+use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Closure;
 
@@ -33,11 +34,6 @@ class Cashier
     public static bool $deactivateIncomplete = true;
 
     /**
-     * Indicates if Cashier routes will be registered.
-     */
-    public static bool $registersRoutes = true;
-
-    /**
      * The custom currency formatter.
      */
     protected static ?Closure $formatCurrencyUsing = null;
@@ -50,7 +46,6 @@ class Cashier
      *   customerModel: string,
      *   deactivatePastDue: bool,
      *   deactivateIncomplete: bool,
-     *   registersRoutes: bool,
      *   formatCurrencyUsing: Closure|null
      * }
      */
@@ -59,7 +54,6 @@ class Cashier
         'customerModel' => 'App\\Models\\User',
         'deactivatePastDue' => true,
         'deactivateIncomplete' => true,
-        'registersRoutes' => true,
         'formatCurrencyUsing' => null,
     ];
 
@@ -141,7 +135,6 @@ class Cashier
             'customerModel' => static::$customerModel,
             'deactivatePastDue' => static::$deactivatePastDue,
             'deactivateIncomplete' => static::$deactivateIncomplete,
-            'registersRoutes' => static::$registersRoutes,
             'formatCurrencyUsing' => static::$formatCurrencyUsing,
         ];
     }
@@ -156,7 +149,6 @@ class Cashier
         }
 
         static::useCustomerModel(self::$octaneDefaults['customerModel']);
-        static::$registersRoutes = self::$octaneDefaults['registersRoutes'];
         static::deactivatePastDue(self::$octaneDefaults['deactivatePastDue']);
         static::deactivateIncomplete(self::$octaneDefaults['deactivateIncomplete']);
         static::formatCurrencyUsing(self::$octaneDefaults['formatCurrencyUsing']);
@@ -174,15 +166,7 @@ class Cashier
         $currency = mb_strtoupper($currency ?? config('cashier.currency', 'USD'));
         $locale = $locale ?? config('cashier.locale', config('app.locale', 'en'));
 
-        return Money::$currency($amount, true)->format($locale);
-    }
-
-    /**
-     * Configure Cashier to not register its routes.
-     */
-    public static function ignoreRoutes(): void
-    {
-        static::$registersRoutes = false;
+        return (new Money($amount, new Currency($currency), false))->format();
     }
 
     /**
@@ -208,7 +192,7 @@ class Cashier
      */
     public static function availableGateways(): array
     {
-        return array_keys(config('cashier.gateways', []));
+        return app(GatewayManager::class)->supportedGateways();
     }
 
     /**

@@ -4,21 +4,24 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Support;
 
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\Cashier\GatewayManager;
 use Illuminate\Support\Collection;
-use Laravel\Cashier\Cashier;
 
 final class GatewayDetector
 {
+    public function __construct(?GatewayManager $gatewayManager = null)
+    {
+        $this->gatewayManager = $gatewayManager ?? app(GatewayManager::class);
+    }
+
+    private readonly GatewayManager $gatewayManager;
+
     /**
      * @return Collection<int, string>
      */
     public function availableGateways(): Collection
     {
-        return collect([
-            'stripe' => class_exists(Cashier::class),
-            'chip' => $this->isChipAvailable(),
-        ])->filter()->keys();
+        return collect($this->gatewayManager->supportedGateways());
     }
 
     public function isAvailable(string $gateway): bool
@@ -79,17 +82,5 @@ final class GatewayDetector
                 $gateway => $this->getLabel($gateway),
             ])
             ->toArray();
-    }
-
-    private function isChipAvailable(): bool
-    {
-        if (! class_exists(\AIArmada\CashierChip\Billing\Cashier::class)) {
-            return false;
-        }
-
-        $subscriptionModel = \AIArmada\CashierChip\Billing\Cashier::$subscriptionModel;
-
-        return class_exists($subscriptionModel)
-            && is_a($subscriptionModel, Model::class, true);
     }
 }

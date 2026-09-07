@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
-use AIArmada\Cashier\Models\UnifiedSubscriptionRecord;
+use AIArmada\Cashier\Contracts\BillableContract;
+use AIArmada\Cashier\Contracts\SubscriptionContract;
+use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\Cashier\Support\GatewayDetector;
-use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\SubscriptionStatus;
 use AIArmada\Cashier\Support\UnifiedSubscription;
-use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
@@ -19,8 +19,7 @@ use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
-use Laravel\Cashier\Subscription;
+use Throwable;
 
 final class ListSubscriptions extends ListRecords
 {
@@ -31,7 +30,7 @@ final class ListSubscriptions extends ListRecords
     protected ?SubscriptionStatus $activeStatusFilter = null;
 
     /**
-     * @var Collection<int, UnifiedSubscriptionRecord>|null
+     * @var Collection<int, UnifiedSubscription>|null
      */
     protected ?Collection $allSubscriptions = null;
 
@@ -77,17 +76,17 @@ final class ListSubscriptions extends ListRecords
 
         foreach ($gateways as $gateway) {
             $tabs[$gateway] = Tab::make($detector->getLabel($gateway))
-                ->badge(fn () => $this->getAllSubscriptions()->where('gateway', $gateway)->count())
+                ->badge(fn () => $this->getAllSubscriptions()->filter(fn (UnifiedSubscription $subscription): bool => $subscription->gateway === $gateway)->count())
                 ->badgeColor($detector->getColor($gateway))
                 ->icon($detector->getIcon($gateway));
         }
 
         $tabs['active'] = Tab::make(__('filament-cashier::subscriptions.tabs.active'))
-            ->badge(fn () => $this->getAllSubscriptions()->filter(fn (UnifiedSubscriptionRecord $sub) => $this->isActive($sub))->count())
+            ->badge(fn () => $this->getAllSubscriptions()->filter(fn (UnifiedSubscription $sub) => $this->isActive($sub))->count())
             ->badgeColor('success');
 
         $tabs['issues'] = Tab::make(__('filament-cashier::subscriptions.tabs.issues'))
-            ->badge(fn () => $this->getAllSubscriptions()->filter(fn (UnifiedSubscriptionRecord $sub) => $this->isAttentionRequired($this->getStatus($sub)))->count())
+            ->badge(fn () => $this->getAllSubscriptions()->filter(fn (UnifiedSubscription $sub) => $this->isAttentionRequired($this->getStatus($sub)))->count())
             ->badgeColor('danger')
             ->icon('heroicon-o-exclamation-triangle');
 
@@ -95,9 +94,9 @@ final class ListSubscriptions extends ListRecords
     }
 
     /**
-     * Override to use collection-based records instead of Eloquent.
+     * Override to use gateway-backed collection records instead of Eloquent.
      *
-     * @return Collection<int, UnifiedSubscriptionRecord>|Paginator|CursorPaginator
+     * @return Collection<int, UnifiedSubscription>|Paginator|CursorPaginator
      */
     public function getTableRecords(): Collection | Paginator | CursorPaginator
     {
@@ -113,6 +112,10 @@ final class ListSubscriptions extends ListRecords
             return ($record['gateway'] ?? 'unknown') . '-' . ($record['id'] ?? 'unknown');
         }
 
+        if ($record instanceof UnifiedSubscription) {
+            return $record->gateway . '-' . $record->id;
+        }
+
         return (string) $record->getKey();
     }
 
@@ -124,9 +127,9 @@ final class ListSubscriptions extends ListRecords
     }
 
     /**
-     * Get all subscriptions across all gateways.
+     * Get all subscriptions across all gateways through their gateway clients.
      *
-     * @return Collection<int, UnifiedSubscriptionRecord>
+     * @return Collection<int, UnifiedSubscription>
      */
     protected function getAllSubscriptions(): Collection
     {
@@ -136,15 +139,7 @@ final class ListSubscriptions extends ListRecords
 
         $user = auth()->user();
 
-        if ($user === null) {
-            $this->allSubscriptions = collect();
-
-            return $this->allSubscriptions;
-        }
-
-        $userId = $this->resolveAuthIdentifier($user);
-
-        if ($userId === null) {
+        if (! $user instanceof BillableContract || ! $user instanceof Model) {
             $this->allSubscriptions = collect();
 
             return $this->allSubscriptions;
@@ -153,37 +148,21 @@ final class ListSubscriptions extends ListRecords
         $subscriptions = collect();
         $detector = app(GatewayDetector::class);
 
-        // Collect from Stripe if available
-        if (
-            $detector->isAvailable('stripe')
-            && class_exists(Subscription::class)
-            && Schema::hasTable((new Subscription)->getTable())
-        ) {
-            $stripeSubscriptions = OwnerScopedQuery::apply(Subscription::query())
-                ->with(['user', 'items'])
-                ->where('user_id', $userId)
-                ->orderByDesc('created_at')
-                ->get()
-                ->map(fn ($sub) => $this->mapUnifiedSubscription(UnifiedSubscription::fromStripe($sub)));
+        foreach ($detector->availableGateways() as $gateway) {
+            try {
+                $gatewaySubscriptions = Cashier::gateway($gateway)->subscriptions($user);
+            } catch (Throwable) {
+                continue;
+            }
 
-            $subscriptions = $subscriptions->merge($stripeSubscriptions);
+            foreach ($gatewaySubscriptions->take(100) as $subscription) {
+                if ($subscription instanceof SubscriptionContract) {
+                    $subscriptions->push(UnifiedSubscription::fromGateway($subscription));
+                }
+            }
         }
 
-        // Collect from CHIP if available
-        if ($detector->isAvailable('chip')) {
-            $subscriptionModel = CashierChip::$subscriptionModel;
-            $chipSubscriptions = OwnerScopedQuery::apply($subscriptionModel::query())
-                ->with(['billable', 'items'])
-                ->where('billable_type', $user->getMorphClass())
-                ->where('billable_id', (string) $user->getKey())
-                ->orderByDesc('created_at')
-                ->get()
-                ->map(fn ($sub) => $this->mapUnifiedSubscription(UnifiedSubscription::fromChip($sub)));
-
-            $subscriptions = $subscriptions->merge($chipSubscriptions);
-        }
-
-        $this->allSubscriptions = $subscriptions->sortByDesc('createdAt')->values();
+        $this->allSubscriptions = $subscriptions->sortByDesc(fn (UnifiedSubscription $subscription): int => $subscription->createdAt->getTimestamp())->values();
 
         return $this->allSubscriptions;
     }
@@ -191,7 +170,7 @@ final class ListSubscriptions extends ListRecords
     /**
      * Filter subscriptions based on active tab and filters.
      *
-     * @return Collection<int, UnifiedSubscriptionRecord>
+     * @return Collection<int, UnifiedSubscription>
      */
     protected function getFilteredSubscriptions(): Collection
     {
@@ -200,54 +179,28 @@ final class ListSubscriptions extends ListRecords
 
         // Tab filtering
         if ($activeTab && ! in_array($activeTab, ['all', 'active', 'issues'])) {
-            $subscriptions = $subscriptions->where('gateway', $activeTab);
+            $subscriptions = $subscriptions->filter(fn (UnifiedSubscription $subscription): bool => $subscription->gateway === $activeTab);
         } elseif ($activeTab === 'active') {
-            $subscriptions = $subscriptions->filter(fn (UnifiedSubscriptionRecord $sub) => $this->isActive($sub));
+            $subscriptions = $subscriptions->filter(fn (UnifiedSubscription $sub) => $this->isActive($sub));
         } elseif ($activeTab === 'issues') {
-            $subscriptions = $subscriptions->filter(fn (UnifiedSubscriptionRecord $sub) => $this->isAttentionRequired($this->getStatus($sub)));
+            $subscriptions = $subscriptions->filter(fn (UnifiedSubscription $sub) => $this->isAttentionRequired($this->getStatus($sub)));
         }
 
         // Apply filters from filter form
         $filterData = $this->tableFilters ?? [];
 
         if (isset($filterData['gateway']['value']) && $filterData['gateway']['value']) {
-            $subscriptions = $subscriptions->where('gateway', $filterData['gateway']['value']);
+            $gateway = $filterData['gateway']['value'];
+            $subscriptions = $subscriptions->filter(fn (UnifiedSubscription $subscription): bool => $subscription->gateway === $gateway);
         }
 
         if (isset($filterData['status']['value']) && $filterData['status']['value']) {
             $subscriptions = $subscriptions->filter(
-                fn (UnifiedSubscriptionRecord $sub) => $this->getStatus($sub)->value === $filterData['status']['value']
+                fn (UnifiedSubscription $sub) => $this->getStatus($sub)->value === $filterData['status']['value']
             );
         }
 
         return $subscriptions->values();
-    }
-
-    protected function mapUnifiedSubscription(UnifiedSubscription $subscription): UnifiedSubscriptionRecord
-    {
-        $record = new UnifiedSubscriptionRecord;
-        $record->forceFill([
-            'id' => $subscription->gateway . '-' . $subscription->id,
-            'source_id' => $subscription->id,
-            'gateway' => $subscription->gateway,
-            'userId' => $subscription->userId,
-            'type' => $subscription->type,
-            'planId' => $subscription->planId,
-            'amount' => $subscription->amount,
-            'formatted_amount' => $subscription->formattedAmount(),
-            'currency' => $subscription->currency,
-            'quantity' => $subscription->quantity,
-            'status' => $subscription->status,
-            'trialEndsAt' => $subscription->trialEndsAt,
-            'endsAt' => $subscription->endsAt,
-            'nextBillingDate' => $subscription->nextBillingDate,
-            'createdAt' => $subscription->createdAt,
-            'gateway_config' => $subscription->gatewayConfig(),
-            'external_dashboard_url' => $subscription->externalDashboardUrl(),
-            'original' => $subscription->original,
-        ]);
-
-        return $record;
     }
 
     protected function isAttentionRequired(SubscriptionStatus $status): bool
@@ -255,47 +208,13 @@ final class ListSubscriptions extends ListRecords
         return in_array($status, [SubscriptionStatus::PastDue, SubscriptionStatus::Incomplete], true);
     }
 
-    protected function isActive(UnifiedSubscriptionRecord $record): bool
+    protected function isActive(UnifiedSubscription $record): bool
     {
         return $this->getStatus($record)->isActive();
     }
 
-    protected function getStatus(UnifiedSubscriptionRecord $record): SubscriptionStatus
+    protected function getStatus(UnifiedSubscription $record): SubscriptionStatus
     {
-        /** @var SubscriptionStatus $status */
-        $status = $record->getAttribute('status');
-
-        return $status;
-    }
-
-    private function resolveAuthIdentifier(mixed $user): int | string | null
-    {
-        if ($user instanceof Model) {
-            $identifierName = $user->getKeyName();
-            $attributes = $user->getAttributes();
-            $attributeIdentifier = $attributes[$identifierName] ?? null;
-
-            if (is_int($attributeIdentifier) || is_string($attributeIdentifier)) {
-                return $attributeIdentifier;
-            }
-
-            $rawIdentifier = $user->getRawOriginal($identifierName);
-
-            if (is_int($rawIdentifier) || is_string($rawIdentifier)) {
-                return $rawIdentifier;
-            }
-
-            return null;
-        }
-
-        if (is_object($user) && method_exists($user, 'getAuthIdentifier')) {
-            $identifier = $user->getAuthIdentifier();
-
-            if (is_int($identifier) || is_string($identifier)) {
-                return $identifier;
-            }
-        }
-
-        return null;
+        return $record->status;
     }
 }

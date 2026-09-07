@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Authz\Services\PermissionKeyBuilder;
 use AIArmada\FilamentAuthz\Authz;
+use AIArmada\FilamentAuthz\Facades\FilamentAuthz;
 
 beforeEach(function (): void {
     $this->keyBuilder = new PermissionKeyBuilder;
@@ -11,6 +12,14 @@ beforeEach(function (): void {
 });
 
 describe('Authz Service', function (): void {
+    it('exposes discovery through the named FilamentAuthz facade', function (): void {
+        $reflection = new ReflectionMethod(FilamentAuthz::class, 'getFacadeAccessor');
+
+        expect(class_exists(FilamentAuthz::class))->toBeTrue()
+            ->and(class_exists('AIArmada\\FilamentAuthz\\Facades\\Authz'))->toBeFalse()
+            ->and($reflection->invoke(null))->toBe(Authz::class);
+    });
+
     it('is scoped to one container lifecycle by the Filament adapter', function (): void {
         $first = app(Authz::class);
 

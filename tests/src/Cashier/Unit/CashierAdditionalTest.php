@@ -13,7 +13,6 @@ uses(CashierTestCase::class);
 describe('Cashier Class - Additional Coverage', function (): void {
     beforeEach(function (): void {
         // Reset static properties
-        Cashier::$registersRoutes = true;
     });
 
     describe('gateway', function (): void {
@@ -60,6 +59,12 @@ describe('Cashier Class - Additional Coverage', function (): void {
     });
 
     describe('formatAmount', function (): void {
+        it('formats native minor units without multiplying them again', function (): void {
+            Cashier::formatCurrencyUsing(null);
+
+            expect(Cashier::formatAmount(1000, 'MYR'))->toBe('RM10.00');
+        });
+
         it('formats amount with default currency', function (): void {
             // Use a fresh formatter
             Cashier::formatCurrencyUsing(fn ($a, $c, $l) => '$' . number_format($a / 100, 2));

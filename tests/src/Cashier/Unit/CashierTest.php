@@ -13,7 +13,6 @@ describe('Cashier', function (): void {
     afterEach(function (): void {
         Cashier::$deactivatePastDue = true;
         Cashier::$deactivateIncomplete = true;
-        Cashier::$registersRoutes = true;
     });
 
     it('can get the gateway manager instance', function (): void {
@@ -63,9 +62,4 @@ describe('Cashier', function (): void {
         expect(Cashier::$deactivateIncomplete)->toBeFalse();
     });
 
-    it('can ignore routes', function (): void {
-        Cashier::ignoreRoutes();
-
-        expect(Cashier::$registersRoutes)->toBeFalse();
-    });
 });

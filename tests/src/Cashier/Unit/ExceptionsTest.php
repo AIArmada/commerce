@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\Exceptions\CashierException;
 use AIArmada\Cashier\Exceptions\CustomerNotFoundException;
-use AIArmada\Cashier\Exceptions\GatewayNotFoundException;
-use AIArmada\Cashier\Exceptions\InvalidGatewayException;
-use AIArmada\Cashier\Exceptions\PaymentActionRequired;
-use AIArmada\Cashier\Exceptions\PaymentFailedException;
-use AIArmada\Cashier\Exceptions\SubscriptionNotFoundException;
-use AIArmada\Cashier\Exceptions\SubscriptionUpdateFailure;
-use AIArmada\Cashier\Exceptions\WebhookVerificationException;
+use AIArmada\Cashier\Exceptions\Gateway\GatewayNotFoundException;
+use AIArmada\Cashier\Exceptions\Gateway\InvalidGatewayException;
+use AIArmada\Cashier\Exceptions\Payment\PaymentActionRequired;
+use AIArmada\Cashier\Exceptions\Payment\PaymentFailedException;
+use AIArmada\Cashier\Exceptions\Subscription\SubscriptionNotFoundException;
+use AIArmada\Cashier\Exceptions\Subscription\SubscriptionUpdateFailure;
+use AIArmada\Cashier\Exceptions\Webhook\WebhookVerificationException;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
 uses(CashierTestCase::class);

@@ -163,6 +163,109 @@ reported and taken on trust; code correctness was verified directly.
   them, plus a lean composer require. Keeps the foundation honest going
   forward.
 
+## Identity cluster (implemented, one deferral)
+
+- **Persons:** slug/searchable generation hook on saving, transactional
+  scoped primary-name demotion, Filament search on `searchable_name`,
+  Title fail-fast fallback. Topology decided and documented:
+  `Person` = shared root, `Customer` = owner-scoped + `person_id`,
+  `Organization` = tenant, `EventOrganizer` = event-scoped.
+- **Customers pilot:** `Customer::person()` relation +
+  `LinkCustomerToPerson` action (owner-safe), `HasAddresses` adopted with
+  `legacyAddresses()` retention and legacy bridge. **Dependency decision
+  ratified:** customers hard-requires addressing (unconditional trait use;
+  one-directional, no cycle) — recorded as policy for the orders pilot.
+  Doctrine now mechanical: addressing CONTEXT declares canonical-addressing
+  policy, and the architecture guard test pins addressing `require` +
+  namespace independence.
+- **Organizations/membership:** slug retry/backstop, single members-table
+  source, invitation idempotence, AddMember race handling, middleware
+  fallback reconciliation, Filament auth posture pinned.
+- **Contacting:** `isDirty`-guarded display preservation, scoped locked
+  primary demotion, enum validation, importer owner guards.
+- **Addressing:** nested `database.tables` config rename, lineage
+  normalizer, transactional guarded attach, `SingleAddressAreaSource`
+  moved to core, adoption plan doc, customers pilot done.
+  **Table-name split-brain resolved:** `AddressingTableResolver` is now the
+  sole resolver for runtime readers AND all 19 migration files (17 shipped
+  edited under explicit authorization + 2 track); zero flat-key reads
+  repo-wide. Architecture guard pins addressing `require` (support +
+  package-tools only) + consumer-namespace independence
+  (`CommerceSupportArchitectureTest.php:94-136`, 4 passed). Resolver
+  regression suite `AddressingTableResolverTest.php` green (3 passed).
+- **Deferred (honest):** physical persons/org partial-unique and covering
+  indexes — blocked by the one-migration rule; app-level mitigations in
+  place. Orders/events addressing follow-ups open (events trait keeps
+  hardcoded `addressables.` column prefixes — see `events.md` finding 3
+  re-check).
+
+## Cashier multiplexer collapse (implemented)
+
+- **A-1 fake unified records:** `UnifiedSubscription` is now a `final
+  readonly` DTO (`packages/cashier/src/Support/UnifiedSubscription.php:15`);
+  both fake record models (`UnifiedInvoiceRecord`,
+  `UnifiedSubscriptionRecord`) deleted with the 8 flat exception files;
+  Filament lists read through gateway clients
+  (`ListSubscriptions.php:129`, `ListInvoices.php:106`). No tables were
+  necessary or created — the package still ships no `database/` dir.
+  Held migration proposal: none.
+- **A-2 gateway truth:** `GatewayManager::supportedGateways()`
+  (`GatewayManager.php:56`) is the single capability source with
+  per-driver `class_exists` guards; Cashier and the detector delegate.
+- **A-3 CHIP collapse:** `ChipGateway::client()` returns
+  `CashierChip::chip()` (`ChipGateway.php:58`); billables/subscriptions
+  resolve via `CashierChip::findBillable` / `::$subscriptionModel`;
+  404s detected through typed CHIP exceptions. Thin local adapters
+  remain only because the read-only `chip`/`cashier-chip` contracts do
+  not implement cashier's unified contracts — every behavior path
+  delegates (see deviations).
+- **A-4 webhook:** real verify+handle on both gateways (CHIP
+  `X-Signature` at `ChipGateway.php:391`, Stripe signature at
+  `StripeGateway.php:394`); `SyncWebhook.php:29` dispatches
+  `WebhookHandled` only when the result is handled; the empty
+  `routes/web.php` endpoint is deleted.
+- **A-5 unscoped read:** subscription lookup scoped through
+  `OwnerScopedQuery` (`ChipGateway.php:189`) with cross-tenant
+  regression coverage (`ChipGatewayOwnerScopeTest.php`).
+- **A-6 Octane:** fresh gateway clients plus driver/facade flushing on
+  `RequestReceived` (`CashierServiceProvider.php:121`).
+- **C-1 100x bug:** `new Money($amount, new Currency($currency), false)`
+  (`Cashier.php:169`) with golden `1000/MYR -> RM10.00` coverage.
+- **C-2/C-3:** flat exception duplicates removed (canonical namespaced
+  imports, e.g. `PaymentContract.php:7`); cart checkout reads
+  checkout-owned inventory keys (`CartCheckoutBuilder.php:60`,
+  `CartIntegrationRegistrar.php:150`).
+- Suites: Cashier 255 passed (522 assertions), FilamentCashier 133
+  passed (423 assertions); PHPStan level 6 clean on both source
+  packages; `git diff --check` clean. Delegation tests mock the
+  gateway contract and assert the seam, not chip internals.
+
+## Authz hardening (implemented)
+
+- **A2:** blanket `withoutGlobalScopes()` replaced with a documented
+  `parent::getEloquentQuery()` (`PermissionResource.php:40` — Spatie
+  permissions are global records; no scope to opt out of).
+- **A3:** `Authz` discovery binding scoped per request with Octane
+  flushing of `OwnerContext` and the model registries
+  (`FilamentAuthzServiceProvider.php:33`, `:80`); facade accessor
+  unchanged.
+- **A4:** facade renamed `Authz` -> `FilamentAuthz`
+  (`Facades/FilamentAuthz.php:22`); old file deleted; repository search
+  confirms zero old-namespace imports outside audit metadata.
+- **Q1:** generated record policies enforce
+  `isRecordInCurrentOwnerScope()` before `$user->can()`
+  (`GeneratePoliciesCommand.php:197`).
+- **Hardening:** tenant checks use fail-closed `enforce && teams` in
+  both `ScopesAuthzTenancy.php:12` and `ImpersonationScopeGuard.php:74`
+  (deviation from the audit's literal `OR` — avoids team-pivot scoping
+  when Spatie teams are disabled); boot-time separator assertion
+  (exactly one non-alphanumeric char) plus scopes-require-teams guard
+  (`AuthzServiceProvider.php:82`).
+- Core coverage grown from 3 thin files to substantive behavior tests
+  (`AuthorizationBehaviorTest.php:13`). Suites: Authz 13 passed (34
+  assertions), FilamentAuthz 140 passed (251), FilamentAuthzScoped 12
+  passed (32); PHPStan level 6 clean on both source packages.
+
 ## Fairness log
 
 - Orders checkout-context concern: not present, dropped correctly.

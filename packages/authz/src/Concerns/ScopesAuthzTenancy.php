@@ -11,11 +11,8 @@ trait ScopesAuthzTenancy
 {
     protected static function shouldScopeToTenant(): bool
     {
-        if (! config('authz.scopes.enforce', true)) {
-            return false;
-        }
-
-        return (bool) app(PermissionRegistrar::class)->teams;
+        return (bool) config('authz.scopes.enforce', true)
+            && (bool) app(PermissionRegistrar::class)->teams;
     }
 
     protected static function getTeamKey(): ?string

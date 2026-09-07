@@ -34,10 +34,6 @@ final class ImpersonationScopeGuard
 
         $registrar = app(PermissionRegistrar::class);
 
-        if (! $registrar->teams) {
-            return $query;
-        }
-
         $teamsKey = (string) $registrar->teamsKey;
         $teamId = getPermissionsTeamId();
         $modelMorphKey = (string) config('permission.column_names.model_morph_key', 'model_id');
@@ -77,7 +73,8 @@ final class ImpersonationScopeGuard
 
     private static function shouldEnforceTenantScope(): bool
     {
-        return (bool) config('authz.scopes.enforce', true);
+        return (bool) config('authz.scopes.enforce', true)
+            && (bool) app(PermissionRegistrar::class)->teams;
     }
 
     private static function addScopedAssignmentExistsClause(

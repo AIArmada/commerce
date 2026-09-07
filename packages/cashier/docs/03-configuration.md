@@ -70,12 +70,11 @@ The optional `cart` section controls the tight integration with `aiarmada/cart`:
 | `cart.order_id_key` | Metadata key used to persist the order ID |
 | `cart.clear_on_success` | Clear the cart after a successful payment |
 | `cart.handle_failure` | Run failure handling logic on payment failures |
-| `cart.failure_mode` | Failure strategy: `immediate_release`, `retry_window`, or `hybrid` |
-| `cart.retry_window_minutes` | Retry window for `retry_window` and `hybrid` modes |
-| `cart.hard_failure_codes` | Gateway error codes that trigger immediate release |
-| `cart.allocate_inventory` | Allocate inventory before payment begins |
-| `cart.inventory_ttl_minutes` | Reservation TTL for pre-payment allocations |
-| `cart.validate_stock` | Re-check stock before checkout starts |
+
+Inventory reservation behavior is owned by `aiarmada/checkout` and is configured under
+`checkout.integrations.inventory` (`enabled`, `reservation_ttl`, `validate_stock`, and
+`release_on_failure`). Cashier reads those settings when building a cart checkout and when
+releasing allocations after a failed payment.
 
 ## Example environment values
 

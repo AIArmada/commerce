@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\Contracts\GatewayContract;
-use AIArmada\Cashier\Exceptions\GatewayNotFoundException;
+use AIArmada\Cashier\Exceptions\Gateway\GatewayNotFoundException;
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
@@ -102,6 +102,17 @@ describe('GatewayManager - Additional Coverage', function (): void {
             $driver2 = $manager->driver('stripe');
 
             expect($driver1)->toBe($driver2);
+        });
+
+        it('can forget resolved drivers between long-lived requests', function (): void {
+            $manager = app(GatewayManager::class);
+
+            $manager->driver('stripe');
+            expect($manager->getDrivers())->toHaveKey('stripe');
+
+            $manager->forgetDrivers();
+
+            expect($manager->getDrivers())->toBeEmpty();
         });
     });
 

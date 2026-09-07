@@ -545,10 +545,7 @@ it('covers the filament-cashier public surface', function (): void {
     expect($createSubscription->form(Schema::make($schemaLivewire)))->toBeInstanceOf(Schema::class);
 
     $listSubscriptions = app(ListSubscriptions::class);
-    // Map UnifiedSubscription objects to UnifiedSubscriptionRecord for proper type compatibility
-    $chipRecord = filamentCashier_callMethod($listSubscriptions, 'mapUnifiedSubscription', [$unifiedChipSub]);
-    $stripeRecord = filamentCashier_callMethod($listSubscriptions, 'mapUnifiedSubscription', [$unifiedStripeSub]);
-    filamentCashier_setProperty($listSubscriptions, 'allSubscriptions', collect([$chipRecord, $stripeRecord]));
+    filamentCashier_setProperty($listSubscriptions, 'allSubscriptions', collect([$unifiedChipSub, $unifiedStripeSub]));
     filamentCashier_setProperty($listSubscriptions, 'activeTab', 'issues');
     filamentCashier_setProperty($listSubscriptions, 'tableFilters', [
         'gateway' => ['value' => 'chip'],
@@ -559,10 +556,7 @@ it('covers the filament-cashier public surface', function (): void {
     expect($listSubscriptions->getTableRecords())->toBeInstanceOf(Collection::class);
 
     $listInvoices = app(ListInvoices::class);
-    // Map UnifiedInvoice objects to UnifiedInvoiceRecord for proper type compatibility
-    $chipInvoiceRecord = filamentCashier_callMethod($listInvoices, 'mapUnifiedInvoice', [$unifiedChipInvoice]);
-    $stripeInvoiceRecord = filamentCashier_callMethod($listInvoices, 'mapUnifiedInvoice', [$unifiedStripeInvoice]);
-    filamentCashier_setProperty($listInvoices, 'allInvoices', collect([$chipInvoiceRecord, $stripeInvoiceRecord]));
+    filamentCashier_setProperty($listInvoices, 'allInvoices', collect([$unifiedChipInvoice, $unifiedStripeInvoice]));
     filamentCashier_setProperty($listInvoices, 'activeTab', 'chip');
     filamentCashier_setProperty($listInvoices, 'tableFilters', [
         'gateway' => ['value' => 'chip'],

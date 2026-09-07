@@ -9,7 +9,7 @@ use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\Cashier\Events\PaymentFailed;
 use AIArmada\Cashier\Events\PaymentSucceeded;
-use AIArmada\Cashier\Exceptions\PaymentFailedException;
+use AIArmada\Cashier\Exceptions\Payment\PaymentFailedException;
 use AIArmada\Cashier\Facades\Cashier;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;

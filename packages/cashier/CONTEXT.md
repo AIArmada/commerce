@@ -42,9 +42,9 @@ keywords:
 - Owner/security: No HasOwner models; OwnerScopedQuery helper only.
 
 ## Key surfaces
-- Models: `UnifiedInvoiceRecord`, `UnifiedSubscriptionRecord`
+- Support DTOs: `UnifiedInvoice`, `UnifiedSubscription`
 - Actions/Services: `Actions/CancelSubscription`, `Actions/CreatePayment`, `Actions/CreateSubscription`, `Actions/RefundPayment`, `Actions/SyncWebhook`, `Support/CartIntegrationRegistrar`, `Support/CartManagerWithPayment`, `Support/GatewayDetector`
-- Config `cashier.php`: `models`, `billable`, `default`, `currency`, `locale`, `database`, `tables`, `unified_invoices`, `unified_subscriptions`, `gateways`
+- Config `cashier.php`: `models`, `billable`, `default`, `currency`, `locale`, `gateways`, and cart metadata/integration switches
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

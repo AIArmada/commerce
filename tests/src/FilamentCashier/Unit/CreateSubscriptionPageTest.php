@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
@@ -21,6 +22,19 @@ use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Illuminate\Auth\Access\AuthorizationException;
 use Livewire\Component;
+
+beforeEach(function (): void {
+    app()->register(CashierServiceProvider::class);
+    config()->set('cashier.gateways', [
+        'chip' => [
+            'driver' => 'chip',
+            'label' => 'CHIP',
+            'icon' => 'heroicon-o-cube',
+            'color' => 'emerald',
+            'dashboard_url' => 'https://gate.chip-in.asia',
+        ],
+    ]);
+});
 
 afterEach(function (): void {
     Mockery::close();
@@ -107,6 +121,7 @@ it('builds customer options, plans, payment methods, and can create a subscripti
     $builder = Mockery::mock(SubscriptionBuilderContract::class);
     $subscription = Mockery::mock(SubscriptionContract::class);
 
+    Cashier::shouldReceive('supportedGateways')->andReturn(['chip']);
     Cashier::shouldReceive('gateway')->with('chip')->twice()->andReturn($gateway);
 
     $gateway
@@ -169,6 +184,7 @@ it('rejects creating a subscription with an inaccessible payment method id', fun
     $gateway = Mockery::mock(GatewayContract::class);
     $builder = Mockery::mock(SubscriptionBuilderContract::class);
 
+    Cashier::shouldReceive('supportedGateways')->andReturn(['chip']);
     Cashier::shouldReceive('gateway')->with('chip')->once()->andReturn($gateway);
 
     $gateway

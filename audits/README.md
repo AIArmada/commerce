@@ -20,9 +20,9 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | addressing | filament-addressing | Done | Yes | High | `addressing.md` | Open |
 | affiliate-network | filament-affiliate-network | No | Yes | High | `affiliate-network.md` | Open |
 | affiliates | filament-affiliates | No | Yes | High | `affiliates.md` | Open |
-| authz | filament-authz | No | Yes | Medium | `authz.md` | Open |
+| authz | filament-authz | No | Yes | Medium | `authz.md` | Done |
 | cart | filament-cart | No | Yes | High | `cart.md` | Open |
-| cashier | filament-cashier | No | Yes | Critical | `cashier.md` | Open |
+| cashier | filament-cashier | No | Yes | Critical | `cashier.md` | Done |
 | cashier-chip | filament-cashier-chip | No | Yes | High | `cashier-chip.md` | Open |
 | chip | filament-chip | No | Yes | High | `chip.md` | Open |
 | commerce-support | filament-commerce-support | No | No | Low | `commerce-support.md` | Done |
@@ -65,16 +65,16 @@ All 11 migration packages are closed — 7 implemented, 4 dropped/corrected with
 
 ## Highest-Risk Packages (Critical severity, 1)
 
-`cashier` — the last Critical holder: webhook stub returning null whiledispatches fire, unscoped subscription reads, 100× `formatAmount` bug, table-less in-memory records, gateway-capability contradiction. Everything else is High or below.
+`inventory` — the remaining Critical holder (open A1 serial-vocabulary *code* fix, not schema work; see line 62). `cashier` cleared 2026-09-08 and rates Critical only as history.
 
-Dominant remaining risk themes: payments-multiplexer integrity (`cashier`), crash-recovery window on the chip money path (gateway documents no native key; local mechanism only), owner-scoping gaps in `events` models.
+Dominant remaining risk themes: gateway-side payments work (`cashier-chip`/`chip` — `cashier` itself is now a thin multiplexer), crash-recovery window on the chip money path (gateway documents no native key; local mechanism only), owner-scoping gaps in `events` models.
 
 ## Major Cross-Package Architectural Issues (remaining)
 
 1. **Owner-scoping gaps (security).** Remaining: 57/64 `events` models on a bespoke scope framework instead of `HasOwner`. Settled: `addressing`/`persons` owner morphs shipped, `growth`/`signals` parity enforced, `tax` demoted (global scope applies), `orders` intake scoped both paths, `customers` resolver scoped + model-hook uniqueness + owner-aware unique index (see `code-fixes-record.md`). See `events.md`, `tax.md`.
 2. **Identity concept split four ways.** `persons`, `customers`, `organizations`, and `events` each model identity/contact with no `person_id` bridge. Decide one canonical identity owner; see `persons.md`. (Persons tenancy question settled: shared-by-design.)
-3. **Address lineage tripled.** `addressing` vs native columns in `customers`/`orders`, with zero adoption of `HasAddresses`. The blocker is gone — owner migration shipped — so consolidation can proceed; see `addressing.md`, `contacting.md`.
-4. **Payments modeled three times.** `cashier` ↔ `cashier-chip` ↔ `chip` duplicate CHIP concepts; `checkout` duplicates chip's status mapper/payload builder and confirms payment without amount reconciliation. Collapse toward `cashier-chip`-canonical billing, `chip`-owned HTTP/verification, `cashier` as thin multiplexer; delete checkout's copies. See `cashier.md`, `cashier-chip.md`, `chip.md`, `checkout.md`.
+3. **Address lineage tripled.** `addressing` vs native columns in `customers`/`orders`; `customers` pilot adopted `HasAddresses` for new attachments (legacy `customer_addresses` frozen), `events` trait resolves the canonical pivot via the table resolver (full adoption still open), `orders` deferred. Remaining: legacy-address migration + default-address semantics; see `addressing.md`, `contacting.md`.
+4. **Payments modeled three times.** `cashier` leg done (thin multiplexer over canonical clients; see `cashier.md`). Remaining: `cashier-chip` ↔ `chip` duplicate CHIP concepts; `checkout` duplicates chip's status mapper/payload builder and confirms payment without amount reconciliation. See `cashier-chip.md`, `chip.md`, `checkout.md`.
 5. **Pricing/promotions/vouchers (residual).** Dead promotion strategies deleted, BOGO promotion type removed (voucher-side BOGO mechanic untouched and live), voucher provenance canonicalized, broken cross-package class references fixed. Remaining: `pricing.ApplyPromotionalAdjustment` still bypasses the promotions domain; voucher validator hardening. See `pricing.md`, `vouchers.md`.
 6. **Events ↔ ticketing ↔ seating forks.** 4 ticketing DTO/action forks live in `events`; `TicketableTypeRegistry` lives in the Filament adapter while core needs it; per-pass issuance loop and per-seat allocate loop under `lockForUpdate` need set-based rewrites. See `events.md`, `ticketing.md`, `seating.md`.
 7. **Foundation residue.** Models moved, money strict, navigation canonical, Octane flush wired, helpers grouped, stubs unified (see `code-fixes-record.md`; dependency-direction guard in place). Remaining: Octane exercised under real Octane, `ManageCommerceNavigation` feature test, `products` `store_money_in_cents` toggle, `jnt` float money math. See `commerce-support.md`, `authz.md`, `products.md`, `jnt.md`.
@@ -84,7 +84,7 @@ Dominant remaining risk themes: payments-multiplexer integrity (`cashier`), cras
 
 ## Second pass (hardening) + migration track
 
-- **Severity normalized, no inflation.** Critical is used only for breach-class security holes, corruption/data-loss risks, and broken integrity behavior (1 file — `cashier` — down from 17 at first pass: migration resolutions, four code-only Critical fixes, chip idempotency rewrite to its wiring gap, inventory A1 falsification; full trail in `migration-record.md` + `code-fixes-record.md`).
+- **Severity normalized, no inflation.** Critical is used only for breach-class security holes, corruption/data-loss risks, and broken integrity behavior (1 file — `inventory`, the A1 code fix; `cashier` cleared 2026-09-08: migration resolutions, four code-only Critical fixes, chip idempotency rewrite to its wiring gap, inventory A1 falsification; full trail in `migration-record.md` + `code-fixes-record.md`).
 - **False claims removed or corrected** (see hardening notes in prior revision; full list in `migration-record.md` deviations).
 - **Migration track completed 2026-09-07.** 10 of 11 migration packages settled: 6 implemented (`pricing`, `organizations`, `addressing`, `vouchers`, `promotions`, + `growth` parity assertion), 4 dropped/corrected with evidence (`signals`, `shipping`, `persons`, `docs`). `inventory` untouched. Details, evidence, commit list (24 commits after base), and deployment gates in [`migration-record.md`](migration-record.md).
 - **Reviewer spot-checks (all held).** Unscoped `findExistingIntake`, zero `HasOwner` in persons, wrong voucher import fixed to the real class, serial enum-vs-morph mismatch, empty-`getPages()` phantom chip resources, enum-removal consistency (zero `PromotionType::BuyXGetY` references repo-wide), guarded checkout-listener registration, boot-time owner-parity assertion.
@@ -92,10 +92,10 @@ Dominant remaining risk themes: payments-multiplexer integrity (`cashier`), cras
 ## Recommended Overall Refactor Order (remaining work)
 
 1. **Deployment gates first** (see `migration-record.md`): dev-only, no backfills — delete-and-rerun accepted; promotions migration timing; PHP 8.4 CI.
-2. **Cashier multiplexer (last Critical package):** webhook verify/handle, unscoped reads, 100× amount bug, table-less records, gateway truth — then collapse toward thin multiplexer.
+2. **Cashier multiplexer (done 2026-09-08):** was webhook verify/handle, unscoped reads, 100× amount bug, table-less records, gateway truth — collapsed to thin multiplexer. Remaining payments work: `cashier-chip`/`chip` gateway-side items.
 3. **Chip crash-recovery window:** gateway documents no native idempotency key, so gateway-success-then-crash still double-charges; needs a gateway-capability answer or durable outbox before the money path.
 4. **Events isolation:** bespoke-scope migration toward `HasOwner` (compensation now implemented).
-5. **Identity/address consolidation:** pick canonical owners; `HasAddresses` adoption now unblocked.
+5. **Identity/address consolidation (partly done):** topology decided, customers pilot live, table-name resolver shipped (`addressing.md` split-brain resolved); remaining: orders/events addressing follow-ups (events hardcoded pivot prefixes), persons/org index batches.
 6. **Foundation residue:** ManageNav feature test, real-Octane exercise, `products` toggle, `jnt` math.
 7. **Pricing/vouchers residual + shipping/tax:** route pricing through promotions domain, voucher validator hardening.
 8. **Events/ticketing/seating + affiliates/affiliate-network:** remove forks, move registry to core, set-based issuance, document programs-vs-offers boundary.

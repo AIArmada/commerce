@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Exceptions\GatewayNotFoundException;
+use AIArmada\Cashier\Exceptions\Gateway\GatewayNotFoundException;
 use AIArmada\Cashier\Exceptions\InsufficientStockException;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 

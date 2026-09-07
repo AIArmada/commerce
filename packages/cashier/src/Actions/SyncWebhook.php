@@ -8,6 +8,7 @@ use AIArmada\Cashier\Events\WebhookHandled;
 use AIArmada\Cashier\Events\WebhookReceived;
 use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\Cashier\Gateways\AbstractGateway;
+use AIArmada\Chip\Data\WebhookResult;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class SyncWebhook
@@ -27,7 +28,9 @@ final class SyncWebhook
 
         $result = $gatewayInstance->handleWebhook($payload, $headers);
 
-        WebhookHandled::dispatch($gateway, $payload);
+        if ($result !== null && (! $result instanceof WebhookResult || $result->isHandled())) {
+            WebhookHandled::dispatch($gateway, $payload);
+        }
 
         return $result;
     }

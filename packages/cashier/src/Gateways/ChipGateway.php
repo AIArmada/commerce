@@ -20,10 +20,15 @@ use AIArmada\Cashier\Gateways\Chip\ChipPayment;
 use AIArmada\Cashier\Gateways\Chip\ChipPaymentMethod;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscription;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscriptionBuilder;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Payment\Payment;
+use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\PaymentData;
+use AIArmada\Chip\Exceptions\ChipApiException;
 use AIArmada\Chip\Services\ChipCollectService;
+use AIArmada\Chip\Services\WebhookService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -40,11 +45,6 @@ use Throwable;
 class ChipGateway extends AbstractGateway
 {
     /**
-     * The CHIP service instance.
-     */
-    protected ?ChipCollectService $chipService = null;
-
-    /**
      * Get the gateway name.
      */
     public function name(): string
@@ -57,11 +57,7 @@ class ChipGateway extends AbstractGateway
      */
     public function client(): ChipCollectService
     {
-        if ($this->chipService === null) {
-            $this->chipService = app(ChipCollectService::class);
-        }
-
-        return $this->chipService;
+        return CashierChip::chip();
     }
 
     /**
@@ -193,7 +189,8 @@ class ChipGateway extends AbstractGateway
     public function retrieveSubscription(string $subscriptionId): ?SubscriptionContract
     {
         try {
-            $subscription = CashierChip::$subscriptionModel::find($subscriptionId);
+            $subscriptionQuery = OwnerScopedQuery::apply(CashierChip::$subscriptionModel::query());
+            $subscription = $subscriptionQuery->whereKey($subscriptionId)->first();
 
             if (! $subscription) {
                 return null;
@@ -267,7 +264,8 @@ class ChipGateway extends AbstractGateway
             return true;
         }
 
-        return str_contains(mb_strtolower($e->getMessage()), 'not found');
+        return $e instanceof ChipApiException
+            && $e->getStatusCode() === 404;
     }
 
     /**
@@ -392,32 +390,18 @@ class ChipGateway extends AbstractGateway
      */
     public function verifyWebhookSignature(string $payload, array $headers): bool
     {
-        // CHIP webhook verification
         $signature = $headers['X-Signature'] ?? $headers['x-signature'] ?? '';
 
         if (! is_string($signature) || $signature === '') {
             return false;
         }
 
-        $decodedSignature = base64_decode($signature, true);
-
-        if ($decodedSignature === false || $decodedSignature === '') {
-            return false;
-        }
-
         try {
-            $publicKey = $this->client()->getPublicKey();
+            $request = Request::create('/', 'POST', [], [], [], [
+                'HTTP_X_SIGNATURE' => $signature,
+            ], $payload);
 
-            if ($publicKey === '') {
-                return false;
-            }
-
-            return openssl_verify(
-                $payload,
-                $decodedSignature,
-                $publicKey,
-                OPENSSL_ALGO_SHA256
-            ) === 1;
+            return app(WebhookService::class)->verifySignature($request);
         } catch (Throwable $e) {
             Log::error('CHIP webhook verification failed', [
                 'error' => $e->getMessage(),
@@ -435,9 +419,13 @@ class ChipGateway extends AbstractGateway
      */
     public function handleWebhook(array $payload, array $headers = []): mixed
     {
-        // Webhook handling is managed by cashier-chip's webhook controller
-        // This method is here for custom webhook handling if needed
-        return null;
+        $event = $payload['event_type'] ?? null;
+
+        if (! is_string($event) || $event === '') {
+            throw new InvalidArgumentException('CHIP webhook payload must contain an event_type.');
+        }
+
+        return app(DispatchChipWebhookAction::class)->execute($event, $payload);
     }
 
     /**

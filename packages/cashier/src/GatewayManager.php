@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Cashier;
 
 use AIArmada\Cashier\Contracts\GatewayContract;
-use AIArmada\Cashier\Exceptions\GatewayNotFoundException;
+use AIArmada\Cashier\Exceptions\Gateway\GatewayNotFoundException;
+use AIArmada\Chip\Services\ChipCollectService;
 use Illuminate\Support\Manager;
 use Laravel\Cashier\Cashier;
 
@@ -56,11 +57,15 @@ class GatewayManager extends Manager
     {
         $gateways = array_keys($this->config->get('cashier.gateways', []));
 
-        if (! class_exists(Cashier::class) && in_array('stripe', $gateways, true)) {
-            $gateways = array_values(array_diff($gateways, ['stripe']));
-        }
-
-        return $gateways;
+        return array_values(array_filter(
+            $gateways,
+            fn (string $gateway): bool => match ($gateway) {
+                'stripe' => class_exists(Cashier::class),
+                'chip' => class_exists(\AIArmada\CashierChip\Billing\Cashier::class)
+                    && class_exists(ChipCollectService::class),
+                default => true,
+            },
+        ));
     }
 
     /**
@@ -68,10 +73,6 @@ class GatewayManager extends Manager
      */
     public function supportsGateway(string $name): bool
     {
-        if ($name === 'stripe' && ! class_exists(Cashier::class)) {
-            return false;
-        }
-
         return in_array($name, $this->supportedGateways(), true);
     }
 
@@ -106,6 +107,12 @@ class GatewayManager extends Manager
      */
     protected function createChipDriver(): GatewayContract
     {
+        if (! $this->supportsGateway('chip')) {
+            throw new GatewayNotFoundException(
+                'CHIP gateway requires the [aiarmada/cashier-chip] and [aiarmada/chip] packages.'
+            );
+        }
+
         $config = $this->config->get('cashier.gateways.chip', []);
 
         return $this->buildGateway('chip', Gateways\ChipGateway::class, $config);

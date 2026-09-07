@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Support;
 
+use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final readonly class UnifiedSubscription
 {
@@ -78,6 +80,21 @@ final readonly class UnifiedSubscription
             createdAt: CarbonImmutable::parse($createdAt),
             original: $subscription,
         );
+    }
+
+    public static function fromGateway(SubscriptionContract $subscription): self
+    {
+        $original = $subscription->asGatewaySubscription();
+
+        if (! $original instanceof Model) {
+            throw new InvalidArgumentException('A gateway subscription must expose its Eloquent model.');
+        }
+
+        return match ($subscription->gateway()) {
+            'stripe' => self::fromStripe($original),
+            'chip' => self::fromChip($original),
+            default => throw new InvalidArgumentException("Unsupported subscription gateway [{$subscription->gateway()}]."),
+        };
     }
 
     public function formattedAmount(): string

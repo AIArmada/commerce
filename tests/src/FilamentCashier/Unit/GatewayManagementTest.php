@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -11,6 +12,26 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentCashier\Pages\GatewayManagement;
 use Filament\Actions\Action;
 use Illuminate\Support\Collection;
+
+beforeEach(function (): void {
+    app()->register(CashierServiceProvider::class);
+    config()->set('cashier.gateways', [
+        'chip' => [
+            'driver' => 'chip',
+            'label' => 'CHIP',
+            'icon' => 'heroicon-o-cube',
+            'color' => 'emerald',
+            'dashboard_url' => 'https://gate.chip-in.asia',
+        ],
+        'stripe' => [
+            'driver' => 'stripe',
+            'label' => 'Stripe',
+            'icon' => 'heroicon-o-credit-card',
+            'color' => 'indigo',
+            'dashboard_url' => 'https://dashboard.stripe.com',
+        ],
+    ]);
+});
 
 it('reports gateway health and default gateway without network calls', function (): void {
     // Default gateway now falls back to core cashier config.

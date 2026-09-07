@@ -261,8 +261,8 @@ $user->syncCustomer(gateway: 'stripe', options: [
 ## Error Handling
 
 ```php
-use AIArmada\Cashier\Exceptions\PaymentActionRequired;
-use AIArmada\Cashier\Exceptions\PaymentFailedException;
+use AIArmada\Cashier\Exceptions\Payment\PaymentActionRequired;
+use AIArmada\Cashier\Exceptions\Payment\PaymentFailedException;
 
 try {
     $payment = $user->chargeWithGateway(1000, $paymentMethodId, 'stripe');

@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\Support\InvoiceStatus;
 use AIArmada\Cashier\Support\UnifiedInvoice;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages\ListInvoices;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -27,12 +28,33 @@ if (! function_exists('filamentCashier_setProtectedProperty')) {
     }
 }
 
+beforeEach(function (): void {
+    app()->register(CashierServiceProvider::class);
+
+    config()->set('cashier.gateways', [
+        'stripe' => [
+            'driver' => 'stripe',
+            'label' => 'Stripe',
+            'icon' => 'heroicon-o-credit-card',
+            'color' => 'indigo',
+            'dashboard_url' => 'https://dashboard.stripe.com',
+        ],
+        'chip' => [
+            'driver' => 'chip',
+            'label' => 'CHIP',
+            'icon' => 'heroicon-o-cube',
+            'color' => 'emerald',
+            'dashboard_url' => 'https://gate.chip-in.asia',
+        ],
+    ]);
+});
+
 it('lists CHIP purchases as unified invoices and applies tabs and filters', function (): void {
-    config()->set('cashier.models.billable', User::class);
+    config()->set('cashier.models.billable', ChipBillableUser::class);
 
     CashierChip::useSubscriptionModel(ChipSubscription::class);
 
-    $user = User::query()->create([
+    $user = ChipBillableUser::query()->create([
         'name' => 'Invoice User',
         'email' => 'invoice-user@example.com',
         'password' => bcrypt('secret'),
@@ -172,7 +194,7 @@ it('lists CHIP purchases as unified invoices and applies tabs and filters', func
 
     $filtered = $page->getTableRecords();
     expect($filtered)->toHaveCount(1);
-    expect((string) $filtered->first()->source_id)->toBe((string) $purchaseA->getKey());
+    expect($filtered->first()->id)->toBe('chip_inv_2');
 
     filamentCashier_setProtectedProperty($page, 'tableFilters', [
         'gateway' => ['value' => 'chip'],
@@ -180,7 +202,7 @@ it('lists CHIP purchases as unified invoices and applies tabs and filters', func
 
     $gatewayFiltered = $page->getTableRecords();
     expect($gatewayFiltered)->toHaveCount(2);
-    expect($gatewayFiltered->pluck('source_id')->all())->toContain((string) $purchaseA->getKey(), (string) $purchaseB->getKey());
+    expect($gatewayFiltered->pluck('id')->all())->toContain('chip_inv_1', 'chip_inv_2');
 });
 
 it('returns no invoices when the configured billable model does not exist', function (): void {

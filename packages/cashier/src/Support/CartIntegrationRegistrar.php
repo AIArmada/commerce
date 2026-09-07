@@ -147,25 +147,8 @@ final class CartIntegrationRegistrar
             return;
         }
 
-        $failureMode = config('cashier.cart.failure_mode', 'hybrid');
-
-        switch ($failureMode) {
-            case 'immediate_release':
-                $this->releaseInventoryAllocations($cartId);
-
-                break;
-
-            case 'retry_window':
-                // Inventory will auto-release after TTL
-                break;
-
-            case 'hybrid':
-                // Check if it's a hard failure
-                if ($this->isHardFailure($event)) {
-                    $this->releaseInventoryAllocations($cartId);
-                }
-
-                break;
+        if (config('checkout.integrations.inventory.release_on_failure', true)) {
+            $this->releaseInventoryAllocations($cartId);
         }
     }
 
@@ -265,23 +248,5 @@ final class CartIntegrationRegistrar
         }
 
         return $event->payment->id();
-    }
-
-    /**
-     * Determine if payment failure is a "hard" failure (no retry possible).
-     */
-    private function isHardFailure(PaymentFailed $event): bool
-    {
-        $hardFailureCodes = config('cashier.cart.hard_failure_codes', [
-            'card_declined',
-            'insufficient_funds',
-            'expired_card',
-            'incorrect_cvc',
-            'processing_error',
-        ]);
-
-        $errorCode = $event->payment->errorCode() ?? '';
-
-        return in_array($errorCode, $hardFailureCodes, true);
     }
 }

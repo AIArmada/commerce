@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem as ChipSubscriptionItem;
+use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\BillingOverview;
@@ -17,6 +19,21 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+
+beforeEach(function (): void {
+    app()->register(CashierServiceProvider::class);
+
+    config()->set('cashier.models.billable', ChipBillableUser::class);
+    config()->set('cashier.gateways', [
+        'chip' => [
+            'driver' => 'chip',
+            'label' => 'CHIP',
+            'icon' => 'heroicon-o-cube',
+            'color' => 'emerald',
+            'dashboard_url' => 'https://gate.chip-in.asia',
+        ],
+    ]);
+});
 
 it('shows and manages CHIP subscriptions in the customer portal', function (): void {
     if (! Schema::hasTable('cashier_chip_subscriptions')) {
@@ -54,7 +71,8 @@ it('shows and manages CHIP subscriptions in the customer portal', function (): v
     }
 
     /** @var class-string<Model> $userModel */
-    $userModel = config('auth.providers.users.model');
+    $userModel = ChipBillableUser::class;
+    config()->set('cashier.models.billable', $userModel);
 
     /** @var Model $user */
     $user = $userModel::query()->create([
@@ -165,7 +183,8 @@ it('limits customer portal subscriptions and can load more', function (): void {
     }
 
     /** @var class-string<Model> $userModel */
-    $userModel = config('auth.providers.users.model');
+    $userModel = ChipBillableUser::class;
+    config()->set('cashier.models.billable', $userModel);
 
     /** @var Model $user */
     $user = $userModel::query()->create([

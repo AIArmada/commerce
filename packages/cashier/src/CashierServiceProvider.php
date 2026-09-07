@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier;
 
 use AIArmada\Cashier\Console\Commands\WebhookReplayCommand;
+use AIArmada\Cashier\Facades\Cashier as CashierFacade;
 use AIArmada\Cashier\Support\CartIntegrationRegistrar;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
@@ -53,7 +54,6 @@ final class CashierServiceProvider extends PackageServiceProvider
     {
         $this->registerPublishing();
         $this->loadStripeMigrationFallbacks();
-        $this->registerRoutes();
         $this->registerOctaneListeners();
 
         $this->app->booted(static function (): void {
@@ -100,16 +100,6 @@ final class CashierServiceProvider extends PackageServiceProvider
         }
     }
 
-    /**
-     * Register the package routes.
-     */
-    protected function registerRoutes(): void
-    {
-        if (Cashier::$registersRoutes) {
-            $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
-        }
-    }
-
     protected function loadStripeMigrationFallbacks(): void
     {
         if (! class_exists(\Laravel\Cashier\CashierServiceProvider::class)) {
@@ -130,6 +120,8 @@ final class CashierServiceProvider extends PackageServiceProvider
 
         $this->app['events']->listen(RequestReceived::class, static function (): void {
             Cashier::restoreOctaneDefaults();
+            app(GatewayManager::class)->forgetDrivers();
+            CashierFacade::clearResolvedInstance(GatewayManager::class);
         });
     }
 }

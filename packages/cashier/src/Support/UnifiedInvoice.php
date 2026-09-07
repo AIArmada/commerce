@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Support;
 
+use AIArmada\Cashier\Contracts\InvoiceContract;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
+use InvalidArgumentException;
 
 final readonly class UnifiedInvoice
 {
@@ -65,6 +68,33 @@ final readonly class UnifiedInvoice
         );
     }
 
+    public static function fromGateway(InvoiceContract $invoice, string $userId): self
+    {
+        $original = $invoice->asGatewayInvoice();
+
+        if (! is_object($original)) {
+            throw new InvalidArgumentException('A gateway invoice must expose its underlying object.');
+        }
+
+        $date = $invoice->date();
+        $dueDate = $invoice->dueDate();
+
+        return new self(
+            id: $invoice->id(),
+            gateway: $invoice->gateway(),
+            userId: $userId,
+            number: $invoice->number() ?? $invoice->id(),
+            amount: $invoice->rawTotal(),
+            currency: mb_strtoupper($invoice->currency()),
+            status: self::normalizeContractStatus($invoice),
+            date: $date instanceof CarbonImmutable ? $date : CarbonImmutable::parse($date),
+            dueDate: $dueDate instanceof CarbonImmutable ? $dueDate : ($dueDate ? CarbonImmutable::parse($dueDate) : null),
+            paidAt: self::resolveContractPaidAt($invoice, $original),
+            pdfUrl: $invoice->pdfUrl(),
+            original: $original,
+        );
+    }
+
     public function formattedAmount(): string
     {
         return MoneyFormatter::formatMinor($this->amount, $this->currency);
@@ -119,6 +149,18 @@ final readonly class UnifiedInvoice
         };
     }
 
+    private static function normalizeContractStatus(InvoiceContract $invoice): InvoiceStatus
+    {
+        return match (true) {
+            $invoice->isPaid() => InvoiceStatus::Paid,
+            $invoice->isVoid() => InvoiceStatus::Void,
+            $invoice->isDraft() => InvoiceStatus::Draft,
+            mb_strtolower($invoice->status()) === 'uncollectible' => InvoiceStatus::Uncollectible,
+            $invoice->isOpen() => InvoiceStatus::Open,
+            default => InvoiceStatus::Open,
+        };
+    }
+
     private static function resolveStripePaidAt(object $invoice): ?CarbonImmutable
     {
         if (! ($invoice->paid ?? false)) {
@@ -132,5 +174,34 @@ final readonly class UnifiedInvoice
         }
 
         return CarbonImmutable::createFromTimestamp((int) $paidAt);
+    }
+
+    private static function resolveContractPaidAt(InvoiceContract $invoice, object $original): ?CarbonImmutable
+    {
+        if (! $invoice->isPaid()) {
+            return null;
+        }
+
+        $transitions = $original->status_transitions ?? null;
+        $paidAt = is_object($transitions) ? ($transitions->paid_at ?? null) : null;
+        $paidAt ??= $original->paid_at ?? null;
+
+        if ($paidAt instanceof CarbonImmutable) {
+            return $paidAt;
+        }
+
+        if ($paidAt instanceof DateTimeInterface) {
+            return CarbonImmutable::instance($paidAt);
+        }
+
+        if (is_numeric($paidAt)) {
+            return CarbonImmutable::createFromTimestamp((int) $paidAt);
+        }
+
+        if (is_string($paidAt) && $paidAt !== '') {
+            return CarbonImmutable::parse($paidAt);
+        }
+
+        return null;
     }
 }

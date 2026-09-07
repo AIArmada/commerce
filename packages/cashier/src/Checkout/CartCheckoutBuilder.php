@@ -57,9 +57,10 @@ final class CartCheckoutBuilder
     {
         $this->cart = $cart;
         $this->gateway = $gateway;
-        $this->allocateInventory = config('cashier.cart.allocate_inventory', true);
-        $this->inventoryTtl = config('cashier.cart.inventory_ttl_minutes', 30);
-        $this->validateStock = config('cashier.cart.validate_stock', true);
+        $this->allocateInventory = (bool) config('checkout.integrations.inventory.enabled', true);
+        $ttlSeconds = (int) config('checkout.integrations.inventory.reservation_ttl', 900);
+        $this->inventoryTtl = max(1, (int) ceil($ttlSeconds / 60));
+        $this->validateStock = (bool) config('checkout.integrations.inventory.validate_stock', true);
     }
 
     /**
@@ -233,7 +234,7 @@ final class CartCheckoutBuilder
         $cartManager = app('cart');
 
         if (method_exists($cartManager, 'allocateAllInventory')) {
-            $cartManager->allocateAllInventory($this->cart->getId(), $this->inventoryTtl);
+            $cartManager->allocateAllInventory($this->inventoryTtl);
         }
     }
 

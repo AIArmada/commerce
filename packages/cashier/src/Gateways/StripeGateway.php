@@ -22,9 +22,11 @@ use AIArmada\Cashier\Gateways\Stripe\StripePaymentMethod;
 use AIArmada\Cashier\Gateways\Stripe\StripeSubscription;
 use AIArmada\Cashier\Gateways\Stripe\StripeSubscriptionBuilder;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Cashier;
+use Laravel\Cashier\Http\Controllers\WebhookController;
 use Laravel\Cashier\Payment;
 use SensitiveParameter;
 use Stripe\Exception\InvalidRequestException;
@@ -41,11 +43,6 @@ use Throwable;
 class StripeGateway extends AbstractGateway
 {
     /**
-     * The Stripe client instance.
-     */
-    protected ?StripeClient $stripeClient = null;
-
-    /**
      * Get the gateway name.
      */
     public function name(): string
@@ -58,11 +55,7 @@ class StripeGateway extends AbstractGateway
      */
     public function client(): StripeClient
     {
-        if ($this->stripeClient === null) {
-            $this->stripeClient = Cashier::stripe();
-        }
-
-        return $this->stripeClient;
+        return Cashier::stripe();
     }
 
     /**
@@ -284,9 +277,10 @@ class StripeGateway extends AbstractGateway
      */
     public function invoices(BillableContract $billable, bool | array $parameters = false): Collection
     {
-        $includePending = is_bool($parameters) ? $parameters : ($parameters['include_pending'] ?? false);
+        $includePending = is_bool($parameters) ? $parameters : (bool) ($parameters['include_pending'] ?? false);
+        $invoiceParameters = is_array($parameters) ? $parameters : [];
 
-        $rawInvoices = $this->callBillableMethod($billable, 'invoices', [$includePending]);
+        $rawInvoices = $this->callBillableMethod($billable, 'invoices', [$includePending, $invoiceParameters]);
 
         if (! is_iterable($rawInvoices)) {
             return collect();
@@ -399,9 +393,14 @@ class StripeGateway extends AbstractGateway
      */
     public function handleWebhook(array $payload, array $headers = []): mixed
     {
-        // Webhook handling is managed by Laravel Cashier's webhook controller
-        // This method is here for custom webhook handling if needed
-        return null;
+        $signature = $headers['Stripe-Signature'] ?? $headers['stripe-signature'] ?? null;
+        $server = is_string($signature) && $signature !== ''
+            ? ['HTTP_STRIPE_SIGNATURE' => $signature]
+            : [];
+
+        $request = Request::create('/', 'POST', [], [], [], $server, json_encode($payload, JSON_THROW_ON_ERROR));
+
+        return app(WebhookController::class)->handleWebhook($request);
     }
 
     /**

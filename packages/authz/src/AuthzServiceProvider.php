@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
+use InvalidArgumentException;
 use Laravel\Octane\Events\RequestReceived;
 use Spatie\Permission\Contracts\PermissionsTeamResolver;
 use Spatie\Permission\Models\Permission as SpatiePermission;
@@ -63,6 +64,8 @@ final class AuthzServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->assertConfiguration();
+
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
         $this->registerBladeDirectives();
@@ -74,6 +77,19 @@ final class AuthzServiceProvider extends ServiceProvider
 
         $this->registerGateHooks();
         $this->registerCommands();
+    }
+
+    private function assertConfiguration(): void
+    {
+        $separator = config('authz.permissions.separator', '.');
+
+        if (! is_string($separator) || mb_strlen($separator) !== 1 || ctype_alnum($separator)) {
+            throw new InvalidArgumentException('authz.permissions.separator must be exactly one non-alphanumeric character.');
+        }
+
+        if (config('authz.scopes.enabled', false) && ! config('permission.teams', false)) {
+            throw new InvalidArgumentException('Authz scopes require Spatie permission teams to be enabled.');
+        }
     }
 
     protected function registerGateHooks(): void

@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem as ChipSubscriptionItem;
+use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\ListSubscriptions;
@@ -29,6 +31,27 @@ if (! function_exists('filamentCashier_setProtectedProperty')) {
         $prop->setValue($object, $value);
     }
 }
+
+beforeEach(function (): void {
+    app()->register(CashierServiceProvider::class);
+
+    config()->set('cashier.gateways', [
+        'stripe' => [
+            'driver' => 'stripe',
+            'label' => 'Stripe',
+            'icon' => 'heroicon-o-credit-card',
+            'color' => 'indigo',
+            'dashboard_url' => 'https://dashboard.stripe.com',
+        ],
+        'chip' => [
+            'driver' => 'chip',
+            'label' => 'CHIP',
+            'icon' => 'heroicon-o-cube',
+            'color' => 'emerald',
+            'dashboard_url' => 'https://gate.chip-in.asia',
+        ],
+    ]);
+});
 
 it('lists CHIP subscriptions as unified subscriptions and applies tabs and filters', function (): void {
     if (! Schema::hasTable('cashier_chip_subscriptions')) {
@@ -66,7 +89,7 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
     }
 
     /** @var class-string<Model> $userModel */
-    $userModel = config('auth.providers.users.model');
+    $userModel = ChipBillableUser::class;
     $user = $userModel::query()->create([
         'name' => 'Subscriptions',
         'email' => 'subscriptions@example.com',

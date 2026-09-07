@@ -24,13 +24,6 @@ return [
     'currency' => $currency,
     'locale' => env('CASHIER_LOCALE', 'en'),
 
-    'database' => [
-        'tables' => [
-            'unified_invoices' => 'cashier_unified_invoices',
-            'unified_subscriptions' => 'cashier_unified_subscriptions',
-        ],
-    ],
-
     /*
     |--------------------------------------------------------------------------
     | Credentials / Gateways
@@ -101,28 +94,5 @@ return [
         // Handle payment failures
         'handle_failure' => env('CASHIER_CART_HANDLE_FAILURE', true),
 
-        // Failure handling mode: immediate_release|retry_window|hybrid
-        'failure_mode' => env('CASHIER_CART_FAILURE_MODE', 'hybrid'),
-
-        // Retry window in minutes (for retry_window mode)
-        'retry_window_minutes' => env('CASHIER_CART_RETRY_WINDOW', 15),
-
-        // Error codes that trigger immediate inventory release (for hybrid mode)
-        'hard_failure_codes' => [
-            'card_declined',
-            'insufficient_funds',
-            'expired_card',
-            'incorrect_cvc',
-            'processing_error',
-        ],
-
-        // Allocate inventory before payment
-        'allocate_inventory' => env('CASHIER_CART_ALLOCATE_INVENTORY', true),
-
-        // Inventory allocation TTL in minutes
-        'inventory_ttl_minutes' => env('CASHIER_CART_INVENTORY_TTL', 30),
-
-        // Validate stock before checkout
-        'validate_stock' => env('CASHIER_CART_VALIDATE_STOCK', true),
     ],
 ];
