@@ -89,11 +89,6 @@ function filamentPromotions_createIssuedVoucher(Promotion $promotion, string $co
         'promotion_id' => $promotion->id,
         'owner_type' => $promotion->owner_type,
         'owner_id' => $promotion->owner_id,
-        'metadata' => [
-            'source_promotion_id' => $promotion->id,
-            'source_promotion_name' => $promotion->name,
-            'source_promotion_code' => $promotion->code,
-        ],
     ]);
 
     if ($redeemed) {
