@@ -9,14 +9,45 @@ use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
+use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
+use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\States\Processing;
 use AIArmada\Checkout\Steps\ApplyDiscountsStep;
 use AIArmada\Checkout\Steps\CreateOrderStep;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Events\OrderPaid;
+use AIArmada\Orders\Events\OrderProcessingStarted;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+
+/**
+ * @param  array<string, mixed>  $paymentData
+ */
+function createCheckoutAmountReconciliationSession(array $paymentData, int $grandTotal = 1000): CheckoutSession
+{
+    $session = CheckoutSession::create([
+        'cart_id' => 'cart-amount-reconciliation-' . Str::random(8),
+        'cart_snapshot' => ['items' => []],
+        'payment_data' => array_merge([
+            'type' => 'card',
+            'status' => PaymentStatus::Completed->value,
+            'transaction_id' => 'tx-amount-reconciliation',
+            'gateway' => 'chip',
+        ], $paymentData),
+        'selected_payment_gateway' => 'chip',
+        'payment_id' => 'payment-amount-reconciliation',
+        'subtotal' => $grandTotal,
+        'grand_total' => $grandTotal,
+        'currency' => 'MYR',
+    ]);
+
+    return $session->transitionStatus(Processing::class);
+}
 
 it('refreshes voucher-driven affiliate overrides before creating order metadata', function (): void {
     config()->set('checkout.integrations.vouchers.enabled', true);
@@ -121,4 +152,82 @@ it('refreshes voucher-driven affiliate overrides before creating order metadata'
         ->and(data_get($capturedOrderData, 'metadata.affiliate_id'))->toBeNull()
         ->and(data_get($capturedOrderData, 'metadata.voucher_codes.0'))->toBe('AFFE2E3SAVE5')
         ->and(data_get($capturedOrderData, 'metadata.promo_code'))->toBe('AFFE2E3SAVE5');
+});
+
+it('confirms payment when the reported amount exactly matches the checkout total', function (): void {
+    config()->set('checkout.create_order.confirm_payment', true);
+
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-AMOUNT-MATCH',
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmPayment')
+        ->once()
+        ->withArgs(fn (...$arguments): bool => ($arguments[3] ?? null) === 1000)
+        ->andReturn($order);
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
+    $result = app(CreateOrderStep::class)->handle($session);
+
+    expect($result->isSuccessful())->toBeTrue()
+        ->and($session->fresh()?->order_id)->toBe($order->id);
+});
+
+it('blocks payment confirmation when the reported amount mismatches the checkout total', function (): void {
+    config()->set('checkout.create_order.confirm_payment', true);
+    Event::fake([OrderPaid::class, OrderProcessingStarted::class]);
+    Log::spy();
+
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-AMOUNT-MISMATCH',
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmPayment')->never();
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $session = createCheckoutAmountReconciliationSession(['amount' => 999]);
+    $result = app(CreateOrderStep::class)->handle($session);
+    $freshSession = $session->fresh();
+
+    expect($result->isSuccessful())->toBeFalse()
+        ->and(data_get($freshSession?->payment_data, 'amount_reconciliation.status'))->toBe('mismatch')
+        ->and(data_get($freshSession?->payment_data, 'amount_reconciliation.expected_amount'))->toBe(1000)
+        ->and(data_get($freshSession?->payment_data, 'amount_reconciliation.received_amount'))->toBe(999)
+        ->and($freshSession?->error_message)->toBe('Payment amount does not match the checkout total.');
+
+    Event::assertNotDispatched(OrderPaid::class);
+    Event::assertNotDispatched(OrderProcessingStarted::class);
+    Log::shouldHaveReceived('warning')->once();
+});
+
+it('uses the checkout total when the payment amount is missing', function (): void {
+    config()->set('checkout.create_order.confirm_payment', true);
+
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-AMOUNT-MISSING',
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmPayment')
+        ->once()
+        ->withArgs(fn (...$arguments): bool => ($arguments[3] ?? null) === 1000)
+        ->andReturn($order);
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $session = createCheckoutAmountReconciliationSession([]);
+    $result = app(CreateOrderStep::class)->handle($session);
+
+    expect($result->isSuccessful())->toBeTrue();
 });

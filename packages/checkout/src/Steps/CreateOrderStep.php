@@ -9,6 +9,7 @@ use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -314,7 +315,14 @@ final class CreateOrderStep extends AbstractCheckoutStep
             ?? $session->selected_payment_gateway
             ?? 'unknown';
 
-        $amount = $paymentData['amount'] ?? $session->grand_total;
+        $expectedAmount = (int) $session->grand_total;
+        $amount = (int) ($paymentData['amount'] ?? $expectedAmount);
+
+        if ($amount !== $expectedAmount) {
+            $this->recordPaymentAmountMismatch($session, $paymentData, $expectedAmount, $amount);
+
+            return false;
+        }
 
         $metadata = [
             'checkout_session_id' => $session->id,
@@ -349,5 +357,33 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
             return false;
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $paymentData
+     */
+    private function recordPaymentAmountMismatch(
+        CheckoutSession $session,
+        array $paymentData,
+        int $expectedAmount,
+        int $receivedAmount,
+    ): void {
+        $paymentData['amount_reconciliation'] = [
+            'status' => 'mismatch',
+            'expected_amount' => $expectedAmount,
+            'received_amount' => $receivedAmount,
+            'recorded_at' => CarbonImmutable::now()->toIso8601String(),
+        ];
+
+        $session->update([
+            'payment_data' => $paymentData,
+            'error_message' => 'Payment amount does not match the checkout total.',
+        ]);
+
+        Log::warning('Payment confirmation aborted because the amount mismatched the checkout total', [
+            'session_id' => $session->id,
+            'expected_amount' => $expectedAmount,
+            'received_amount' => $receivedAmount,
+        ]);
     }
 }
