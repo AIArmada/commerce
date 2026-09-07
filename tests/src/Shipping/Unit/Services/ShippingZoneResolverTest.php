@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Data\AddressData;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Schema;
 
 describe('ShippingZoneResolver', function (): void {
     beforeEach(function (): void {
-        $this->resolver = new ShippingZoneResolver;
+        $this->resolver = app(ShippingZoneResolver::class);
     });
 
     it('can resolve zone for matching address', function (): void {
@@ -139,6 +140,29 @@ describe('ShippingZoneResolver', function (): void {
         $zone2 = $this->resolver->resolve($address, 'test-owner-123', 'TestOwner');
 
         expect($zone1)->toBe($zone2); // Still same due to database state
+    });
+
+    it('invalidates cached resolutions after a zone changes', function (): void {
+        $address = new AddressData(
+            name: 'Cache Invalidation',
+            phone: '000',
+            line1: '1 Test Street',
+            postcode: '10000',
+            country: 'US',
+        );
+
+        expect($this->resolver->resolve($address))->toBeNull();
+
+        ShippingZone::create([
+            'name' => 'New US Zone',
+            'code' => 'new-us',
+            'type' => 'country',
+            'countries' => ['US'],
+            'priority' => 10,
+            'active' => true,
+        ]);
+
+        expect($this->resolver->resolve($address)?->name)->toBe('New US Zone');
     });
 
     it('can get all matching zones', function (): void {
@@ -526,5 +550,57 @@ describe('ShippingZoneResolver', function (): void {
         expect($zones->pluck('name')->all())
             ->toContain('Owner A Zone', 'Global US Zone 2')
             ->not->toContain('Owner B Zone');
+    });
+
+    it('honors an explicit owner tuple even when ambient context differs', function (): void {
+        config()->set('shipping.features.owner.enabled', true);
+        config()->set('shipping.features.owner.include_global', false);
+
+        $ownerA = User::factory()->create();
+        $ownerB = User::factory()->create();
+
+        OwnerContext::withOwner($ownerA, function () use ($ownerA): void {
+            ShippingZone::create([
+                'owner_type' => $ownerA->getMorphClass(),
+                'owner_id' => $ownerA->getKey(),
+                'name' => 'Owner A Explicit Zone',
+                'code' => 'owner-a-explicit',
+                'type' => 'country',
+                'countries' => ['US'],
+                'priority' => 10,
+                'active' => true,
+            ]);
+        });
+
+        $address = new AddressData(
+            name: 'Explicit owner',
+            phone: '000',
+            line1: '1 Test Street',
+            postcode: '10000',
+            country: 'US',
+        );
+
+        OwnerContext::withOwner($ownerB, function () use ($address, $ownerA): void {
+            $zones = $this->resolver->resolveAll(
+                $address,
+                (string) $ownerA->getKey(),
+                $ownerA->getMorphClass(),
+            );
+
+            expect($zones->pluck('name')->all())->toBe(['Owner A Explicit Zone']);
+        });
+    });
+
+    it('rejects a partial explicit owner tuple', function (): void {
+        $address = new AddressData(
+            name: 'Partial owner',
+            phone: '000',
+            line1: '1 Test Street',
+            postcode: '10000',
+            country: 'US',
+        );
+
+        expect(fn (): mixed => $this->resolver->resolveAll($address, 'owner-a', null))
+            ->toThrow(InvalidArgumentException::class);
     });
 });
