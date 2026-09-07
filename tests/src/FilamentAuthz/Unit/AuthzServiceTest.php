@@ -11,8 +11,33 @@ beforeEach(function (): void {
 });
 
 describe('Authz Service', function (): void {
-    it('is registered as a singleton by the Filament adapter', function (): void {
-        expect(app(Authz::class))->toBe(app(Authz::class));
+    it('is scoped to one container lifecycle by the Filament adapter', function (): void {
+        $first = app(Authz::class);
+
+        expect($first)->toBe(app(Authz::class));
+
+        app()->forgetScopedInstances();
+
+        expect(app(Authz::class))->not->toBe($first);
+    });
+
+    it('does not carry permission discovery cache into the next request lifecycle', function (): void {
+        $first = app(Authz::class);
+        $permissionCache = new ReflectionProperty(Authz::class, 'permissionCache');
+        $permissionCache->setValue($first, [
+            'page' => [
+                'StalePage_default' => 'page.stale',
+            ],
+        ]);
+
+        expect($first->getPagePermission('StalePage'))->toBe('page.stale');
+
+        app()->forgetScopedInstances();
+
+        $second = app(Authz::class);
+
+        expect($second)->not->toBe($first)
+            ->and($second->getPagePermission('StalePage'))->toBeNull();
     });
 
     it('can build permission keys', function (): void {

@@ -59,33 +59,33 @@ class RatesRelationManager extends RelationManager
 
                 Forms\Components\TextInput::make('base_rate')
                     ->numeric()
-                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                    ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                     ->required()
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                     ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : 0),
 
                 Forms\Components\TextInput::make('per_unit_rate')
                     ->numeric()
-                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                    ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                     ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : 0)
                     ->visible(fn (Get $get) => in_array($get('calculation_type'), ['per_kg', 'per_item', 'percentage'])),
 
                 Forms\Components\TextInput::make('min_charge')
                     ->numeric()
-                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                    ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                     ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
 
                 Forms\Components\TextInput::make('max_charge')
                     ->numeric()
-                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                    ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                     ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
 
                 Forms\Components\TextInput::make('free_shipping_threshold')
                     ->numeric()
-                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                    ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                     ->helperText('Orders above this amount get free shipping')
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                     ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
@@ -102,7 +102,7 @@ class RatesRelationManager extends RelationManager
                             ->required(),
                         Forms\Components\TextInput::make('rate')
                             ->numeric()
-                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                            ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                             ->required()
                             ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                             ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : 0),
@@ -148,7 +148,7 @@ class RatesRelationManager extends RelationManager
                                     ->numeric()
                                     ->required()
                                     ->prefix(fn (Get $get): ?string => in_array($get('type'), ['min_order_total', 'max_order_total'])
-                                        ? currency_symbol(config('shipping.defaults.currency', 'MYR'))
+                                        ? MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR'))
                                         : null)
                                     ->suffix(fn (Get $get): ?string => match ($get('type')) {
                                         'min_weight', 'max_weight' => 'g',

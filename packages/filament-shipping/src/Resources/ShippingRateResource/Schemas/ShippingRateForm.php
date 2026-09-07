@@ -68,33 +68,33 @@ final class ShippingRateForm
                     ->schema([
                         TextInput::make('base_rate')
                             ->numeric()
-                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                            ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                             ->required()
                             ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                             ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : 0),
 
                         TextInput::make('per_unit_rate')
                             ->numeric()
-                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                            ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                             ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                             ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : 0)
                             ->visible(fn (Get $get) => in_array($get('calculation_type'), ['per_kg', 'per_item', 'percentage'])),
 
                         TextInput::make('min_charge')
                             ->numeric()
-                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                            ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                             ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                             ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : null),
 
                         TextInput::make('max_charge')
                             ->numeric()
-                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                            ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                             ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                             ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : null),
 
                         TextInput::make('free_shipping_threshold')
                             ->numeric()
-                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                            ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                             ->helperText('Orders above this amount get free shipping')
                             ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                             ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : null),
@@ -111,7 +111,7 @@ final class ShippingRateForm
                                     ->required(),
                                 TextInput::make('rate')
                                     ->numeric()
-                                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                                    ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                                     ->required()
                                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                                     ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : 0),
@@ -159,7 +159,7 @@ final class ShippingRateForm
                                     ->numeric()
                                     ->required()
                                     ->prefix(fn (Get $get): ?string => in_array($get('type'), ['min_order_total', 'max_order_total'])
-                                        ? currency_symbol(config('shipping.defaults.currency', 'MYR'))
+                                        ? MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR'))
                                         : null)
                                     ->suffix(fn (Get $get): ?string => match ($get('type')) {
                                         'min_weight', 'max_weight' => 'g',
