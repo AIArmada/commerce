@@ -103,6 +103,14 @@ describe('PerformsCharges', function (): void {
         $this->assertSame('2', $payload['purchase']['products'][0]['quantity']);
     });
 
+    it('rejects a checkout charge total outside the configured bounds', function (): void {
+        config()->set('cashier-chip.billing.max_amount_minor', 1500);
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+
+        expect(fn () => $user->checkoutCharge(1000, 'Test Product', 2))
+            ->toThrow(InvalidArgumentException::class);
+    });
+
     it('charge without chip id', function (): void {
         $user = $this->createUser(['email' => 'test@example.com', 'name' => 'Test User']);
 

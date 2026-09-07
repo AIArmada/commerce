@@ -839,6 +839,7 @@ class Subscription extends Model
     public function charge(?int $amount = null)
     {
         $amount = $amount ?? $this->calculateSubscriptionAmount();
+        Cashier::assertAmountWithinBounds($amount);
 
         $recurringTokenId = $this->customer->defaultPaymentMethod()?->id();
 

@@ -16,6 +16,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 /**
  * Main Cashier class for CHIP payment gateway.
@@ -327,6 +328,28 @@ final class Cashier
         $money = new Money($amount, new Currency($currency), false);
 
         return $money->format();
+    }
+
+    public static function maximumAmount(): int
+    {
+        return max(1, (int) config('cashier-chip.billing.max_amount_minor', 100_000_000));
+    }
+
+    public static function isAmountWithinBounds(int $amount): bool
+    {
+        return $amount > 0 && $amount <= static::maximumAmount();
+    }
+
+    public static function assertAmountWithinBounds(int $amount): void
+    {
+        if (static::isAmountWithinBounds($amount)) {
+            return;
+        }
+
+        throw new InvalidArgumentException(sprintf(
+            'Charge amount must be between 1 and %d minor units.',
+            static::maximumAmount(),
+        ));
     }
 
     /**

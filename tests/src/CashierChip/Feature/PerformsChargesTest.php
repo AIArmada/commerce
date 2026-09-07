@@ -23,6 +23,15 @@ describe('PerformsCharges', function (): void {
         $this->assertContains($payment->status(), ['created', 'paid']);
     });
 
+    it('rejects charge amounts outside the configured bounds', function (): void {
+        config()->set('cashier-chip.billing.max_amount_minor', 5000);
+
+        expect(fn () => $this->user->charge(0))
+            ->toThrow(InvalidArgumentException::class);
+        expect(fn () => $this->user->charge(5001))
+            ->toThrow(InvalidArgumentException::class);
+    });
+
     it('it can create payment', function (): void {
         $payment = $this->user->pay(2000);
 

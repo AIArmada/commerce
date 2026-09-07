@@ -15,6 +15,7 @@ use AIArmada\Chip\Data\ClientData;
 use AIArmada\Commerce\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use InvalidArgumentException;
 
 \uses(TestCase::class);
 describe('ChargeChipCustomer', function (): void {
@@ -124,5 +125,12 @@ describe('ChargeChipCustomer', function (): void {
         expect($payment)->toBeInstanceOf(Payment::class);
         expect($payment->rawAmount())->toBe(5000);
         expect($payment->currency())->toBe('SGD');
+
+        config()->set('cashier-chip.billing.max_amount_minor', 5000);
+
+        expect(fn () => ChargeChipCustomer::run($customer, 0))
+            ->toThrow(InvalidArgumentException::class);
+        expect(fn () => ChargeChipCustomer::run($customer, 5001))
+            ->toThrow(InvalidArgumentException::class);
     });
 });

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * @property string $id
@@ -26,6 +27,15 @@ use Illuminate\Support\Carbon;
 class RenewalAttempt extends Model
 {
     use HasUuids;
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $attempt): void {
+            if ($attempt->isDirty('amount_minor')) {
+                throw new LogicException('A renewal attempt amount is frozen after it is claimed.');
+            }
+        });
+    }
 
     protected $fillable = [
         'subscription_id',

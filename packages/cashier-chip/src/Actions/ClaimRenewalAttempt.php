@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Actions;
 
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
@@ -34,7 +35,9 @@ final class ClaimRenewalAttempt
                 return null;
             }
 
-            $periodKey = $subscription->next_billing_at->format('Y-m');
+            $periodKey = ($subscription->billing_interval ?? 'month') === 'month'
+                ? $subscription->next_billing_at->format('Y-m')
+                : $subscription->next_billing_at->toIso8601String();
 
             $existingClaim = RenewalAttempt::query()
                 ->where('subscription_id', $subscription->id)
@@ -47,12 +50,18 @@ final class ClaimRenewalAttempt
                 return null;
             }
 
+            $amountMinor = $subscription->calculateSubscriptionAmount();
+
+            if ($amountMinor > Cashier::maximumAmount()) {
+                return null;
+            }
+
             $leaseMinutes = max(1, (int) config('cashier-chip.renewals.lease_minutes', 30));
 
             return RenewalAttempt::create([
                 'subscription_id' => $subscription->id,
                 'status' => 'claimed',
-                'amount_minor' => $subscription->calculateSubscriptionAmount(),
+                'amount_minor' => $amountMinor,
                 'period_key' => $periodKey,
                 'lease_expires_at' => CarbonImmutable::now()->addMinutes($leaseMinutes),
             ]);

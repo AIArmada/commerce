@@ -26,6 +26,8 @@ final class ChargeChipCustomer
      */
     public function handle(Model $billable, int $amount, #[SensitiveParameter] ?string $recurringToken = null, array $options = []): Payment
     {
+        Cashier::assertAmountWithinBounds($amount);
+
         $rateLimitKey = 'cashier-chip:charge:' . ($billable->chipId() ?? $billable->getKey());
         $executed = RateLimiter::attempt(
             key: $rateLimitKey,

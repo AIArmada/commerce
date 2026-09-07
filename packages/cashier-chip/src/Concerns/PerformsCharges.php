@@ -25,6 +25,8 @@ trait PerformsCharges // @phpstan-ignore trait.unused
      */
     public function charge(int $amount, #[SensitiveParameter] ?string $recurringToken = null, array $options = []): Payment
     {
+        Cashier::assertAmountWithinBounds($amount);
+
         $rateLimitKey = 'cashier-chip:charge:' . ($this->chipId() ?? $this->getKey());
         $executed = RateLimiter::attempt(
             key: $rateLimitKey,
@@ -140,6 +142,8 @@ trait PerformsCharges // @phpstan-ignore trait.unused
      */
     public function createPayment(int $amount, array $options = []): Payment
     {
+        Cashier::assertAmountWithinBounds($amount);
+
         $metadata = $this->billableMetadata($options['metadata'] ?? null);
         $currency = $options['currency'] ?? $this->preferredCurrency();
         $currency = is_string($currency) && $currency !== ''
@@ -246,6 +250,8 @@ trait PerformsCharges // @phpstan-ignore trait.unused
      */
     public function checkout(int $amount, array $sessionOptions = [], array $customerOptions = []): Checkout
     {
+        Cashier::assertAmountWithinBounds($amount);
+
         return Checkout::customer($this)->create($amount, array_merge($sessionOptions, $customerOptions));
     }
 
@@ -262,9 +268,14 @@ trait PerformsCharges // @phpstan-ignore trait.unused
         array $sessionOptions = [],
         array $customerOptions = []
     ): Checkout {
+        Cashier::assertAmountWithinBounds($amount);
+
+        $quantity = max(1, $quantity);
+        Cashier::assertAmountWithinBounds($amount * $quantity);
+
         return Checkout::customer($this)
             ->addProduct($name, $amount, $quantity)
-            ->create($amount * max(1, $quantity), array_merge($sessionOptions, $customerOptions));
+            ->create($amount * $quantity, array_merge($sessionOptions, $customerOptions));
     }
 
     /**

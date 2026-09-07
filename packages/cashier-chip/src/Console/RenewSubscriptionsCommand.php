@@ -116,7 +116,7 @@ class RenewSubscriptionsCommand extends Command
         }
 
         /** @var Model&BillableContract $billable */
-        if ($attempt->amount_minor <= 0) {
+        if (! Cashier::isAmountWithinBounds($attempt->amount_minor)) {
             $this->recordFailure($attempt, $subscription, 'INVALID_RENEWAL_AMOUNT');
 
             return 'failed';

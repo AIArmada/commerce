@@ -54,6 +54,10 @@ return [
         'charges_per_minute' => env('CASHIER_CHIP_CHARGES_PER_MINUTE', 30),
     ],
 
+    'billing' => [
+        'max_amount_minor' => 100_000_000,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | HTTP
