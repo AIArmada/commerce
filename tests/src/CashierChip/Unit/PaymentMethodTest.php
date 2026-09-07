@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
-use Mockery;
 
 uses(CashierChipTestCase::class);
 

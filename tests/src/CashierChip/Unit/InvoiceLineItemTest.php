@@ -7,7 +7,6 @@ use AIArmada\CashierChip\Invoice\InvoiceLineItem;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Akaunting\Money\Money;
-use Mockery;
 
 uses(CashierChipTestCase::class);
 

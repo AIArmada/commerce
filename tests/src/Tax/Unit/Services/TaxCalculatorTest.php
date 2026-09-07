@@ -9,7 +9,6 @@ use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Tax\Settings\TaxSettings;
-use Exception;
 
 describe('TaxCalculator', function (): void {
     beforeEach(function (): void {

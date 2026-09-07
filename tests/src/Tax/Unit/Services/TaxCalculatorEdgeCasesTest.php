@@ -9,8 +9,6 @@ use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Tax\Settings\TaxSettings;
 use AIArmada\Tax\Settings\TaxZoneSettings;
-use Exception;
-use Mockery;
 
 describe('TaxCalculatorEdgeCases', function (): void {
     beforeEach(function (): void {

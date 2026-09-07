@@ -10,8 +10,6 @@ use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use LogicException;
-use Mockery;
 
 uses(CashierChipTestCase::class);
 

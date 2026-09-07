@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
-use Exception;
 
 describe('TaxZoneNotFoundException', function (): void {
     it('exception creation with default message', function (): void {
