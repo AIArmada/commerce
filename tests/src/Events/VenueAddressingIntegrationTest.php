@@ -9,7 +9,9 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventLocation;
 use AIArmada\Events\Models\Venue;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 test('venue falls back to flat address columns when shared addressing is disabled', function (): void {
@@ -70,6 +72,51 @@ test('venue reads primary address data from the shared address relation when add
         ->and($addressData?->countryCode)->toBe('MY')
         ->and(DB::table('addressables')->where('address_id', $address->id)->value('owner_id'))
         ->toBe(OwnerContext::resolve()?->getKey());
+});
+
+test('venue uses the configured addressables table throughout the shared address relation', function (): void {
+    $pivotTable = 'events_custom_addressables';
+    $originalPivotTable = config('addressing.database.tables.addressables');
+    $originalAddressingEnabled = config('events.integrations.addressing_enabled');
+
+    try {
+        config()->set('addressing.database.tables.addressables', $pivotTable);
+        config()->set('events.integrations.addressing_enabled', true);
+
+        Schema::create($pivotTable, function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('address_id')->index();
+            $table->uuidMorphs('addressable');
+            $table->string('type')->default('primary')->index();
+            $table->string('label')->nullable();
+            $table->boolean('is_primary')->default(false)->index();
+            $table->timestampTz('valid_from')->nullable();
+            $table->timestampTz('valid_until')->nullable();
+            $table->nullableUuidMorphs('owner');
+            $table->timestamps();
+        });
+
+        $venue = Venue::factory()->create();
+        $address = Address::create([
+            'line1' => '123 Jalan Ampang',
+            'city' => 'Kuala Lumpur',
+            'country_code' => 'MY',
+        ]);
+
+        $venue->addresses()->attach($address->id, [
+            'id' => (string) Str::orderedUuid(),
+            'type' => 'primary',
+            'is_primary' => true,
+        ]);
+
+        expect($venue->getPrimaryAddressData()?->line1)->toBe('123 Jalan Ampang')
+            ->and(DB::table($pivotTable)->where('address_id', $address->id)->value('is_primary'))
+            ->toBe(1);
+    } finally {
+        Schema::dropIfExists($pivotTable);
+        config()->set('addressing.database.tables.addressables', $originalPivotTable);
+        config()->set('events.integrations.addressing_enabled', $originalAddressingEnabled);
+    }
 });
 
 test('event locations keep shared addresses isolated by their event owner', function (): void {
