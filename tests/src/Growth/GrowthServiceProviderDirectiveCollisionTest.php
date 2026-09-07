@@ -5,6 +5,17 @@ declare(strict_types=1);
 use AIArmada\Growth\GrowthServiceProvider;
 use Illuminate\Support\Facades\Blade;
 
+it('fails fast when growth and signals owner modes differ', function (): void {
+    config()->set('growth.features.owner.enabled', true);
+    config()->set('signals.owner.enabled', false);
+
+    /** @var GrowthServiceProvider $provider */
+    $provider = app()->getProvider(GrowthServiceProvider::class);
+
+    expect(fn (): mixed => $provider->packageBooted())
+        ->toThrow(InvalidArgumentException::class, 'Growth and Signals owner scoping must be enabled or disabled together.');
+});
+
 it('fails fast when blade directives are enabled and variant directive is already defined', function (): void {
     config()->set('growth.features.blade_directives.enabled', true);
 
