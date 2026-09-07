@@ -117,7 +117,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             'transaction_id' => $result->transactionId,
             'status' => $result->status->value,
             'amount' => $result->amount ?? $session->grand_total,
-            'currency' => $result->currency ?? $session->currency,
+            'currency' => $result->currency,
             'gateway_response' => $result->gatewayResponse,
             'processed_at' => CarbonImmutable::now()->toIso8601String(),
         ]);

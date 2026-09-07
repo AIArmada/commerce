@@ -369,7 +369,7 @@ final class CheckoutService implements CheckoutServiceInterface
                     'transaction_id' => $paymentResult->transactionId ?? ($session->payment_data['transaction_id'] ?? null),
                     'provider' => $paymentResult->provider ?? ($session->payment_data['provider'] ?? null),
                     'amount' => $paymentResult->amount ?? ($session->payment_data['amount'] ?? null),
-                    'currency' => $paymentResult->currency ?? ($session->payment_data['currency'] ?? $session->currency),
+                    'currency' => $paymentResult->currency,
                     'gateway_response' => $paymentResult->gatewayResponse !== []
                         ? $paymentResult->gatewayResponse
                         : ($session->payment_data['gateway_response'] ?? null),

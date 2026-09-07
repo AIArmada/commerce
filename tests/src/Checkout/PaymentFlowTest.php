@@ -464,7 +464,8 @@ describe('ProcessPaymentStep', function (): void {
             ->and($fresh->payment_data['callback_token'])->not->toBeNull()
             ->and($fresh->payment_data['callback_token'])->not->toBe('')
             ->and($fresh->payment_data)->toHaveKey('gateway')
-            ->and($fresh->payment_data['gateway'])->toBe('chip');
+            ->and($fresh->payment_data['gateway'])->toBe('chip')
+            ->and(data_get($fresh->payment_data, 'currency'))->toBeNull();
     });
 });
 
@@ -1569,6 +1570,7 @@ describe('CheckoutService', function (): void {
             'cart_id' => 'test-cart-post-payment-phase',
             'status' => AwaitingPayment::class,
             'selected_payment_gateway' => 'chip',
+            'currency' => 'MYR',
             'step_states' => [
                 'process_payment' => 'pending',
                 'reserve_inventory' => 'pending',
@@ -1584,7 +1586,8 @@ describe('CheckoutService', function (): void {
 
         expect($result->success)->toBeTrue()
             ->and($tracker->steps)->toBe(['reserve_inventory', 'persist_customer', 'create_order'])
-            ->and($session->fresh()->status instanceof Completed)->toBeTrue();
+            ->and($session->fresh()->status instanceof Completed)->toBeTrue()
+            ->and(data_get($session->fresh()->payment_data, 'currency'))->toBeNull();
     });
 
     it('dispatches CheckoutCompleted exactly once for a completed checkout', function (): void {

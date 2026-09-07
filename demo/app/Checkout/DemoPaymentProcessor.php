@@ -30,7 +30,7 @@ final class DemoPaymentProcessor implements PaymentProcessorInterface
 
     public function createPayment(CheckoutSession $session, PaymentRequest $request): PaymentResult
     {
-        $paymentId = 'demo-pay-'.Str::lower(Str::random(20));
+        $paymentId = 'demo-pay-' . Str::lower(Str::random(20));
         $redirectUrl = route('demo.payment.show', ['checkoutSession' => $session]);
 
         return new PaymentResult(
@@ -98,7 +98,7 @@ final class DemoPaymentProcessor implements PaymentProcessorInterface
             paymentId: $paymentId,
             transactionId: is_string($demoPayment['transaction_id'] ?? null) ? $demoPayment['transaction_id'] : null,
             amount: (int) ($demoPayment['amount'] ?? $session->grand_total),
-            currency: is_string($demoPayment['currency'] ?? null) ? $demoPayment['currency'] : $session->currency,
+            currency: is_string($demoPayment['currency'] ?? null) ? $demoPayment['currency'] : null,
             message: is_string($demoPayment['message'] ?? null) ? $demoPayment['message'] : null,
             gatewayResponse: is_array($demoPayment) ? $demoPayment : [],
         );
