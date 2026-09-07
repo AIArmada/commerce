@@ -105,7 +105,7 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
         ]);
     }
 
-    public function rollback(CheckoutSession $session): void
+    public function compensate(CheckoutSession $session): StepResult
     {
         $commitments = $this->activeCommitments ?? $this->persistedCommitments($session);
 
@@ -122,6 +122,11 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
 
         $session->calculateTotals();
         $session->save();
+
+        return $this->compensated('Discount commitments released', [
+            'operation' => 'release_discount_commitments',
+            'commitments_count' => count($commitments),
+        ]);
     }
 
     /**

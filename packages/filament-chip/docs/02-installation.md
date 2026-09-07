@@ -150,7 +150,6 @@ $panel->plugin(
     FilamentChipPlugin::make()
         ->operatorResources()
         ->developerResources(false)
-        ->regulatorResources(false)
 );
 ```
 

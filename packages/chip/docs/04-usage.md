@@ -69,6 +69,7 @@ $purchase = Chip::purchase()
     
     // Optional settings
     ->reference('ORD-2024-001')
+    // The reference is also the replay key when a cache store is configured.
     ->sendReceipt(true)
     ->notes('Thank you for your purchase!')
     
@@ -77,6 +78,17 @@ $purchase = Chip::purchase()
 
 // Redirect to CHIP checkout
 return redirect($purchase->checkout_url);
+```
+
+For a purchase without a stable reference, use an explicit replay key:
+
+```php
+$purchase = Chip::purchase()
+    ->idempotencyKey('checkout-session-123')
+    ->reference('ORD-2024-001')
+    ->addProductCents('Premium Plan', 9900)
+    ->email('customer@example.com')
+    ->create();
 ```
 
 ### Create from Cart/Order (Checkoutable Interface)

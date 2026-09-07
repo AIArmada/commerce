@@ -161,6 +161,7 @@ return [
         'ttl' => [
             'public_key' => env('CHIP_CACHE_PUBLIC_KEY_TTL', 86400),
             'payment_methods' => env('CHIP_CACHE_PAYMENT_METHODS_TTL', 3600),
+            'purchase_idempotency' => 86400,
         ],
     ],
 

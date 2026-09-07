@@ -182,10 +182,15 @@ Create zero-amount checkouts to save payment methods:
 $checkout = $user->createSetupPurchase([
     'success_url' => route('billing.methods'),
     'cancel_url' => route('billing.methods'),
+    // Reuse this value when retrying the same setup attempt.
+    'idempotency_key' => 'setup-attempt-123',
 ]);
 
 return redirect($checkout->checkout_url);
 ```
+
+`idempotency_key` is required for setup purchases. Use a new value for a new
+setup attempt and reuse the same value when recovering a timed-out request.
 
 This creates a CHIP purchase with:
 - `total_override = 0` (zero amount)

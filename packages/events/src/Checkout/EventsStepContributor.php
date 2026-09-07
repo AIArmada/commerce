@@ -8,6 +8,7 @@ use AIArmada\Checkout\Contracts\CheckoutStepInterface;
 use AIArmada\Checkout\Contracts\StepContributor;
 use AIArmada\Events\Actions\CreateRegistrationsFromOrderAction;
 use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
+use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Steps\CreateEventRegistrationsStep;
 use AIArmada\Events\Steps\IssueEventPassesStep;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
@@ -22,6 +23,7 @@ final readonly class EventsStepContributor implements StepContributor
 
         $steps['create_event_registrations'] = fn (): CheckoutStepInterface => new CreateEventRegistrationsStep(
             createRegistrations: app(CreateRegistrationsFromOrderAction::class),
+            registrationService: app(RegistrationServiceInterface::class),
         );
 
         if ((bool) config('events.features.auto_issue_passes', false)) {

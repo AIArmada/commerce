@@ -432,3 +432,37 @@ it('routes registrations to the matching event scope for event, occurrence, and 
             ->and($sessionOrderItem->fresh()->exists)->toBeTrue();
     });
 });
+
+it('compensates only registrations recorded by the checkout step', function (): void {
+    OwnerContext::withOwner(null, function (): void {
+        $event = Event::factory()->create();
+        $registration = EventRegistration::factory()->create([
+            'event_id' => $event->id,
+            'registration_type' => 'individual',
+            'status' => 'confirmed',
+            'source' => 'order',
+            'total_participants' => 1,
+            'currency' => 'MYR',
+        ]);
+        $session = CheckoutSession::query()->create([
+            'cart_id' => (string) Str::uuid(),
+            'cart_snapshot' => [],
+        ]);
+        $session->setStepData('create_event_registrations', [
+            'registration_ids' => [$registration->id],
+            'order_item_options' => [],
+        ]);
+
+        $registrationService = mock(RegistrationServiceInterface::class);
+        $registrationService->shouldReceive('cancel')
+            ->once()
+            ->withArgs(fn (EventRegistration $actual, ?string $reason): bool => $actual->is($registration)
+                && $reason === 'Checkout compensation');
+        app()->instance(RegistrationServiceInterface::class, $registrationService);
+
+        $result = app(CreateEventRegistrationsStep::class)->compensate($session->fresh());
+
+        expect($result->isCompensated())->toBeTrue()
+            ->and($result->data['cancelled'])->toBe(1);
+    });
+});

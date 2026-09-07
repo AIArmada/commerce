@@ -58,6 +58,30 @@ describe('WebhookService', function (): void {
             ->toBeTrue();
     });
 
+    it('rejects a Send SHA-512 signature through Collect verification', function (): void {
+        config()->set('chip.webhooks.collect.webhook_keys', [$this->publicKey]);
+
+        $payload = json_encode([
+            'id' => 2,
+            'type' => 'purchase',
+            'event_type' => 'purchase.paid',
+        ], JSON_THROW_ON_ERROR);
+
+        openssl_sign($payload, $signature, $this->privateKey, OPENSSL_ALGO_SHA512);
+
+        $request = Request::create(
+            uri: '/collect-webhook',
+            method: 'POST',
+            server: [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_SIGNATURE' => base64_encode($signature),
+            ],
+            content: $payload,
+        );
+
+        expect($this->webhookService->verifySignature($request))->toBeFalse();
+    });
+
     it('verifies incoming requests with configured webhook public keys', function (): void {
         config()->set('chip.collect.public_key', null);
         config()->set('chip.webhooks.collect.webhook_keys', [

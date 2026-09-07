@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Integrations\Payment;
 
+use AIArmada\Checkout\Contracts\PaymentCompensationInterface;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Data\PaymentRequest;
 use AIArmada\Checkout\Data\PaymentResult;
@@ -14,7 +15,7 @@ use AIArmada\Checkout\Support\ChipRefundGateway;
 use AIArmada\Chip\Facades\Chip;
 use Throwable;
 
-final class ChipProcessor implements PaymentProcessorInterface
+final class ChipProcessor implements PaymentCompensationInterface, PaymentProcessorInterface
 {
     public function __construct(
         private readonly ChipPurchasePayloadBuilder $payloadBuilder,
@@ -97,6 +98,11 @@ final class ChipProcessor implements PaymentProcessorInterface
     public function refund(string $paymentId, int $amount, ?string $reason = null): PaymentResult
     {
         return $this->refundGateway->refund($paymentId, $amount, $reason);
+    }
+
+    public function voidPayment(string $paymentId, ?string $reason = null): PaymentResult
+    {
+        return $this->refundGateway->voidPayment($paymentId, $reason);
     }
 
     public function checkStatus(string $paymentId): PaymentResult

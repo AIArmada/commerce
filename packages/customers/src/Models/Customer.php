@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -138,6 +139,15 @@ class Customer extends Model implements Auditable, HasMedia
         $prefix = config('customers.database.table_prefix', 'customer_');
 
         return $tables['customers'] ?? $prefix . 'customers';
+    }
+
+    public static function normalizeEmail(mixed $email): ?string
+    {
+        if ($email === null || ! is_scalar($email)) {
+            return null;
+        }
+
+        return mb_strtolower(mb_trim((string) $email));
     }
 
     // =========================================================================
@@ -428,17 +438,28 @@ class Customer extends Model implements Auditable, HasMedia
 
     private function assertEmailIsUniqueWithinOwnerScope(): void
     {
-        $email = $this->getAttribute('email');
+        $normalizedEmail = static::normalizeEmail($this->getAttribute('email'));
 
-        if (! is_string($email) || mb_trim($email) === '') {
+        if ($normalizedEmail === null) {
             return;
         }
 
-        $normalizedEmail = mb_strtolower(mb_trim($email));
+        $ownerType = $this->getAttribute('owner_type');
+        $ownerId = $this->getAttribute('owner_id');
+
+        if (($ownerType === null) !== ($ownerId === null)) {
+            throw new InvalidArgumentException('Owner type and owner id must both be present or both be null.');
+        }
 
         $query = static::query()
-            ->forOwner(includeGlobal: (bool) config('customers.features.owner.include_global', false))
+            ->withoutOwnerScope()
             ->whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail]);
+
+        if ($ownerType === null && $ownerId === null) {
+            $query->whereNull('owner_type')->whereNull('owner_id');
+        } else {
+            $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
+        }
 
         if ($this->exists) {
             $query->where($this->getKeyName(), '!=', $this->getKey());

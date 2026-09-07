@@ -400,7 +400,10 @@ function createProviderTestStep(string $identifier): CheckoutStepInterface
             return false;
         }
 
-        public function rollback(CheckoutSession $session): void {}
+        public function compensate(CheckoutSession $session): StepResult
+        {
+            return StepResult::compensated($this->identifier);
+        }
 
         public function getDependencies(): array
         {

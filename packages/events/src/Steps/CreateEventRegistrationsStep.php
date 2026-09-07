@@ -7,18 +7,24 @@ namespace AIArmada\Events\Steps;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\AbstractCheckoutStep;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Actions\CreateRegistrationsFromOrderAction;
+use AIArmada\Events\Contracts\RegistrationServiceInterface;
+use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Throwable;
 
 final class CreateEventRegistrationsStep extends AbstractCheckoutStep
 {
     public function __construct(
         private readonly CreateRegistrationsFromOrderAction $createRegistrations,
+        private readonly RegistrationServiceInterface $registrationService,
     ) {}
 
     public function getIdentifier(): string
@@ -45,6 +51,7 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
             return $this->skipped('No order to create registrations for.');
         }
 
+        /** @var class-string<Model> $orderClass */
         $orderClass = CommerceIntegration::requireModelClass('order_model', 'order fulfillment');
 
         /** @var Model|null $order */
@@ -65,6 +72,11 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
         }
 
         $created = 0;
+        $stepData = $session->getStepData($this->getIdentifier());
+        $stepData['registration_ids'] = $this->stringList($stepData['registration_ids'] ?? []);
+        $stepData['order_item_options'] = is_array($stepData['order_item_options'] ?? null)
+            ? $stepData['order_item_options']
+            : [];
 
         foreach ($orderItems as $orderItem) {
             $purchasable = $orderItem->getRelation('purchasable');
@@ -75,13 +87,24 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
 
             $ticketType = $purchasable;
 
-            $this->markEventFulfillment($orderItem);
-
             $target = $this->resolveRegistrationTarget($ticketType);
 
             if ($target === null) {
                 continue;
             }
+
+            $originalOptions = $this->markEventFulfillment($orderItem);
+
+            if ($originalOptions !== null) {
+                $stepData['order_item_options'][(string) $orderItem->getKey()] = [
+                    'order_item_id' => (string) $orderItem->getKey(),
+                    'options' => $originalOptions['options'],
+                ];
+            }
+
+            $this->persistStepData($session, $stepData);
+
+            $existingRegistrationIds = $this->existingRegistrationIds($order, $orderItem);
 
             $participants = $this->resolveParticipants(
                 orderItem: $orderItem,
@@ -89,12 +112,28 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
                 order: $order,
             );
 
-            $this->createRegistrations->handle(
+            $registrations = $this->createRegistrations->handle(
                 $target,
                 $orderItem,
                 $participants,
                 $this->resolveRegistrant($session, $order),
             );
+
+            foreach ($registrations as $registration) {
+                if (! $registration instanceof EventRegistration) {
+                    continue;
+                }
+
+                $registrationId = $registration->getKey();
+
+                if ($registrationId === null || in_array((string) $registrationId, $existingRegistrationIds, true)) {
+                    continue;
+                }
+
+                $stepData['registration_ids'][] = (string) $registrationId;
+            }
+
+            $this->persistStepData($session, $stepData);
 
             $created++;
         }
@@ -103,7 +142,57 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
             return $this->skipped('No event ticket items found in order.');
         }
 
-        return $this->success(sprintf('%d event registrations created.', $created));
+        return $this->success(
+            sprintf('%d event registrations created.', $created),
+            $stepData,
+        );
+    }
+
+    public function compensate(CheckoutSession $session): StepResult
+    {
+        $stepData = $session->getStepData($this->getIdentifier());
+        $registrationIds = $this->stringList($stepData['registration_ids'] ?? []);
+        $errors = [];
+        $cancelled = 0;
+
+        if ($registrationIds !== []) {
+            $registrationClass = ModelResolver::registrationClass();
+            $registrations = $registrationClass::query()
+                ->whereKey($registrationIds)
+                ->get();
+
+            foreach ($registrations as $registration) {
+                try {
+                    $this->registrationService->cancel($registration, 'Checkout compensation');
+                    $cancelled++;
+                } catch (Throwable $e) {
+                    $errors[(string) $registration->getKey()] = $e->getMessage() !== ''
+                        ? $e->getMessage()
+                        : $e::class;
+                }
+            }
+        }
+
+        $restored = 0;
+
+        try {
+            $restored = $this->restoreOrderItemOptions($session, $stepData['order_item_options'] ?? []);
+        } catch (Throwable $e) {
+            $errors['order_item_options'] = $e->getMessage() !== '' ? $e->getMessage() : $e::class;
+        }
+
+        if ($errors !== []) {
+            return $this->failed('Event registration compensation failed.', $errors);
+        }
+
+        return $this->compensated(
+            'Event registrations compensated.',
+            [
+                'registration_ids' => $registrationIds,
+                'cancelled' => $cancelled,
+                'order_items_restored' => $restored,
+            ],
+        );
     }
 
     /**
@@ -203,19 +292,113 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
         return EventTicketScope::target($ticketType);
     }
 
-    private function markEventFulfillment(mixed $orderItem): void
+    private function markEventFulfillment(mixed $orderItem): ?array
     {
-        $options = $orderItem->getAttribute('options');
+        $originalOptions = $orderItem->getAttribute('options');
+        $options = $originalOptions;
 
         $options = is_array($options) ? $options : [];
 
         if (($options['event_fulfillment'] ?? null) === 'event_registration') {
-            return;
+            return null;
         }
 
         $orderItem->forceFill([
             'options' => [...$options, 'event_fulfillment' => 'event_registration'],
         ])->save();
+
+        return ['options' => $originalOptions];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function existingRegistrationIds(Model $order, mixed $orderItem): array
+    {
+        $registrationClass = ModelResolver::registrationClass();
+
+        return $registrationClass::byOrder($order)
+            ->whereHas(
+                'items',
+                fn ($query) => $query
+                    ->where('external_order_item_id', $orderItem->getKey())
+                    ->where('external_order_item_type', $orderItem::class),
+            )
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $stepData
+     */
+    private function persistStepData(CheckoutSession $session, array &$stepData): void
+    {
+        $stepData['registration_ids'] = array_values(array_unique(
+            $this->stringList($stepData['registration_ids'] ?? []),
+        ));
+
+        $session->setStepData($this->getIdentifier(), $stepData);
+    }
+
+    /**
+     * @param  array<string, mixed>  $restorations
+     */
+    private function restoreOrderItemOptions(CheckoutSession $session, mixed $restorations): int
+    {
+        if (! is_array($restorations) || $restorations === [] || $session->order_id === null) {
+            return 0;
+        }
+
+        /** @var class-string<Model> $orderClass */
+        $orderClass = CommerceIntegration::requireModelClass('order_model', 'order fulfillment');
+
+        /** @var Model $order */
+        $order = method_exists($orderClass, 'ownerScopeConfig') && ! $orderClass::ownerScopeConfig()->enabled
+            ? $orderClass::query()->findOrFail($session->order_id)
+            : OwnerWriteGuard::findOrFailForOwner($orderClass, $session->order_id);
+        $order->loadMissing('items');
+        $restored = 0;
+
+        foreach ($restorations as $restoration) {
+            if (! is_array($restoration)) {
+                continue;
+            }
+
+            $orderItemId = $restoration['order_item_id'] ?? null;
+
+            if (! is_string($orderItemId) && ! is_int($orderItemId)) {
+                continue;
+            }
+
+            $orderItem = $order->getRelation('items')->first(
+                fn (mixed $item): bool => (string) $item->getKey() === (string) $orderItemId,
+            );
+
+            if (! $orderItem instanceof Model) {
+                continue;
+            }
+
+            $orderItem->forceFill(['options' => $restoration['options'] ?? null])->save();
+            $restored++;
+        }
+
+        return $restored;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function stringList(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(static fn (mixed $item): string => (string) $item, $value),
+            static fn (string $item): bool => $item !== '',
+        ));
     }
 
     private function resolveCustomerEmail(mixed $customer): ?string

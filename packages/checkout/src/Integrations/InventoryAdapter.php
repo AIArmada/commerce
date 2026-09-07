@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Integrations;
 
+use AIArmada\Checkout\Contracts\InventoryCompensationInterface;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Data\ReservationLine;
 use AIArmada\Inventory\Data\ReservationOutcome;
 
-final class InventoryAdapter
+final class InventoryAdapter implements InventoryCompensationInterface
 {
     /** @param list<ReservationLine> $lines */
     public function reserve(string $reference, array $lines, int $ttl = 900): ReservationOutcome

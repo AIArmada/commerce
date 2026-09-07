@@ -10,6 +10,7 @@ use AIArmada\CashierChip\Payment\StoredPaymentMethod;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use SensitiveParameter;
 
 trait ManagesPaymentMethods // @phpstan-ignore trait.unused
@@ -178,6 +179,20 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function createSetupPurchase(array $options = []): PurchaseData
     {
+        $idempotencyKey = $options['idempotency_key'] ?? null;
+
+        if ($idempotencyKey === null && is_array($options['chip'] ?? null)) {
+            $idempotencyKey = $options['chip']['idempotency_key'] ?? null;
+        }
+
+        if (! is_string($idempotencyKey) || mb_trim($idempotencyKey) === '') {
+            throw new InvalidArgumentException(
+                'An idempotency_key option is required when creating a setup purchase.',
+            );
+        }
+
+        $idempotencyKey = mb_trim($idempotencyKey);
+
         // Ensure customer exists on CHIP - create if not already exists
         if (! $this->hasChipId()) {
             $this->createAsChipCustomer();
@@ -211,6 +226,8 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
                 unset($purchaseData[$key]);
             }
         }
+
+        $purchaseData['idempotency_key'] = $idempotencyKey;
 
         return Cashier::chip()->createPurchase($purchaseData);
     }

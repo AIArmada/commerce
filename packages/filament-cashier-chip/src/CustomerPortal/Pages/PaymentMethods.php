@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\CustomerPortal\Pages;
 
+use AIArmada\FilamentCashierChip\Concerns\HasSetupPaymentMethodIdempotencyKey;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithBillable;
 use BackedEnum;
 use Exception;
@@ -15,7 +16,10 @@ use UnitEnum;
 
 class PaymentMethods extends Page
 {
+    use HasSetupPaymentMethodIdempotencyKey;
     use InteractsWithBillable;
+
+    public ?string $addPaymentMethodUrl = null;
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCreditCard;
 
@@ -60,6 +64,10 @@ class PaymentMethods extends Page
 
     public function getAddPaymentMethodUrl(): string
     {
+        if ($this->addPaymentMethodUrl !== null) {
+            return $this->addPaymentMethodUrl;
+        }
+
         $billable = $this->getBillable();
 
         if (! $billable || ! method_exists($billable, 'setupPaymentMethodUrl')) {
@@ -70,10 +78,16 @@ class PaymentMethods extends Page
             ?? $this->billingRoute('pages.billing.payment-methods');
 
         try {
-            return $billable->setupPaymentMethodUrl([
+            $url = $billable->setupPaymentMethodUrl($this->setupPaymentMethodOptions([
                 'success_url' => $successUrl,
                 'cancel_url' => $this->billingRoute('pages.billing.payment-methods'),
-            ]);
+            ]));
+
+            if ($url !== '') {
+                $this->addPaymentMethodUrl = $url;
+            }
+
+            return $url;
         } catch (Exception) {
             return '#';
         }

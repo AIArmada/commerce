@@ -161,6 +161,27 @@ $paymentMethod?->delete();
 > **Note:** Attaching payment methods, updating default methods, or using setup intents remains
 > gateway-native behavior. Use the installed gateway package directly when you need those write APIs.
 
+### CHIP Setup Intents
+
+CHIP implements setup intents as zero-amount setup purchases. They require an
+explicit idempotency key so a retried request reuses the original purchase:
+
+```php
+use Illuminate\Support\Str;
+
+$setupAttemptKey = (string) Str::uuid();
+
+$checkout = $user->createGatewaySetupIntent('chip', [
+    'idempotency_key' => $setupAttemptKey,
+    'success_url' => route('billing.payment-methods'),
+    'cancel_url' => route('billing.payment-methods'),
+]);
+```
+
+Persist or otherwise retain the key for the lifetime of the setup attempt and
+reuse it after a timeout or transport failure. A missing CHIP key is rejected;
+the gateway does not create an unprotected setup purchase.
+
 ## Invoices
 
 ### Listing Invoices

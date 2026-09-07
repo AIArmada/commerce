@@ -74,3 +74,100 @@ it('rejects a non-object Send payload', function (): void {
 
     expect($response->getStatusCode())->toBe(400);
 });
+
+it('rejects a Send webhook without a signature header', function (): void {
+    $payload = json_encode([
+        'id' => 18,
+        'state' => 'completed',
+    ], JSON_THROW_ON_ERROR);
+
+    $response = app(SendWebhookController::class)->handle(
+        Request::create(
+            uri: '/chip/send/webhooks',
+            method: 'POST',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: $payload,
+        )
+    );
+
+    expect($response->getStatusCode())->toBe(401);
+});
+
+it('rejects a Send webhook when no Send public key is configured', function (): void {
+    config()->set('chip.webhooks.send.webhook_keys', []);
+
+    $payload = json_encode([
+        'id' => 19,
+        'state' => 'completed',
+    ], JSON_THROW_ON_ERROR);
+
+    openssl_sign($payload, $signature, $this->sendPrivateKey, OPENSSL_ALGO_SHA512);
+
+    $response = app(SendWebhookController::class)->handle(
+        Request::create(
+            uri: '/chip/send/webhooks',
+            method: 'POST',
+            server: [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_SIGNATURE' => base64_encode($signature),
+            ],
+            content: $payload,
+        )
+    );
+
+    expect($response->getStatusCode())->toBe(401);
+});
+
+it('rejects a forged Send webhook signature', function (): void {
+    $forgedKey = openssl_pkey_new([
+        'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        'private_key_bits' => 2048,
+    ]);
+
+    expect($forgedKey)->not->toBeFalse();
+    openssl_pkey_export($forgedKey, $forgedPrivateKey);
+
+    $payload = json_encode([
+        'id' => 20,
+        'state' => 'completed',
+    ], JSON_THROW_ON_ERROR);
+
+    openssl_sign($payload, $signature, $forgedPrivateKey, OPENSSL_ALGO_SHA512);
+
+    $response = app(SendWebhookController::class)->handle(
+        Request::create(
+            uri: '/chip/send/webhooks',
+            method: 'POST',
+            server: [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_SIGNATURE' => base64_encode($signature),
+            ],
+            content: $payload,
+        )
+    );
+
+    expect($response->getStatusCode())->toBe(401);
+});
+
+it('rejects a Collect SHA-256 signature on the Send route', function (): void {
+    $payload = json_encode([
+        'id' => 21,
+        'state' => 'completed',
+    ], JSON_THROW_ON_ERROR);
+
+    openssl_sign($payload, $signature, $this->sendPrivateKey, OPENSSL_ALGO_SHA256);
+
+    $response = app(SendWebhookController::class)->handle(
+        Request::create(
+            uri: '/chip/send/webhooks',
+            method: 'POST',
+            server: [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_SIGNATURE' => base64_encode($signature),
+            ],
+            content: $payload,
+        )
+    );
+
+    expect($response->getStatusCode())->toBe(401);
+});

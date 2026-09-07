@@ -20,6 +20,8 @@ final class PurchaseBuilder
      */
     private array $data = [];
 
+    private ?string $idempotencyKey = null;
+
     public function __construct(
         private ChipCollectService $service
     ) {}
@@ -344,6 +346,22 @@ final class PurchaseBuilder
     }
 
     /**
+     * Set the key used to replay a previously-created purchase.
+     */
+    public function idempotencyKey(string $idempotencyKey): self
+    {
+        $idempotencyKey = mb_trim($idempotencyKey);
+
+        if ($idempotencyKey === '') {
+            throw new ChipValidationException('Idempotency key cannot be empty.');
+        }
+
+        $this->idempotencyKey = $idempotencyKey;
+
+        return $this;
+    }
+
+    /**
      * Set success redirect URL
      */
     public function successUrl(string $url): self
@@ -501,7 +519,13 @@ final class PurchaseBuilder
             $this->data['brand_id'] = config('chip.collect.brand_id');
         }
 
-        return $this->service->createPurchase($this->data);
+        $data = $this->data;
+
+        if ($this->idempotencyKey !== null) {
+            $data['idempotency_key'] = $this->idempotencyKey;
+        }
+
+        return $this->service->createPurchase($data);
     }
 
     /**

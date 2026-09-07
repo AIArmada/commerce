@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Models;
 
+use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\States\Cancelled;
 use AIArmada\Checkout\States\CheckoutState;
@@ -185,6 +186,70 @@ class CheckoutSession extends Model
         $states[$identifier] = $status->value;
 
         $this->update(['step_states' => $states]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getStepData(string $identifier): array
+    {
+        $stepData = data_get($this->payment_data ?? [], "checkout_step_data.{$identifier}", []);
+
+        return is_array($stepData) ? $stepData : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function setStepData(string $identifier, array $data): void
+    {
+        $paymentData = $this->payment_data ?? [];
+        $stepData = $paymentData['checkout_step_data'] ?? [];
+
+        if (! is_array($stepData)) {
+            $stepData = [];
+        }
+
+        $stepData[$identifier] = $data;
+        $paymentData['checkout_step_data'] = $stepData;
+
+        $this->update(['payment_data' => $paymentData]);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function getCompensationLog(): array
+    {
+        $log = data_get($this->payment_data ?? [], 'checkout_compensation_log', []);
+
+        if (! is_array($log)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $log,
+            static fn (mixed $entry): bool => is_array($entry),
+        ));
+    }
+
+    public function recordCompensation(string $stepIdentifier, StepResult $result): void
+    {
+        $paymentData = $this->payment_data ?? [];
+        $log = $this->getCompensationLog();
+
+        $log[] = [
+            'step_identifier' => $stepIdentifier,
+            'status' => $result->status->value,
+            'message' => $result->message,
+            'data' => $result->data,
+            'errors' => $result->errors,
+            'recorded_at' => CarbonImmutable::now()->toIso8601String(),
+        ];
+
+        $paymentData['checkout_compensation_log'] = $log;
+
+        $this->update(['payment_data' => $paymentData]);
     }
 
     public function isStepCompleted(string $identifier): bool

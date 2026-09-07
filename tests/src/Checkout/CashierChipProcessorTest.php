@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Checkout\Data\PaymentRequest;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Integrations\Payment\CashierChipProcessor;
+use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Facades\Chip;
@@ -38,6 +40,52 @@ it('stores a JSON-safe public CHIP purchase response when checking payment statu
 
     expect($result->gatewayResponse)->toBe($purchase->toArray())
         ->and($json)->toBeString();
+});
+
+it('passes the checkout session key to guest CHIP purchases', function (): void {
+    $purchase = PurchaseData::from([
+        'id' => 'purchase-guest-123',
+        'type' => 'purchase',
+        'status' => 'created',
+        'created_on' => time(),
+        'updated_on' => time(),
+        'client' => [
+            'email' => 'guest@example.com',
+            'full_name' => 'Guest Customer',
+        ],
+        'purchase' => [
+            'total' => 1000,
+            'currency' => 'MYR',
+            'products' => [],
+        ],
+        'checkout_url' => 'https://gate.chip-in.asia/checkout/purchase-guest-123',
+    ]);
+
+    Chip::shouldReceive('createPurchase')
+        ->once()
+        ->with(Mockery::on(fn (array $payload): bool => $payload['idempotency_key'] === 'guest-session-123'))
+        ->andReturn($purchase);
+
+    $session = new CheckoutSession;
+    $session->setAttribute('id', 'guest-session-123');
+    $session->setRelation('billable', null);
+    $session->setRelation('customer', null);
+
+    $result = app(CashierChipProcessor::class)->createPayment(
+        $session,
+        new PaymentRequest(
+            amount: 1000,
+            currency: 'MYR',
+            gateway: 'cashier-chip',
+            description: 'Guest payment',
+            successUrl: 'https://example.test/success',
+            failureUrl: 'https://example.test/failure',
+            cancelUrl: 'https://example.test/cancel',
+        ),
+    );
+
+    expect($result->paymentId)->toBe('purchase-guest-123')
+        ->and($result->redirectUrl)->toBe('https://gate.chip-in.asia/checkout/purchase-guest-123');
 });
 
 it('keeps a pending CHIP refund in processing', function (): void {

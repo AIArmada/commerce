@@ -85,6 +85,36 @@ describe('ProcessChipWebhook', function (): void {
         Event::assertDispatched(PurchaseCreated::class);
     });
 
+    it('processes an identical webhook delivery only once', function (): void {
+        $payload = [
+            'event_type' => 'purchase.paid',
+            'type' => 'purchase',
+            'id' => 'purchase-double-delivery-123',
+            'brand_id' => 'brand-123',
+            'status' => 'paid',
+            'is_test' => true,
+            'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+            'client' => ['email' => 'test@example.com'],
+        ];
+
+        $firstWebhookCall = WebhookCall::create([
+            'name' => Webhook::WEBHOOK_NAME,
+            'url' => 'https://example.test/chip/webhooks',
+            'payload' => $payload,
+        ]);
+
+        $secondWebhookCall = WebhookCall::create([
+            'name' => Webhook::WEBHOOK_NAME,
+            'url' => 'https://example.test/chip/webhooks',
+            'payload' => $payload,
+        ]);
+
+        (new ProcessChipWebhook($firstWebhookCall))->handle();
+        (new ProcessChipWebhook($secondWebhookCall))->handle();
+
+        Event::assertDispatchedTimes(PurchasePaid::class, 1);
+    });
+
     it('dispatches PurchasePaid event', function (): void {
         $payload = [
             'event_type' => 'purchase.paid',

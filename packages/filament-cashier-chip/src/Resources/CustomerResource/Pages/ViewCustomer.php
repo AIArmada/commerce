@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages;
 
+use AIArmada\FilamentCashierChip\Concerns\HasSetupPaymentMethodIdempotencyKey;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -15,6 +16,8 @@ use Override;
 
 final class ViewCustomer extends ViewRecord
 {
+    use HasSetupPaymentMethodIdempotencyKey;
+
     protected static string $resource = CustomerResource::class;
 
     #[Override]
@@ -36,6 +39,8 @@ final class ViewCustomer extends ViewRecord
     #[Override]
     protected function getHeaderActions(): array
     {
+        $this->getSetupPaymentMethodIdempotencyKey();
+
         return [
             ActionGroup::make([
                 Action::make('create_chip_customer')
@@ -111,12 +116,14 @@ final class ViewCustomer extends ViewRecord
                     $record = $this->getRecord();
 
                     if (method_exists($record, 'setupPaymentMethodUrl')) {
-                        $url = $record->setupPaymentMethodUrl([
+                        $url = $record->setupPaymentMethodUrl($this->setupPaymentMethodOptions([
                             'success_url' => url()->current(),
                             'cancel_url' => url()->current(),
-                        ]);
+                        ]));
 
                         if ($url) {
+                            $this->resetSetupPaymentMethodIdempotencyKey();
+
                             Notification::make()
                                 ->title('Payment Method Setup URL')
                                 ->body('Redirect the customer to: ' . $url)

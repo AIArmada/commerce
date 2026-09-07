@@ -9,6 +9,11 @@ use AIArmada\Checkout\Models\CheckoutSession;
 
 final readonly class ChipPurchasePayloadBuilder
 {
+    public function idempotencyKey(CheckoutSession $session): string
+    {
+        return (string) $session->getKey();
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -32,6 +37,7 @@ final readonly class ChipPurchasePayloadBuilder
             ], static fn (mixed $value): bool => $value !== null
                 && (! is_string($value) || mb_trim($value) !== '')),
             'reference' => $session->id,
+            'idempotency_key' => $this->idempotencyKey($session),
             'success_redirect' => $request->successUrl,
             'failure_redirect' => $request->failureUrl,
             'cancel_redirect' => $request->cancelUrl,

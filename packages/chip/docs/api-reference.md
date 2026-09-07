@@ -176,6 +176,7 @@ Chip::purchase()
     ->fromCheckoutable(CheckoutableInterface $checkoutable): self
     ->fromCustomer(CustomerInterface $customer): self
     ->reference(string $reference): self
+    ->idempotencyKey(string $idempotencyKey): self
     ->successUrl(string $url): self
     ->failureUrl(string $url): self
     ->cancelUrl(string $url): self

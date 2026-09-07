@@ -52,6 +52,7 @@ The recommended way to add payment methods:
 $checkout = $user->createSetupPurchase([
     'success_url' => route('billing.methods'),
     'cancel_url' => route('billing.methods'),
+    'idempotency_key' => 'setup-attempt-123',
 ]);
 
 return redirect($checkout->checkout_url);
@@ -74,6 +75,7 @@ $checkout = $user->checkout(10000, [
 $url = $user->setupPaymentMethodUrl([
     'success_url' => route('billing.methods'),
     'cancel_url' => route('billing.methods'),
+    'idempotency_key' => 'setup-attempt-123',
 ]);
 
 return redirect($url);

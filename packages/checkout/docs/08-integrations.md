@@ -362,4 +362,4 @@ CHIP-specific logic is consolidated in shared support classes used by both `Chip
 |-------|---------|
 | `ChipPurchasePayloadBuilder` | Builds the CHIP purchase payload from `PaymentRequest` and `CheckoutSession` |
 | `ChipPaymentStatusMapper` | Normalizes CHIP status strings to `PaymentStatus` enum |
-| `ChipRefundGateway` | Handles CHIP refund calls |
+| `ChipRefundGateway` | Handles CHIP refund and void calls |

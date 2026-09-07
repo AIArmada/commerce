@@ -74,3 +74,54 @@ it('gracefully handles billables without payment method mutator methods', functi
         ->toContain(__('Unable to update payment method'))
         ->toContain(__('Unable to delete payment method'));
 });
+
+it('reuses one explicit setup key while resolving the portal URL', function (): void {
+    $billable = new class extends Model
+    {
+        /** @var list<array<string, mixed>> */
+        public array $setupCalls = [];
+
+        /**
+         * @param  array<string, mixed>  $options
+         */
+        public function setupPaymentMethodUrl(array $options = []): string
+        {
+            $this->setupCalls[] = $options;
+
+            return 'https://gate.chip-in.asia/checkout/setup-1';
+        }
+    };
+
+    $page = new class($billable) extends PaymentMethods
+    {
+        public function __construct(private readonly Model $testBillable) {}
+
+        protected function getBillable(): ?Model
+        {
+            return $this->testBillable;
+        }
+
+        /**
+         * @param  array<string, mixed>  $parameters
+         */
+        protected function billingRoute(string $name, array $parameters = []): string
+        {
+            return 'https://example.test/billing/payment-methods';
+        }
+    };
+
+    expect($page->getAddPaymentMethodUrl())
+        ->toBe('https://gate.chip-in.asia/checkout/setup-1')
+        ->and($page->getAddPaymentMethodUrl())
+        ->toBe('https://gate.chip-in.asia/checkout/setup-1')
+        ->and($billable->setupCalls)
+        ->toHaveCount(1);
+
+    $key = $billable->setupCalls[0]['idempotency_key'] ?? null;
+
+    expect($key)
+        ->toBeString()
+        ->not->toBeEmpty()
+        ->and($page->setupPaymentMethodIdempotencyKey)
+        ->toBe($key);
+});

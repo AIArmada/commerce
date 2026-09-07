@@ -94,6 +94,20 @@ $this->setAsDefault($paymentMethodId);
 $this->deletePaymentMethod($paymentMethodId);
 ```
 
+The built-in portal keeps one explicit CHIP idempotency key for each setup
+attempt and reuses it if the Livewire request is retried. Custom callers of
+`setupPaymentMethodUrl()` must provide the same key for retries:
+
+```php
+$url = $billable->setupPaymentMethodUrl([
+    'idempotency_key' => $setupAttemptKey,
+    'success_url' => route('billing.payment-methods'),
+    'cancel_url' => route('billing.payment-methods'),
+]);
+```
+
+Generate a new key only when starting a genuinely new setup attempt.
+
 ### Invoices
 
 View and download invoice history:

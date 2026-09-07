@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManagers;
 
+use AIArmada\FilamentCashierChip\Concerns\HasSetupPaymentMethodIdempotencyKey;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -13,12 +14,16 @@ use Filament\Tables\Table;
 
 final class PaymentMethodsRelationManager extends RelationManager
 {
+    use HasSetupPaymentMethodIdempotencyKey;
+
     protected static string $relationship = 'storedPaymentMethods';
 
     protected static ?string $title = 'Payment Methods';
 
     public function table(Table $table): Table
     {
+        $this->getSetupPaymentMethodIdempotencyKey();
+
         return $table
             ->columns([
                 TextColumn::make('brand')
@@ -47,12 +52,14 @@ final class PaymentMethodsRelationManager extends RelationManager
                         $record = $this->getOwnerRecord();
 
                         if (method_exists($record, 'setupPaymentMethodUrl')) {
-                            $url = $record->setupPaymentMethodUrl([
+                            $url = $record->setupPaymentMethodUrl($this->setupPaymentMethodOptions([
                                 'success_url' => url()->current(),
                                 'cancel_url' => url()->current(),
-                            ]);
+                            ]));
 
                             if ($url) {
+                                $this->resetSetupPaymentMethodIdempotencyKey();
+
                                 Notification::make()
                                     ->title('Payment Method Setup')
                                     ->body('Checkout URL generated. Redirect customer to complete setup.')
@@ -118,7 +125,14 @@ final class PaymentMethodsRelationManager extends RelationManager
                         $record = $this->getOwnerRecord();
 
                         if (method_exists($record, 'setupPaymentMethodUrl')) {
-                            $url = $record->setupPaymentMethodUrl();
+                            $url = $record->setupPaymentMethodUrl($this->setupPaymentMethodOptions([
+                                'success_url' => url()->current(),
+                                'cancel_url' => url()->current(),
+                            ]));
+
+                            if ($url) {
+                                $this->resetSetupPaymentMethodIdempotencyKey();
+                            }
 
                             Notification::make()
                                 ->title('Setup URL Generated')

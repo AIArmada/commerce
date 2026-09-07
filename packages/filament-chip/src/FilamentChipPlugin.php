@@ -5,17 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip;
 
 use AIArmada\FilamentChip\Pages\AnalyticsDashboardPage;
-use AIArmada\FilamentChip\Resources\AuditLogResource;
 use AIArmada\FilamentChip\Resources\BankAccountResource;
 use AIArmada\FilamentChip\Resources\ClientResource;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource;
-use AIArmada\FilamentChip\Resources\ComplianceReportResource;
-use AIArmada\FilamentChip\Resources\FraudReviewResource;
-use AIArmada\FilamentChip\Resources\PaymentLinkResource;
 use AIArmada\FilamentChip\Resources\PaymentResource;
 use AIArmada\FilamentChip\Resources\PurchaseResource;
-use AIArmada\FilamentChip\Resources\RefundResource;
-use AIArmada\FilamentChip\Resources\RiskRuleResource;
 use AIArmada\FilamentChip\Resources\SendInstructionResource;
 use AIArmada\FilamentChip\Widgets\ChipStatsWidget;
 use AIArmada\FilamentChip\Widgets\RecentTransactionsWidget;
@@ -27,13 +21,11 @@ use Filament\Panel;
  * Filament CHIP Plugin
  *
  * Provides admin panel integration for CHIP payment gateway data.
- * Resources are grouped by audience: operator (default), regulator (config-gated).
+ * Resources are grouped by audience: operator (default) and developer.
  */
 final class FilamentChipPlugin implements Plugin
 {
     private bool $hasOperatorResources = true;
-
-    private bool $hasRegulatorResources = false;
 
     private bool $hasDeveloperResources = false;
 
@@ -66,18 +58,7 @@ final class FilamentChipPlugin implements Plugin
     }
 
     /**
-     * Enable regulator-facing resources (compliance, audit, fraud, risk).
-     * Gated behind config: filament-chip.features.regulator_mode
-     */
-    public function regulatorResources(bool $enabled = true): static
-    {
-        $this->hasRegulatorResources = $enabled;
-
-        return $this;
-    }
-
-    /**
-     * Enable developer-facing resources (payment links, statements).
+     * Enable developer-facing resources (statements).
      */
     public function developerResources(bool $enabled = true): static
     {
@@ -121,22 +102,12 @@ final class FilamentChipPlugin implements Plugin
             $resources[] = PurchaseResource::class;
             $resources[] = ClientResource::class;
             $resources[] = PaymentResource::class;
-            $resources[] = RefundResource::class;
             $resources[] = SendInstructionResource::class;
             $resources[] = BankAccountResource::class;
         }
 
-        // Regulator resources (behind config gate)
-        if ($this->hasRegulatorResources && config('filament-chip.features.regulator_mode', false)) {
-            $resources[] = ComplianceReportResource::class;
-            $resources[] = AuditLogResource::class;
-            $resources[] = FraudReviewResource::class;
-            $resources[] = RiskRuleResource::class;
-        }
-
         // Developer resources
         if ($this->hasDeveloperResources) {
-            $resources[] = PaymentLinkResource::class;
             $resources[] = CompanyStatementResource::class;
         }
 

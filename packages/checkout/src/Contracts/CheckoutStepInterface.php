@@ -37,9 +37,9 @@ interface CheckoutStepInterface
     public function canSkip(CheckoutSession $session): bool;
 
     /**
-     * Rollback any changes made by this step.
+     * Compensate any changes made by this step.
      */
-    public function rollback(CheckoutSession $session): void;
+    public function compensate(CheckoutSession $session): StepResult;
 
     /**
      * Get the dependencies (other step identifiers) that must run before this step.

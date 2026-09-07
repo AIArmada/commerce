@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Integrations\Payment;
 
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\Checkout\Contracts\PaymentCompensationInterface;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Data\PaymentRequest;
 use AIArmada\Checkout\Data\PaymentResult;
@@ -16,7 +17,7 @@ use AIArmada\Chip\Facades\Chip;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
-final class CashierChipProcessor implements PaymentProcessorInterface
+final class CashierChipProcessor implements PaymentCompensationInterface, PaymentProcessorInterface
 {
     public function __construct(
         private readonly ChipPurchasePayloadBuilder $payloadBuilder,
@@ -51,7 +52,11 @@ final class CashierChipProcessor implements PaymentProcessorInterface
             $customer = $billable instanceof Model ? $billable : $session->customer;
 
             if ($customer instanceof Model && method_exists($customer, 'charge')) {
-                return $this->createBillablePayment($customer, $request);
+                return $this->createBillablePayment(
+                    customer: $customer,
+                    session: $session,
+                    request: $request,
+                );
             }
 
             return $this->createGuestPayment($session, $request);
@@ -93,6 +98,11 @@ final class CashierChipProcessor implements PaymentProcessorInterface
         return $this->refundGateway->refund($paymentId, $amount, $reason);
     }
 
+    public function voidPayment(string $paymentId, ?string $reason = null): PaymentResult
+    {
+        return $this->refundGateway->voidPayment($paymentId, $reason);
+    }
+
     public function checkStatus(string $paymentId): PaymentResult
     {
         try {
@@ -115,8 +125,11 @@ final class CashierChipProcessor implements PaymentProcessorInterface
         }
     }
 
-    private function createBillablePayment(Model $customer, PaymentRequest $request): PaymentResult
-    {
+    private function createBillablePayment(
+        Model $customer,
+        CheckoutSession $session,
+        PaymentRequest $request,
+    ): PaymentResult {
         /** @phpstan-ignore method.notFound */
         $payment = $customer->charge($request->amount, null, [
             'product_name' => $request->description,
@@ -126,10 +139,11 @@ final class CashierChipProcessor implements PaymentProcessorInterface
             'metadata' => $request->metadata,
             'reference' => $request->description,
             'currency' => $request->currency,
+            'idempotency_key' => $this->payloadBuilder->idempotencyKey($session),
         ]);
 
-        $checkoutUrl = $payment->purchase->checkout_url;
-        $purchaseId = $payment->purchase->id;
+        $checkoutUrl = $payment->checkoutUrl();
+        $purchaseId = $payment->id();
 
         if ($checkoutUrl !== null) {
             return PaymentResult::pending(

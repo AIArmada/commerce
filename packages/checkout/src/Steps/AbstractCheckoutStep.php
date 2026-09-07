@@ -23,9 +23,13 @@ abstract class AbstractCheckoutStep implements CheckoutStepInterface
         return false;
     }
 
-    public function rollback(CheckoutSession $session): void
+    public function compensate(CheckoutSession $session): StepResult
     {
-        // Default: no rollback action
+        return StepResult::compensated(
+            stepIdentifier: $this->getIdentifier(),
+            message: 'No compensation required',
+            data: ['operation' => 'none'],
+        );
     }
 
     /**
@@ -49,5 +53,13 @@ abstract class AbstractCheckoutStep implements CheckoutStepInterface
     protected function failed(string $message, array $errors = []): StepResult
     {
         return StepResult::failed($this->getIdentifier(), $message, $errors);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function compensated(string $message, array $data = []): StepResult
+    {
+        return StepResult::compensated($this->getIdentifier(), $message, $data);
     }
 }

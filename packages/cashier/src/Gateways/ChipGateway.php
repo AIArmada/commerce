@@ -27,6 +27,7 @@ use AIArmada\Chip\Services\ChipCollectService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use InvalidArgumentException;
 use SensitiveParameter;
 use Throwable;
 
@@ -365,9 +366,21 @@ class ChipGateway extends AbstractGateway
      * Create a setup purchase for adding payment methods.
      *
      * @param  array<string, mixed>  $options
+     *
+     * @throws InvalidArgumentException
      */
     public function createSetupIntent(BillableContract $billable, array $options = []): mixed
     {
+        $idempotencyKey = $options['idempotency_key'] ?? null;
+
+        if (! is_string($idempotencyKey) || mb_trim($idempotencyKey) === '') {
+            throw new InvalidArgumentException(
+                'An idempotency_key option is required when creating a CHIP setup intent.',
+            );
+        }
+
+        $options['idempotency_key'] = mb_trim($idempotencyKey);
+
         // CHIP uses a zero-amount purchase with skip_capture for setup
         return $this->callBillableMethod($billable, 'createSetupPurchase', [$options]);
     }

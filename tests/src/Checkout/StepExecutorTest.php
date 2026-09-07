@@ -45,7 +45,10 @@ function makeStep(string $id, ?string $dependency = null): CheckoutStepInterface
             return false;
         }
 
-        public function rollback(CheckoutSession $session): void {}
+        public function compensate(CheckoutSession $session): StepResult
+        {
+            return StepResult::compensated($this->id);
+        }
 
         public function getDependencies(): array
         {
@@ -127,7 +130,10 @@ describe('StepExecutor', function (): void {
                 return false;
             }
 
-            public function rollback(CheckoutSession $session): void {}
+            public function compensate(CheckoutSession $session): StepResult
+            {
+                return StepResult::compensated($this->getIdentifier());
+            }
 
             public function getDependencies(): array
             {

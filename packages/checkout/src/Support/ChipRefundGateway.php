@@ -13,6 +13,10 @@ use Throwable;
 
 final readonly class ChipRefundGateway
 {
+    public function __construct(
+        private ChipPaymentStatusMapper $statusMapper,
+    ) {}
+
     public function refund(string $paymentId, int $amount, ?string $reason = null): PaymentResult
     {
         try {
@@ -45,6 +49,27 @@ final readonly class ChipRefundGateway
             );
         } catch (Throwable $e) {
             return PaymentResult::failed("Refund failed: {$e->getMessage()}", [], $paymentId);
+        }
+    }
+
+    public function voidPayment(string $paymentId, ?string $reason = null): PaymentResult
+    {
+        try {
+            $cancelled = Chip::cancelPurchase($paymentId);
+            $response = $cancelled->toArray();
+            $paymentStatus = $this->statusMapper->fromPurchaseStatus($cancelled->status);
+
+            return new PaymentResult(
+                status: $paymentStatus,
+                paymentId: $paymentId,
+                message: $paymentStatus === PaymentStatus::Cancelled
+                    ? 'Payment voided successfully'
+                    : 'Payment void is being processed by CHIP',
+                gatewayResponse: $response,
+                provider: 'chip',
+            );
+        } catch (Throwable $e) {
+            return PaymentResult::failed("Payment void failed: {$e->getMessage()}", [], $paymentId);
         }
     }
 

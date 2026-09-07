@@ -104,7 +104,7 @@ final class CheckoutService implements CheckoutServiceInterface
             }
 
             try {
-                return DB::transaction(function () use ($session) {
+                $pipelineResult = DB::transaction(function () use ($session): CheckoutResult {
                     $this->ensureProcessingStatus($session);
 
                     $pipelineResult = $this->stepExecutor->run($session);
@@ -115,6 +115,12 @@ final class CheckoutService implements CheckoutServiceInterface
 
                     return $this->finalizer->finalize($session);
                 });
+
+                if (! $pipelineResult->requiresRedirect() && ! $pipelineResult->success) {
+                    return $this->handleCheckoutFailureResult($session, $pipelineResult);
+                }
+
+                return $pipelineResult;
             } catch (Throwable $e) {
                 $this->handleCheckoutFailure($session, $e);
 
@@ -147,7 +153,14 @@ final class CheckoutService implements CheckoutServiceInterface
                 throw CheckoutStepException::stepNotFound('process_payment');
             }
 
-            $result = $this->stepExecutor->processStep($session, $paymentStep);
+            try {
+                $result = $this->stepExecutor->processStep($session, $paymentStep);
+            } catch (Throwable $e) {
+                $this->stepExecutor->compensate($session);
+                $this->handleCheckoutFailure($session, $e);
+
+                throw $e;
+            }
 
             if ($session->payment_redirect_url !== null) {
                 return CheckoutResult::awaitingPayment($session, $session->payment_redirect_url);
@@ -157,7 +170,12 @@ final class CheckoutService implements CheckoutServiceInterface
                 return $this->continueFromStep($session, 'process_payment');
             }
 
-            return CheckoutResult::failed($session, $result->message ?? 'Payment failed', $result->errors);
+            $this->stepExecutor->compensate($session);
+
+            return $this->handleCheckoutFailureResult(
+                $session,
+                CheckoutResult::failed($session, $result->message ?? 'Payment failed', $result->errors),
+            );
         });
     }
 
@@ -168,7 +186,7 @@ final class CheckoutService implements CheckoutServiceInterface
         }
 
         return $this->withSessionOwnerContext($session, function () use ($session): CheckoutSession {
-            $this->rollbackCompletedSteps($session);
+            $this->stepExecutor->compensate($session);
 
             $session->transitionStatus(Cancelled::class);
 
@@ -189,7 +207,7 @@ final class CheckoutService implements CheckoutServiceInterface
         return $this->withSessionOwnerContext($session, function () use ($session, $callbackType, $payload): CheckoutResult {
             if ($callbackType === 'cancel') {
                 if ($session->status->canCancel()) {
-                    $this->rollbackCompletedSteps($session);
+                    $this->stepExecutor->compensate($session);
                     $session->transitionStatus(Cancelled::class);
                     $this->events->dispatch(new CheckoutCancelled($session));
                 }
@@ -198,19 +216,22 @@ final class CheckoutService implements CheckoutServiceInterface
             }
 
             if ($callbackType === 'failure') {
-                $this->rollbackCompletedSteps($session);
-                $session->transitionStatus(PaymentFailed::class);
-                $session->update(['error_message' => 'Payment failed at gateway']);
-                $this->events->dispatch(new CheckoutFailed($session, 'Payment failed'));
+                $this->stepExecutor->compensate($session);
 
-                return CheckoutResult::failed($session, 'Payment failed');
+                return $this->handleCheckoutFailureResult(
+                    $session,
+                    CheckoutResult::failed($session, 'Payment failed at gateway'),
+                );
             }
 
             if ($callbackType === 'success') {
                 return $this->verifyAndCompletePayment($session, $payload);
             }
 
-            return CheckoutResult::failed($session, 'Unknown callback type');
+            return $this->handleCheckoutFailureResult(
+                $session,
+                CheckoutResult::failed($session, 'Unknown callback type'),
+            );
         });
     }
 
@@ -281,30 +302,20 @@ final class CheckoutService implements CheckoutServiceInterface
     {
         $pipelineResult = $this->stepExecutor->run($session, fromStep: $fromStep);
 
-        if ($pipelineResult->requiresRedirect() || ! $pipelineResult->success) {
+        if ($pipelineResult->requiresRedirect()) {
             return $pipelineResult;
+        }
+
+        if (! $pipelineResult->success) {
+            return $this->handleCheckoutFailureResult($session, $pipelineResult);
         }
 
         return $this->finalizer->finalize($session);
     }
 
-    private function rollbackCompletedSteps(CheckoutSession $session): void
-    {
-        $steps = array_reverse($this->stepRegistry->getOrderedSteps());
-
-        foreach ($steps as $step) {
-            $state = $session->getStepState($step->getIdentifier());
-
-            if ($state === StepStatus::Completed) {
-                $step->rollback($session);
-                $session->setStepState($step->getIdentifier(), StepStatus::RolledBack);
-            }
-        }
-    }
-
     private function handleCheckoutFailure(CheckoutSession $session, Throwable $e): void
     {
-        $this->rollbackCompletedSteps($session);
+        $this->stepExecutor->compensate($session);
 
         if (! $session->status->isTerminal() && ! $session->status->is(PaymentFailed::class)) {
             $session->transitionStatus(PaymentFailed::class);
@@ -318,6 +329,21 @@ final class CheckoutService implements CheckoutServiceInterface
         $session->update(['error_message' => 'An error occurred during checkout. Please try again.']);
 
         $this->events->dispatch(new CheckoutFailed($session, $e->getMessage()));
+    }
+
+    private function handleCheckoutFailureResult(
+        CheckoutSession $session,
+        CheckoutResult $result,
+    ): CheckoutResult {
+        if (! $session->status->isTerminal() && ! $session->status->is(PaymentFailed::class)) {
+            $session->transitionStatus(PaymentFailed::class);
+        }
+
+        $message = $result->message ?? 'Checkout failed';
+        $session->update(['error_message' => $message]);
+        $this->events->dispatch(new CheckoutFailed($session, $message));
+
+        return CheckoutResult::failed($session, $message, $result->errors);
     }
 
     /**

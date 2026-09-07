@@ -155,6 +155,8 @@ Use zero-amount preauthorization to securely add a payment method without chargi
 $checkout = $user->createSetupPurchase([
     'success_url' => route('billing.payment-methods'),
     'cancel_url' => route('billing.payment-methods'),
+    // Reuse this value when retrying the same setup attempt.
+    'idempotency_key' => 'setup-attempt-123',
 ]);
 
 // Redirect to CHIP checkout to collect card details
@@ -164,6 +166,7 @@ return redirect($checkout->checkout_url);
 $url = $user->setupPaymentMethodUrl([
     'success_url' => route('billing.payment-methods'),
     'cancel_url' => route('billing.payment-methods'),
+    'idempotency_key' => 'setup-attempt-123',
 ]);
 
 return redirect($url);
@@ -173,6 +176,9 @@ This creates a CHIP purchase with:
 - `total_override = 0` (zero amount)
 - `skip_capture = true` (preauthorization only)  
 - `force_recurring = true` (save card for future use)
+
+`idempotency_key` is required for setup purchases. Reuse the same value when
+retrying one setup attempt and generate a new value for a new attempt.
 
 When the customer completes checkout, the webhook will automatically save the recurring token as a payment method.
 

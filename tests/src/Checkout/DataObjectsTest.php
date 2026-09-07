@@ -185,7 +185,8 @@ describe('ChipPurchasePayloadBuilder', function (): void {
         expect($payload['client'])->toBe([
             'email' => 'test@example.com',
             'full_name' => 'Test User',
-        ]);
+        ])->and($payload['idempotency_key'])
+            ->toBe('session_without_phone');
     });
 
     it('keeps a provided client phone number', function (): void {

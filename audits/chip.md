@@ -25,38 +25,16 @@ No table/column/index/constraint changes. Fixes are code + config + Filament reg
 - Filament adapter owns: purchase/payment/client/bank/statement/send resources, analytics/payout/refund/webhook pages, stats widgets, CSV exporters. Must stay read-mostly over domain models.
 
 ## Architecture Findings
-### A-1 No mutation idempotency — retry = duplicate charge
-- Severity: Critical
-- Location: `packages/chip/src/Clients/Http/BaseHttpClient.php:161` ("CHIP does not document idempotency keys for its mutation endpoints"), `Actions/Purchases/CreatePurchase.php`, `ChargePurchase.php`, `CapturePurchase.php`, `RefundPurchase.php`, `Builders/PurchaseBuilder.php::create()`, `checkout/Steps/ProcessPaymentStep.php` (increments `payment_attempts`, calls processor, each retry builds a new purchase)
-- Problem: Webhook ingress has idempotency (`ProcessChipWebhook` + `WebhookLogger` + `idempotency_key`); API egress has none. Any timeout → retry (HTTP retry 3×1000ms in `chip.http.retry`, checkout `payment.retry_limit=3`, operator "retry payment") creates a second purchase/charge/refund. There is no client-generated idempotency token, no pre-create existence check by `reference`, no refund-guard against double `refundPurchase`.
-- Why It Matters: Direct money loss path — the most severe finding in this unit.
-- Recommended Fix: Generate a caller-supplied idempotency token per logical operation (`PurchaseBuilder::idempotencyKey()` / `reference` uniqueness pre-check: look up existing `Purchase` by `reference` before `create`);serialize capture/refund per purchase (`lockForUpdate` on the local row + `SyncPurchaseRefundState`); make checkout retries reuse the same purchase id while it is still payable instead of creating new ones.
-- Breaking Change: NO (additive builder method + processor retry behavior)
-- Affected Packages: `chip`, `checkout` (`Integrations/Payment/ChipProcessor.php`, `CashierChipProcessor.php`, `Steps/ProcessPaymentStep.php`), `cashier-chip` (`ChargeChipCustomer`, `RefundChipPayment`)
-- Required Dependent Changes: Checkout processors pass through the session-scoped idempotency key; renewal/refund Actions check-then-act.
-- Migration Required: NO
-
-### A-2 Vendor-table migration coupling + missing `spatie/laravel-webhook-client` require
+### A-2 Vendor-table migration coupling
 - Severity: Medium
 - Location: `packages/chip/database/migrations/2000_04_01_000003_add_chip_webhook_columns_to_webhook_calls_table.php` (adds chip columns to spatie `webhook_calls`), `packages/chip/src/Models/Webhook.php` (`extends WebhookCall`, `getTable()` returns `webhook_calls`), `packages/chip/src/Webhooks/ProcessChipWebhook.php::storeWebhookRecord()` + `WebhookLogger::createLog()/isDuplicate()`, `src/ChipServiceProvider.php:96-128`
-- Problem: Re-check outcome (corrected + demoted High→Medium 2026-09-07): there are NOT two webhook stores — `Models/Webhook.php` extends spatie's `WebhookCall` and returns `webhook_calls` from `getTable()`, so `ProcessChipWebhook::storeWebhookRecord` (row UPDATE by webhook-call key) and `WebhookLogger::createLog` (row CREATE) both write the same `webhook_calls` table; no `chip_webhooks` table exists in any migration (the only `chip_*webhook*` table is `chip_send_webhooks`, which models Send-API records, not ingress). The failure modes were also overstated: the provider DOES guard (`if (! class_exists(WebhookCall::class)) return;` before touching `webhook-client.configs`) and the migration DOES guard (`if (! Schema::hasTable('webhook_calls')) return;`), so a standalone `chip` install skips webhook wiring instead of breaking at migrate time. Residual real gap: `composer.json` requires only `illuminate/http|queue|validation` with no `spatie/laravel-webhook-client`, so webhook support is a de-facto-but-undeclared dependency, and chip columns live on a vendor-owned table (broken boundary, guarded but still coupled).
-- Why It Matters: Undeclared dependency drifts from the spatie version `checkout`/`cashier-chip` resolve; vendor-table coupling means a spatie major can collide with the added columns; two writers (`storeWebhookRecord` update vs `createLog` insert) can diverge on which row represents "handled".
-- Recommended Fix: Add `spatie/laravel-webhook-client` to `chip` requires (it is already a de-facto dependency), freeze the vendor-table migration (no further alters), and declare the spatie `webhook_calls` row (via the `Webhook` subclass) the single system of record — `ProcessChipWebhook::storeWebhookRecord` is the single writer; `WebhookLogger` becomes a thin delegate or is deleted.
-- Breaking Change: YES (composer require addition; single-writer contract)
+- Problem: Re-check outcome (corrected + demoted High→Medium 2026-09-07): there are NOT two webhook stores — `Models/Webhook.php` extends spatie's `WebhookCall` and returns `webhook_calls` from `getTable()`, so `ProcessChipWebhook::storeWebhookRecord` (row UPDATE by webhook-call key) and `WebhookLogger::createLog` (row CREATE) both write the same `webhook_calls` table; no `chip_webhooks` table exists in any migration (the only `chip_*webhook*` table is `chip_send_webhooks`, which models Send-API records, not ingress). The failure modes were also overstated: the provider DOES guard (`if (! class_exists(WebhookCall::class)) return;` before touching `webhook-client.configs`) and the migration DOES guard (`if (! Schema::hasTable('webhook_calls')) return;`), so a standalone `chip` install skips webhook wiring instead of breaking at migrate time. Residual real gap: chip columns live on a vendor-owned table (broken boundary, guarded but still coupled). (`spatie/laravel-webhook-client` is now a declared + vendored require — verified `packages/chip/composer.json` + `vendor/spatie/laravel-webhook-client`.)
+- Why It Matters: Vendor-table coupling means a spatie major can collide with the added columns; two writers (`storeWebhookRecord` update vs `createLog` insert) can diverge on which row represents "handled".
+- Recommended Fix: Freeze the vendor-table migration (no further alters), and declare the spatie `webhook_calls` row (via the `Webhook` subclass) the single system of record — `ProcessChipWebhook::storeWebhookRecord` is the single writer; `WebhookLogger` becomes a thin delegate or is deleted.
+- Breaking Change: YES (single-writer contract)
 - Affected Packages: `chip`, `checkout` (`ProcessCheckoutWebhook`, `CheckoutWebhookProfile`), `cashier-chip`
 - Required Dependent Changes: `checkout` webhook profile/response keep working against the same spatie version pin.
 - Migration Required: NO (freeze; no new columns)
-
-### A-3 Send webhook verification path ambiguity (payout surface)
-- Severity: High
-- Location: `packages/chip/src/Services/WebhookService.php::verifySendSignature()` (SHA-512 + `resolveSendVerificationPublicKeys`), `::verifySignature()` (SHA-256), `Http/Controllers/SendWebhookController.php`, `Http/Controllers/WebhookController.php`, `Http/Middleware/VerifyWebhookSignature.php` (Collect-only: reads `X-Signature`, calls `verifySignature()`), `config/chip.php::webhooks.send` (`webhook_id`, `webhook_keys`, separate `route`)
-- Problem: The middleware enforces Collect verification, but the Send controller route (`routes/send-webhooks.php`) does not visibly share the same enforcement — verify whether `SendWebhookController::handle` calls `verifySendSignature()` with the Send webhook key (SHA-512) or inherits the Collect middleware (SHA-256 → every legitimate Send event rejected, or worse, unverified if the route skips the middleware). Payout webhooks are the money-out path; ambiguity here is unacceptable.
-- Why It Matters: Either Send events are dropped (payout status never syncs) or accepted without verification (forged payout-success → premature fulfillment/release).
-- Recommended Fix: Dedicated `VerifySendWebhookSignature` middleware (SHA-512, Send keys only) applied to the Send route; add explicit controller-level assertion + test with both algorithms (valid Collect key must FAIL the Send route and vice versa).
-- Breaking Change: NO (fail-closed tightening)
-- Affected Packages: `chip`
-- Required Dependent Changes: `filament-chip` webhook-monitor page labels per pipeline (Collect vs Send).
-- Migration Required: NO
 
 ### A-4 Amount-trust chain is unverified end to end
 - Severity: High
@@ -115,17 +93,16 @@ No table/column/index/constraint changes. Fixes are code + config + Filament reg
 - Migration Required: NO
 
 ## Laravel-Specific Findings
-- L-1 (Info): Missing `spatie/laravel-webhook-client` require — see A-2 (single tracking point; not a separate High). Also confirm `spatie/laravel-data` usage is covered by transitive deps or add it explicitly — `Data/*` leans on it heavily.
+- L-1 (Info): Confirm `spatie/laravel-data` usage is covered by transitive deps or add it explicitly — `Data/*` leans on it heavily.
 - L-2 (Compliant): PHP `^8.4`; uuid PKs; `getTable()` via `tableSuffix()` + prefix; `timestampsTz`/`immutable_datetime` casts; `CarbonImmutable` in `BuildChipDocData`, `Webhook` model; no `SoftDeletes` (app deletes in `Purchase::booted`, `Webhook::booted` — correct per rules).
 - L-3 (Low): `ChipServiceProvider` webhook-brand→owner map validation (lines ~368-419) fails fast with clear messages — good; keep. `configureWebhookRoutes()` respects `chip.webhooks.enabled` — good.
 
 ## Filament Adapter Findings
-- Thin-adapter check: FAIL on phantom resources, PASS elsewhere. Real resources (`Purchase`, `Payment`, `Client`, `BankAccount`, `CompanyStatement`, `SendInstruction`) + exporters + payout/refund/analytics pages correctly wrap domain models.
+- Thin-adapter check: PASS (six phantom resources deleted 2026-09-08, zero references — verified). Real resources (`Purchase`, `Payment`, `Client`, `BankAccount`, `CompanyStatement`, `SendInstruction`) + exporters + payout/refund/analytics pages correctly wrap domain models.
 - Domain leak: `Widgets/*` (11 widgets) recompute balances/turnover/payout stats via direct model queries — acceptable for read-only analytics, but share the aggregation with `chip/Services/LocalAnalyticsService.php` instead of triplicating SQL in widgets.
 - Duplication: `filament-chip` payout pages vs `filament-cashier-chip` billing portal both show money movement with different vocabulary — keep (different audiences: gateway ops vs subscriber billing), but cross-link.
 - Dependency direction: Correct (`filament-chip` → `chip`).
 - Navigation: COMPLIANT for real resources (`BaseChipResource::getNavigationGroup()` from `filament-chip.navigation.group`; `AnalyticsDashboardPage` same). No static `$navigationGroup`.
-- Phantom resources (verified — each file is ~30 lines, `getPages(): array { return []; }`, no Schemas/Tables): `AuditLogResource` (over `Webhook`), `ComplianceReportResource` (over `Purchase`), `FraudReviewResource` (over `Payment`), `PaymentLinkResource` (over `Payment`), `RefundResource` (over `Payment`), `RiskRuleResource` (over `Purchase`). Three different labels over the same `Payment` model and two over the same `Purchase` model with zero pages — pure nav noise that will error in Filament (resources with no pages). Delete all six.
 
 ## Database Findings
 - D-1 (Compliant): uuid PKs everywhere (verified); `nullableUuidMorphs`/`nullableMorphs` owner columns; no `constrained()`/`cascadeOnDelete()` (grep-verified); `json_column_type` configurable; app-level cascade in `Purchase::booted()` (`payments()->delete()`) — correct.
@@ -138,7 +115,7 @@ No table/column/index/constraint changes. Fixes are code + config + Filament reg
 - M-3: Money handling is integer-based (`Purchase::amount` int, builder cents methods, `MoneyCast`/`MoneyTransformer`) — correct; the gap is verification (A-4), not representation. `Purchase::totalMoney`/`format()` display path should route through `commerce-support` formatters (same note as cashier C-1).
 
 ## Security Findings
-- S-1 (Critical): A-1 (duplicate charges on retry) + A-3 (Send verification ambiguity) are the two money-critical security findings.
+- S-1 (Medium): Send-vs-Collect hardening residue — dedicated `VerifySendWebhookSignature` middleware + cross-algorithm tests (the ambiguity itself is resolved and verified).
 - S-2 (Medium): `verifySignature()` fail-open shape — `assertSignatureVerificationEnabled()` returns `false` when verification is disabled, and callers do `if (! assert) return true` (verified `WebhookService.php:21-23,44-46`), so a disabled non-prod install ACCEPTS every webhook with only a log warning. Production already fail-closes (throws `WebhookVerificationException` when disabled in prod — verified lines 341-343, matching checkout's `CheckoutSpatieSignatureValidator` discipline). Demoted from High: the prod path is safe; the residue is confusing naming + non-prod accept-all (needed by `SimulatesWebhooks`, which sets `chip.webhooks.verify_signature=false`). Rename to `isVerificationBypassed()` or invert, and keep the production hard-fail.
 - S-3 (Medium): `chip.logging.log_requests/log_responses` + `mask_sensitive_data` — verify `BaseHttpClient` never logs `api_key`/`Authorization`/`recurring tokens` even when masking is on (mask list must include them; `VerifyWebhookSignature::maskSensitiveData` list lacks token fields).
 - S-4 (Medium): Public-key fetch (`getPublicKey()` → `Cache::remember` → API `getWebhook($webhookId)`) uses caller-influenced `$webhookId` — constrain to configured `webhooks.collect.webhook_keys` map before hitting the network (SSRF/cache-poisoning surface).
@@ -163,11 +140,11 @@ No table/column/index/constraint changes. Fixes are code + config + Filament reg
 | `filament-cashier-chip` | purchase data for billing portal | Display-only | No change |
 
 ## Recommended Refactor Plan
-1. Mutation idempotency + Send verification lockdown + verify-bypass hardening (A-1, A-3, S-2) — money first.
-2. Declare `webhook-client` require; single webhook writer (A-2); fix idempotency race (D-2).
+1. Send verification lockdown (dedicated middleware + cross-algorithm tests) + verify-bypass hardening (S-2).
+2. Single webhook writer (A-2); fix idempotency race (D-2).
 3. Amount/currency assertion chain + single builder + canonical mapper (A-4, A-5, C-1).
 4. Move docs/customer-bridge ownership out (A-6).
-5. Delete 6 phantom Filament resources; share analytics aggregation (Filament findings).
+5. Share analytics aggregation (Filament findings).
 6. Pest suite with the ready-made simulator/factory (T-1).
 
 ## Files Likely to Change
@@ -179,12 +156,6 @@ No table/column/index/constraint changes. Fixes are code + config + Filament reg
 - `packages/checkout/src/Support/Chip*.php`, `Integrations/Payment/*.php`, `Webhooks/CheckoutSpatieSignatureValidator.php`
 
 ## Files / Code That Should Be Removed
-- `packages/filament-chip/src/Resources/AuditLogResource.php` (verified: `getPages()` returns `[]`, label-only alias over `Webhook`)
-- `packages/filament-chip/src/Resources/ComplianceReportResource.php` (verified: `[]` pages over `Purchase`)
-- `packages/filament-chip/src/Resources/FraudReviewResource.php` (verified: `[]` pages over `Payment`)
-- `packages/filament-chip/src/Resources/PaymentLinkResource.php` (verified: `[]` pages over `Payment`)
-- `packages/filament-chip/src/Resources/RefundResource.php` (verified: `[]` pages over `Payment`)
-- `packages/filament-chip/src/Resources/RiskRuleResource.php` (verified: `[]` pages over `Purchase`)
 - `packages/checkout/src/Support/ChipPaymentStatusMapper.php` (verified duplicate name+role of `chip/src/Support/ChipPaymentStatusMapper.php`; keep chip's copy)
 - `packages/chip/src/Webhooks/WebhookLogger.php` if `ProcessChipWebhook::storeWebhookRecord` becomes the single writer (verified overlapping `isDuplicate`/insert logic in both files), else keep as a thin delegate — no two writers.
 - `packages/chip/src/Support/BuildChipDocData.php` + `Listeners/GenerateDocOnPayment.php` + `GenerateDocOnRefund.php` + `Actions/RunChipPurchaseDocGenerationAction.php` from `chip` after ownership moves to `docs` (verified doc-gen cluster inside the gateway package).

@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Steps;
 
+use AIArmada\Checkout\Contracts\PaymentCompensationInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
+use AIArmada\Checkout\Contracts\ProviderAwarePaymentProcessorInterface;
 use AIArmada\Checkout\Data\PaymentRequest;
+use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Data\StepResult;
+use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Events\CheckoutPaymentCompleted;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\AwaitingPayment;
@@ -17,6 +21,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Throwable;
 
 final class ProcessPaymentStep extends AbstractCheckoutStep
 {
@@ -160,11 +165,110 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         return $this->failed($result->message ?? 'Payment failed', $result->errors);
     }
 
-    public function rollback(CheckoutSession $session): void
+    public function compensate(CheckoutSession $session): StepResult
     {
-        // Payment rollback is typically handled via refunds
-        // This is a no-op as we don't want to automatically refund on rollback
-        // Refunds should be explicit actions
+        $paymentId = $session->payment_id
+            ?? data_get($session->payment_data ?? [], 'payment_id');
+
+        if (! is_string($paymentId) || $paymentId === '') {
+            return $this->compensated('No payment was created', [
+                'operation' => 'payment_compensation',
+                'skipped' => true,
+            ]);
+        }
+
+        $paymentData = $session->payment_data ?? [];
+        $provider = data_get($paymentData, 'provider');
+        $paymentStatus = PaymentStatus::tryFrom((string) data_get($paymentData, 'status', PaymentStatus::Pending->value))
+            ?? PaymentStatus::Pending;
+        $operation = match ($paymentStatus) {
+            PaymentStatus::Completed, PaymentStatus::PartiallyRefunded => 'refund',
+            PaymentStatus::Refunded, PaymentStatus::Cancelled => 'none',
+            default => 'void',
+        };
+
+        if ($operation === 'none') {
+            return $this->compensated('Payment is already compensated', [
+                'operation' => $operation,
+                'payment_id' => $paymentId,
+                'payment_status' => $paymentStatus->value,
+                'skipped' => true,
+            ]);
+        }
+
+        try {
+            $processor = $this->paymentResolver->resolve($session->selected_payment_gateway);
+
+            if (! $processor instanceof PaymentCompensationInterface) {
+                return $this->failed('Payment processor cannot compensate this payment', [
+                    'payment' => 'The resolved processor must support refunds and voids',
+                ]);
+            }
+
+            $reason = 'Checkout compensation';
+            $result = $operation === 'refund'
+                ? $this->refund($processor, $provider, $paymentId, $session->grand_total, $reason)
+                : $this->void($processor, $provider, $paymentId, $reason);
+
+            if ($result->status === PaymentStatus::Failed) {
+                return $this->failed(
+                    $result->message ?? 'Payment compensation failed',
+                    $result->errors,
+                );
+            }
+
+            return $this->compensated(
+                $result->message ?? 'Payment compensated',
+                [
+                    'operation' => $operation,
+                    'payment_id' => $paymentId,
+                    'payment_status' => $result->status->value,
+                    'provider' => $result->provider ?? $provider,
+                    'gateway_response' => $result->gatewayResponse,
+                ],
+            );
+        } catch (Throwable $e) {
+            return $this->failed('Payment compensation failed', [
+                'payment' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function refund(
+        PaymentCompensationInterface $processor,
+        mixed $provider,
+        string $paymentId,
+        int $amount,
+        string $reason,
+    ): PaymentResult {
+        if (
+            is_string($provider)
+            && $provider !== ''
+            && $processor instanceof ProviderAwarePaymentProcessorInterface
+            && $provider !== $processor->getIdentifier()
+        ) {
+            return $processor->refundForProvider($provider, $paymentId, $amount, $reason);
+        }
+
+        return $processor->refund($paymentId, $amount, $reason);
+    }
+
+    private function void(
+        PaymentCompensationInterface $processor,
+        mixed $provider,
+        string $paymentId,
+        string $reason,
+    ): PaymentResult {
+        if (
+            is_string($provider)
+            && $provider !== ''
+            && $processor instanceof ProviderAwarePaymentProcessorInterface
+            && $provider !== $processor->getIdentifier()
+        ) {
+            return $processor->voidPaymentForProvider($provider, $paymentId, $reason);
+        }
+
+        return $processor->voidPayment($paymentId, $reason);
     }
 
     private function buildPaymentRequest(CheckoutSession $session): PaymentRequest

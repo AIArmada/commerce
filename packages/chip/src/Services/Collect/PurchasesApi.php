@@ -10,6 +10,9 @@ use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 
 final class PurchasesApi extends CollectApi
@@ -27,12 +30,25 @@ final class PurchasesApi extends CollectApi
     /**
      * @param  array<string, mixed>  $data
      */
-    public function create(array $data): PurchaseData
+    public function create(array $data, ?string $idempotencyKey = null): PurchaseData
     {
+        $idempotencyKey = $this->resolveIdempotencyKey($data, $idempotencyKey);
         $data['brand_id'] = $data['brand_id'] ?? $this->client->getBrandId();
 
         $this->validatePurchaseData($data);
 
+        if ($idempotencyKey === null || $this->cache === null) {
+            return $this->postCreate($data);
+        }
+
+        return $this->createIdempotently($data, $idempotencyKey);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function postCreate(array $data): PurchaseData
+    {
         $response = $this->attempt(
             fn () => $this->client->post('purchases/', $data),
             'Failed to create CHIP purchase',
@@ -40,6 +56,156 @@ final class PurchasesApi extends CollectApi
         );
 
         return PurchaseData::from($response);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function createIdempotently(array $data, string $idempotencyKey): PurchaseData
+    {
+        /** @var CacheRepository $cache */
+        $cache = $this->cache;
+        $cacheKey = $this->idempotencyCacheKey((string) $data['brand_id'], $idempotencyKey);
+        $fingerprint = $this->payloadFingerprint($data);
+
+        $cachedPurchase = $this->resolveCachedPurchase($cache->get($cacheKey), $fingerprint);
+        if ($cachedPurchase !== null) {
+            return $cachedPurchase;
+        }
+
+        $store = $cache->getStore();
+        if (! $store instanceof LockProvider) {
+            throw new ChipValidationException(
+                'Purchase idempotency requires a lock-capable cache store.'
+            );
+        }
+
+        $lock = $store->lock(
+            $cacheKey . ':lock',
+            max(1, (int) config('chip.http.timeout', 30) + 10)
+        );
+
+        return $lock->block(
+            max(1, (int) config('chip.http.timeout', 30)),
+            function () use ($cache, $cacheKey, $data, $fingerprint): PurchaseData {
+                $cachedPurchase = $this->resolveCachedPurchase($cache->get($cacheKey), $fingerprint);
+                if ($cachedPurchase !== null) {
+                    return $cachedPurchase;
+                }
+
+                $purchase = $this->postCreate($data);
+
+                $cache->put($cacheKey, [
+                    'fingerprint' => $fingerprint,
+                    'purchase' => $purchase->toArray(),
+                ], max(1, (int) (config('chip.cache.ttl.purchase_idempotency') ?? config('chip.cache.default_ttl', 3600))));
+
+                return $purchase;
+            }
+        );
+    }
+
+    private function resolveCachedPurchase(mixed $cached, string $fingerprint): ?PurchaseData
+    {
+        if ($cached === null) {
+            return null;
+        }
+
+        if (! is_array($cached)
+            || ! is_string($cached['fingerprint'] ?? null)
+            || ! is_array($cached['purchase'] ?? null)) {
+            throw new ChipValidationException('Cached idempotent purchase response is invalid.');
+        }
+
+        if (! hash_equals($fingerprint, $cached['fingerprint'])) {
+            throw new ChipValidationException(
+                'Idempotency key has already been used for a different purchase payload.'
+            );
+        }
+
+        /** @var array<string, mixed> $purchase */
+        $purchase = $cached['purchase'];
+
+        return PurchaseData::from($purchase);
+    }
+
+    private function idempotencyCacheKey(string $brandId, string $idempotencyKey): string
+    {
+        $owner = OwnerContext::resolve();
+        if ((bool) config('chip.owner.enabled', false)) {
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                'Purchase idempotency requires an owner context or explicit global context.'
+            );
+        }
+
+        $ownerKey = (bool) config('chip.owner.enabled', false)
+            ? OwnerScopeKey::forOwner($owner)
+            : OwnerScopeKey::GLOBAL;
+
+        return (string) config('chip.cache.prefix', 'chip:')
+            . 'purchase_idempotency:'
+            . $ownerKey
+            . ':'
+            . hash('sha256', $brandId . '|' . $idempotencyKey);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function payloadFingerprint(array $data): string
+    {
+        return hash('sha256', json_encode($this->sortForFingerprint($data), JSON_THROW_ON_ERROR));
+    }
+
+    private function sortForFingerprint(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (array_is_list($value)) {
+            return array_map(fn (mixed $item): mixed => $this->sortForFingerprint($item), $value);
+        }
+
+        ksort($value);
+
+        foreach ($value as $key => $item) {
+            $value[$key] = $this->sortForFingerprint($item);
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveIdempotencyKey(array &$data, ?string $idempotencyKey): ?string
+    {
+        if (array_key_exists('idempotency_key', $data)) {
+            $payloadKey = $data['idempotency_key'];
+            unset($data['idempotency_key']);
+
+            if ($idempotencyKey === null) {
+                if ($payloadKey !== null && ! is_string($payloadKey)) {
+                    throw new ChipValidationException('Idempotency key must be a string.');
+                }
+
+                $idempotencyKey = $payloadKey;
+            }
+        }
+
+        if ($idempotencyKey === null) {
+            $idempotencyKey = $data['reference'] ?? null;
+        }
+
+        if ($idempotencyKey === null) {
+            return null;
+        }
+
+        $idempotencyKey = mb_trim($idempotencyKey);
+
+        return $idempotencyKey === '' ? null : $idempotencyKey;
     }
 
     public function find(string $purchaseId): PurchaseData

@@ -14,6 +14,7 @@ use AIArmada\Checkout\Events\CheckoutStepFailed;
 use AIArmada\Checkout\Exceptions\CheckoutStepException;
 use AIArmada\Checkout\Models\CheckoutSession;
 use Illuminate\Contracts\Events\Dispatcher;
+use Throwable;
 
 final readonly class StepExecutor
 {
@@ -54,6 +55,8 @@ final readonly class StepExecutor
             $result = $this->processStep($session, $step);
 
             if (! $result->isSuccessful()) {
+                $this->compensate($session);
+
                 return CheckoutResult::failed($session, $result->message ?? 'Step failed', $result->errors);
             }
 
@@ -95,7 +98,19 @@ final readonly class StepExecutor
         $session->setStepState($identifier, StepStatus::Processing);
         $session->update(['current_step' => $identifier]);
 
-        $result = $step->handle($session);
+        try {
+            $result = $step->handle($session);
+        } catch (Throwable $e) {
+            $message = $e->getMessage() !== '' ? $e->getMessage() : $e::class;
+            $session->setStepState($identifier, StepStatus::Failed);
+            $this->events->dispatch(new CheckoutStepFailed(
+                $session,
+                $identifier,
+                ['exception' => $message],
+            ));
+
+            throw $e;
+        }
 
         $session->setStepState($identifier, $result->status);
 
@@ -106,5 +121,45 @@ final readonly class StepExecutor
         }
 
         return $result;
+    }
+
+    /**
+     * Compensate every step that may have produced a side effect, in reverse
+     * execution order, while preserving an auditable result for each attempt.
+     *
+     * @return list<StepResult>
+     */
+    public function compensate(CheckoutSession $session): array
+    {
+        $results = [];
+
+        foreach (array_reverse($this->stepRegistry->getOrderedSteps()) as $step) {
+            $identifier = $step->getIdentifier();
+            $state = $session->getStepState($identifier);
+
+            if (! in_array($state, [StepStatus::Completed, StepStatus::Processing, StepStatus::Failed], true)) {
+                continue;
+            }
+
+            try {
+                $result = $step->compensate($session);
+            } catch (Throwable $e) {
+                $message = $e->getMessage() !== '' ? $e->getMessage() : $e::class;
+                $result = StepResult::failed(
+                    stepIdentifier: $identifier,
+                    message: 'Compensation failed',
+                    errors: ['exception' => $message],
+                );
+            }
+
+            $session->recordCompensation($identifier, $result);
+            $results[] = $result;
+
+            if ($result->isCompensated()) {
+                $session->setStepState($identifier, StepStatus::RolledBack);
+            }
+        }
+
+        return $results;
     }
 }

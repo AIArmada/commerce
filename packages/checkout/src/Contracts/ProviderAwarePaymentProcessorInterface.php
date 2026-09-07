@@ -13,12 +13,18 @@ use AIArmada\Checkout\Data\PaymentResult;
  * concrete provider used for a payment can still be selected for follow-up
  * operations such as refunds and status checks.
  */
-interface ProviderAwarePaymentProcessorInterface extends PaymentProcessorInterface
+interface ProviderAwarePaymentProcessorInterface extends PaymentCompensationInterface, PaymentProcessorInterface
 {
     public function refundForProvider(
         string $provider,
         string $paymentId,
         int $amount,
+        ?string $reason = null,
+    ): PaymentResult;
+
+    public function voidPaymentForProvider(
+        string $provider,
+        string $paymentId,
         ?string $reason = null,
     ): PaymentResult;
 

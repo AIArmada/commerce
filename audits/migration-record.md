@@ -81,9 +81,13 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
 - Out of scope (still open): A1 serial enum-vs-morph code fix. Data-cleanup assessment RECEIVED 2026-09-07 and independently confirmed: the serials-table migration defaults `status` to the raw slug `'available'` (`000006` line 31) while the model casts to the spatie state (FQCN morphs) and Filament queries raw enum values — three raw-slug writers, so rows may hold non-morph values. Cleanup migration needed only if live rows are affected (unconfirmed, no live DB). The A1 audit finding now carries this as fix step (3).
 - **Falsification note (2026-09-07 reviewer re-derivation):** the A1 FQCN-storage premise was WRONG. Vendor source (`State::getMorphClass()` returns `static::$name ?? static::class`) plus `Available::$name = 'available'` proves the column stores slugs; the deleted enum carried byte-identical values, so badge/filter/form reads and writes were always consistent — the described corruption mechanism could not occur. The genuine defect was duplicated vocabulary only. Implemented as a behavior-preserving unification (enum deleted, Filament on state classes, zero remaining importers). A1 struck from `inventory.md`; package top severity now Medium.
 
-## Deployment gates
+## Post-track: customers email unique — implemented
 
-Env is dev-only with no production data: per explicit direction there are NO backfills anywhere — delete-and-rerun is the accepted remediation for legacy/dev rows. Remaining gates are ordering and CI checks, in order:
+- **Migration** `2026_09_07_120000_add_owner_email_uniqueness_to_customers_table.php`: owner-aware uniqueness over `LOWER(TRIM(email))` — partial uniques on pgsql/sqlite (owned rows constrained among owned, global rows among globals, owned/global may share), functional + `CASE`-gated indexes on MySQL. NULL emails never collide on any driver. Preflights fail loudly (missing columns, partial owner tuples, duplicate groups with counts); unsupported drivers throw; everything guarded and re-runnable.
+- Model hooks and resolver normalization aligned to the same `LOWER(TRIM)` semantics (code record). App-level race closed by the constraint; implementer-reported suites taken on trust.
+- Reviewed in source: index definitions, preflight queries, and driver branches verified.
+
+## Deployment gates
 
 1. **Addressing cutover** — the migration fails closed on ownerless rows by design; on a fresh/dev DB just remove the rows and rerun. Never backfill.
 2. **Organizations duplicates** — run the slug and membership duplicate preflights before migrating (uniques fail on dirty data); dev-only today, keep the habit for prod later.

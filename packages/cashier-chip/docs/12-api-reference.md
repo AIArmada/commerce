@@ -78,10 +78,10 @@ $user->deletePaymentMethod(string $paymentMethodId): void
 // Delete all payment methods
 $user->deletePaymentMethods(): void
 
-// Create setup purchase (for adding payment methods)
+// Create setup purchase (for adding payment methods; idempotency_key is required)
 $user->createSetupPurchase(array $options = []): PurchaseData
 
-// Get setup purchase URL
+// Get setup purchase URL (idempotency_key is required)
 $user->setupPaymentMethodUrl(array $options = []): string
 ```
 

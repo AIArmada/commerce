@@ -12,8 +12,10 @@ use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
+use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
+use Throwable;
 
 final class IssueEventPassesStep extends AbstractCheckoutStep
 {
@@ -58,6 +60,8 @@ final class IssueEventPassesStep extends AbstractCheckoutStep
         }
 
         $issued = 0;
+        $stepData = $session->getStepData($this->getIdentifier());
+        $stepData['pass_ids'] = $this->stringList($stepData['pass_ids'] ?? []);
         $orderItems = $order->getRelation('items');
         $ticketTypeIds = $orderItems
             ->map(function (mixed $orderItem): ?string {
@@ -84,7 +88,32 @@ final class IssueEventPassesStep extends AbstractCheckoutStep
                 ->get();
 
             foreach ($registrations as $registration) {
-                foreach ($this->issuePasses->handle($registration) as $pass) {
+                $existingPassIds = $registration->passes()
+                    ->pluck('id')
+                    ->map(static fn (mixed $id): string => (string) $id)
+                    ->all();
+                $passes = $this->issuePasses->handle($registration);
+                $newPassIds = [];
+
+                foreach ($passes as $pass) {
+                    if (! $pass instanceof Pass) {
+                        continue;
+                    }
+
+                    $passId = $pass->getKey();
+
+                    if ($passId !== null && ! in_array((string) $passId, $existingPassIds, true)) {
+                        $newPassIds[] = (string) $passId;
+                    }
+                }
+
+                $stepData['pass_ids'] = array_values(array_unique([
+                    ...$this->stringList($stepData['pass_ids']),
+                    ...$newPassIds,
+                ]));
+                $session->setStepData($this->getIdentifier(), $stepData);
+
+                foreach ($passes as $pass) {
                     $this->passDelivery->deliver($pass);
                     $issued++;
                 }
@@ -95,6 +124,63 @@ final class IssueEventPassesStep extends AbstractCheckoutStep
             return $this->skipped('No registrations to issue passes for.');
         }
 
-        return $this->success(sprintf('%d passes issued.', $issued));
+        return $this->success(
+            sprintf('%d passes issued.', $issued),
+            $stepData,
+        );
+    }
+
+    public function compensate(CheckoutSession $session): StepResult
+    {
+        $stepData = $session->getStepData($this->getIdentifier());
+        $passIds = $this->stringList($stepData['pass_ids'] ?? []);
+        $errors = [];
+        $revoked = 0;
+
+        if ($passIds !== []) {
+            $passes = Pass::query()->whereKey($passIds)->get();
+
+            foreach ($passes as $pass) {
+                if (! $pass->isValid()) {
+                    continue;
+                }
+
+                try {
+                    $pass->markRevoked('Checkout compensation');
+                    $revoked++;
+                } catch (Throwable $e) {
+                    $errors[(string) $pass->getKey()] = $e->getMessage() !== ''
+                        ? $e->getMessage()
+                        : $e::class;
+                }
+            }
+        }
+
+        if ($errors !== []) {
+            return $this->failed('Event pass compensation failed.', $errors);
+        }
+
+        return $this->compensated(
+            'Event passes compensated.',
+            [
+                'pass_ids' => $passIds,
+                'revoked' => $revoked,
+            ],
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function stringList(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(static fn (mixed $item): string => (string) $item, $value),
+            static fn (string $item): bool => $item !== '',
+        ));
     }
 }

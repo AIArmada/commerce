@@ -142,5 +142,55 @@ describe('Gateways', function (): void {
 
             expect($gateway->findBillable('cli_missing'))->toBeNull();
         });
+
+        it('forwards the explicit setup idempotency key to the CHIP billable hook', function (): void {
+            $gateway = $this->gatewayManager->gateway('chip');
+            $user = new class extends ChipBillableUser
+            {
+                /** @var array<string, mixed> */
+                public array $setupOptions = [];
+
+                /**
+                 * @param  array<string, mixed>  $options
+                 * @return array<string, mixed>
+                 */
+                public function createSetupPurchase(array $options = []): array
+                {
+                    $this->setupOptions = $options;
+
+                    return $options;
+                }
+            };
+
+            $options = [
+                'idempotency_key' => 'setup-attempt-1',
+                'success_url' => 'https://example.test/success',
+            ];
+
+            expect($gateway->createSetupIntent($user, $options))
+                ->toBe($options)
+                ->and($user->setupOptions)
+                ->toBe($options);
+        });
+
+        it('rejects a missing CHIP setup key before invoking the billable hook', function (): void {
+            $gateway = $this->gatewayManager->gateway('chip');
+            $user = new class extends ChipBillableUser
+            {
+                public bool $setupPurchaseCalled = false;
+
+                public function createSetupPurchase(array $options = []): mixed
+                {
+                    $this->setupPurchaseCalled = true;
+
+                    return null;
+                }
+            };
+
+            expect(fn () => $gateway->createSetupIntent($user))
+                ->toThrow(InvalidArgumentException::class, 'An idempotency_key option is required');
+
+            expect($user->setupPurchaseCalled)->toBeFalse();
+        });
     });
 });

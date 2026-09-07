@@ -71,7 +71,7 @@ Reserves inventory for items as a single group:
 - Creates a group reservation (one reference for the entire cart)
 - Stores outcome in `pricing_data.inventory_reservation` (contains `reference`, `state`, `expires_at`)
 - Sets `pricing_data.reservations_expire_at` for upstream consumers
-- Rolls back by releasing the entire reference group
+- Compensates by releasing the entire reference group
 - Runs before `process_payment` by default and moves to the start of the post-payment phase when `integrations.inventory.reserve_before_payment` is `false`
 
 ### ProcessPaymentStep
@@ -177,9 +177,10 @@ class CustomValidationStep implements CheckoutStepInterface
         return false; // Or conditional logic
     }
 
-    public function rollback(CheckoutSession $session): void
+    public function compensate(CheckoutSession $session): StepResult
     {
-        // Undo any changes if needed
+        // Return a durable compensation result.
+        return StepResult::compensated($this->getIdentifier(), 'Nothing to compensate');
     }
 
     public function getDependencies(): array
@@ -266,22 +267,29 @@ public function canSkip(CheckoutSession $session): bool
 }
 ```
 
-## Rollback Support
+## Compensation Support
 
-Implement rollback for reversible steps:
+Implement compensation for reversible steps. Checkout invokes compensation in
+reverse order for completed, failed, and interrupted steps. The result is
+recorded in the session's compensation audit log:
 
 ```php
-public function rollback(CheckoutSession $session): void
+public function compensate(CheckoutSession $session): StepResult
 {
-    // Called when later steps fail
-    // Undo this step's changes
+    // Called when a later step fails or throws
+    // Undo this step's changes and report the outcome.
     
-    $reservation = $session->metadata['inventory_reservation'] ?? null;
+    $reservation = $session->pricing_data['inventory_reservation'] ?? null;
     if ($reservation) {
         InventoryReservation::release($reservation);
     }
+
+    return StepResult::compensated($this->getIdentifier(), 'Reservation released');
 }
 ```
+
+Payment steps must use a processor implementing `PaymentCompensationInterface`
+so completed payments are refunded and incomplete payments are voided.
 
 ## Disabling Steps
 

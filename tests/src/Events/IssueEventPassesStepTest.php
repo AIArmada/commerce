@@ -89,6 +89,15 @@ it('issues and delivers all passes created for matching registrations', function
 
         expect($result->isSuccessful())->toBeTrue()
             ->and($result->message)->toBe('2 passes issued.');
+
+        $compensation = app(IssueEventPassesStep::class)->compensate($session->fresh());
+        $passIds = $session->fresh()->getStepData('issue_event_passes')['pass_ids'];
+
+        expect($compensation->isCompensated())->toBeTrue()
+            ->and($compensation->data['revoked'])->toBe(2)
+            ->and(Pass::query()->whereKey($passIds)->get()->every(
+                fn (Pass $pass): bool => (string) $pass->status === 'revoked',
+            ))->toBeTrue();
     });
 });
 

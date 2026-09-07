@@ -10,6 +10,7 @@ use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 function chipPurchaseResponse(array $overrides = []): array
@@ -112,6 +113,69 @@ describe('Collect Purchases API', function (): void {
 
         expect($purchase->id)->toBe('purchase_123');
         expect($purchase->client->email)->toBe('buyer@example.com');
+    });
+
+    it('reuses the original purchase for repeated idempotency references', function (): void {
+        $cache = Cache::store('array');
+        $cache->clear();
+        $api = new PurchasesApi($cache, $this->client);
+        $requestData = [
+            'client' => ['email' => 'buyer@example.com'],
+            'purchase' => [
+                'currency' => 'MYR',
+                'products' => [['name' => 'Item', 'price' => 1000]],
+            ],
+            'brand_id' => 'brand_123',
+            'reference' => 'checkout-session-123',
+        ];
+
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('purchases/', $requestData)
+            ->andReturn(chipPurchaseResponse([
+                'reference' => 'checkout-session-123',
+            ]));
+
+        $first = $api->create($requestData);
+        $second = $api->create($requestData);
+
+        expect($second->id)->toBe($first->id)
+            ->and($second->reference)->toBe($first->reference);
+    });
+
+    it('rejects a reused idempotency key with a different payload', function (): void {
+        $cache = Cache::store('array');
+        $cache->clear();
+        $api = new PurchasesApi($cache, $this->client);
+        $requestData = [
+            'client' => ['email' => 'buyer@example.com'],
+            'purchase' => [
+                'currency' => 'MYR',
+                'products' => [['name' => 'Item', 'price' => 1000]],
+            ],
+            'brand_id' => 'brand_123',
+            'idempotency_key' => 'checkout-session-123',
+        ];
+
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('purchases/', Mockery::on(function (array $payload): bool {
+                return ! array_key_exists('idempotency_key', $payload);
+            }))
+            ->andReturn(chipPurchaseResponse());
+
+        $api->create($requestData);
+
+        expect(fn () => $api->create([
+            ...$requestData,
+            'purchase' => [
+                'currency' => 'MYR',
+                'products' => [['name' => 'Different item', 'price' => 2000]],
+            ],
+        ]))->toThrow(
+            ChipValidationException::class,
+            'Idempotency key has already been used for a different purchase payload.'
+        );
     });
 
     it('fills brand id from client when missing', function (): void {

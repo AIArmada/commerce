@@ -7,8 +7,8 @@
 
 ## Overall Assessment
 - Quality: The most complete billing implementation of the three payment units (real persistence, lease-based renewal, coupon/voucher bridge, invoice rendering, customer portal). Concerns are well-factored; `ClaimRenewalAttempt` + `RenewSubscriptionsCommand` + `OwnerBatchRunner` is the right shape for multi-tenant cron renewals.
-- Health: Fair. One Critical renewal-correctness bug (monthly `period_key` blocks sub-monthly billings), one High amount-integrity gap (renewal/charge amounts recomputed from mutable items with no price lock), plus the three-way duplication with `cashier`/`chip` documented in the cashier audit.
-- Risks: Double-charge or missed-charge on weekly/custom intervals; `Subscription::$with = ['items']` performance tax on every query including the renewal chunk loop; silent voucher no-op when `aiarmada/vouchers` is absent.
+- Health: Fair. The three-way duplication with `cashier`/`chip` documented in the cashier audit.
+- Risks: `Subscription::$with = ['items']` performance tax on every query including the renewal chunk loop; silent voucher no-op when `aiarmada/vouchers` is absent.
 - Refactor size: Medium-Large. ~12–16 files. No migration required for the recommended path (one optional unique index noted).
 
 ## Migration Impact
@@ -24,28 +24,6 @@ No required table/column/index/constraint changes. The recommended fixes are cod
 - Filament adapter owns: customer/invoice/subscription resources, billing-portal pages, MRR/churn/trial widgets. Must stay thin over Actions/models.
 
 ## Architecture Findings
-### A-1 Renewal `period_key` granularity blocks sub-monthly billing (double-charge/missed-charge)
-- Severity: Critical
-- Location: `packages/cashier-chip/src/Actions/ClaimRenewalAttempt.php::handle()` (`$periodKey = $subscription->next_billing_at->format('Y-m')`), `packages/cashier-chip/src/Console/RenewSubscriptionsCommand.php::processRenewals()` + `::executeAttempt()`, `packages/cashier-chip/src/Subscription/RenewalAttempt.php`
-- Problem: The idempotency key for a renewal is month-granular. Any `billing_interval` finer than monthly (weekly, custom days) claims at most one renewal per calendar month: the second weekly renewal in the same month finds the existing `claimed` attempt with a live lease and returns null → skipped as duplicate (missed charge). Conversely, after the lease expires mid-month, a retry can claim a second attempt for the same period with no unique guard → double charge. The `next_billing_at->isFuture()` recheck inside the lock mitigates but does not fix the key collision.
-- Why It Matters: This is the recurring-revenue path — wrong granularity directly causes under- or over-billing.
-- Recommended Fix: Key on the actual billing period: `period_key = next_billing_at->format('Y-m-d') . '|' . billing_interval . '|' . billing_interval_count` (or the period-start date derived from `currentPeriodStart()`), and advance `next_billing_at` inside the same transaction that creates the attempt. Keep the `lockForUpdate()` + `DB::transaction(..., 3)` shape.
-- Breaking Change: NO (period_key values change going forward; old rows age out via lease expiry)
-- Affected Packages: `cashier-chip`
-- Required Dependent Changes: `RenewSubscriptionsCommand` reporting only; `filament-cashier-chip` renewal widgets read status, not keys.
-- Migration Required: NO
-
-### A-2 Renewal/charge amounts recomputed from mutable items with no price lock (amount integrity)
-- Severity: High
-- Location: `packages/cashier-chip/src/Subscription/Subscription.php::calculateSubscriptionAmount()` (`$this->items->sum(unit_amount * quantity)`), `Actions/ClaimRenewalAttempt.php` (`'amount_minor' => $subscription->calculateSubscriptionAmount()`), `Actions/ChargeChipCustomer.php::handle()` (`addProductCents($productName, $amount)` with caller-supplied `$amount`), `Concerns/PerformsCharges.php::charge()/createPayment()/checkout()`
-- Problem: The renewal amount is snapshotted from the live `items` relation at claim time — a concurrent `swap()`/`addPrice()`/`updateQuantity()` between claim and `ChargeChipCustomer` changes what the customer pays, and `executeAttempt()` never re-validates `attempt->amount_minor` against the subscription total. One-off `charge($amount)` takes any int with no lower/upper bound check visible at the Action layer (negative/zero/huge amounts flow to `PurchaseBuilder::addProductCents()`).
-- Why It Matters: Amount tampering / race between plan change and renewal charge; supports the checkout amount-mismatch gap (checkout trusts its own `grand_total` while the gateway charges a separately computed number).
-- Recommended Fix: Freeze `amount_minor` + currency at claim time and assert equality before charging (abort + re-claim on mismatch); add amount guards in `ChargeChipCustomer` (`$amount > 0`, upper bound from config) and validate `unit_amount` presence in `calculateSubscriptionAmount()` (fail closed on null instead of treating as 0).
-- Breaking Change: NO (fail-closed on previously ambiguous inputs)
-- Affected Packages: `cashier-chip`, `checkout` (`Integrations/Payment/CashierChipProcessor.php`)
-- Required Dependent Changes: `CashierChipProcessor` must surface amount-mismatch as retryable payment failure, not order creation.
-- Migration Required: NO
-
 ### A-3 Three-way payment duplication (`cashier` ↔ `cashier-chip` ↔ `chip`)
 - Severity: High
 - Location: `packages/cashier-chip/src/Billing/Cashier.php` (391 lines: `chip()`, `findBillable()`, `formatAmount()`, fake/octane helpers) vs `packages/cashier/src/Cashier.php` (same method names); `Billing/Billable.php` + 10 `Concerns/*` vs `cashier` `Concerns/Billable.php` + `Gateways/Chip/*`; `Payment/Payment.php` (346 lines) vs `chip` `PaymentData`/`PurchaseData`; `Invoice/Invoice.php` vs `cashier` `Gateways/Chip/ChipInvoice.php`
@@ -144,13 +122,12 @@ No required table/column/index/constraint changes. The recommended fixes are cod
 ## Model / Domain Findings
 - M-1: `Subscription` lifecycle columns (`trial_ends_at/started_at`, `next_billing_at`, `ends_at/canceled_at`, `paused_at`, `past_due_at`, `renewed_at`) follow the timestamp rules; `chip_status` enum + transition methods (`cancel/cancelAt/cancelNow/resume/pause/unpause/extendTrial/skipTrial`) keep state-to-timestamp mapping centralized — good.
 - M-2: `billable_type/billable_id` + `owner_type/owner_id` dual morphs are intentional (customer vs tenant) — keep, and keep the `booted()` cross-tenant billable-owner validation (`validate_billable_owner`) which is the strongest multitenancy enforcement of the three payment units.
-- M-3: `coupon_*` columns denormalize voucher state onto the subscription — acceptable cache, but `coupon_discount` (int minor units — correct) must be recomputed on renewal, not carried forward blindly (ties to A-2 freeze).
+- M-3: `coupon_*` columns denormalize voucher state onto the subscription — acceptable cache, but `coupon_discount` (int minor units — correct) must be recomputed on renewal, not carried forward blindly.
 
 ## Security Findings
-- S-1 (Medium): Same root cause as A-2 (no amount validation at the Action boundary) — see A-2 for the fix. Demoted from High to avoid double-counting one gap in two sections. Security-specific residue: reject `unit_amount: null` items in renewal math (fail closed) and add `$amount > 0` + max guards in `ChargeChipCustomer` / `PerformsCharges::charge/createPayment`.
-- S-2 (Medium): `RateLimiter::attempt('cashier-chip:charge:{chipId|key}', 30/min)` keys on chip id falling back to primary key — two billables sharing a chip id (data error) share a bucket; include billable morph in the key.
-- S-3 (Medium): `#[SensitiveParameter]` on recurring tokens is good — extend the audit to ensure tokens never land in `renewal_attempts` payload columns, exception messages, or `Log::` context in `RenewSubscriptionsCommand::executeAttempt` failure paths.
-- S-4 (Low): `webhooks.secret` (`CHIP_WEBHOOK_SECRET`) + `verify_signature` toggle — same shape as `chip`; document that these must be the same value in split deployments (or better: read once from `chip` config — see chip audit).
+- S-1 (Medium): `RateLimiter::attempt('cashier-chip:charge:{chipId|key}', 30/min)` keys on chip id falling back to primary key — two billables sharing a chip id (data error) share a bucket; include billable morph in the key.
+- S-2 (Medium): `#[SensitiveParameter]` on recurring tokens is good — extend the audit to ensure tokens never land in `renewal_attempts` payload columns, exception messages, or `Log::` context in `RenewSubscriptionsCommand::executeAttempt` failure paths.
+- S-3 (Low): `webhooks.secret` (`CHIP_WEBHOOK_SECRET`) + `verify_signature` toggle — same shape as `chip`; document that these must be the same value in split deployments (or better: read once from `chip` config — see chip audit).
 
 ## Performance Findings
 - P-1: Remove `$with=['items']` (A-4); batch renewal execution; add `whereActive()->whereNotNull('next_billing_at')` composite index if the renewal scan slows (migration only if measured — not recommended now).
@@ -171,11 +148,10 @@ No required table/column/index/constraint changes. The recommended fixes are cod
 | `docs` | invoice rendering | Renderer choice | Point at one `InvoiceRenderer` |
 
 ## Recommended Refactor Plan
-1. Fix renewal period key + amount freeze/guards (A-1, A-2, S-1) — revenue correctness first.
-2. Collapse three-way duplication toward `cashier-chip`-canonical CHIP billing (A-3) with `cashier` audit A-3.
-3. Remove `$with`, fix cron scoping, fail-loud vouchers (A-4, A-6, A-5).
-4. Mutable-Carbon swap, uuid item ids, stub-method decision (C-1, C-2, C-3).
-5. Shared MRR/churn services for both Filament adapters; Pest suite with fakes (T-1).
+1. Collapse three-way duplication toward `cashier-chip`-canonical CHIP billing (A-3) with `cashier` audit A-3.
+2. Remove `$with`, fix cron scoping, fail-loud vouchers (A-4, A-6, A-5).
+3. Mutable-Carbon swap, uuid item ids, stub-method decision (C-1, C-2, C-3).
+4. Shared MRR/churn services for both Filament adapters; Pest suite with fakes (T-1).
 
 ## Files Likely to Change
 - `packages/cashier-chip/src/Actions/ClaimRenewalAttempt.php`, `Actions/ChargeChipCustomer.php`, `Actions/CreateChipSubscription.php`, `Actions/CancelChipSubscription.php`, `Actions/RefundChipPayment.php`, `Actions/SyncChipPurchaseStatus.php`

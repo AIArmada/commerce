@@ -31,10 +31,6 @@ return [
 
     'default_currency' => 'MYR',
 
-    'features' => [
-        'regulator_mode' => false,
-    ],
-
     'resources' => [
         'navigation_sort' => [
             'purchases' => 10,
@@ -89,7 +85,6 @@ return [
 ```
 
 - `default_currency` is the fallback currency used by UI formatting helpers.
-- `features.regulator_mode` exposes regulator-focused read-only surfaces when enabled.
 - Owner scoping is configured via `config/chip.php` (`chip.owner.enabled`).
 
 ## Resource Navigation Sort
@@ -132,7 +127,7 @@ $panel->plugin(FilamentChipPlugin::make());
 By default, the plugin registers:
 
 - Page: `AnalyticsDashboardPage`
-- Resources: `PurchaseResource`, `ClientResource`, `PaymentResource`, `RefundResource`, `SendInstructionResource`, `BankAccountResource`
+- Resources: `PurchaseResource`, `ClientResource`, `PaymentResource`, `SendInstructionResource`, `BankAccountResource`
 - Widgets: `ChipStatsWidget`, `RevenueChartWidget`, `RecentTransactionsWidget`
 
 Optional resources/widgets can be registered explicitly in your panel provider.

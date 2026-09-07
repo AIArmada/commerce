@@ -48,8 +48,28 @@ final class StepResult extends Data
         );
     }
 
+    /**
+     * Create a result for a completed compensation.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function compensated(string $stepIdentifier, ?string $message = null, array $data = []): self
+    {
+        return new self(
+            status: StepStatus::RolledBack,
+            stepIdentifier: $stepIdentifier,
+            message: $message ?? 'Step compensated',
+            data: $data,
+        );
+    }
+
     public function isSuccessful(): bool
     {
         return $this->status->isComplete();
+    }
+
+    public function isCompensated(): bool
+    {
+        return $this->status === StepStatus::RolledBack;
     }
 }

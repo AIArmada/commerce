@@ -158,22 +158,56 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
         }
     }
 
-    public function rollback(CheckoutSession $session): void
+    public function compensate(CheckoutSession $session): StepResult
     {
         if ($this->inventoryAdapter === null) {
-            return;
+            return $this->compensated('Inventory adapter unavailable', [
+                'operation' => 'release_inventory',
+                'skipped' => true,
+            ]);
         }
 
         if (! config('checkout.integrations.inventory.release_on_failure', true)) {
-            return;
+            return $this->compensated('Inventory release disabled', [
+                'operation' => 'release_inventory',
+                'skipped' => true,
+            ]);
         }
 
-        $reference = $session->cart_id;
+        $reservation = data_get($session->pricing_data ?? [], 'inventory_reservation');
 
-        $this->inventoryAdapter->release($reference);
+        if (! is_array($reservation)) {
+            return $this->compensated('No inventory reservation recorded', [
+                'operation' => 'release_inventory',
+                'skipped' => true,
+            ]);
+        }
 
-        $pricingData = $session->pricing_data ?? [];
-        unset($pricingData['inventory_reservation'], $pricingData['reservations_expire_at']);
-        $session->update(['pricing_data' => $pricingData]);
+        $reference = $reservation['reference'] ?? $session->cart_id;
+
+        if (! is_string($reference) || $reference === '') {
+            return $this->failed('Inventory reservation reference is missing', [
+                'reference' => 'The reservation reference must be a non-empty string',
+            ]);
+        }
+
+        try {
+            $outcome = $this->inventoryAdapter->release($reference);
+
+            $pricingData = $session->pricing_data ?? [];
+            unset($pricingData['inventory_reservation'], $pricingData['reservations_expire_at']);
+            $session->update(['pricing_data' => $pricingData]);
+
+            return $this->compensated('Inventory reservation released', [
+                'operation' => 'release_inventory',
+                'reference' => $reference,
+                'state' => $outcome->state,
+            ]);
+        } catch (Throwable $e) {
+            return $this->failed('Inventory reservation release failed', [
+                'reference' => $reference,
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -6,8 +6,8 @@
 
 ## Overall Assessment
 - Quality: Ambitious and mostly well-shaped orchestrator (registry + executor + 12 single-purpose steps, tagged processor contributions, session-state machine, owner-aware service with `OwnerContextJob` queue support). The step/contract seam design is the best extension model of the six units.
-- Health: Fair. The pipeline lacks atomicity (no transaction or compensation audit across steps), the payment-confirmation path trusts amounts from three unreconciled sources, the Stripe webhook secret is read from another package's config, and the callback token never expires. Zero tests for a 12-step money pipeline.
-- Risks: Order created for the wrong amount (Critical); paid-but-unconfirmed or confirmed-but-unpaid sessions on partial failure (High); cross-gateway notification spoofing via `reference` fallback (Medium).
+- Health: Fair. The Stripe webhook secret is read from another package's config, and the callback token never expires. Zero tests for a 12-step money pipeline.
+- Risks: Cross-gateway notification spoofing via `reference` fallback (Medium).
 - Refactor size: Medium-Large. ~14–18 files. One additive migration is optional (callback-token expiry column already exists as data — no schema change needed); recommended verdict stays NO.
 
 ## Migration Impact
@@ -23,28 +23,6 @@ No table/column/index/constraint changes. `finalization_phase`/`finalization_err
 - Must NOT own: pricing math (pricing/cart), rate tables (shipping/tax), charge execution (cashier/cashier-chip/chip), order persistence rules (orders), stock ledger (inventory). Current code respects this except the duplicated CHIP mapping cluster (see A-5).
 
 ## Architecture Findings
-### A-1 No atomicity or audited compensation across the 12-step pipeline
-- Severity: High
-- Location: `packages/checkout/src/Services/StepExecutor.php::run()` + `::processStep()` (no `DB::transaction`, per-step `setStepState` + `update`), `Services/CheckoutService.php`, `Steps/ReserveInventoryStep.php`, `Steps/ProcessPaymentStep.php`, `Steps/CreateOrderStep.php`, `Actions/CheckoutFinalizer.php`, `Enums/CheckoutFinalizationPhase.php`, `Data/FinalizationPhaseResult.php`
-- Problem: Each step commits independently. `reserve_before_payment=true` (default) reserves stock, then `process_payment` may fail or redirect (AwaitingPayment) — nothing in the executor releases the reservation on the failure path except each adapter's best-effort `release_on_failure` flag, with no central record of which compensations ran. `CreateOrderStep` + `CheckoutFinalizer` add a second phased commit (`finalization_phase`) without a documented recovery job for sessions stuck mid-finalization.
-- Why It Matters: Stock stranded reserved, orders created without payment confirmation (or payments captured without orders) on crash between steps; operators cannot tell "failed clean" from "failed dirty".
-- Recommended Fix: Add a compensating-action registry (each step declares `compensate(CheckoutSession)`; executor runs compensations in reverse on failure and records them in `step_states`), plus a `checkout:recover-stuck-sessions` command sweeping `PaymentProcessing`/`AwaitingPayment`/mid-`finalization_phase` sessions past TTL (session TTL already 24h in `defaults.session_ttl`).
-- Breaking Change: NO (additive contract method with default no-op)
-- Affected Packages: `checkout`, `inventory`, `orders`
-- Required Dependent Changes: `ReserveInventoryStep`, `ProcessPaymentStep`, `CreateOrderStep` implement `compensate()`; docs `05-checkout-steps.md` updated.
-- Migration Required: NO (record in existing `step_states` JSON)
-
-### A-2 Order confirmation trusts unreconciled amounts (amount-tampering gap)
-- Severity: Critical
-- Location: `packages/checkout/src/Steps/CreateOrderStep.php::confirmPayment()` (`$amount = $paymentData['amount'] ?? $session->grand_total`), `::handle()` (`'grand_total' => $session->grand_total`), `Steps/ProcessPaymentStep.php::handle()` (`'amount' => $result->amount ?? $session->grand_total`), `Steps/CalculatePricingStep.php`, `CalculateShippingStep.php`, `CalculateTaxStep.php`, `Integrations/Payment/ChipProcessor.php`, `CashierChipProcessor.php`, `CashierProcessor.php`
-- Problem: Three money sources — session `grand_total` (fillable, DB-stored), gateway `PaymentResult::amount`, and recomputed step totals — are merged with `??` fallbacks and never asserted equal before `confirmPayment()` fires `PaymentConfirmed` → `OrderPaid`. A partial capture, currency-mismatched purchase, or stale session total still creates/confirms the full order. `grand_total <= 0` short-circuits to `free_order` without asserting that discounts actually zeroed the total.
-- Why It Matters: Under-payment confirms full orders; over-payment is captured without refund.
-- Recommended Fix: Recompute the expected total from the pricing/shipping/tax step outputs at confirmation time and assert `payment.amount == session.grand_total == recomputed && currency == session.currency`; on mismatch, transition to `PaymentFailed`, do NOT create/confirm the order, and emit `CheckoutFailed` with the delta. Same assertion in `HandleCheckoutPaymentCallback` before completing.
-- Breaking Change: NO (fail-closed on previously corrupt confirmations)
-- Affected Packages: `checkout`, `orders`
-- Required Dependent Changes: `CreateOrderStep`, `ProcessPaymentStep`, `HandleCheckoutPaymentCallback`, `ProcessCheckoutPaymentNotification` share one `AssertCheckoutAmount` service.
-- Migration Required: NO
-
 ### A-3 Stripe secret read from another package's config (cross-package coupling)
 - Severity: High
 - Location: `packages/checkout/src/Webhooks/CheckoutSpatieSignatureValidator.php::verifyStripeSignature()` (`config('cashier.gateways.stripe.webhook_secret')`), `config/checkout.php::payment` (no `webhooks.secret` of its own), `src/CheckoutServiceProvider.php:257` (registers this validator for the checkout webhook route)
@@ -60,7 +38,7 @@ No table/column/index/constraint changes. `finalization_phase`/`finalization_err
 - Severity: Medium
 - Location: `CheckoutSpatieSignatureValidator.php::detectGateway()` (`X-Signature` → chip; `Stripe-Signature` → stripe; `reference`+`status` → chip; `data.object`+`type` → stripe; default → reject)
 - Problem: Routing to the verifier is attacker-influenced (headers/body shape). Today both branches still require a valid signature, so this is defense-correct but fragile: any new gateway (or CHIP payload variant without `reference`) falls to `default => false` and is silently dropped, and a future "lenient" branch would inherit spoofable routing.
-- Why It Matters: Silent webhook drops = paid-but-unconfirmed sessions (feeds A-1/A-2 fallout).
+- Why It Matters: Silent webhook drops = paid-but-unconfirmed sessions.
 - Recommended Fix: Route by URL (per-gateway webhook paths already exist via `routes.webhook_path` + spatie config names) instead of sniffing; keep sniffing only as a logged fallback; emit a metric/log on `null` detection.
 - Breaking Change: YES (webhook URL contract per gateway)
 - Affected Packages: `checkout`, `chip`, `cashier-chip`
@@ -148,18 +126,17 @@ No table/column/index/constraint changes. `finalization_phase`/`finalization_err
 - D-3 (Info): `payment_data`/`pricing_data`/`discount_data`/`tax_data` JSON snapshots are the audit trail for A-2 assertions — never prune them; document retention alongside the 24h session TTL.
 
 ## Model / Domain Findings
-- M-1: `CheckoutSession` status machine (`Pending → PaymentProcessing → AwaitingPayment → Processing → Completed`, plus `PaymentFailed/Expired/Cancelled`) + `finalization_phase` two-phase tail is the right shape — but the executor (A-1) and amount assertion (A-2) must be fixed before the machine can be trusted.
+- M-1: `CheckoutSession` status machine (`Pending → PaymentProcessing → AwaitingPayment → Processing → Completed`, plus `PaymentFailed/Expired/Cancelled`) + `finalization_phase` two-phase tail is the right shape.
 - M-2: `CheckoutService::withSessionOwnerContext()` + `ResolveCustomerStep`/`PersistCustomerStep` owner handling + `GenerateCheckoutDocumentsJob implements OwnerScopedJob` is the correct multitenancy pattern — extend the same discipline to `ProcessCheckoutPaymentNotification::gatewayMatches()` (currently `withoutOwnerScope()` then manual compare; re-enter session owner context before acting).
 - M-3: Money representation is correct everywhere (minor-unit ints, `MYR` default, `MoneyNormalizer` at boundaries) — the finding is verification, not representation.
 
 ## Security Findings
-- S-1 (Critical): A-2 amount confirmation — fix first.
-- S-2 (High): A-3 secret coupling + A-4 sniffing + A-7 token TTL — fix as one webhook/callback hardening pass.
-- S-3 (Medium): `C-2` reference namespacing; `PaymentCallbackController` GET handlers must be idempotent (double-click/refresh replays success) — verify `CheckoutCallbackStatePolicy` rejects already-`Completed` sessions instead of re-confirming payment.
-- S-4 (Low): `EnsureCheckoutOfferProduct` runs `OwnerContext::withOwner(null, ...)` global write to publish a product — privileged global path; confirm it is gated to admin-initiated flows only, per global-write rules.
+- S-1 (High): A-3 secret coupling + A-4 sniffing + A-7 token TTL — fix as one webhook/callback hardening pass.
+- S-2 (Medium): `C-2` reference namespacing; `PaymentCallbackController` GET handlers must be idempotent (double-click/refresh replays success) — verify `CheckoutCallbackStatePolicy` rejects already-`Completed` sessions instead of re-confirming payment.
+- S-3 (Low): `EnsureCheckoutOfferProduct` runs `OwnerContext::withOwner(null, ...)` global write to publish a product — privileged global path; confirm it is gated to admin-initiated flows only, per global-write rules.
 
 ## Performance Findings
-- P-1: Step-history writes (`setStepState` + `update(['current_step'])` per step) are chatty but fine; do not add per-step transactions (would worsen lock time) — compensations (A-1) over transactions.
+- P-1: Step-history writes (`setStepState` + `update(['current_step'])` per step) are chatty but fine; do not add per-step transactions (would worsen lock time) — compensations over transactions.
 - P-2: `ValidatePromoCodeAction` + `DiscountCompositionService` + `VouchersAdapter` (352 lines) run before pricing — cache voucher lookups per session to avoid re-validating on every retry.
 
 ## Testing Findings
@@ -179,12 +156,11 @@ No table/column/index/constraint changes. `finalization_phase`/`finalization_err
 | `vouchers` / `promotions` | `VouchersAdapter`, `PromotionsAdapter`, `DiscountCodeResolver` | None structural | Cache + docs |
 
 ## Recommended Refactor Plan
-1. Amount assertion before confirm (A-2) + atomic attempts/retry-limit (C-1) — money first.
-2. Atomicity: compensations + stuck-session recovery (A-1).
-3. Webhook/callback hardening: checkout-owned Stripe secret, URL routing, token TTL + single-use, namespaced refs, mandatory gateway match (A-3, A-4, A-7, C-2).
-4. Processor collapse: single-gateway processors, config-driven priority, shared CHIP seams (A-5, A-6).
-5. Demote unused hard requires; null-transformer logging (L-2, L-3).
-6. Pest suite for the pipeline (T-1).
+1. Atomic attempts/retry-limit (C-1) — money first.
+2. Webhook/callback hardening: checkout-owned Stripe secret, URL routing, token TTL + single-use, namespaced refs, mandatory gateway match (A-3, A-4, A-7, C-2).
+3. Processor collapse: single-gateway processors, config-driven priority, shared CHIP seams (A-5, A-6).
+4. Demote unused hard requires; null-transformer logging (L-2, L-3).
+5. Pest suite for the pipeline (T-1).
 
 ## Files Likely to Change
 - `packages/checkout/src/Services/StepExecutor.php`, `CheckoutService.php`, `PaymentGatewayResolver.php`, `CheckoutStepRegistry.php`
@@ -199,7 +175,6 @@ No table/column/index/constraint changes. `finalization_phase`/`finalization_err
 - `packages/checkout/src/Support/ChipPaymentStatusMapper.php` (verified duplicate of `chip/src/Support/ChipPaymentStatusMapper.php`; keep chip's).
 - `packages/checkout/src/Support/ChipPurchasePayloadBuilder.php` + `ChipRefundGateway.php` after folding into `chip` builder / gateway `refund()` (verified thin wrappers used only by the two CHIP processors).
 - `config/checkout.php::payment.gateway_priority` vs ctor-default divergence — delete one source (keep config; verified `PaymentGatewayResolver` ctor defaults `['cashier','cashier-chip','chip']` contradicting config `['chip','cashier-chip','cashier']`).
-- `Steps/CreateOrderStep.php` `?? $session->grand_total` fallbacks (verified) — replace with assertion (A-2), no silent fallback.
 - No migration files removed. No legacy shims preserved. No Filament adapter created.
 
 ## Final Recommended Architecture

@@ -1102,10 +1102,11 @@ describe('CreateOrderStep', function (): void {
         ]);
 
         $step = app(ReserveInventoryStep::class);
-        $step->rollback($session);
+        $result = $step->compensate($session);
 
         expect(data_get($session->fresh()->pricing_data, 'inventory_reservation'))->toBeNull()
-            ->and(data_get($session->fresh()->pricing_data, 'reservations_expire_at'))->toBeNull();
+            ->and(data_get($session->fresh()->pricing_data, 'reservations_expire_at'))->toBeNull()
+            ->and($result->isCompensated())->toBeTrue();
     });
 
     it('depends on tax before payment when the tax step is enabled', function (): void {
@@ -1316,7 +1317,10 @@ describe('CheckoutService', function (): void {
                 return false;
             }
 
-            public function rollback(CheckoutSession $session): void {}
+            public function compensate(CheckoutSession $session): StepResult
+            {
+                return StepResult::compensated($this->getIdentifier());
+            }
 
             public function getDependencies(): array
             {
@@ -1380,7 +1384,10 @@ describe('CheckoutService', function (): void {
                 return false;
             }
 
-            public function rollback(CheckoutSession $session): void {}
+            public function compensate(CheckoutSession $session): StepResult
+            {
+                return StepResult::compensated($this->getIdentifier());
+            }
 
             public function getDependencies(): array
             {
@@ -1426,7 +1433,10 @@ describe('CheckoutService', function (): void {
                 return false;
             }
 
-            public function rollback(CheckoutSession $session): void {}
+            public function compensate(CheckoutSession $session): StepResult
+            {
+                return StepResult::compensated($this->getIdentifier());
+            }
 
             public function getDependencies(): array
             {
@@ -1498,7 +1508,10 @@ describe('CheckoutService', function (): void {
                 return false;
             }
 
-            public function rollback(CheckoutSession $session): void {}
+            public function compensate(CheckoutSession $session): StepResult
+            {
+                return StepResult::compensated($this->getIdentifier());
+            }
 
             public function getDependencies(): array
             {
@@ -1542,7 +1555,10 @@ describe('CheckoutService', function (): void {
                     return false;
                 }
 
-                public function rollback(CheckoutSession $session): void {}
+                public function compensate(CheckoutSession $session): StepResult
+                {
+                    return StepResult::compensated($this->identifier);
+                }
 
                 public function getDependencies(): array
                 {
@@ -1655,7 +1671,10 @@ describe('CheckoutService', function (): void {
                 return false;
             }
 
-            public function rollback(CheckoutSession $session): void {}
+            public function compensate(CheckoutSession $session): StepResult
+            {
+                return StepResult::compensated($this->getIdentifier());
+            }
 
             public function getDependencies(): array
             {

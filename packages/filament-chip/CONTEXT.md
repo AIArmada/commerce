@@ -40,9 +40,9 @@ keywords:
 - Owner/security: Filament adapter.
 
 ## Key surfaces
-- Resources: `AuditLogResource`, `BankAccountResource`, `BaseChipResource`, `ClientResource`, `CompanyStatementResource`, `ComplianceReportResource`, `FraudReviewResource`, `PaymentLinkResource`, `PaymentResource`, `PurchaseResource`
+- Resources: `BankAccountResource`, `BaseChipResource`, `ClientResource`, `CompanyStatementResource`, `PaymentResource`, `PurchaseResource`, `SendInstructionResource`
 - Actions/Services: `Actions/PurchaseExporter`, `Actions/SendInstructionExporter`
-- Config `filament-chip.php`: `navigation`, `group`, `badge_color`, `polling_interval`, `tables`, `created_on_format`, `updated_on_format`, `amount_precision`, `default_currency`, `features`
+- Config `filament-chip.php`: `navigation`, `group`, `badge_color`, `polling_interval`, `tables`, `created_on_format`, `updated_on_format`, `amount_precision`, `default_currency`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

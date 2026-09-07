@@ -153,6 +153,61 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
         }
     }
 
+    public function voidPayment(string $paymentId, ?string $reason = null): PaymentResult
+    {
+        return $this->voidPaymentForProvider('', $paymentId, $reason);
+    }
+
+    public function voidPaymentForProvider(
+        string $provider,
+        string $paymentId,
+        ?string $reason = null,
+    ): PaymentResult {
+        try {
+            $gateway = app(GatewayManager::class)->gateway($provider !== '' ? $provider : null);
+
+            if (method_exists($gateway, 'cancelPurchase')) {
+                $cancelled = $gateway->cancelPurchase($paymentId);
+
+                return new PaymentResult(
+                    status: PaymentStatus::Cancelled,
+                    paymentId: $paymentId,
+                    message: 'Payment voided successfully',
+                    gatewayResponse: $this->gatewayResponse($cancelled),
+                    provider: $gateway->name(),
+                );
+            }
+
+            $payment = $gateway->findPayment($paymentId);
+
+            if ($payment === null) {
+                return PaymentResult::failed('Payment not found', [], $paymentId);
+            }
+
+            $gatewayPayment = $payment->asGatewayPayment();
+
+            if (! is_object($gatewayPayment) || ! method_exists($gatewayPayment, 'cancel')) {
+                return PaymentResult::failed(
+                    'The payment provider does not support voiding this payment',
+                    [],
+                    $paymentId,
+                );
+            }
+
+            $cancelled = $gatewayPayment->cancel();
+
+            return new PaymentResult(
+                status: PaymentStatus::Cancelled,
+                paymentId: $paymentId,
+                message: 'Payment voided successfully',
+                gatewayResponse: $this->gatewayResponse($cancelled),
+                provider: $gateway->name(),
+            );
+        } catch (Throwable $e) {
+            return PaymentResult::failed("Payment void failed: {$e->getMessage()}", [], $paymentId);
+        }
+    }
+
     public function checkStatus(string $paymentId): PaymentResult
     {
         return $this->checkStatusForProvider('', $paymentId);
@@ -355,5 +410,17 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
         $value = mb_trim((string) $value);
 
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function gatewayResponse(mixed $response): array
+    {
+        if ($response instanceof PaymentContract) {
+            return $response->toArray();
+        }
+
+        return is_array($response) ? $response : ['response' => $response];
     }
 }
