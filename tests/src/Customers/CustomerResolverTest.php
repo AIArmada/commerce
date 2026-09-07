@@ -15,6 +15,7 @@ use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Services\CustomerResolver;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
 
@@ -335,5 +336,90 @@ describe('CustomerResolver', function (): void {
             ->and($resolved?->id)->toBe($guest->id)
             ->and((string) $resolved?->user_id)->toBe((string) $user->getKey())
             ->and($resolved?->is_guest)->toBeFalse();
+    });
+
+    it('isolates the same guest email between owners', function (): void {
+        config()->set('customers.features.owner.enabled', true);
+        config()->set('customers.features.owner.include_global', false);
+
+        $resolver = new CustomerResolver(new CreateCustomer, new UpdateCustomerProfile);
+        $ownerA = CustomersTestOwner::query()->create(['name' => 'Owner A']);
+        $ownerB = CustomersTestOwner::query()->create(['name' => 'Owner B']);
+        $email = 'shared-guest-' . uniqid() . '@example.com';
+
+        $customerA = OwnerContext::withOwner($ownerA, fn (): Customer => (new CreateCustomer)->execute(
+            $email,
+            ['name' => 'Owner A Guest'],
+            [],
+            null,
+            true,
+        ));
+
+        $unscopedGuest = OwnerContext::withOwner($ownerB, function () use ($email, $resolver): ?Customer {
+            return $resolver->resolveExisting(
+                user: null,
+                sessionCustomer: null,
+                billingData: ['email' => $email],
+                shippingData: [],
+            );
+        });
+
+        $customerB = OwnerContext::withOwner($ownerB, function () use ($email, $resolver): ?Customer {
+            return $resolver->resolve(
+                user: null,
+                sessionCustomer: null,
+                billingData: ['email' => $email, 'name' => 'Owner B Guest'],
+                shippingData: [],
+            );
+        });
+
+        expect($unscopedGuest)->toBeNull()
+            ->and($customerB)->not->toBeNull()
+            ->and($customerB?->getKey())->not->toBe($customerA->getKey())
+            ->and(Customer::query()->forOwner($ownerA)->where('email', $email)->count())->toBe(1)
+            ->and(Customer::query()->forOwner($ownerB)->where('email', $email)->count())->toBe(1);
+    });
+
+    it('rejects duplicate customer emails within one owner scope', function (): void {
+        config()->set('customers.features.owner.enabled', true);
+        config()->set('customers.features.owner.include_global', false);
+
+        $owner = CustomersTestOwner::query()->create(['name' => 'Owner']);
+        $email = 'duplicate-' . uniqid() . '@example.com';
+        $createCustomer = new CreateCustomer;
+
+        $first = OwnerContext::withOwner($owner, fn (): Customer => $createCustomer->execute(
+            $email,
+            ['name' => 'First Customer'],
+            [],
+            null,
+            true,
+        ));
+        $second = OwnerContext::withOwner($owner, fn (): Customer => $createCustomer->execute(
+            'second-' . uniqid() . '@example.com',
+            ['name' => 'Second Customer'],
+            [],
+            null,
+            true,
+        ));
+
+        expect(fn () => OwnerContext::withOwner($owner, function () use ($createCustomer, $email): Customer {
+            return $createCustomer->execute(
+                mb_strtoupper($email),
+                ['name' => 'Duplicate Customer'],
+                [],
+                null,
+                true,
+            );
+        }))->toThrow(ValidationException::class);
+
+        expect(fn () => OwnerContext::withOwner($owner, function () use ($first, $second): void {
+            (new UpdateCustomerProfile)->execute(
+                $second,
+                ['email' => $first->email],
+                [],
+                null,
+            );
+        }))->toThrow(ValidationException::class);
     });
 });

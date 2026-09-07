@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User;
+use Illuminate\Validation\ValidationException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -388,6 +389,16 @@ class Customer extends Model implements Auditable, HasMedia
     protected static function booted(): void
     {
         static::creating(function (Customer $customer): void {
+            $customer->assertEmailIsUniqueWithinOwnerScope();
+        });
+
+        static::updating(function (Customer $customer): void {
+            if ($customer->isDirty('email')) {
+                $customer->assertEmailIsUniqueWithinOwnerScope();
+            }
+        });
+
+        static::creating(function (Customer $customer): void {
             if (! (bool) config('customers.features.owner.enabled', false)) {
                 return;
             }
@@ -413,6 +424,33 @@ class Customer extends Model implements Auditable, HasMedia
             $customer->segments()->detach();
             $customer->groups()->detach();
         });
+    }
+
+    private function assertEmailIsUniqueWithinOwnerScope(): void
+    {
+        $email = $this->getAttribute('email');
+
+        if (! is_string($email) || mb_trim($email) === '') {
+            return;
+        }
+
+        $normalizedEmail = mb_strtolower(mb_trim($email));
+
+        $query = static::query()
+            ->forOwner(includeGlobal: (bool) config('customers.features.owner.include_global', false))
+            ->whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail]);
+
+        if ($this->exists) {
+            $query->where($this->getKeyName(), '!=', $this->getKey());
+        }
+
+        if (! $query->exists()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'email' => 'The email has already been taken within the current owner scope.',
+        ]);
     }
 
     // =========================================================================

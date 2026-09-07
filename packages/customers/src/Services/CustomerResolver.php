@@ -275,6 +275,7 @@ final class CustomerResolver
         $normalizedEmail = mb_strtolower(mb_trim($email));
 
         return Customer::query()
+            ->forOwner(includeGlobal: (bool) config('customers.features.owner.include_global', false))
             ->where(function (Builder $query) use ($normalizedEmail): void {
                 $query->whereRaw('LOWER(email) = ?', [$normalizedEmail])
                     ->orWhereHas('contactMethods', function (Builder $contactMethods) use ($normalizedEmail): void {
