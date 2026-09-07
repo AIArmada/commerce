@@ -21,7 +21,7 @@ When both packages are installed, Filament Vouchers automatically enables cart i
 Use `CartVoucherActions` to add voucher functionality to cart pages:
 
 ```php
-use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
+use AIArmada\Vouchers\Filament\Extensions\CartVoucherActions;
 ```
 
 ### Apply Voucher
@@ -73,7 +73,7 @@ Features:
 namespace App\Filament\Resources\CartResource\Pages;
 
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ViewCart as BaseViewCart;
-use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
+use AIArmada\Vouchers\Filament\Extensions\CartVoucherActions;
 
 class ViewCart extends BaseViewCart
 {
@@ -94,7 +94,7 @@ class ViewCart extends BaseViewCart
 namespace App\Filament\Resources\CartResource\Pages;
 
 use AIArmada\FilamentCart\Resources\CartResource\Pages\EditCart as BaseEditCart;
-use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
+use AIArmada\Vouchers\Filament\Extensions\CartVoucherActions;
 
 class EditCart extends BaseEditCart
 {
