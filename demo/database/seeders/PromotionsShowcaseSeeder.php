@@ -70,26 +70,6 @@ final class PromotionsShowcaseSeeder extends Seeder
             ],
         );
 
-        Promotion::query()->updateOrCreate(
-            ['code' => 'BUNDLEBOOST'],
-            [
-                'name' => 'Bundle Booster',
-                'description' => 'Buy-more incentive for bundled accessory purchases.',
-                'type' => PromotionType::BuyXGetY,
-                'discount_value' => 1,
-                'priority' => 60,
-                'is_stackable' => false,
-                'is_active' => true,
-                'usage_limit' => null,
-                'per_customer_limit' => 2,
-                'min_purchase_amount' => 0,
-                'min_quantity' => 3,
-                'conditions' => null,
-                'starts_at' => now()->subDay(),
-                'ends_at' => now()->addDays(21),
-            ],
-        );
-
         $flagshipProduct = Product::query()->where('sku', 'IP16-PROMAX')->first();
 
         if ($flagshipProduct instanceof Product) {
