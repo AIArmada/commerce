@@ -50,7 +50,7 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
 - **Enforcement**: `HasOwner` + scope config on all three instance models, `AddressOwnerGuard` on write/attach/snapshot paths, `OwnerUiScope` on Filament resources, events-side `Addressable` trait hardened with owner-guarded relations (commits `048a8d686`, `963e00bc3`, `ce5550f98`, `0c8521a41`).
 - `include_global` set to `false` (audit suggested `true`; `false` chosen — tenant PII must not leak through global reads; global access uses explicit global context).
 - Dropped subclaim: the snapshot composite index already comes from `uuidMorphs('snapshotable')`.
-- **Gate**: legacy ownerless rows were NOT backfilled — see [Deployment gates](#deployment-gates). This is the top deployment risk in the whole track.
+- **Cutover**: `2026_09_07_100000_reject_legacy_ownerless_addressing_rows.php` (commit `569d4042b`) fails the migration when any instance-table row has a null owner tuple — no backfill, no legacy compatibility path, per explicit direction (dev-only env; delete-and-rerun is the accepted remediation). Audit gate notes updated to match.
 
 ## Vouchers — implemented
 
@@ -71,16 +71,21 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
 
 - Audited `doc_workflows.payload` is absent; actual schema is `docs_workflows.rules`, already configurable via `commerce_json_column_type()`. No migration. Verified in migration source and model.
 
-## Not in this track
+## Inventory — implemented
 
-- **Inventory** (`reservation_group_id` migration, decimal-column drops) was never implemented — `audits/inventory.md` is unchanged and still describes open work.
+- **Migration** `2026_09_07_000001_add_reservation_group_id_to_inventory_allocations_table.php`: adds `reservation_group_id` (`foreignUuid()->nullable()`) + index `inv_allocations_reservation_group_idx` on `inventory_allocations`, mirroring the extracted block with the same guards.
+- **Shipped-file edit** (exception, verified safe): the hidden `Schema::table` alteration block was removed from `2026_07_12_000002_create_inventory_reservations_table.php` — the block existed exactly as audited and was fully conditional/idempotent; dead `Schema` import and `$allocationTable` var removed with it.
+- **Migration** `2026_09_07_000002_drop_decimal_quantities_from_inventory_levels_table.php`: drops `quantity_on_hand_decimal` / `quantity_reserved_decimal`, each behind `hasColumn`. Independent repo-wide `rg` confirmed zero readers anywhere; `unit_conversion_factor` kept; `InventoryLevel` docblock/fillable/casts cleaned.
+- **Tests**: `tests/src/Inventory/Feature/InventoryMigrationsTest.php` pins the old file clean, asserts end-state schema, and proves idempotency via double-`up()`.
+- No `down()` methods (permitted; re-runs guarded, rollbacks manual). Work was uncommitted at review time.
+- Out of scope (still open): A1 serial enum-vs-morph code fix. Data-cleanup assessment RECEIVED 2026-09-07 and independently confirmed: the serials-table migration defaults `status` to the raw slug `'available'` (`000006` line 31) while the model casts to the spatie state (FQCN morphs) and Filament queries raw enum values — three raw-slug writers, so rows may hold non-morph values. Cleanup migration needed only if live rows are affected (unconfirmed, no live DB). The A1 audit finding now carries this as fix step (3).
 
 ## Deployment gates
 
-In order:
+Env is dev-only with no production data: per explicit direction there are NO backfills anywhere — delete-and-rerun is the accepted remediation for legacy/dev rows. Remaining gates are ordering and CI checks, in order:
 
-1. **Addressing legacy rows** — decide before enabling in production: backfill owners onto existing ownerless rows, or confirm every legacy consumer reads through explicit global context. Otherwise legacy addresses silently vanish from scoped reads.
-2. **Organizations duplicates** — run the slug and membership duplicate preflights on the live DB; dedupe before migrating.
+1. **Addressing cutover** — the migration fails closed on ownerless rows by design; on a fresh/dev DB just remove the rows and rerun. Never backfill.
+2. **Organizations duplicates** — run the slug and membership duplicate preflights before migrating (uniques fail on dirty data); dev-only today, keep the habit for prod later.
 3. **Promotions timing** — migrate before workers boot the new code.
 4. **Voucher backup** — back up `voucher_assignments` / `voucher_transactions` before migrating.
 5. **PHP 8.4 CI** — local verification ran on PHP 8.5.8; gate deployment on the 8.4 pipeline.
@@ -88,4 +93,4 @@ In order:
 
 ## Commit list (after base `32f10440b`)
 
-`a654bde4e`, `36e26266a`, `41870ef74`, `048a8d686`, `963e00bc3`, `ce5550f98`, `a0d804fd0`, `7732638a7`, `4c6b2c732`, `d3638e5fa`, `fcc9dfa0c`, `b611dc155`, `0c8521a41`, `0d29e2da6`, `e6de8d5d6`, `af24a2edb`, `ad36b8059`, `ea7471b1c`, `3acbfca73`, `2001bd53d`, `83a3c331e`, `28ce28c2b`, `6c452d751`, `7645f4a38`.
+`a654bde4e`, `36e26266a`, `41870ef74`, `048a8d686`, `963e00bc3`, `ce5550f98`, `a0d804fd0`, `7732638a7`, `4c6b2c732`, `d3638e5fa`, `fcc9dfa0c`, `b611dc155`, `0c8521a41`, `0d29e2da6`, `e6de8d5d6`, `af24a2edb`, `ad36b8059`, `ea7471b1c`, `3acbfca73`, `2001bd53d`, `83a3c331e`, `28ce28c2b`, `6c452d751`, `7645f4a38`, `569d4042b` (addressing cutover). Inventory code changes were uncommitted at review time.

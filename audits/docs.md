@@ -1,9 +1,5 @@
 # docs Audit
 
-## Implementation outcome (migration track, 2026-09-07)
-
-The `doc_workflows.payload` claim was dropped: the actual configurable table is `docs_workflows` and its JSON column is `rules`. The existing migration resolves the configured JSON type, so no migration was required.
-
 ## Packages Reviewed (bullets)
 
 - `packages/docs` — document generation (invoices/receipts/labels): 15 models, DocService, email/share/tracking controllers, numbering, rendering, spatie model-states, reminders (58 `src/` files, `config/docs.php`, 4 migrations, `routes/docs.php`, seeders + factories)
@@ -16,12 +12,7 @@ docs is the most complete domain package in this set (factories, seeders, 5 doc 
 
 ## Migration Impact
 
-**Migration Required: YES**
-
-| Table | Column/Index/Constraint | Data migration | Notes |
-|---|---|---|---|
-| `doc_workflows` | `payload` column type `json` → `jsonb` (standardize with siblings + `jsonb` config default) | none | Type-only change on a config/blob column; Postgres `json` vs `jsonb` changes indexing/operator behavior |
-| all other `doc_*` tables (docs, sequences, extended) | none proposed | none | uuid PKs verified; `status` string column serves both enum + spatie-state reads — no column change; state consolidation is code-only |
+**Migration Required: NO** — migration track completed 2026-09-07, see `migration-record.md#docs`
 
 ## Package Responsibilities
 
@@ -102,7 +93,6 @@ docs is the most complete domain package in this set (factories, seeders, 5 doc 
 ## Laravel-Specific Findings
 
 - PHP 8.4, no FK constraints/cascades (rg clean), uuid PKs, `getTable()` everywhere, `json_column_type` in config + migrations, factories + seeders present — compliant and the best migration hygiene in the set (4 focused migration files).
-- One inconsistency: `000001_create_doc_workflows_table.php` uses `commerce_json_column_type('docs', 'json')` (default `json`) while siblings use `'jsonb'` — Postgres `json` vs `jsonb` changes indexing/operator behavior for workflow payload queries. Fix: standardize on `jsonb` via a new migration (one-word change + config default already `jsonb`).
 - `SendDocReminderJob` correctly re-enters owner context per batch (`OwnerContext::withOwner` at :55–57, per-owner iteration at :253–268) — queued-job exemplar alongside jnt's listener.
 
 ## Filament Adapter Findings (thin-adapter check, domain leak, duplication, dependency direction)
@@ -151,7 +141,7 @@ docs is the most complete domain package in this set (factories, seeders, 5 doc 
 ## Recommended Refactor Plan (ordered steps)
 
 1. D2: guard owner writes (`assignOwner` + `OwnerWriteGuard`), replace `withoutOwnerScope` block.
-2. D4: scope sequences via `forOwner()` + `lockForUpdate`; `jsonb` standardization migration.
+2. D4: scope sequences via `forOwner()` + `lockForUpdate`.
 3. D1: canonicalize on spatie states; delete enum; update 4 bridge sites + adapter filters.
 4. D3: unify numbering registry (lazy, scoped binding).
 5. D5+Q1+F1: formatter delegation; extract totals/payment recorder; thin adapter actions.
@@ -159,7 +149,7 @@ docs is the most complete domain package in this set (factories, seeders, 5 doc 
 
 ## Files Likely to Change
 
-- `packages/docs/src/Services/DocService.php`, `src/Services/SequenceManager.php`, `src/Services/DocRenderService.php`, `src/Services/DocEmailService.php`, `src/Models/Doc.php`, `src/Enums/DocStatus.php` (delete), `src/States/DocStatus.php`, `src/Numbering/*.php`, `src/DocsServiceProvider.php`, `src/Jobs/SendDocReminderJob.php`, plus new `src/Services/{DocTotals,DocPaymentRecorder}.php`, `src/Numbering/DocumentNumberRegistry.php`, plus a new migration standardizing `doc_workflows.payload` on `jsonb`
+- `packages/docs/src/Services/DocService.php`, `src/Services/SequenceManager.php`, `src/Services/DocRenderService.php`, `src/Services/DocEmailService.php`, `src/Models/Doc.php`, `src/Enums/DocStatus.php` (delete), `src/States/DocStatus.php`, `src/Numbering/*.php`, `src/DocsServiceProvider.php`, `src/Jobs/SendDocReminderJob.php`, plus new `src/Services/{DocTotals,DocPaymentRecorder}.php`, `src/Numbering/DocumentNumberRegistry.php`
 - `packages/filament-docs/src/Actions/{RecordPaymentAction,SendEmailAction}.php`, resources referencing `Enums\DocStatus`, `src/Rendering/*`
 
 ## Files / Code That Should Be Removed (explicit list, no legacy preservation)

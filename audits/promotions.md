@@ -185,18 +185,11 @@ The core discount math (`PromotionService`, `Promotion::calculateDiscount`) is s
 - `packages/promotions/src/Services/PromotionService.php` (per-customer enforcement, pre-filters, exact code lookup)
 - `packages/promotions/src/Actions/IssueVouchersFromPromotion.php` (int-type issuance mapping per vouchers C2)
 - `packages/promotions/src/Listeners/MarkPromotionAsUsedOnOrderPlaced.php` (ownership check + logging)
-- `packages/promotions/database/migrations/` (new data migration)
 - `packages/promotions/docs/*`, `CONTEXT.md`
 - `packages/filament-promotions/src/Actions/*`, `Resources/PromotionResource/Schemas/PromotionForm.php`, docs
 
 ## Files / Code That Should Be Removed (explicit list, no legacy preservation)
 
-- `packages/promotions/src/Actions/ApplyPromotionToCart.php` — zero callers; tag wiring absent so it always throws.
-- `packages/promotions/src/Strategies/PercentageStrategy.php`, `FixedStrategy.php`, `BuyXGetYStrategy.php` — only referenced by the dead action.
-- `packages/promotions/src/Contracts/PromotionStrategyInterface.php` — only referenced by the dead action/strategies.
-- `packages/promotions/src/Console/Commands/RecomputePromotionEligibilityCommand.php` — unregistered stub that changes nothing.
-- `packages/promotions/src/Listeners/ReevaluatePromotionsOnCartUpdated.php` — unregistered and discards its own result.
-- `packages/promotions/src/Actions/EvaluatePromotionForCart.php` — sole caller is the deleted listener.
 - `packages/filament-promotions/src/Actions/IssuePromotionVouchersFromListAction.php` — duplicate of `IssuePromotionVouchersAction`; one action serves both contexts.
 
 ## Final Recommended Architecture
