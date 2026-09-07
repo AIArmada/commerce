@@ -11,6 +11,7 @@ use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
+use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\FilamentAddressing\Rules\AddressAreasBelongToCountry;
@@ -114,11 +115,11 @@ class AddressFormSchema
                             $ancestors
                                 ->whereKey($parentId)
                                 ->where(
-                                    config('addressing.database.tables.area_relationships', 'address_area_relationships') . '.hierarchy_type',
+                                    AddressingTableResolver::resolve('area_relationships') . '.hierarchy_type',
                                     self::hierarchyType($definition),
                                 )
                                 ->where(
-                                    config('addressing.database.tables.area_relationships', 'address_area_relationships') . '.relationship_type',
+                                    AddressingTableResolver::resolve('area_relationships') . '.relationship_type',
                                     'contains',
                                 )
                                 ->where(function ($query): void {

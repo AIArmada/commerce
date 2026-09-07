@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
+use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Traits\HasAddresses;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -103,7 +104,7 @@ it('sets the primary pivot for the requested type when an address has multiple a
 
     $this->model->setPrimaryAddress($this->address1, type: 'billing');
 
-    $addressablesTable = config('addressing.database.tables.addressables', 'addressables');
+    $addressablesTable = AddressingTableResolver::resolve('addressables');
     expect(DB::table($addressablesTable)->where('address_id', $this->address1->id)->where('type', 'shipping')->value('is_primary'))->toBe(1)
         ->and(DB::table($addressablesTable)->where('address_id', $this->address1->id)->where('type', 'billing')->value('is_primary'))->toBe(1);
 });
@@ -137,7 +138,7 @@ it('lists addresses of type', function (): void {
 });
 
 it('returns only currently valid primary addresses', function (): void {
-    $addressablesTable = config('addressing.database.tables.addressables', 'addressables');
+    $addressablesTable = AddressingTableResolver::resolve('addressables');
     $now = CarbonImmutable::now();
 
     $this->model->attachAddress($this->address1, type: 'shipping', isPrimary: true);
@@ -168,7 +169,7 @@ it('returns only currently valid primary addresses', function (): void {
 });
 
 it('filters addressable pivots to those valid now', function (): void {
-    $addressablesTable = config('addressing.database.tables.addressables', 'addressables');
+    $addressablesTable = AddressingTableResolver::resolve('addressables');
     $now = CarbonImmutable::now();
 
     $this->model->attachAddress($this->address1, type: 'shipping', isPrimary: true);

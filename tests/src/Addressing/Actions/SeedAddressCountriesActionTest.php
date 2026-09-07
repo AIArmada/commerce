@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedAddressCountryReferencesAction;
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\CommerceSupport\Actions\SeedCurrenciesAction;
 use AIArmada\CommerceSupport\Actions\SeedTimezonesAction;
 use AIArmada\CommerceSupport\Models\Currency;
@@ -91,7 +92,7 @@ it('rebuilds bundled country reference links without retaining stale rows', func
     $my = AddressCountry::where('iso2', 'MY')->firstOrFail();
     $tokyo = Timezone::where('name', 'Asia/Tokyo')->firstOrFail();
 
-    DB::table(config('addressing.database.tables.country_timezone_links'))->insert([
+    DB::table(AddressingTableResolver::resolve('country_timezone_links'))->insert([
         'id' => (string) str()->uuid(),
         'country_id' => $my->id,
         'timezone_id' => $tokyo->id,
