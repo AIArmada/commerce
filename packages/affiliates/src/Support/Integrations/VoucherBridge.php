@@ -12,7 +12,7 @@ final class VoucherBridge
 
     public function __construct()
     {
-        $this->available = class_exists('AIArmada\\FilamentVouchers\\Models\\Voucher') && class_exists('AIArmada\\FilamentVouchers\\Resources\\VoucherResource');
+        $this->available = class_exists('AIArmada\\Vouchers\\Models\\Voucher') && class_exists('AIArmada\\FilamentVouchers\\Resources\\VoucherResource');
     }
 
     public function warm(): void {}

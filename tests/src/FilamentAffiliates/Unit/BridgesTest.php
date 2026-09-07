@@ -187,7 +187,7 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
 });
 
 test('voucher bridge resolves urls for vouchers when enabled', function (): void {
-    if (! class_exists('AIArmada\\FilamentVouchers\\Models\\Voucher')) {
+    if (! class_exists('AIArmada\\FilamentVouchers\\Resources\\VoucherResource')) {
         $this->markTestSkipped('FilamentVouchers package not installed.');
 
         return;
@@ -209,7 +209,7 @@ test('voucher bridge resolves urls for vouchers when enabled', function (): void
 });
 
 test('voucher bridge does not resolve urls outside current owner scope', function (): void {
-    if (! class_exists('AIArmada\\FilamentVouchers\\Models\\Voucher')) {
+    if (! class_exists('AIArmada\\FilamentVouchers\\Resources\\VoucherResource')) {
         $this->markTestSkipped('FilamentVouchers package not installed.');
 
         return;
