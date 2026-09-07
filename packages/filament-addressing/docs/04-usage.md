@@ -45,6 +45,11 @@ Search examples:
 
 Open any country to see its related states in the States section below the country details.
 
+Address and snapshot resources use the current owner context. Reference-data
+resources such as countries, states, cities, areas, and postcodes remain
+global. Global address work must enter explicit global context in the owning
+application.
+
 ## Manage Areas
 
 Areas are user/importer-owned reference data.

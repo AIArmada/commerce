@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Resources;
 
 use AIArmada\Addressing\Models\AddressSnapshot;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentAddressing\Resources\AddressSnapshotResource\Pages\ListAddressSnapshots;
 use AIArmada\FilamentAddressing\Resources\AddressSnapshotResource\Pages\ViewAddressSnapshot;
 use AIArmada\FilamentAddressing\Tables\AddressSnapshotTable;
@@ -14,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class AddressSnapshotResource extends Resource
 {
@@ -44,6 +46,14 @@ final class AddressSnapshotResource extends Resource
     public static function getModel(): string
     {
         return config('filament-addressing.resources.snapshots.model', AddressSnapshot::class);
+    }
+
+    /**
+     * @return Builder<AddressSnapshot>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
     }
 
     public static function table(Table $table): Table

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Resources;
 
 use AIArmada\Addressing\Models\Address;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentAddressing\Resources\AddressResource\Pages\CreateAddress;
 use AIArmada\FilamentAddressing\Resources\AddressResource\Pages\EditAddress;
 use AIArmada\FilamentAddressing\Resources\AddressResource\Pages\ListAddresses;
@@ -16,6 +17,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class AddressResource extends Resource
 {
@@ -46,6 +48,14 @@ final class AddressResource extends Resource
     public static function getModel(): string
     {
         return config('filament-addressing.resources.addresses.model', Address::class);
+    }
+
+    /**
+     * @return Builder<Address>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
     }
 
     public static function table(Table $table): Table
