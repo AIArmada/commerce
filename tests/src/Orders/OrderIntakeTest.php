@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Events\OrderCreated;
 use AIArmada\Orders\Exceptions\OrderIntakeConflictException;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use Illuminate\Database\QueryException;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 it('creates order with intake identity', function (): void {
@@ -52,6 +55,53 @@ it('exact retry with same intake identity returns existing order', function (): 
         ->where('intake_source', 'checkout')
         ->where('intake_id', 'sess_dup_test')
         ->count())->toBe(1);
+});
+
+it('isolates the same intake identity between owners', function (): void {
+    config()->set('orders.owner.enabled', true);
+    config()->set('orders.owner.include_global', false);
+    config()->set('orders.owner.auto_assign_on_create', true);
+
+    Schema::dropIfExists('test_owners');
+    Schema::create('test_owners', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
+    $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
+    $createOrder = new CreateOrder;
+
+    $orderData = [
+        'currency' => 'MYR',
+        'subtotal' => 5000,
+        'grand_total' => 5000,
+    ];
+    $items = [['name' => 'Test Item', 'quantity' => 1, 'unit_price' => 5000, 'currency' => 'MYR']];
+
+    $orderA = OwnerContext::withOwner($ownerA, fn () => $createOrder->execute(
+        orderData: $orderData,
+        items: $items,
+        intakeSource: 'checkout',
+        intakeId: 'shared-intake',
+    ));
+    $orderB = OwnerContext::withOwner($ownerB, fn () => $createOrder->execute(
+        orderData: $orderData,
+        items: $items,
+        intakeSource: 'checkout',
+        intakeId: 'shared-intake',
+    ));
+
+    expect($orderB->id)->not->toBe($orderA->id)
+        ->and(OwnerContext::withOwner($ownerA, fn () => Order::query()
+            ->where('intake_source', 'checkout')
+            ->where('intake_id', 'shared-intake')
+            ->value('id')))->toBe($orderA->id)
+        ->and(OwnerContext::withOwner($ownerB, fn () => Order::query()
+            ->where('intake_source', 'checkout')
+            ->where('intake_id', 'shared-intake')
+            ->value('id')))->toBe($orderB->id);
 });
 
 it('without intake identity creates new order each call', function (): void {
