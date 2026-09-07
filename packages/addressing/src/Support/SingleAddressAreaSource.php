@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAddressing\Support;
+namespace AIArmada\Addressing\Support;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Data\AddressAreaData;

@@ -19,6 +19,10 @@ identity models, migrations, and domain actions belong to `aiarmada/persons`.
 The resources do not add tenant scoping because the persons package is a
 shared identity layer by design.
 
+The Persons table searches the generated `searchable_name` value together
+with the person's name parts, so primary `person_names` values are searchable
+without changing the shared identity boundary.
+
 ## Read next
 
 - [Installation](02-installation.md)

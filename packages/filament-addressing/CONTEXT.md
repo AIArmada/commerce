@@ -42,7 +42,7 @@ keywords:
 
 ## Key surfaces
 - Resources: `AddressAreaResource`, `AddressCityResource`, `AddressCountryResource`, `AddressResource`, `AddressSnapshotResource`, `AddressStateResource`, `PostalCodeResource`
-- Actions/Services: `Support/GuardsAddressingUi`, `Support/ResolvesAddressingResources`, `Support/SingleAddressAreaSource`
+- Actions/Services: `Support/GuardsAddressingUi`, `Support/ResolvesAddressingResources`; the reusable `SingleAddressAreaSource` now belongs to core `addressing`
 - Config `filament-addressing.php`: `navigation`, `enabled`, `group`, `sort`, `icons`, `countries`, `states`, `cities`, `areas`, `addresses`
 
 ## Docs map

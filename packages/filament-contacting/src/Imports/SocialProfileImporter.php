@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Imports;
 
 use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
@@ -38,21 +39,20 @@ final class SocialProfileImporter extends Importer
         return new SocialProfile;
     }
 
+    protected function beforeValidate(): void
+    {
+        app(ContactingModelReferenceGuard::class)->resolve(
+            $this->data['socialable_type'] ?? null,
+            $this->data['socialable_id'] ?? null,
+        );
+    }
+
     /**
      * @return class-string<SocialProfile>
      */
     public static function getModelLabel(): string
     {
         return SocialProfile::class;
-    }
-
-    protected function handleRecordCreation(array $data): SocialProfile
-    {
-        $record = new SocialProfile;
-        $record->fill($data);
-        $record->save();
-
-        return $record;
     }
 
     public static function getCompletedNotificationBody(Import $import): string

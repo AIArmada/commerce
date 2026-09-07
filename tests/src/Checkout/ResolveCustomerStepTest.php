@@ -123,7 +123,7 @@ describe('ResolveCustomerStep', function (): void {
                 ->exists() ?? false;
         });
         $customerAddressCount = OwnerContext::withOwner(null, function () use ($customer): int {
-            return $customer?->addresses()->count() ?? 0;
+            return $customer?->legacyAddresses()->count() ?? 0;
         });
 
         expect($customer)->not->toBeNull()
@@ -155,7 +155,7 @@ describe('ResolveCustomerStep', function (): void {
             ]);
             $guestCustomer->addContactMethod(ContactMethodData::email('guest@example.com'));
 
-            $guestCustomer->addresses()->create([
+            $guestCustomer->legacyAddresses()->create([
                 'type' => 'billing',
                 'line1' => '789 Merge Street',
                 'city' => 'Kuala Lumpur',
@@ -192,7 +192,7 @@ describe('ResolveCustomerStep', function (): void {
             return $session->fresh(['customer']);
         });
         $userCustomerAddressCount = OwnerContext::withOwner(null, function () use ($userCustomer): int {
-            return $userCustomer->fresh()->addresses()->count();
+            return $userCustomer->fresh()->legacyAddresses()->count();
         });
         $guestExists = OwnerContext::withOwner(null, function () use ($guestCustomer): bool {
             return Customer::query()->whereKey($guestCustomer->id)->exists();
@@ -272,7 +272,7 @@ describe('ResolveCustomerStep', function (): void {
             $customer->addContactMethod(ContactMethodData::email('payment-country-' . uniqid() . '@example.com'));
             $customer->addContactMethod(ContactMethodData::phone('+60123456789', countryCode: 'MY'));
 
-            $customer->addresses()->create([
+            $customer->legacyAddresses()->create([
                 'type' => 'billing',
                 'line1' => '123 Billing Street',
                 'city' => 'Kuala Lumpur',
@@ -281,7 +281,7 @@ describe('ResolveCustomerStep', function (): void {
                 'is_default_billing' => true,
             ]);
 
-            $customer->addresses()->create([
+            $customer->legacyAddresses()->create([
                 'type' => 'shipping',
                 'line1' => '456 Shipping Road',
                 'city' => 'Sydney',

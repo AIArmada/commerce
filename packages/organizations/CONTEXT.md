@@ -16,10 +16,10 @@ keywords:
 
 ## Snapshot
 - Composer: `aiarmada/organizations`
-- Role: Reusable organization aggregate: identity, lifecycle, visibility, ownership invariants, current-org context.
+- Role: Reusable tenant aggregate: organization identity, lifecycle, visibility, ownership invariants, and current-org context.
 - Triggers: organization, tenant, ownership, transfer, current-org
 - Search first: `src/Models, src/Actions, src/Resolvers, config, docs`
-- Related: `membership`, `filament-organizations`, `commerce-support`
+- Related: `membership`, `filament-organizations`, `commerce-support`, `persons`, `customers`, `events`
 - Paired: `filament-organizations` (Filament admin adapter)
 
 ## Read next
@@ -34,12 +34,14 @@ keywords:
 - Owns the reusable tenant aggregate, membership ownership invariants, lifecycle actions, and current-org context only.
 - Does NOT own events, addresses, media, billing, moderation, Livewire, or Filament. Applications provide profile extensions, public projections, and domain authorization policy.
 - Invariants: every org gets exactly one `Owner` membership; `created_by` is immutable; transfers are transactional; the final owner cannot leave or be removed; public queries must use the `public()` scope.
+- `Organization` is the tenant/owner aggregate, never a `Person` or an event organizer. `customers` use the organization owner tuple; a persons affiliation may reference an organization only when the host explicitly configures it as the institution model.
+- Organization membership reads and writes use `organizations.database.tables.members`; `membership.pivot.table_suffix` does not override this aggregate-specific table.
 - Use `CurrentOrganizationMiddleware` to establish the `OwnerContext` used by owner-aware packages.
 - If admin UI changes too, audit `filament-organizations`.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 
 ## Decide fast
-- Use when: Tenant aggregate or ownership transfer rules.
+- Use when: Tenant aggregate, ownership transfer rules, or current organization context.
 - Skip when: Join/invite flows — see membership.
 - Owner/security: Org IS the owner; no HasOwner on Organization.
 

@@ -21,7 +21,8 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
- * Event-domain organizer profile. This is not a tenant organization.
+ * Event-scoped organizer role/profile. This is not a shared Person or a
+ * tenant Organization; the event involvement owns the role and scope.
  *
  * @property string $id
  * @property string|null $owner_type

@@ -30,6 +30,7 @@ keywords:
 
 ## Guardrails
 - Owns models, actions, services, events, calculations, and persistence rules.
+- For `organizations.Organization`, the aggregate's `membersTable()` is authoritative. Do not configure an organization membership table through `membership.pivot.table_suffix`; that suffix remains the default for other `HasMembers` subjects.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 
 ## Decide fast

@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
-    $this->addressesTable = config('addressing.tables.addresses', 'addresses');
-    $this->snapshotsTable = config('addressing.tables.snapshots', 'address_snapshots');
+    $this->addressesTable = config('addressing.database.tables.addresses', 'addresses');
+    $this->snapshotsTable = config('addressing.database.tables.snapshots', 'address_snapshots');
 });
 
 it('has latitude on addresses table', function (): void {

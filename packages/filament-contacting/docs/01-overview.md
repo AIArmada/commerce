@@ -38,6 +38,10 @@ Standalone resources (`ContactMethodResource`, `SocialProfileResource`, `Contact
 
 Enable them only when you have safe owner/contactable context.
 
+CSV importers resolve each contactable or socialable reference through the
+core contacting owner guard before validation. A row that names a record from
+another owner is rejected rather than importing under the current owner.
+
 ## Snapshots are Read-Only
 
 Contact snapshots preserve point-in-time copies of contact/social data. They cannot be created, edited, or deleted from the UI.

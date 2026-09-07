@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
+use LogicException;
 
 /**
  * @property string $id
@@ -32,6 +34,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $published_at
  * @property-read EloquentCollection<int, PersonName> $names
  * @property-read string $formatted_name
+ *
+ * Person is the shared, global human-identity root. It deliberately has no
+ * owner scope; tenant-owned profiles link to it without changing that rule.
  */
 class Person extends Model
 {
@@ -58,6 +63,10 @@ class Person extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (Person $person): void {
+            $person->normalizeIdentityValues();
+        });
+
         static::deleting(function (Person $person): void {
             $person->names()->get()->each->delete();
             $person->titleAssignments()->get()->each->delete();
@@ -87,6 +96,78 @@ class Person extends Model
     public function names(): HasMany
     {
         return $this->hasMany(PersonName::class, 'person_id');
+    }
+
+    private function normalizeIdentityValues(): void
+    {
+        if ($this->getKey() === null) {
+            $this->setAttribute($this->getKeyName(), (string) Str::orderedUuid());
+        }
+
+        $this->name = mb_trim((string) $this->name);
+
+        $explicitSlug = is_string($this->slug) && mb_trim($this->slug) !== '';
+        $base = Str::slug($explicitSlug ? $this->slug : $this->name) ?: 'person';
+        $key = mb_substr((string) $this->getKey(), 0, 8);
+        $candidate = $explicitSlug
+            ? $base
+            : ($key !== '' ? $base . '-' . $key : $base);
+        $suffix = 2;
+        $found = false;
+
+        for ($attempt = 0; $attempt < 100; $attempt++) {
+            $query = static::query()->where('slug', $candidate);
+
+            if ($this->exists) {
+                $query->whereKeyNot($this->getKey());
+            }
+
+            if (! $query->exists()) {
+                $this->slug = $candidate;
+                $found = true;
+
+                break;
+            }
+
+            $candidate = $explicitSlug
+                ? $base . '-' . $suffix
+                : $base . '-' . $key . '-' . $suffix;
+            $suffix++;
+        }
+
+        if (! $found) {
+            throw new LogicException('Person slug generation exhausted its collision budget.');
+        }
+
+        $parts = array_filter([
+            $this->name,
+            $this->family_name,
+            $this->middle_name,
+            ...$this->primaryNameValues(),
+        ], static fn (mixed $value): bool => is_string($value) && mb_trim($value) !== '');
+
+        $this->searchable_name = mb_strtolower(mb_trim(implode(' ', $parts)));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function primaryNameValues(): array
+    {
+        if ($this->relationLoaded('names')) {
+            /** @var EloquentCollection<int, PersonName> $names */
+            $names = $this->getRelation('names');
+        } else {
+            /** @var EloquentCollection<int, PersonName> $names */
+            $names = $this->names()->where('is_primary', true)->get();
+        }
+
+        return $names
+            ->filter(static fn (PersonName $name): bool => $name->is_primary)
+            ->map(static fn (PersonName $name): string => mb_trim($name->full_name))
+            ->filter(static fn (string $name): bool => $name !== '')
+            ->values()
+            ->all();
     }
 
     /**

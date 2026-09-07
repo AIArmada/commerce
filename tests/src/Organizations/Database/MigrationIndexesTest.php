@@ -24,6 +24,11 @@ it('adds organization uniqueness and membership lookup indexes', function (): vo
         ->and(Schema::hasIndex($membersTable, 'organization_members_organization_role_index'))->toBeTrue();
 });
 
+it('uses the organizations membership table config as the single source of truth', function (): void {
+    expect((new Organization)->membersTable())
+        ->toBe(config('organizations.database.tables.members'));
+});
+
 it('enforces unique organization slugs at the database boundary', function (): void {
     $attributes = [
         'name' => 'First Organization',

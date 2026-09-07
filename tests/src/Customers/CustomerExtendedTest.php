@@ -2,17 +2,48 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address as AddressingAddress;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 describe('Customer Model - Extended Coverage', function (): void {
     describe('Relationships', function (): void {
-        it('has addresses relationship', function (): void {
+        it('has the shared addressing relationship', function (): void {
             $customer = new Customer;
-            expect($customer->addresses())->toBeInstanceOf(HasMany::class);
+
+            expect(OwnerContext::withOwner(null, fn (): MorphToMany => $customer->addresses()))
+                ->toBeInstanceOf(MorphToMany::class);
+        });
+
+        it('can attach a reusable addressing address without changing the legacy profile table', function (): void {
+            [$customer, $address] = OwnerContext::withOwner(null, function (): array {
+                $customer = Customer::create([
+                    'first_name' => 'Address',
+                    'last_name' => 'Pilot',
+                    'email' => 'address-pilot-' . uniqid() . '@example.com',
+                    'status' => CustomerStatus::Active,
+                ]);
+                $address = AddressingAddress::create([
+                    'line1' => '1 Shared Street',
+                    'city' => 'Kuala Lumpur',
+                    'postcode' => '50000',
+                    'country_code' => 'MY',
+                ]);
+
+                $customer->attachAddress($address, type: 'shipping', isPrimary: true);
+
+                return [$customer, $address];
+            });
+
+            expect(OwnerContext::withOwner(null, fn (): bool => $customer->primaryAddress('shipping')?->is($address) ?? false))
+                ->toBeTrue()
+                ->and(OwnerContext::withOwner(null, fn (): int => $customer->legacyAddresses()->count()))
+                ->toBe(0);
         });
 
         it('has segments relationship', function (): void {

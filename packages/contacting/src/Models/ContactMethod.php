@@ -49,6 +49,8 @@ use Override;
  */
 final class ContactMethod extends Model
 {
+    private bool $shouldSyncPrimary = false;
+
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
@@ -186,6 +188,8 @@ final class ContactMethod extends Model
             $contactMethod->normalizeForSave();
             $contactMethod->guardAllowedType();
             $contactMethod->guardContactableOwner();
+            $contactMethod->shouldSyncPrimary = $contactMethod->isDirty('is_primary')
+                && $contactMethod->is_primary;
         });
 
         static::saved(function (ContactMethod $contactMethod): void {
@@ -206,6 +210,9 @@ final class ContactMethod extends Model
 
     private function normalizeForSave(): void
     {
+        $displayValueWasExplicitlyChanged = $this->isDirty('display_value');
+        $contactValueChanged = $this->isDirty(['value', 'country_code']);
+
         if ($this->country_code !== null) {
             $this->country_code = mb_strtoupper($this->country_code);
         }
@@ -217,7 +224,11 @@ final class ContactMethod extends Model
         );
 
         $this->normalized_value = $normalized['normalized_value'];
-        $this->display_value = $normalized['display_value'];
+
+        if (! $displayValueWasExplicitlyChanged
+            && (! $this->exists || $contactValueChanged || $this->display_value === null)) {
+            $this->display_value = $normalized['display_value'];
+        }
     }
 
     private function guardAllowedType(): void
@@ -236,18 +247,22 @@ final class ContactMethod extends Model
 
     private function syncSiblingPrimaryFlags(): void
     {
-        if (! $this->is_primary) {
+        if (! $this->shouldSyncPrimary) {
             return;
         }
 
         DB::transaction(function (): void {
-            if ($this->contactable_type !== null && $this->contactable_id !== null) {
-                $this->contactable()->lockForUpdate()->first();
+            if ($this->contactable_type === null || $this->contactable_id === null) {
+                return;
             }
+
+            $this->contactable()->lockForUpdate()->firstOrFail();
 
             ContactMethod::query()
                 ->where('contactable_type', $this->contactable_type)
                 ->where('contactable_id', $this->contactable_id)
+                ->where('type', $this->type)
+                ->where('purpose', $this->purpose)
                 ->where('id', '!=', $this->id)
                 ->lockForUpdate()
                 ->update(['is_primary' => false]);

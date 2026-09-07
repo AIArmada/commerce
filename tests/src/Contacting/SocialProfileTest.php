@@ -30,7 +30,6 @@ test('SocialPlatform enum has expected values', function (): void {
 test('SocialPlatform options map configured values', function (): void {
     expect(SocialPlatform::options(['facebook', 'telegram_channel', 'x']))->toBe([
         'facebook' => 'Facebook',
-        'telegram_channel' => 'Telegram Channel',
         'x' => 'X / Twitter',
     ]);
 });
@@ -85,6 +84,44 @@ test('primary social profiles remain unique per socialable type and purpose', fu
     expect($first->fresh()?->is_primary)->toBeFalse()
         ->and($second->fresh()?->is_primary)->toBeTrue()
         ->and($customer->socialProfiles()->where('platform', 'facebook')->where('purpose', 'general')->count())->toBe(2);
+
+    $instagram = $customer->addSocialProfile(new SocialProfileData(
+        platform: 'instagram',
+        purpose: 'general',
+        handle: 'instagram-' . uniqid(),
+        isPrimary: true,
+    ));
+
+    expect($instagram->fresh()?->is_primary)->toBeTrue()
+        ->and($second->fresh()?->is_primary)->toBeTrue();
+});
+
+test('SocialProfile preserves explicitly supplied handle and URL values on later saves', function (): void {
+    $customer = Customer::create([
+        'first_name' => 'Display',
+        'last_name' => 'Profile',
+        'email' => 'display-profile-' . uniqid() . '@example.com',
+        'status' => 'active',
+    ]);
+
+    $profile = SocialProfile::query()->create([
+        'socialable_type' => $customer->getMorphClass(),
+        'socialable_id' => $customer->getKey(),
+        'platform' => 'facebook',
+        'purpose' => 'general',
+        'handle' => 'InitialHandle',
+        'url' => 'https://example.com/operator-profile',
+    ]);
+
+    $profile->handle = '@OperatorHandle';
+    $profile->url = 'https://example.com/operator-profile?view=custom';
+    $profile->save();
+    $profile->label = 'Operator profile';
+    $profile->save();
+
+    expect($profile->fresh())
+        ->handle->toBe('@OperatorHandle')
+        ->url->toBe('https://example.com/operator-profile?view=custom');
 });
 
 test('NormalizeSocialProfileAction normalizes @handle', function (): void {

@@ -17,6 +17,22 @@ it('reads navigation settings from package config', function (): void {
         ->and(OrganizationResource::getNavigationSort())->toBe(42);
 });
 
+it('allows authenticated actors to see and create the organization resource', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    expect(OrganizationResource::canViewAny())->toBeTrue()
+        ->and(OrganizationResource::canCreate())->toBeTrue();
+});
+
+it('pins organization resource access to authenticated actors', function (): void {
+    auth()->logout();
+
+    expect(OrganizationResource::canViewAny())->toBeFalse()
+        ->and(OrganizationResource::canCreate())->toBeFalse();
+});
+
 it('restricts resource queries to organizations the actor belongs to', function (): void {
     $member = User::factory()->create();
     $outsider = User::factory()->create();

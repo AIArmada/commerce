@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Gate;
 
 class AddressesRelationManager extends RelationManager
 {
-    protected static string $relationship = 'addresses';
+    protected static string $relationship = 'legacyAddresses';
 
     protected static ?string $recordTitleAttribute = 'label';
 

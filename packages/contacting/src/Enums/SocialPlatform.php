@@ -64,28 +64,22 @@ enum SocialPlatform: string
 
     public static function options(?array $allowedPlatforms = null): array
     {
-        $platformConfig = config('contacting.social_profiles.platforms', []);
-        $allowedPlatforms ??= array_keys($platformConfig);
+        $allowedPlatforms ??= array_map(
+            static fn (self $platform): string => $platform->value,
+            self::cases(),
+        );
 
         $options = [];
 
         foreach ($allowedPlatforms as $key => $value) {
-            if (! is_int($key)) {
-                if (is_array($value)) {
-                    $options[(string) $key] = $value['label'] ?? self::formatLabel((string) $key);
-                } else {
-                    $options[(string) $key] = (string) $value;
-                }
+            $platformValue = is_int($key) ? (string) $value : (string) $key;
+            $platform = self::tryFrom($platformValue);
 
+            if (! $platform instanceof self) {
                 continue;
             }
 
-            $platform = (string) $value;
-            $config = $platformConfig[$platform] ?? null;
-
-            $options[$platform] = is_array($config) && isset($config['label'])
-                ? $config['label']
-                : self::formatLabel($platform);
+            $options[$platform->value] = $platform->label();
         }
 
         return $options;

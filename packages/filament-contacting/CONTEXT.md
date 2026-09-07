@@ -32,6 +32,7 @@ keywords:
 - Adapter only: no domain models/actions/calculations. Keep all business rules in `contacting`.
 - Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope).
 - If behavior or calculations change, move them to `contacting` and keep this package UI-only.
+- Importers resolve each CSV target through the core contacting owner guard before a row can be validated or persisted.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 
 ## Decide fast

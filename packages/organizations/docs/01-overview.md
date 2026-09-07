@@ -22,6 +22,15 @@ projections, and domain-specific authorization policy.
 - The final owner cannot leave or be removed.
 - Public queries must use the `public()` scope.
 
+## Identity topology
+
+`Organization` is the tenant/owner aggregate. It is not a shared human
+`Person` and it is not an `EventOrganizer`; event organizer profiles and event
+involvement roles belong to `events`. Owner-scoped customer rows use the
+organization's owner tuple. A persons affiliation may reference an
+organization only when the host explicitly configures `Organization` as its
+institution model.
+
 ## What this package owns
 
 - Model `Organization` (the org IS the tenant — no `HasOwner` on the model itself)

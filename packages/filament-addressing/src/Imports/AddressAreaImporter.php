@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAddressing\Imports;
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\FilamentAddressing\Support\SingleAddressAreaSource;
+use AIArmada\Addressing\Support\SingleAddressAreaSource;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;

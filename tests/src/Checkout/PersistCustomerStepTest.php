@@ -50,7 +50,7 @@ describe('PersistCustomerStep', function (): void {
                 ->exists() ?? false;
         });
         $customerAddressCount = OwnerContext::withOwner(null, function () use ($customer): int {
-            return $customer?->addresses()->count() ?? 0;
+            return $customer?->legacyAddresses()->count() ?? 0;
         });
         $billableMatches = OwnerContext::withOwner(null, function () use ($session, $customer): bool {
             return $session->fresh(['billable'])?->billable?->is($customer) ?? false;
@@ -86,7 +86,7 @@ describe('PersistCustomerStep', function (): void {
             ]);
             $guestCustomer->addContactMethod(ContactMethodData::email('guest@example.com'));
 
-            $guestCustomer->addresses()->create([
+            $guestCustomer->legacyAddresses()->create([
                 'type' => 'billing',
                 'line1' => '789 Merge Street',
                 'city' => 'Kuala Lumpur',
@@ -128,7 +128,7 @@ describe('PersistCustomerStep', function (): void {
             return $session->fresh(['customer', 'billable']);
         });
         $userCustomerAddressCount = OwnerContext::withOwner(null, function () use ($userCustomer): int {
-            return $userCustomer->fresh()->addresses()->count();
+            return $userCustomer->fresh()->legacyAddresses()->count();
         });
         $guestExists = OwnerContext::withOwner(null, function () use ($guestCustomer): bool {
             return Customer::query()->whereKey($guestCustomer->id)->exists();

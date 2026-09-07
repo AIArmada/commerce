@@ -270,7 +270,7 @@ describe('Address Model', function (): void {
                 ],
             );
 
-            $address = $customer?->addresses()->where('type', AddressType::Shipping->value)->first();
+            $address = $customer?->legacyAddresses()->where('type', AddressType::Shipping->value)->first();
 
             expect($address)->not->toBeNull()
                 ->and($address?->line1)->toBe('123 Resolver St')

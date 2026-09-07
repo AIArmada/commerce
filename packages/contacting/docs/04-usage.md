@@ -4,6 +4,23 @@ title: Contacting Usage
 
 # Usage
 
+## Canonical contact values
+
+`ContactMethod` and `SocialProfile` rows are the canonical multi-value contact
+surface. A consumer may expose a native email/phone column for legacy or
+cache purposes, but new identity code should read the contacting relation and
+must not add another contact column without a synchronization decision.
+
+Save-time normalization always refreshes `normalized_value`. An explicitly
+provided `display_value`, social handle, or social URL is preserved on later
+unrelated saves; changing the underlying contact value regenerates only values
+that were not explicitly supplied.
+
+Primary status is scoped to the contactable/socialable, channel (`type` or
+`platform`), and `purpose`. The save path locks the parent and demotes matching
+siblings in a transaction. Invalid polymorphic references are rejected before
+that demotion path runs.
+
 ## Add Traits to Your Model
 
 ```php
@@ -177,3 +194,10 @@ app(CreateContactSnapshotAction::class)->fromBundle(
 ```
 
 If the organizer changes their WhatsApp later, the event snapshot remains unchanged.
+
+## Imports and owner isolation
+
+Contact and social CSV importers resolve the row's polymorphic target through
+`ContactingModelReferenceGuard` before validation and persistence. Owner-scoped
+targets must be visible in the current `OwnerContext`; a forged cross-owner
+ID is rejected and creates no contact row.

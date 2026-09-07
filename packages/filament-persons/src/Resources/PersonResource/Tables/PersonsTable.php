@@ -18,7 +18,7 @@ class PersonsTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->searchable()
+                    ->searchable(['searchable_name', 'name', 'family_name', 'middle_name'])
                     ->sortable(),
                 TextColumn::make('family_name')
                     ->searchable()

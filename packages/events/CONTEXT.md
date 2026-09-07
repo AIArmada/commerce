@@ -33,12 +33,13 @@ keywords:
 
 ## Guardrails
 - Owns models, actions, services, events, calculations, and persistence rules.
+- `EventOrganizer` is an event-scoped organizer role/profile, not a tenant organization or a replacement for shared `persons.Person`. Involvements may point at a person or another `CanBeInvolvedInEvents` model through the event-owned polymorphic role.
 - If admin UI changes too, audit `filament-events`.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 
 ## Decide fast
 - Use when: Event scheduling, venues, registrations, attendance.
-- Skip when: Ticket inventory/pricing — see ticketing; seat maps — see seating.
+- Skip when: Ticket inventory/pricing — see ticketing; seat maps — see seating; shared human identity — see persons.
 - Owner/security: Owner-scoped with EventOwnerScope family.
 
 ## Key surfaces

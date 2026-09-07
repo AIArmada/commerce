@@ -72,6 +72,20 @@ it('maps country_code to countryCode', function (): void {
     expect($address->countryCode)->toBe('MY');
 });
 
+it('maps canonical geography identifiers and normalizes their aliases', function (): void {
+    $address = AddressData::from([
+        'country_id' => ' country-id ',
+        'stateId' => ' state-id ',
+        'city_id' => ' city-id ',
+        'country_code' => ' my ',
+    ]);
+
+    expect($address->countryId)->toBe('country-id');
+    expect($address->stateId)->toBe('state-id');
+    expect($address->cityId)->toBe('city-id');
+    expect($address->countryCode)->toBe('MY');
+});
+
 it('sets null for empty string values', function (): void {
     $address = AddressData::from([
         'line1' => '',

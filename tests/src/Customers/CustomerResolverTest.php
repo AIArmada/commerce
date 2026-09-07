@@ -97,7 +97,7 @@ describe('CustomerResolver', function (): void {
                 shippingData: []
             );
 
-            expect($guest->fresh()?->addresses()->count())->toBe(1);
+            expect($guest->fresh()?->legacyAddresses()->count())->toBe(1);
 
             return [$guest, $resolved];
         });
@@ -326,7 +326,7 @@ describe('CustomerResolver', function (): void {
                 shippingData: []
             );
 
-            expect($guest->fresh()?->addresses()->count())->toBe(1);
+            expect($guest->fresh()?->legacyAddresses()->count())->toBe(1);
 
             return [$guest, $resolved];
         });

@@ -67,6 +67,16 @@ test('primary contact methods remain unique per contactable type and purpose', f
     expect($first->fresh()?->is_primary)->toBeFalse()
         ->and($second->fresh()?->is_primary)->toBeTrue()
         ->and($customer->contactMethods()->where('type', 'email')->where('purpose', 'general')->count())->toBe(2);
+
+    $phone = $customer->addContactMethod(new ContactMethodData(
+        type: 'phone',
+        purpose: 'general',
+        value: '+60123456789',
+        isPrimary: true,
+    ));
+
+    expect($phone->fresh()?->is_primary)->toBeTrue()
+        ->and($second->fresh()?->is_primary)->toBeTrue();
 });
 
 test('ContactMethodData factory helpers', function (): void {
@@ -99,6 +109,31 @@ test('ContactMethodData from array', function (): void {
     expect($data->value)->toBe('test@example.com');
     expect($data->isPrimary)->toBeTrue();
     expect($data->isPublic)->toBeFalse();
+});
+
+test('ContactMethod preserves an explicitly supplied display value while normalizing search value', function (): void {
+    $customer = Customer::create([
+        'first_name' => 'Display',
+        'last_name' => 'Value',
+        'email' => 'display-value-' . uniqid() . '@example.com',
+        'status' => 'active',
+    ]);
+
+    $contactMethod = ContactMethod::query()->create([
+        'contactable_type' => $customer->getMorphClass(),
+        'contactable_id' => $customer->getKey(),
+        'type' => 'phone',
+        'purpose' => 'general',
+        'value' => '+60123456789',
+        'display_value' => '+60 12-345 6789 ext. 5',
+    ]);
+
+    $contactMethod->label = 'Primary phone';
+    $contactMethod->save();
+
+    expect($contactMethod->fresh())
+        ->display_value->toBe('+60 12-345 6789 ext. 5')
+        ->normalized_value->toBe('+60123456789');
 });
 
 test('NormalizeContactMethodAction normalizes email', function (): void {

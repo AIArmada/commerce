@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
 use AIArmada\Contacting\Database\Factories\SocialProfileFactory;
+use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use AIArmada\Contacting\Support\SocialProfileConfig;
 use Carbon\CarbonImmutable;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Override;
 
@@ -50,6 +52,8 @@ use Override;
  */
 final class SocialProfile extends Model
 {
+    private bool $shouldSyncPrimary = false;
+
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
@@ -199,6 +203,8 @@ final class SocialProfile extends Model
             $profile->normalizeForSave();
             $profile->guardAllowedPlatform();
             $profile->guardSocialableOwner();
+            $profile->shouldSyncPrimary = $profile->isDirty('is_primary')
+                && $profile->is_primary;
         });
 
         static::saved(function (SocialProfile $profile): void {
@@ -219,14 +225,25 @@ final class SocialProfile extends Model
 
     private function normalizeForSave(): void
     {
+        $handleWasExplicitlyChanged = $this->exists && $this->isDirty('handle');
+        $urlWasExplicitlyChanged = $this->exists && $this->isDirty('url');
+
         $normalized = app(NormalizeSocialProfileAction::class)->execute(
             $this->platform,
             $this->handle,
             $this->url,
         );
 
-        $this->handle = $normalized['handle'];
-        $this->url = $normalized['normalized_url'];
+        if (! $handleWasExplicitlyChanged
+            && (! $this->exists || $this->isDirty('url') || $this->handle === null)) {
+            $this->handle = $normalized['handle'];
+        }
+
+        if (! $urlWasExplicitlyChanged
+            && (! $this->exists || $this->isDirty('handle') || $this->url === null)) {
+            $this->url = $normalized['normalized_url'];
+        }
+
         $this->normalized_url = $normalized['normalized_url'];
     }
 
@@ -236,25 +253,33 @@ final class SocialProfile extends Model
             return;
         }
 
-        $allowedPlatforms = config('contacting.social_profiles.platforms', []);
-        $allowedValues = array_is_list($allowedPlatforms) ? $allowedPlatforms : array_keys($allowedPlatforms);
-
-        if (! in_array($this->platform, $allowedValues, true)) {
+        if (SocialPlatform::tryFrom($this->platform) === null) {
             throw new InvalidArgumentException(sprintf('Unsupported social platform "%s".', $this->platform));
         }
     }
 
     private function syncSiblingPrimaryFlags(): void
     {
-        if (! $this->is_primary) {
+        if (! $this->shouldSyncPrimary) {
             return;
         }
 
-        SocialProfile::query()
-            ->where('socialable_type', $this->socialable_type)
-            ->where('socialable_id', $this->socialable_id)
-            ->where('id', '!=', $this->id)
-            ->update(['is_primary' => false]);
+        DB::transaction(function (): void {
+            if ($this->socialable_type === null || $this->socialable_id === null) {
+                return;
+            }
+
+            $this->socialable()->lockForUpdate()->firstOrFail();
+
+            SocialProfile::query()
+                ->where('socialable_type', $this->socialable_type)
+                ->where('socialable_id', $this->socialable_id)
+                ->where('platform', $this->platform)
+                ->where('purpose', $this->purpose)
+                ->whereKeyNot($this->getKey())
+                ->lockForUpdate()
+                ->update(['is_primary' => false]);
+        });
     }
 
     private function guardSocialableOwner(): void

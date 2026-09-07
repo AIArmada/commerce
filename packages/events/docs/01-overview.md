@@ -44,6 +44,13 @@ title: Events Overview
 | **Registration Mode** | Defines whether registration is required, optional (no pass issued), or none (open door) |
 | **Open Door Mode** | Controls behavior when registration is none: block, walk-in, or headcount |
 
+## Identity topology
+
+`EventOrganizer` is an event-scoped organizer profile/role. It is not the
+tenant `Organization` and does not replace the shared human `Person`. An event
+may involve a `Person` (or another supported model) through the event-owned
+polymorphic involvement record; the events package owns the role and scope.
+
 ## Key Features
 
 - Fully polymorphic ownership (any model can own events)

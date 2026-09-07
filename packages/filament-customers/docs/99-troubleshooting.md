@@ -110,7 +110,7 @@ public static function getRelations(): array
 }
 
 // Check relationship exists on model
-$customer->addresses; // Should not error
+$customer->legacyAddresses; // Should not error
 ```
 
 ### Policy Denying Access
@@ -363,7 +363,7 @@ $customer = Customer::query()
     ->findOrFail($customerId);
 
 // Then safe to create address
-$customer->addresses()->create([...]);
+$customer->legacyAddresses()->create([...]);
 ```
 
 ## Getting Help

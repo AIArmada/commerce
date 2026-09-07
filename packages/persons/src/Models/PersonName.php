@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\DB;
  * @property string $language_code
  * @property bool $is_primary
  * @property-read Person $person
+ *
+ * Names inherit the globality of Person. Do not scope Person without
+ * scoping person_names in the same release.
  */
 class PersonName extends Model
 {
@@ -37,19 +40,49 @@ class PersonName extends Model
 
     protected static function booted(): void
     {
-        static::saved(function (PersonName $name): void {
-            if (! $name->is_primary) {
-                return;
+        static::saving(function (PersonName $name): void {
+            $name->full_name = mb_trim($name->full_name);
+            $name->language_code = mb_strtolower(mb_trim($name->language_code));
+        });
+    }
+
+    /**
+     * Save a primary name while serializing primary replacement per person.
+     * The parent lock is the application-level race backstop while the
+     * partial unique index remains pending the next permitted index migration.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function save(array $options = []): bool
+    {
+        $needsPrimarySync = $this->is_primary
+            && (! $this->exists
+                || $this->isDirty('is_primary')
+                || $this->isDirty('person_id')
+                || $this->isDirty('name_type')
+                || $this->isDirty('language_code'));
+
+        if (! $needsPrimarySync) {
+            return parent::save($options);
+        }
+
+        return DB::transaction(function () use ($options): bool {
+            $this->person()->lockForUpdate()->firstOrFail();
+
+            $saved = parent::save($options);
+
+            if ($saved) {
+                static::query()
+                    ->where('person_id', $this->person_id)
+                    ->where('name_type', $this->name_type instanceof PersonNameType
+                        ? $this->name_type->value
+                        : (string) $this->getAttribute('name_type'))
+                    ->where('language_code', $this->language_code)
+                    ->whereKeyNot($this->getKey())
+                    ->update(['is_primary' => false]);
             }
 
-            DB::transaction(function () use ($name): void {
-                $name->person()->lockForUpdate()->firstOrFail();
-
-                static::query()
-                    ->where('person_id', $name->person_id)
-                    ->whereKeyNot($name->getKey())
-                    ->update(['is_primary' => false]);
-            });
+            return $saved;
         });
     }
 

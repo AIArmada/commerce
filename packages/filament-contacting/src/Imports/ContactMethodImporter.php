@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Imports;
 
 use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
@@ -33,13 +34,16 @@ final class ContactMethodImporter extends Importer
         ];
     }
 
-    protected function mutate(array $data): array
+    protected function beforeValidate(): void
     {
-        $data['country_code'] = isset($data['country_code'])
-            ? mb_strtoupper((string) $data['country_code'])
-            : null;
+        app(ContactingModelReferenceGuard::class)->resolve(
+            $this->data['contactable_type'] ?? null,
+            $this->data['contactable_id'] ?? null,
+        );
 
-        return $data;
+        $this->data['country_code'] = isset($this->data['country_code'])
+            ? mb_strtoupper((string) $this->data['country_code'])
+            : null;
     }
 
     public function resolveRecord(): ?ContactMethod
@@ -53,15 +57,6 @@ final class ContactMethodImporter extends Importer
     public static function getModelLabel(): string
     {
         return ContactMethod::class;
-    }
-
-    protected function handleRecordCreation(array $data): ContactMethod
-    {
-        $record = new ContactMethod;
-        $record->fill($data);
-        $record->save();
-
-        return $record;
     }
 
     public static function getCompletedNotificationBody(Import $import): string

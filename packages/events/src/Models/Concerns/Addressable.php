@@ -24,7 +24,7 @@ trait Addressable
             $relation = $this->morphToMany(
                 Address::class,
                 'addressable',
-                config('addressing.tables.addressables', 'addressables'),
+                config('addressing.database.tables.addressables', 'addressables'),
             )
                 ->using(AddressablePivot::class)
                 ->withPivot(['id', 'type', 'label', 'is_primary', 'valid_from', 'valid_until', 'owner_type', 'owner_id'])
@@ -38,7 +38,7 @@ trait Addressable
         return $this->morphToMany(
             Address::class,
             'addressable',
-            config('addressing.tables.addressables', 'addressables'),
+            config('addressing.database.tables.addressables', 'addressables'),
         )->whereRaw('1 = 0');
     }
 

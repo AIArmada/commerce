@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Organizations\OrganizationsTestCase;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\Membership\Actions\AddMemberAction;
 use AIArmada\Membership\Actions\RemoveMemberAction;
 use AIArmada\Membership\Enums\MemberRole;
@@ -15,8 +16,10 @@ use AIArmada\Organizations\Actions\RestoreOrganizationAction;
 use AIArmada\Organizations\Actions\TransferOrganizationOwnershipAction;
 use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Enums\OrganizationVisibility;
+use AIArmada\Organizations\Http\Middleware\CurrentOrganizationMiddleware;
 use AIArmada\Organizations\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Request;
 
 uses(OrganizationsTestCase::class);
 
@@ -53,6 +56,7 @@ it('transfers ownership transactionally and protects the final owner', function 
     $organization->refresh();
 
     expect($organization->ownerMember()->first()?->is($newOwner))->toBeTrue()
+        ->and($organization->created_by)->toBe($creator->getKey())
         ->and($organization->members()->whereKey($creator->getKey())->first()?->pivot?->role)
         ->toBe(MemberRole::Admin->spatieRoleName());
 
@@ -96,4 +100,25 @@ it('retains terminal lifecycle timestamps after restoration', function (): void 
     expect($organization->fresh())
         ->status->toBe(OrganizationStatus::Active)
         ->archived_at->toEqual($archivedAt);
+});
+
+it('uses the secure config fallback when the route does not override it', function (): void {
+    config()->set('organizations.middleware.require_context', true);
+
+    expect(fn () => (new CurrentOrganizationMiddleware)->handle(
+        Request::create('/'),
+        fn (): never => throw new RuntimeException('The request should not be called.'),
+    ))->toThrow(NoCurrentOwnerException::class);
+});
+
+it('allows an explicit global route override', function (): void {
+    config()->set('organizations.middleware.require_context', true);
+
+    $result = (new CurrentOrganizationMiddleware)->handle(
+        Request::create('/'),
+        fn (): string => 'ok',
+        'false',
+    );
+
+    expect($result)->toBe('ok');
 });

@@ -114,11 +114,11 @@ class AddressFormSchema
                             $ancestors
                                 ->whereKey($parentId)
                                 ->where(
-                                    config('addressing.tables.area_relationships', 'address_area_relationships') . '.hierarchy_type',
+                                    config('addressing.database.tables.area_relationships', 'address_area_relationships') . '.hierarchy_type',
                                     self::hierarchyType($definition),
                                 )
                                 ->where(
-                                    config('addressing.tables.area_relationships', 'address_area_relationships') . '.relationship_type',
+                                    config('addressing.database.tables.area_relationships', 'address_area_relationships') . '.relationship_type',
                                     'contains',
                                 )
                                 ->where(function ($query): void {

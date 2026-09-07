@@ -12,6 +12,10 @@ $person = Person::create([
     'family_name' => 'Rahman',
     'gender' => 'male',
 ]);
+
+// `slug` and `searchable_name` are generated on save when omitted.
+echo $person->slug;
+echo $person->searchable_name;
 ```
 
 ## Multi-context names
@@ -112,7 +116,26 @@ $affiliation->roles()->create([
 
 ### Primary identity records
 
-`is_primary` is exclusive within an owning person for both names and affiliations. Saving a primary `PersonName` or `Affiliation` automatically clears the sibling records for that person, including writes made through Filament relation managers.
+`PersonName::is_primary` is exclusive within `(person_id, name_type,
+language_code)`. `Affiliation::is_primary` is exclusive within its person.
+Saving a primary record locks the parent and clears the matching siblings,
+including writes made through Filament relation managers. The database partial
+unique backstop is scheduled for the next permitted index migration.
+
+## Linking a customer profile
+
+The customers package owns the tenant-scoped commercial profile. Link it to an
+existing shared person explicitly; do not create a person as an implicit side
+effect of checkout or import flows:
+
+```php
+use AIArmada\Customers\Actions\LinkCustomerToPerson;
+
+$customer = app(LinkCustomerToPerson::class)->execute($customer, $person);
+```
+
+The action validates the customer in the current owner context. `person_id`
+is a nullable, indexed UUID link without a database foreign-key constraint.
 
 ## Wiring country relations
 

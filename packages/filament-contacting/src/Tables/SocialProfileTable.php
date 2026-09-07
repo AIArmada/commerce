@@ -71,7 +71,7 @@ final class SocialProfileTable
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('platform')
-                    ->options(SocialPlatform::options(config('contacting.social_profiles.platforms', []))),
+                    ->options(SocialPlatform::options()),
 
                 Tables\Filters\TernaryFilter::make('is_primary'),
 

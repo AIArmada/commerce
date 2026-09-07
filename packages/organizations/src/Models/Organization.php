@@ -64,6 +64,10 @@ class Organization extends Model implements MembershipMutationGuard
         return (string) config('organizations.database.tables.organizations', 'organizations');
     }
 
+    /**
+     * The organizations config owns this table name. The generic membership
+     * suffix is intentionally not consulted for this aggregate.
+     */
     public function membersTable(): string
     {
         return (string) config('organizations.database.tables.members', 'organization_members');

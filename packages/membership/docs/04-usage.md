@@ -14,6 +14,10 @@ final class Team extends Model
 }
 ```
 
+For `organizations.Organization`, use the organization package's configured
+`organizations.database.tables.members` value; do not derive or override it
+with `membership.pivot.table_suffix`.
+
 ## Add a Member
 
 ```php

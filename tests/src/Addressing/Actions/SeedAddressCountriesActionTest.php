@@ -91,7 +91,7 @@ it('rebuilds bundled country reference links without retaining stale rows', func
     $my = AddressCountry::where('iso2', 'MY')->firstOrFail();
     $tokyo = Timezone::where('name', 'Asia/Tokyo')->firstOrFail();
 
-    DB::table(config('addressing.tables.country_timezone_links'))->insert([
+    DB::table(config('addressing.database.tables.country_timezone_links'))->insert([
         'id' => (string) str()->uuid(),
         'country_id' => $my->id,
         'timezone_id' => $tokyo->id,

@@ -57,6 +57,7 @@ Use core `aiarmada/addressing` for:
 - `Address`
 - `AddressSnapshot`
 - `HasAddresses`
+- `SingleAddressAreaSource` (the reusable area-source implementation)
 - area import contracts
 - country data
 - formatting and normalization

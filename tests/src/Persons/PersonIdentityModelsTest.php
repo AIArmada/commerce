@@ -41,6 +41,22 @@ describe('person identity models', function (): void {
         expect($person->middle_name)->toBe('Bin');
         expect($person->gender)->toBe(Gender::Male);
         expect($person->status)->toBe('verified');
+        expect($person->slug)->toBe('ahmad-rahman-' . mb_substr($person->getKey(), 0, 8));
+        expect($person->searchable_name)->toContain('ahmad rahman');
+    });
+
+    it('suffixes an explicit slug when another person already uses it', function (): void {
+        Person::create([
+            'name' => 'First Slug',
+            'slug' => 'shared-slug',
+        ]);
+
+        $second = Person::create([
+            'name' => 'Second Slug',
+            'slug' => 'shared-slug',
+        ]);
+
+        expect($second->slug)->toBe('shared-slug-2');
     });
 
     it('creates a person with multi-context names', function (): void {
@@ -73,7 +89,7 @@ describe('person identity models', function (): void {
         expect($person->names->last()->name_type)->toBe(PersonNameType::Nickname);
     });
 
-    it('keeps only one primary name per person', function (): void {
+    it('keeps only one primary name per person and name scope', function (): void {
         $person = Person::factory()->create();
 
         $first = PersonName::create([
@@ -86,7 +102,7 @@ describe('person identity models', function (): void {
 
         $second = PersonName::create([
             'person_id' => $person->id,
-            'name_type' => PersonNameType::Nickname,
+            'name_type' => PersonNameType::Display,
             'full_name' => 'Second Name',
             'language_code' => 'en',
             'is_primary' => true,
@@ -94,6 +110,29 @@ describe('person identity models', function (): void {
 
         expect($person->fresh()->names()->where('is_primary', true)->pluck('id')->all())
             ->toBe([$second->getKey()]);
+    });
+
+    it('allows one primary name for each name type and language scope', function (): void {
+        $person = Person::factory()->create();
+
+        $display = PersonName::create([
+            'person_id' => $person->id,
+            'name_type' => PersonNameType::Display,
+            'full_name' => 'Display Name',
+            'language_code' => 'en',
+            'is_primary' => true,
+        ]);
+
+        $nickname = PersonName::create([
+            'person_id' => $person->id,
+            'name_type' => PersonNameType::Nickname,
+            'full_name' => 'Nickname',
+            'language_code' => 'en',
+            'is_primary' => true,
+        ]);
+
+        expect($person->fresh()->names()->where('is_primary', true)->pluck('id')->all())
+            ->toEqualCanonicalizing([$display->getKey(), $nickname->getKey()]);
     });
 
     it('keeps only one primary affiliation per affiliatable model', function (): void {

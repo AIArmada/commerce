@@ -12,11 +12,12 @@ use Illuminate\Http\Request;
 
 final class CurrentOrganizationMiddleware
 {
-    public function handle(Request $request, Closure $next, string $required = 'true'): mixed
+    public function handle(Request $request, Closure $next, ?string $required = null): mixed
     {
         $organization = app(CurrentOrganizationResolver::class)->resolve();
-        $contextRequired = filter_var($required, FILTER_VALIDATE_BOOLEAN)
-            || (bool) config('organizations.middleware.require_context', false);
+        $contextRequired = $required === null
+            ? (bool) config('organizations.middleware.require_context', true)
+            : filter_var($required, FILTER_VALIDATE_BOOLEAN);
 
         if ($organization === null && $contextRequired) {
             throw new NoCurrentOwnerException('An organization context is required for this request.');

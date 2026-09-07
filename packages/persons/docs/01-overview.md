@@ -4,7 +4,9 @@ title: Persons Overview
 
 ## Introduction
 
-`aiarmada/persons` is a reusable person identity package for Laravel. It provides a normalized identity layer — a canonical `persons` table plus relational systems for multi-context names, titles, credentials, and affiliations. Assignment tables are polymorphic so any model can participate as a titleable, credentialable, or affiliatable.
+`aiarmada/persons` is a reusable person identity package for Laravel. It provides a normalized, shared identity layer — a canonical `persons` table plus relational systems for multi-context names, titles, credentials, and affiliations. Assignment tables are polymorphic so any model can participate as a titleable, credentialable, or affiliatable.
+
+`Person` is the shared human identity root and is intentionally unscoped. Tenant-owned commercial data belongs to `customers.Customer`, which may carry a nullable `person_id` link; the link is written explicitly by the customers package and never causes an automatic backfill or merge.
 
 ## What this package owns
 
@@ -15,6 +17,34 @@ title: Persons Overview
 - Credential definitions and polymorphic credential assignments (`credentialable`)
 - Affiliations and the roles held within them
 - Formatted display-name composition from ordered title assignments
+
+## Identity topology
+
+| Model | Meaning | Scope |
+|---|---|---|
+| `Person` | Shared human identity, names, titles, credentials, and affiliations | Global/shared |
+| `Customer` | Commercial profile for a person in a tenant | Owner-scoped; nullable `person_id` link |
+| `Organization` | Tenant/owner aggregate | Organization-owned |
+| `EventOrganizer` | Organizer role/profile in the events domain | Event-scoped |
+
+An event organizer is not an organization and is not a second canonical person
+table. Event involvement remains owned by `events`; a host may attach a
+`Person` to an event involvement through the events polymorphic contract.
+
+## Generated identity values
+
+When a person is saved, a blank slug is generated from the normalized name and
+the person's short UUID, with a numeric collision suffix when necessary.
+`searchable_name` is regenerated from the person's name fields and primary
+name variants. The `status` value remains a host-defined string in this
+release.
+
+`PersonName` primary status is scoped by `(person_id, name_type,
+language_code)`. The model transaction locks the parent person before
+demoting siblings. A database partial unique index and the
+`(person_id, is_primary)` covering index remain a separately gated index
+migration because the current migration track permits only the customers
+link migration.
 
 ## Media
 
@@ -64,6 +94,7 @@ This stores short, stable type strings (`person`) instead of FQCNs in assignment
 - `aiarmada/commerce-support` — shared primitives
 - `aiarmada/addressing` — optional, for country resolution
 - `aiarmada/events` — links persons via `involveable` (application-level wiring)
+- `aiarmada/customers` — owner-scoped commercial profiles with an explicit `person_id` link
 - Future `aiarmada/filament-persons` — Filament admin UI
 
 ## Requirements

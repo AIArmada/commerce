@@ -71,12 +71,16 @@ final class CreateOrganizationAction
         $candidate = $base;
         $suffix = 2;
 
-        while (Organization::query()->where('slug', $candidate)->exists()) {
+        for ($attempt = 0; $attempt < 100; $attempt++) {
+            if (! Organization::query()->where('slug', $candidate)->exists()) {
+                return $candidate;
+            }
+
             $candidate = $base . '-' . $suffix;
             $suffix++;
         }
 
-        return $candidate;
+        throw new LogicException('Organization slug generation exhausted its collision budget.');
     }
 
     private function isSlugUniquenessViolation(QueryException $exception): bool

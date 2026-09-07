@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use LogicException;
 
 /**
  * @property string $id
@@ -76,7 +77,11 @@ class Title extends Model
      */
     public function country(): BelongsTo
     {
-        $countryClass = ModelResolver::countryClass() ?? Model::class;
+        $countryClass = ModelResolver::countryClass();
+
+        if ($countryClass === null) {
+            throw new LogicException('Configure persons.models.country before resolving a title country.');
+        }
 
         /** @var BelongsTo<Model, $this> $relation */
         $relation = $this->belongsTo($countryClass, 'country_id');

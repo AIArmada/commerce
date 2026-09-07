@@ -24,7 +24,7 @@ final class SocialProfileFormSchema
                     Grid::make(2)->schema([
                         Select::make('platform')
                             ->label('Platform')
-                            ->options(SocialPlatform::options(config('contacting.social_profiles.platforms', [])))
+                            ->options(SocialPlatform::options())
                             ->required()
                             ->searchable()
                             ->native(false),

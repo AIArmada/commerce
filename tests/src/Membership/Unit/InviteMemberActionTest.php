@@ -92,3 +92,27 @@ it('lowercases email', function (): void {
 
     expect($invitation->email)->toBe('uppercase@example.com');
 });
+
+it('reuses a pending invitation for the same subject, email, and role', function (): void {
+    $first = InviteMemberAction::make()->handle(
+        subject: $this->subject,
+        email: 'pending@example.com',
+        role: MemberRole::Viewer,
+        inviter: $this->inviter,
+    );
+    $second = InviteMemberAction::make()->handle(
+        subject: $this->subject,
+        email: ' PENDING@example.com ',
+        role: MemberRole::Viewer,
+        inviter: $this->inviter,
+    );
+
+    expect($second->is($first))->toBeTrue()
+        ->and(MembershipInvitation::query()
+            ->where('subject_id', $this->subject->getKey())
+            ->where('email', 'pending@example.com')
+            ->where('role', MemberRole::Viewer->spatieRoleName())
+            ->count())->toBe(1);
+
+    Event::assertDispatchedTimes(MembershipInvitationSent::class, 1);
+});

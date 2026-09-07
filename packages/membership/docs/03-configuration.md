@@ -61,3 +61,4 @@ return [
 
 - Keep `hash_tokens` enabled in production. The plaintext token is available only on `MembershipInvitationSent`.
 - When owner scoping is enabled, resolve the current owner before reading or mutating applications and invitations.
+- `Organization::membersTable()` is the source of truth for organization memberships and reads `organizations.database.tables.members`. The generic `membership.pivot.table_suffix` setting applies to other `HasMembers` subjects only.
