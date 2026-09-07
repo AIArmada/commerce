@@ -2,67 +2,59 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\CashierChip\Billing\CheckoutBuilder;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
-class CheckoutTest extends CashierChipTestCase
-{
-    public function test_guest_returns_checkout_builder(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('Checkout', function (): void {
+    it('guest returns checkout builder', function (): void {
         $builder = Checkout::guest();
 
         $this->assertInstanceOf(CheckoutBuilder::class, $builder);
-    }
+    });
 
-    public function test_customer_returns_checkout_builder(): void
-    {
+    it('customer returns checkout builder', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $builder = Checkout::customer($user);
 
         $this->assertInstanceOf(CheckoutBuilder::class, $builder);
-    }
+    });
 
-    public function test_can_get_id(): void
-    {
+    it('can get id', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'created']);
         $checkout = new Checkout(null, $purchase);
 
         $this->assertEquals('pur_123', $checkout->id());
-    }
+    });
 
-    public function test_can_get_owner(): void
-    {
+    it('can get owner', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'created']);
         $checkout = new Checkout($user, $purchase);
 
         $this->assertSame($user, $checkout->owner());
-    }
+    });
 
-    public function test_owner_can_be_null(): void
-    {
+    it('owner can be null', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'created']);
         $checkout = new Checkout(null, $purchase);
 
         $this->assertNull($checkout->owner());
-    }
+    });
 
-    public function test_can_get_chip_purchase(): void
-    {
+    it('can get chip purchase', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'created']);
         $checkout = new Checkout(null, $purchase);
 
         $this->assertSame($purchase, $checkout->asChipPurchase());
-    }
+    });
 
-    public function test_can_convert_to_payment(): void
-    {
+    it('can convert to payment', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $checkout = new Checkout(null, $purchase);
 
@@ -70,49 +62,44 @@ class CheckoutTest extends CashierChipTestCase
 
         $this->assertInstanceOf(Payment::class, $payment);
         $this->assertEquals('pur_123', $payment->id());
-    }
+    });
 
-    public function test_to_array(): void
-    {
+    it('to array', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'created']);
         $checkout = new Checkout(null, $purchase);
 
         $array = $checkout->toArray();
 
         $this->assertIsArray($array);
-    }
+    });
 
-    public function test_to_json(): void
-    {
+    it('to json', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'created']);
         $checkout = new Checkout(null, $purchase);
 
         $json = $checkout->toJson();
 
         $this->assertJson($json);
-    }
+    });
 
-    public function test_json_serialize(): void
-    {
+    it('json serialize', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'created']);
         $checkout = new Checkout(null, $purchase);
 
         $serialized = $checkout->jsonSerialize();
 
         $this->assertIsArray($serialized);
-    }
+    });
 
-    public function test_dynamic_property_access(): void
-    {
+    it('dynamic property access', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'created', 'reference' => 'ref_123']);
         $checkout = new Checkout(null, $purchase);
 
         $this->assertEquals('pur_123', $checkout->id);
         $this->assertEquals('created', $checkout->status);
-    }
+    });
 
-    public function test_can_get_url(): void
-    {
+    it('can get url', function (): void {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
             'status' => 'created',
@@ -121,5 +108,5 @@ class CheckoutTest extends CashierChipTestCase
         $checkout = new Checkout(null, $purchase);
 
         $this->assertEquals('https://chip.example.com/checkout/pur_123', $checkout->url());
-    }
-}
+    });
+});

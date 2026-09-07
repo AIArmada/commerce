@@ -2,36 +2,27 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Tests\Unit\Models;
-
-use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Tax\Models\TaxClass;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class TaxClassTest extends TaxTestCase
-{
-    use RefreshDatabase;
-
-    private function bindTaxOwnerForScoping(?Model $owner): void
+$bindTaxOwnerForScoping = function (?Model $owner): void {
+    app()->bind(OwnerResolverInterface::class, fn () => new class($owner) implements OwnerResolverInterface
     {
-        app()->bind(OwnerResolverInterface::class, fn () => new class($owner) implements OwnerResolverInterface
+        public function __construct(private ?Model $owner) {}
+
+        public function resolve(): ?Model
         {
-            public function __construct(private ?Model $owner) {}
+            return $this->owner;
+        }
+    });
+};
 
-            public function resolve(): ?Model
-            {
-                return $this->owner;
-            }
-        });
-    }
-
-    public function test_can_create_tax_class(): void
-    {
+describe('TaxClass', function () use ($bindTaxOwnerForScoping): void {
+    it('can create tax class', function (): void {
         $taxClass = TaxClass::create([
             'name' => 'Standard Rate',
             'slug' => 'standard',
@@ -46,10 +37,9 @@ class TaxClassTest extends TaxTestCase
         $this->assertEquals('standard', $taxClass->slug);
         $this->assertTrue($taxClass->is_default);
         $this->assertTrue($taxClass->is_active);
-    }
+    });
 
-    public function test_get_default_method(): void
-    {
+    it('get default method', function (): void {
         TaxClass::create([
             'name' => 'Standard',
             'slug' => 'standard',
@@ -67,10 +57,9 @@ class TaxClassTest extends TaxTestCase
         $default = TaxClass::getDefault();
 
         $this->assertEquals('Standard', $default->name);
-    }
+    });
 
-    public function test_find_by_slug_method(): void
-    {
+    it('find by slug method', function (): void {
         TaxClass::create([
             'name' => 'Standard Rate',
             'slug' => 'standard',
@@ -80,17 +69,15 @@ class TaxClassTest extends TaxTestCase
         $found = TaxClass::findBySlug('standard');
 
         $this->assertEquals('Standard Rate', $found->name);
-    }
+    });
 
-    public function test_find_by_slug_returns_null_for_nonexistent(): void
-    {
+    it('find by slug returns null for nonexistent', function (): void {
         $found = TaxClass::findBySlug('nonexistent');
 
         $this->assertNull($found);
-    }
+    });
 
-    public function test_active_scope(): void
-    {
+    it('active scope', function (): void {
         TaxClass::create([
             'name' => 'Active Class',
             'slug' => 'active',
@@ -107,10 +94,9 @@ class TaxClassTest extends TaxTestCase
 
         $this->assertCount(1, $activeClasses);
         $this->assertEquals('Active Class', $activeClasses->first()->name);
-    }
+    });
 
-    public function test_default_scope(): void
-    {
+    it('default scope', function (): void {
         TaxClass::create([
             'name' => 'Default Class',
             'slug' => 'default',
@@ -129,10 +115,9 @@ class TaxClassTest extends TaxTestCase
 
         $this->assertCount(1, $defaultClasses);
         $this->assertEquals('Default Class', $defaultClasses->first()->name);
-    }
+    });
 
-    public function test_ordered_scope(): void
-    {
+    it('ordered scope', function (): void {
         TaxClass::create([
             'name' => 'Third',
             'slug' => 'third',
@@ -157,10 +142,9 @@ class TaxClassTest extends TaxTestCase
         $ordered = TaxClass::ordered()->get();
 
         $this->assertEquals(['First', 'Second', 'Third'], $ordered->pluck('name')->toArray());
-    }
+    });
 
-    public function test_casts(): void
-    {
+    it('casts', function (): void {
         $taxClass = TaxClass::create([
             'name' => 'Cast Test',
             'slug' => 'cast-test',
@@ -172,19 +156,17 @@ class TaxClassTest extends TaxTestCase
         $this->assertIsBool($taxClass->is_default);
         $this->assertIsBool($taxClass->is_active);
         $this->assertIsInt($taxClass->position);
-    }
+    });
 
-    public function test_attributes_defaults(): void
-    {
+    it('attributes defaults', function (): void {
         $taxClass = new TaxClass(['name' => 'Test', 'slug' => 'test']);
 
         $this->assertFalse($taxClass->is_default);
         $this->assertTrue($taxClass->is_active);
         $this->assertEquals(0, $taxClass->position);
-    }
+    });
 
-    public function test_activity_logging(): void
-    {
+    it('activity logging', function (): void {
         $taxClass = TaxClass::create([
             'name' => 'Activity Test',
             'slug' => 'activity-test',
@@ -196,10 +178,9 @@ class TaxClassTest extends TaxTestCase
         // Activity logging is configured but we can't easily test it without more setup
         // This test ensures the trait is applied and doesn't break
         $this->assertTrue(true);
-    }
+    });
 
-    public function test_for_owner_scope_when_owner_disabled(): void
-    {
+    it('for owner scope when owner disabled', function (): void {
         config(['tax.features.owner.enabled' => false]);
 
         TaxClass::create([
@@ -211,10 +192,9 @@ class TaxClassTest extends TaxTestCase
         $classes = TaxClass::forOwner(null)->get();
 
         $this->assertCount(1, $classes);
-    }
+    });
 
-    public function test_for_owner_scope_with_null_owner(): void
-    {
+    it('for owner scope with null owner', function () use ($bindTaxOwnerForScoping): void {
         config(['tax.features.owner.enabled' => true]);
 
         $owner = new class extends Model
@@ -234,7 +214,7 @@ class TaxClassTest extends TaxTestCase
             }
         };
 
-        $this->bindTaxOwnerForScoping(null);
+        $bindTaxOwnerForScoping(null);
 
         OwnerContext::withOwner(null, fn () => TaxClass::create([
             'name' => 'Global Class',
@@ -244,7 +224,7 @@ class TaxClassTest extends TaxTestCase
             'is_active' => true,
         ]));
 
-        $this->bindTaxOwnerForScoping($owner);
+        $bindTaxOwnerForScoping($owner);
 
         TaxClass::create([
             'name' => 'Owned Class',
@@ -257,13 +237,12 @@ class TaxClassTest extends TaxTestCase
 
         $this->assertCount(1, $classes);
         $this->assertEquals('Global Class', $classes->first()->name);
-    }
+    });
 
-    public function test_for_owner_scope_with_null_owner_exclude_global(): void
-    {
+    it('for owner scope with null owner exclude global', function () use ($bindTaxOwnerForScoping): void {
         config(['tax.features.owner.enabled' => true]);
 
-        $this->bindTaxOwnerForScoping(null);
+        $bindTaxOwnerForScoping(null);
 
         OwnerContext::withOwner(null, fn () => TaxClass::create([
             'name' => 'Global Class',
@@ -278,10 +257,9 @@ class TaxClassTest extends TaxTestCase
 
         $this->assertCount(1, $classes);
         $this->assertEquals('Global Class', $classes->first()->name);
-    }
+    });
 
-    public function test_for_owner_scope_with_owner_include_global(): void
-    {
+    it('for owner scope with owner include global', function () use ($bindTaxOwnerForScoping): void {
         config(['tax.features.owner.enabled' => true]);
         config(['tax.features.owner.include_global' => true]);
 
@@ -303,7 +281,7 @@ class TaxClassTest extends TaxTestCase
             }
         };
 
-        $this->bindTaxOwnerForScoping(null);
+        $bindTaxOwnerForScoping(null);
 
         OwnerContext::withOwner(null, fn () => TaxClass::create([
             'name' => 'Global Class',
@@ -313,7 +291,7 @@ class TaxClassTest extends TaxTestCase
             'is_active' => true,
         ]));
 
-        $this->bindTaxOwnerForScoping($owner);
+        $bindTaxOwnerForScoping($owner);
 
         TaxClass::create([
             'name' => 'Owned Class',
@@ -341,10 +319,9 @@ class TaxClassTest extends TaxTestCase
         $names = $classes->pluck('name')->toArray();
         $this->assertContains('Global Class', $names);
         $this->assertContains('Owned Class', $names);
-    }
+    });
 
-    public function test_for_owner_scope_with_owner_exclude_global(): void
-    {
+    it('for owner scope with owner exclude global', function () use ($bindTaxOwnerForScoping): void {
         config(['tax.features.owner.enabled' => true]);
 
         $owner = new class extends Model
@@ -364,7 +341,7 @@ class TaxClassTest extends TaxTestCase
             }
         };
 
-        $this->bindTaxOwnerForScoping(null);
+        $bindTaxOwnerForScoping(null);
 
         OwnerContext::withOwner(null, fn () => TaxClass::create([
             'name' => 'Global Class',
@@ -374,7 +351,7 @@ class TaxClassTest extends TaxTestCase
             'is_active' => true,
         ]));
 
-        $this->bindTaxOwnerForScoping($owner);
+        $bindTaxOwnerForScoping($owner);
 
         TaxClass::create([
             'name' => 'Owned Class',
@@ -386,10 +363,9 @@ class TaxClassTest extends TaxTestCase
 
         $this->assertCount(1, $classes);
         $this->assertEquals('Owned Class', $classes->first()->name);
-    }
+    });
 
-    public function test_get_default_returns_null_when_none(): void
-    {
+    it('get default returns null when none', function (): void {
         TaxClass::create([
             'name' => 'Non-default',
             'slug' => 'non-default',
@@ -400,5 +376,5 @@ class TaxClassTest extends TaxTestCase
         $default = TaxClass::getDefault();
 
         $this->assertNull($default);
-    }
-}
+    });
+});

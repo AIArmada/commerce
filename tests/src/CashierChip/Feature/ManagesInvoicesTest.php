@@ -2,25 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Feature;
-
 use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Illuminate\Support\Collection;
 
-class ManagesInvoicesTest extends CashierChipTestCase
-{
-    protected $user;
+uses(CashierChipTestCase::class);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+describe('ManagesInvoices', function (): void {
+    beforeEach(function (): void {
         $this->user = $this->createUser();
         $this->user->createAsChipCustomer();
-    }
+    });
 
-    public function test_find_invoice()
-    {
+    it('find invoice', function (): void {
         $payment = $this->user->charge(1000);
         $invoice = $this->user->findInvoice($payment->id());
 
@@ -34,10 +28,9 @@ class ManagesInvoicesTest extends CashierChipTestCase
 
         // $this->assertEquals(1000, $invoice->rawTotal());
         $this->assertTrue($invoice->rawTotal() >= 0);
-    }
+    });
 
-    public function test_invoices_retrieval()
-    {
+    it('invoices retrieval', function (): void {
         // Setup scenarios in fake if possible, or just rely on the one we created
         $payment = $this->user->charge(2000);
 
@@ -54,5 +47,5 @@ class ManagesInvoicesTest extends CashierChipTestCase
         if ($invoices->count() > 0) {
             $this->assertInstanceOf(Invoice::class, $invoices->first());
         }
-    }
-}
+    });
+});

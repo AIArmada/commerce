@@ -2,37 +2,32 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
-class ConsoleCommandsTest extends CashierChipTestCase
-{
-    public function test_webhook_command_runs_successfully(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('ConsoleCommands', function (): void {
+    it('webhook command runs successfully', function (): void {
         $this->artisan('cashier-chip:webhook')
             ->assertSuccessful();
-    }
+    });
 
-    public function test_webhook_command_outputs_webhook_url(): void
-    {
+    it('webhook command outputs webhook url', function (): void {
         $this->artisan('cashier-chip:webhook')
             ->expectsOutputToContain('Webhook URL')
             ->assertSuccessful();
-    }
+    });
 
-    public function test_webhook_command_outputs_environment_variables(): void
-    {
+    it('webhook command outputs environment variables', function (): void {
         $this->artisan('cashier-chip:webhook')
             ->expectsOutputToContain('Environment Variables')
             ->assertSuccessful();
-    }
+    });
 
-    public function test_webhook_command_outputs_supported_events(): void
-    {
+    it('webhook command outputs supported events', function (): void {
         $this->artisan('cashier-chip:webhook')
             ->expectsOutputToContain('purchase.paid')
             ->expectsOutputToContain('purchase.payment_failure')
             ->assertSuccessful();
-    }
-}
+    });
+});

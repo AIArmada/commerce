@@ -3,23 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Models\InventoryStandardCost;
 use Carbon\CarbonImmutable;
 
-class InventoryStandardCostTest extends InventoryTestCase
-{
-    protected InventoryItem $item;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('InventoryStandardCost', function (): void {
+    beforeEach(function (): void {
         $this->item = InventoryItem::create(['name' => 'Test Item']);
-    }
+    });
 
-    public function test_create(): void
-    {
+    it('create', function (): void {
         $cost = InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -29,10 +21,9 @@ class InventoryStandardCostTest extends InventoryTestCase
 
         expect($cost)->toBeInstanceOf(InventoryStandardCost::class);
         expect($cost->standard_cost_minor)->toBe(1000);
-    }
+    });
 
-    public function test_inventoryable_relationship(): void
-    {
+    it('inventoryable relationship', function (): void {
         $cost = InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -40,10 +31,9 @@ class InventoryStandardCostTest extends InventoryTestCase
 
         expect($cost->inventoryable)->toBeInstanceOf(InventoryItem::class);
         expect($cost->inventoryable->id)->toBe($this->item->id);
-    }
+    });
 
-    public function test_scope_for_model(): void
-    {
+    it('scope for model', function (): void {
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -53,10 +43,9 @@ class InventoryStandardCostTest extends InventoryTestCase
         $costs = InventoryStandardCost::forModel($this->item)->get();
 
         expect($costs)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_current(): void
-    {
+    it('scope current', function (): void {
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -73,10 +62,9 @@ class InventoryStandardCostTest extends InventoryTestCase
         $current = InventoryStandardCost::forModel($this->item)->current()->get();
 
         expect($current)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_effective_at(): void
-    {
+    it('scope effective at', function (): void {
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -96,10 +84,9 @@ class InventoryStandardCostTest extends InventoryTestCase
             ->first();
 
         expect($cost->standard_cost_minor)->toBe(500);
-    }
+    });
 
-    public function test_scope_future(): void
-    {
+    it('scope future', function (): void {
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -114,10 +101,9 @@ class InventoryStandardCostTest extends InventoryTestCase
         $future = InventoryStandardCost::forModel($this->item)->future()->get();
 
         expect($future)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_expired(): void
-    {
+    it('scope expired', function (): void {
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -134,10 +120,9 @@ class InventoryStandardCostTest extends InventoryTestCase
         $expired = InventoryStandardCost::forModel($this->item)->expired()->get();
 
         expect($expired)->toHaveCount(1);
-    }
+    });
 
-    public function test_is_current(): void
-    {
+    it('is current', function (): void {
         $current = InventoryStandardCost::factory()->create([
             'effective_from' => now()->subMonth(),
             'effective_to' => null,
@@ -150,10 +135,9 @@ class InventoryStandardCostTest extends InventoryTestCase
 
         expect($current->isCurrent())->toBeTrue();
         expect($expired->isCurrent())->toBeFalse();
-    }
+    });
 
-    public function test_is_future(): void
-    {
+    it('is future', function (): void {
         $future = InventoryStandardCost::factory()->create([
             'effective_from' => now()->addMonth(),
         ]);
@@ -164,10 +148,9 @@ class InventoryStandardCostTest extends InventoryTestCase
 
         expect($future->isFuture())->toBeTrue();
         expect($current->isFuture())->toBeFalse();
-    }
+    });
 
-    public function test_is_expired(): void
-    {
+    it('is expired', function (): void {
         $expired = InventoryStandardCost::factory()->create([
             'effective_from' => now()->subMonths(2),
             'effective_to' => now()->subMonth(),
@@ -180,10 +163,9 @@ class InventoryStandardCostTest extends InventoryTestCase
 
         expect($expired->isExpired())->toBeTrue();
         expect($current->isExpired())->toBeFalse();
-    }
+    });
 
-    public function test_expire(): void
-    {
+    it('expire', function (): void {
         $cost = InventoryStandardCost::factory()->create([
             'effective_from' => now()->subMonth(),
             'effective_to' => null,
@@ -194,10 +176,9 @@ class InventoryStandardCostTest extends InventoryTestCase
         expect($result)->toBeTrue();
         expect($cost->fresh()->effective_to)->not->toBeNull();
         expect($cost->fresh()->isExpired())->toBeTrue();
-    }
+    });
 
-    public function test_casts(): void
-    {
+    it('casts', function (): void {
         $cost = InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -211,5 +192,5 @@ class InventoryStandardCostTest extends InventoryTestCase
         expect($cost->standard_cost_minor)->toBeInt();
         expect($cost->effective_from)->toBeInstanceOf(CarbonImmutable::class);
         expect($cost->metadata)->toBeArray();
-    }
-}
+    });
+});

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
@@ -15,22 +14,13 @@ use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Sold;
 use Carbon\CarbonImmutable;
 
-class InventorySerialTest extends InventoryTestCase
-{
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('InventorySerial', function (): void {
+    beforeEach(function (): void {
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create();
-    }
+    });
 
-    public function test_can_create_serial(): void
-    {
+    it('can create serial', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -41,10 +31,9 @@ class InventorySerialTest extends InventoryTestCase
 
         expect($serial)->toBeInstanceOf(InventorySerial::class);
         expect($serial->serial_number)->toBe('SN-12345');
-    }
+    });
 
-    public function test_inventoryable_relationship(): void
-    {
+    it('inventoryable relationship', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -52,10 +41,9 @@ class InventorySerialTest extends InventoryTestCase
 
         expect($serial->inventoryable)->not->toBeNull();
         expect($serial->inventoryable->id)->toBe($this->item->id);
-    }
+    });
 
-    public function test_location_relationship(): void
-    {
+    it('location relationship', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -64,10 +52,9 @@ class InventorySerialTest extends InventoryTestCase
 
         expect($serial->location)->not->toBeNull();
         expect($serial->location->id)->toBe($this->location->id);
-    }
+    });
 
-    public function test_batch_relationship(): void
-    {
+    it('batch relationship', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -81,10 +68,9 @@ class InventorySerialTest extends InventoryTestCase
 
         expect($serial->batch)->not->toBeNull();
         expect($serial->batch->id)->toBe($batch->id);
-    }
+    });
 
-    public function test_get_status_enum(): void
-    {
+    it('get status enum', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -92,10 +78,9 @@ class InventorySerialTest extends InventoryTestCase
         ]);
 
         expect($serial->getStatusEnum())->toBeInstanceOf(Available::class);
-    }
+    });
 
-    public function test_get_condition_enum(): void
-    {
+    it('get condition enum', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -103,10 +88,9 @@ class InventorySerialTest extends InventoryTestCase
         ]);
 
         expect($serial->getConditionEnum())->toBe(SerialCondition::New);
-    }
+    });
 
-    public function test_is_warranty_active_returns_true_when_future(): void
-    {
+    it('is warranty active returns true when future', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -114,10 +98,9 @@ class InventorySerialTest extends InventoryTestCase
         ]);
 
         expect($serial->is_warranty_active)->toBeTrue();
-    }
+    });
 
-    public function test_is_warranty_active_returns_false_when_past(): void
-    {
+    it('is warranty active returns false when past', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -125,10 +108,9 @@ class InventorySerialTest extends InventoryTestCase
         ]);
 
         expect($serial->is_warranty_active)->toBeFalse();
-    }
+    });
 
-    public function test_is_warranty_active_returns_false_when_null(): void
-    {
+    it('is warranty active returns false when null', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -136,10 +118,9 @@ class InventorySerialTest extends InventoryTestCase
         ]);
 
         expect($serial->is_warranty_active)->toBeFalse();
-    }
+    });
 
-    public function test_days_until_warranty_expires(): void
-    {
+    it('days until warranty expires', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -148,10 +129,9 @@ class InventorySerialTest extends InventoryTestCase
 
         expect($serial->days_until_warranty_expires)->toBeGreaterThanOrEqual(29);
         expect($serial->days_until_warranty_expires)->toBeLessThanOrEqual(30);
-    }
+    });
 
-    public function test_is_under_warranty_method(): void
-    {
+    it('is under warranty method', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -159,10 +139,9 @@ class InventorySerialTest extends InventoryTestCase
         ]);
 
         expect($serial->isUnderWarranty())->toBeTrue();
-    }
+    });
 
-    public function test_warranty_days_remaining_method(): void
-    {
+    it('warranty days remaining method', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -171,10 +150,9 @@ class InventorySerialTest extends InventoryTestCase
 
         expect($serial->warrantyDaysRemaining())->toBeGreaterThanOrEqual(44);
         expect($serial->warrantyDaysRemaining())->toBeLessThanOrEqual(45);
-    }
+    });
 
-    public function test_is_available(): void
-    {
+    it('is available', function (): void {
         $available = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -191,10 +169,9 @@ class InventorySerialTest extends InventoryTestCase
 
         expect($available->isAvailable())->toBeTrue();
         expect($sold->isAvailable())->toBeFalse();
-    }
+    });
 
-    public function test_scope_with_status(): void
-    {
+    it('scope with status', function (): void {
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -209,10 +186,9 @@ class InventorySerialTest extends InventoryTestCase
         $available = InventorySerial::withStatus(Available::class)->get();
 
         expect($available)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_available(): void
-    {
+    it('scope available', function (): void {
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -227,10 +203,9 @@ class InventorySerialTest extends InventoryTestCase
         $available = InventorySerial::available()->get();
 
         expect($available)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_in_stock(): void
-    {
+    it('scope in stock', function (): void {
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -250,10 +225,9 @@ class InventorySerialTest extends InventoryTestCase
         $inStock = InventorySerial::inStock()->get();
 
         expect($inStock)->toHaveCount(2);
-    }
+    });
 
-    public function test_scope_at_location(): void
-    {
+    it('scope at location', function (): void {
         $location2 = InventoryLocation::factory()->create();
 
         InventorySerial::factory()->create([
@@ -270,10 +244,9 @@ class InventorySerialTest extends InventoryTestCase
         $atLocation = InventorySerial::atLocation($this->location->id)->get();
 
         expect($atLocation)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_with_condition(): void
-    {
+    it('scope with condition', function (): void {
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -288,10 +261,9 @@ class InventorySerialTest extends InventoryTestCase
         $newCondition = InventorySerial::withCondition(SerialCondition::New)->get();
 
         expect($newCondition)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_sellable(): void
-    {
+    it('scope sellable', function (): void {
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -308,10 +280,9 @@ class InventorySerialTest extends InventoryTestCase
         $sellable = InventorySerial::sellable()->get();
 
         expect($sellable)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_under_warranty(): void
-    {
+    it('scope under warranty', function (): void {
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -326,10 +297,9 @@ class InventorySerialTest extends InventoryTestCase
         $underWarranty = InventorySerial::underWarranty()->get();
 
         expect($underWarranty)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_warranty_expiring_soon(): void
-    {
+    it('scope warranty expiring soon', function (): void {
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -344,10 +314,9 @@ class InventorySerialTest extends InventoryTestCase
         $expiringSoon = InventorySerial::warrantyExpiringSoon(30)->get();
 
         expect($expiringSoon)->toHaveCount(1);
-    }
+    });
 
-    public function test_history_relationship(): void
-    {
+    it('history relationship', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -362,10 +331,9 @@ class InventorySerialTest extends InventoryTestCase
         ]);
 
         expect($serial->history)->toHaveCount(1);
-    }
+    });
 
-    public function test_deleting_serial_cascades_to_history(): void
-    {
+    it('deleting serial cascades to history', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -381,10 +349,9 @@ class InventorySerialTest extends InventoryTestCase
         $serial->delete();
 
         expect(InventorySerialHistory::find($historyId))->toBeNull();
-    }
+    });
 
-    public function test_casts_are_correct(): void
-    {
+    it('casts are correct', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -396,10 +363,9 @@ class InventorySerialTest extends InventoryTestCase
         expect($serial->unit_cost_minor)->toBeInt();
         expect($serial->warranty_expires_at)->toBeInstanceOf(CarbonImmutable::class);
         expect($serial->metadata)->toBeArray();
-    }
+    });
 
-    public function test_assigned_to_relationship(): void
-    {
+    it('assigned to relationship', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -408,10 +374,9 @@ class InventorySerialTest extends InventoryTestCase
         ]);
 
         expect($serial->assignedTo)->not->toBeNull();
-    }
+    });
 
-    public function test_can_transition_to(): void
-    {
+    it('can transition to', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -420,10 +385,9 @@ class InventorySerialTest extends InventoryTestCase
 
         // Available can transition to Reserved
         expect($serial->canTransitionTo(Reserved::class))->toBeTrue();
-    }
+    });
 
-    public function test_transition_to_changes_status(): void
-    {
+    it('transition to changes status', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -434,10 +398,9 @@ class InventorySerialTest extends InventoryTestCase
 
         expect($result)->toBe($serial);
         expect($serial->fresh()->status)->toBeInstanceOf(Reserved::class);
-    }
+    });
 
-    public function test_transition_to_throws_on_invalid_transition(): void
-    {
+    it('transition to throws on invalid transition', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -446,10 +409,9 @@ class InventorySerialTest extends InventoryTestCase
 
         expect(fn () => $serial->transitionStatusTo(Available::class))
             ->toThrow(InvalidArgumentException::class);
-    }
+    });
 
-    public function test_days_until_warranty_expires_with_null(): void
-    {
+    it('days until warranty expires with null', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -457,5 +419,5 @@ class InventorySerialTest extends InventoryTestCase
         ]);
 
         expect($serial->days_until_warranty_expires)->toBeNull();
-    }
-}
+    });
+});

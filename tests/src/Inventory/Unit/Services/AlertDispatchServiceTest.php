@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
@@ -11,40 +10,27 @@ use AIArmada\Inventory\Services\Stock\AlertDispatchService;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 
-class AlertDispatchServiceTest extends InventoryTestCase
-{
-    protected AlertDispatchService $service;
-
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('AlertDispatchService', function (): void {
+    beforeEach(function (): void {
         $this->service = new AlertDispatchService;
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create();
-    }
+    });
 
-    public function test_can_register_notification(): void
-    {
+    it('can register notification', function (): void {
         $result = $this->service->registerNotification(AlertStatus::LowStock, 'App\Notifications\LowStockNotification');
 
         expect($result)->toBeInstanceOf(AlertDispatchService::class);
-    }
+    });
 
-    public function test_can_register_notifiable(): void
-    {
+    it('can register notifiable', function (): void {
         $notifiable = new AnonymousNotifiable;
         $result = $this->service->registerNotifiable('admin', $notifiable);
 
         expect($result)->toBeInstanceOf(AlertDispatchService::class);
-    }
+    });
 
-    public function test_dispatch_alert_does_nothing_when_notifications_disabled(): void
-    {
+    it('dispatch alert does nothing when notifications disabled', function (): void {
         config(['inventory.events.low_inventory' => false]);
 
         Notification::fake();
@@ -59,10 +45,9 @@ class AlertDispatchServiceTest extends InventoryTestCase
         $this->service->dispatchAlert($level, AlertStatus::LowStock);
 
         Notification::assertNothingSent();
-    }
+    });
 
-    public function test_dispatch_alert_does_nothing_when_no_notification_class(): void
-    {
+    it('dispatch alert does nothing when no notification class', function (): void {
         config(['inventory.events.low_inventory' => true]);
 
         Notification::fake();
@@ -81,10 +66,9 @@ class AlertDispatchServiceTest extends InventoryTestCase
         $this->service->dispatchAlert($level, AlertStatus::LowStock);
 
         Notification::assertNothingSent();
-    }
+    });
 
-    public function test_dispatch_bulk_alerts(): void
-    {
+    it('dispatch bulk alerts', function (): void {
         config(['inventory.events.low_inventory' => true]);
 
         $level1 = InventoryLevel::factory()->create([
@@ -113,10 +97,9 @@ class AlertDispatchServiceTest extends InventoryTestCase
         $count = $this->service->dispatchBulkAlerts([$level1, $level2, $level3]);
 
         expect($count)->toBe(2);
-    }
+    });
 
-    public function test_get_alert_summary(): void
-    {
+    it('get alert summary', function (): void {
         InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -146,10 +129,9 @@ class AlertDispatchServiceTest extends InventoryTestCase
         expect($summary['low_stock'])->toBe(2);
         expect($summary)->toHaveKey('out_of_stock');
         expect($summary['out_of_stock'])->toBe(1);
-    }
+    });
 
-    public function test_get_critical_alerts(): void
-    {
+    it('get critical alerts', function (): void {
         // Create critical alert
         InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -171,10 +153,9 @@ class AlertDispatchServiceTest extends InventoryTestCase
         $criticals = $this->service->getCriticalAlerts();
 
         expect($criticals)->toHaveCount(1);
-    }
+    });
 
-    public function test_acknowledge_alert(): void
-    {
+    it('acknowledge alert', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -187,10 +168,9 @@ class AlertDispatchServiceTest extends InventoryTestCase
         $level->refresh();
         expect($level->metadata['acknowledged_note'])->toBe('Acknowledged by admin');
         expect($level->metadata)->toHaveKey('last_acknowledged_at');
-    }
+    });
 
-    public function test_clear_alert(): void
-    {
+    it('clear alert', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -204,5 +184,5 @@ class AlertDispatchServiceTest extends InventoryTestCase
         $level->refresh();
         expect($level->alert_status)->toBe(AlertStatus::None->value);
         expect($level->last_alert_at)->toBeNull();
-    }
-}
+    });
+});

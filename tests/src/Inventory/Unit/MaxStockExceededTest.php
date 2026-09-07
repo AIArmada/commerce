@@ -3,23 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Events\MaxStockExceeded;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 
-class MaxStockExceededTest extends InventoryTestCase
-{
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected InventoryLevel $level;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('MaxStockExceeded', function (): void {
+    beforeEach(function (): void {
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create([
             'name' => 'Test Location',
@@ -33,39 +22,34 @@ class MaxStockExceededTest extends InventoryTestCase
             'quantity_reserved' => 0,
             'max_stock' => 100,
         ]);
-    }
+    });
 
-    public function test_event_stores_properties_correctly(): void
-    {
+    it('event stores properties correctly', function (): void {
         $event = new MaxStockExceeded($this->item, $this->level);
 
         expect($event->inventoryable)->toBe($this->item);
         expect($event->level)->toBe($this->level);
-    }
+    });
 
-    public function test_get_on_hand_returns_correct_quantity(): void
-    {
+    it('get on hand returns correct quantity', function (): void {
         $event = new MaxStockExceeded($this->item, $this->level);
 
         expect($event->getOnHand())->toBe(150);
-    }
+    });
 
-    public function test_get_max_stock_returns_correct_value(): void
-    {
+    it('get max stock returns correct value', function (): void {
         $event = new MaxStockExceeded($this->item, $this->level);
 
         expect($event->getMaxStock())->toBe(100);
-    }
+    });
 
-    public function test_get_overage_calculates_correctly(): void
-    {
+    it('get overage calculates correctly', function (): void {
         $event = new MaxStockExceeded($this->item, $this->level);
 
         expect($event->getOverage())->toBe(50); // 150 - 100 = 50
-    }
+    });
 
-    public function test_get_max_stock_returns_zero_when_null(): void
-    {
+    it('get max stock returns zero when null', function (): void {
         $anotherLocation = InventoryLocation::factory()->create([
             'name' => 'Another Location',
             'code' => 'TEST2',
@@ -83,5 +67,5 @@ class MaxStockExceededTest extends InventoryTestCase
 
         expect($event->getMaxStock())->toBe(0);
         expect($event->getOverage())->toBe(50); // 50 - 0 = 50
-    }
-}
+    });
+});

@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
@@ -17,10 +15,10 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Event;
 
-class MoreListenersTest extends CashierChipTestCase
-{
-    public function test_handle_purchase_payment_failure_dispatches_event(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('MoreListeners', function (): void {
+    it('handle purchase payment failure dispatches event', function (): void {
         Event::fake([PaymentFailed::class]);
 
         $user = $this->createUser();
@@ -42,10 +40,9 @@ class MoreListenersTest extends CashierChipTestCase
         Event::assertDispatched(PaymentFailed::class, function ($e) use ($user) {
             return $e->billable->is($user);
         });
-    }
+    });
 
-    public function test_handle_purchase_payment_failure_returns_early_without_client_id(): void
-    {
+    it('handle purchase payment failure returns early without client id', function (): void {
         Event::fake([PaymentFailed::class]);
 
         $purchaseData = [
@@ -60,10 +57,9 @@ class MoreListenersTest extends CashierChipTestCase
         $listener->handle($event);
 
         Event::assertNotDispatched(PaymentFailed::class);
-    }
+    });
 
-    public function test_handle_purchase_payment_failure_marks_subscription_past_due(): void
-    {
+    it('handle purchase payment failure marks subscription past due', function (): void {
         $user = $this->createUser();
         Cashier::chipCustomerDirectory()->link($user, 'cli_123');
 
@@ -88,10 +84,9 @@ class MoreListenersTest extends CashierChipTestCase
         OwnerContext::withOwner($user, fn (): null => tap(null, fn () => $listener->handle($event)));
 
         $this->assertEquals(SubscriptionStatus::PastDue, $subscription->fresh()->chip_status);
-    }
+    });
 
-    public function test_handle_purchase_preauthorized_saves_recurring_token(): void
-    {
+    it('handle purchase preauthorized saves recurring token', function (): void {
         $user = $this->createUser();
         Cashier::chipCustomerDirectory()->link($user, 'cli_123');
 
@@ -118,10 +113,9 @@ class MoreListenersTest extends CashierChipTestCase
 
         $this->assertNotNull($paymentMethod);
         $this->assertEquals('tok_preauth_123', $paymentMethod?->id());
-    }
+    });
 
-    public function test_handle_purchase_preauthorized_returns_early_without_client_id(): void
-    {
+    it('handle purchase preauthorized returns early without client id', function (): void {
         $purchaseData = [
             'id' => 'pur_123',
             'status' => 'preauthorized',
@@ -136,10 +130,9 @@ class MoreListenersTest extends CashierChipTestCase
 
         // No exception means it returned early successfully
         $this->assertTrue(true);
-    }
+    });
 
-    public function test_handle_purchase_preauthorized_returns_early_without_recurring_token(): void
-    {
+    it('handle purchase preauthorized returns early without recurring token', function (): void {
         $user = $this->createUser();
         Cashier::chipCustomerDirectory()->link($user, 'cli_123');
 
@@ -157,5 +150,5 @@ class MoreListenersTest extends CashierChipTestCase
 
         $user->refresh();
         $this->assertNull($user->defaultPaymentMethod());
-    }
-}
+    });
+});

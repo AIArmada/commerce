@@ -2,38 +2,29 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Tests\Unit\Models;
-
-use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Tax\Enums\ZoneType;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class TaxZoneTest extends TaxTestCase
-{
-    use RefreshDatabase;
-
-    private function bindTaxOwnerForScoping(?Model $owner): void
+$bindTaxOwnerForScoping = function (?Model $owner): void {
+    app()->bind(OwnerResolverInterface::class, fn () => new class($owner) implements OwnerResolverInterface
     {
-        app()->bind(OwnerResolverInterface::class, fn () => new class($owner) implements OwnerResolverInterface
+        public function __construct(private ?Model $owner) {}
+
+        public function resolve(): ?Model
         {
-            public function __construct(private ?Model $owner) {}
+            return $this->owner;
+        }
+    });
+};
 
-            public function resolve(): ?Model
-            {
-                return $this->owner;
-            }
-        });
-    }
-
-    public function test_can_create_tax_zone(): void
-    {
+describe('TaxZone', function () use ($bindTaxOwnerForScoping): void {
+    it('can create tax zone', function (): void {
         $zone = TaxZone::create([
             'name' => 'Malaysia',
             'code' => 'MY',
@@ -50,19 +41,17 @@ class TaxZoneTest extends TaxTestCase
         $this->assertEquals(['MY'], $zone->countries);
         $this->assertTrue($zone->is_default);
         $this->assertTrue($zone->is_active);
-    }
+    });
 
-    public function test_zero_rate_static_method(): void
-    {
+    it('zero rate static method', function (): void {
         $zone = TaxZone::zeroRate();
 
         $this->assertEquals('Zero Rate Zone', $zone->name);
         $this->assertEquals('ZERO', $zone->code);
         $this->assertTrue($zone->is_active);
-    }
+    });
 
-    public function test_active_scope(): void
-    {
+    it('active scope', function (): void {
         TaxZone::create(['name' => 'Active Zone', 'code' => 'ACTIVE', 'is_active' => true]);
         TaxZone::create(['name' => 'Inactive Zone', 'code' => 'INACTIVE', 'is_active' => false]);
 
@@ -70,20 +59,18 @@ class TaxZoneTest extends TaxTestCase
 
         $this->assertCount(1, $activeZones);
         $this->assertEquals('Active Zone', $activeZones->first()->name);
-    }
+    });
 
-    public function test_default_scope(): void
-    {
+    it('default scope', function (): void {
         TaxZone::create(['name' => 'Default Zone', 'code' => 'DEFAULT', 'is_default' => true]);
         TaxZone::create(['name' => 'Regular Zone', 'code' => 'REGULAR', 'is_default' => false]);
 
         $defaultZone = TaxZone::default()->first();
 
         $this->assertEquals('Default Zone', $defaultZone->name);
-    }
+    });
 
-    public function test_for_address_scope_country_match(): void
-    {
+    it('for address scope country match', function (): void {
         $zone = TaxZone::create([
             'name' => 'Malaysia',
             'code' => 'MY',
@@ -96,10 +83,9 @@ class TaxZoneTest extends TaxTestCase
 
         $this->assertCount(1, $matchingZones);
         $this->assertEquals($zone->id, $matchingZones->first()->id);
-    }
+    });
 
-    public function test_for_address_scope_state_match(): void
-    {
+    it('for address scope state match', function (): void {
         $zone = TaxZone::create([
             'name' => 'California',
             'code' => 'CA',
@@ -113,10 +99,9 @@ class TaxZoneTest extends TaxTestCase
 
         $this->assertCount(1, $matchingZones);
         $this->assertEquals($zone->id, $matchingZones->first()->id);
-    }
+    });
 
-    public function test_for_address_scope_no_match(): void
-    {
+    it('for address scope no match', function (): void {
         TaxZone::create([
             'name' => 'Malaysia',
             'code' => 'MY',
@@ -127,10 +112,9 @@ class TaxZoneTest extends TaxTestCase
         $matchingZones = TaxZone::forAddress('US')->get();
 
         $this->assertCount(0, $matchingZones);
-    }
+    });
 
-    public function test_matches_address_country_only(): void
-    {
+    it('matches address country only', function (): void {
         $zone = TaxZone::create([
             'name' => 'Malaysia',
             'code' => 'MY',
@@ -141,10 +125,9 @@ class TaxZoneTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('MY'));
         $this->assertTrue($zone->matchesAddress('SG'));
         $this->assertFalse($zone->matchesAddress('US'));
-    }
+    });
 
-    public function test_matches_address_with_state(): void
-    {
+    it('matches address with state', function (): void {
         $zone = TaxZone::create([
             'name' => 'US States',
             'code' => 'US',
@@ -157,10 +140,9 @@ class TaxZoneTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('US', 'NY'));
         $this->assertFalse($zone->matchesAddress('US', 'TX'));
         $this->assertFalse($zone->matchesAddress('CA', 'CA')); // Wrong country
-    }
+    });
 
-    public function test_matches_address_with_postcode_exact(): void
-    {
+    it('matches address with postcode exact', function (): void {
         $zone = TaxZone::create([
             'name' => 'Specific Postcode',
             'code' => 'POST',
@@ -172,10 +154,9 @@ class TaxZoneTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('MY', null, '12345'));
         $this->assertTrue($zone->matchesAddress('MY', null, '67890'));
         $this->assertFalse($zone->matchesAddress('MY', null, '11111'));
-    }
+    });
 
-    public function test_matches_address_with_postcode_wildcard(): void
-    {
+    it('matches address with postcode wildcard', function (): void {
         $zone = TaxZone::create([
             'name' => 'Postcode Range',
             'code' => 'RANGE',
@@ -187,10 +168,9 @@ class TaxZoneTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('MY', null, '50000'));
         $this->assertTrue($zone->matchesAddress('MY', null, '60012'));
         $this->assertFalse($zone->matchesAddress('MY', null, '70000'));
-    }
+    });
 
-    public function test_matches_address_with_postcode_range(): void
-    {
+    it('matches address with postcode range', function (): void {
         $zone = TaxZone::create([
             'name' => 'Postcode Numeric Range',
             'code' => 'NUMRANGE',
@@ -203,10 +183,9 @@ class TaxZoneTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('MY', null, '35000'));
         $this->assertFalse($zone->matchesAddress('MY', null, '25000'));
         $this->assertFalse($zone->matchesAddress('MY', null, '45000'));
-    }
+    });
 
-    public function test_matches_address_combined_conditions(): void
-    {
+    it('matches address combined conditions', function (): void {
         $zone = TaxZone::create([
             'name' => 'Complex Zone',
             'code' => 'COMPLEX',
@@ -227,10 +206,9 @@ class TaxZoneTest extends TaxTestCase
 
         // Postcode doesn't match
         $this->assertFalse($zone->matchesAddress('US', 'CA', '80000'));
-    }
+    });
 
-    public function test_relationships_with_rates(): void
-    {
+    it('relationships with rates', function (): void {
         $zone = TaxZone::create([
             'name' => 'Test Zone',
             'code' => 'TEST',
@@ -247,10 +225,9 @@ class TaxZoneTest extends TaxTestCase
 
         $this->assertInstanceOf(TaxRate::class, $zone->rates()->first());
         $this->assertEquals($rate->id, $zone->rates()->first()->id);
-    }
+    });
 
-    public function test_casts(): void
-    {
+    it('casts', function (): void {
         $zone = TaxZone::create([
             'name' => 'Cast Test',
             'code' => 'CAST',
@@ -268,10 +245,9 @@ class TaxZoneTest extends TaxTestCase
         $this->assertIsInt($zone->priority);
         $this->assertIsBool($zone->is_default);
         $this->assertIsBool($zone->is_active);
-    }
+    });
 
-    public function test_deleting_zone_deletes_rates(): void
-    {
+    it('deleting zone deletes rates', function (): void {
         $zone = TaxZone::create([
             'name' => 'Delete Test',
             'code' => 'DELETE',
@@ -291,10 +267,9 @@ class TaxZoneTest extends TaxTestCase
         $zone->delete();
 
         $this->assertEquals(0, TaxRate::count());
-    }
+    });
 
-    public function test_activity_logging(): void
-    {
+    it('activity logging', function (): void {
         $zone = TaxZone::create([
             'name' => 'Activity Test',
             'code' => 'ACTIVITY',
@@ -307,10 +282,9 @@ class TaxZoneTest extends TaxTestCase
         // Activity logging is configured but we can't easily test it without more setup
         // This test ensures the trait is applied and doesn't break
         $this->assertTrue(true);
-    }
+    });
 
-    public function test_for_owner_scope_when_owner_disabled(): void
-    {
+    it('for owner scope when owner disabled', function (): void {
         config(['tax.features.owner.enabled' => false]);
 
         TaxZone::create([
@@ -322,10 +296,9 @@ class TaxZoneTest extends TaxTestCase
         $zones = TaxZone::forOwner(null)->get();
 
         $this->assertCount(1, $zones);
-    }
+    });
 
-    public function test_for_owner_scope_with_null_owner(): void
-    {
+    it('for owner scope with null owner', function () use ($bindTaxOwnerForScoping): void {
         config(['tax.features.owner.enabled' => true]);
 
         $owner = new class extends Model
@@ -345,7 +318,7 @@ class TaxZoneTest extends TaxTestCase
             }
         };
 
-        $this->bindTaxOwnerForScoping(null);
+        $bindTaxOwnerForScoping(null);
 
         $globalZone = OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
@@ -355,7 +328,7 @@ class TaxZoneTest extends TaxTestCase
             'is_active' => true,
         ]));
 
-        $this->bindTaxOwnerForScoping($owner);
+        $bindTaxOwnerForScoping($owner);
 
         TaxZone::create([
             'name' => 'Owned Zone',
@@ -368,13 +341,12 @@ class TaxZoneTest extends TaxTestCase
 
         $this->assertCount(1, $zones);
         $this->assertEquals('Global Zone', $zones->first()->name);
-    }
+    });
 
-    public function test_for_owner_scope_with_null_owner_exclude_global(): void
-    {
+    it('for owner scope with null owner exclude global', function () use ($bindTaxOwnerForScoping): void {
         config(['tax.features.owner.enabled' => true]);
 
-        $this->bindTaxOwnerForScoping(null);
+        $bindTaxOwnerForScoping(null);
 
         OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
@@ -389,10 +361,9 @@ class TaxZoneTest extends TaxTestCase
 
         $this->assertCount(1, $zones);
         $this->assertEquals('Global Zone', $zones->first()->name);
-    }
+    });
 
-    public function test_for_owner_scope_with_owner_include_global(): void
-    {
+    it('for owner scope with owner include global', function () use ($bindTaxOwnerForScoping): void {
         config(['tax.features.owner.enabled' => true]);
         config(['tax.features.owner.include_global' => true]);
 
@@ -413,7 +384,7 @@ class TaxZoneTest extends TaxTestCase
             }
         };
 
-        $this->bindTaxOwnerForScoping(null);
+        $bindTaxOwnerForScoping(null);
 
         OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
@@ -423,7 +394,7 @@ class TaxZoneTest extends TaxTestCase
             'is_active' => true,
         ]));
 
-        $this->bindTaxOwnerForScoping($owner);
+        $bindTaxOwnerForScoping($owner);
 
         TaxZone::create([
             'name' => 'Owned Zone',
@@ -455,10 +426,9 @@ class TaxZoneTest extends TaxTestCase
         $names = $zones->pluck('name')->toArray();
         $this->assertContains('Global Zone', $names);
         $this->assertContains('Owned Zone', $names);
-    }
+    });
 
-    public function test_for_owner_scope_with_owner_exclude_global(): void
-    {
+    it('for owner scope with owner exclude global', function () use ($bindTaxOwnerForScoping): void {
         config(['tax.features.owner.enabled' => true]);
 
         $owner = new class extends Model
@@ -478,7 +448,7 @@ class TaxZoneTest extends TaxTestCase
             }
         };
 
-        $this->bindTaxOwnerForScoping(null);
+        $bindTaxOwnerForScoping(null);
 
         OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
@@ -488,7 +458,7 @@ class TaxZoneTest extends TaxTestCase
             'is_active' => true,
         ]));
 
-        $this->bindTaxOwnerForScoping($owner);
+        $bindTaxOwnerForScoping($owner);
 
         TaxZone::create([
             'name' => 'Owned Zone',
@@ -500,20 +470,18 @@ class TaxZoneTest extends TaxTestCase
 
         $this->assertCount(1, $zones);
         $this->assertEquals('Owned Zone', $zones->first()->name);
-    }
+    });
 
-    public function test_attributes_defaults(): void
-    {
+    it('attributes defaults', function (): void {
         $zone = new TaxZone(['name' => 'Test', 'code' => 'TEST']);
 
         $this->assertSame(ZoneType::Country, $zone->type);
         $this->assertEquals(0, $zone->priority);
         $this->assertFalse($zone->is_default);
         $this->assertTrue($zone->is_active);
-    }
+    });
 
-    public function test_matches_address_empty_countries(): void
-    {
+    it('matches address empty countries', function (): void {
         $zone = new TaxZone([
             'name' => 'No Country Zone',
             'code' => 'NONE',
@@ -522,10 +490,9 @@ class TaxZoneTest extends TaxTestCase
         ]);
 
         $this->assertTrue($zone->matchesAddress('ANY'));
-    }
+    });
 
-    public function test_matches_address_with_empty_states(): void
-    {
+    it('matches address with empty states', function (): void {
         $zone = new TaxZone([
             'name' => 'Empty States Zone',
             'code' => 'EMPTY',
@@ -535,10 +502,9 @@ class TaxZoneTest extends TaxTestCase
         ]);
 
         $this->assertTrue($zone->matchesAddress('US', 'CA'));
-    }
+    });
 
-    public function test_matches_address_with_empty_postcodes(): void
-    {
+    it('matches address with empty postcodes', function (): void {
         $zone = new TaxZone([
             'name' => 'Empty Postcodes Zone',
             'code' => 'EMPTY',
@@ -548,5 +514,5 @@ class TaxZoneTest extends TaxTestCase
         ]);
 
         $this->assertTrue($zone->matchesAddress('US', null, '12345'));
-    }
-}
+    });
+});

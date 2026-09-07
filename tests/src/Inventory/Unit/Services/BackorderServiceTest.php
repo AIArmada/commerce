@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Models\InventoryBackorder;
 use AIArmada\Inventory\Models\InventoryLevel;
@@ -13,25 +12,14 @@ use AIArmada\Inventory\States\Fulfilled;
 use AIArmada\Inventory\States\PartiallyFulfilled;
 use AIArmada\Inventory\States\Pending;
 
-class BackorderServiceTest extends InventoryTestCase
-{
-    protected BackorderService $service;
-
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('BackorderService', function (): void {
+    beforeEach(function (): void {
         $this->service = new BackorderService;
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create(['is_active' => true]);
-    }
+    });
 
-    public function test_create_backorder(): void
-    {
+    it('create backorder', function (): void {
         $backorder = $this->service->create(
             $this->item,
             10,
@@ -48,10 +36,9 @@ class BackorderServiceTest extends InventoryTestCase
         expect($backorder->quantity_requested)->toBe(10);
         expect($backorder->status)->toBeInstanceOf(Pending::class);
         expect($backorder->priority)->toBe(BackorderPriority::High);
-    }
+    });
 
-    public function test_fulfill_backorder(): void
-    {
+    it('fulfill backorder', function (): void {
         $backorder = InventoryBackorder::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -65,10 +52,9 @@ class BackorderServiceTest extends InventoryTestCase
 
         expect($result)->toBeTrue();
         expect($backorder->fresh()->quantity_fulfilled)->toBe(5);
-    }
+    });
 
-    public function test_cancel_backorder(): void
-    {
+    it('cancel backorder', function (): void {
         $backorder = InventoryBackorder::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -82,10 +68,9 @@ class BackorderServiceTest extends InventoryTestCase
 
         expect($result)->toBeTrue();
         expect($backorder->fresh()->quantity_cancelled)->toBe(5);
-    }
+    });
 
-    public function test_get_open_backorders(): void
-    {
+    it('get open backorders', function (): void {
         InventoryBackorder::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -105,10 +90,9 @@ class BackorderServiceTest extends InventoryTestCase
         $openBackorders = $this->service->getOpenBackorders($this->item);
 
         expect($openBackorders)->toHaveCount(2);
-    }
+    });
 
-    public function test_get_all_open_backorders(): void
-    {
+    it('get all open backorders', function (): void {
         InventoryBackorder::factory()->count(3)->create([
             'status' => Pending::class,
         ]);
@@ -119,10 +103,9 @@ class BackorderServiceTest extends InventoryTestCase
         $allOpen = $this->service->getAllOpenBackorders();
 
         expect($allOpen)->toHaveCount(3);
-    }
+    });
 
-    public function test_get_overdue_backorders(): void
-    {
+    it('get overdue backorders', function (): void {
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
             'promised_at' => now()->subDay(),
@@ -135,10 +118,9 @@ class BackorderServiceTest extends InventoryTestCase
         $overdue = $this->service->getOverdueBackorders();
 
         expect($overdue)->toHaveCount(1);
-    }
+    });
 
-    public function test_get_backorders_due_within(): void
-    {
+    it('get backorders due within', function (): void {
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
             'promised_at' => now()->addDays(3),
@@ -151,10 +133,9 @@ class BackorderServiceTest extends InventoryTestCase
         $dueWithin7Days = $this->service->getBackordersDueWithin(7);
 
         expect($dueWithin7Days)->toHaveCount(1);
-    }
+    });
 
-    public function test_auto_fulfill(): void
-    {
+    it('auto fulfill', function (): void {
         InventoryBackorder::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -178,10 +159,9 @@ class BackorderServiceTest extends InventoryTestCase
 
         expect($result['fulfilled'])->toBe(8);
         expect($result['backorders_updated'])->toBeGreaterThanOrEqual(1);
-    }
+    });
 
-    public function test_escalate_overdue(): void
-    {
+    it('escalate overdue', function (): void {
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
@@ -196,10 +176,9 @@ class BackorderServiceTest extends InventoryTestCase
         $escalated = $this->service->escalateOverdue();
 
         expect($escalated)->toBe(1);
-    }
+    });
 
-    public function test_expire_old(): void
-    {
+    it('expire old', function (): void {
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
             'requested_at' => now()->subDays(100),
@@ -212,10 +191,9 @@ class BackorderServiceTest extends InventoryTestCase
         $expired = $this->service->expireOld(90);
 
         expect($expired)->toBe(1);
-    }
+    });
 
-    public function test_get_statistics(): void
-    {
+    it('get statistics', function (): void {
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
             'priority' => BackorderPriority::High,
@@ -233,10 +211,9 @@ class BackorderServiceTest extends InventoryTestCase
 
         expect($stats)->toHaveKeys(['total_open', 'total_quantity', 'overdue', 'by_priority']);
         expect($stats['total_open'])->toBe(2);
-    }
+    });
 
-    public function test_get_fulfillable_backorders(): void
-    {
+    it('get fulfillable backorders', function (): void {
         InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -257,10 +234,9 @@ class BackorderServiceTest extends InventoryTestCase
         $fulfillable = $this->service->getFulfillableBackorders();
 
         expect($fulfillable)->toHaveCount(1);
-    }
+    });
 
-    public function test_update_promised_date(): void
-    {
+    it('update promised date', function (): void {
         $backorder = InventoryBackorder::factory()->create([
             'promised_at' => now()->addDays(7),
         ]);
@@ -270,10 +246,9 @@ class BackorderServiceTest extends InventoryTestCase
 
         expect($result)->toBeTrue();
         expect($backorder->fresh()->promised_at->toDateString())->toBe($newDate->toDateString());
-    }
+    });
 
-    public function test_get_total_backordered_quantity(): void
-    {
+    it('get total backordered quantity', function (): void {
         InventoryBackorder::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -295,5 +270,5 @@ class BackorderServiceTest extends InventoryTestCase
 
         // (10-2-0) + (20-5-3) = 8 + 12 = 20
         expect($total)->toBe(20);
-    }
-}
+    });
+});

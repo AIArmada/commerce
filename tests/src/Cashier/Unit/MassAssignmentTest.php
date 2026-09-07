@@ -2,16 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\Cashier\Unit;
-
 use AIArmada\Cashier\Models\UnifiedInvoiceRecord;
 use AIArmada\Cashier\Models\UnifiedSubscriptionRecord;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
-final class MassAssignmentTest extends CashierTestCase
-{
-    public function test_unified_subscription_record_protects_status_amount_and_gateway_ids(): void
-    {
+uses(CashierTestCase::class);
+
+describe('MassAssignment', function (): void {
+    it('unified subscription record protects status amount and gateway ids', function (): void {
         $subscription = new UnifiedSubscriptionRecord([
             'user_id' => 'user-123',
             'type' => 'default',
@@ -31,10 +29,9 @@ final class MassAssignmentTest extends CashierTestCase
         $this->assertNull($subscription->chip_id);
         $this->assertNull($subscription->status);
         $this->assertNull($subscription->amount);
-    }
+    });
 
-    public function test_unified_invoice_record_protects_status_amount_and_gateway_ids(): void
-    {
+    it('unified invoice record protects status amount and gateway ids', function (): void {
         $invoice = new UnifiedInvoiceRecord([
             'user_id' => 'user-123',
             'number' => 'INV-1',
@@ -52,5 +49,5 @@ final class MassAssignmentTest extends CashierTestCase
         $this->assertNull($invoice->chip_id);
         $this->assertNull($invoice->status);
         $this->assertNull($invoice->amount);
-    }
-}
+    });
+});

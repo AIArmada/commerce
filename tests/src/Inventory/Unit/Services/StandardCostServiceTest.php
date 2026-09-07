@@ -3,30 +3,18 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryStandardCost;
 use AIArmada\Inventory\Services\Costing\StandardCostService;
 
-class StandardCostServiceTest extends InventoryTestCase
-{
-    protected StandardCostService $service;
-
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('StandardCostService', function (): void {
+    beforeEach(function (): void {
         $this->service = new StandardCostService;
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create(['is_active' => true]);
-    }
+    });
 
-    public function test_set_standard_cost(): void
-    {
+    it('set standard cost', function (): void {
         $cost = $this->service->setStandardCost(
             $this->item,
             1000,
@@ -39,55 +27,49 @@ class StandardCostServiceTest extends InventoryTestCase
         expect($cost)->toBeInstanceOf(InventoryStandardCost::class);
         expect($cost->standard_cost_minor)->toBe(1000);
         expect($cost->approved_by)->toBe('admin');
-    }
+    });
 
-    public function test_set_standard_cost_expires_current(): void
-    {
+    it('set standard cost expires current', function (): void {
         $oldCost = $this->service->setStandardCost($this->item, 500, now()->subMonth());
         $newCost = $this->service->setStandardCost($this->item, 600, now());
 
         expect($oldCost->fresh()->effective_to)->not->toBeNull();
         expect($newCost->effective_to)->toBeNull();
-    }
+    });
 
-    public function test_get_current_standard_cost(): void
-    {
+    it('get current standard cost', function (): void {
         $this->service->setStandardCost($this->item, 1000, now());
 
         $current = $this->service->getCurrentStandardCost($this->item);
 
         expect($current)->not->toBeNull();
         expect($current->standard_cost_minor)->toBe(1000);
-    }
+    });
 
-    public function test_get_standard_cost_at(): void
-    {
+    it('get standard cost at', function (): void {
         $this->service->setStandardCost($this->item, 500, now()->subMonths(2), now()->subMonth());
         $this->service->setStandardCost($this->item, 600, now()->subMonth());
 
         $pastCost = $this->service->getStandardCostAt($this->item, now()->subMonths(1)->subDays(15));
 
         expect($pastCost->standard_cost_minor)->toBe(500);
-    }
+    });
 
-    public function test_get_current_cost_value(): void
-    {
+    it('get current cost value', function (): void {
         $this->service->setStandardCost($this->item, 1000, now());
 
         $value = $this->service->getCurrentCostValue($this->item);
 
         expect($value)->toBe(1000);
-    }
+    });
 
-    public function test_get_current_cost_value_returns_null_when_none(): void
-    {
+    it('get current cost value returns null when none', function (): void {
         $value = $this->service->getCurrentCostValue($this->item);
 
         expect($value)->toBeNull();
-    }
+    });
 
-    public function test_calculate_valuation(): void
-    {
+    it('calculate valuation', function (): void {
         $this->service->setStandardCost($this->item, 500, now());
 
         $valuation = $this->service->calculateValuation($this->item, 100);
@@ -95,10 +77,9 @@ class StandardCostServiceTest extends InventoryTestCase
         expect($valuation['quantity'])->toBe(100);
         expect($valuation['value'])->toBe(50000);
         expect($valuation['unit_cost'])->toBe(500);
-    }
+    });
 
-    public function test_calculate_variance_favorable(): void
-    {
+    it('calculate variance favorable', function (): void {
         $this->service->setStandardCost($this->item, 1000, now());
 
         // Actual cost is lower than standard = favorable
@@ -106,10 +87,9 @@ class StandardCostServiceTest extends InventoryTestCase
 
         expect($variance['variance'])->toBe(-200);
         expect($variance['favorable'])->toBeTrue();
-    }
+    });
 
-    public function test_calculate_variance_unfavorable(): void
-    {
+    it('calculate variance unfavorable', function (): void {
         $this->service->setStandardCost($this->item, 1000, now());
 
         // Actual cost is higher than standard = unfavorable
@@ -117,10 +97,9 @@ class StandardCostServiceTest extends InventoryTestCase
 
         expect($variance['variance'])->toBe(200);
         expect($variance['favorable'])->toBeFalse();
-    }
+    });
 
-    public function test_get_cost_history(): void
-    {
+    it('get cost history', function (): void {
         $this->service->setStandardCost($this->item, 500, now()->subMonths(2), now()->subMonth());
         $this->service->setStandardCost($this->item, 600, now()->subMonth(), now());
         $this->service->setStandardCost($this->item, 700, now());
@@ -128,10 +107,9 @@ class StandardCostServiceTest extends InventoryTestCase
         $history = $this->service->getCostHistory($this->item);
 
         expect($history)->toHaveCount(3);
-    }
+    });
 
-    public function test_get_future_costs(): void
-    {
+    it('get future costs', function (): void {
         $this->service->setStandardCost($this->item, 500, now());
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -144,10 +122,9 @@ class StandardCostServiceTest extends InventoryTestCase
 
         expect($future)->toHaveCount(1);
         expect($future->first()->standard_cost_minor)->toBe(600);
-    }
+    });
 
-    public function test_expire_current_cost(): void
-    {
+    it('expire current cost', function (): void {
         $this->service->setStandardCost($this->item, 500, now());
 
         $result = $this->service->expireCurrentCost($this->item);
@@ -156,26 +133,23 @@ class StandardCostServiceTest extends InventoryTestCase
 
         $current = $this->service->getCurrentStandardCost($this->item);
         expect($current)->toBeNull();
-    }
+    });
 
-    public function test_expire_current_cost_returns_false_when_none(): void
-    {
+    it('expire current cost returns false when none', function (): void {
         $result = $this->service->expireCurrentCost($this->item);
 
         expect($result)->toBeFalse();
-    }
+    });
 
-    public function test_has_standard_cost(): void
-    {
+    it('has standard cost', function (): void {
         expect($this->service->hasStandardCost($this->item))->toBeFalse();
 
         $this->service->setStandardCost($this->item, 500, now());
 
         expect($this->service->hasStandardCost($this->item))->toBeTrue();
-    }
+    });
 
-    public function test_schedule_cost_change(): void
-    {
+    it('schedule cost change', function (): void {
         $this->service->setStandardCost($this->item, 500, now());
 
         $scheduled = $this->service->scheduleCostChange(
@@ -188,17 +162,13 @@ class StandardCostServiceTest extends InventoryTestCase
 
         expect($scheduled)->toBeInstanceOf(InventoryStandardCost::class);
         expect($scheduled->standard_cost_minor)->toBe(600);
-    }
+    });
 
-    public function test_schedule_cost_change_throws_for_past_date(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-
+    it('schedule cost change throws for past date', function (): void {
         $this->service->scheduleCostChange($this->item, 600, now()->subDay());
-    }
+    })->throws(InvalidArgumentException::class);
 
-    public function test_cancel_scheduled_cost(): void
-    {
+    it('cancel scheduled cost', function (): void {
         $scheduled = InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -209,10 +179,9 @@ class StandardCostServiceTest extends InventoryTestCase
 
         expect($result)->toBeTrue();
         expect(InventoryStandardCost::find($scheduled->id))->toBeNull();
-    }
+    });
 
-    public function test_cancel_scheduled_cost_throws_for_active_cost(): void
-    {
+    it('cancel scheduled cost throws for active cost', function (): void {
         $activeCost = InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -220,8 +189,6 @@ class StandardCostServiceTest extends InventoryTestCase
             'effective_to' => null,
         ]);
 
-        $this->expectException(InvalidArgumentException::class);
-
         $this->service->cancelScheduledCost($activeCost);
-    }
-}
+    })->throws(InvalidArgumentException::class);
+});

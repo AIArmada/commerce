@@ -2,103 +2,91 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Billing\CheckoutBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
-class CheckoutBuilderTest extends CashierChipTestCase
-{
-    public function test_can_create_guest_builder(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('CheckoutBuilder', function (): void {
+    it('can create guest builder', function (): void {
         $builder = new CheckoutBuilder;
 
         $this->assertInstanceOf(CheckoutBuilder::class, $builder);
-    }
+    });
 
-    public function test_can_create_builder_with_owner(): void
-    {
+    it('can create builder with owner', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new CheckoutBuilder($user);
 
         $this->assertInstanceOf(CheckoutBuilder::class, $builder);
-    }
+    });
 
-    public function test_recurring(): void
-    {
+    it('recurring', function (): void {
         $builder = new CheckoutBuilder;
 
         $result = $builder->recurring();
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_recurring_with_false(): void
-    {
+    it('recurring with false', function (): void {
         $builder = new CheckoutBuilder;
         $builder->recurring();
 
         $result = $builder->recurring(false);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_success_url(): void
-    {
+    it('success url', function (): void {
         $builder = new CheckoutBuilder;
 
         $result = $builder->successUrl('https://example.com/success');
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_cancel_url(): void
-    {
+    it('cancel url', function (): void {
         $builder = new CheckoutBuilder;
 
         $result = $builder->cancelUrl('https://example.com/cancel');
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_webhook_url(): void
-    {
+    it('webhook url', function (): void {
         $builder = new CheckoutBuilder;
 
         $result = $builder->webhookUrl('https://example.com/webhook');
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_with_metadata(): void
-    {
+    it('with metadata', function (): void {
         $builder = new CheckoutBuilder;
 
         $result = $builder->withMetadata(['key' => 'value']);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_add_product(): void
-    {
+    it('add product', function (): void {
         $builder = new CheckoutBuilder;
 
         $result = $builder->addProduct('Test Product', 1000);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_add_product_with_quantity(): void
-    {
+    it('add product with quantity', function (): void {
         $builder = new CheckoutBuilder;
 
         $result = $builder->addProduct('Test Product', 1000, 5);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_products(): void
-    {
+    it('products', function (): void {
         $builder = new CheckoutBuilder;
 
         $result = $builder->products([
@@ -106,19 +94,17 @@ class CheckoutBuilderTest extends CashierChipTestCase
         ]);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_currency(): void
-    {
+    it('currency', function (): void {
         $builder = new CheckoutBuilder;
 
         $result = $builder->currency('MYR');
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_fluent_chaining(): void
-    {
+    it('fluent chaining', function (): void {
         $builder = new CheckoutBuilder;
 
         $result = $builder
@@ -131,10 +117,9 @@ class CheckoutBuilderTest extends CashierChipTestCase
             ->currency('MYR');
 
         $this->assertInstanceOf(CheckoutBuilder::class, $result);
-    }
+    });
 
-    public function test_create_keeps_prices_in_cents(): void
-    {
+    it('create keeps prices in cents', function (): void {
         $checkout = (new CheckoutBuilder)
             ->addProduct('Test Product', 1000, 2)
             ->create(2000);
@@ -144,5 +129,5 @@ class CheckoutBuilderTest extends CashierChipTestCase
         $this->assertSame(1000, $payload['purchase']['products'][0]['price']);
         $this->assertSame('2', $payload['purchase']['products'][0]['quantity']);
         $this->assertSame(2000, $payload['purchase']['total']);
-    }
-}
+    });
+});

@@ -3,29 +3,19 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLocation;
 use Carbon\CarbonImmutable;
 
-class InventoryCostLayerTest extends InventoryTestCase
-{
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('InventoryCostLayer', function (): void {
+    beforeEach(function (): void {
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create();
-    }
+    });
 
-    public function test_can_create_cost_layer(): void
-    {
+    it('can create cost layer', function (): void {
         $layer = InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -43,10 +33,9 @@ class InventoryCostLayerTest extends InventoryTestCase
         expect($layer->quantity)->toBe(100);
         expect($layer->remaining_quantity)->toBe(100);
         expect($layer->unit_cost_minor)->toBe(1500);
-    }
+    });
 
-    public function test_inventoryable_relationship(): void
-    {
+    it('inventoryable relationship', function (): void {
         $layer = InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -61,10 +50,9 @@ class InventoryCostLayerTest extends InventoryTestCase
 
         expect($layer->inventoryable)->not->toBeNull();
         expect($layer->inventoryable->id)->toBe($this->item->id);
-    }
+    });
 
-    public function test_location_relationship(): void
-    {
+    it('location relationship', function (): void {
         $layer = InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -80,10 +68,9 @@ class InventoryCostLayerTest extends InventoryTestCase
 
         expect($layer->location)->not->toBeNull();
         expect($layer->location->id)->toBe($this->location->id);
-    }
+    });
 
-    public function test_batch_relationship(): void
-    {
+    it('batch relationship', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -104,10 +91,9 @@ class InventoryCostLayerTest extends InventoryTestCase
 
         expect($layer->batch)->not->toBeNull();
         expect($layer->batch->id)->toBe($batch->id);
-    }
+    });
 
-    public function test_scope_with_remaining_quantity(): void
-    {
+    it('scope with remaining quantity', function (): void {
         InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -134,10 +120,9 @@ class InventoryCostLayerTest extends InventoryTestCase
         $layers = InventoryCostLayer::withRemainingQuantity()->get();
 
         expect($layers)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_for_model(): void
-    {
+    it('scope for model', function (): void {
         $item2 = InventoryItem::create(['name' => 'Item 2']);
 
         InventoryCostLayer::create([
@@ -166,10 +151,9 @@ class InventoryCostLayerTest extends InventoryTestCase
         $layers = InventoryCostLayer::forModel($this->item)->get();
 
         expect($layers)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_fifo_order(): void
-    {
+    it('scope fifo order', function (): void {
         InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -196,10 +180,9 @@ class InventoryCostLayerTest extends InventoryTestCase
         $layers = InventoryCostLayer::fifoOrder()->get();
 
         expect($layers->first()->quantity)->toBe(50);
-    }
+    });
 
-    public function test_scope_lifo_order(): void
-    {
+    it('scope lifo order', function (): void {
         InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -226,10 +209,9 @@ class InventoryCostLayerTest extends InventoryTestCase
         $layers = InventoryCostLayer::lifoOrder()->get();
 
         expect($layers->first()->quantity)->toBe(100);
-    }
+    });
 
-    public function test_scope_using_method(): void
-    {
+    it('scope using method', function (): void {
         InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -258,10 +240,9 @@ class InventoryCostLayerTest extends InventoryTestCase
 
         expect($fifoLayers)->toHaveCount(1);
         expect($lifoLayers)->toHaveCount(1);
-    }
+    });
 
-    public function test_has_remaining_quantity(): void
-    {
+    it('has remaining quantity', function (): void {
         $withRemaining = InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -287,10 +268,9 @@ class InventoryCostLayerTest extends InventoryTestCase
 
         expect($withRemaining->hasRemainingQuantity())->toBeTrue();
         expect($withoutRemaining->hasRemainingQuantity())->toBeFalse();
-    }
+    });
 
-    public function test_is_fully_consumed(): void
-    {
+    it('is fully consumed', function (): void {
         $consumed = InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -316,10 +296,9 @@ class InventoryCostLayerTest extends InventoryTestCase
 
         expect($consumed->isFullyConsumed())->toBeTrue();
         expect($partial->isFullyConsumed())->toBeFalse();
-    }
+    });
 
-    public function test_consumed_quantity(): void
-    {
+    it('consumed quantity', function (): void {
         $layer = InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -333,10 +312,9 @@ class InventoryCostLayerTest extends InventoryTestCase
         ]);
 
         expect($layer->consumedQuantity())->toBe(70);
-    }
+    });
 
-    public function test_remaining_value(): void
-    {
+    it('remaining value', function (): void {
         $layer = InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -350,10 +328,9 @@ class InventoryCostLayerTest extends InventoryTestCase
         ]);
 
         expect($layer->remainingValue())->toBe(30000);
-    }
+    });
 
-    public function test_consumed_value(): void
-    {
+    it('consumed value', function (): void {
         $layer = InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -367,10 +344,9 @@ class InventoryCostLayerTest extends InventoryTestCase
         ]);
 
         expect($layer->consumedValue())->toBe(70000);
-    }
+    });
 
-    public function test_consume_reduces_remaining_quantity(): void
-    {
+    it('consume reduces remaining quantity', function (): void {
         $layer = InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -387,10 +363,9 @@ class InventoryCostLayerTest extends InventoryTestCase
 
         expect($consumed)->toBe(30);
         expect($layer->fresh()->remaining_quantity)->toBe(70);
-    }
+    });
 
-    public function test_consume_returns_actual_consumed_when_less_available(): void
-    {
+    it('consume returns actual consumed when less available', function (): void {
         $layer = InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -407,10 +382,9 @@ class InventoryCostLayerTest extends InventoryTestCase
 
         expect($consumed)->toBe(20);
         expect($layer->fresh()->remaining_quantity)->toBe(0);
-    }
+    });
 
-    public function test_casts_are_correct(): void
-    {
+    it('casts are correct', function (): void {
         $layer = InventoryCostLayer::create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -427,5 +401,5 @@ class InventoryCostLayerTest extends InventoryTestCase
         expect($layer->remaining_quantity)->toBeInt();
         expect($layer->costing_method)->toBe(CostingMethod::Fifo);
         expect($layer->layer_date)->toBeInstanceOf(CarbonImmutable::class);
-    }
-}
+    });
+});

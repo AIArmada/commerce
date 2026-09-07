@@ -2,44 +2,39 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Illuminate\Support\Collection;
 
-class InvoiceTest extends CashierChipTestCase
-{
-    public function test_can_get_id(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('Invoice', function (): void {
+    it('can get id', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertEquals('pur_123', $invoice->id());
-    }
+    });
 
-    public function test_can_get_number(): void
-    {
+    it('can get number', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid', 'reference' => 'INV-001']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertEquals('INV-001', $invoice->number());
-    }
+    });
 
-    public function test_number_falls_back_to_id(): void
-    {
+    it('number falls back to id', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertEquals('pur_123', $invoice->number());
-    }
+    });
 
-    public function test_currency(): void
-    {
+    it('currency', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
@@ -49,10 +44,9 @@ class InvoiceTest extends CashierChipTestCase
         $invoice = new Invoice($user, $purchase);
 
         $this->assertEquals('MYR', $invoice->currency());
-    }
+    });
 
-    public function test_raw_total(): void
-    {
+    it('raw total', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
@@ -61,64 +55,57 @@ class InvoiceTest extends CashierChipTestCase
         $invoice = new Invoice($user, $purchase);
 
         $this->assertIsInt($invoice->rawTotal());
-    }
+    });
 
-    public function test_total(): void
-    {
+    it('total', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertIsString($invoice->total());
-    }
+    });
 
-    public function test_subtotal(): void
-    {
+    it('subtotal', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertIsString($invoice->subtotal());
-    }
+    });
 
-    public function test_has_tax(): void
-    {
+    it('has tax', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertFalse($invoice->hasTax());
-    }
+    });
 
-    public function test_tax(): void
-    {
+    it('tax', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertIsString($invoice->tax());
-    }
+    });
 
-    public function test_has_discount(): void
-    {
+    it('has discount', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertFalse($invoice->hasDiscount());
-    }
+    });
 
-    public function test_discount(): void
-    {
+    it('discount', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertIsString($invoice->discount());
-    }
+    });
 
-    public function test_invoice_items(): void
-    {
+    it('invoice items', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
@@ -134,166 +121,148 @@ class InvoiceTest extends CashierChipTestCase
         $items = $invoice->invoiceItems();
 
         $this->assertInstanceOf(Collection::class, $items);
-    }
+    });
 
-    public function test_to_array(): void
-    {
+    it('to array', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertIsArray($invoice->toArray());
-    }
+    });
 
-    public function test_to_json(): void
-    {
+    it('to json', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertJson($invoice->toJson());
-    }
+    });
 
-    public function test_json_serialize(): void
-    {
+    it('json serialize', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertIsArray($invoice->jsonSerialize());
-    }
+    });
 
-    public function test_as_chip_purchase(): void
-    {
+    it('as chip purchase', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertSame($purchase, $invoice->asChipPurchase());
-    }
+    });
 
-    public function test_status(): void
-    {
+    it('status', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertEquals('paid', $invoice->status());
-    }
+    });
 
-    public function test_is_paid_when_paid(): void
-    {
+    it('is paid when paid', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertTrue($invoice->isPaid());
         $this->assertTrue($invoice->paid());
-    }
+    });
 
-    public function test_is_paid_when_not_paid(): void
-    {
+    it('is paid when not paid', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertFalse($invoice->isPaid());
-    }
+    });
 
-    public function test_is_open(): void
-    {
+    it('is open', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertTrue($invoice->isOpen());
         $this->assertTrue($invoice->open());
-    }
+    });
 
-    public function test_is_not_open_when_paid(): void
-    {
+    it('is not open when paid', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertFalse($invoice->isOpen());
-    }
+    });
 
-    public function test_is_draft(): void
-    {
+    it('is draft', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'created']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertTrue($invoice->isDraft());
-    }
+    });
 
-    public function test_is_voided(): void
-    {
+    it('is voided', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'cancelled']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertTrue($invoice->voided());
         $this->assertTrue($invoice->isVoid());
-    }
+    });
 
-    public function test_is_uncollectible(): void
-    {
+    it('is uncollectible', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'error']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertTrue($invoice->isUncollectible());
-    }
+    });
 
-    public function test_is_uncollectible_when_expired(): void
-    {
+    it('is uncollectible when expired', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'expired']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertTrue($invoice->isUncollectible());
-    }
+    });
 
-    public function test_amount_due(): void
-    {
+    it('amount due', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertIsString($invoice->amountDue());
-    }
+    });
 
-    public function test_raw_amount_due_zero_when_paid(): void
-    {
+    it('raw amount due zero when paid', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertEquals(0, $invoice->rawAmountDue());
-    }
+    });
 
-    public function test_amount_paid(): void
-    {
+    it('amount paid', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertIsString($invoice->amountPaid());
-    }
+    });
 
-    public function test_raw_amount_paid_zero_when_not_paid(): void
-    {
+    it('raw amount paid zero when not paid', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertEquals(0, $invoice->rawAmountPaid());
-    }
+    });
 
-    public function test_checkout_url(): void
-    {
+    it('checkout url', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
@@ -303,23 +272,21 @@ class InvoiceTest extends CashierChipTestCase
         $invoice = new Invoice($user, $purchase);
 
         $this->assertEquals('https://example.com/checkout', $invoice->checkoutUrl());
-    }
+    });
 
-    public function test_customer_name(): void
-    {
+    it('customer name', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123', 'name' => 'John Doe']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertEquals('John Doe', $invoice->customerName());
-    }
+    });
 
-    public function test_customer_email(): void
-    {
+    it('customer email', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123', 'email' => 'john@example.com']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoice = new Invoice($user, $purchase);
 
         $this->assertEquals('john@example.com', $invoice->customerEmail());
-    }
-}
+    });
+});

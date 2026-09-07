@@ -3,24 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use Carbon\CarbonImmutable;
 
-class InventoryAllocationTest extends InventoryTestCase
-{
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected InventoryLevel $level;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('InventoryAllocation', function (): void {
+    beforeEach(function (): void {
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create();
         $this->level = InventoryLevel::factory()->create([
@@ -30,10 +19,9 @@ class InventoryAllocationTest extends InventoryTestCase
             'quantity_on_hand' => 100,
             'quantity_reserved' => 0,
         ]);
-    }
+    });
 
-    public function test_can_create_allocation(): void
-    {
+    it('can create allocation', function (): void {
         $allocation = InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -47,10 +35,9 @@ class InventoryAllocationTest extends InventoryTestCase
         expect($allocation)->toBeInstanceOf(InventoryAllocation::class);
         expect($allocation->cart_id)->toBe('cart-123');
         expect($allocation->quantity)->toBe(10);
-    }
+    });
 
-    public function test_location_relationship(): void
-    {
+    it('location relationship', function (): void {
         $allocation = InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -62,10 +49,9 @@ class InventoryAllocationTest extends InventoryTestCase
 
         expect($allocation->location)->not->toBeNull();
         expect($allocation->location->id)->toBe($this->location->id);
-    }
+    });
 
-    public function test_level_relationship(): void
-    {
+    it('level relationship', function (): void {
         $allocation = InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -77,10 +63,9 @@ class InventoryAllocationTest extends InventoryTestCase
 
         expect($allocation->level)->not->toBeNull();
         expect($allocation->level->id)->toBe($this->level->id);
-    }
+    });
 
-    public function test_inventoryable_relationship(): void
-    {
+    it('inventoryable relationship', function (): void {
         $allocation = InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -92,10 +77,9 @@ class InventoryAllocationTest extends InventoryTestCase
 
         expect($allocation->inventoryable)->not->toBeNull();
         expect($allocation->inventoryable->id)->toBe($this->item->id);
-    }
+    });
 
-    public function test_scope_for_cart(): void
-    {
+    it('scope for cart', function (): void {
         InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -117,10 +101,9 @@ class InventoryAllocationTest extends InventoryTestCase
 
         expect($allocations)->toHaveCount(1);
         expect($allocations->first()->cart_id)->toBe('cart-A');
-    }
+    });
 
-    public function test_scope_expired(): void
-    {
+    it('scope expired', function (): void {
         InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -142,10 +125,9 @@ class InventoryAllocationTest extends InventoryTestCase
 
         expect($expired)->toHaveCount(1);
         expect($expired->first()->cart_id)->toBe('cart-1');
-    }
+    });
 
-    public function test_scope_active(): void
-    {
+    it('scope active', function (): void {
         InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -167,10 +149,9 @@ class InventoryAllocationTest extends InventoryTestCase
 
         expect($active)->toHaveCount(1);
         expect($active->first()->cart_id)->toBe('cart-1');
-    }
+    });
 
-    public function test_scope_at_location(): void
-    {
+    it('scope at location', function (): void {
         $location2 = InventoryLocation::factory()->create();
         $level2 = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -199,10 +180,9 @@ class InventoryAllocationTest extends InventoryTestCase
 
         expect($atLocation)->toHaveCount(1);
         expect($atLocation->first()->cart_id)->toBe('cart-1');
-    }
+    });
 
-    public function test_is_expired_returns_true_when_expired(): void
-    {
+    it('is expired returns true when expired', function (): void {
         $allocation = InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -213,10 +193,9 @@ class InventoryAllocationTest extends InventoryTestCase
         ]);
 
         expect($allocation->isExpired())->toBeTrue();
-    }
+    });
 
-    public function test_is_expired_returns_false_when_not_expired(): void
-    {
+    it('is expired returns false when not expired', function (): void {
         $allocation = InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -227,10 +206,9 @@ class InventoryAllocationTest extends InventoryTestCase
         ]);
 
         expect($allocation->isExpired())->toBeFalse();
-    }
+    });
 
-    public function test_is_active_returns_true_when_not_expired(): void
-    {
+    it('is active returns true when not expired', function (): void {
         $allocation = InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -241,10 +219,9 @@ class InventoryAllocationTest extends InventoryTestCase
         ]);
 
         expect($allocation->isActive())->toBeTrue();
-    }
+    });
 
-    public function test_is_active_returns_false_when_expired(): void
-    {
+    it('is active returns false when expired', function (): void {
         $allocation = InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -255,10 +232,9 @@ class InventoryAllocationTest extends InventoryTestCase
         ]);
 
         expect($allocation->isActive())->toBeFalse();
-    }
+    });
 
-    public function test_extend_updates_expires_at(): void
-    {
+    it('extend updates expires at', function (): void {
         $allocation = InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -272,10 +248,9 @@ class InventoryAllocationTest extends InventoryTestCase
 
         $allocation->refresh();
         expect($allocation->expires_at->isAfter(now()->addMinutes(110)))->toBeTrue();
-    }
+    });
 
-    public function test_casts_are_correct(): void
-    {
+    it('casts are correct', function (): void {
         $allocation = InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -288,5 +263,5 @@ class InventoryAllocationTest extends InventoryTestCase
 
         expect($allocation->quantity)->toBeInt();
         expect($allocation->expires_at)->toBeInstanceOf(CarbonImmutable::class);
-    }
-}
+    });
+});

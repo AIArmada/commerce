@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Actions\TransferInventory;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryTransferred;
@@ -12,20 +11,8 @@ use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use Illuminate\Support\Facades\Event;
 
-class TransferInventoryTest extends InventoryTestCase
-{
-    protected TransferInventory $action;
-
-    protected InventoryItem $item;
-
-    protected InventoryLocation $fromLocation;
-
-    protected InventoryLocation $toLocation;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('TransferInventory', function (): void {
+    beforeEach(function (): void {
         $this->action = app(TransferInventory::class);
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->fromLocation = InventoryLocation::factory()->create([
@@ -36,10 +23,9 @@ class TransferInventoryTest extends InventoryTestCase
             'name' => 'To Location',
             'code' => 'TO',
         ]);
-    }
+    });
 
-    public function test_transfers_inventory_between_locations(): void
-    {
+    it('transfers inventory between locations', function (): void {
         Event::fake();
 
         InventoryLevel::factory()->create([
@@ -65,10 +51,9 @@ class TransferInventoryTest extends InventoryTestCase
         expect($movement->to_location_id)->toBe($this->toLocation->id);
 
         Event::assertDispatched(InventoryTransferred::class);
-    }
+    });
 
-    public function test_updates_source_location_quantity(): void
-    {
+    it('updates source location quantity', function (): void {
         InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -81,10 +66,9 @@ class TransferInventoryTest extends InventoryTestCase
 
         $fromLevel = InventoryLevel::where('location_id', $this->fromLocation->id)->first();
         expect($fromLevel->quantity_on_hand)->toBe(70);
-    }
+    });
 
-    public function test_updates_destination_location_quantity(): void
-    {
+    it('updates destination location quantity', function (): void {
         InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -98,10 +82,9 @@ class TransferInventoryTest extends InventoryTestCase
         $toLevel = InventoryLevel::where('location_id', $this->toLocation->id)->first();
         expect($toLevel)->not->toBeNull();
         expect($toLevel->quantity_on_hand)->toBe(30);
-    }
+    });
 
-    public function test_creates_destination_level_if_not_exists(): void
-    {
+    it('creates destination level if not exists', function (): void {
         InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -114,10 +97,9 @@ class TransferInventoryTest extends InventoryTestCase
 
         $toLevel = InventoryLevel::where('location_id', $this->toLocation->id)->first();
         expect($toLevel)->not->toBeNull();
-    }
+    });
 
-    public function test_throws_exception_when_insufficient_inventory(): void
-    {
+    it('throws exception when insufficient inventory', function (): void {
         InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -126,20 +108,14 @@ class TransferInventoryTest extends InventoryTestCase
             'quantity_reserved' => 0,
         ]);
 
-        $this->expectException(InsufficientInventoryException::class);
-
         $this->action->handle($this->item, $this->fromLocation->id, $this->toLocation->id, 50);
-    }
+    })->throws(InsufficientInventoryException::class);
 
-    public function test_throws_exception_when_no_source_level(): void
-    {
-        $this->expectException(InsufficientInventoryException::class);
-
+    it('throws exception when no source level', function (): void {
         $this->action->handle($this->item, $this->fromLocation->id, $this->toLocation->id, 10);
-    }
+    })->throws(InsufficientInventoryException::class);
 
-    public function test_considers_reserved_quantity_at_source(): void
-    {
+    it('considers reserved quantity at source', function (): void {
         InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -149,13 +125,11 @@ class TransferInventoryTest extends InventoryTestCase
         ]);
 
         // Available is 50 - 40 = 10, so transferring 20 should fail
-        $this->expectException(InsufficientInventoryException::class);
 
         $this->action->handle($this->item, $this->fromLocation->id, $this->toLocation->id, 20);
-    }
+    })->throws(InsufficientInventoryException::class);
 
-    public function test_dispatches_inventory_transferred_event(): void
-    {
+    it('dispatches inventory transferred event', function (): void {
         Event::fake();
 
         InventoryLevel::factory()->create([
@@ -171,5 +145,5 @@ class TransferInventoryTest extends InventoryTestCase
         Event::assertDispatched(InventoryTransferred::class, function (InventoryTransferred $event): bool {
             return $event->inventoryable->is($this->item);
         });
-    }
-}
+    });
+});

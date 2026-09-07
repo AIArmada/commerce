@@ -16,6 +16,7 @@ use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Commerce\Tests\Jnt\JntTestCase;
 use AIArmada\Commerce\Tests\Persons\PersonsTestCase;
 use AIArmada\Commerce\Tests\Products\ProductsTestCase;
+use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -82,7 +83,6 @@ pest()->extend(TestCase::class)->in(
     'src/Pricing',
     'src/Promotions',
     'src/FilamentCustomers',
-    'src/Tax',
     'src/Shipping',
     'src/Support',
     'src/FilamentCommerceSupport',
@@ -100,6 +100,8 @@ pest()->extend(ProductsTestCase::class)->in('src/Products');
 pest()->extend(JntTestCase::class)->in('src/Jnt');
 
 pest()->extend(InventoryTestCase::class)->in('src/Inventory');
+
+pest()->extend(TaxTestCase::class)->in('src/Tax');
 
 pest()->extend(FilamentInventoryTestCase::class)->in('src/FilamentInventory');
 

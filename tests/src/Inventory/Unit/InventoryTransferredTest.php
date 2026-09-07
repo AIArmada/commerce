@@ -3,30 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Events\InventoryTransferred;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 
-class InventoryTransferredTest extends InventoryTestCase
-{
-    protected InventoryItem $item;
-
-    protected InventoryLocation $fromLocation;
-
-    protected InventoryLocation $toLocation;
-
-    protected InventoryLevel $fromLevel;
-
-    protected InventoryLevel $toLevel;
-
-    protected InventoryMovement $movement;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('InventoryTransferred', function (): void {
+    beforeEach(function (): void {
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->fromLocation = InventoryLocation::factory()->create([
             'name' => 'From Location',
@@ -56,15 +39,14 @@ class InventoryTransferredTest extends InventoryTestCase
             'type' => 'transfer',
             'quantity' => 3,
         ]);
-    }
+    });
 
-    public function test_event_stores_properties_correctly(): void
-    {
+    it('event stores properties correctly', function (): void {
         $event = new InventoryTransferred($this->item, $this->fromLevel, $this->toLevel, $this->movement);
 
         expect($event->inventoryable)->toBe($this->item);
         expect($event->fromLevel)->toBe($this->fromLevel);
         expect($event->toLevel)->toBe($this->toLevel);
         expect($event->movement)->toBe($this->movement);
-    }
-}
+    });
+});

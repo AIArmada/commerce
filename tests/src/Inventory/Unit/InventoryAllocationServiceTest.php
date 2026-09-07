@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAllocated;
@@ -17,22 +16,8 @@ use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use Illuminate\Support\Facades\Event;
 
-class InventoryAllocationServiceTest extends InventoryTestCase
-{
-    protected InventoryService $inventoryService;
-
-    protected InventoryAllocationService $allocationService;
-
-    protected InventoryItem $item;
-
-    protected InventoryLocation $locationA;
-
-    protected InventoryLocation $locationB;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('InventoryAllocationService', function (): void {
+    beforeEach(function (): void {
         config()->set('inventory.allow_split_allocation', true);
         config()->set('inventory.allocation_strategy', 'priority');
 
@@ -55,10 +40,9 @@ class InventoryAllocationServiceTest extends InventoryTestCase
 
         $this->inventoryService->receive($this->item, $this->locationA->id, 10);
         $this->inventoryService->receive($this->item, $this->locationB->id, 6);
-    }
+    });
 
-    public function test_allocates_across_locations_using_split_allocation_and_updates_reserved_quantities(): void
-    {
+    it('allocates across locations using split allocation and updates reserved quantities', function (): void {
         Event::fake();
 
         $allocations = $this->allocationService->allocate($this->item, 12, 'cart-1', 45);
@@ -73,10 +57,9 @@ class InventoryAllocationServiceTest extends InventoryTestCase
         expect($levelB?->quantity_reserved)->toBe(2);
 
         Event::assertDispatched(InventoryAllocated::class);
-    }
+    });
 
-    public function test_releases_allocations_and_restores_reserved_quantities(): void
-    {
+    it('releases allocations and restores reserved quantities', function (): void {
         Event::fake();
 
         $this->allocationService->allocate($this->item, 5, 'cart-2');
@@ -91,10 +74,9 @@ class InventoryAllocationServiceTest extends InventoryTestCase
         expect($levelB?->quantity_reserved)->toBe(0);
 
         Event::assertDispatched(InventoryReleased::class);
-    }
+    });
 
-    public function test_commits_allocations_into_shipments_and_clears_reservations(): void
-    {
+    it('commits allocations into shipments and clears reservations', function (): void {
         $allocations = $this->allocationService->allocate($this->item, 8, 'cart-3');
 
         $movements = $this->allocationService->commit('cart-3', 'ORDER-123');
@@ -108,10 +90,9 @@ class InventoryAllocationServiceTest extends InventoryTestCase
         expect($levelB?->quantity_reserved)->toBe(0);
         expect($levelA?->quantity_on_hand + $levelB?->quantity_on_hand)->toBe(8); // 16 received - 8 committed
         expect(InventoryAllocation::query()->forCart('cart-3')->count())->toBe(0);
-    }
+    });
 
-    public function test_cleans_up_expired_allocations_and_frees_reserved_stock(): void
-    {
+    it('cleans up expired allocations and frees reserved stock', function (): void {
         $level = $this->inventoryService->getLevel($this->item, $this->locationA->id);
 
         $allocation = InventoryAllocation::create([
@@ -133,25 +114,22 @@ class InventoryAllocationServiceTest extends InventoryTestCase
         expect($removed)->toBe(1);
         expect($level?->quantity_reserved)->toBe(0);
         expect(InventoryAllocation::query()->forCart('expired-cart')->count())->toBe(0);
-    }
+    });
 
-    public function test_throws_exception_for_zero_or_negative_quantity(): void
-    {
+    it('throws exception for zero or negative quantity', function (): void {
         expect(fn () => $this->allocationService->allocate($this->item, 0, 'cart-1'))
             ->toThrow(InvalidArgumentException::class, 'Quantity must be positive');
 
         expect(fn () => $this->allocationService->allocate($this->item, -5, 'cart-1'))
             ->toThrow(InvalidArgumentException::class, 'Quantity must be positive');
-    }
+    });
 
-    public function test_throws_exception_when_insufficient_inventory(): void
-    {
+    it('throws exception when insufficient inventory', function (): void {
         expect(fn () => $this->allocationService->allocate($this->item, 100, 'cart-1'))
             ->toThrow(InsufficientInventoryException::class, 'Insufficient inventory');
-    }
+    });
 
-    public function test_releases_existing_allocations_before_new_allocation(): void
-    {
+    it('releases existing allocations before new allocation', function (): void {
         $this->allocationService->allocate($this->item, 5, 'cart-realloc');
 
         $levelA = $this->inventoryService->getLevel($this->item, $this->locationA->id)?->fresh();
@@ -162,10 +140,9 @@ class InventoryAllocationServiceTest extends InventoryTestCase
 
         $levelA = $this->inventoryService->getLevel($this->item, $this->locationA->id)?->fresh();
         expect($levelA?->quantity_reserved)->toBe(3);
-    }
+    });
 
-    public function test_release_all_for_cart_releases_all_allocations(): void
-    {
+    it('release all for cart releases all allocations', function (): void {
         // Create a second item and allocations
         $item2 = InventoryItem::create(['name' => 'Second Item']);
         $this->inventoryService->receive($item2, $this->locationA->id, 10);
@@ -179,10 +156,9 @@ class InventoryAllocationServiceTest extends InventoryTestCase
 
         expect($released)->toBe(8);
         expect(InventoryAllocation::query()->forCart('cart-release-all')->count())->toBe(0);
-    }
+    });
 
-    public function test_extend_allocations_updates_expiry(): void
-    {
+    it('extend allocations updates expiry', function (): void {
         $this->allocationService->allocate($this->item, 5, 'cart-extend', 10);
 
         $originalExpiry = InventoryAllocation::query()
@@ -200,52 +176,46 @@ class InventoryAllocationServiceTest extends InventoryTestCase
             ?->expires_at;
 
         expect($newExpiry->gt($originalExpiry))->toBeTrue();
-    }
+    });
 
-    public function test_get_allocations_for_cart_returns_active_allocations(): void
-    {
+    it('get allocations for cart returns active allocations', function (): void {
         $this->allocationService->allocate($this->item, 5, 'cart-get');
 
         $allocations = $this->allocationService->getAllocationsForCart('cart-get');
 
         expect($allocations)->toHaveCount(1);
-    }
+    });
 
-    public function test_get_allocations_for_model_and_cart(): void
-    {
+    it('get allocations for model and cart', function (): void {
         $this->allocationService->allocate($this->item, 5, 'cart-model');
 
         $allocations = $this->allocationService->getAllocations($this->item, 'cart-model');
 
         expect($allocations)->toHaveCount(1);
-    }
+    });
 
-    public function test_has_available_inventory(): void
-    {
+    it('has available inventory', function (): void {
         expect($this->allocationService->hasAvailableInventory($this->item, 10))->toBeTrue();
         expect($this->allocationService->hasAvailableInventory($this->item, 16))->toBeTrue();
         expect($this->allocationService->hasAvailableInventory($this->item, 17))->toBeFalse();
-    }
+    });
 
-    public function test_get_total_available(): void
-    {
+    it('get total available', function (): void {
         $available = $this->allocationService->getTotalAvailable($this->item);
 
         expect($available)->toBe(16); // 10 + 6 from setup
-    }
+    });
 
-    public function test_validate_availability_returns_available_true_when_all_items_available(): void
-    {
+    it('validate availability returns available true when all items available', function (): void {
         $result = $this->allocationService->validateAvailability([
             ['model' => $this->item, 'quantity' => 5],
         ]);
 
         expect($result['available'])->toBeTrue();
         expect($result['issues'])->toBeEmpty();
-    }
+    });
 
-    public function test_validate_availability_returns_issues_when_insufficient(): void
-    {
+    it('validate availability returns issues when insufficient', function (): void {
         $result = $this->allocationService->validateAvailability([
             ['model' => $this->item, 'quantity' => 50],
         ]);
@@ -254,19 +224,17 @@ class InventoryAllocationServiceTest extends InventoryTestCase
         expect($result['issues'])->toHaveCount(1);
         expect($result['issues'][0]['requested'])->toBe(50);
         expect($result['issues'][0]['available'])->toBe(16);
-    }
+    });
 
-    public function test_get_strategy_returns_default_from_config(): void
-    {
+    it('get strategy returns default from config', function (): void {
         config()->set('inventory.allocation_strategy', 'fifo');
 
         $strategy = $this->allocationService->getStrategy($this->item);
 
         expect($strategy)->toBe(AllocationStrategy::FIFO);
-    }
+    });
 
-    public function test_release_allocation_releases_single_allocation(): void
-    {
+    it('release allocation releases single allocation', function (): void {
         Event::fake();
 
         $allocations = $this->allocationService->allocate($this->item, 5, 'cart-single-release');
@@ -278,20 +246,18 @@ class InventoryAllocationServiceTest extends InventoryTestCase
         expect(InventoryAllocation::find($allocation->id))->toBeNull();
 
         Event::assertDispatched(InventoryReleased::class);
-    }
+    });
 
-    public function test_single_location_strategy_does_not_split(): void
-    {
+    it('single location strategy does not split', function (): void {
         config()->set('inventory.allocation_strategy', 'single_location');
 
         $allocations = $this->allocationService->allocate($this->item, 8, 'cart-single-loc');
 
         expect($allocations)->toHaveCount(1);
         expect($allocations->first()->quantity)->toBe(8);
-    }
+    });
 
-    public function test_allocate_uses_fifo_strategy(): void
-    {
+    it('allocate uses fifo strategy', function (): void {
         config()->set('inventory.allocation_strategy', 'fifo');
 
         // Location A was created first, so it should be used first
@@ -299,10 +265,9 @@ class InventoryAllocationServiceTest extends InventoryTestCase
 
         expect($allocations)->toHaveCount(1);
         expect($allocations->first()->location_id)->toBe($this->locationA->id);
-    }
+    });
 
-    public function test_allocate_uses_least_stock_strategy(): void
-    {
+    it('allocate uses least stock strategy', function (): void {
         config()->set('inventory.allocation_strategy', 'least_stock');
 
         // LeastStock allocates from locations with MOST available stock first to balance
@@ -310,10 +275,9 @@ class InventoryAllocationServiceTest extends InventoryTestCase
 
         // Location A has 10, Location B has 6, so A should be used first
         expect($allocations->first()->location_id)->toBe($this->locationA->id);
-    }
+    });
 
-    public function test_commit_dispatches_out_of_inventory_event_when_stock_depleted(): void
-    {
+    it('commit dispatches out of inventory event when stock depleted', function (): void {
         Event::fake();
         config()->set('inventory.events.low_inventory', true);
         config()->set('inventory.events.out_of_inventory', true);
@@ -323,10 +287,9 @@ class InventoryAllocationServiceTest extends InventoryTestCase
         $this->allocationService->commit('cart-deplete', 'ORD-DEPLETE');
 
         Event::assertDispatched(OutOfInventory::class);
-    }
+    });
 
-    public function test_commit_dispatches_low_inventory_event_when_below_threshold(): void
-    {
+    it('commit dispatches low inventory event when below threshold', function (): void {
         Event::fake();
         config()->set('inventory.events.low_inventory', true);
 
@@ -339,21 +302,19 @@ class InventoryAllocationServiceTest extends InventoryTestCase
         $this->allocationService->commit('cart-low', 'ORD-LOW');
 
         Event::assertDispatched(LowInventoryDetected::class);
-    }
+    });
 
-    public function test_split_allocation_disabled_requires_single_location(): void
-    {
+    it('split allocation disabled requires single location', function (): void {
         config()->set('inventory.allow_split_allocation', false);
 
         // Can't allocate 12 because neither location has enough (A has 10, B has 6)
         expect(fn () => $this->allocationService->allocate($this->item, 12, 'cart-no-split'))
             ->toThrow(InsufficientInventoryException::class, 'Insufficient inventory');
-    }
+    });
 
-    public function test_release_returns_zero_when_no_allocations(): void
-    {
+    it('release returns zero when no allocations', function (): void {
         $released = $this->allocationService->release($this->item, 'non-existent-cart');
 
         expect($released)->toBe(0);
-    }
-}
+    });
+});

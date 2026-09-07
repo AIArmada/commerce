@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem;
@@ -14,20 +12,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use InvalidArgumentException;
 use LogicException;
 
-class SubscriptionExtendedTest extends CashierChipTestCase
-{
-    public function test_has_multiple_prices(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('SubscriptionExtended', function (): void {
+    it('has multiple prices', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => null,
         ]);
 
         $this->assertTrue($subscription->hasMultiplePrices());
-    }
+    });
 
-    public function test_has_single_price(): void
-    {
+    it('has single price', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_123',
@@ -35,10 +32,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
 
         $this->assertTrue($subscription->hasSinglePrice());
         $this->assertFalse($subscription->hasMultiplePrices());
-    }
+    });
 
-    public function test_has_price_with_single_price(): void
-    {
+    it('has price with single price', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_123',
@@ -46,30 +42,27 @@ class SubscriptionExtendedTest extends CashierChipTestCase
 
         $this->assertTrue($subscription->hasPrice('price_123'));
         $this->assertFalse($subscription->hasPrice('price_456'));
-    }
+    });
 
-    public function test_incomplete(): void
-    {
+    it('incomplete', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Incomplete,
         ]);
 
         $this->assertTrue($subscription->incomplete());
-    }
+    });
 
-    public function test_past_due(): void
-    {
+    it('past due', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::PastDue,
         ]);
 
         $this->assertTrue($subscription->pastDue());
-    }
+    });
 
-    public function test_recurring(): void
-    {
+    it('recurring', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -78,10 +71,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertTrue($subscription->recurring());
-    }
+    });
 
-    public function test_not_recurring_when_on_trial(): void
-    {
+    it('not recurring when on trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -89,10 +81,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertFalse($subscription->recurring());
-    }
+    });
 
-    public function test_not_recurring_when_canceled(): void
-    {
+    it('not recurring when canceled', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -100,40 +91,36 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertFalse($subscription->recurring());
-    }
+    });
 
-    public function test_has_expired_trial(): void
-    {
+    it('has expired trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'trial_ends_at' => Carbon::now()->subDay(),
         ]);
 
         $this->assertTrue($subscription->hasExpiredTrial());
-    }
+    });
 
-    public function test_on_grace_period(): void
-    {
+    it('on grace period', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'ends_at' => Carbon::now()->addDay(),
         ]);
 
         $this->assertTrue($subscription->onGracePeriod());
-    }
+    });
 
-    public function test_not_on_grace_period(): void
-    {
+    it('not on grace period', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'ends_at' => null,
         ]);
 
         $this->assertFalse($subscription->onGracePeriod());
-    }
+    });
 
-    public function test_skip_trial(): void
-    {
+    it('skip trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'trial_ends_at' => Carbon::now()->addDays(7),
@@ -142,10 +129,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $subscription->skipTrial();
 
         $this->assertNull($subscription->trial_ends_at);
-    }
+    });
 
-    public function test_end_trial(): void
-    {
+    it('end trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'trial_ends_at' => Carbon::now()->addDays(7),
@@ -154,10 +140,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $subscription->endTrial();
 
         $this->assertNull($subscription->fresh()->trial_ends_at);
-    }
+    });
 
-    public function test_end_trial_does_nothing_without_trial(): void
-    {
+    it('end trial does nothing without trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'trial_ends_at' => null,
@@ -166,10 +151,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $result = $subscription->endTrial();
 
         $this->assertSame($subscription, $result);
-    }
+    });
 
-    public function test_extend_trial(): void
-    {
+    it('extend trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'trial_ends_at' => Carbon::now()->addDays(7),
@@ -179,21 +163,16 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $subscription->extendTrial($newDate);
 
         $this->assertEquals($newDate->toDateTimeString(), $subscription->fresh()->trial_ends_at->toDateTimeString());
-    }
+    });
 
-    public function test_extend_trial_throws_for_past_date(): void
-    {
+    it('extend trial throws for past date', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('date in the future');
-
         $subscription->extendTrial(Carbon::now()->subDay());
-    }
+    })->throws(InvalidArgumentException::class, 'date in the future');
 
-    public function test_scope_incomplete(): void
-    {
+    it('scope incomplete', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Incomplete,
@@ -203,10 +182,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->incomplete()->count());
-    }
+    });
 
-    public function test_scope_past_due(): void
-    {
+    it('scope past due', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::PastDue,
@@ -216,10 +194,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->pastDue()->count());
-    }
+    });
 
-    public function test_scope_canceled(): void
-    {
+    it('scope canceled', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'ends_at' => Carbon::now()->subDay(),
@@ -229,10 +206,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->canceled()->count());
-    }
+    });
 
-    public function test_scope_not_canceled(): void
-    {
+    it('scope not canceled', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'ends_at' => Carbon::now()->subDay(),
@@ -242,10 +218,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->notCanceled()->count());
-    }
+    });
 
-    public function test_scope_ended(): void
-    {
+    it('scope ended', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'ends_at' => Carbon::now()->subDay(),
@@ -255,10 +230,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->ended()->count());
-    }
+    });
 
-    public function test_scope_on_trial(): void
-    {
+    it('scope on trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'trial_ends_at' => Carbon::now()->addDays(7),
@@ -268,10 +242,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->onTrial()->count());
-    }
+    });
 
-    public function test_scope_expired_trial(): void
-    {
+    it('scope expired trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'trial_ends_at' => Carbon::now()->subDay(),
@@ -281,10 +254,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->expiredTrial()->count());
-    }
+    });
 
-    public function test_scope_recurring(): void
-    {
+    it('scope recurring', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'trial_ends_at' => null,
@@ -296,10 +268,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->recurring()->count());
-    }
+    });
 
-    public function test_scope_on_grace_period(): void
-    {
+    it('scope on grace period', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'ends_at' => Carbon::now()->addDay(),
@@ -309,34 +280,30 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->onGracePeriod()->count());
-    }
+    });
 
-    public function test_user_relation(): void
-    {
+    it('user relation', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
         $this->assertInstanceOf(BelongsTo::class, $subscription->user());
-    }
+    });
 
-    public function test_items_relation(): void
-    {
+    it('items relation', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
         $this->assertInstanceOf(HasMany::class, $subscription->items());
-    }
+    });
 
-    public function test_get_table(): void
-    {
+    it('get table', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
         $this->assertStringContainsString('subscriptions', $subscription->getTable());
-    }
+    });
 
-    public function test_valid_when_active(): void
-    {
+    it('valid when active', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -344,10 +311,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertTrue($subscription->valid());
-    }
+    });
 
-    public function test_valid_when_on_trial(): void
-    {
+    it('valid when on trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Trialing,
@@ -355,10 +321,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertTrue($subscription->valid());
-    }
+    });
 
-    public function test_valid_when_on_grace_period(): void
-    {
+    it('valid when on grace period', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -366,10 +331,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertTrue($subscription->valid());
-    }
+    });
 
-    public function test_invalid_when_ended(): void
-    {
+    it('invalid when ended', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Canceled,
@@ -377,10 +341,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertFalse($subscription->valid());
-    }
+    });
 
-    public function test_calculate_subscription_amount(): void
-    {
+    it('calculate subscription amount', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
@@ -395,10 +358,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $amount = $subscription->calculateSubscriptionAmount();
 
         $this->assertEquals(2000, $amount);
-    }
+    });
 
-    public function test_cancel(): void
-    {
+    it('cancel', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -408,10 +370,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $subscription->cancel();
 
         $this->assertNotNull($subscription->ends_at);
-    }
+    });
 
-    public function test_cancel_on_trial(): void
-    {
+    it('cancel on trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $trialEnd = Carbon::now()->addDays(7);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
@@ -422,10 +383,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $subscription->cancel();
 
         $this->assertEquals($trialEnd->toDateTimeString(), $subscription->ends_at->toDateTimeString());
-    }
+    });
 
-    public function test_cancel_now(): void
-    {
+    it('cancel now', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -435,10 +395,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
 
         $this->assertEquals(SubscriptionStatus::Canceled, $subscription->chip_status);
         $this->assertNotNull($subscription->ends_at);
-    }
+    });
 
-    public function test_mark_as_canceled(): void
-    {
+    it('mark as canceled', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -447,10 +406,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $subscription->markAsCanceled();
 
         $this->assertEquals(SubscriptionStatus::Canceled, $subscription->fresh()->chip_status);
-    }
+    });
 
-    public function test_resume(): void
-    {
+    it('resume', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -461,43 +419,37 @@ class SubscriptionExtendedTest extends CashierChipTestCase
 
         $this->assertEquals(SubscriptionStatus::Active, $subscription->chip_status);
         $this->assertNull($subscription->ends_at);
-    }
+    });
 
-    public function test_resume_throws_not_on_grace_period(): void
-    {
+    it('resume throws not on grace period', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
             'ends_at' => null,
         ]);
 
-        $this->expectException(LogicException::class);
-
         $subscription->resume();
-    }
+    })->throws(LogicException::class);
 
-    public function test_has_incomplete_payment(): void
-    {
+    it('has incomplete payment', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::PastDue,
         ]);
 
         $this->assertTrue($subscription->hasIncompletePayment());
-    }
+    });
 
-    public function test_has_incomplete_payment_with_incomplete_status(): void
-    {
+    it('has incomplete payment with incomplete status', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Incomplete,
         ]);
 
         $this->assertTrue($subscription->hasIncompletePayment());
-    }
+    });
 
-    public function test_scope_not_on_trial(): void
-    {
+    it('scope not on trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'trial_ends_at' => null,
@@ -507,10 +459,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->notOnTrial()->count());
-    }
+    });
 
-    public function test_scope_not_on_grace_period(): void
-    {
+    it('scope not on grace period', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'ends_at' => null,
@@ -520,10 +471,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->notOnGracePeriod()->count());
-    }
+    });
 
-    public function test_cancel_at(): void
-    {
+    it('cancel at', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
@@ -531,10 +481,9 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $subscription->cancelAt($cancelDate);
 
         $this->assertEquals($cancelDate->toDateTimeString(), $subscription->ends_at->toDateTimeString());
-    }
+    });
 
-    public function test_cancel_at_with_timestamp(): void
-    {
+    it('cancel at with timestamp', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
@@ -542,15 +491,14 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $subscription->cancelAt($timestamp);
 
         $this->assertNotNull($subscription->ends_at);
-    }
+    });
 
-    public function test_set_recurring_token(): void
-    {
+    it('set recurring token', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
         $subscription->setRecurringToken('tok_123');
 
         $this->assertEquals('tok_123', $subscription->fresh()->recurring_token);
-    }
-}
+    });
+});

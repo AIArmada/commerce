@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Tests\Unit\Models;
-
-use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
@@ -12,14 +9,9 @@ use AIArmada\Tax\States\TaxExemptionState\PendingState;
 use AIArmada\Tax\States\TaxExemptionState\RejectedState;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class TaxExemptionTest extends TaxTestCase
-{
-    use RefreshDatabase;
-
-    public function test_can_create_tax_exemption(): void
-    {
+describe('TaxExemption', function (): void {
+    it('can create tax exemption', function (): void {
         $zone = TaxZone::create([
             'name' => 'Test Zone',
             'code' => 'TEST',
@@ -43,10 +35,9 @@ class TaxExemptionTest extends TaxTestCase
         $this->assertEquals('customer-123', $exemption->exemptable_id);
         $this->assertEquals('Non-profit organization', $exemption->reason);
         $this->assertInstanceOf(ApprovedState::class, $exemption->status);
-    }
+    });
 
-    public function test_active_scope(): void
-    {
+    it('active scope', function (): void {
         $uuid1 = '550e8400-e29b-41d4-a716-446655440001';
         $uuid2 = '550e8400-e29b-41d4-a716-446655440002';
         $uuid3 = '550e8400-e29b-41d4-a716-446655440003';
@@ -96,10 +87,9 @@ class TaxExemptionTest extends TaxTestCase
 
         $this->assertCount(1, $activeExemptions);
         $this->assertEquals('Active exemption', $activeExemptions->first()->reason);
-    }
+    });
 
-    public function test_pending_scope(): void
-    {
+    it('pending scope', function (): void {
         TaxExemption::create([
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
@@ -118,10 +108,9 @@ class TaxExemptionTest extends TaxTestCase
 
         $this->assertCount(1, $pending);
         $this->assertEquals('Pending', $pending->first()->reason);
-    }
+    });
 
-    public function test_approved_scope(): void
-    {
+    it('approved scope', function (): void {
         TaxExemption::create([
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
@@ -140,10 +129,9 @@ class TaxExemptionTest extends TaxTestCase
 
         $this->assertCount(1, $approved);
         $this->assertEquals('Approved', $approved->first()->reason);
-    }
+    });
 
-    public function test_for_zone_scope(): void
-    {
+    it('for zone scope', function (): void {
         $zone1 = TaxZone::create(['name' => 'Zone 1', 'code' => 'Z1', 'is_active' => true]);
         $zone2 = TaxZone::create(['name' => 'Zone 2', 'code' => 'Z2', 'is_active' => true]);
 
@@ -171,10 +159,9 @@ class TaxExemptionTest extends TaxTestCase
         $this->assertCount(2, $zone1Exemptions); // Both exemptions apply to zone 1
         $this->assertCount(1, $zone2Exemptions); // Only the global exemption applies to zone 2
         $this->assertEquals('All zones', $zone2Exemptions->first()->reason);
-    }
+    });
 
-    public function test_relationships(): void
-    {
+    it('relationships', function (): void {
         $zone = TaxZone::create([
             'name' => 'Test Zone',
             'code' => 'TEST',
@@ -195,10 +182,9 @@ class TaxExemptionTest extends TaxTestCase
         // Test morphTo relationship (would need actual Customer model for full test)
         $this->assertEquals('customer-123', $exemption->exemptable_id);
         $this->assertEquals('App\\Models\\Customer', $exemption->exemptable_type);
-    }
+    });
 
-    public function test_is_active_method(): void
-    {
+    it('is active method', function (): void {
         $now = CarbonImmutable::now();
 
         // Active exemption
@@ -241,10 +227,9 @@ class TaxExemptionTest extends TaxTestCase
         $this->assertFalse($pending->isActive());
         $this->assertFalse($expired->isActive());
         $this->assertFalse($future->isActive());
-    }
+    });
 
-    public function test_is_expired_method(): void
-    {
+    it('is expired method', function (): void {
         $expired = new TaxExemption(['expires_at' => CarbonImmutable::now()->subDay()]);
         $notExpired = new TaxExemption(['expires_at' => CarbonImmutable::now()->addDay()]);
         $noExpiry = new TaxExemption(['expires_at' => null]);
@@ -252,10 +237,9 @@ class TaxExemptionTest extends TaxTestCase
         $this->assertTrue($expired->isExpired());
         $this->assertFalse($notExpired->isExpired());
         $this->assertFalse($noExpiry->isExpired());
-    }
+    });
 
-    public function test_status_helper_methods(): void
-    {
+    it('status helper methods', function (): void {
         $pending = new TaxExemption(['status' => PendingState::class]);
         $approved = new TaxExemption(['status' => ApprovedState::class]);
         $rejected = new TaxExemption(['status' => RejectedState::class]);
@@ -267,10 +251,9 @@ class TaxExemptionTest extends TaxTestCase
         $this->assertFalse($approved->isPending());
         $this->assertFalse($pending->isApproved());
         $this->assertFalse($approved->isRejected());
-    }
+    });
 
-    public function test_approve_method(): void
-    {
+    it('approve method', function (): void {
         $exemption = TaxExemption::create([
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
@@ -283,10 +266,9 @@ class TaxExemptionTest extends TaxTestCase
         $this->assertSame($exemption, $result);
         $this->assertInstanceOf(ApprovedState::class, $exemption->status);
         $this->assertNotNull($exemption->verified_at);
-    }
+    });
 
-    public function test_reject_method(): void
-    {
+    it('reject method', function (): void {
         $exemption = TaxExemption::create([
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
@@ -299,10 +281,9 @@ class TaxExemptionTest extends TaxTestCase
         $this->assertSame($exemption, $result);
         $this->assertInstanceOf(RejectedState::class, $exemption->status);
         $this->assertEquals('Invalid certificate', $exemption->rejection_reason);
-    }
+    });
 
-    public function test_applies_to_zone_method(): void
-    {
+    it('applies to zone method', function (): void {
         $zone = TaxZone::create(['name' => 'Zone', 'code' => 'Z', 'is_active' => true]);
 
         // Exemption for specific zone
@@ -317,10 +298,9 @@ class TaxExemptionTest extends TaxTestCase
         $this->assertTrue($global->appliesToZone($zone->id));
         $this->assertTrue($global->appliesToZone('any-zone-id'));
         $this->assertTrue($global->appliesToZone(null));
-    }
+    });
 
-    public function test_casts(): void
-    {
+    it('casts', function (): void {
         $exemption = TaxExemption::create([
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
@@ -334,10 +314,9 @@ class TaxExemptionTest extends TaxTestCase
         $this->assertInstanceOf(CarbonImmutable::class, $exemption->verified_at);
         $this->assertInstanceOf(CarbonImmutable::class, $exemption->starts_at);
         $this->assertInstanceOf(CarbonImmutable::class, $exemption->expires_at);
-    }
+    });
 
-    public function test_attributes_defaults(): void
-    {
+    it('attributes defaults', function (): void {
         $exemption = new TaxExemption([
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
@@ -345,10 +324,9 @@ class TaxExemptionTest extends TaxTestCase
         ]);
 
         $this->assertInstanceOf(PendingState::class, $exemption->status);
-    }
+    });
 
-    public function test_activity_logging(): void
-    {
+    it('activity logging', function (): void {
         $exemption = TaxExemption::create([
             'exemptable_id' => 'customer-1',
             'exemptable_type' => 'App\\Models\\Customer',
@@ -361,17 +339,15 @@ class TaxExemptionTest extends TaxTestCase
         // Activity logging is configured but we can't easily test it without more setup
         // This test ensures the trait is applied and doesn't break
         $this->assertTrue(true);
-    }
+    });
 
-    public function test_get_table_method(): void
-    {
+    it('get table method', function (): void {
         $exemption = new TaxExemption;
 
         $this->assertEquals('tax_exemptions', $exemption->getTable());
-    }
+    });
 
-    public function test_get_table_method_with_custom_config(): void
-    {
+    it('get table method with custom config', function (): void {
         config(['tax.database.tables.tax_exemptions' => 'custom_tax_exemptions']);
 
         $exemption = new TaxExemption;
@@ -380,15 +356,14 @@ class TaxExemptionTest extends TaxTestCase
 
         // Reset to default
         config(['tax.database.tables.tax_exemptions' => 'tax_exemptions']);
-    }
+    });
 
-    public function test_exemptable_relationship_is_morph_to(): void
-    {
+    it('exemptable relationship is morph to', function (): void {
         $exemption = new TaxExemption;
 
         // Access the relationship builder
         $relation = $exemption->exemptable();
 
         $this->assertInstanceOf(MorphTo::class, $relation);
-    }
-}
+    });
+});

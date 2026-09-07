@@ -2,18 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Tests\Unit\Models;
-
-use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Tax\Models\TaxZone;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class TaxZonePostcodeMatchingTest extends TaxTestCase
-{
-    use RefreshDatabase;
-
-    public function test_matches_postcode_exact(): void
-    {
+describe('TaxZonePostcodeMatching', function (): void {
+    it('matches postcode exact', function (): void {
         $zone = TaxZone::create([
             'name' => 'Exact Postcode',
             'code' => 'EXACT',
@@ -24,10 +16,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
 
         $this->assertTrue($zone->matchesAddress('MY', null, '43000'));
         $this->assertFalse($zone->matchesAddress('MY', null, '43001'));
-    }
+    });
 
-    public function test_matches_postcode_range_numeric(): void
-    {
+    it('matches postcode range numeric', function (): void {
         $zone = TaxZone::create([
             'name' => 'Range Postcode',
             'code' => 'RANGE',
@@ -41,10 +32,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('MY', null, '49999'));
         $this->assertFalse($zone->matchesAddress('MY', null, '39999'));
         $this->assertFalse($zone->matchesAddress('MY', null, '50000'));
-    }
+    });
 
-    public function test_matches_postcode_range_with_non_numeric_postcodes(): void
-    {
+    it('matches postcode range with non numeric postcodes', function (): void {
         $zone = TaxZone::create([
             'name' => 'UK Range',
             'code' => 'UK-RANGE',
@@ -55,10 +45,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
 
         $this->assertTrue($zone->matchesAddress('GB', null, 'SW1A5'));
         $this->assertFalse($zone->matchesAddress('GB', null, 'SW2A5'));
-    }
+    });
 
-    public function test_matches_postcode_range_with_zero_start_and_end(): void
-    {
+    it('matches postcode range with zero start and end', function (): void {
         $zone = TaxZone::create([
             'name' => 'Zero Range',
             'code' => 'ZERO-RANGE',
@@ -69,10 +58,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
 
         $this->assertFalse($zone->matchesAddress('TEST', null, 'ABC'));
         $this->assertFalse($zone->matchesAddress('TEST', null, 'XYZ'));
-    }
+    });
 
-    public function test_matches_postcode_wildcard_simple(): void
-    {
+    it('matches postcode wildcard simple', function (): void {
         $zone = TaxZone::create([
             'name' => 'Wildcard Simple',
             'code' => 'WILD-SIMPLE',
@@ -86,10 +74,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('MY', null, '43'));
         $this->assertFalse($zone->matchesAddress('MY', null, '44000'));
         $this->assertFalse($zone->matchesAddress('MY', null, '42999'));
-    }
+    });
 
-    public function test_matches_postcode_wildcard_middle(): void
-    {
+    it('matches postcode wildcard middle', function (): void {
         $zone = TaxZone::create([
             'name' => 'Wildcard Middle',
             'code' => 'WILD-MID',
@@ -102,10 +89,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('GB', null, 'SW12AA'));
         $this->assertTrue($zone->matchesAddress('GB', null, 'SWAA'));
         $this->assertFalse($zone->matchesAddress('GB', null, 'SW1AB'));
-    }
+    });
 
-    public function test_matches_postcode_wildcard_multiple(): void
-    {
+    it('matches postcode wildcard multiple', function (): void {
         $zone = TaxZone::create([
             'name' => 'Wildcard Multiple',
             'code' => 'WILD-MULTI',
@@ -118,10 +104,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('TEST', null, 'A1B2C'));
         $this->assertTrue($zone->matchesAddress('TEST', null, 'AXYZBYC'));
         $this->assertFalse($zone->matchesAddress('TEST', null, 'ABCD'));
-    }
+    });
 
-    public function test_matches_postcode_wildcard_empty_match(): void
-    {
+    it('matches postcode wildcard empty match', function (): void {
         $zone = TaxZone::create([
             'name' => 'Wildcard Empty',
             'code' => 'WILD-EMPTY',
@@ -133,10 +118,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('MY', null, ''));
         $this->assertTrue($zone->matchesAddress('MY', null, '43000'));
         $this->assertTrue($zone->matchesAddress('MY', null, 'ANY'));
-    }
+    });
 
-    public function test_matches_postcode_no_match_returns_false(): void
-    {
+    it('matches postcode no match returns false', function (): void {
         $zone = TaxZone::create([
             'name' => 'No Match',
             'code' => 'NO-MATCH',
@@ -146,10 +130,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
         ]);
 
         $this->assertFalse($zone->matchesAddress('MY', null, '54321'));
-    }
+    });
 
-    public function test_matches_postcode_multiple_patterns(): void
-    {
+    it('matches postcode multiple patterns', function (): void {
         $zone = TaxZone::create([
             'name' => 'Multiple Patterns',
             'code' => 'MULTI-PAT',
@@ -163,10 +146,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('MY', null, '60000'));
         $this->assertFalse($zone->matchesAddress('MY', null, '45000'));
         $this->assertFalse($zone->matchesAddress('MY', null, '60001'));
-    }
+    });
 
-    public function test_matches_address_postcode_null(): void
-    {
+    it('matches address postcode null', function (): void {
         $zone = TaxZone::create([
             'name' => 'Postcode Null Test',
             'code' => 'NULL-POST',
@@ -176,10 +158,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
         ]);
 
         $this->assertTrue($zone->matchesAddress('MY', null, null));
-    }
+    });
 
-    public function test_matches_address_empty_postcodes_with_postcode(): void
-    {
+    it('matches address empty postcodes with postcode', function (): void {
         $zone = TaxZone::create([
             'name' => 'Empty Postcodes',
             'code' => 'EMPTY-POST',
@@ -190,10 +171,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
 
         $this->assertTrue($zone->matchesAddress('MY', null, '43000'));
         $this->assertTrue($zone->matchesAddress('MY', null, 'ANY'));
-    }
+    });
 
-    public function test_matches_address_null_postcodes_with_postcode(): void
-    {
+    it('matches address null postcodes with postcode', function (): void {
         $zone = TaxZone::create([
             'name' => 'Null Postcodes',
             'code' => 'NULL-POSTS',
@@ -203,10 +183,9 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
         ]);
 
         $this->assertTrue($zone->matchesAddress('MY', null, '43000'));
-    }
+    });
 
-    public function test_matches_postcode_with_special_regex_characters(): void
-    {
+    it('matches postcode with special regex characters', function (): void {
         $zone = TaxZone::create([
             'name' => 'Special Chars',
             'code' => 'SPECIAL',
@@ -218,5 +197,5 @@ class TaxZonePostcodeMatchingTest extends TaxTestCase
         $this->assertTrue($zone->matchesAddress('TEST', null, 'A.B'));
         $this->assertTrue($zone->matchesAddress('TEST', null, 'A.BXYZ'));
         $this->assertFalse($zone->matchesAddress('TEST', null, 'AXB'));
-    }
-}
+    });
+});

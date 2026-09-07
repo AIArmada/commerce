@@ -2,52 +2,46 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
-class PerformsChargesTest extends CashierChipTestCase
-{
-    public function test_charge_returns_payment(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('PerformsCharges', function (): void {
+    it('charge returns payment', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $payment = $user->charge(1000);
 
         $this->assertInstanceOf(Payment::class, $payment);
-    }
+    });
 
-    public function test_pay_returns_payment(): void
-    {
+    it('pay returns payment', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $payment = $user->pay(1000);
 
         $this->assertInstanceOf(Payment::class, $payment);
-    }
+    });
 
-    public function test_pay_with_returns_payment(): void
-    {
+    it('pay with returns payment', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $payment = $user->payWith(1000, ['card', 'fpx']);
 
         $this->assertInstanceOf(Payment::class, $payment);
-    }
+    });
 
-    public function test_create_payment_returns_payment(): void
-    {
+    it('create payment returns payment', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $payment = $user->createPayment(1000);
 
         $this->assertInstanceOf(Payment::class, $payment);
-    }
+    });
 
-    public function test_create_payment_with_options(): void
-    {
+    it('create payment with options', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $payment = $user->createPayment(1000, [
@@ -60,37 +54,33 @@ class PerformsChargesTest extends CashierChipTestCase
         ]);
 
         $this->assertInstanceOf(Payment::class, $payment);
-    }
+    });
 
-    public function test_find_payment_returns_null_on_error(): void
-    {
+    it('find payment returns null on error', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $payment = $user->findPayment('non_existent_id');
 
         $this->assertNull($payment);
-    }
+    });
 
-    public function test_charge_with_recurring_token(): void
-    {
+    it('charge with recurring token', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $payment = $user->chargeWithRecurringToken(1000, null);
 
         $this->assertInstanceOf(Payment::class, $payment);
-    }
+    });
 
-    public function test_checkout_returns_checkout(): void
-    {
+    it('checkout returns checkout', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $checkout = $user->checkout(1000);
 
         $this->assertInstanceOf(Checkout::class, $checkout);
-    }
+    });
 
-    public function test_checkout_with_options(): void
-    {
+    it('checkout with options', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $checkout = $user->checkout(1000, [
@@ -99,10 +89,9 @@ class PerformsChargesTest extends CashierChipTestCase
         ]);
 
         $this->assertInstanceOf(Checkout::class, $checkout);
-    }
+    });
 
-    public function test_checkout_charge_returns_checkout(): void
-    {
+    it('checkout charge returns checkout', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $checkout = $user->checkoutCharge(1000, 'Test Product', 2);
@@ -112,19 +101,17 @@ class PerformsChargesTest extends CashierChipTestCase
         $payload = $checkout->toArray();
         $this->assertSame(1000, $payload['purchase']['products'][0]['price']);
         $this->assertSame('2', $payload['purchase']['products'][0]['quantity']);
-    }
+    });
 
-    public function test_charge_without_chip_id(): void
-    {
+    it('charge without chip id', function (): void {
         $user = $this->createUser(['email' => 'test@example.com', 'name' => 'Test User']);
 
         $payment = $user->charge(1000);
 
         $this->assertInstanceOf(Payment::class, $payment);
-    }
+    });
 
-    public function test_create_payment_with_skip_capture(): void
-    {
+    it('create payment with skip capture', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $payment = $user->createPayment(1000, [
@@ -132,10 +119,9 @@ class PerformsChargesTest extends CashierChipTestCase
         ]);
 
         $this->assertInstanceOf(Payment::class, $payment);
-    }
+    });
 
-    public function test_create_payment_with_force_recurring(): void
-    {
+    it('create payment with force recurring', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $payment = $user->createPayment(1000, [
@@ -143,5 +129,5 @@ class PerformsChargesTest extends CashierChipTestCase
         ]);
 
         $this->assertInstanceOf(Payment::class, $payment);
-    }
-}
+    });
+});

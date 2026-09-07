@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Concerns\AllowsCoupons;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
@@ -15,10 +13,10 @@ use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Paused;
 use Akaunting\Money\Money;
 
-class AllowsCouponsTest extends CashierChipTestCase
-{
-    public function test_with_coupon(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('AllowsCoupons', function (): void {
+    it('with coupon', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', ['price_123']);
 
@@ -26,10 +24,9 @@ class AllowsCouponsTest extends CashierChipTestCase
 
         $this->assertSame($builder, $result);
         $this->assertEquals('COUPON_123', $builder->couponId);
-    }
+    });
 
-    public function test_with_coupon_null(): void
-    {
+    it('with coupon null', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', ['price_123']);
         $builder->withCoupon('COUPON_123');
@@ -37,10 +34,9 @@ class AllowsCouponsTest extends CashierChipTestCase
         $result = $builder->withCoupon(null);
 
         $this->assertNull($builder->couponId);
-    }
+    });
 
-    public function test_with_promotion_code(): void
-    {
+    it('with promotion code', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', ['price_123']);
 
@@ -48,10 +44,9 @@ class AllowsCouponsTest extends CashierChipTestCase
 
         $this->assertSame($builder, $result);
         $this->assertEquals('PROMO_123', $builder->promotionCodeId);
-    }
+    });
 
-    public function test_allow_promotion_codes(): void
-    {
+    it('allow promotion codes', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', ['price_123']);
 
@@ -61,17 +56,15 @@ class AllowsCouponsTest extends CashierChipTestCase
 
         $this->assertSame($builder, $result);
         $this->assertTrue($builder->allowPromotionCodes);
-    }
+    });
 
-    public function test_checkout_discounts_returns_null_without_coupon_or_promo(): void
-    {
+    it('checkout discounts returns null without coupon or promo', function (): void {
         $harness = new AllowsCouponsHarness;
 
         $this->assertNull($harness->exposeCheckoutDiscounts());
-    }
+    });
 
-    public function test_checkout_discounts_includes_coupon_and_promotion_code(): void
-    {
+    it('checkout discounts includes coupon and promotion code', function (): void {
         $voucher = VoucherData::fromArray([
             'id' => 'v_1',
             'code' => 'COUPON_123',
@@ -99,19 +92,15 @@ class AllowsCouponsTest extends CashierChipTestCase
             ['coupon' => 'COUPON_123'],
             ['promotion_code' => 'PROMO_123'],
         ], $discounts);
-    }
+    });
 
-    public function test_validate_coupon_for_checkout_throws_when_coupon_not_found(): void
-    {
+    it('validate coupon for checkout throws when coupon not found', function (): void {
         $this->app->instance(VoucherService::class, new FakeVoucherService([]));
 
-        $this->expectException(InvalidCoupon::class);
-
         (new AllowsCouponsHarness)->exposeValidateCouponForCheckout('MISSING');
-    }
+    })->throws(InvalidCoupon::class);
 
-    public function test_validate_coupon_for_checkout_throws_when_coupon_inactive(): void
-    {
+    it('validate coupon for checkout throws when coupon inactive', function (): void {
         $voucher = VoucherData::fromArray([
             'id' => 'v_2',
             'code' => 'INACTIVE',
@@ -125,13 +114,10 @@ class AllowsCouponsTest extends CashierChipTestCase
 
         $this->app->instance(VoucherService::class, new FakeVoucherService(['INACTIVE' => $voucher]));
 
-        $this->expectException(InvalidCoupon::class);
-
         (new AllowsCouponsHarness)->exposeValidateCouponForCheckout('INACTIVE');
-    }
+    })->throws(InvalidCoupon::class);
 
-    public function test_validate_coupon_for_checkout_throws_when_forever_amount_off(): void
-    {
+    it('validate coupon for checkout throws when forever amount off', function (): void {
         $voucher = VoucherData::fromArray([
             'id' => 'v_3',
             'code' => 'FOREVER_OFF',
@@ -145,13 +131,10 @@ class AllowsCouponsTest extends CashierChipTestCase
 
         $this->app->instance(VoucherService::class, new FakeVoucherService(['FOREVER_OFF' => $voucher]));
 
-        $this->expectException(InvalidCoupon::class);
-
         (new AllowsCouponsHarness)->exposeValidateCouponForCheckout('FOREVER_OFF');
-    }
+    })->throws(InvalidCoupon::class);
 
-    public function test_validate_coupon_for_subscription_application_throws_when_forever_amount_off(): void
-    {
+    it('validate coupon for subscription application throws when forever amount off', function (): void {
         $voucher = VoucherData::fromArray([
             'id' => 'v_4',
             'code' => 'FOREVER_OFF_SUB',
@@ -165,22 +148,18 @@ class AllowsCouponsTest extends CashierChipTestCase
 
         $this->app->instance(VoucherService::class, new FakeVoucherService(['FOREVER_OFF_SUB' => $voucher]));
 
-        $this->expectException(InvalidCoupon::class);
-
         (new AllowsCouponsHarness)->exposeValidateCouponForSubscriptionApplication('FOREVER_OFF_SUB');
-    }
+    })->throws(InvalidCoupon::class);
 
-    public function test_calculate_coupon_discount_returns_zero_when_no_coupon_or_promo_set(): void
-    {
+    it('calculate coupon discount returns zero when no coupon or promo set', function (): void {
         $this->app->instance(VoucherService::class, new FakeVoucherService([]));
 
         $harness = new AllowsCouponsHarness;
 
         $this->assertSame(0, $harness->exposeCalculateCouponDiscount(10_000));
-    }
+    });
 
-    public function test_calculate_coupon_discount_returns_discount_when_coupon_exists(): void
-    {
+    it('calculate coupon discount returns discount when coupon exists', function (): void {
         $voucher = VoucherData::fromArray([
             'id' => 'v_5',
             'code' => 'TENPCT',
@@ -198,10 +177,9 @@ class AllowsCouponsTest extends CashierChipTestCase
         $harness->withCoupon('TENPCT');
 
         $this->assertSame(1000, $harness->exposeCalculateCouponDiscount(10_000));
-    }
+    });
 
-    public function test_record_coupon_usage_calls_voucher_service(): void
-    {
+    it('record coupon usage calls voucher service', function (): void {
         $service = new FakeVoucherService([]);
         $this->app->instance(VoucherService::class, $service);
 
@@ -221,8 +199,8 @@ class AllowsCouponsTest extends CashierChipTestCase
         $this->assertNull($call['redeemedBy']);
         $this->assertSame(2500, $call['discountAmount']->getAmount());
         $this->assertSame('MYR', $call['discountAmount']->getCurrency()->getCurrency());
-    }
-}
+    });
+});
 
 final class AllowsCouponsHarness
 {

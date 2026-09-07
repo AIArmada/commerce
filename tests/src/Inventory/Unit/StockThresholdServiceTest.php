@@ -3,34 +3,22 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\Stock\StockThresholdService;
 
-class StockThresholdServiceTest extends InventoryTestCase
-{
-    protected StockThresholdService $service;
-
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('StockThresholdService', function (): void {
+    beforeEach(function (): void {
         $this->service = app(StockThresholdService::class);
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create([
             'name' => 'Test Location',
             'code' => 'TEST',
         ]);
-    }
+    });
 
-    public function test_calculate_status_returns_out_of_stock_when_available_is_zero(): void
-    {
+    it('calculate status returns out of stock when available is zero', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -42,10 +30,9 @@ class StockThresholdServiceTest extends InventoryTestCase
         $status = $this->service->calculateStatus($level);
 
         expect($status)->toBe(AlertStatus::OutOfStock);
-    }
+    });
 
-    public function test_calculate_status_returns_safety_breached_when_below_safety_stock(): void
-    {
+    it('calculate status returns safety breached when below safety stock', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -58,10 +45,9 @@ class StockThresholdServiceTest extends InventoryTestCase
         $status = $this->service->calculateStatus($level);
 
         expect($status)->toBe(AlertStatus::SafetyBreached);
-    }
+    });
 
-    public function test_calculate_status_returns_low_stock_when_below_reorder_point(): void
-    {
+    it('calculate status returns low stock when below reorder point', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -74,10 +60,9 @@ class StockThresholdServiceTest extends InventoryTestCase
         $status = $this->service->calculateStatus($level);
 
         expect($status)->toBe(AlertStatus::LowStock);
-    }
+    });
 
-    public function test_calculate_status_returns_over_stock_when_above_max_stock(): void
-    {
+    it('calculate status returns over stock when above max stock', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -90,10 +75,9 @@ class StockThresholdServiceTest extends InventoryTestCase
         $status = $this->service->calculateStatus($level);
 
         expect($status)->toBe(AlertStatus::OverStock);
-    }
+    });
 
-    public function test_calculate_status_returns_none_when_normal(): void
-    {
+    it('calculate status returns none when normal', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -107,10 +91,9 @@ class StockThresholdServiceTest extends InventoryTestCase
         $status = $this->service->calculateStatus($level);
 
         expect($status)->toBe(AlertStatus::None);
-    }
+    });
 
-    public function test_needs_attention_returns_true_for_critical_statuses(): void
-    {
+    it('needs attention returns true for critical statuses', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -122,10 +105,9 @@ class StockThresholdServiceTest extends InventoryTestCase
         $needsAttention = $this->service->needsAttention($level);
 
         expect($needsAttention)->toBeTrue();
-    }
+    });
 
-    public function test_needs_attention_returns_false_for_normal_and_over_stock(): void
-    {
+    it('needs attention returns false for normal and over stock', function (): void {
         $location2 = InventoryLocation::factory()->create([
             'name' => 'Test Location 2',
             'code' => 'TEST2',
@@ -153,5 +135,5 @@ class StockThresholdServiceTest extends InventoryTestCase
 
         expect($this->service->needsAttention($normalLevel))->toBeFalse();
         expect($this->service->needsAttention($overStockLevel))->toBeFalse();
-    }
-}
+    });
+});

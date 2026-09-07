@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
@@ -11,59 +10,45 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-class InventoryBatchTest extends InventoryTestCase
-{
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('InventoryBatch', function (): void {
+    beforeEach(function (): void {
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create([
             'name' => 'Test Location',
             'code' => 'TEST',
         ]);
-    }
+    });
 
-    public function test_get_table_returns_correct_table_name(): void
-    {
+    it('get table returns correct table name', function (): void {
         $batch = new InventoryBatch;
         expect($batch->getTable())->toBe('inventory_batches');
-    }
+    });
 
-    public function test_inventoryable_relationship(): void
-    {
+    it('inventoryable relationship', function (): void {
         $batch = new InventoryBatch;
         $relation = $batch->inventoryable();
         expect($relation)->toBeInstanceOf(MorphTo::class);
-    }
+    });
 
-    public function test_location_relationship(): void
-    {
+    it('location relationship', function (): void {
         $batch = new InventoryBatch;
         $relation = $batch->location();
         expect($relation)->toBeInstanceOf(BelongsTo::class);
-    }
+    });
 
-    public function test_movements_relationship(): void
-    {
+    it('movements relationship', function (): void {
         $batch = new InventoryBatch;
         $relation = $batch->movements();
         expect($relation)->toBeInstanceOf(HasMany::class);
-    }
+    });
 
-    public function test_allocations_relationship(): void
-    {
+    it('allocations relationship', function (): void {
         $batch = new InventoryBatch;
         $relation = $batch->allocations();
         expect($relation)->toBeInstanceOf(HasMany::class);
-    }
+    });
 
-    public function test_get_available_attribute(): void
-    {
+    it('get available attribute', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -73,10 +58,9 @@ class InventoryBatchTest extends InventoryTestCase
         ]);
 
         expect($batch->available)->toBe(80);
-    }
+    });
 
-    public function test_get_is_expired_attribute(): void
-    {
+    it('get is expired attribute', function (): void {
         $expiredBatch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -93,10 +77,9 @@ class InventoryBatchTest extends InventoryTestCase
 
         expect($expiredBatch->is_expired)->toBeTrue();
         expect($validBatch->is_expired)->toBeFalse();
-    }
+    });
 
-    public function test_get_days_until_expiry_attribute(): void
-    {
+    it('get days until expiry attribute', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -105,10 +88,9 @@ class InventoryBatchTest extends InventoryTestCase
         ]);
 
         expect($batch->days_until_expiry)->toBe(4); // diffInDays might be off by 1
-    }
+    });
 
-    public function test_is_expired_method(): void
-    {
+    it('is expired method', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -117,10 +99,9 @@ class InventoryBatchTest extends InventoryTestCase
         ]);
 
         expect($batch->isExpired())->toBeTrue();
-    }
+    });
 
-    public function test_days_until_expiry_method(): void
-    {
+    it('days until expiry method', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -129,10 +110,9 @@ class InventoryBatchTest extends InventoryTestCase
         ]);
 
         expect($batch->daysUntilExpiry())->toBe(9); // diffInDays might be off by 1
-    }
+    });
 
-    public function test_get_status_enum(): void
-    {
+    it('get status enum', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -141,10 +121,9 @@ class InventoryBatchTest extends InventoryTestCase
         ]);
 
         expect($batch->getStatusEnum())->toBe(BatchStatus::Active);
-    }
+    });
 
-    public function test_can_allocate(): void
-    {
+    it('can allocate', function (): void {
         $allocatableBatch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -166,10 +145,9 @@ class InventoryBatchTest extends InventoryTestCase
 
         expect($allocatableBatch->canAllocate())->toBeTrue();
         expect($nonAllocatableBatch->canAllocate())->toBeFalse();
-    }
+    });
 
-    public function test_is_expiring_soon(): void
-    {
+    it('is expiring soon', function (): void {
         $expiringBatch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -186,10 +164,9 @@ class InventoryBatchTest extends InventoryTestCase
 
         expect($expiringBatch->isExpiringSoon(30))->toBeTrue();
         expect($notExpiringBatch->isExpiringSoon(30))->toBeFalse();
-    }
+    });
 
-    public function test_quarantine(): void
-    {
+    it('quarantine', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -203,10 +180,9 @@ class InventoryBatchTest extends InventoryTestCase
         expect($batch->fresh()->status)->toBe(BatchStatus::Quarantined->value);
         expect($batch->fresh()->quarantine_reason)->toBe('Quality issue detected');
         expect($batch->fresh()->quarantined_at)->not->toBeNull();
-    }
+    });
 
-    public function test_release_from_quarantine(): void
-    {
+    it('release from quarantine', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -222,10 +198,9 @@ class InventoryBatchTest extends InventoryTestCase
         expect($batch->fresh()->status)->toBe(BatchStatus::Active->value);
         expect($batch->fresh()->quarantined_at)->toBeNull();
         expect($batch->fresh()->quarantine_reason)->toBeNull();
-    }
+    });
 
-    public function test_recall(): void
-    {
+    it('recall', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -240,10 +215,9 @@ class InventoryBatchTest extends InventoryTestCase
         expect($fresh->status)->toBe(BatchStatus::Recalled->value);
         expect($fresh->recall_reason)->toBe('Safety hazard found');
         expect($fresh->recalled_at)->not->toBeNull();
-    }
+    });
 
-    public function test_mark_expired(): void
-    {
+    it('mark expired', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -255,10 +229,9 @@ class InventoryBatchTest extends InventoryTestCase
 
         expect($result)->toBe($batch);
         expect($batch->fresh()->status)->toBe(BatchStatus::Expired->value);
-    }
+    });
 
-    public function test_increment_on_hand(): void
-    {
+    it('increment on hand', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -270,10 +243,9 @@ class InventoryBatchTest extends InventoryTestCase
 
         expect($result)->toBe($batch);
         expect($batch->fresh()->quantity_on_hand)->toBe(60);
-    }
+    });
 
-    public function test_decrement_on_hand(): void
-    {
+    it('decrement on hand', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -286,10 +258,9 @@ class InventoryBatchTest extends InventoryTestCase
 
         expect($result)->toBe($batch);
         expect($batch->fresh()->quantity_on_hand)->toBe(40);
-    }
+    });
 
-    public function test_decrement_on_hand_to_zero_depletes(): void
-    {
+    it('decrement on hand to zero depletes', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -302,10 +273,9 @@ class InventoryBatchTest extends InventoryTestCase
 
         expect($batch->fresh()->quantity_on_hand)->toBe(0);
         expect($batch->fresh()->status)->toBe(BatchStatus::Depleted->value);
-    }
+    });
 
-    public function test_increment_reserved(): void
-    {
+    it('increment reserved', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -317,10 +287,9 @@ class InventoryBatchTest extends InventoryTestCase
 
         expect($result)->toBe($batch);
         expect($batch->fresh()->quantity_reserved)->toBe(15);
-    }
+    });
 
-    public function test_decrement_reserved(): void
-    {
+    it('decrement reserved', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -332,10 +301,9 @@ class InventoryBatchTest extends InventoryTestCase
 
         expect($result)->toBe($batch);
         expect($batch->fresh()->quantity_reserved)->toBe(15);
-    }
+    });
 
-    public function test_is_expired_with_null_expires_at(): void
-    {
+    it('is expired with null expires at', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -344,10 +312,9 @@ class InventoryBatchTest extends InventoryTestCase
         ]);
 
         expect($batch->is_expired)->toBeFalse();
-    }
+    });
 
-    public function test_days_until_expiry_with_null_expires_at(): void
-    {
+    it('days until expiry with null expires at', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -356,10 +323,9 @@ class InventoryBatchTest extends InventoryTestCase
         ]);
 
         expect($batch->days_until_expiry)->toBeNull();
-    }
+    });
 
-    public function test_is_expiring_soon_with_null_expires_at(): void
-    {
+    it('is expiring soon with null expires at', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -368,10 +334,9 @@ class InventoryBatchTest extends InventoryTestCase
         ]);
 
         expect($batch->isExpiringSoon())->toBeFalse();
-    }
+    });
 
-    public function test_can_allocate_when_expired(): void
-    {
+    it('can allocate when expired', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -383,10 +348,9 @@ class InventoryBatchTest extends InventoryTestCase
         ]);
 
         expect($batch->canAllocate())->toBeFalse();
-    }
+    });
 
-    public function test_can_allocate_when_no_available(): void
-    {
+    it('can allocate when no available', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -398,5 +362,5 @@ class InventoryBatchTest extends InventoryTestCase
         ]);
 
         expect($batch->canAllocate())->toBeFalse();
-    }
-}
+    });
+});

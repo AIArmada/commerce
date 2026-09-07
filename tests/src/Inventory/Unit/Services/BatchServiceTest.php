@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Events\BatchCreated;
 use AIArmada\Inventory\Events\BatchExpired;
@@ -14,25 +13,14 @@ use AIArmada\Inventory\Services\Batch\BatchService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Event;
 
-class BatchServiceTest extends InventoryTestCase
-{
-    protected BatchService $service;
-
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('BatchService', function (): void {
+    beforeEach(function (): void {
         $this->service = new BatchService;
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create();
-    }
+    });
 
-    public function test_create_batch(): void
-    {
+    it('create batch', function (): void {
         Event::fake();
 
         $batch = $this->service->createBatch(
@@ -50,34 +38,27 @@ class BatchServiceTest extends InventoryTestCase
         expect($batch->status)->toBe(BatchStatus::Active->value);
 
         Event::assertDispatched(BatchCreated::class);
-    }
+    });
 
-    public function test_create_batch_throws_for_zero_quantity(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-
+    it('create batch throws for zero quantity', function (): void {
         $this->service->createBatch(
             $this->item,
             'BATCH-001',
             $this->location->id,
             0
         );
-    }
+    })->throws(InvalidArgumentException::class);
 
-    public function test_create_batch_throws_for_negative_quantity(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-
+    it('create batch throws for negative quantity', function (): void {
         $this->service->createBatch(
             $this->item,
             'BATCH-001',
             $this->location->id,
             -10
         );
-    }
+    })->throws(InvalidArgumentException::class);
 
-    public function test_find_by_batch_number(): void
-    {
+    it('find by batch number', function (): void {
         InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -89,17 +70,15 @@ class BatchServiceTest extends InventoryTestCase
 
         expect($found)->not->toBeNull();
         expect($found->batch_number)->toBe('BATCH-FIND');
-    }
+    });
 
-    public function test_find_by_batch_number_returns_null_when_not_found(): void
-    {
+    it('find by batch number returns null when not found', function (): void {
         $found = $this->service->findByBatchNumber('NONEXISTENT');
 
         expect($found)->toBeNull();
-    }
+    });
 
-    public function test_get_batches_for_model(): void
-    {
+    it('get batches for model', function (): void {
         InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -116,10 +95,9 @@ class BatchServiceTest extends InventoryTestCase
         $batches = $this->service->getBatchesForModel($this->item);
 
         expect($batches)->toHaveCount(2);
-    }
+    });
 
-    public function test_get_allocatable_batches(): void
-    {
+    it('get allocatable batches', function (): void {
         InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -141,10 +119,9 @@ class BatchServiceTest extends InventoryTestCase
         $allocatable = $this->service->getAllocatableBatches($this->item);
 
         expect($allocatable)->toHaveCount(1);
-    }
+    });
 
-    public function test_get_total_available(): void
-    {
+    it('get total available', function (): void {
         InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -170,10 +147,9 @@ class BatchServiceTest extends InventoryTestCase
 
         // (100-20) + (50-10) = 80 + 40 = 120
         expect($total)->toBe(120);
-    }
+    });
 
-    public function test_quarantine_batch(): void
-    {
+    it('quarantine batch', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -185,10 +161,9 @@ class BatchServiceTest extends InventoryTestCase
         $result = $this->service->quarantine($batch, 'Quality issue found');
 
         expect($result->status)->toBe(BatchStatus::Quarantined->value);
-    }
+    });
 
-    public function test_recall_batches(): void
-    {
+    it('recall batches', function (): void {
         Event::fake();
 
         $batch1 = InventoryBatch::factory()->create([
@@ -214,10 +189,9 @@ class BatchServiceTest extends InventoryTestCase
         expect($batch2->fresh()->status)->toBe(BatchStatus::Recalled->value);
 
         Event::assertDispatched(BatchRecalled::class);
-    }
+    });
 
-    public function test_transfer_batch(): void
-    {
+    it('transfer batch', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -231,10 +205,9 @@ class BatchServiceTest extends InventoryTestCase
         $result = $this->service->transferBatch($batch, $newLocation);
 
         expect($result->location_id)->toBe($newLocation->id);
-    }
+    });
 
-    public function test_transfer_batch_throws_when_reserved(): void
-    {
+    it('transfer batch throws when reserved', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -245,12 +218,10 @@ class BatchServiceTest extends InventoryTestCase
 
         $newLocation = InventoryLocation::factory()->create();
 
-        $this->expectException(InvalidArgumentException::class);
         $this->service->transferBatch($batch, $newLocation);
-    }
+    })->throws(InvalidArgumentException::class);
 
-    public function test_split_batch(): void
-    {
+    it('split batch', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -265,10 +236,9 @@ class BatchServiceTest extends InventoryTestCase
         expect($newBatch->batch_number)->toBe('BATCH-SPLIT');
         expect($newBatch->quantity_on_hand)->toBe(30);
         expect($batch->fresh()->quantity_on_hand)->toBe(70);
-    }
+    });
 
-    public function test_split_batch_throws_for_invalid_quantity(): void
-    {
+    it('split batch throws for invalid quantity', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -278,12 +248,10 @@ class BatchServiceTest extends InventoryTestCase
             'quantity_reserved' => 0,
         ]);
 
-        $this->expectException(InvalidArgumentException::class);
         $this->service->splitBatch($batch, 0, 'BATCH-SPLIT');
-    }
+    })->throws(InvalidArgumentException::class);
 
-    public function test_merge_batches(): void
-    {
+    it('merge batches', function (): void {
         $batch1 = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -308,10 +276,9 @@ class BatchServiceTest extends InventoryTestCase
         expect($merged->quantity_on_hand)->toBe(80);
         expect(InventoryBatch::find($batch1->id))->toBeNull();
         expect(InventoryBatch::find($batch2->id))->toBeNull();
-    }
+    });
 
-    public function test_merge_batches_throws_for_single_batch(): void
-    {
+    it('merge batches throws for single batch', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -320,12 +287,10 @@ class BatchServiceTest extends InventoryTestCase
         ]);
 
         $batches = new Collection([$batch]);
-        $this->expectException(InvalidArgumentException::class);
         $this->service->mergeBatches($batches, 'BATCH-MERGED');
-    }
+    })->throws(InvalidArgumentException::class);
 
-    public function test_get_expiring_batches(): void
-    {
+    it('get expiring batches', function (): void {
         InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -347,10 +312,9 @@ class BatchServiceTest extends InventoryTestCase
 
         expect($expiring)->toHaveCount(1);
         expect($expiring->first()->batch_number)->toBe('BATCH-EXPIRING');
-    }
+    });
 
-    public function test_scope_with_status(): void
-    {
+    it('scope with status', function (): void {
         $activeBatch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -375,10 +339,9 @@ class BatchServiceTest extends InventoryTestCase
 
         expect($quarantineBatches)->toHaveCount(1);
         expect($quarantineBatches->first()->id)->toBe($quarantineBatch->id);
-    }
+    });
 
-    public function test_process_expired_batches(): void
-    {
+    it('process expired batches', function (): void {
         Event::fake();
 
         InventoryBatch::factory()->create([
@@ -394,5 +357,5 @@ class BatchServiceTest extends InventoryTestCase
 
         expect($count)->toBe(1);
         Event::assertDispatched(BatchExpired::class);
-    }
-}
+    });
+});

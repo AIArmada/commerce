@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAdjusted;
 use AIArmada\Inventory\Events\InventoryReceived;
@@ -16,20 +15,8 @@ use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Support\Facades\Event;
 
-class InventoryServiceTest extends InventoryTestCase
-{
-    protected InventoryService $inventoryService;
-
-    protected InventoryItem $item;
-
-    protected InventoryLocation $locationA;
-
-    protected InventoryLocation $locationB;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('InventoryService', function (): void {
+    beforeEach(function (): void {
         $this->inventoryService = app(InventoryService::class);
         $this->item = InventoryItem::create(['name' => 'Test Inventory Item']);
         $this->locationA = InventoryLocation::factory()->create([
@@ -42,10 +29,9 @@ class InventoryServiceTest extends InventoryTestCase
             'code' => 'OVER',
             'priority' => 50,
         ]);
-    }
+    });
 
-    public function test_receives_inventory_and_records_movement(): void
-    {
+    it('receives inventory and records movement', function (): void {
         Event::fake();
 
         $movement = $this->inventoryService->receive($this->item, $this->locationA->id, 15, 'restock', 'batch-1', 'user-1');
@@ -56,10 +42,9 @@ class InventoryServiceTest extends InventoryTestCase
         expect($movement->type)->toBe(MovementType::Receipt->value);
 
         Event::assertDispatched(InventoryReceived::class);
-    }
+    });
 
-    public function test_ships_inventory_and_dispatches_low_or_out_of_inventory_events_when_depleted(): void
-    {
+    it('ships inventory and dispatches low or out of inventory events when depleted', function (): void {
         Event::fake();
 
         $this->inventoryService->receive($this->item, $this->locationA->id, 3);
@@ -71,19 +56,15 @@ class InventoryServiceTest extends InventoryTestCase
 
         Event::assertDispatched(InventoryShipped::class);
         Event::assertDispatched(OutOfInventory::class);
-    }
+    });
 
-    public function test_throws_when_shipping_more_than_available(): void
-    {
-        $this->expectException(InsufficientInventoryException::class);
-
+    it('throws when shipping more than available', function (): void {
         $this->inventoryService->receive($this->item, $this->locationA->id, 2);
 
         $this->inventoryService->ship($this->item, $this->locationA->id, 3);
-    }
+    })->throws(InsufficientInventoryException::class);
 
-    public function test_shipping_considers_reserved_quantity(): void
-    {
+    it('shipping considers reserved quantity', function (): void {
         $this->inventoryService->receive($this->item, $this->locationA->id, 20);
 
         $level = $this->inventoryService->getLevel($this->item, $this->locationA->id);
@@ -91,13 +72,10 @@ class InventoryServiceTest extends InventoryTestCase
 
         $level->update(['quantity_reserved' => 15]);
 
-        $this->expectException(InsufficientInventoryException::class);
-
         $this->inventoryService->ship($this->item, $this->locationA->id, 10);
-    }
+    })->throws(InsufficientInventoryException::class);
 
-    public function test_transfers_inventory_between_locations_and_updates_levels(): void
-    {
+    it('transfers inventory between locations and updates levels', function (): void {
         Event::fake();
 
         $this->inventoryService->receive($this->item, $this->locationA->id, 5);
@@ -111,10 +89,9 @@ class InventoryServiceTest extends InventoryTestCase
 
         Event::assertDispatched(InventoryTransferred::class);
         Event::assertNotDispatched(InventoryShipped::class);
-    }
+    });
 
-    public function test_adjusts_inventory_to_a_target_quantity(): void
-    {
+    it('adjusts inventory to a target quantity', function (): void {
         Event::fake();
 
         $this->inventoryService->receive($this->item, $this->locationA->id, 10);
@@ -127,10 +104,9 @@ class InventoryServiceTest extends InventoryTestCase
 
         Event::assertDispatched(InventoryAdjusted::class);
         Event::assertDispatched(LowInventoryDetected::class);
-    }
+    });
 
-    public function test_reports_aggregated_availability_across_locations(): void
-    {
+    it('reports aggregated availability across locations', function (): void {
         $this->inventoryService->receive($this->item, $this->locationA->id, 7);
         $this->inventoryService->receive($this->item, $this->locationB->id, 5);
 
@@ -142,5 +118,5 @@ class InventoryServiceTest extends InventoryTestCase
         ]);
         expect($this->inventoryService->hasInventory($this->item, 10))->toBeTrue();
         expect($this->inventoryService->hasInventory($this->item, 20))->toBeFalse();
-    }
-}
+    });
+});

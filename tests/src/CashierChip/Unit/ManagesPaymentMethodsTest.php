@@ -2,33 +2,29 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
-class ManagesPaymentMethodsTest extends CashierChipTestCase
-{
-    public function test_payment_methods_returns_empty_without_chip_id(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('ManagesPaymentMethods', function (): void {
+    it('payment methods returns empty without chip id', function (): void {
         $user = $this->createUser(['email' => 'test@example.com']);
 
         $methods = $user->paymentMethods();
 
         $this->assertCount(0, $methods);
-    }
+    });
 
-    public function test_find_payment_method_returns_null_without_chip_id(): void
-    {
+    it('find payment method returns null without chip id', function (): void {
         $user = $this->createUser(['email' => 'test@example.com']);
 
         $method = $user->findPaymentMethod('pm_123');
 
         $this->assertNull($method);
-    }
+    });
 
-    public function test_has_default_payment_method(): void
-    {
+    it('has default payment method', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Cashier::paymentMethodStore()->saveForBillable($user, 'tok_default', [
             'type' => 'card',
@@ -37,34 +33,30 @@ class ManagesPaymentMethodsTest extends CashierChipTestCase
         ], true);
 
         $this->assertTrue($user->hasDefaultPaymentMethod());
-    }
+    });
 
-    public function test_has_default_payment_method_false(): void
-    {
+    it('has default payment method false', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertFalse($user->hasDefaultPaymentMethod());
-    }
+    });
 
-    public function test_default_payment_method_returns_null_without_default(): void
-    {
+    it('default payment method returns null without default', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertNull($user->defaultPaymentMethod());
-    }
+    });
 
-    public function test_delete_payment_method_returns_early_without_chip_id(): void
-    {
+    it('delete payment method returns early without chip id', function (): void {
         $user = $this->createUser(['email' => 'test@example.com']);
 
         // Should not throw
         $user->deletePaymentMethod('pm_123');
 
         $this->assertTrue(true);
-    }
+    });
 
-    public function test_delete_payment_methods(): void
-    {
+    it('delete payment methods', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Cashier::paymentMethodStore()->saveForBillable($user, 'tok_default', [
             'type' => 'card',
@@ -75,10 +67,9 @@ class ManagesPaymentMethodsTest extends CashierChipTestCase
         $user->deletePaymentMethods();
 
         $this->assertFalse($user->fresh()->hasPaymentMethod());
-    }
+    });
 
-    public function test_update_default_payment_method_persists_default_payment_method(): void
-    {
+    it('update default payment method persists default payment method', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $token = $this->fakeChip->addRecurringToken('cli_123', [
@@ -96,10 +87,9 @@ class ManagesPaymentMethodsTest extends CashierChipTestCase
         $this->assertSame('visa', $freshUser->pm_type);
         $this->assertNull($freshUser->pm_last_four);
         $this->assertSame('tok_primary', $token['id']);
-    }
+    });
 
-    public function test_default_payment_method_prefers_saved_default_payment_method(): void
-    {
+    it('default payment method prefers saved default payment method', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_456']);
         Cashier::paymentMethodStore()->saveForBillable($user, 'tok_preferred', [
             'type' => 'card',
@@ -122,5 +112,5 @@ class ManagesPaymentMethodsTest extends CashierChipTestCase
 
         $this->assertNotNull($paymentMethod);
         $this->assertSame('tok_preferred', $paymentMethod?->id());
-    }
-}
+    });
+});

@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\CashierChip\Listeners\HandlePurchasePaid;
 use AIArmada\Chip\Data\PurchaseData;
@@ -12,10 +10,10 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Event;
 
-class ListenersTest extends CashierChipTestCase
-{
-    public function test_handle_purchase_paid_dispatches_event()
-    {
+uses(CashierChipTestCase::class);
+
+describe('Listeners', function (): void {
+    it('handle purchase paid dispatches event', function (): void {
         Event::fake([PaymentSucceeded::class]);
 
         $user = $this->createUser([
@@ -38,10 +36,9 @@ class ListenersTest extends CashierChipTestCase
         Event::assertDispatched(PaymentSucceeded::class, function ($e) use ($user) {
             return $e->billable->is($user);
         });
-    }
+    });
 
-    public function test_handle_purchase_paid_updates_default_pm()
-    {
+    it('handle purchase paid updates default pm', function (): void {
         $user = $this->createUser([
             'chip_id' => 'cli_123',
         ]);
@@ -66,5 +63,5 @@ class ListenersTest extends CashierChipTestCase
 
         $user->refresh();
         $this->assertEquals('tok_123', $user->default_pm_id);
-    }
-}
+    });
+});

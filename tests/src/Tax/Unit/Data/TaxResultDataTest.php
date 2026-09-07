@@ -2,15 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Tests\Unit\Data;
-
-use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Tax\Data\TaxResultData;
 
-class TaxResultDataTest extends TaxTestCase
-{
-    public function test_can_create_tax_result(): void
-    {
+describe('TaxResultData', function (): void {
+    it('can create tax result', function (): void {
         $result = new TaxResultData(
             taxAmount: 600,
             rateId: 'rate-123',
@@ -30,10 +25,9 @@ class TaxResultDataTest extends TaxTestCase
         $this->assertEquals('Test Zone', $result->zoneName);
         $this->assertFalse($result->includedInPrice);
         $this->assertNull($result->exemptionReason);
-    }
+    });
 
-    public function test_is_exempt_with_exemption_reason(): void
-    {
+    it('is exempt with exemption reason', function (): void {
         $exemptResult = new TaxResultData(
             taxAmount: 0,
             rateId: 'exempt',
@@ -46,10 +40,9 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertTrue($exemptResult->isExempt());
-    }
+    });
 
-    public function test_is_exempt_with_zero_rate(): void
-    {
+    it('is exempt with zero rate', function (): void {
         // Zero-rate is NOT an exemption — it is a valid 0% tax rate.
         // Only a result with an exemptionReason set is truly exempt.
         $zeroResult = new TaxResultData(
@@ -63,10 +56,9 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertFalse($zeroResult->isExempt());
-    }
+    });
 
-    public function test_is_exempt_with_normal_tax(): void
-    {
+    it('is exempt with normal tax', function (): void {
         $normalResult = new TaxResultData(
             taxAmount: 600,
             rateId: 'rate-123',
@@ -78,10 +70,9 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertFalse($normalResult->isExempt());
-    }
+    });
 
-    public function test_get_formatted_amount(): void
-    {
+    it('get formatted amount', function (): void {
         $result = new TaxResultData(
             taxAmount: 1234, // $12.34
             rateId: 'rate-123',
@@ -92,10 +83,9 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertStringContainsString('12.34', $result->getFormattedAmount());
-    }
+    });
 
-    public function test_get_formatted_amount_with_custom_currency(): void
-    {
+    it('get formatted amount with custom currency', function (): void {
         $result = new TaxResultData(
             taxAmount: 1234,
             rateId: 'rate-123',
@@ -106,10 +96,9 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertStringContainsString('12.34', $result->getFormattedAmount('USD'));
-    }
+    });
 
-    public function test_get_formatted_rate(): void
-    {
+    it('get formatted rate', function (): void {
         $result = new TaxResultData(
             taxAmount: 600,
             rateId: 'rate-123',
@@ -120,10 +109,9 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertEquals('6.50%', $result->getFormattedRate());
-    }
+    });
 
-    public function test_get_summary_with_exemption(): void
-    {
+    it('get summary with exemption', function (): void {
         $exemptResult = new TaxResultData(
             taxAmount: 0,
             rateId: 'exempt',
@@ -135,10 +123,9 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertEquals('Tax Exempt Organization', $exemptResult->getSummary());
-    }
+    });
 
-    public function test_get_summary_with_normal_tax(): void
-    {
+    it('get summary with normal tax', function (): void {
         $normalResult = new TaxResultData(
             taxAmount: 600,
             rateId: 'rate-123',
@@ -149,10 +136,9 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertEquals('GST (6.00%)', $normalResult->getSummary());
-    }
+    });
 
-    public function test_get_summary_with_zero_rate(): void
-    {
+    it('get summary with zero rate', function (): void {
         // Zero-rate is not exempt — summary should show the rate name and 0.00%
         $zeroResult = new TaxResultData(
             taxAmount: 0,
@@ -164,10 +150,9 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertEquals('Zero Rate (0.00%)', $zeroResult->getSummary());
-    }
+    });
 
-    public function test_has_compound_taxes_with_single_rate(): void
-    {
+    it('has compound taxes with single rate', function (): void {
         $result = new TaxResultData(
             taxAmount: 600,
             rateId: 'rate-123',
@@ -181,10 +166,9 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertFalse($result->hasCompoundTaxes());
-    }
+    });
 
-    public function test_has_compound_taxes_with_multiple_rates(): void
-    {
+    it('has compound taxes with multiple rates', function (): void {
         $result = new TaxResultData(
             taxAmount: 1400,
             rateId: 'rate-123',
@@ -199,10 +183,9 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertTrue($result->hasCompoundTaxes());
-    }
+    });
 
-    public function test_has_compound_taxes_false_for_two_non_compound_rates(): void
-    {
+    it('has compound taxes false for two non compound rates', function (): void {
         // Two non-compound rates is NOT compound taxation.
         $result = new TaxResultData(
             taxAmount: 1100,
@@ -218,5 +201,5 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertFalse($result->hasCompoundTaxes());
-    }
-}
+    });
+});

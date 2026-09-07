@@ -2,32 +2,28 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Payment\InvoicePayment;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
-class InvoicePaymentTest extends CashierChipTestCase
-{
-    public function test_can_get_id(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('InvoicePayment', function (): void {
+    it('can get id', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoicePayment = new InvoicePayment($purchase);
 
         $this->assertEquals('pur_123', $invoicePayment->id());
-    }
+    });
 
-    public function test_can_get_status(): void
-    {
+    it('can get status', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoicePayment = new InvoicePayment($purchase);
 
         $this->assertEquals('paid', $invoicePayment->status());
-    }
+    });
 
-    public function test_is_completed(): void
-    {
+    it('is completed', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoicePayment = new InvoicePayment($purchase);
         $this->assertTrue($invoicePayment->isCompleted());
@@ -39,10 +35,9 @@ class InvoicePaymentTest extends CashierChipTestCase
         $purchaseFailed = PurchaseData::from(['id' => 'pur_125', 'status' => 'error']);
         $invoicePaymentFailed = new InvoicePayment($purchaseFailed);
         $this->assertFalse($invoicePaymentFailed->isCompleted());
-    }
+    });
 
-    public function test_is_pending(): void
-    {
+    it('is pending', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $invoicePayment = new InvoicePayment($purchase);
         $this->assertTrue($invoicePayment->isPending());
@@ -54,18 +49,16 @@ class InvoicePaymentTest extends CashierChipTestCase
         $purchasePaid = PurchaseData::from(['id' => 'pur_125', 'status' => 'paid']);
         $invoicePaymentPaid = new InvoicePayment($purchasePaid);
         $this->assertFalse($invoicePaymentPaid->isPending());
-    }
+    });
 
-    public function test_overdue_purchase_is_pending(): void
-    {
+    it('overdue purchase is pending', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_126', 'status' => 'overdue']);
         $invoicePayment = new InvoicePayment($purchase);
 
         $this->assertTrue($invoicePayment->isPending());
-    }
+    });
 
-    public function test_is_failed(): void
-    {
+    it('is failed', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'error']);
         $invoicePayment = new InvoicePayment($purchase);
         $this->assertTrue($invoicePayment->isFailed());
@@ -77,10 +70,9 @@ class InvoicePaymentTest extends CashierChipTestCase
         $purchasePaid = PurchaseData::from(['id' => 'pur_125', 'status' => 'paid']);
         $invoicePaymentPaid = new InvoicePayment($purchasePaid);
         $this->assertFalse($invoicePaymentPaid->isFailed());
-    }
+    });
 
-    public function test_can_get_raw_amount(): void
-    {
+    it('can get raw amount', function (): void {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
             'status' => 'paid',
@@ -89,10 +81,9 @@ class InvoicePaymentTest extends CashierChipTestCase
         $invoicePayment = new InvoicePayment($purchase);
 
         $this->assertEquals(1000, $invoicePayment->rawAmount());
-    }
+    });
 
-    public function test_can_get_currency(): void
-    {
+    it('can get currency', function (): void {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
             'status' => 'paid',
@@ -101,18 +92,16 @@ class InvoicePaymentTest extends CashierChipTestCase
         $invoicePayment = new InvoicePayment($purchase);
 
         $this->assertEquals('MYR', $invoicePayment->currency());
-    }
+    });
 
-    public function test_can_get_chip_purchase(): void
-    {
+    it('can get chip purchase', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoicePayment = new InvoicePayment($purchase);
 
         $this->assertSame($purchase, $invoicePayment->asChipPurchase());
-    }
+    });
 
-    public function test_to_array(): void
-    {
+    it('to array', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoicePayment = new InvoicePayment($purchase);
 
@@ -124,10 +113,9 @@ class InvoicePaymentTest extends CashierChipTestCase
         $this->assertEquals('pur_123', $array['id']);
         $this->assertEquals('paid', $array['status']);
         $this->assertTrue($array['is_completed']);
-    }
+    });
 
-    public function test_to_json(): void
-    {
+    it('to json', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoicePayment = new InvoicePayment($purchase);
 
@@ -135,10 +123,9 @@ class InvoicePaymentTest extends CashierChipTestCase
 
         $this->assertJson($json);
         $this->assertStringContainsString('pur_123', $json);
-    }
+    });
 
-    public function test_json_serialize(): void
-    {
+    it('json serialize', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $invoicePayment = new InvoicePayment($purchase);
 
@@ -146,15 +133,14 @@ class InvoicePaymentTest extends CashierChipTestCase
 
         $this->assertIsArray($serialized);
         $this->assertEquals('pur_123', $serialized['id']);
-    }
+    });
 
-    public function test_dynamic_property_access(): void
-    {
+    it('dynamic property access', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid', 'reference' => 'ref_123']);
         $invoicePayment = new InvoicePayment($purchase);
 
         // Dynamic __get should retrieve from purchase
         $this->assertEquals('pur_123', $invoicePayment->id);
         $this->assertEquals('paid', $invoicePayment->status);
-    }
-}
+    });
+});

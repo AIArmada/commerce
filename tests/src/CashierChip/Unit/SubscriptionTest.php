@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\CashierChip\Subscription\Subscription;
@@ -15,10 +13,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 use Mockery;
 
-class SubscriptionTest extends CashierChipTestCase
-{
-    public function test_can_check_active_status()
-    {
+uses(CashierChipTestCase::class);
+
+describe('Subscription', function (): void {
+    it('can check active status', function (): void {
         $subscription = $this->makeTrustedSubscription(['chip_status' => SubscriptionStatus::Active]);
         $this->assertTrue($subscription->active());
         $this->assertFalse($subscription->onTrial());
@@ -40,10 +38,9 @@ class SubscriptionTest extends CashierChipTestCase
 
         $subscription->chip_status = SubscriptionStatus::Incomplete;
         $this->assertFalse($subscription->active());
-    }
+    });
 
-    public function test_can_check_valid_status()
-    {
+    it('can check valid status', function (): void {
         $subscription = $this->makeTrustedSubscription(['chip_status' => SubscriptionStatus::Active]);
         $this->assertTrue($subscription->valid());
 
@@ -53,10 +50,9 @@ class SubscriptionTest extends CashierChipTestCase
         $subscription->chip_status = SubscriptionStatus::Canceled;
         $subscription->ends_at = Carbon::now()->subDay();
         $this->assertFalse($subscription->valid());
-    }
+    });
 
-    public function test_can_check_incomplete()
-    {
+    it('can check incomplete', function (): void {
         $subscription = $this->makeTrustedSubscription(['chip_status' => SubscriptionStatus::Incomplete]);
         $this->assertTrue($subscription->incomplete());
 
@@ -65,10 +61,9 @@ class SubscriptionTest extends CashierChipTestCase
 
         $subscription->chip_status = SubscriptionStatus::Active;
         $this->assertFalse($subscription->incomplete());
-    }
+    });
 
-    public function test_can_check_canceled()
-    {
+    it('can check canceled', function (): void {
         $subscription = $this->makeTrustedSubscription(['chip_status' => SubscriptionStatus::Canceled, 'ends_at' => Carbon::now()]);
         $this->assertTrue($subscription->canceled());
 
@@ -84,10 +79,9 @@ class SubscriptionTest extends CashierChipTestCase
 
         $subscription->ends_at = null; // Uncancel
         $this->assertFalse($subscription->canceled());
-    }
+    });
 
-    public function test_can_check_ended()
-    {
+    it('can check ended', function (): void {
         $subscription = $this->makeTrustedSubscription([
             'chip_status' => SubscriptionStatus::Canceled,
             'ends_at' => Carbon::now()->subDay(),
@@ -101,10 +95,9 @@ class SubscriptionTest extends CashierChipTestCase
         // Grace period is NOT ended
         $subscription->ends_at = Carbon::now()->addDay();
         $this->assertFalse($subscription->ended());
-    }
+    });
 
-    public function test_has_incomplete_payment()
-    {
+    it('has incomplete payment', function (): void {
         $subscription = $this->makeTrustedSubscription([
             'chip_status' => SubscriptionStatus::PastDue,
         ]);
@@ -118,26 +111,23 @@ class SubscriptionTest extends CashierChipTestCase
 
         $subscription->chip_status = SubscriptionStatus::Active;
         $this->assertFalse($subscription->hasIncompletePayment());
-    }
+    });
 
-    public function test_owner_relationship()
-    {
+    it('owner relationship', function (): void {
         $user = new User;
         $subscription = new Subscription;
         $subscription->setRelation('owner', $user);
 
         $this->assertSame($user, $subscription->owner);
-    }
+    });
 
-    public function test_items_relationship()
-    {
+    it('items relationship', function (): void {
         // hasMany relation
         $subscription = new Subscription;
         $this->assertInstanceOf(HasMany::class, $subscription->items());
-    }
+    });
 
-    public function test_can_cancel_immediately()
-    {
+    it('can cancel immediately', function (): void {
         $user = $this->createUser(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
         $subscription = Subscription::factory()->for($user, 'owner')->create(['chip_status' => SubscriptionStatus::Active]);
 
@@ -146,10 +136,9 @@ class SubscriptionTest extends CashierChipTestCase
         $this->assertTrue($subscription->canceled());
         $this->assertEquals(SubscriptionStatus::Canceled, $subscription->chip_status);
         $this->assertNotNull($subscription->ends_at);
-    }
+    });
 
-    public function test_can_resume()
-    {
+    it('can resume', function (): void {
         $user = $this->createUser(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Canceled,
@@ -162,31 +151,27 @@ class SubscriptionTest extends CashierChipTestCase
         $this->assertFalse($subscription->canceled());
         $this->assertNull($subscription->ends_at);
         $this->assertEquals(SubscriptionStatus::Active, $subscription->chip_status);
-    }
+    });
 
-    public function test_resume_throws_exception_if_not_on_grace_period()
-    {
+    it('resume throws exception if not on grace period', function (): void {
         $subscription = $this->makeTrustedSubscription([
             'chip_status' => SubscriptionStatus::Canceled,
             'ends_at' => Carbon::yesterday(),
         ]);
 
-        $this->expectException(LogicException::class);
         $subscription->resume();
-    }
+    })->throws(LogicException::class);
 
-    public function test_skip_trial()
-    {
+    it('skip trial', function (): void {
         $subscription = $this->makeTrustedSubscription([
             'trial_ends_at' => Carbon::tomorrow(),
         ]);
 
         $subscription->skipTrial();
         $this->assertNull($subscription->trial_ends_at);
-    }
+    });
 
-    public function test_end_trial()
-    {
+    it('end trial', function (): void {
         $user = $this->createUser(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
         $subscription = Subscription::factory()->for($user, 'billable')->create([
             'trial_ends_at' => Carbon::tomorrow(),
@@ -195,10 +180,9 @@ class SubscriptionTest extends CashierChipTestCase
         $subscription->endTrial();
 
         $this->assertNull($subscription->fresh()->trial_ends_at);
-    }
+    });
 
-    public function test_recurring_token()
-    {
+    it('recurring token', function (): void {
         $subscription = new Subscription;
         $subscription->recurring_token = 'test-recurring-token-123';
         $this->assertEquals('test-recurring-token-123', $subscription->recurringToken());
@@ -211,10 +195,9 @@ class SubscriptionTest extends CashierChipTestCase
         $subscription->setRelation('customer', $owner);
 
         $this->assertEquals('tok_default', $subscription->recurringToken());
-    }
+    });
 
-    public function test_increment_decrement_quantity()
-    {
+    it('increment decrement quantity', function (): void {
         $user = $this->createUser(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
 
         $subscription = null;
@@ -234,20 +217,18 @@ class SubscriptionTest extends CashierChipTestCase
 
         OwnerContext::withOwner($user, fn (): mixed => $subscription->decrementQuantity());
         $this->assertEquals(1, $subscription->fresh()->quantity);
-    }
+    });
 
-    public function test_scope_active()
-    {
+    it('scope active', function (): void {
         $user = $this->createUser(['email' => 'u1', 'name' => 'U1', 'chip_id' => 'c1']);
         Subscription::factory()->for($user, 'billable')->create(['chip_status' => SubscriptionStatus::Active]);
         Subscription::factory()->for($user, 'billable')->create(['chip_status' => SubscriptionStatus::Canceled, 'ends_at' => Carbon::now()->subDay()]);
 
         // Use query()->active()
         $this->assertEquals(1, Subscription::query()->active()->count());
-    }
+    });
 
-    public function test_current_period_start_respects_interval_count(): void
-    {
+    it('current period start respects interval count', function (): void {
         $subscription = $this->makeTrustedSubscription([
             'billing_interval' => 'month',
             'billing_interval_count' => 3,
@@ -258,5 +239,5 @@ class SubscriptionTest extends CashierChipTestCase
 
         $this->assertNotNull($periodStart);
         $this->assertSame('2026-03-01 00:00:00', $periodStart?->format('Y-m-d H:i:s'));
-    }
-}
+    });
+});

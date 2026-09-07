@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Subscription\Subscription;
@@ -11,10 +9,10 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use Mockery;
 
-class HandlesPaymentFailuresTest extends CashierChipTestCase
-{
-    public function test_it_validates_incomplete_payments()
-    {
+uses(CashierChipTestCase::class);
+
+describe('HandlesPaymentFailures', function (): void {
+    it('it validates incomplete payments', function (): void {
         $user = new User;
 
         $payment = Mockery::mock(Payment::class);
@@ -24,13 +22,10 @@ class HandlesPaymentFailuresTest extends CashierChipTestCase
         $subscription->shouldReceive('hasIncompletePayment')->andReturn(true);
         $subscription->shouldReceive('latestPayment')->andReturn($payment);
 
-        $this->expectException(IncompletePayment::class);
-
         $user->handlePaymentFailure($subscription);
-    }
+    })->throws(IncompletePayment::class);
 
-    public function test_it_can_ignore_incomplete_payments()
-    {
+    it('it can ignore incomplete payments', function (): void {
         $user = new User;
 
         $subscription = Mockery::mock(Subscription::class);
@@ -42,5 +37,5 @@ class HandlesPaymentFailuresTest extends CashierChipTestCase
         $user->ignoreIncompletePayments()->handlePaymentFailure($subscription);
 
         $this->assertTrue(true);
-    }
-}
+    });
+});

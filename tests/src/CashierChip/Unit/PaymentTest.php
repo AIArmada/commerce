@@ -2,106 +2,93 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
-class PaymentTest extends CashierChipTestCase
-{
-    public function test_can_get_id(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('Payment', function (): void {
+    it('can get id', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $this->assertEquals('pur_123', $payment->id());
-    }
+    });
 
-    public function test_can_get_status(): void
-    {
+    it('can get status', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $this->assertEquals('paid', $payment->status());
-    }
+    });
 
-    public function test_is_succeeded(): void
-    {
+    it('is succeeded', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isSucceeded());
-    }
+    });
 
-    public function test_is_succeeded_when_paid(): void
-    {
+    it('is succeeded when paid', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isSucceeded());
-    }
+    });
 
-    public function test_is_pending(): void
-    {
+    it('is pending', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isPending());
-    }
+    });
 
-    public function test_overdue_purchase_remains_pending_and_not_expired(): void
-    {
+    it('overdue purchase remains pending and not expired', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'overdue']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isPending());
         $this->assertFalse($payment->isExpired());
-    }
+    });
 
-    public function test_is_expired(): void
-    {
+    it('is expired', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'expired']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isExpired());
-    }
+    });
 
-    public function test_is_failed(): void
-    {
+    it('is failed', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'error']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isFailed());
-    }
+    });
 
-    public function test_is_cancelled(): void
-    {
+    it('is cancelled', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'cancelled']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isCancelled());
-    }
+    });
 
-    public function test_released_purchase_is_cancelled(): void
-    {
+    it('released purchase is cancelled', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'released']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isCancelled());
-    }
+    });
 
-    public function test_is_refunded(): void
-    {
+    it('is refunded', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'refunded']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->isRefunded());
-    }
+    });
 
-    public function test_dynamic_property_access(): void
-    {
+    it('dynamic property access', function (): void {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
             'status' => 'paid',
@@ -113,10 +100,9 @@ class PaymentTest extends CashierChipTestCase
         $this->assertEquals('pur_123', $payment->id);
         $this->assertEquals('paid', $payment->status);
         $this->assertEquals('REF-001', $payment->reference);
-    }
+    });
 
-    public function test_requires_redirect(): void
-    {
+    it('requires redirect', function (): void {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
             'status' => 'created',
@@ -125,26 +111,23 @@ class PaymentTest extends CashierChipTestCase
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->requiresRedirect());
-    }
+    });
 
-    public function test_requires_capture_for_held_purchase(): void
-    {
+    it('requires capture for held purchase', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'hold']);
         $payment = new Payment($purchase);
 
         $this->assertTrue($payment->requiresCapture());
-    }
+    });
 
-    public function test_preauthorized_purchase_does_not_require_capture(): void
-    {
+    it('preauthorized purchase does not require capture', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'preauthorized']);
         $payment = new Payment($purchase);
 
         $this->assertFalse($payment->requiresCapture());
-    }
+    });
 
-    public function test_is_processing(): void
-    {
+    it('is processing', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $payment = new Payment($purchase);
 
@@ -154,10 +137,9 @@ class PaymentTest extends CashierChipTestCase
         $payment2 = new Payment($purchase2);
 
         $this->assertTrue($payment2->isProcessing());
-    }
+    });
 
-    public function test_get_checkout_url(): void
-    {
+    it('get checkout url', function (): void {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
             'status' => 'created',
@@ -166,10 +148,9 @@ class PaymentTest extends CashierChipTestCase
         $payment = new Payment($purchase);
 
         $this->assertEquals('https://chip.example.com/checkout/pur_123', $payment->checkoutUrl());
-    }
+    });
 
-    public function test_get_recurring_token(): void
-    {
+    it('get recurring token', function (): void {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
             'status' => 'paid',
@@ -178,10 +159,9 @@ class PaymentTest extends CashierChipTestCase
         $payment = new Payment($purchase);
 
         $this->assertEquals('tok_123', $payment->recurringToken());
-    }
+    });
 
-    public function test_get_currency(): void
-    {
+    it('get currency', function (): void {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
             'status' => 'paid',
@@ -190,10 +170,9 @@ class PaymentTest extends CashierChipTestCase
         $payment = new Payment($purchase);
 
         $this->assertEquals('MYR', $payment->currency());
-    }
+    });
 
-    public function test_get_raw_amount(): void
-    {
+    it('get raw amount', function (): void {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
             'status' => 'paid',
@@ -203,18 +182,16 @@ class PaymentTest extends CashierChipTestCase
 
         // rawAmount should return an integer - exact value depends on how PurchaseData handles payment
         $this->assertIsInt($payment->rawAmount());
-    }
+    });
 
-    public function test_as_chip_purchase(): void
-    {
+    it('as chip purchase', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $this->assertSame($purchase, $payment->asChipPurchase());
-    }
+    });
 
-    public function test_set_customer(): void
-    {
+    it('set customer', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
@@ -222,38 +199,34 @@ class PaymentTest extends CashierChipTestCase
         $payment->setCustomer($user);
 
         $this->assertSame($user, $payment->customer());
-    }
+    });
 
-    public function test_to_array(): void
-    {
+    it('to array', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $array = $payment->toArray();
 
         $this->assertIsArray($array);
-    }
+    });
 
-    public function test_to_json(): void
-    {
+    it('to json', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $json = $payment->toJson();
 
         $this->assertJson($json);
-    }
+    });
 
-    public function test_json_serialize(): void
-    {
+    it('json serialize', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid', 'reference' => 'ref_123']);
         $payment = new Payment($purchase);
 
         $this->assertIsArray($payment->jsonSerialize());
-    }
+    });
 
-    public function test_validate_throws_on_requires_redirect(): void
-    {
+    it('validate throws on requires redirect', function (): void {
         $purchase = PurchaseData::from([
             'id' => 'pur_123',
             'status' => 'created',
@@ -261,65 +234,56 @@ class PaymentTest extends CashierChipTestCase
         ]);
         $payment = new Payment($purchase);
 
-        $this->expectException(IncompletePayment::class);
         $payment->validate();
-    }
+    })->throws(IncompletePayment::class);
 
-    public function test_validate_throws_on_failed(): void
-    {
+    it('validate throws on failed', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'error']);
         $payment = new Payment($purchase);
 
-        $this->expectException(IncompletePayment::class);
         $payment->validate();
-    }
+    })->throws(IncompletePayment::class);
 
-    public function test_validate_throws_on_expired(): void
-    {
+    it('validate throws on expired', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'expired']);
         $payment = new Payment($purchase);
 
-        $this->expectException(IncompletePayment::class);
         $payment->validate();
-    }
+    })->throws(IncompletePayment::class);
 
-    public function test_validate_passes_on_success(): void
-    {
+    it('validate passes on success', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         // Should not throw
         $payment->validate();
         $this->assertTrue(true);
-    }
+    });
 
-    public function test_capture_returns_self_when_not_held(): void
-    {
+    it('capture returns self when not held', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $result = $payment->capture();
 
         $this->assertSame($payment, $result);
-    }
+    });
 
-    public function test_cancel_returns_self_when_succeeded(): void
-    {
+    it('cancel returns self when succeeded', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
         $payment = new Payment($purchase);
 
         $result = $payment->cancel();
 
         $this->assertSame($payment, $result);
-    }
+    });
 
-    public function test_cancel_returns_self_when_cancelled(): void
-    {
+    it('cancel returns self when cancelled', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'cancelled']);
         $payment = new Payment($purchase);
 
         $result = $payment->cancel();
 
         $this->assertSame($payment, $result);
-    }
-}
+    });
+});

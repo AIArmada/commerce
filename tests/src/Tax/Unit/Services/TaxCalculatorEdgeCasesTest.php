@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Tests\Unit\Services;
-
-use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
@@ -13,29 +10,18 @@ use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Tax\Settings\TaxSettings;
 use AIArmada\Tax\Settings\TaxZoneSettings;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 
-class TaxCalculatorEdgeCasesTest extends TaxTestCase
-{
-    use RefreshDatabase;
-
-    private TaxCalculator $calculator;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
+describe('TaxCalculatorEdgeCases', function (): void {
+    beforeEach(function (): void {
         $this->calculator = $this->app->make(TaxCalculator::class);
-    }
+    });
 
-    protected function tearDown(): void
-    {
+    afterEach(function (): void {
         Mockery::close();
-        parent::tearDown();
-    }
+    });
 
-    public function test_compound_tax_with_tax_inclusive_pricing(): void
-    {
+    it('compound tax with tax inclusive pricing', function (): void {
         $mockSettings = Mockery::mock(TaxSettings::class);
         $mockSettings->enabled = true;
         $mockSettings->pricesIncludeTax = true;
@@ -81,10 +67,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         $compoundBreakdown = collect($result->breakdown)->firstWhere('is_compound', true);
         $this->assertNotNull($compoundBreakdown);
         $this->assertEquals('Compound Rate', $compoundBreakdown['name']);
-    }
+    });
 
-    public function test_compound_tax_with_tax_exclusive_pricing(): void
-    {
+    it('compound tax with tax exclusive pricing', function (): void {
         config(['tax.defaults.prices_include_tax' => false]);
 
         $zone = TaxZone::create([
@@ -124,10 +109,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         $this->assertEquals(815, $result->taxAmount);
         $this->assertFalse($result->includedInPrice);
         $this->assertTrue($result->hasCompoundTaxes());
-    }
+    });
 
-    public function test_fallback_zone_id_resolution(): void
-    {
+    it('fallback zone id resolution', function (): void {
         $fallbackZone = TaxZone::create([
             'name' => 'Fallback Zone',
             'code' => 'FALLBACK',
@@ -149,10 +133,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
 
         $this->assertEquals(500, $result->taxAmount);
         $this->assertEquals($fallbackZone->id, $result->zoneId);
-    }
+    });
 
-    public function test_fallback_zone_id_not_found(): void
-    {
+    it('fallback zone id not found', function (): void {
         config(['tax.features.zone_resolution.fallback_zone_id' => 'non-existent-uuid']);
         config(['tax.features.zone_resolution.unknown_zone_behavior' => 'zero']);
 
@@ -160,20 +143,18 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
 
         $this->assertEquals(0, $result->taxAmount);
         $this->assertEquals('Zero Rate Zone', $result->zoneName);
-    }
+    });
 
-    public function test_unknown_zone_behavior_default_branch(): void
-    {
+    it('unknown zone behavior default branch', function (): void {
         config(['tax.features.zone_resolution.unknown_zone_behavior' => 'unknown_value']);
 
         $result = $this->calculator->calculateTax(10000, 'standard');
 
         $this->assertEquals(0, $result->taxAmount);
         $this->assertEquals('Zero Rate Zone', $result->zoneName);
-    }
+    });
 
-    public function test_create_exempt_result_with_zone_id(): void
-    {
+    it('create exempt result with zone id', function (): void {
         $zone = TaxZone::create([
             'name' => 'Exempt Zone',
             'code' => 'EXEMPT',
@@ -206,10 +187,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         $this->assertEquals($zone->id, $result->zoneId);
         $this->assertEquals($zone->name, $result->zoneName);
         $this->assertEquals('Test exemption', $result->exemptionReason);
-    }
+    });
 
-    public function test_create_exempt_result_without_zone_id(): void
-    {
+    it('create exempt result without zone id', function (): void {
         TaxExemption::create([
             'exemptable_id' => 'customer-no-zone',
             'exemptable_type' => 'App\\Models\\Customer',
@@ -227,10 +207,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         $this->assertEquals(0, $result->taxAmount);
         $this->assertEquals('Zero Rate Zone', $result->zoneName);
         $this->assertEquals('Test exemption no zone', $result->exemptionReason);
-    }
+    });
 
-    public function test_create_zero_result_with_valid_zone_id(): void
-    {
+    it('create zero result with valid zone id', function (): void {
         config(['tax.features.enabled' => false]);
 
         $zone = TaxZone::create([
@@ -244,20 +223,18 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         $this->assertEquals(0, $result->taxAmount);
         $this->assertEquals($zone->id, $result->zoneId);
         $this->assertEquals($zone->name, $result->zoneName);
-    }
+    });
 
-    public function test_create_zero_result_with_invalid_zone_id(): void
-    {
+    it('create zero result with invalid zone id', function (): void {
         config(['tax.features.enabled' => false]);
 
         $result = $this->calculator->calculateTax(10000, 'standard', 'invalid-uuid');
 
         $this->assertEquals(0, $result->taxAmount);
         $this->assertEquals('Zero Rate Zone', $result->zoneName);
-    }
+    });
 
-    public function test_settings_fallback_when_settings_throw(): void
-    {
+    it('settings fallback when settings throw', function (): void {
         $this->app->bind(TaxSettings::class, fn () => throw new Exception('Settings not configured'));
 
         config(['tax.features.enabled' => true]);
@@ -282,10 +259,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
 
         $this->assertEquals(600, $result->taxAmount);
         $this->assertFalse($result->includedInPrice);
-    }
+    });
 
-    public function test_zone_settings_fallback_when_settings_throw(): void
-    {
+    it('zone settings fallback when settings throw', function (): void {
         $this->app->bind(TaxZoneSettings::class, fn () => throw new Exception('Zone settings not configured'));
 
         config(['tax.features.zone_resolution.use_customer_address' => true]);
@@ -312,10 +288,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         ]);
 
         $this->assertEquals(700, $result->taxAmount);
-    }
+    });
 
-    public function test_tax_settings_enabled_via_spatie_settings(): void
-    {
+    it('tax settings enabled via spatie settings', function (): void {
         $mockSettings = Mockery::mock(TaxSettings::class);
         $mockSettings->enabled = false;
         $mockSettings->pricesIncludeTax = false;
@@ -341,10 +316,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         $result = $this->calculator->calculateTax(10000, 'standard', $zone->id);
 
         $this->assertEquals(0, $result->taxAmount);
-    }
+    });
 
-    public function test_prices_include_tax_via_spatie_settings(): void
-    {
+    it('prices include tax via spatie settings', function (): void {
         $mockSettings = Mockery::mock(TaxSettings::class);
         $mockSettings->enabled = true;
         $mockSettings->pricesIncludeTax = true;
@@ -371,10 +345,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
 
         $this->assertEquals(1000, $result->taxAmount);
         $this->assertTrue($result->includedInPrice);
-    }
+    });
 
-    public function test_shipping_not_taxable_via_spatie_settings(): void
-    {
+    it('shipping not taxable via spatie settings', function (): void {
         $mockSettings = Mockery::mock(TaxSettings::class);
         $mockSettings->enabled = true;
         $mockSettings->pricesIncludeTax = false;
@@ -386,10 +359,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         $result = $this->calculator->calculateShippingTax(5000);
 
         $this->assertEquals(0, $result->taxAmount);
-    }
+    });
 
-    public function test_zone_resolution_via_spatie_settings(): void
-    {
+    it('zone resolution via spatie settings', function (): void {
         $mockZoneSettings = Mockery::mock(TaxZoneSettings::class);
         $mockZoneSettings->autoDetectZone = true;
         $mockZoneSettings->fallbackBehavior = 'zero';
@@ -417,10 +389,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         ]);
 
         $this->assertEquals(800, $result->taxAmount);
-    }
+    });
 
-    public function test_zone_resolution_disabled_via_config(): void
-    {
+    it('zone resolution disabled via config', function (): void {
         config(['tax.features.zone_resolution.use_customer_address' => false]);
 
         $zone = TaxZone::create([
@@ -443,10 +414,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         ]);
 
         $this->assertEquals(0, $result->taxAmount);
-    }
+    });
 
-    public function test_fallback_zone_via_config(): void
-    {
+    it('fallback zone via config', function (): void {
         $fallbackZone = TaxZone::create([
             'name' => 'Fallback',
             'code' => 'FALLBACK',
@@ -468,10 +438,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
 
         $this->assertEquals(550, $result->taxAmount);
         $this->assertEquals($fallbackZone->id, $result->zoneId);
-    }
+    });
 
-    public function test_billing_address_priority_via_config(): void
-    {
+    it('billing address priority via config', function (): void {
         config(['tax.features.zone_resolution.address_priority' => 'billing']);
 
         $sgZone = TaxZone::create([
@@ -510,15 +479,12 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         ]);
 
         $this->assertEquals(900, $result->taxAmount);
-    }
+    });
 
-    public function test_unknown_zone_behavior_error_via_config(): void
-    {
+    it('unknown zone behavior error via config', function (): void {
         config(['tax.features.zone_resolution.use_customer_address' => false]);
         config(['tax.features.zone_resolution.unknown_zone_behavior' => 'error']);
 
-        $this->expectException(TaxZoneNotFoundException::class);
-
         $this->calculator->calculateTax(10000, 'standard');
-    }
-}
+    })->throws(TaxZoneNotFoundException::class);
+});

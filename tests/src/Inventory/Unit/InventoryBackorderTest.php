@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Models\InventoryBackorder;
 use AIArmada\Inventory\States\Cancelled;
@@ -13,30 +12,25 @@ use AIArmada\Inventory\States\Pending;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-class InventoryBackorderTest extends InventoryTestCase
-{
-    public function test_get_table_returns_correct_table_name(): void
-    {
+describe('InventoryBackorder', function (): void {
+    it('get table returns correct table name', function (): void {
         $backorder = new InventoryBackorder;
         expect($backorder->getTable())->toBe('inventory_backorders');
-    }
+    });
 
-    public function test_inventoryable_relationship(): void
-    {
+    it('inventoryable relationship', function (): void {
         $backorder = new InventoryBackorder;
         $relation = $backorder->inventoryable();
         expect($relation)->toBeInstanceOf(MorphTo::class);
-    }
+    });
 
-    public function test_location_relationship(): void
-    {
+    it('location relationship', function (): void {
         $backorder = new InventoryBackorder;
         $relation = $backorder->location();
         expect($relation)->toBeInstanceOf(BelongsTo::class);
-    }
+    });
 
-    public function test_scope_open_filters_correctly(): void
-    {
+    it('scope open filters correctly', function (): void {
         InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '1',
@@ -70,10 +64,9 @@ class InventoryBackorderTest extends InventoryTestCase
 
         $open = InventoryBackorder::open()->get();
         expect($open)->toHaveCount(2);
-    }
+    });
 
-    public function test_scope_pending_filters_correctly(): void
-    {
+    it('scope pending filters correctly', function (): void {
         InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '4',
@@ -98,10 +91,9 @@ class InventoryBackorderTest extends InventoryTestCase
         $pending = InventoryBackorder::pending()->get();
         expect($pending)->toHaveCount(1);
         expect($pending->first()->status)->toBeInstanceOf(Pending::class);
-    }
+    });
 
-    public function test_is_closed(): void
-    {
+    it('is closed', function (): void {
         $fulfilled = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '6',
@@ -126,10 +118,9 @@ class InventoryBackorderTest extends InventoryTestCase
 
         expect($fulfilled->isClosed())->toBeTrue();
         expect($pending->isClosed())->toBeFalse();
-    }
+    });
 
-    public function test_is_overdue(): void
-    {
+    it('is overdue', function (): void {
         $overdue = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '8',
@@ -156,10 +147,9 @@ class InventoryBackorderTest extends InventoryTestCase
 
         expect($overdue->isOverdue())->toBeTrue();
         expect($notOverdue->isOverdue())->toBeFalse();
-    }
+    });
 
-    public function test_can_fulfill(): void
-    {
+    it('can fulfill', function (): void {
         $canFulfill = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '10',
@@ -184,10 +174,9 @@ class InventoryBackorderTest extends InventoryTestCase
 
         expect($canFulfill->canFulfill())->toBeTrue();
         expect($cannotFulfill->canFulfill())->toBeFalse();
-    }
+    });
 
-    public function test_can_cancel(): void
-    {
+    it('can cancel', function (): void {
         $canCancel = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '12',
@@ -212,10 +201,9 @@ class InventoryBackorderTest extends InventoryTestCase
 
         expect($canCancel->canCancel())->toBeTrue();
         expect($cannotCancel->canCancel())->toBeFalse();
-    }
+    });
 
-    public function test_fulfill_partial(): void
-    {
+    it('fulfill partial', function (): void {
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '14',
@@ -232,10 +220,9 @@ class InventoryBackorderTest extends InventoryTestCase
         expect($result)->toBeTrue();
         expect($backorder->fresh()->quantity_fulfilled)->toBe(5);
         expect($backorder->fresh()->status)->toBeInstanceOf(PartiallyFulfilled::class);
-    }
+    });
 
-    public function test_fulfill_complete(): void
-    {
+    it('fulfill complete', function (): void {
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '15',
@@ -253,10 +240,9 @@ class InventoryBackorderTest extends InventoryTestCase
         expect($backorder->fresh()->quantity_fulfilled)->toBe(10);
         expect($backorder->fresh()->status)->toBeInstanceOf(Fulfilled::class);
         expect($backorder->fresh()->fulfilled_at)->not->toBeNull();
-    }
+    });
 
-    public function test_fulfill_returns_false_when_cannot_fulfill(): void
-    {
+    it('fulfill returns false when cannot fulfill', function (): void {
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '16',
@@ -271,10 +257,9 @@ class InventoryBackorderTest extends InventoryTestCase
         $result = $backorder->fulfill(5);
 
         expect($result)->toBeFalse();
-    }
+    });
 
-    public function test_cancel_partial(): void
-    {
+    it('cancel partial', function (): void {
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '17',
@@ -291,10 +276,9 @@ class InventoryBackorderTest extends InventoryTestCase
         expect($result)->toBeTrue();
         expect($backorder->fresh()->quantity_cancelled)->toBe(5);
         expect($backorder->fresh()->metadata['cancellation_reason'])->toBe('Customer request');
-    }
+    });
 
-    public function test_cancel_full(): void
-    {
+    it('cancel full', function (): void {
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '18',
@@ -312,10 +296,9 @@ class InventoryBackorderTest extends InventoryTestCase
         expect($backorder->fresh()->quantity_cancelled)->toBe(10);
         expect($backorder->fresh()->status)->toBeInstanceOf(Cancelled::class);
         expect($backorder->fresh()->cancelled_at)->not->toBeNull();
-    }
+    });
 
-    public function test_cancel_returns_false_when_cannot_cancel(): void
-    {
+    it('cancel returns false when cannot cancel', function (): void {
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '19',
@@ -330,10 +313,9 @@ class InventoryBackorderTest extends InventoryTestCase
         $result = $backorder->cancel(5);
 
         expect($result)->toBeFalse();
-    }
+    });
 
-    public function test_expire(): void
-    {
+    it('expire', function (): void {
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '20',
@@ -350,10 +332,9 @@ class InventoryBackorderTest extends InventoryTestCase
         expect($result)->toBeTrue();
         expect($backorder->fresh()->status)->toBeInstanceOf(Expired::class);
         expect($backorder->fresh()->cancelled_at)->not->toBeNull();
-    }
+    });
 
-    public function test_expire_returns_false_when_not_open(): void
-    {
+    it('expire returns false when not open', function (): void {
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '21',
@@ -368,10 +349,9 @@ class InventoryBackorderTest extends InventoryTestCase
         $result = $backorder->expire();
 
         expect($result)->toBeFalse();
-    }
+    });
 
-    public function test_escalate(): void
-    {
+    it('escalate', function (): void {
         $lowPriority = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '22',
@@ -387,10 +367,9 @@ class InventoryBackorderTest extends InventoryTestCase
 
         expect($result)->toBeTrue();
         expect($lowPriority->fresh()->priority)->toBe(BackorderPriority::Normal);
-    }
+    });
 
-    public function test_escalate_from_normal_to_high(): void
-    {
+    it('escalate from normal to high', function (): void {
         $normalPriority = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '23',
@@ -405,10 +384,9 @@ class InventoryBackorderTest extends InventoryTestCase
         $normalPriority->escalate();
 
         expect($normalPriority->fresh()->priority)->toBe(BackorderPriority::High);
-    }
+    });
 
-    public function test_escalate_from_high_to_urgent(): void
-    {
+    it('escalate from high to urgent', function (): void {
         $highPriority = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '24',
@@ -423,10 +401,9 @@ class InventoryBackorderTest extends InventoryTestCase
         $highPriority->escalate();
 
         expect($highPriority->fresh()->priority)->toBe(BackorderPriority::Urgent);
-    }
+    });
 
-    public function test_escalate_stays_at_urgent(): void
-    {
+    it('escalate stays at urgent', function (): void {
         $urgentPriority = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '25',
@@ -441,5 +418,5 @@ class InventoryBackorderTest extends InventoryTestCase
         $urgentPriority->escalate();
 
         expect($urgentPriority->fresh()->priority)->toBe(BackorderPriority::Urgent);
-    }
-}
+    });
+});

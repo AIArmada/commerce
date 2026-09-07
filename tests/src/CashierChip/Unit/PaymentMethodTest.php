@@ -2,17 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use Mockery;
 
-class PaymentMethodTest extends CashierChipTestCase
-{
-    public function test_it_can_instantiate_and_access_properties()
-    {
+uses(CashierChipTestCase::class);
+
+describe('PaymentMethod', function (): void {
+    it('it can instantiate and access properties', function (): void {
         $owner = new User;
         $tokenData = [
             'id' => 'tok_123',
@@ -43,10 +41,9 @@ class PaymentMethodTest extends CashierChipTestCase
         $this->assertNull($paymentMethod->cardExpMonth());
         $this->assertNull($paymentMethod->cardExpYear());
         $this->assertEquals('tok_123', $paymentMethod->chipToken());
-    }
+    });
 
-    public function test_it_can_check_is_default()
-    {
+    it('it can check is default', function (): void {
         $owner = Mockery::mock(User::class);
         $tokenData = ['id' => 'tok_123'];
         $paymentMethod = new PaymentMethod($owner, $tokenData);
@@ -57,10 +54,9 @@ class PaymentMethodTest extends CashierChipTestCase
 
         $otherMethod = new PaymentMethod($owner, ['id' => 'tok_456']);
         $this->assertFalse($otherMethod->isDefault());
-    }
+    });
 
-    public function test_it_can_delete()
-    {
+    it('it can delete', function (): void {
         $owner = Mockery::mock(User::class);
         $tokenData = ['id' => 'tok_123'];
         $paymentMethod = new PaymentMethod($owner, $tokenData);
@@ -69,5 +65,5 @@ class PaymentMethodTest extends CashierChipTestCase
 
         $paymentMethod->delete();
         $this->assertTrue(true);
-    }
-}
+    });
+});

@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Tests\Unit\Services;
-
-use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Tax\Data\TaxResultData;
 use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
 use AIArmada\Tax\Models\TaxExemption;
@@ -13,22 +10,13 @@ use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Tax\Settings\TaxSettings;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class TaxCalculatorTest extends TaxTestCase
-{
-    use RefreshDatabase;
-
-    private TaxCalculator $calculator;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
+describe('TaxCalculator', function (): void {
+    beforeEach(function (): void {
         $this->calculator = $this->app->make(TaxCalculator::class);
-    }
+    });
 
-    public function test_calculate_tax_with_explicit_zone(): void
-    {
+    it('calculate tax with explicit zone', function (): void {
         $zone = TaxZone::create([
             'name' => 'Malaysia',
             'code' => 'MY',
@@ -49,10 +37,9 @@ class TaxCalculatorTest extends TaxTestCase
         $this->assertEquals(600, $result->taxAmount); // 6% of 10000 cents = 600 cents
         $this->assertEquals($zone->id, $result->zoneId);
         $this->assertFalse($result->includedInPrice);
-    }
+    });
 
-    public function test_calculate_tax_with_address_resolution(): void
-    {
+    it('calculate tax with address resolution', function (): void {
         $zone = TaxZone::create([
             'name' => 'Malaysia',
             'code' => 'MY',
@@ -80,10 +67,9 @@ class TaxCalculatorTest extends TaxTestCase
 
         $this->assertEquals(600, $result->taxAmount);
         $this->assertEquals($zone->id, $result->zoneId);
-    }
+    });
 
-    public function test_calculate_tax_with_default_zone_fallback(): void
-    {
+    it('calculate tax with default zone fallback', function (): void {
         $zone = TaxZone::create([
             'name' => 'Default Zone',
             'code' => 'DEFAULT',
@@ -104,10 +90,9 @@ class TaxCalculatorTest extends TaxTestCase
 
         $this->assertEquals(2000, $result->taxAmount); // 10% of 20000
         $this->assertEquals($zone->id, $result->zoneId);
-    }
+    });
 
-    public function test_calculate_tax_with_zero_rate_fallback(): void
-    {
+    it('calculate tax with zero rate fallback', function (): void {
         config(['tax.features.zone_resolution.unknown_zone_behavior' => 'zero']);
 
         // No zones or rates configured
@@ -115,10 +100,9 @@ class TaxCalculatorTest extends TaxTestCase
 
         $this->assertEquals(0, $result->taxAmount);
         $this->assertEquals('Zero Rate Zone', $result->zoneName);
-    }
+    });
 
-    public function test_calculate_tax_with_tax_inclusive_pricing(): void
-    {
+    it('calculate tax with tax inclusive pricing', function (): void {
         $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
 
         config(['tax.defaults.prices_include_tax' => true]);
@@ -141,10 +125,9 @@ class TaxCalculatorTest extends TaxTestCase
 
         $this->assertEquals(1000, $result->taxAmount); // Extract 10% from 11000
         $this->assertTrue($result->includedInPrice);
-    }
+    });
 
-    public function test_calculate_tax_with_rounding(): void
-    {
+    it('calculate tax with rounding', function (): void {
         config(['tax.defaults.round_at_subtotal' => true]);
 
         $zone = TaxZone::create([
@@ -165,10 +148,9 @@ class TaxCalculatorTest extends TaxTestCase
 
         // 10000 * 0.0875 = 875, rounded to 875
         $this->assertEquals(875, $result->taxAmount);
-    }
+    });
 
-    public function test_calculate_tax_with_exemption(): void
-    {
+    it('calculate tax with exemption', function (): void {
         $zone = TaxZone::create([
             'name' => 'Exempt Zone',
             'code' => 'EXEMPT',
@@ -220,10 +202,9 @@ class TaxCalculatorTest extends TaxTestCase
         $this->assertEquals(0, $result->taxAmount);
         $this->assertEquals('Non-profit', $result->exemptionReason);
         $this->assertTrue($result->isExempt());
-    }
+    });
 
-    public function test_calculate_tax_with_zone_specific_exemption(): void
-    {
+    it('calculate tax with zone specific exemption', function (): void {
         $zone1 = TaxZone::create(['name' => 'Zone 1', 'code' => 'Z1', 'is_active' => true]);
         $zone2 = TaxZone::create(['name' => 'Zone 2', 'code' => 'Z2', 'is_active' => true]);
 
@@ -261,10 +242,9 @@ class TaxCalculatorTest extends TaxTestCase
         // Should NOT be exempt in zone 2
         $result2 = $this->calculator->calculateTax(10000, 'standard', $zone2->id, $context);
         $this->assertEquals(800, $result2->taxAmount);
-    }
+    });
 
-    public function test_calculate_shipping_tax_enabled(): void
-    {
+    it('calculate shipping tax enabled', function (): void {
         $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
 
         config(['tax.defaults.calculate_tax_on_shipping' => true]);
@@ -286,10 +266,9 @@ class TaxCalculatorTest extends TaxTestCase
         $result = $this->calculator->calculateShippingTax(5000, $zone->id);
 
         $this->assertEquals(300, $result->taxAmount); // 6% of 5000
-    }
+    });
 
-    public function test_calculate_shipping_tax_disabled(): void
-    {
+    it('calculate shipping tax disabled', function (): void {
         $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
 
         config(['tax.defaults.calculate_tax_on_shipping' => false]);
@@ -297,10 +276,9 @@ class TaxCalculatorTest extends TaxTestCase
         $result = $this->calculator->calculateShippingTax(5000);
 
         $this->assertEquals(0, $result->taxAmount);
-    }
+    });
 
-    public function test_calculate_tax_with_different_tax_classes(): void
-    {
+    it('calculate tax with different tax classes', function (): void {
         $zone = TaxZone::create([
             'name' => 'Class Zone',
             'code' => 'CLASS',
@@ -329,10 +307,9 @@ class TaxCalculatorTest extends TaxTestCase
 
         $this->assertEquals(600, $standardResult->taxAmount);
         $this->assertEquals(300, $reducedResult->taxAmount);
-    }
+    });
 
-    public function test_calculate_tax_with_rate_priority(): void
-    {
+    it('calculate tax with rate priority', function (): void {
         $zone = TaxZone::create([
             'name' => 'Priority Zone',
             'code' => 'PRIO',
@@ -364,20 +341,16 @@ class TaxCalculatorTest extends TaxTestCase
         // Two non-compound rates can both apply: 600 + 800 = 1400.
         $this->assertEquals(1400, $result->taxAmount);
         $this->assertFalse($result->hasCompoundTaxes());
-    }
+    });
 
-    public function test_calculate_tax_with_unknown_zone_error_behavior(): void
-    {
+    it('calculate tax with unknown zone error behavior', function (): void {
         config(['tax.features.zone_resolution.unknown_zone_behavior' => 'error']);
-
-        $this->expectException(TaxZoneNotFoundException::class);
 
         // No zones configured, should throw error
         $this->calculator->calculateTax(10000, 'standard');
-    }
+    })->throws(TaxZoneNotFoundException::class);
 
-    public function test_tax_disabled_does_not_throw_when_unknown_zone_behavior_is_error(): void
-    {
+    it('tax disabled does not throw when unknown zone behavior is error', function (): void {
         $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
 
         config(['tax.features.enabled' => false]);
@@ -387,20 +360,18 @@ class TaxCalculatorTest extends TaxTestCase
 
         $this->assertEquals(0, $result->taxAmount);
         $this->assertEquals('Zero Rate Zone', $result->zoneName);
-    }
+    });
 
-    public function test_calculate_tax_with_unknown_zone_zero_behavior(): void
-    {
+    it('calculate tax with unknown zone zero behavior', function (): void {
         config(['tax.features.zone_resolution.unknown_zone_behavior' => 'zero']);
 
         $result = $this->calculator->calculateTax(10000, 'standard');
 
         $this->assertEquals(0, $result->taxAmount);
         $this->assertEquals('Zero Rate Zone', $result->zoneName);
-    }
+    });
 
-    public function test_calculate_tax_with_address_priority(): void
-    {
+    it('calculate tax with address priority', function (): void {
         config(['tax.features.zone_resolution.address_priority' => 'billing']);
 
         $zone = TaxZone::create([
@@ -427,10 +398,9 @@ class TaxCalculatorTest extends TaxTestCase
 
         // Should use billing address (US) over shipping (MY)
         $this->assertEquals(700, $result->taxAmount);
-    }
+    });
 
-    public function test_calculate_tax_with_disabled_exemptions(): void
-    {
+    it('calculate tax with disabled exemptions', function (): void {
         config(['tax.features.exemptions.enabled' => false]);
 
         $zone = TaxZone::create([
@@ -460,5 +430,5 @@ class TaxCalculatorTest extends TaxTestCase
         // Exemption should be ignored, tax should be calculated
         $this->assertEquals(600, $result->taxAmount);
         $this->assertNull($result->exemptionReason);
-    }
-}
+    });
+});

@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\PromotionCode;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
@@ -12,10 +10,10 @@ use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\VoucherStatus;
 
-class PromotionCodeTest extends CashierChipTestCase
-{
-    public function test_it_can_be_instantiated()
-    {
+uses(CashierChipTestCase::class);
+
+describe('PromotionCode', function (): void {
+    it('it can be instantiated', function (): void {
         $voucher = new VoucherData(
             id: 'uuid',
             code: 'TESTCODE',
@@ -48,10 +46,9 @@ class PromotionCodeTest extends CashierChipTestCase
         $this->assertEquals('PROMO123', $promo->code());
         $this->assertSame($coupon, $promo->coupon());
         $this->assertTrue($promo->isActive());
-    }
+    });
 
-    public function test_magic_get()
-    {
+    it('magic get', function (): void {
         $voucher = new VoucherData(
             id: 'uuid',
             code: 'TESTCODE',
@@ -83,10 +80,9 @@ class PromotionCodeTest extends CashierChipTestCase
         $this->assertEquals('PROMO123', $promo->code);
         $this->assertSame($coupon, $promo->coupon);
         $this->assertTrue($promo->active);
-    }
+    });
 
-    public function test_serialization()
-    {
+    it('serialization', function (): void {
         $voucher = new VoucherData(
             id: 'uuid',
             code: 'TESTCODE',
@@ -120,5 +116,5 @@ class PromotionCodeTest extends CashierChipTestCase
 
         $json = $promo->toJson();
         $this->assertJson($json);
-    }
-}
+    });
+});

@@ -3,23 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 
-class CleanupExpiredAllocationsCommandTest extends InventoryTestCase
-{
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected InventoryLevel $level;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('CleanupExpiredAllocationsCommand', function (): void {
+    beforeEach(function (): void {
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create();
         $this->level = InventoryLevel::factory()->create([
@@ -29,10 +18,9 @@ class CleanupExpiredAllocationsCommandTest extends InventoryTestCase
             'quantity_on_hand' => 100,
             'quantity_reserved' => 10,
         ]);
-    }
+    });
 
-    public function test_cleanup_command_removes_expired_allocations(): void
-    {
+    it('cleanup command removes expired allocations', function (): void {
         // Create expired allocation
         InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -62,10 +50,9 @@ class CleanupExpiredAllocationsCommandTest extends InventoryTestCase
         // Expired should be gone, active should remain
         expect(InventoryAllocation::where('cart_id', 'cart-expired')->exists())->toBeFalse();
         expect(InventoryAllocation::where('cart_id', 'cart-active')->exists())->toBeTrue();
-    }
+    });
 
-    public function test_cleanup_command_dry_run_shows_count(): void
-    {
+    it('cleanup command dry run shows count', function (): void {
         // Create expired allocations
         InventoryAllocation::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -94,13 +81,12 @@ class CleanupExpiredAllocationsCommandTest extends InventoryTestCase
         // Both should still exist since dry run
         expect(InventoryAllocation::where('cart_id', 'cart-expired-1')->exists())->toBeTrue();
         expect(InventoryAllocation::where('cart_id', 'cart-expired-2')->exists())->toBeTrue();
-    }
+    });
 
-    public function test_cleanup_command_handles_no_expired_allocations(): void
-    {
+    it('cleanup command handles no expired allocations', function (): void {
         $this->artisan('inventory:cleanup-allocations')
             ->expectsOutput('Cleaning up expired inventory allocations...')
             ->expectsOutput('Cleaned up 0 expired allocations.')
             ->assertSuccessful();
-    }
-}
+    });
+});

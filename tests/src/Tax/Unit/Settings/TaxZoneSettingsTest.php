@@ -2,22 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Tests\Unit\Settings;
-
-use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Tax\Settings\TaxZoneSettings;
 use ReflectionClass;
 use Spatie\LaravelSettings\Settings;
 
-class TaxZoneSettingsTest extends TaxTestCase
-{
-    public function test_settings_group(): void
-    {
+describe('TaxZoneSettings', function (): void {
+    it('settings group', function (): void {
         $this->assertEquals('tax_zones', TaxZoneSettings::group());
-    }
+    });
 
-    public function test_settings_has_required_properties(): void
-    {
+    it('settings has required properties', function (): void {
         $reflection = new ReflectionClass(TaxZoneSettings::class);
 
         $this->assertTrue($reflection->hasProperty('multiZoneEnabled'));
@@ -26,10 +20,9 @@ class TaxZoneSettingsTest extends TaxTestCase
         $this->assertTrue($reflection->hasProperty('fallbackBehavior'));
         $this->assertTrue($reflection->hasProperty('compoundTaxEnabled'));
         $this->assertTrue($reflection->hasProperty('showTaxBreakdown'));
-    }
+    });
 
-    public function test_settings_properties_have_correct_types(): void
-    {
+    it('settings properties have correct types', function (): void {
         $reflection = new ReflectionClass(TaxZoneSettings::class);
 
         $multiZoneEnabled = $reflection->getProperty('multiZoneEnabled');
@@ -49,23 +42,20 @@ class TaxZoneSettingsTest extends TaxTestCase
 
         $showTaxBreakdown = $reflection->getProperty('showTaxBreakdown');
         $this->assertEquals('bool', $showTaxBreakdown->getType()?->getName());
-    }
+    });
 
-    public function test_settings_class_extends_spatie_settings(): void
-    {
+    it('settings class extends spatie settings', function (): void {
         $this->assertTrue(is_subclass_of(TaxZoneSettings::class, Settings::class));
-    }
+    });
 
-    public function test_settings_can_be_instantiated_without_constructor(): void
-    {
+    it('settings can be instantiated without constructor', function (): void {
         $reflection = new ReflectionClass(TaxZoneSettings::class);
         $settings = $reflection->newInstanceWithoutConstructor();
 
         $this->assertInstanceOf(TaxZoneSettings::class, $settings);
-    }
+    });
 
-    public function test_settings_properties_are_accessible(): void
-    {
+    it('settings properties are accessible', function (): void {
         $reflection = new ReflectionClass(TaxZoneSettings::class);
         $settings = $reflection->newInstanceWithoutConstructor();
 
@@ -82,15 +72,14 @@ class TaxZoneSettingsTest extends TaxTestCase
         $this->assertEquals('default', $settings->fallbackBehavior);
         $this->assertFalse($settings->compoundTaxEnabled);
         $this->assertTrue($settings->showTaxBreakdown);
-    }
+    });
 
-    public function test_settings_default_zone_id_can_be_null(): void
-    {
+    it('settings default zone id can be null', function (): void {
         $reflection = new ReflectionClass(TaxZoneSettings::class);
         $settings = $reflection->newInstanceWithoutConstructor();
 
         $settings->defaultZoneId = null;
 
         $this->assertNull($settings->defaultZoneId);
-    }
-}
+    });
+});

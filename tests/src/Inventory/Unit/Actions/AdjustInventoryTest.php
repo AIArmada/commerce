@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Actions\AdjustInventory;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAdjusted;
@@ -11,28 +10,17 @@ use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use Illuminate\Support\Facades\Event;
 
-class AdjustInventoryTest extends InventoryTestCase
-{
-    protected AdjustInventory $action;
-
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('AdjustInventory', function (): void {
+    beforeEach(function (): void {
         $this->action = app(AdjustInventory::class);
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create([
             'name' => 'Test Location',
             'code' => 'TEST',
         ]);
-    }
+    });
 
-    public function test_adjusts_inventory_and_creates_movement(): void
-    {
+    it('adjusts inventory and creates movement', function (): void {
         Event::fake();
 
         // Create initial level
@@ -53,19 +41,17 @@ class AdjustInventoryTest extends InventoryTestCase
         expect($movement->user_id)->toBe('user-1');
 
         Event::assertDispatched(InventoryAdjusted::class);
-    }
+    });
 
-    public function test_creates_inventory_level_if_not_exists(): void
-    {
+    it('creates inventory level if not exists', function (): void {
         $movement = $this->action->handle($this->item, $this->location->id, 20);
 
         $level = $this->item->inventoryLevels()->where('location_id', $this->location->id)->first();
         expect($level)->not->toBeNull();
         expect($level->quantity_on_hand)->toBe(20);
-    }
+    });
 
-    public function test_handles_negative_adjustment(): void
-    {
+    it('handles negative adjustment', function (): void {
         InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -82,10 +68,9 @@ class AdjustInventoryTest extends InventoryTestCase
 
         $level = $this->item->inventoryLevels()->where('location_id', $this->location->id)->first();
         expect($level->quantity_on_hand)->toBe(5);
-    }
+    });
 
-    public function test_dispatches_inventory_adjusted_event_with_correct_data(): void
-    {
+    it('dispatches inventory adjusted event with correct data', function (): void {
         Event::fake();
 
         InventoryLevel::factory()->create([
@@ -103,5 +88,5 @@ class AdjustInventoryTest extends InventoryTestCase
                 && $event->newQuantity === 25
                 && $event->inventoryable->is($this->item);
         });
-    }
-}
+    });
+});

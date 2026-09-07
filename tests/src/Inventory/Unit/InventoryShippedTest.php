@@ -3,26 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Events\InventoryShipped;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 
-class InventoryShippedTest extends InventoryTestCase
-{
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected InventoryLevel $level;
-
-    protected InventoryMovement $movement;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('InventoryShipped', function (): void {
+    beforeEach(function (): void {
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create([
             'name' => 'Test Location',
@@ -42,14 +29,13 @@ class InventoryShippedTest extends InventoryTestCase
             'type' => 'shipment',
             'quantity' => 5,
         ]);
-    }
+    });
 
-    public function test_event_stores_properties_correctly(): void
-    {
+    it('event stores properties correctly', function (): void {
         $event = new InventoryShipped($this->item, $this->level, $this->movement);
 
         expect($event->inventoryable)->toBe($this->item);
         expect($event->level)->toBe($this->level);
         expect($event->movement)->toBe($this->movement);
-    }
-}
+    });
+});

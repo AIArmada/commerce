@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
@@ -13,68 +11,60 @@ use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;
 
-class SubscriptionBuilderTest extends CashierChipTestCase
-{
-    public function test_can_create_builder(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('SubscriptionBuilder', function (): void {
+    it('can create builder', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
         $this->assertInstanceOf(SubscriptionBuilder::class, $builder);
-    }
+    });
 
-    public function test_can_add_price(): void
-    {
+    it('can add price', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default');
 
         $result = $builder->price('price_123');
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_can_add_price_with_quantity(): void
-    {
+    it('can add price with quantity', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default');
 
         $result = $builder->price('price_123', 5);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_quantity_throws_without_price(): void
-    {
+    it('quantity throws without price', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default');
 
-        $this->expectException(InvalidArgumentException::class);
-
         $builder->quantity(5);
-    }
+    })->throws(InvalidArgumentException::class);
 
-    public function test_quantity_with_single_price(): void
-    {
+    it('quantity with single price', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
         $result = $builder->quantity(5);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_trial_days(): void
-    {
+    it('trial days', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
         $result = $builder->trialDays(14);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_trial_until(): void
-    {
+    it('trial until', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
@@ -82,70 +72,63 @@ class SubscriptionBuilderTest extends CashierChipTestCase
         $result = $builder->trialUntil($trialEnd);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_skip_trial(): void
-    {
+    it('skip trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
         $result = $builder->skipTrial();
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_billing_interval(): void
-    {
+    it('billing interval', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
         $result = $builder->billingInterval('month', 1);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_monthly(): void
-    {
+    it('monthly', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
         $result = $builder->monthly();
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_yearly(): void
-    {
+    it('yearly', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
         $result = $builder->yearly();
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_weekly(): void
-    {
+    it('weekly', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
         $result = $builder->weekly();
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_daily(): void
-    {
+    it('daily', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
         $result = $builder->daily();
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_anchor_billing_cycle(): void
-    {
+    it('anchor billing cycle', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
@@ -153,42 +136,32 @@ class SubscriptionBuilderTest extends CashierChipTestCase
         $result = $builder->anchorBillingCycleOn($anchor);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_with_metadata(): void
-    {
+    it('with metadata', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
         $result = $builder->withMetadata(['key' => 'value']);
 
         $this->assertSame($builder, $result);
-    }
+    });
 
-    public function test_add_throws_without_prices(): void
-    {
+    it('add throws without prices', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default');
-
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('At least one price is required');
 
         $builder->add();
-    }
+    })->throws(Exception::class, 'At least one price is required');
 
-    public function test_create_throws_without_prices(): void
-    {
+    it('create throws without prices', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default');
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('At least one price is required');
-
         $builder->create();
-    }
+    })->throws(Exception::class, 'At least one price is required');
 
-    public function test_create_requires_owner_context_when_owner_scoping_enabled(): void
-    {
+    it('create requires owner context when owner scoping enabled', function (): void {
         config()->set('cashier-chip.features.owner.enabled', true);
         config()->set('cashier-chip.features.owner.include_global', false);
 
@@ -205,5 +178,5 @@ class SubscriptionBuilderTest extends CashierChipTestCase
         } catch (AuthorizationException) {
             $this->assertSame(0, Subscription::query()->withoutOwnerScope()->count());
         }
-    }
-}
+    });
+});

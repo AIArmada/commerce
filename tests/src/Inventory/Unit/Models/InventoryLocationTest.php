@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\TemperatureZone;
@@ -14,10 +13,8 @@ use AIArmada\Inventory\Models\InventoryMovement;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
-class InventoryLocationTest extends InventoryTestCase
-{
-    public function test_can_create_inventory_location(): void
-    {
+describe('InventoryLocation', function (): void {
+    it('can create inventory location', function (): void {
         $location = InventoryLocation::factory()->create([
             'name' => 'Main Warehouse',
             'code' => 'MAIN',
@@ -28,10 +25,9 @@ class InventoryLocationTest extends InventoryTestCase
         expect($location->name)->toBe('Main Warehouse');
         expect($location->code)->toBe('MAIN');
         expect($location->is_active)->toBeTrue();
-    }
+    });
 
-    public function test_can_have_parent_location(): void
-    {
+    it('can have parent location', function (): void {
         $parent = InventoryLocation::factory()->create([
             'name' => 'Main Building',
         ]);
@@ -43,10 +39,9 @@ class InventoryLocationTest extends InventoryTestCase
 
         expect($child->parent)->not->toBeNull();
         expect($child->parent->id)->toBe($parent->id);
-    }
+    });
 
-    public function test_children_relationship(): void
-    {
+    it('children relationship', function (): void {
         $parent = InventoryLocation::factory()->create([
             'name' => 'Main Building',
         ]);
@@ -61,10 +56,9 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         expect($parent->children)->toHaveCount(2);
-    }
+    });
 
-    public function test_inventory_levels_relationship(): void
-    {
+    it('inventory levels relationship', function (): void {
         $location = InventoryLocation::factory()->create();
         $item = InventoryItem::create(['name' => 'Test Item']);
 
@@ -75,10 +69,9 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         expect($location->inventoryLevels)->toHaveCount(1);
-    }
+    });
 
-    public function test_movements_to_relationship(): void
-    {
+    it('movements to relationship', function (): void {
         $location = InventoryLocation::factory()->create();
         $fromLocation = InventoryLocation::factory()->create();
         $item = InventoryItem::create(['name' => 'Test Item']);
@@ -91,10 +84,9 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         expect($location->movementsTo)->toHaveCount(1);
-    }
+    });
 
-    public function test_movements_from_relationship(): void
-    {
+    it('movements from relationship', function (): void {
         $location = InventoryLocation::factory()->create();
         $toLocation = InventoryLocation::factory()->create();
         $item = InventoryItem::create(['name' => 'Test Item']);
@@ -107,10 +99,9 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         expect($location->movementsFrom)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_active(): void
-    {
+    it('scope active', function (): void {
         InventoryLocation::factory()->create(['is_active' => true]);
         InventoryLocation::factory()->create(['is_active' => true]);
         InventoryLocation::factory()->create(['is_active' => false]);
@@ -118,64 +109,56 @@ class InventoryLocationTest extends InventoryTestCase
         $activeLocations = InventoryLocation::active()->get();
 
         expect($activeLocations)->toHaveCount(2);
-    }
+    });
 
-    public function test_is_default(): void
-    {
+    it('is default', function (): void {
         $defaultLocation = InventoryLocation::getOrCreateDefault();
         $regularLocation = InventoryLocation::factory()->create(['code' => 'REGULAR']);
 
         expect($defaultLocation->isDefault())->toBeTrue();
         expect($regularLocation->isDefault())->toBeFalse();
-    }
+    });
 
-    public function test_is_root_returns_true_for_top_level(): void
-    {
+    it('is root returns true for top level', function (): void {
         $location = InventoryLocation::factory()->create(['parent_id' => null]);
 
         expect($location->isRoot())->toBeTrue();
-    }
+    });
 
-    public function test_is_root_returns_false_for_children(): void
-    {
+    it('is root returns false for children', function (): void {
         $parent = InventoryLocation::factory()->create();
         $child = InventoryLocation::factory()->create(['parent_id' => $parent->id]);
 
         expect($child->isRoot())->toBeFalse();
-    }
+    });
 
-    public function test_is_leaf_returns_true_for_childless(): void
-    {
+    it('is leaf returns true for childless', function (): void {
         $location = InventoryLocation::factory()->create();
 
         expect($location->isLeaf())->toBeTrue();
-    }
+    });
 
-    public function test_is_leaf_returns_false_for_parents(): void
-    {
+    it('is leaf returns false for parents', function (): void {
         $parent = InventoryLocation::factory()->create();
         InventoryLocation::factory()->create(['parent_id' => $parent->id]);
 
         expect($parent->isLeaf())->toBeFalse();
-    }
+    });
 
-    public function test_has_no_children_for_empty(): void
-    {
+    it('has no children for empty', function (): void {
         $location = InventoryLocation::factory()->create();
 
         expect($location->children)->toHaveCount(0);
-    }
+    });
 
-    public function test_has_children_when_children_exist(): void
-    {
+    it('has children when children exist', function (): void {
         $parent = InventoryLocation::factory()->create();
         InventoryLocation::factory()->create(['parent_id' => $parent->id]);
 
         expect($parent->children)->toHaveCount(1);
-    }
+    });
 
-    public function test_deleting_location_cascades_to_inventory_levels(): void
-    {
+    it('deleting location cascades to inventory levels', function (): void {
         $location = InventoryLocation::factory()->create();
         $item = InventoryItem::create(['name' => 'Test Item']);
 
@@ -189,10 +172,9 @@ class InventoryLocationTest extends InventoryTestCase
         $location->delete();
 
         expect(InventoryLevel::find($levelId))->toBeNull();
-    }
+    });
 
-    public function test_get_descendants(): void
-    {
+    it('get descendants', function (): void {
         $root = InventoryLocation::factory()->create(['name' => 'Root']);
         $child1 = InventoryLocation::factory()->create(['name' => 'Child 1', 'parent_id' => $root->id]);
         $child2 = InventoryLocation::factory()->create(['name' => 'Child 2', 'parent_id' => $root->id]);
@@ -202,10 +184,9 @@ class InventoryLocationTest extends InventoryTestCase
 
         expect($descendants)->toHaveCount(3);
         expect($descendants->pluck('id')->toArray())->toContain($child1->id, $child2->id, $grandchild->id);
-    }
+    });
 
-    public function test_get_ancestors(): void
-    {
+    it('get ancestors', function (): void {
         $root = InventoryLocation::factory()->create(['name' => 'Root']);
         $child = InventoryLocation::factory()->create(['name' => 'Child', 'parent_id' => $root->id]);
         $grandchild = InventoryLocation::factory()->create(['name' => 'Grandchild', 'parent_id' => $child->id]);
@@ -213,10 +194,9 @@ class InventoryLocationTest extends InventoryTestCase
         $ancestors = $grandchild->ancestors;
 
         expect($ancestors)->toHaveCount(2);
-    }
+    });
 
-    public function test_get_breadcrumbs(): void
-    {
+    it('get breadcrumbs', function (): void {
         $root = InventoryLocation::factory()->create(['name' => 'Root']);
         $child = InventoryLocation::factory()->create(['name' => 'Child', 'parent_id' => $root->id]);
         $grandchild = InventoryLocation::factory()->create(['name' => 'Grandchild', 'parent_id' => $child->id]);
@@ -225,10 +205,9 @@ class InventoryLocationTest extends InventoryTestCase
 
         expect($breadcrumbs)->toHaveCount(3);
         expect($breadcrumbs->last()->id)->toBe($grandchild->id);
-    }
+    });
 
-    public function test_depth_property(): void
-    {
+    it('depth property', function (): void {
         $root = InventoryLocation::factory()->create();
         $child = InventoryLocation::factory()->create(['parent_id' => $root->id]);
         $grandchild = InventoryLocation::factory()->create(['parent_id' => $child->id]);
@@ -236,10 +215,9 @@ class InventoryLocationTest extends InventoryTestCase
         expect($root->depth)->toBe(0);
         expect($child->depth)->toBe(1);
         expect($grandchild->depth)->toBe(2);
-    }
+    });
 
-    public function test_scope_by_priority(): void
-    {
+    it('scope by priority', function (): void {
         $low = InventoryLocation::factory()->create(['priority' => 10]);
         $high = InventoryLocation::factory()->create(['priority' => 100]);
         $mid = InventoryLocation::factory()->create(['priority' => 50]);
@@ -248,10 +226,9 @@ class InventoryLocationTest extends InventoryTestCase
 
         expect($sorted->first()->id)->toBe($high->id);
         expect($sorted->last()->id)->toBe($low->id);
-    }
+    });
 
-    public function test_get_or_create_default(): void
-    {
+    it('get or create default', function (): void {
         $default = InventoryLocation::getOrCreateDefault();
 
         expect($default)->toBeInstanceOf(InventoryLocation::class);
@@ -261,10 +238,9 @@ class InventoryLocationTest extends InventoryTestCase
         // Calling again should return same location
         $default2 = InventoryLocation::getOrCreateDefault();
         expect($default2->id)->toBe($default->id);
-    }
+    });
 
-    public function test_get_or_create_default_requires_explicit_global_context_when_owner_mode_is_enabled(): void
-    {
+    it('get or create default requires explicit global context when owner mode is enabled', function (): void {
         config([
             'inventory.owner.enabled' => true,
             'inventory.owner.include_global' => false,
@@ -284,10 +260,9 @@ class InventoryLocationTest extends InventoryTestCase
         $default = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::getOrCreateDefault());
 
         expect($default->isDefault())->toBeTrue();
-    }
+    });
 
-    public function test_owner_columns_are_not_mass_assignable(): void
-    {
+    it('owner columns are not mass assignable', function (): void {
         config([
             'inventory.owner.enabled' => true,
             'inventory.owner.include_global' => false,
@@ -315,10 +290,9 @@ class InventoryLocationTest extends InventoryTestCase
 
         expect($location->owner_type)->toBe($owner->getMorphClass())
             ->and((string) $location->owner_id)->toBe((string) $owner->getKey());
-    }
+    });
 
-    public function test_forged_owner_columns_are_rejected_when_set_outside_mass_assignment(): void
-    {
+    it('forged owner columns are rejected when set outside mass assignment', function (): void {
         config([
             'inventory.owner.enabled' => true,
             'inventory.owner.include_global' => false,
@@ -342,10 +316,9 @@ class InventoryLocationTest extends InventoryTestCase
             'owner_type' => $otherOwner->getMorphClass(),
             'owner_id' => $otherOwner->getKey(),
         ]))->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\Inventory\Models\InventoryLocation.');
-    }
+    });
 
-    public function test_has_available_capacity(): void
-    {
+    it('has available capacity', function (): void {
         $withCapacity = InventoryLocation::factory()->create([
             'capacity' => 100,
             'current_utilization' => 80,
@@ -357,10 +330,9 @@ class InventoryLocationTest extends InventoryTestCase
         expect($withCapacity->hasAvailableCapacity(15))->toBeTrue();
         expect($withCapacity->hasAvailableCapacity(25))->toBeFalse();
         expect($noCapacity->hasAvailableCapacity(1000))->toBeTrue();
-    }
+    });
 
-    public function test_get_utilization_percentage(): void
-    {
+    it('get utilization percentage', function (): void {
         $location = InventoryLocation::factory()->create([
             'capacity' => 100,
             'current_utilization' => 75,
@@ -371,10 +343,9 @@ class InventoryLocationTest extends InventoryTestCase
 
         expect($location->getUtilizationPercentage())->toBe(75.0);
         expect($noCapacity->getUtilizationPercentage())->toBeNull();
-    }
+    });
 
-    public function test_coordinates(): void
-    {
+    it('coordinates', function (): void {
         $location = InventoryLocation::factory()->create();
         $location->setCoordinates(10.5, 20.3, 5.0);
         $location->save();
@@ -384,10 +355,9 @@ class InventoryLocationTest extends InventoryTestCase
         expect($coords['x'])->toBe('10.50');
         expect($coords['y'])->toBe('20.30');
         expect($coords['z'])->toBe('5.00');
-    }
+    });
 
-    public function test_distance_to(): void
-    {
+    it('distance to', function (): void {
         $location1 = InventoryLocation::factory()->create([
             'coordinate_x' => 0,
             'coordinate_y' => 0,
@@ -402,10 +372,9 @@ class InventoryLocationTest extends InventoryTestCase
         $distance = $location1->distanceTo($location2);
 
         expect($distance)->toBe(5.0);
-    }
+    });
 
-    public function test_distance_to_returns_null_when_no_coordinates(): void
-    {
+    it('distance to returns null when no coordinates', function (): void {
         $location1 = InventoryLocation::factory()->create([
             'coordinate_x' => null,
         ]);
@@ -414,10 +383,9 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         expect($location1->distanceTo($location2))->toBeNull();
-    }
+    });
 
-    public function test_scope_with_temperature_zone(): void
-    {
+    it('scope with temperature zone', function (): void {
         InventoryLocation::factory()->create(['temperature_zone' => TemperatureZone::Chilled->value]);
         InventoryLocation::factory()->create(['temperature_zone' => TemperatureZone::Frozen->value]);
         InventoryLocation::factory()->create(['temperature_zone' => TemperatureZone::Chilled->value]);
@@ -427,10 +395,9 @@ class InventoryLocationTest extends InventoryTestCase
 
         expect($chilled)->toHaveCount(2);
         expect($frozen)->toHaveCount(1);
-    }
+    });
 
-    public function test_scope_hazmat_certified(): void
-    {
+    it('scope hazmat certified', function (): void {
         InventoryLocation::factory()->create(['is_hazmat_certified' => true]);
         InventoryLocation::factory()->create(['is_hazmat_certified' => false]);
         InventoryLocation::factory()->create(['is_hazmat_certified' => true]);
@@ -438,10 +405,9 @@ class InventoryLocationTest extends InventoryTestCase
         $hazmat = InventoryLocation::hazmatCertified()->get();
 
         expect($hazmat)->toHaveCount(2);
-    }
+    });
 
-    public function test_scope_with_available_capacity(): void
-    {
+    it('scope with available capacity', function (): void {
         // Location with capacity but full
         InventoryLocation::factory()->create([
             'capacity' => 100,
@@ -460,10 +426,9 @@ class InventoryLocationTest extends InventoryTestCase
         $available = InventoryLocation::withAvailableCapacity(10)->get();
 
         expect($available)->toHaveCount(2); // One with space + one unlimited
-    }
+    });
 
-    public function test_scope_by_pick_sequence(): void
-    {
+    it('scope by pick sequence', function (): void {
         $third = InventoryLocation::factory()->create(['pick_sequence' => 30]);
         $first = InventoryLocation::factory()->create(['pick_sequence' => 10]);
         $second = InventoryLocation::factory()->create(['pick_sequence' => 20]);
@@ -472,10 +437,9 @@ class InventoryLocationTest extends InventoryTestCase
 
         expect($sorted->first()->id)->toBe($first->id);
         expect($sorted->last()->id)->toBe($third->id);
-    }
+    });
 
-    public function test_get_temperature_zone_enum(): void
-    {
+    it('get temperature zone enum', function (): void {
         $withZone = InventoryLocation::factory()->create([
             'temperature_zone' => TemperatureZone::Frozen->value,
         ]);
@@ -485,10 +449,9 @@ class InventoryLocationTest extends InventoryTestCase
 
         expect($withZone->getTemperatureZoneEnum())->toBe(TemperatureZone::Frozen);
         expect($withoutZone->getTemperatureZoneEnum())->toBeNull();
-    }
+    });
 
-    public function test_can_store_temperature_zone(): void
-    {
+    it('can store temperature zone', function (): void {
         $chilledLocation = InventoryLocation::factory()->create([
             'temperature_zone' => TemperatureZone::Chilled->value,
         ]);
@@ -503,19 +466,17 @@ class InventoryLocationTest extends InventoryTestCase
         // No zone = ambient, only ambient is compatible
         expect($noZoneLocation->canStoreTemperatureZone(TemperatureZone::Ambient))->toBeTrue();
         expect($noZoneLocation->canStoreTemperatureZone(TemperatureZone::Chilled))->toBeFalse();
-    }
+    });
 
-    public function test_can_store_hazmat(): void
-    {
+    it('can store hazmat', function (): void {
         $certified = InventoryLocation::factory()->create(['is_hazmat_certified' => true]);
         $notCertified = InventoryLocation::factory()->create(['is_hazmat_certified' => false]);
 
         expect($certified->canStoreHazmat())->toBeTrue();
         expect($notCertified->canStoreHazmat())->toBeFalse();
-    }
+    });
 
-    public function test_allocations_relationship(): void
-    {
+    it('allocations relationship', function (): void {
         $location = InventoryLocation::factory()->create();
         $item = InventoryItem::create(['name' => 'Test Item']);
 
@@ -534,10 +495,9 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         expect($location->allocations)->toHaveCount(1);
-    }
+    });
 
-    public function test_deleting_location_cascades_to_allocations(): void
-    {
+    it('deleting location cascades to allocations', function (): void {
         $location = InventoryLocation::factory()->create();
         $item = InventoryItem::create(['name' => 'Test Item']);
 
@@ -559,10 +519,9 @@ class InventoryLocationTest extends InventoryTestCase
         $location->delete();
 
         expect(InventoryAllocation::find($allocationId))->toBeNull();
-    }
+    });
 
-    public function test_scope_for_owner_when_disabled(): void
-    {
+    it('scope for owner when disabled', function (): void {
         config(['inventory.owner.enabled' => false]);
 
         $location1 = InventoryLocation::factory()->create();
@@ -572,10 +531,9 @@ class InventoryLocationTest extends InventoryTestCase
         $result = InventoryLocation::forOwner(null)->get();
 
         expect($result)->toHaveCount(2);
-    }
+    });
 
-    public function test_scope_for_owner_with_owner_enabled_and_null(): void
-    {
+    it('scope for owner with owner enabled and null', function (): void {
         config([
             'inventory.owner.enabled' => true,
             'inventory.owner.include_global' => true,
@@ -588,10 +546,9 @@ class InventoryLocationTest extends InventoryTestCase
         $result = InventoryLocation::forOwner(null, true)->get();
 
         expect($result->pluck('id')->toArray())->toContain($globalLocation->id);
-    }
+    });
 
-    public function test_scope_for_owner_with_owner_model(): void
-    {
+    it('scope for owner with owner model', function (): void {
         config([
             'inventory.owner.enabled' => true,
             'inventory.owner.include_global' => true,
@@ -641,10 +598,9 @@ class InventoryLocationTest extends InventoryTestCase
         expect($result->pluck('id')->toArray())->toContain($ownedLocation->id);
         expect($result->pluck('id')->toArray())->toContain($globalLocation->id);
         expect($result->pluck('id')->toArray())->not->toContain($otherLocation->id);
-    }
+    });
 
-    public function test_scope_for_owner_exclude_global(): void
-    {
+    it('scope for owner exclude global', function (): void {
         config(['inventory.owner.enabled' => true]);
 
         $owner = InventoryItem::create(['name' => 'Owner Item']);
@@ -677,20 +633,18 @@ class InventoryLocationTest extends InventoryTestCase
 
         expect($result->pluck('id')->toArray())->toContain($ownedLocation->id);
         expect($result->pluck('id')->toArray())->not->toContain($globalLocation->id);
-    }
+    });
 
-    public function test_get_utilization_percentage_with_zero_capacity(): void
-    {
+    it('get utilization percentage with zero capacity', function (): void {
         $location = InventoryLocation::factory()->create([
             'capacity' => 0,
             'current_utilization' => 0,
         ]);
 
         expect($location->getUtilizationPercentage())->toBeNull();
-    }
+    });
 
-    public function test_set_coordinates_returns_self(): void
-    {
+    it('set coordinates returns self', function (): void {
         $location = InventoryLocation::factory()->create();
 
         $result = $location->setCoordinates(5.0, 10.0, 15.0);
@@ -699,10 +653,9 @@ class InventoryLocationTest extends InventoryTestCase
         expect($location->coordinate_x)->toBe('5.00');
         expect($location->coordinate_y)->toBe('10.00');
         expect($location->coordinate_z)->toBe('15.00');
-    }
+    });
 
-    public function test_distance_with_null_y_and_z(): void
-    {
+    it('distance with null y and z', function (): void {
         $location1 = InventoryLocation::factory()->create([
             'coordinate_x' => 0,
             'coordinate_y' => null,
@@ -717,5 +670,5 @@ class InventoryLocationTest extends InventoryTestCase
         $distance = $location1->distanceTo($location2);
 
         expect($distance)->toBe(10.0);
-    }
-}
+    });
+});

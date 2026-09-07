@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
@@ -19,16 +17,15 @@ use ReflectionMethod;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
-class RenewSubscriptionsCommandTest extends CashierChipTestCase
-{
-    public function test_command_runs_with_no_subscriptions(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('RenewSubscriptionsCommand', function (): void {
+    it('command runs with no subscriptions', function (): void {
         $this->artisan('cashier-chip:renew-subscriptions')
             ->assertSuccessful();
-    }
+    });
 
-    public function test_command_runs_with_dry_run_option(): void
-    {
+    it('command runs with dry run option', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'billable')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -38,10 +35,9 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
 
         $this->artisan('cashier-chip:renew-subscriptions', ['--dry-run' => true])
             ->assertSuccessful();
-    }
+    });
 
-    public function test_command_handles_subscription_without_owner(): void
-    {
+    it('command handles subscription without owner', function (): void {
         // Subscription with null owner should be skipped
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'billable')->create([
@@ -54,10 +50,9 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
 
         $this->artisan('cashier-chip:renew-subscriptions')
             ->assertSuccessful();
-    }
+    });
 
-    public function test_command_renews_due_subscription_successfully(): void
-    {
+    it('command renews due subscription successfully', function (): void {
         Event::fake([
             SubscriptionRenewed::class,
             SubscriptionRenewalFailed::class,
@@ -79,16 +74,23 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
             'quantity' => 2,
         ]);
 
-        $result = $this->processRenewals();
+        $command = $this->app->make(RenewSubscriptionsCommand::class);
+        $command->setLaravel($this->app);
+        $command->setOutput(new OutputStyle(
+            new ArrayInput([]),
+            new BufferedOutput,
+        ));
+        $method = new ReflectionMethod($command, 'processRenewals');
+        /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
+        $result = $method->invoke($command, false, 0);
 
         $this->assertSame(['renewed' => 1, 'failed' => 0, 'unknown' => 0, 'skipped' => 0], $result);
 
         Event::assertDispatched(SubscriptionRenewed::class);
         Event::assertNotDispatched(SubscriptionRenewalFailed::class);
-    }
+    });
 
-    public function test_command_marks_subscription_past_due_when_no_payment_method_available(): void
-    {
+    it('command marks subscription past due when no payment method available', function (): void {
         Event::fake([
             SubscriptionRenewed::class,
             SubscriptionRenewalFailed::class,
@@ -107,7 +109,15 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
             'quantity' => 1,
         ]);
 
-        $result = $this->processRenewals();
+        $command = $this->app->make(RenewSubscriptionsCommand::class);
+        $command->setLaravel($this->app);
+        $command->setOutput(new OutputStyle(
+            new ArrayInput([]),
+            new BufferedOutput,
+        ));
+        $method = new ReflectionMethod($command, 'processRenewals');
+        /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
+        $result = $method->invoke($command, false, 0);
 
         $this->assertSame(['renewed' => 0, 'failed' => 1, 'unknown' => 0, 'skipped' => 0], $result);
 
@@ -117,10 +127,9 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
 
         Event::assertDispatched(SubscriptionRenewalFailed::class);
         Event::assertNotDispatched(SubscriptionRenewed::class);
-    }
+    });
 
-    public function test_command_marks_subscription_past_due_when_subscription_amount_is_invalid(): void
-    {
+    it('command marks subscription past due when subscription amount is invalid', function (): void {
         Event::fake([
             SubscriptionRenewed::class,
             SubscriptionRenewalFailed::class,
@@ -142,7 +151,15 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
             'quantity' => 1,
         ]);
 
-        $result = $this->processRenewals();
+        $command = $this->app->make(RenewSubscriptionsCommand::class);
+        $command->setLaravel($this->app);
+        $command->setOutput(new OutputStyle(
+            new ArrayInput([]),
+            new BufferedOutput,
+        ));
+        $method = new ReflectionMethod($command, 'processRenewals');
+        /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
+        $result = $method->invoke($command, false, 0);
 
         $this->assertSame(['renewed' => 0, 'failed' => 1, 'unknown' => 0, 'skipped' => 0], $result);
 
@@ -152,25 +169,5 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
 
         Event::assertDispatched(SubscriptionRenewalFailed::class);
         Event::assertNotDispatched(SubscriptionRenewed::class);
-    }
-
-    /**
-     * @return array{renewed: int, failed: int, unknown: int, skipped: int}
-     */
-    private function processRenewals(bool $dryRun = false, int $graceHours = 0): array
-    {
-        $command = $this->app->make(RenewSubscriptionsCommand::class);
-        $command->setLaravel($this->app);
-        $command->setOutput(new OutputStyle(
-            new ArrayInput([]),
-            new BufferedOutput,
-        ));
-
-        $method = new ReflectionMethod($command, 'processRenewals');
-
-        /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
-        $result = $method->invoke($command, $dryRun, $graceHours);
-
-        return $result;
-    }
-}
+    });
+});

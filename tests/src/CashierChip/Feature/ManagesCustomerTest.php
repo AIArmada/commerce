@@ -2,22 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Feature;
-
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
-class ManagesCustomerTest extends CashierChipTestCase
-{
-    protected $user;
+uses(CashierChipTestCase::class);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+describe('ManagesCustomer', function (): void {
+    beforeEach(function (): void {
         $this->user = $this->createUser();
-    }
+    });
 
-    public function test_create_as_chip_customer()
-    {
+    it('create as chip customer', function (): void {
         $customer = $this->user->createAsChipCustomer([
             'email' => 'new@example.com',
             'full_name' => 'John Doe',
@@ -26,10 +20,9 @@ class ManagesCustomerTest extends CashierChipTestCase
         $this->assertEquals('new@example.com', $customer->email);
         $this->assertEquals('John Doe', $customer->full_name);
         $this->assertNotNull($this->user->chip_id);
-    }
+    });
 
-    public function test_update_chip_customer()
-    {
+    it('update chip customer', function (): void {
         $this->user->createAsChipCustomer();
         $originalId = $this->user->chip_id;
 
@@ -37,22 +30,20 @@ class ManagesCustomerTest extends CashierChipTestCase
 
         $this->assertEquals('Updated Name', $customer->full_name);
         $this->assertEquals($originalId, $this->user->chip_id);
-    }
+    });
 
-    public function test_as_chip_customer()
-    {
+    it('as chip customer', function (): void {
         $this->user->createAsChipCustomer();
         $customer = $this->user->asChipCustomer();
 
         $this->assertEquals($this->user->chip_id, $customer->id);
-    }
+    });
 
-    public function test_chip_name_and_email_accessors()
-    {
+    it('chip name and email accessors', function (): void {
         $this->user->name = 'Test User';
         $this->user->email = 'test@example.com';
 
         $this->assertEquals('Test User', $this->user->chipName());
         $this->assertEquals('test@example.com', $this->user->chipEmail());
-    }
-}
+    });
+});

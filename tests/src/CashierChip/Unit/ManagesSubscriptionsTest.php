@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
@@ -11,132 +9,115 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-class ManagesSubscriptionsTest extends CashierChipTestCase
-{
-    public function test_new_subscription_returns_builder(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('ManagesSubscriptions', function (): void {
+    it('new subscription returns builder', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $builder = $user->newSubscription('default', 'price_123');
 
         $this->assertInstanceOf(SubscriptionBuilder::class, $builder);
-    }
+    });
 
-    public function test_on_trial_returns_false_without_subscription(): void
-    {
+    it('on trial returns false without subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertFalse($user->onTrial('default'));
-    }
+    });
 
-    public function test_on_generic_trial(): void
-    {
+    it('on generic trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123', 'trial_ends_at' => Carbon::now()->addDays(7)]);
 
         $this->assertTrue($user->onGenericTrial());
-    }
+    });
 
-    public function test_on_generic_trial_false_when_expired(): void
-    {
+    it('on generic trial false when expired', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123', 'trial_ends_at' => Carbon::now()->subDay()]);
 
         $this->assertFalse($user->onGenericTrial());
-    }
+    });
 
-    public function test_has_expired_generic_trial(): void
-    {
+    it('has expired generic trial', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123', 'trial_ends_at' => Carbon::now()->subDay()]);
 
         $this->assertTrue($user->hasExpiredGenericTrial());
-    }
+    });
 
-    public function test_has_expired_trial_returns_false_without_subscription(): void
-    {
+    it('has expired trial returns false without subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertFalse($user->hasExpiredTrial('default'));
-    }
+    });
 
-    public function test_trial_ends_at_returns_model_trial(): void
-    {
+    it('trial ends at returns model trial', function (): void {
         $trialDate = Carbon::now()->addDays(7);
         $user = $this->createUser(['chip_id' => 'cli_123', 'trial_ends_at' => $trialDate]);
 
         $this->assertEquals($trialDate->toDateTimeString(), $user->trialEndsAt()->toDateTimeString());
-    }
+    });
 
-    public function test_subscribed_returns_false_without_subscription(): void
-    {
+    it('subscribed returns false without subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertFalse($user->subscribed('default'));
-    }
+    });
 
-    public function test_subscription_returns_null_without_subscription(): void
-    {
+    it('subscription returns null without subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertNull($user->subscription('default'));
-    }
+    });
 
-    public function test_subscriptions_relation(): void
-    {
+    it('subscriptions relation', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertInstanceOf(MorphMany::class, $user->subscriptions());
-    }
+    });
 
-    public function test_has_incomplete_payment_returns_false_without_subscription(): void
-    {
+    it('has incomplete payment returns false without subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertFalse($user->hasIncompletePayment('default'));
-    }
+    });
 
-    public function test_subscribed_to_product_returns_false_without_subscription(): void
-    {
+    it('subscribed to product returns false without subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertFalse($user->subscribedToProduct('prod_123'));
-    }
+    });
 
-    public function test_subscribed_to_price_returns_false_without_subscription(): void
-    {
+    it('subscribed to price returns false without subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertFalse($user->subscribedToPrice('price_123'));
-    }
+    });
 
-    public function test_on_product_returns_false_without_subscription(): void
-    {
+    it('on product returns false without subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertFalse($user->onProduct('prod_123'));
-    }
+    });
 
-    public function test_on_price_returns_false_without_subscription(): void
-    {
+    it('on price returns false without subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertFalse($user->onPrice('price_123'));
-    }
+    });
 
-    public function test_tax_rates_returns_empty_array(): void
-    {
+    it('tax rates returns empty array', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertEquals([], $user->taxRates());
-    }
+    });
 
-    public function test_price_tax_rates_returns_empty_array(): void
-    {
+    it('price tax rates returns empty array', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertEquals([], $user->priceTaxRates());
-    }
+    });
 
-    public function test_subscribed_with_active_subscription(): void
-    {
+    it('subscribed with active subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'billable')->create([
             'type' => 'default',
@@ -144,10 +125,9 @@ class ManagesSubscriptionsTest extends CashierChipTestCase
         ]);
 
         $this->assertTrue($user->subscribed('default'));
-    }
+    });
 
-    public function test_has_incomplete_payment_with_past_due_subscription(): void
-    {
+    it('has incomplete payment with past due subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'billable')->create([
             'type' => 'default',
@@ -155,5 +135,5 @@ class ManagesSubscriptionsTest extends CashierChipTestCase
         ]);
 
         $this->assertTrue($user->hasIncompletePayment('default'));
-    }
-}
+    });
+});

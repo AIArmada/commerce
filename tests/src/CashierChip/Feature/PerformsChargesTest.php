@@ -2,65 +2,55 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Feature;
-
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
-class PerformsChargesTest extends CashierChipTestCase
-{
-    protected $user;
+uses(CashierChipTestCase::class);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+describe('PerformsCharges', function (): void {
+    beforeEach(function (): void {
         $this->user = $this->createUser();
         $this->user->createAsChipCustomer();
-    }
+    });
 
-    public function test_it_can_perform_charges()
-    {
+    it('it can perform charges', function (): void {
         $payment = $this->user->charge(1000, null, ['product_name' => 'One Time Charge']);
 
         $this->assertInstanceOf(Payment::class, $payment);
         $this->assertTrue($payment->rawAmount() >= 0);
         // In fake, it starts as 'created' unless charged immediately
         $this->assertContains($payment->status(), ['created', 'paid']);
-    }
+    });
 
-    public function test_it_can_create_payment()
-    {
+    it('it can create payment', function (): void {
         $payment = $this->user->pay(2000);
 
         $this->assertInstanceOf(Payment::class, $payment);
         $this->assertTrue($payment->rawAmount() >= 0);
-    }
+    });
 
-    public function test_it_can_override_the_billable_default_currency()
-    {
+    it('it can override the billable default currency', function (): void {
         $payment = $this->user->charge(1000, null, ['currency' => 'SGD']);
 
         $this->assertInstanceOf(Payment::class, $payment);
         $this->assertSame('SGD', $payment->currency());
-    }
+    });
 
-    public function test_it_can_refund_charge()
-    {
+    it('it can refund charge', function (): void {
         $payment = $this->user->charge(1000);
         $purchaseId = $payment->id();
 
         $refundData = $this->user->refund($purchaseId, 500);
 
         $this->assertInstanceOf(PaymentData::class, $refundData);
-    }
+    });
 
-    public function test_find_payment()
-    {
+    it('find payment', function (): void {
         $payment = $this->user->charge(1000);
         $found = $this->user->findPayment($payment->id());
 
         $this->assertInstanceOf(Payment::class, $found);
         $this->assertEquals($payment->id(), $found->id());
-    }
-}
+    });
+});

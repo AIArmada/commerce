@@ -3,26 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Events\InventoryAdjusted;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 
-class InventoryAdjustedTest extends InventoryTestCase
-{
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected InventoryLevel $level;
-
-    protected InventoryMovement $movement;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('InventoryAdjusted', function (): void {
+    beforeEach(function (): void {
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create([
             'name' => 'Test Location',
@@ -41,10 +28,9 @@ class InventoryAdjustedTest extends InventoryTestCase
             'type' => 'adjustment',
             'quantity' => 5,
         ]);
-    }
+    });
 
-    public function test_event_stores_properties_correctly(): void
-    {
+    it('event stores properties correctly', function (): void {
         $event = new InventoryAdjusted(
             $this->item,
             $this->level,
@@ -58,10 +44,9 @@ class InventoryAdjustedTest extends InventoryTestCase
         expect($event->movement)->toBe($this->movement);
         expect($event->oldQuantity)->toBe(10);
         expect($event->newQuantity)->toBe(15);
-    }
+    });
 
-    public function test_get_difference_calculates_correctly(): void
-    {
+    it('get difference calculates correctly', function (): void {
         $event = new InventoryAdjusted(
             $this->item,
             $this->level,
@@ -71,10 +56,9 @@ class InventoryAdjustedTest extends InventoryTestCase
         );
 
         expect($event->getDifference())->toBe(5);
-    }
+    });
 
-    public function test_get_difference_handles_negative_adjustments(): void
-    {
+    it('get difference handles negative adjustments', function (): void {
         $event = new InventoryAdjusted(
             $this->item,
             $this->level,
@@ -84,5 +68,5 @@ class InventoryAdjustedTest extends InventoryTestCase
         );
 
         expect($event->getDifference())->toBe(-5);
-    }
-}
+    });
+});

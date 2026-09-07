@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Data\ReservationLine;
 use AIArmada\Inventory\Exceptions\InvalidReservationTransition;
@@ -14,20 +13,8 @@ use AIArmada\Inventory\Models\InventoryReservation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 
-class CheckoutReservationServiceTest extends InventoryTestCase
-{
-    protected CheckoutReservationServiceInterface $reservationService;
-
-    protected InventoryService $inventoryService;
-
-    protected InventoryItem $item;
-
-    protected InventoryLocation $location;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('CheckoutReservationService', function (): void {
+    beforeEach(function (): void {
         config()->set('inventory.models.product', InventoryItem::class);
 
         $this->reservationService = app(CheckoutReservationServiceInterface::class);
@@ -41,10 +28,9 @@ class CheckoutReservationServiceTest extends InventoryTestCase
         ]);
 
         $this->inventoryService->receive($this->item, $this->location->id, 10);
-    }
+    });
 
-    public function test_reserve_creates_group_and_allocations(): void
-    {
+    it('reserve creates group and allocations', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 3)];
         $outcome = $this->reservationService->reserve('ref-1', $lines, 900);
 
@@ -57,10 +43,9 @@ class CheckoutReservationServiceTest extends InventoryTestCase
 
         $allocations = InventoryAllocation::query()->where('reservation_group_id', $group->id)->get();
         expect($allocations->sum('quantity'))->toBe(3);
-    }
+    });
 
-    public function test_reserve_resolves_a_polymorphic_inventoryable_line(): void
-    {
+    it('reserve resolves a polymorphic inventoryable line', function (): void {
         $lines = [new ReservationLine(
             productId: 'not-a-product-id',
             quantity: 3,
@@ -72,10 +57,9 @@ class CheckoutReservationServiceTest extends InventoryTestCase
 
         expect($outcome->state)->toBe('reserved')
             ->and(InventoryAllocation::query()->where('cart_id', 'ref-polymorphic')->sum('quantity'))->toBe(3);
-    }
+    });
 
-    public function test_commit_transitions_group_and_deducts_stock(): void
-    {
+    it('commit transitions group and deducts stock', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 4)];
         $this->reservationService->reserve('ref-commit', $lines, 900);
 
@@ -87,10 +71,9 @@ class CheckoutReservationServiceTest extends InventoryTestCase
         $level = $this->inventoryService->getLevel($this->item, $this->location->id)?->fresh();
         expect($level?->quantity_reserved)->toBe(0);
         expect($level?->quantity_on_hand)->toBe(6);
-    }
+    });
 
-    public function test_release_frees_allocations(): void
-    {
+    it('release frees allocations', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 5)];
         $this->reservationService->reserve('ref-release', $lines, 900);
 
@@ -101,10 +84,9 @@ class CheckoutReservationServiceTest extends InventoryTestCase
         expect($group?->status)->toBe('released');
 
         // ponytail: not asserting allocations are deleted since releaseAllForCart may handle them differently
-    }
+    });
 
-    public function test_extends_ttl(): void
-    {
+    it('extends ttl', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
         $this->reservationService->reserve('ref-extend', $lines, 900);
 
@@ -113,10 +95,9 @@ class CheckoutReservationServiceTest extends InventoryTestCase
 
         $group = InventoryReservation::query()->where('reference', 'ref-extend')->first();
         expect($group?->ttl_seconds)->toBe(1800);
-    }
+    });
 
-    public function test_find_returns_correct_state(): void
-    {
+    it('find returns correct state', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 1)];
         $this->reservationService->reserve('ref-find', $lines, 900);
         $this->reservationService->commit('ref-find', 'ORDER-FIND');
@@ -124,19 +105,17 @@ class CheckoutReservationServiceTest extends InventoryTestCase
         $outcome = $this->reservationService->find('ref-find');
         expect($outcome->state)->toBe('committed');
         expect($outcome->orderId)->toBe('ORDER-FIND');
-    }
+    });
 
-    public function test_throws_on_duplicate_active_reserve(): void
-    {
+    it('throws on duplicate active reserve', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
         $this->reservationService->reserve('ref-dup', $lines, 900);
 
         expect(fn () => $this->reservationService->reserve('ref-dup', [new ReservationLine(productId: $this->item->getKey(), quantity: 3)], 900))
             ->toThrow(ReservationReferenceConflict::class);
-    }
+    });
 
-    public function test_exact_active_reserve_retry_returns_the_existing_outcome(): void
-    {
+    it('exact active reserve retry returns the existing outcome', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
         $first = $this->reservationService->reserve('ref-retry', $lines, 900);
         $retry = $this->reservationService->reserve('ref-retry', $lines, 900);
@@ -144,10 +123,9 @@ class CheckoutReservationServiceTest extends InventoryTestCase
         expect($retry->reference)->toBe($first->reference)
             ->and($retry->lines)->toBe($first->lines)
             ->and(InventoryAllocation::query()->where('cart_id', 'ref-retry')->sum('quantity'))->toBe(2);
-    }
+    });
 
-    public function test_commit_does_not_mutate_unrelated_allocations_with_the_same_reference(): void
-    {
+    it('commit does not mutate unrelated allocations with the same reference', function (): void {
         $this->reservationService->reserve('ref-isolated', [new ReservationLine(productId: $this->item->getKey(), quantity: 2)], 900);
 
         $otherItem = InventoryItem::create(['name' => 'Unrelated Item']);
@@ -159,36 +137,32 @@ class CheckoutReservationServiceTest extends InventoryTestCase
         expect($this->inventoryService->getLevel($this->item, $this->location->id)?->fresh()?->quantity_on_hand)->toBe(8)
             ->and($this->inventoryService->getLevel($otherItem, $this->location->id)?->fresh()?->quantity_on_hand)->toBe(10)
             ->and(InventoryAllocation::query()->where('inventoryable_id', $otherItem->getKey())->where('cart_id', 'ref-isolated')->exists())->toBeTrue();
-    }
+    });
 
-    public function test_throws_on_invalid_commit_from_released(): void
-    {
+    it('throws on invalid commit from released', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
         $this->reservationService->reserve('ref-bad-commit', $lines, 900);
         $this->reservationService->release('ref-bad-commit');
 
         expect(fn () => $this->reservationService->commit('ref-bad-commit', 'ORDER-BAD'))
             ->toThrow(InvalidReservationTransition::class);
-    }
+    });
 
-    public function test_reserve_does_not_treat_a_released_group_as_a_new_reservation(): void
-    {
+    it('reserve does not treat a released group as a new reservation', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
         $this->reservationService->reserve('ref-released', $lines, 900);
         $this->reservationService->release('ref-released');
 
         expect(fn () => $this->reservationService->reserve('ref-released', $lines, 900))
             ->toThrow(ReservationReferenceConflict::class);
-    }
+    });
 
-    public function test_returns_not_found_on_nonexistent_reference(): void
-    {
+    it('returns not found on nonexistent reference', function (): void {
         $outcome = $this->reservationService->find('no-such-ref');
         expect($outcome->state)->toBe('not_found');
-    }
+    });
 
-    public function test_commit_is_idempotent(): void
-    {
+    it('commit is idempotent', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
         $this->reservationService->reserve('ref-idem-commit', $lines, 900);
 
@@ -198,20 +172,18 @@ class CheckoutReservationServiceTest extends InventoryTestCase
         expect($first->state)->toBe('committed');
         expect($second->state)->toBe('committed');
         expect($second->orderId)->toBe('ORDER-A');
-    }
+    });
 
-    public function test_commit_with_different_order_id_throws(): void
-    {
+    it('commit with different order id throws', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
         $this->reservationService->reserve('ref-diff-order', $lines, 900);
         $this->reservationService->commit('ref-diff-order', 'ORDER-A');
 
         expect(fn () => $this->reservationService->commit('ref-diff-order', 'ORDER-B'))
             ->toThrow(ReservationReferenceConflict::class);
-    }
+    });
 
-    public function test_release_is_idempotent(): void
-    {
+    it('release is idempotent', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
         $this->reservationService->reserve('ref-idem-release', $lines, 900);
 
@@ -220,10 +192,9 @@ class CheckoutReservationServiceTest extends InventoryTestCase
 
         expect($first->state)->toBe('released');
         expect($second->state)->toBe('released');
-    }
+    });
 
-    public function test_maintains_stock_invariants_under_concurrent_reserve_and_release(): void
-    {
+    it('maintains stock invariants under concurrent reserve and release', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 3)];
 
         $reserved = $this->reservationService->reserve('ref-concurrent-a', $lines, 900);
@@ -243,5 +214,5 @@ class CheckoutReservationServiceTest extends InventoryTestCase
             ->where('reservation_group_id', $group->id)
             ->get();
         expect($allocations->sum('quantity'))->toBe(3);
-    }
-}
+    });
+});

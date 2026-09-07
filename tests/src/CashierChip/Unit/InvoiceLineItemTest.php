@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\CashierChip\Invoice\InvoiceLineItem;
 use AIArmada\Chip\Data\ProductData;
@@ -11,10 +9,10 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Akaunting\Money\Money;
 use Mockery;
 
-class InvoiceLineItemTest extends CashierChipTestCase
-{
-    public function test_it_can_be_instantiated()
-    {
+uses(CashierChipTestCase::class);
+
+describe('InvoiceLineItem', function (): void {
+    it('it can be instantiated', function (): void {
         $invoice = Mockery::mock(Invoice::class);
         $invoice->shouldReceive('currency')->andReturn('MYR');
 
@@ -34,10 +32,9 @@ class InvoiceLineItemTest extends CashierChipTestCase
         $this->assertEquals(2000, $item->total());
         $this->assertStringContainsString('20.00', $item->totalFormatted());
         $this->assertEquals('MYR', $item->currency());
-    }
+    });
 
-    public function test_serialization()
-    {
+    it('serialization', function (): void {
         $invoice = Mockery::mock(Invoice::class);
         $invoice->shouldReceive('currency')->andReturn('MYR');
 
@@ -55,5 +52,5 @@ class InvoiceLineItemTest extends CashierChipTestCase
 
         $json = $item->toJson();
         $this->assertJson($json);
-    }
-}
+    });
+});

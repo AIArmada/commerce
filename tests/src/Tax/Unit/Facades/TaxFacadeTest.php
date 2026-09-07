@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Tests\Unit\Facades;
-
-use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Tax\Contracts\TaxCalculatorInterface;
 use AIArmada\Tax\Data\TaxResultData;
 use AIArmada\Tax\Facades\Tax;
@@ -13,22 +10,16 @@ use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Tax\Settings\TaxSettings;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class TaxFacadeTest extends TaxTestCase
-{
-    use RefreshDatabase;
-
-    public function test_facade_resolves_to_tax_calculator(): void
-    {
+describe('TaxFacade', function (): void {
+    it('facade resolves to tax calculator', function (): void {
         $resolved = Tax::getFacadeRoot();
 
         $this->assertInstanceOf(TaxCalculatorInterface::class, $resolved);
         $this->assertInstanceOf(TaxCalculator::class, $resolved);
-    }
+    });
 
-    public function test_facade_can_calculate_tax(): void
-    {
+    it('facade can calculate tax', function (): void {
         $zone = TaxZone::create([
             'name' => 'Malaysia',
             'code' => 'MY',
@@ -50,10 +41,9 @@ class TaxFacadeTest extends TaxTestCase
         $this->assertEquals(600, $result->taxAmount);
         $this->assertEquals('SST', $result->rateName);
         $this->assertEquals($zone->id, $result->zoneId);
-    }
+    });
 
-    public function test_facade_can_calculate_shipping_tax(): void
-    {
+    it('facade can calculate shipping tax', function (): void {
         $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
 
         config(['tax.defaults.calculate_tax_on_shipping' => true]);
@@ -78,10 +68,9 @@ class TaxFacadeTest extends TaxTestCase
 
         $this->assertInstanceOf(TaxResultData::class, $result);
         $this->assertEquals(300, $result->taxAmount); // 6% of 5000
-    }
+    });
 
-    public function test_facade_returns_zero_when_tax_disabled(): void
-    {
+    it('facade returns zero when tax disabled', function (): void {
         $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
 
         config(['tax.features.enabled' => false]);
@@ -89,27 +78,24 @@ class TaxFacadeTest extends TaxTestCase
         $result = Tax::calculateTax(10000);
 
         $this->assertEquals(0, $result->taxAmount);
-    }
+    });
 
-    public function test_facade_is_singleton(): void
-    {
+    it('facade is singleton', function (): void {
         $instance1 = Tax::getFacadeRoot();
         $instance2 = Tax::getFacadeRoot();
 
         $this->assertSame($instance1, $instance2);
-    }
+    });
 
-    public function test_can_resolve_via_app_helper(): void
-    {
+    it('can resolve via app helper', function (): void {
         $viaTax = app('tax');
         $viaInterface = app(TaxCalculatorInterface::class);
 
         $this->assertInstanceOf(TaxCalculator::class, $viaTax);
         $this->assertSame($viaTax, $viaInterface);
-    }
+    });
 
-    public function test_facade_with_context(): void
-    {
+    it('facade with context', function (): void {
         $zone = TaxZone::create([
             'name' => 'Malaysia',
             'code' => 'MY',
@@ -136,5 +122,5 @@ class TaxFacadeTest extends TaxTestCase
 
         $this->assertEquals(600, $result->taxAmount);
         $this->assertEquals($zone->id, $result->zoneId);
-    }
-}
+    });
+});

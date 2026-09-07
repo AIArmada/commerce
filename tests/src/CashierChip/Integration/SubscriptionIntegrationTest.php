@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Integration;
-
 use AIArmada\CashierChip\Billing\Discount;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
@@ -15,10 +13,10 @@ use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 
-class SubscriptionIntegrationTest extends CashierChipTestCase
-{
-    public function test_can_swap_single_price(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('SubscriptionIntegration', function (): void {
+    it('can swap single price', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_swap_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_old',
@@ -31,10 +29,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $subscription->swap('price_new');
 
         $this->assertEquals('price_new', $subscription->fresh()->chip_price);
-    }
+    });
 
-    public function test_can_swap_multiple_prices(): void
-    {
+    it('can swap multiple prices', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_swap_multi_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_old',
@@ -48,34 +45,27 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
 
         $this->assertNull($subscription->fresh()->chip_price);
         $this->assertEquals(2, $subscription->fresh()->items->count());
-    }
+    });
 
-    public function test_swap_throws_on_incomplete(): void
-    {
+    it('swap throws on incomplete', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_swap_incomplete_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Incomplete,
         ]);
 
-        $this->expectException(Exception::class);
-
         $subscription->swap('price_new');
-    }
+    })->throws(Exception::class);
 
-    public function test_swap_throws_with_empty_prices(): void
-    {
+    it('swap throws with empty prices', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_swap_empty_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
         ]);
 
-        $this->expectException(InvalidArgumentException::class);
-
         $subscription->swap([]);
-    }
+    })->throws(InvalidArgumentException::class);
 
-    public function test_swap_clears_ends_at(): void
-    {
+    it('swap clears ends at', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_swap_ends_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_old',
@@ -89,10 +79,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $subscription->swap('price_new');
 
         $this->assertNull($subscription->fresh()->ends_at);
-    }
+    });
 
-    public function test_update_quantity(): void
-    {
+    it('update quantity', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_qty_update_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_per_seat',
@@ -107,10 +96,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $subscription->updateQuantity(5);
 
         $this->assertEquals(5, $subscription->fresh()->quantity);
-    }
+    });
 
-    public function test_update_quantity_clamps_to_minimum_one(): void
-    {
+    it('update quantity clamps to minimum one', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_qty_min_clamp_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_per_seat',
@@ -125,10 +113,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $subscription->updateQuantity(0);
 
         $this->assertEquals(1, $subscription->fresh()->quantity);
-    }
+    });
 
-    public function test_increment_quantity(): void
-    {
+    it('increment quantity', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_qty_inc_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_per_seat',
@@ -143,10 +130,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $subscription->incrementQuantity(2);
 
         $this->assertEquals(7, $subscription->fresh()->quantity);
-    }
+    });
 
-    public function test_decrement_quantity(): void
-    {
+    it('decrement quantity', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_qty_dec_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_per_seat',
@@ -161,10 +147,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $subscription->decrementQuantity(2);
 
         $this->assertEquals(3, $subscription->fresh()->quantity);
-    }
+    });
 
-    public function test_decrement_quantity_minimum_one(): void
-    {
+    it('decrement quantity minimum one', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_qty_min_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_per_seat',
@@ -179,23 +164,19 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $subscription->decrementQuantity(5);
 
         $this->assertEquals(1, $subscription->fresh()->quantity);
-    }
+    });
 
-    public function test_quantity_throws_on_incomplete(): void
-    {
+    it('quantity throws on incomplete', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_qty_incomplete_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_per_seat',
             'chip_status' => SubscriptionStatus::Incomplete,
         ]);
 
-        $this->expectException(Exception::class);
-
         $subscription->updateQuantity(5);
-    }
+    })->throws(Exception::class);
 
-    public function test_current_period_start(): void
-    {
+    it('current period start', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_period_123']);
         $nextBilling = Carbon::now()->addMonth();
         $subscription = Subscription::factory()->for($user, 'owner')->create([
@@ -206,20 +187,18 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $periodStart = $subscription->currentPeriodStart();
 
         $this->assertNotNull($periodStart);
-    }
+    });
 
-    public function test_current_period_start_null_without_billing_date(): void
-    {
+    it('current period start null without billing date', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_period_null_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'next_billing_at' => null,
         ]);
 
         $this->assertNull($subscription->currentPeriodStart());
-    }
+    });
 
-    public function test_current_period_end(): void
-    {
+    it('current period end', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_period_end_123']);
         $nextBilling = Carbon::now()->addMonth();
         $subscription = Subscription::factory()->for($user, 'owner')->create([
@@ -229,10 +208,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $periodEnd = $subscription->currentPeriodEnd();
 
         $this->assertNotNull($periodEnd);
-    }
+    });
 
-    public function test_current_period_end_with_timezone(): void
-    {
+    it('current period end with timezone', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_period_tz_123']);
         $nextBilling = Carbon::now()->addMonth();
         $subscription = Subscription::factory()->for($user, 'owner')->create([
@@ -243,20 +221,18 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
 
         $this->assertNotNull($periodEnd);
         $this->assertEquals('Asia/Kuala_Lumpur', $periodEnd->timezoneName);
-    }
+    });
 
-    public function test_recurring_token_from_subscription(): void
-    {
+    it('recurring token from subscription', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_token_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'recurring_token' => 'tok_sub_123',
         ]);
 
         $this->assertEquals('tok_sub_123', $subscription->recurringToken());
-    }
+    });
 
-    public function test_has_discount(): void
-    {
+    it('has discount', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_discount_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'coupon_id' => 'COUPON123',
@@ -264,20 +240,18 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         ]);
 
         $this->assertTrue($subscription->hasDiscount());
-    }
+    });
 
-    public function test_no_discount(): void
-    {
+    it('no discount', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_no_discount_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'coupon_id' => null,
         ]);
 
         $this->assertFalse($subscription->hasDiscount());
-    }
+    });
 
-    public function test_has_product(): void
-    {
+    it('has product', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_prod_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
         SubscriptionItem::factory()->for($subscription)->create([
@@ -286,10 +260,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
 
         $this->assertTrue($subscription->hasProduct('prod_123'));
         $this->assertFalse($subscription->hasProduct('prod_456'));
-    }
+    });
 
-    public function test_has_price_with_multiple_prices(): void
-    {
+    it('has price with multiple prices', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_multi_price_check_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => null,
@@ -304,10 +277,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $this->assertTrue($subscription->hasPrice('price_123'));
         $this->assertTrue($subscription->hasPrice('price_456'));
         $this->assertFalse($subscription->hasPrice('price_789'));
-    }
+    });
 
-    public function test_find_item_or_fail(): void
-    {
+    it('find item or fail', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_find_item_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
         SubscriptionItem::factory()->for($subscription)->create([
@@ -317,20 +289,16 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $item = $subscription->findItemOrFail('price_123');
 
         $this->assertInstanceOf(SubscriptionItem::class, $item);
-    }
+    });
 
-    public function test_find_item_or_fail_throws(): void
-    {
+    it('find item or fail throws', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_find_item_fail_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
-        $this->expectException(ModelNotFoundException::class);
-
         $subscription->findItemOrFail('non_existent_price');
-    }
+    })->throws(ModelNotFoundException::class);
 
-    public function test_discount_returns_discount_instance(): void
-    {
+    it('discount returns discount instance', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_discount_inst_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'coupon_id' => 'COUPON123',
@@ -341,20 +309,18 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $discount = $subscription->discount();
 
         $this->assertInstanceOf(Discount::class, $discount);
-    }
+    });
 
-    public function test_discount_returns_null_without_coupon(): void
-    {
+    it('discount returns null without coupon', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_discount_null_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'coupon_id' => null,
         ]);
 
         $this->assertNull($subscription->discount());
-    }
+    });
 
-    public function test_discounts_returns_collection(): void
-    {
+    it('discounts returns collection', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_discounts_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'coupon_id' => 'COUPON123',
@@ -364,20 +330,18 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $discounts = $subscription->discounts();
 
         $this->assertCount(1, $discounts);
-    }
+    });
 
-    public function test_discounts_returns_empty_without_coupon(): void
-    {
+    it('discounts returns empty without coupon', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_discounts_empty_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'coupon_id' => null,
         ]);
 
         $this->assertCount(0, $subscription->discounts());
-    }
+    });
 
-    public function test_remove_discount(): void
-    {
+    it('remove discount', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_remove_discount_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'coupon_id' => 'COUPON123',
@@ -388,20 +352,18 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
 
         $this->assertNull($subscription->fresh()->coupon_id);
         $this->assertNull($subscription->fresh()->coupon_discount);
-    }
+    });
 
-    public function test_paused(): void
-    {
+    it('paused', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_paused_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Paused,
         ]);
 
         $this->assertTrue($subscription->paused());
-    }
+    });
 
-    public function test_pause(): void
-    {
+    it('pause', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_pause_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -410,10 +372,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $subscription->pause();
 
         $this->assertEquals(SubscriptionStatus::Paused, $subscription->chip_status);
-    }
+    });
 
-    public function test_unpause(): void
-    {
+    it('unpause', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_unpause_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Paused,
@@ -422,10 +383,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $subscription->unpause();
 
         $this->assertEquals(SubscriptionStatus::Active, $subscription->chip_status);
-    }
+    });
 
-    public function test_scope_paused(): void
-    {
+    it('scope paused', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_scope_paused_123']);
         Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Paused,
@@ -435,44 +395,39 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         ]);
 
         $this->assertEquals(1, Subscription::query()->paused()->count());
-    }
+    });
 
-    public function test_invoices_returns_empty_collection(): void
-    {
+    it('invoices returns empty collection', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_invoices_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
         $this->assertCount(0, $subscription->invoices());
-    }
+    });
 
-    public function test_upcoming_invoice_returns_null_when_canceled(): void
-    {
+    it('upcoming invoice returns null when canceled', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_upcoming_invoice_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'ends_at' => now()->subDay(),
         ]);
 
         $this->assertNull($subscription->upcomingInvoice());
-    }
+    });
 
-    public function test_latest_invoice_returns_null(): void
-    {
+    it('latest invoice returns null', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_latest_invoice_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
         $this->assertNull($subscription->latestInvoice());
-    }
+    });
 
-    public function test_latest_payment_returns_null(): void
-    {
+    it('latest payment returns null', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_latest_payment_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
         $this->assertNull($subscription->latestPayment());
-    }
+    });
 
-    public function test_add_price(): void
-    {
+    it('add price', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_add_price_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_base',
@@ -486,10 +441,9 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
 
         $this->assertEquals(2, $subscription->fresh()->items->count());
         $this->assertNull($subscription->fresh()->chip_price);
-    }
+    });
 
-    public function test_add_price_throws_on_duplicate(): void
-    {
+    it('add price throws on duplicate', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_add_dup_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -498,13 +452,10 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
             'chip_price' => 'price_existing',
         ]);
 
-        $this->expectException(SubscriptionUpdateFailure::class);
-
         $subscription->addPrice('price_existing');
-    }
+    })->throws(SubscriptionUpdateFailure::class);
 
-    public function test_remove_price_throws_on_single_price(): void
-    {
+    it('remove price throws on single price', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_remove_single_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_price' => 'price_only',
@@ -514,13 +465,10 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
             'chip_price' => 'price_only',
         ]);
 
-        $this->expectException(SubscriptionUpdateFailure::class);
-
         $subscription->removePrice('price_only');
-    }
+    })->throws(SubscriptionUpdateFailure::class);
 
-    public function test_sync_chip_status(): void
-    {
+    it('sync chip status', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_sync_status_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -532,5 +480,5 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
 
         // Status should remain active since not ended
         $this->assertEquals(SubscriptionStatus::Active, $subscription->chip_status);
-    }
-}
+    });
+});

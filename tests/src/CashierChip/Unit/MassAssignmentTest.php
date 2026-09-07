@@ -2,18 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Payment\StoredPaymentMethod;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
-final class MassAssignmentTest extends CashierChipTestCase
-{
-    public function test_subscription_protects_owner_status_and_gateway_id(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('MassAssignment', function (): void {
+    it('subscription protects owner status and gateway id', function (): void {
         $subscription = new Subscription([
             'billable_type' => 'user',
             'billable_id' => 'user-123',
@@ -33,10 +31,9 @@ final class MassAssignmentTest extends CashierChipTestCase
         $this->assertNull($subscription->owner_id);
         $this->assertSame('sub_external', $subscription->chip_id);
         $this->assertSame(SubscriptionStatus::Active, $subscription->chip_status);
-    }
+    });
 
-    public function test_subscription_item_protects_owner_gateway_id_and_amount(): void
-    {
+    it('subscription item protects owner gateway id and amount', function (): void {
         $item = new SubscriptionItem([
             'subscription_id' => 'subscription-123',
             'chip_product' => 'product_basic',
@@ -56,10 +53,9 @@ final class MassAssignmentTest extends CashierChipTestCase
         $this->assertNull($item->owner_id);
         $this->assertNull($item->chip_id);
         $this->assertNull($item->unit_amount);
-    }
+    });
 
-    public function test_stored_payment_method_protects_owner_tuple(): void
-    {
+    it('stored payment method protects owner tuple', function (): void {
         $paymentMethod = new StoredPaymentMethod([
             'billable_type' => 'user',
             'billable_id' => 'user-123',
@@ -75,5 +71,5 @@ final class MassAssignmentTest extends CashierChipTestCase
         $this->assertSame('card', $paymentMethod->type);
         $this->assertNull($paymentMethod->owner_type);
         $this->assertNull($paymentMethod->owner_id);
-    }
-}
+    });
+});

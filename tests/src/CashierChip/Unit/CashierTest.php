@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Unit;
-
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem;
@@ -11,65 +9,55 @@ use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 
-class CashierTest extends CashierChipTestCase
-{
-    protected function tearDown(): void
-    {
+uses(CashierChipTestCase::class);
+
+describe('Cashier', function (): void {
+    afterEach(function (): void {
         Cashier::restoreOctaneDefaults();
+    });
 
-        parent::tearDown();
-    }
-
-    public function test_version(): void
-    {
+    it('version', function (): void {
         $this->assertEquals('1.0.0', Cashier::VERSION);
-    }
+    });
 
-    public function test_find_billable_returns_null_without_chip_id(): void
-    {
+    it('find billable returns null without chip id', function (): void {
         $result = Cashier::findBillable(null);
 
         $this->assertNull($result);
-    }
+    });
 
-    public function test_find_billable_returns_user(): void
-    {
+    it('find billable returns user', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_find_test_123']);
 
         $result = Cashier::findBillable('cli_find_test_123');
 
         $this->assertNotNull($result);
         $this->assertEquals($user->id, $result->id);
-    }
+    });
 
-    public function test_chip_returns_fake(): void
-    {
+    it('chip returns fake', function (): void {
         $chip = Cashier::chip();
 
         $this->assertInstanceOf(FakeChipCollectService::class, $chip);
-    }
+    });
 
-    public function test_is_fake(): void
-    {
+    it('is fake', function (): void {
         $this->assertTrue(Cashier::isFake());
-    }
+    });
 
-    public function test_get_fake(): void
-    {
+    it('get fake', function (): void {
         $fake = Cashier::getFake();
 
         $this->assertInstanceOf(FakeChipCollectService::class, $fake);
-    }
+    });
 
-    public function test_format_amount(): void
-    {
+    it('format amount', function (): void {
         $formatted = Cashier::formatAmount(1000, 'MYR');
 
         $this->assertIsString($formatted);
-    }
+    });
 
-    public function test_format_amount_with_custom_formatter(): void
-    {
+    it('format amount with custom formatter', function (): void {
         Cashier::formatCurrencyUsing(function ($amount, $currency) {
             return "CUSTOM: {$currency} {$amount}";
         });
@@ -77,31 +65,27 @@ class CashierTest extends CashierChipTestCase
         $formatted = Cashier::formatAmount(1000, 'MYR');
 
         $this->assertEquals('CUSTOM: MYR 1000', $formatted);
-    }
+    });
 
-    public function test_ignore_routes(): void
-    {
+    it('ignore routes', function (): void {
         Cashier::ignoreRoutes();
 
         $this->assertFalse(Cashier::$registersRoutes);
-    }
+    });
 
-    public function test_keep_past_due_subscriptions_active(): void
-    {
+    it('keep past due subscriptions active', function (): void {
         Cashier::keepPastDueSubscriptionsActive();
 
         $this->assertFalse(Cashier::$deactivatePastDue);
-    }
+    });
 
-    public function test_keep_incomplete_subscriptions_active(): void
-    {
+    it('keep incomplete subscriptions active', function (): void {
         Cashier::keepIncompleteSubscriptionsActive();
 
         $this->assertFalse(Cashier::$deactivateIncomplete);
-    }
+    });
 
-    public function test_use_customer_model(): void
-    {
+    it('use customer model', function (): void {
         $original = Cashier::$customerModel;
 
         Cashier::useCustomerModel(User::class);
@@ -110,10 +94,9 @@ class CashierTest extends CashierChipTestCase
 
         // Reset
         Cashier::useCustomerModel($original);
-    }
+    });
 
-    public function test_use_subscription_model(): void
-    {
+    it('use subscription model', function (): void {
         $original = Cashier::$subscriptionModel;
 
         Cashier::useSubscriptionModel(Subscription::class);
@@ -122,10 +105,9 @@ class CashierTest extends CashierChipTestCase
 
         // Reset
         Cashier::useSubscriptionModel($original);
-    }
+    });
 
-    public function test_use_subscription_item_model(): void
-    {
+    it('use subscription item model', function (): void {
         $original = Cashier::$subscriptionItemModel;
 
         Cashier::useSubscriptionItemModel(SubscriptionItem::class);
@@ -134,13 +116,12 @@ class CashierTest extends CashierChipTestCase
 
         // Reset
         Cashier::useSubscriptionItemModel($original);
-    }
+    });
 
-    public function test_reset_fake(): void
-    {
+    it('reset fake', function (): void {
         // Should not throw
         Cashier::resetFake();
 
         $this->assertTrue(true);
-    }
-}
+    });
+});

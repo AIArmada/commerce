@@ -2,39 +2,30 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Tests\Unit\Models;
-
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class TaxZoneDeletionTest extends TaxTestCase
-{
-    use RefreshDatabase;
-
-    private function bindOwner(?Model $owner): void
+$bindOwner = function (?Model $owner): void {
+    app()->bind(OwnerResolverInterface::class, fn () => new class($owner) implements OwnerResolverInterface
     {
-        app()->bind(OwnerResolverInterface::class, fn () => new class($owner) implements OwnerResolverInterface
+        public function __construct(private ?Model $owner) {}
+
+        public function resolve(): ?Model
         {
-            public function __construct(private ?Model $owner) {}
+            return $this->owner;
+        }
+    });
+};
 
-            public function resolve(): ?Model
-            {
-                return $this->owner;
-            }
-        });
-    }
-
-    public function test_deleting_zone_cascades_to_rates_without_owner_scoping(): void
-    {
+describe('TaxZoneDeletion', function () use ($bindOwner): void {
+    it('deleting zone cascades to rates without owner scoping', function (): void {
         config(['tax.features.owner.enabled' => false]);
 
         $zone = TaxZone::create([
@@ -64,10 +55,9 @@ class TaxZoneDeletionTest extends TaxTestCase
         $zone->delete();
 
         $this->assertCount(0, TaxRate::where('zone_id', $zone->id)->get());
-    }
+    });
 
-    public function test_deleting_owned_zone_deletes_owned_rates_only(): void
-    {
+    it('deleting owned zone deletes owned rates only', function () use ($bindOwner): void {
         config(['tax.features.owner.enabled' => true]);
 
         $owner = User::query()->create([
@@ -76,7 +66,7 @@ class TaxZoneDeletionTest extends TaxTestCase
             'password' => 'secret',
         ]);
 
-        $this->bindOwner($owner);
+        $bindOwner($owner);
 
         $zone = TaxZone::create([
             'name' => 'Owned Zone',
@@ -97,10 +87,9 @@ class TaxZoneDeletionTest extends TaxTestCase
         $zone->delete();
 
         $this->assertCount(0, TaxRate::withoutOwnerScope()->where('zone_id', $zone->id)->get());
-    }
+    });
 
-    public function test_deleting_global_zone_with_owned_rates_throws(): void
-    {
+    it('deleting global zone with owned rates throws', function () use ($bindOwner): void {
         config(['tax.features.owner.enabled' => true]);
 
         $owner = User::query()->create([
@@ -109,7 +98,7 @@ class TaxZoneDeletionTest extends TaxTestCase
             'password' => 'secret',
         ]);
 
-        $this->bindOwner(null);
+        $bindOwner(null);
 
         $globalZone = OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
@@ -133,17 +122,13 @@ class TaxZoneDeletionTest extends TaxTestCase
             'updated_at' => now(),
         ]);
 
-        $this->expectException(AuthorizationException::class);
-        $this->expectExceptionMessage('Cannot delete a global tax zone while owned rates exist.');
-
         OwnerContext::withOwner(null, fn () => $globalZone->delete());
-    }
+    })->throws(AuthorizationException::class, 'Cannot delete a global tax zone while owned rates exist.');
 
-    public function test_deleting_global_zone_deletes_global_rates_only(): void
-    {
+    it('deleting global zone deletes global rates only', function () use ($bindOwner): void {
         config(['tax.features.owner.enabled' => true]);
 
-        $this->bindOwner(null);
+        $bindOwner(null);
 
         $globalZone = OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
@@ -164,10 +149,9 @@ class TaxZoneDeletionTest extends TaxTestCase
         OwnerContext::withOwner(null, fn () => $globalZone->delete());
 
         $this->assertCount(0, TaxRate::withoutOwnerScope()->where('zone_id', $globalZone->id)->get());
-    }
+    });
 
-    public function test_deleting_owned_zone_without_owner_context_throws(): void
-    {
+    it('deleting owned zone without owner context throws', function () use ($bindOwner): void {
         config(['tax.features.owner.enabled' => true]);
 
         $owner = User::query()->create([
@@ -176,7 +160,7 @@ class TaxZoneDeletionTest extends TaxTestCase
             'password' => 'secret',
         ]);
 
-        $this->bindOwner($owner);
+        $bindOwner($owner);
 
         $zone = TaxZone::create([
             'name' => 'Owned Zone',
@@ -184,17 +168,13 @@ class TaxZoneDeletionTest extends TaxTestCase
             'is_active' => true,
         ]);
 
-        $this->bindOwner(null);
-
-        $this->expectException(AuthorizationException::class);
-        $this->expectExceptionMessage('A matching owner context is required to delete owned AIArmada\Tax\Models\TaxZone records.');
+        $bindOwner(null);
 
         $freshZone = TaxZone::withoutOwnerScope()->find($zone->id);
         $freshZone->delete();
-    }
+    })->throws(AuthorizationException::class, 'A matching owner context is required to delete owned AIArmada\Tax\Models\TaxZone records.');
 
-    public function test_deleting_zone_outside_owner_scope_throws(): void
-    {
+    it('deleting zone outside owner scope throws', function () use ($bindOwner): void {
         config(['tax.features.owner.enabled' => true]);
 
         $ownerA = User::query()->create([
@@ -209,7 +189,7 @@ class TaxZoneDeletionTest extends TaxTestCase
             'password' => 'secret',
         ]);
 
-        $this->bindOwner($ownerA);
+        $bindOwner($ownerA);
 
         $zoneA = TaxZone::create([
             'name' => 'Owner A Zone',
@@ -217,12 +197,9 @@ class TaxZoneDeletionTest extends TaxTestCase
             'is_active' => true,
         ]);
 
-        $this->bindOwner($ownerB);
-
-        $this->expectException(AuthorizationException::class);
-        $this->expectExceptionMessage('Cross-owner delete blocked for AIArmada\Tax\Models\TaxZone.');
+        $bindOwner($ownerB);
 
         $freshZone = TaxZone::withoutOwnerScope()->find($zoneA->id);
         $freshZone->delete();
-    }
-}
+    })->throws(AuthorizationException::class, 'Cross-owner delete blocked for AIArmada\Tax\Models\TaxZone.');
+});

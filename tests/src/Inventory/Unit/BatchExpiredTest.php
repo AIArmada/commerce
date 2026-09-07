@@ -3,20 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Events\BatchExpired;
 use AIArmada\Inventory\Models\InventoryBatch;
 
-class BatchExpiredTest extends InventoryTestCase
-{
-    protected InventoryItem $item;
-
-    protected InventoryBatch $batch;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
+describe('BatchExpired', function (): void {
+    beforeEach(function (): void {
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -24,27 +15,24 @@ class BatchExpiredTest extends InventoryTestCase
             'batch_number' => 'BATCH-002',
             'quantity_on_hand' => 50,
         ]);
-    }
+    });
 
-    public function test_event_stores_properties_correctly(): void
-    {
+    it('event stores properties correctly', function (): void {
         $event = new BatchExpired($this->batch, $this->item);
 
         expect($event->batch)->toBe($this->batch);
         expect($event->inventoryable)->toBe($this->item);
-    }
+    });
 
-    public function test_get_batch_number_returns_correct_value(): void
-    {
+    it('get batch number returns correct value', function (): void {
         $event = new BatchExpired($this->batch, $this->item);
 
         expect($event->getBatchNumber())->toBe('BATCH-002');
-    }
+    });
 
-    public function test_get_remaining_quantity_returns_correct_value(): void
-    {
+    it('get remaining quantity returns correct value', function (): void {
         $event = new BatchExpired($this->batch, $this->item);
 
         expect($event->getRemainingQuantity())->toBe(50);
-    }
-}
+    });
+});
