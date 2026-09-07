@@ -8,7 +8,7 @@
 
 ## Overall Assessment (quality, health, risks, refactor size)
 
-authz is a capable Spatie wrapper (teams resolver, wildcard matching with cache, scope teams, impersonation with tenant guard, Octane listeners, scoped bindings for `AuthzScopeContext`/`WildcardPermissionCache`). The highest-severity items are narrow rather than systemic: the one over-broad scope strip (`PermissionResource::getEloquentQuery()->withoutGlobalScopes()`) is mitigated by an accurate comment (Spatie permissions are global; only roles carry `team_id`) but still strips more than it names; the filament `Authz` discovery service holds per-panel caches on a singleton; and the package's own models live in commerce-support instead of here. Filament tenancy-is-not-security posture is otherwise decent (server-side `can*` gates, `ImpersonationScopeGuard` on the user query). The glaring gap is test depth: 3 root tests for the security-critical core. No schema migration required. Refactor size: Small-Medium, code-only.
+authz is a capable Spatie wrapper (teams resolver, wildcard matching with cache, scope teams, impersonation with tenant guard, Octane listeners, scoped bindings for `AuthzScopeContext`/`WildcardPermissionCache`). The highest-severity items are narrow rather than systemic: the one over-broad scope strip (`PermissionResource::getEloquentQuery()->withoutGlobalScopes()`) is mitigated by an accurate comment (Spatie permissions are global; only roles carry `team_id`) but still strips more than it names; the filament `Authz` discovery service holds per-panel caches on a singleton. Filament tenancy-is-not-security posture is otherwise decent (server-side `can*` gates, `ImpersonationScopeGuard` on the user query). The glaring gap is test depth: 3 root tests for the security-critical core. No schema migration required. Refactor size: Small-Medium, code-only.
 
 ## Migration Impact
 
@@ -28,17 +28,6 @@ authz is a capable Spatie wrapper (teams resolver, wildcard matching with cache,
 - Operator tooling (`SuperAdminCommand`, `SyncAuthzCommand`, `filament-authz` `DiscoverCommand`/`GeneratePoliciesCommand`/`SeederCommand`, `Services/EntityDiscoveryService.php`, `Authz` discovery in filament adapter).
 
 ## Architecture Findings (each: Severity Critical/High/Medium/Low, Location files, Problem, Why It Matters, Recommended Fix concrete, Breaking Change YES/NO, Affected Packages list, Required Dependent Changes, Migration Required YES/NO)
-
-### A1 — Domain models live in commerce-support, not in authz
-- Severity: High
-- Location: `packages/commerce-support/src/Models/Role.php`, `Models/Permission.php`, `Models/AuthzScope.php`; wired in `packages/authz/src/AuthzServiceProvider.php:16-17`
-- Problem: authz is a domain package whose entities are owned by the foundation. Authz cannot change its own storage without a foundation release; foundation consumers inherit authz tables.
-- Why It Matters: Wrong ownership boundary; see commerce-support audit A1 for the full case.
-- Recommended Fix: Create `AIArmada\Authz\Models\{Role,Permission,AuthzScope}` in this package (move, not fork), re-point `configureSpatiePermissions()` and `Support/FilamentPermission.php`; leave no aliases beyond one release. Agreed direction with commerce-support audit A1 (cross-checked 2026-09-07, both files prescribe commerce-support → authz).
-- Breaking Change: YES
-- Affected Packages: commerce-support, filament-authz, events (`SyncManagementAssignmentToAuthzAction`), organizations (`DefaultOrganizationAuthorization`), membership (`MembershipRoleSyncService`)
-- Required Dependent Changes: update all `CommerceSupport\Models\(Role|Permission|AuthzScope)` imports repo-wide (verified hits in authz provider, commerce-support `FilamentPermission`, plus re-grep before merge)
-- Migration Required: NO
 
 ### A2 — `PermissionResource` strips all global scopes instead of naming the opt-out
 - Severity: Medium
@@ -140,23 +129,21 @@ authz is a capable Spatie wrapper (teams resolver, wildcard matching with cache,
 
 ## Recommended Refactor Plan (ordered steps)
 
-1. A1: move the three models into authz; update provider + `FilamentPermission`; repo-wide import sweep.
-2. A2: narrow the `PermissionResource` scope strip.
-3. A3: scope the filament `Authz` binding (+ plugin) per-request; add Octane flush.
-4. Security hardening: unify `shouldEnforceTenantScope()` flags; add permission separator assertion.
-5. A4: rename filament facade; update internal refs + tests.
-6. Q1: owner-aware policy stubs.
-7. Add the required tests above; verify with `./vendor/bin/pest --parallel tests/src/Authz tests/src/FilamentAuthz tests/src/FilamentAuthzScoped`.
+1. A2: narrow the `PermissionResource` scope strip.
+2. A3: scope the filament `Authz` binding (+ plugin) per-request; add Octane flush.
+3. Security hardening: unify `shouldEnforceTenantScope()` flags; add permission separator assertion.
+4. A4: rename filament facade; update internal refs + tests.
+5. Q1: owner-aware policy stubs.
+6. Add the required tests above; verify with `./vendor/bin/pest --parallel tests/src/Authz tests/src/FilamentAuthz tests/src/FilamentAuthzScoped`.
 
 ## Files Likely to Change
 
-- `packages/authz/src/AuthzServiceProvider.php`, `src/Support/ImpersonationScopeGuard.php`, `src/Services/PermissionKeyBuilder.php` (assertion), plus new `src/Models/{Role,Permission,AuthzScope}.php`
+- `packages/authz/src/AuthzServiceProvider.php`, `src/Support/ImpersonationScopeGuard.php`, `src/Services/PermissionKeyBuilder.php` (assertion), `src/Models/{Role,Permission,AuthzScope}.php` (owned here since the 2026-09-08 move)
 - `packages/filament-authz/src/Authz.php`, `src/FilamentAuthzServiceProvider.php`, `src/FilamentAuthzPlugin.php`, `src/Resources/PermissionResource.php`, `src/Console/GeneratePoliciesCommand.php`, `src/Facades/Authz.php` (rename)
-- `packages/commerce-support/src/Support/FilamentPermission.php` (import updates), deleted `src/Models/{Role,Permission,AuthzScope}.php`
+- `packages/commerce-support/src/Support/FilamentPermission.php` (import updates already landed with the move)
 
 ## Files / Code That Should Be Removed (explicit list, no legacy preservation)
 
-- `packages/commerce-support/src/Models/Role.php`, `Models/Permission.php`, `Models/AuthzScope.php` (moved to authz — verified consumers: authz provider, `FilamentPermission`; re-grep `CommerceSupport\\Models\\(Role|Permission|AuthzScope)` repo-wide before deleting)
 - `packages/filament-authz/src/Facades/Authz.php` (replaced by `Facades/FilamentAuthz.php`; verified no outside-package imports via rg `FilamentAuthz\\Facades\\Authz` — adapter-internal `src/` + tests + package `README.md`/`docs/*.md` examples, all updated same pass)
 - `->withoutGlobalScopes()` in `PermissionResource::getEloquentQuery()` (replaced by narrow expression + comment)
 - Nothing else: `scopeForOwner` duck-type checks stay until cashier/cashier-chip/contacting migrate in their own audits; `down()` methods stay (harmless)

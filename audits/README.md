@@ -20,12 +20,12 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | addressing | filament-addressing | Done | Yes | High | `addressing.md` |
 | affiliate-network | filament-affiliate-network | No | Yes | High | `affiliate-network.md` |
 | affiliates | filament-affiliates | No | Yes | High | `affiliates.md` |
-| authz | filament-authz | No | Yes | High | `authz.md` |
+| authz | filament-authz | No | Yes | Medium | `authz.md` |
 | cart | filament-cart | No | Yes | High | `cart.md` |
 | cashier | filament-cashier | No | Yes | Critical | `cashier.md` |
 | cashier-chip | filament-cashier-chip | No | Yes | High | `cashier-chip.md` |
 | chip | filament-chip | No | Yes | High | `chip.md` |
-| commerce-support | filament-commerce-support | No | Yes | High | `commerce-support.md` |
+| commerce-support | filament-commerce-support | No | Yes | Medium | `commerce-support.md` |
 | communications | filament-communications | No | Yes | High | `communications.md` |
 | contacting | filament-contacting | No | Yes | High | `contacting.md` |
 | customers | filament-customers | No | Yes | High | `customers.md` |
@@ -77,7 +77,7 @@ Dominant remaining risk themes: payments-multiplexer integrity (`cashier`), cras
 4. **Payments modeled three times.** `cashier` ↔ `cashier-chip` ↔ `chip` duplicate CHIP concepts; `checkout` duplicates chip's status mapper/payload builder and confirms payment without amount reconciliation. Collapse toward `cashier-chip`-canonical billing, `chip`-owned HTTP/verification, `cashier` as thin multiplexer; delete checkout's copies. See `cashier.md`, `cashier-chip.md`, `chip.md`, `checkout.md`.
 5. **Pricing/promotions/vouchers (residual).** Dead promotion strategies deleted, BOGO promotion type removed (voucher-side BOGO mechanic untouched and live), voucher provenance canonicalized, broken cross-package class references fixed. Remaining: `pricing.ApplyPromotionalAdjustment` still bypasses the promotions domain; voucher validator hardening. See `pricing.md`, `vouchers.md`.
 6. **Events ↔ ticketing ↔ seating forks.** 4 ticketing DTO/action forks live in `events`; `TicketableTypeRegistry` lives in the Filament adapter while core needs it; per-pass issuance loop and per-seat allocate loop under `lockForUpdate` need set-based rewrites. See `events.md`, `ticketing.md`, `seating.md`.
-7. **Foundation boundary violations.** `commerce-support` owns authz-domain models (`Role`/`Permission`/`AuthzScope`) and the navigation engine is implemented twice; money APIs accept `float|string`; `products` `store_money_in_cents` toggle; `jnt` float money math. See `commerce-support.md`, `authz.md`, `products.md`, `jnt.md`.
+7. **Foundation residue.** Models moved, money strict, navigation canonical (see `code-fixes-record.md`; dependency-direction guard in place). Remaining: Octane flush coverage, `currency_symbol()` helper delegation, `products` `store_money_in_cents` toggle, `jnt` float money math. See `commerce-support.md`, `authz.md`, `products.md`, `jnt.md`.
 8. **Filament adapters duplicating domain.** Snapshot dual-write (`filament-cart`), condition-application duplication, `CreateCustomer`/`UpdateCustomerProfile` parsing duplication, customer merge split across core/Filament, `GrowthStatsAggregator` N+1. See `cart.md`, `customers.md`, `growth.md`.
 9. **Zero tests in nearly all packages.** Repo-root `tests/src/<Area>/` has partial coverage only. Test-absence findings are uniformly Medium per the rubric. Every audit lists highest-value first tests.
 10. **Migration hygiene (residual).** Duplicate `000066` migration number in `events`, 9 tables in one `feedback` migration, inventory decimal columns (open migration above).
@@ -96,7 +96,7 @@ Dominant remaining risk themes: payments-multiplexer integrity (`cashier`), cras
 3. **Chip crash-recovery window:** gateway documents no native idempotency key, so gateway-success-then-crash still double-charges; needs a gateway-capability answer or durable outbox before the money path.
 4. **Events isolation:** bespoke-scope migration toward `HasOwner` (compensation now implemented).
 5. **Identity/address consolidation:** pick canonical owners; `HasAddresses` adoption now unblocked.
-6. **Foundation:** `commerce-support` (move authz models out, dedupe navigation, strict money) + `authz` (narrow opt-outs, Octane-safe discovery).
+6. **Foundation residue:** Octane flush + scoped filament binding, helper delegation, `products` toggle, `jnt` math.
 7. **Pricing/vouchers residual + shipping/tax:** route pricing through promotions domain, voucher validator hardening.
 8. **Events/ticketing/seating + affiliates/affiliate-network:** remove forks, move registry to core, set-based issuance, document programs-vs-offers boundary.
 9. **Remainder:** `cart` snapshot consolidation, `products` config/policy fixes, `communications`, `engagement`, `feedback`, `docs`, `jnt`, standalones (`moderation` expiry sweep, `references` tenancy, `membership`, `csuite` bundle requires).

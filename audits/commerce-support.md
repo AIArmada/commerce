@@ -10,7 +10,7 @@
 
 commerce-support is a broadly well-designed foundation: owner-tenancy (`HasOwner`, `OwnerScope`, `OwnerContext`, `OwnerQuery`, `OwnerWriteGuard`, `OwnerRouteBinding`, `OwnerCache`, `OwnerFilesystem`, `OwnerScopeKey`, `OwnerBatchRunner`), money (`MoneyFormatter`, `MoneyNormalizer`, `FormatsMoney`), navigation engine (`Support/Filament/CommerceNavigation.php`, 706 lines), payment contracts, a 24-evaluator targeting engine, and reusable test contracts (`Testing/OwnerScopingContractTests.php`). As the standard other packages are judged against, it mostly practices what it preaches (config-driven tables via `getTable()`, `json_column_type` discipline, no FK constraints/cascades, no soft deletes).
 
-Health risks: (1) it is simultaneously a foundation **and** a domain owner — `src/Models/Role.php`, `src/Models/Permission.php`, `src/Models/AuthzScope.php` are authz-domain models living in the foundation, creating a reverse-dependency smell (authz wraps models it does not own); (2) money APIs accept `float|string` at the boundary, undermining the integer-minor-units rule it is supposed to enforce; (3) Octane safety is uneven — `OwnerContext` keeps a `private static array $fallback` and several registries/caches hold in-memory state with no verified Octane flush coverage; (4) the navigation engine is split across two near-duplicate implementations (`CommerceNavigation` 706 lines in commerce-support + `ManageCommerceNavigation` 1055 lines in filament-commerce-support); (5) `FilamentCommerceSupport` has 1 root test for 14 source files. No schema migration is required by any recommendation below. Refactor size: Medium (code-only, breaking in 2 spots with internal consumers updated in the same pass).
+Health risks: Octane safety is uneven — `OwnerContext` keeps a `private static array $fallback` and several registries/caches hold in-memory state with no verified Octane flush coverage; `FilamentCommerceSupport` has 1 root test for 14 source files. Settled 2026-09-08 (see code-fixes-record.md): authz models moved out, money APIs int-only, single navigation engine. No schema migration is required by any recommendation below. Refactor size: Medium (code-only, breaking in 2 spots with internal consumers updated in the same pass).
 
 ## Migration Impact
 
@@ -32,39 +32,6 @@ No finding in this audit requires a schema change. Detail:
 - Payment subject/gateway contracts (`Contracts/Payment/*`), event interfaces (`Contracts/Events/*`), targeting engine (`Targeting/*`), health (`Health/*`), webhook pipeline (`Webhooks/*`, `Actions/ProcessWebhookCallAction.php`), audit/activity traits, install/publish commands.
 
 ## Architecture Findings (each: Severity Critical/High/Medium/Low, Location files, Problem, Why It Matters, Recommended Fix concrete, Breaking Change YES/NO, Affected Packages list, Required Dependent Changes, Migration Required YES/NO)
-
-### A1 — Foundation owns authz-domain models (reverse ownership)
-- Severity: High
-- Location: `packages/commerce-support/src/Models/Role.php`, `packages/commerce-support/src/Models/Permission.php`, `packages/commerce-support/src/Models/AuthzScope.php`; consumed by `packages/authz/src/AuthzServiceProvider.php` (`use AIArmada\CommerceSupport\Models\Permission as AuthzPermission`)
-- Problem: The foundation defines Role/Permission/AuthzScope tables and models; the authz package (the actual domain owner) merely configures Spatie against them. Any authz schema/behavior change forces a foundation release, and every consumer of commerce-support transitively carries authz tables.
-- Why It Matters: Inverts the required dependency direction (core must not enumerate downstream domains); blocks authz from evolving its own storage without touching the foundation.
-- Recommended Fix: Move `Role`, `Permission`, `AuthzScope` models + their table-name config into `aiarmada/authz` (`AIArmada\Authz\Models\`), keep thin deprecated class aliases in commerce-support for one release cycle only if external consumers exist, then delete aliases. Update `AuthzServiceProvider::configureSpatiePermissions()` and `Support/FilamentPermission.php` imports. Agreed direction with authz audit A1 (cross-checked 2026-09-07, both files prescribe commerce-support → authz; verified live wiring at `packages/authz/src/AuthzServiceProvider.php:16-17`).
-- Breaking Change: YES
-- Affected Packages: authz, filament-authz, any package referencing `CommerceSupport\Models\Role|Permission|AuthzScope`
-- Required Dependent Changes: authz owns models/config; filament-authz + `FilamentPermission` re-point imports; grep `CommerceSupport\\Models\\(Role|Permission|AuthzScope)` repo-wide and update all hits
-- Migration Required: NO
-
-### A2 — Money boundary accepts float|string, defeating the minor-units standard
-- Severity: High
-- Location: `packages/commerce-support/src/Support/MoneyFormatter.php` (`formatMinor(int|float|string ...)`, `formatMajor(...)`), `packages/commerce-support/src/Support/MoneyNormalizer.php` (`toCents(int|float|string|null)`)
-- Problem: The package that is supposed to guarantee "money as integer minor units" accepts floats and currency-symbol strings at its public API. Float input (`19.99 → 1999`) reintroduces binary floating-point error at the exact layer meant to prevent it; string sanitizing (`"$19.99"`) belongs in form/request parsing, not the canonical formatter.
-- Why It Matters: Downstream packages (docs, jnt, signals) can pass floats end-to-end and still be "using the standard"; audits cannot distinguish clean integer pipelines from float pipelines.
-- Recommended Fix: Narrow signatures to `formatMinor(int $amountInMinorUnits, string $currency, ?int $precision = null)` and `toCents(int|string $price)` with string restricted to canonical decimal (`/^\d+(\.\d{1,2})?$/`, no symbols). Move symbol-stripping/float handling into a single `MoneyInputParser::parseUserInput()` used only at HTTP/form boundaries. Update internal consumers (`DocRenderService::money()`, jnt `JntShippingDriver`, `GrowthStatsAggregator`).
-- Breaking Change: YES
-- Affected Packages: docs, jnt, growth, filament-growth, signals, filament-shipping
-- Required Dependent Changes: replace float money args with ints at call sites; route user-entered strings through the new parser
-- Migration Required: NO
-
-### A3 — Navigation engine implemented twice (foundation + adapter drift)
-- Severity: High
-- Location: `packages/commerce-support/src/Support/Filament/CommerceNavigation.php` (706 lines) vs `packages/filament-commerce-support/src/Pages/ManageCommerceNavigation.php` (1055 lines); glue `packages/filament-commerce-support/src/Support/NavigationConfigurator.php`
-- Problem: Two large navigation implementations with overlapping responsibilities (group resolution, item merging, runtime overrides via `commerce-support.filament.navigation.items.*`). Fixes in one do not propagate to the other; behavior differs by which class renders.
-- Why It Matters: Navigation is the foundation's flakiest cross-cutting surface; duplication here multiplies every downstream navigation bug by two and doubles review cost for all filament-* packages.
-- Recommended Fix: Collapse to one engine: keep `CommerceNavigation` as the single renderer/resolver; reduce `ManageCommerceNavigation` to a thin settings form + preview that calls the engine (delete its private `getNavigationGroup`-scanning/resolution helpers, ~600 lines). No new abstraction — move, don't wrap.
-- Breaking Change: NO (internal method visibility changes only; public page route unchanged)
-- Affected Packages: filament-commerce-support, all filament-* consumers of navigation overrides
-- Required Dependent Changes: none for consumers; adapter-internal call rewiring only
-- Migration Required: NO
 
 ### A4 — In-memory caches/registries with unverified Octane lifecycle
 - Severity: Medium
@@ -166,29 +133,22 @@ No finding in this audit requires a schema change. Detail:
 
 ## Recommended Refactor Plan (ordered steps)
 
-1. A1: move Role/Permission/AuthzScope to authz; update `AuthzServiceProvider`, `FilamentPermission`, all repo-wide import hits.
-2. A2: narrow money signatures; add `MoneyInputParser`; update docs/jnt/growth/signals call sites in the same pass.
-3. A3: collapse navigation engine into `CommerceNavigation`; thin out `ManageCommerceNavigation`.
-4. A4: add Octane flush listeners + scoped filament-authz binding; add leak regression tests.
-5. A5 + Q1/Q2: helper delegation and stub simplification.
-6. Add missing tests: `ManageCommerceNavigation` feature, money boundary, Octane leaks. Run per-package: `./vendor/bin/pest --parallel tests/src/CommerceSupport tests/src/FilamentCommerceSupport`.
+1. A4: add Octane flush listeners + scoped filament-authz binding; add leak regression tests.
+2. A5 + Q1/Q2: helper delegation and stub simplification.
+3. Add missing tests: Octane leaks (money boundary + `ManageCommerceNavigation` feature suites now exist — keep green). Run per-package: `./vendor/bin/pest --parallel tests/src/CommerceSupport tests/src/FilamentCommerceSupport`.
 
 ## Files Likely to Change
 
-- `packages/commerce-support/src/Models/Role.php`, `Models/Permission.php`, `Models/AuthzScope.php` (move out)
-- `packages/commerce-support/src/Support/FilamentPermission.php`, `src/Support/MoneyFormatter.php`, `src/Support/MoneyNormalizer.php`, `src/helpers.php`, `src/Support/Filament/CommerceNavigation.php`
-- `packages/commerce-support/src/Support/AuditableModelRegistry.php`, `src/Support/LoggableModelRegistry.php`, `src/Support/OwnerContext.php`, `src/SupportServiceProvider.php`
+- `packages/commerce-support/src/Support/FilamentPermission.php`, `src/helpers.php` (A5), `src/Support/OwnerContext.php` (A4), `src/SupportServiceProvider.php`
+- `packages/commerce-support/src/Support/AuditableModelRegistry.php`, `src/Support/LoggableModelRegistry.php` (A4)
 - `packages/commerce-support/database/migrations/*.stub` (Q2)
-- `packages/filament-commerce-support/src/Pages/ManageCommerceNavigation.php`, `src/Support/NavigationConfigurator.php`
-- `packages/authz/src/AuthzServiceProvider.php`, `packages/filament-authz/src/Authz.php`, `packages/filament-authz/src/FilamentAuthzServiceProvider.php`
+- `packages/authz/src/AuthzServiceProvider.php`, `packages/filament-authz/src/Authz.php`, `packages/filament-authz/src/FilamentAuthzServiceProvider.php` (A4 scoped binding)
 
 ## Files / Code That Should Be Removed (explicit list, no legacy preservation)
 
-- `packages/commerce-support/src/Models/Role.php`, `src/Models/Permission.php`, `src/Models/AuthzScope.php` (moved to authz; delete originals after import updates — verified consumers: `packages/authz/src/AuthzServiceProvider.php`, `packages/commerce-support/src/Support/FilamentPermission.php`; re-grep `CommerceSupport\\Models\\(Role|Permission|AuthzScope)` before deleting)
 - `currency_symbol()` in `packages/commerce-support/src/helpers.php` (after the two filament-shipping call sites move to `MoneyFormatter::symbol()` — verified only consumers via rg)
-- Duplicated navigation-resolution private methods in `packages/filament-commerce-support/src/Pages/ManageCommerceNavigation.php` (the `getNavigationGroup`-scanning loops at lines ~450–560, ~760–970 — collapsed into engine calls)
 - Nothing else: `webhook_calls`/`audits` `bigIncrements` PKs stay (shared-table compat); `scopeForOwner` compat references stay until the cashier/cashier-chip/contacting call sites are migrated in their own audits
 
 ## Final Recommended Architecture
 
-commerce-support remains the foundation but stops being a domain owner: tenancy + money + navigation + payment/targeting contracts + testing contracts only. Authz models live in authz. Money APIs are int-only with a single form-boundary parser. One navigation engine with a thin settings page. All shared mutable state is request-scoped or Octane-flushed. Every primitive ships with a contract test that downstream packages reuse rather than re-implement.
+commerce-support remains the foundation but stops being a domain owner: tenancy + money + navigation + payment/targeting contracts + testing contracts only. Authz models live in authz. Money APIs are int-only with explicit call-site conversion. One navigation engine with a thin settings page. All shared mutable state is request-scoped or Octane-flushed. Every primitive ships with a contract test that downstream packages reuse rather than re-implement.

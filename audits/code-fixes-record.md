@@ -1,5 +1,4 @@
 # Code Fixes Record
-
 Completed 2026-09-08. Historical record of implemented code fixes from the
 package audits (the code-only Criticals track, the checkout currency
 follow-ups, the three-stream parallel track, and the inventory A1
@@ -124,6 +123,31 @@ reported and taken on trust; code correctness was verified directly.
 - Fix is behavior-preserving: badge/filter/form moved to state classes with
   identical string values; zero remaining enum references; docs updated.
 - Full evidence chain in `migration-record.md`.
+
+## Commerce-support foundation settling (implemented)
+
+- **Money strictness:** `MoneyFormatter` (`formatMinor`, `formatMajor`,
+  variants) and `MoneyNormalizer::toCents()` narrowed to `int`; every
+  repo-wide caller passing `float|string` converted with explicit
+  half-up rounding (centralized in a `ChipIntegerModel` helper where the
+  pattern repeated). No shims or overloads retained. J&T float-math
+  rerouting deferred — equivalence unproven, logged as follow-up.
+- **Single navigation engine:** `CommerceNavigation` canonical;
+  `ManageCommerceNavigation` reduced to a settings Page that consumes the
+  engine for all discovery/resolution (verified call sites). Runtime
+  overrides preserved with tests. Legitimate adapter layering, not a
+  retained shim.
+- **Authz models moved:** `Role`, `Permission`, `AuthzScope` now live under
+  `AIArmada\Authz\Models`; originals deleted with zero remaining
+  old-namespace references repo-wide (including the heavy filament
+  consumer surface); `AuthzServiceProvider` owns registration. Stronger
+  than the audit asked (no alias release cycle).
+- **Dependency-direction guard (new, permanent):**
+  `tests/src/CommerceSupport/Architecture/
+  CommerceSupportArchitectureTest.php` derives downstream namespaces from
+  composer manifests and asserts `commerce-support/src` references none of
+  them, plus a lean composer require. Keeps the foundation honest going
+  forward.
 
 ## Fairness log
 
