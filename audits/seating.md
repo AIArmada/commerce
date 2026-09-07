@@ -42,7 +42,7 @@
 
 ## Database Findings
 - 5 focused migrations, UUID PKs, no constraints. Model-per-table mapping is 1:1 with no join bloat. PASS.
-- Concurrency correctness rests on `lockForUpdate` + hold-expiry predicates — verify the `(seat_id, expires_at)` and section-ordering indexes exist (see Migration Impact). Stale-hold cleanup (`ReleaseExpiredHoldsCommand`, `StaleSeatHoldException`) shows expiry was designed, not bolted on. PASS.
+- Concurrency correctness rests on `lockForUpdate` + hold-expiry predicates — verify the `(seat_id, expires_at)` and section-ordering indexes exist in the migrations. Stale-hold cleanup (`ReleaseExpiredHoldsCommand`, `StaleSeatHoldException`) shows expiry was designed, not bolted on. PASS.
 
 ## Model / Domain Findings
 - `SeatHold` (TTL, `held_by` morph, `reference`) vs `SeatAllocation` (confirmed) is a clean two-phase commit model; `ConvertHoldsToAllocationsAction` is the commit step. `EnsureSectionAllocationAction` covers GA/count-based sections. `ResolveSeatMapForHostAction` gives polymorphic host scoping (event/occurrence/session). Coherent minimal domain — do not expand (no seat pricing, no tier logic here; those belong to ticketing).
