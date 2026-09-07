@@ -34,10 +34,9 @@ The `aiarmada/promotions` package owns automatic and code-based discount campaig
 ## Main models services or surfaces
 
 - **Model** — `Promotion`
-- **Actions** — `CreatePromotion`, `ApplyPromotionToCart`, `EvaluatePromotionForCart`, `DeactivatePromotion`, `IssueVouchersFromPromotion`
+- **Actions** — `CreatePromotion`, `EvaluatePromotionForCart`, `DeactivatePromotion`, `IssueVouchersFromPromotion`
 - **Events** — `PromotionCreated`, `PromotionApplied`, `PromotionRemoved`, `PromotionDeactivated`
-- **Strategies** — `FixedStrategy`, `PercentageStrategy`, `BuyXGetYStrategy` (resolved via `PromotionStrategyInterface`)
-- **Contracts** — `PromotionStrategyInterface`, `PromotionServiceInterface`
+- **Contracts** — `PromotionServiceInterface`
 - **Listeners** — `MarkPromotionAsUsedOnOrderPlaced`, `ReevaluatePromotionsOnCartUpdated`
 - **Support** — `PromotionPerformanceInsights`
 - **Core surfaces** — promotion targeting evaluation, usage-limit enforcement, code and automatic promotion flows
@@ -62,8 +61,7 @@ The `aiarmada/promotions` package owns automatic and code-based discount campaig
 - Optional promotion-issued one-time vouchers for recovery or targeted distribution campaigns
 - Owner-aware scoping and write guards
 - Activity logging for core promotion fields
-- Action-based API: `CreatePromotion`, `ApplyPromotionToCart`, `EvaluatePromotionForCart`, `DeactivatePromotion`
-- Strategy pattern: `FixedStrategy`, `PercentageStrategy`, `BuyXGetYStrategy` via `PromotionStrategyInterface`
+- Action-based API: `CreatePromotion`, `EvaluatePromotionForCart`, `DeactivatePromotion`
 - Events for extensibility: `PromotionCreated`, `PromotionApplied`, `PromotionRemoved`, `PromotionDeactivated`
 
 ## Core model fields

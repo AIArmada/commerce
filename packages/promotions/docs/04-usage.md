@@ -10,7 +10,6 @@ These Action classes are the recommended entry points for promotion operations.
 
 ```php
 use AIArmada\Promotions\Actions\CreatePromotion;
-use AIArmada\Promotions\Actions\ApplyPromotionToCart;
 use AIArmada\Promotions\Actions\EvaluatePromotionForCart;
 use AIArmada\Promotions\Actions\DeactivatePromotion;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
@@ -30,7 +29,7 @@ $eligible = EvaluatePromotionForCart::run(
 );
 
 // Calculate the discount amount
-$discountInCents = ApplyPromotionToCart::run($promotion, $subtotalInCents);
+$discountInCents = $promotion->calculateDiscount($subtotalInCents);
 
 // Deactivate a promotion
 DeactivatePromotion::run($promotion);

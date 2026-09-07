@@ -81,11 +81,6 @@ final class IssueVouchersFromPromotion
     private function buildVoucherPayload(Promotion $promotion, int $sequence, ?string $codePrefix): array
     {
         $currency = (string) config('promotions.defaults.currency', config('vouchers.default_currency', 'MYR'));
-        $metadata = array_filter([
-            'source_promotion_id' => $promotion->id,
-            'source_promotion_name' => $promotion->name,
-            'source_promotion_code' => $promotion->code,
-        ], static fn (mixed $value): bool => $value !== null && $value !== '');
 
         return [
             'code' => $this->buildVoucherCode($promotion, $sequence, $codePrefix),
@@ -103,7 +98,6 @@ final class IssueVouchersFromPromotion
             'owner_type' => $promotion->owner_type,
             'owner_id' => $promotion->owner_id,
             'target_definition' => $this->buildTargetDefinition($promotion),
-            'metadata' => $metadata !== [] ? $metadata : null,
             'promotion_id' => $promotion->id,
         ];
     }

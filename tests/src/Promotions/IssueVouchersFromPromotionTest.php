@@ -58,6 +58,7 @@ it('issues one-time vouchers linked to the source promotion', function (): void 
         ->and($storedVoucher->promotion_id)->toBe($promotion->id)
         ->and($storedVoucher->owner_type)->toBe($promotion->owner_type)
         ->and((string) $storedVoucher->owner_id)->toBe((string) $promotion->owner_id)
+        ->and($storedVoucher->metadata)->toBeNull()
         ->and($storedVoucher->value)->toBe(1000)
         ->and($storedVoucher->target_definition)->toBe([
             'targeting' => [
