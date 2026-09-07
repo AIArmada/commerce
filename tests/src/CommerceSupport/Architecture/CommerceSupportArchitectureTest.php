@@ -90,3 +90,47 @@ it('keeps commerce-support Composer requirements free of sibling packages', func
 
     expect($requiredSiblingPackages)->toBe([]);
 });
+
+it('keeps addressing composer requirements free of consumer packages', function (): void {
+    // Canonical-addressing doctrine: consumers hard-require addressing;
+    // addressing itself must require nothing beyond the foundation.
+    $repositoryPath = dirname(__DIR__, 4);
+    $manifest = readCommerceSupportComposerManifest(
+        "{$repositoryPath}/packages/addressing/composer.json"
+    );
+
+    $requirements = $manifest['require'] ?? [];
+    $allowed = ['php', 'aiarmada/commerce-support', 'spatie/laravel-package-tools'];
+    $extra = is_array($requirements)
+        ? array_values(array_diff(array_keys($requirements), $allowed))
+        : [];
+
+    expect($extra)->toBe([]);
+});
+
+it('keeps addressing source independent of consumer namespaces', function (): void {
+    // Identity/addressing consumers that must never be imported back.
+    $consumerNamespaces = [
+        'AIArmada\\Customers',
+        'AIArmada\\Persons',
+        'AIArmada\\Orders',
+        'AIArmada\\Events',
+    ];
+
+    $repositoryPath = dirname(__DIR__, 4);
+    $filesystem = new Filesystem;
+
+    $violations = [];
+
+    foreach ($filesystem->allFiles("{$repositoryPath}/packages/addressing/src") as $file) {
+        $contents = $file->getContents();
+
+        foreach ($consumerNamespaces as $namespace) {
+            if (str_contains($contents, "{$namespace}\\")) {
+                $violations[] = "{$file->getPathname()} imports {$namespace}";
+            }
+        }
+    }
+
+    expect($violations)->toBe([]);
+});
