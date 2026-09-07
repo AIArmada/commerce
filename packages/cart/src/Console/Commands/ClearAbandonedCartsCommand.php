@@ -134,8 +134,8 @@ final class ClearAbandonedCartsCommand extends Command
         $columns = OwnerTupleColumns::forModelClass(CartModel::class);
         $owners = DB::table($table)
             ->select([
-                $columns->ownerTypeColumn . ' as owner_type',
-                $columns->ownerIdColumn . ' as owner_id',
+                $columns->ownerTypeColumn,
+                $columns->ownerIdColumn,
             ])
             ->distinct()
             ->get();
@@ -160,7 +160,7 @@ final class ClearAbandonedCartsCommand extends Command
         foreach ($owners as $row) {
             $parsed = OwnerTupleParser::fromRow(
                 row: $row,
-                columns: new OwnerTupleColumns,
+                columns: $columns,
                 allowMalformed: true,
             );
 
@@ -168,8 +168,8 @@ final class ClearAbandonedCartsCommand extends Command
                 if ($strictOwnerTuples) {
                     $this->error(sprintf(
                         'Malformed owner tuple encountered (owner_type: %s, owner_id: %s).',
-                        $row->owner_type ?? 'null',
-                        $row->owner_id === null ? 'null' : (string) $row->owner_id,
+                        $row->{$columns->ownerTypeColumn} ?? 'null',
+                        $row->{$columns->ownerIdColumn} === null ? 'null' : (string) $row->{$columns->ownerIdColumn},
                     ));
 
                     return self::FAILURE;
@@ -177,8 +177,8 @@ final class ClearAbandonedCartsCommand extends Command
 
                 $this->warn(sprintf(
                     'Skipping malformed owner tuple while clearing abandoned carts (owner_type: %s, owner_id: %s).',
-                    $row->owner_type ?? 'null',
-                    $row->owner_id === null ? 'null' : (string) $row->owner_id,
+                    $row->{$columns->ownerTypeColumn} ?? 'null',
+                    $row->{$columns->ownerIdColumn} === null ? 'null' : (string) $row->{$columns->ownerIdColumn},
                 ));
 
                 continue;

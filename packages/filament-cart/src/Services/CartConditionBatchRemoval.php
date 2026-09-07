@@ -203,7 +203,7 @@ final class CartConditionBatchRemoval
      */
     private function snapshotQuery(StoredCondition | string $condition)
     {
-        if ($condition instanceof StoredCondition && $condition->owner_type === null && $condition->owner_id === null && config('cart.owner.enabled', false)) {
+        if ($condition instanceof StoredCondition && $condition->owner_type === null && $condition->owner_id === null && StoredCondition::ownerScopingEnabled()) {
             if (! OwnerContext::isExplicitGlobal()) {
                 throw new RuntimeException('Removing shared global conditions from all carts requires explicit global owner context.');
             }

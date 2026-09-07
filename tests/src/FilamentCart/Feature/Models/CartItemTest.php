@@ -121,7 +121,7 @@ describe('CartItem Model', function (): void {
         ]);
 
         expect(CartItem::byName('Widget')->count())->toBe(2);
-        expect(CartItem::priceBetween(5, 20)->count())->toBe(1); // $10 matches
+        expect(CartItem::priceBetween(500, 2000)->count())->toBe(1); // 1000 minor units matches
         expect(CartItem::quantityBetween(4, 6)->count())->toBe(1); // 5 matches
 
         expect(CartItem::withConditions()->count())->toBe(1);

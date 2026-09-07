@@ -61,7 +61,7 @@ final class ConditionResource extends Resource
         /** @var Builder<Condition> $query */
         $query = parent::getEloquentQuery();
 
-        if (! (bool) config('cart.owner.enabled', false)) {
+        if (! Condition::ownerScopingEnabled()) {
             return $query;
         }
 
@@ -76,7 +76,7 @@ final class ConditionResource extends Resource
             return $query->globalOnly();
         }
 
-        return $query->forOwner($owner, (bool) config('cart.owner.include_global', false));
+        return $query->forOwner($owner, (bool) (config('filament-cart.owner.include_global') ?? config('cart.owner.include_global', false)));
     }
 
     public static function getRelations(): array
@@ -95,9 +95,11 @@ final class ConditionResource extends Resource
         ];
     }
 
-    public static function getNavigationBadge(): string
+    public static function getNavigationBadge(): ?string
     {
-        return (string) self::getEloquentQuery()->where('is_active', true)->count();
+        $count = self::getEloquentQuery()->where('is_active', true)->count();
+
+        return $count > 0 ? (string) $count : null;
     }
 
     public static function getNavigationBadgeColor(): string
@@ -123,7 +125,7 @@ final class ConditionResource extends Resource
 
     public static function isGlobalRecordOutsideExplicitGlobalContext(Condition $record): bool
     {
-        return config('cart.owner.enabled', false)
+        return Condition::ownerScopingEnabled()
             && $record->owner_type === null
             && $record->owner_id === null
             && ! OwnerContext::isExplicitGlobal();

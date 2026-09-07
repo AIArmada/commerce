@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Models\Traits;
 
+use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 
 /**
@@ -189,9 +190,7 @@ trait MoneyTrait
      */
     public function getPrice(): Money
     {
-        $currency = config('cart.money.default_currency', 'USD');
-
-        return Money::{$currency}($this->getRawPrice());
+        return $this->moneyFromMinor((int) $this->getRawPrice());
     }
 
     /**
@@ -199,9 +198,7 @@ trait MoneyTrait
      */
     public function getSubtotal(): Money
     {
-        $currency = config('cart.money.default_currency', 'USD');
-
-        return Money::{$currency}($this->getRawSubtotal());
+        return $this->moneyFromMinor((int) $this->getRawSubtotal());
     }
 
     /**
@@ -213,9 +210,7 @@ trait MoneyTrait
         $discountedTotal = $this->getRawSubtotal();
         $discountAmount = max(0, $originalTotal - $discountedTotal);
 
-        $currency = config('cart.money.default_currency', 'USD');
-
-        return Money::{$currency}($discountAmount);
+        return $this->moneyFromMinor($discountAmount);
     }
 
     /**
@@ -223,9 +218,7 @@ trait MoneyTrait
      */
     public function getPriceWithoutConditions(): Money
     {
-        $currency = config('cart.money.default_currency', 'USD');
-
-        return Money::{$currency}($this->price);
+        return $this->moneyFromMinor((int) $this->getRawPriceWithoutConditions());
     }
 
     /**
@@ -233,9 +226,7 @@ trait MoneyTrait
      */
     public function getSubtotalWithoutConditions(): Money
     {
-        $currency = config('cart.money.default_currency', 'USD');
-
-        return Money::{$currency}($this->getRawSubtotalWithoutConditions());
+        return $this->moneyFromMinor((int) $this->getRawSubtotalWithoutConditions());
     }
 
     /**
@@ -260,5 +251,14 @@ trait MoneyTrait
     public function discountAmount(): Money
     {
         return $this->getDiscountAmount();
+    }
+
+    private function moneyFromMinor(int $amount): Money
+    {
+        return new Money(
+            $amount,
+            new Currency(mb_strtoupper((string) config('cart.money.default_currency', 'USD'))),
+            false,
+        );
     }
 }

@@ -72,9 +72,9 @@ return [
     ],
 
     'owner' => [
-        'enabled' => env('FILAMENT_CART_OWNER_ENABLED', false),
-        'include_global' => env('FILAMENT_CART_OWNER_INCLUDE_GLOBAL', false),
-        'auto_assign_on_create' => env('FILAMENT_CART_OWNER_AUTO_ASSIGN_ON_CREATE', true),
+        'enabled' => env('FILAMENT_CART_OWNER_ENABLED'),
+        'include_global' => env('FILAMENT_CART_OWNER_INCLUDE_GLOBAL'),
+        'auto_assign_on_create' => env('FILAMENT_CART_OWNER_AUTO_ASSIGN_ON_CREATE'),
     ],
 
     /*

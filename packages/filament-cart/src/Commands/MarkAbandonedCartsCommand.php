@@ -117,8 +117,8 @@ class MarkAbandonedCartsCommand extends Command
 
         $owners = OwnerContext::withOwner(null, fn () => Cart::query()
             ->select([
-                $columns->ownerTypeColumn . ' as owner_type',
-                $columns->ownerIdColumn . ' as owner_id',
+                $columns->ownerTypeColumn,
+                $columns->ownerIdColumn,
             ])
             ->distinct()
             ->get());
@@ -129,7 +129,7 @@ class MarkAbandonedCartsCommand extends Command
         foreach ($owners as $row) {
             $parsed = OwnerTupleParser::fromRow(
                 row: $row,
-                columns: new OwnerTupleColumns,
+                columns: $columns,
                 allowMalformed: true,
             );
 
@@ -137,8 +137,8 @@ class MarkAbandonedCartsCommand extends Command
                 if ($strictOwnerTuples) {
                     $this->error(sprintf(
                         'Malformed owner tuple encountered (owner_type: %s, owner_id: %s).',
-                        is_string($row->owner_type ?? null) && $row->owner_type !== '' ? $row->owner_type : 'null',
-                        is_string($row->owner_id ?? null) || is_int($row->owner_id ?? null) ? (string) $row->owner_id : 'null',
+                        is_string($row->{$columns->ownerTypeColumn} ?? null) && $row->{$columns->ownerTypeColumn} !== '' ? $row->{$columns->ownerTypeColumn} : 'null',
+                        is_string($row->{$columns->ownerIdColumn} ?? null) || is_int($row->{$columns->ownerIdColumn} ?? null) ? (string) $row->{$columns->ownerIdColumn} : 'null',
                     ));
 
                     return self::FAILURE;
@@ -146,8 +146,8 @@ class MarkAbandonedCartsCommand extends Command
 
                 $this->warn(sprintf(
                     'Skipping malformed owner tuple while marking abandoned carts (owner_type: %s, owner_id: %s).',
-                    is_string($row->owner_type ?? null) && $row->owner_type !== '' ? $row->owner_type : 'null',
-                    is_string($row->owner_id ?? null) || is_int($row->owner_id ?? null) ? (string) $row->owner_id : 'null',
+                    is_string($row->{$columns->ownerTypeColumn} ?? null) && $row->{$columns->ownerTypeColumn} !== '' ? $row->{$columns->ownerTypeColumn} : 'null',
+                    is_string($row->{$columns->ownerIdColumn} ?? null) || is_int($row->{$columns->ownerIdColumn} ?? null) ? (string) $row->{$columns->ownerIdColumn} : 'null',
                 ));
 
                 continue;

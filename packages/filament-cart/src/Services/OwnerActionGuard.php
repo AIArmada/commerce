@@ -88,7 +88,7 @@ final class OwnerActionGuard
         $condition = OwnerWriteGuard::findOrFailForOwner(
             Condition::class,
             $id,
-            includeGlobal: (bool) config('cart.owner.include_global', false),
+            includeGlobal: (bool) (config('filament-cart.owner.include_global') ?? config('cart.owner.include_global', false)),
             message: 'Condition is not accessible in the current owner scope.',
         );
 

@@ -33,6 +33,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
@@ -298,7 +299,11 @@ it('handles user login event automatically when configured', function (): void {
     // Set the cache key for migration (matches getUserIdentifier logic)
     Cache::put(LoginMigrationCacheKey::make('testuser@example.com'), 'guest_session_login_123');
 
-    $listener = new HandleUserLogin(app(MigrateCartOnLoginAction::class), app(LoginMigrationIdentifierResolver::class));
+    $listener = new HandleUserLogin(
+        app(MigrateCartOnLoginAction::class),
+        app(LoginMigrationIdentifierResolver::class),
+        app(Container::class),
+    );
     $event = new Login('web', $this->user, false);
 
     // Check initial state via storage
@@ -359,7 +364,11 @@ it('migrates guest carts into the authenticated owner cart when owner scoping is
 
     Session::shouldReceive('flash')->withAnyArgs()->andReturnTrue();
 
-    $listener = new HandleUserLogin(app(MigrateCartOnLoginAction::class), app(LoginMigrationIdentifierResolver::class));
+    $listener = new HandleUserLogin(
+        app(MigrateCartOnLoginAction::class),
+        app(LoginMigrationIdentifierResolver::class),
+        app(Container::class),
+    );
     $event = new Login('web', $owner, false);
 
     OwnerContext::withOwner($owner, fn () => $listener->handle($event));

@@ -189,9 +189,14 @@ $result = $migrationService->migrateGuestCartForUser(
     instance: 'default',
     sessionId: $guestSessionId
 );
+
+// $result->itemsMerged is the sum of guest quantities migrated.
 ```
 
 The service API is available for integrations that need identifier management. The dedicated Action classes below are the preferred orchestration path for application workflows.
+
+itemsMerged reports the sum of quantities from the guest instance captured
+before migration. It is 0 when migration fails or no guest items exist.
 
 ### Action-Based Migration
 
@@ -248,6 +253,13 @@ The package listens to `Attempting` and `Login` events:
 
 1. `HandleUserLoginAttempt` - Captures session ID before auth regenerates it
 2. `HandleUserLogin` - Migrates cart using captured session ID
+
+HandleUserLogin calls StorageInterface::getInstances($sessionId) and migrates
+each discovered instance. If none are returned it attempts default. Owner-aware
+storage is switched to explicit global storage while discovering guest
+instances, then each migration writes to the authenticated owner scope. The
+listener resolves storage when handling the login so owner-sensitive storage
+is not constructed while the listener itself is being resolved.
 
 ## Custom Storage
 

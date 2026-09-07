@@ -10,11 +10,12 @@ use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Database\Factories\ConditionFactory;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
-use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -336,11 +337,13 @@ class Condition extends Model implements Auditable
      */
     public function getRuleFactoryKeys(): array
     {
-        if (! is_array($this->rules)) {
+        $rules = $this->rulesDefinition();
+
+        if ($rules === null) {
             return [];
         }
 
-        $keys = $this->rules['factory_keys'] ?? [];
+        $keys = $rules['factory_keys'] ?? [];
 
         if (! is_array($keys)) {
             return [];
@@ -356,11 +359,13 @@ class Condition extends Model implements Auditable
      */
     public function getRuleContext(): array
     {
-        if (! is_array($this->rules)) {
+        $rules = $this->rulesDefinition();
+
+        if ($rules === null) {
             return [];
         }
 
-        $context = $this->rules['context'] ?? [];
+        $context = $rules['context'] ?? [];
 
         return is_array($context) ? $context : [];
     }
@@ -384,11 +389,14 @@ class Condition extends Model implements Auditable
 
         $rawValue = $this->value;
         $normalized = mb_ltrim($rawValue, '+');
-        $money = Money::{$this->resolveCurrency()}($normalized);
+        $formatted = MoneyFormatter::formatMinor(
+            MoneyNormalizer::toCents($normalized),
+            $this->resolveCurrency(),
+        );
 
         return str_starts_with($rawValue, '+')
-            ? '+' . $money
-            : (string) $money;
+            ? '+' . $formatted
+            : $formatted;
     }
 
     /**
@@ -444,17 +452,6 @@ class Condition extends Model implements Auditable
     }
 
     /**
-     * Set the rules attribute (raw storage).
-     *
-     * @param  array{factory_keys?: array<int, string>, context?: array<string, mixed>}|null  $rules
-     */
-    public function setRulesAttribute(?array $rules): void
-    {
-        // Store as JSON string - will be normalized during save
-        $this->attributes['rules'] = json_encode($rules);
-    }
-
-    /**
      * Scope query to the specified owner.
      *
      * When null is explicitly passed inside an explicit global context, this
@@ -495,7 +492,6 @@ class Condition extends Model implements Auditable
         return $scoped;
     }
 
-    /**
     /**
      * Boot the model and set up event listeners.
      */
@@ -538,15 +534,15 @@ class Condition extends Model implements Auditable
             $condition->computeDerivedFields();
             $condition->target_definition = ConditionTarget::from($condition->target)->toArray();
 
-            // Normalize rules after is_dynamic is computed
-            if (isset($condition->attributes['rules']) && is_string($condition->attributes['rules'])) {
-                $rawRules = json_decode($condition->attributes['rules'], true);
-                if (is_array($rawRules)) {
-                    $condition->attributes['rules'] = json_encode(
-                        self::normalizeRulesDefinition($rawRules, $condition->is_dynamic)
-                    );
-                }
+            $rules = $condition->rules;
+            if (is_string($rules)) {
+                $rules = json_decode($rules, true);
             }
+
+            $condition->rules = self::normalizeRulesDefinition(
+                is_array($rules) ? $rules : null,
+                $condition->is_dynamic,
+            );
         });
     }
 
@@ -696,6 +692,20 @@ class Condition extends Model implements Auditable
     protected function resolveCurrency(): string
     {
         return mb_strtoupper(config('cart.money.default_currency', 'USD'));
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function rulesDefinition(): ?array
+    {
+        $rules = $this->rules;
+
+        if (is_string($rules)) {
+            $rules = json_decode($rules, true);
+        }
+
+        return is_array($rules) ? $rules : null;
     }
 
     private static function normalizeContextValue(mixed $value): mixed

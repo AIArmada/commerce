@@ -6,9 +6,19 @@ title: Multitenancy
 
 Filament Cart uses `commerce-support` owner scoping.
 
+Filament owner configuration is not a write-through switch for the core Cart
+package. filament-cart.owner.enabled and filament-cart.owner.include_global
+fall back to their cart.owner.* counterparts only when unset. Enable
+cart.owner.enabled explicitly when core carts or stored conditions must be
+owner-scoped; installing the admin adapter alone does not change that setting.
+For the stored-condition resource, enable both owner flags; the core
+Condition model remains the authority for condition ownership.
+
 ## Core contract
 
 Filament Cart treats snapshot rows and snapshot children as owner-scoped records.
+Their owner configuration falls back to the core cart settings when the
+Filament setting is unset, including auto-assignment on create.
 
 - owner-scoped rows use `owner_type` + `owner_id`
 - global rows use `null` + `null`
@@ -43,6 +53,11 @@ Use `OwnerWriteGuard` / package action guards for:
 ## Global rows
 
 Global rows are ownerless rows. They may be visible when explicitly included, but mutating them requires explicit global context.
+
+Global-condition validation and application scope the current owner (or
+explicit global context) before applying the active/global filter. In owner
+mode, calls without either context fail closed instead of returning an
+ambiguous set.
 
 ## Operational events
 

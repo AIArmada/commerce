@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\Condition as ConditionModel;
 use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\FilamentCart\Services\CartConditionValidator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -123,5 +125,44 @@ describe('CartConditionValidator', function (): void {
         expect($result['is_valid'])->toBeTrue();
         expect($result['removed_conditions'])->toBeEmpty();
         expect($cart->getConditions()->has('Active Promo'))->toBeTrue();
+    });
+
+    it('requires an owner context when validating global conditions in owner mode', function (): void {
+        config()->set('cart.owner.enabled', true);
+        config()->set('filament-cart.owner.enabled', true);
+        app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
+
+        $validator = new CartConditionValidator;
+        $storage = new DatabaseStorage(
+            database: DB::connection('testing'),
+            table: 'carts',
+        );
+
+        $cart = new Cart(
+            storage: $storage,
+            identifier: 'user-' . Str::random(12),
+            events: null,
+            instanceName: 'default',
+            eventsEnabled: false,
+        );
+
+        $cart->add('sku-1', 'Test Item', 10000, 1);
+        $cart->addCondition([
+            'name' => 'Owner-scoped Promo',
+            'type' => 'discount',
+            'target_definition' => [
+                'scope' => 'cart',
+                'phase' => 'cart_subtotal',
+                'application' => 'aggregate',
+            ],
+            'value' => '-10%',
+            'attributes' => ['is_global' => true],
+        ]);
+
+        expect(ConditionModel::ownerScopingEnabled())->toBeTrue();
+        expect($cart->getConditions()->first()?->getAttribute('is_global'))->toBeTrue();
+
+        expect(fn (): array => $validator->validateAndClean($cart))
+            ->toThrow(RuntimeException::class, 'requires an owner context or explicit global context.');
     });
 });

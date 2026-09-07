@@ -39,6 +39,10 @@ php artisan cache:clear
 ],
 ```
 
+Money display values are formatted from integer minor units. If a condition
+value is a decimal string, it is normalized before display; check the
+configured ISO 4217 currency when normalization fails.
+
 ## Runtime Issues
 
 ### CartConflictException
@@ -109,6 +113,14 @@ $total = Cart::total();
 Cart::withLazyPipeline();
 ```
 
+Stale owner after an Octane request usually indicates that an integration
+retained a CartFactory instance outside its request/job lifecycle. Resolve the
+factory again inside the current request; the container binding is scoped.
+
+Global condition validation or application throws in owner mode when no owner
+context is available. Resolve the tenant or wrap deliberate global work in
+OwnerContext::withOwner(null, ...).
+
 ## Multi-Tenancy Issues
 
 ### Carts Not Scoped to Tenant
@@ -136,6 +148,10 @@ Cart::add('SKU-001', 'Product', 999, 1);
     'include_global' => false, // Strict isolation
 ],
 ```
+
+Login migration discovers all guest instances. Check
+StorageInterface::getInstances($sessionId) and remember that itemsMerged is the
+total quantity migrated across those instances.
 
 ## Performance Issues
 

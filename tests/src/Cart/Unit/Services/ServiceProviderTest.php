@@ -5,9 +5,11 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\CartServiceProvider;
+use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
+use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Services\CartMigrationService;
 use AIArmada\Cart\Storage\DatabaseStorage;
@@ -67,6 +69,24 @@ describe('CartServiceProvider', function (): void {
 
         $reflection = new ReflectionClass($provider);
         $method = $reflection->getMethod('registerCartManager');
+        $method->invoke($provider);
+
+        expect(true)->toBeTrue();
+    });
+
+    it('registers the cart factory as scoped', function (): void {
+        $app = mock(Application::class);
+        $app->shouldReceive('scoped')
+            ->withArgs([CartFactory::class, Mockery::type('callable')])
+            ->once();
+        $app->shouldReceive('singleton')
+            ->withArgs([ConditionPipelineFactory::class])
+            ->once();
+
+        $provider = new CartServiceProvider($app);
+
+        $reflection = new ReflectionClass($provider);
+        $method = $reflection->getMethod('registerFactories');
         $method->invoke($provider);
 
         expect(true)->toBeTrue();

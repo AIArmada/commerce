@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCart\Models;
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
@@ -70,6 +71,15 @@ class Cart extends Model
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'filament-cart.owner';
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return new OwnerScopeConfig(
+            enabled: (bool) (config('filament-cart.owner.enabled') ?? config('cart.owner.enabled', false)),
+            includeGlobal: (bool) (config('filament-cart.owner.include_global') ?? config('cart.owner.include_global', false)),
+            autoAssignOnCreate: (bool) (config('filament-cart.owner.auto_assign_on_create') ?? config('cart.owner.auto_assign_on_create', true)),
+        );
+    }
 
     /** @var list<string> */
     protected $hidden = [
@@ -143,12 +153,12 @@ class Cart extends Model
 
     public static function ownerScopingEnabled(): bool
     {
-        return (bool) config('filament-cart.owner.enabled', false);
+        return (bool) (config('filament-cart.owner.enabled') ?? config('cart.owner.enabled', false));
     }
 
     public static function includeGlobalRecords(): bool
     {
-        return (bool) config('filament-cart.owner.include_global', config('cart.owner.include_global', false));
+        return (bool) (config('filament-cart.owner.include_global') ?? config('cart.owner.include_global', false));
     }
 
     public static function resolveCurrentOwner(): ?EloquentModel

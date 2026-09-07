@@ -194,10 +194,9 @@ final class CartItem extends Model
      * @param  Builder<self>  $query
      */
     #[Scope]
-    protected function priceBetween(Builder $query, float $min, float $max): void
+    protected function priceBetween(Builder $query, int $min, int $max): void
     {
-        // Convert dollars to cents for comparison
-        $query->whereBetween('price', [$min * 100, $max * 100]);
+        $query->whereBetween('price', [$min, $max]);
     }
 
     /**

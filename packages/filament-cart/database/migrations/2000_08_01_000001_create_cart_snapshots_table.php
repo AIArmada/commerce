@@ -16,7 +16,7 @@ return new class extends Migration
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
         $tables = $databaseConfig['tables'] ?? [];
         $tableName = $tables['snapshots'] ?? $tablePrefix . 'snapshots';
-        $jsonType = (string) commerce_json_column_type('cart', 'jsonb');
+        $jsonType = (string) commerce_json_column_type('filament-cart', config('cart.database.json_column_type', 'jsonb'));
 
         commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonType, $tableName): void {
             $table->uuid('id')->primary();
@@ -55,7 +55,7 @@ return new class extends Migration
         });
 
         if (
-            commerce_json_column_type('cart', 'jsonb') === 'jsonb'
+            commerce_json_column_type('filament-cart', config('cart.database.json_column_type', 'jsonb')) === 'jsonb'
             && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName): void {

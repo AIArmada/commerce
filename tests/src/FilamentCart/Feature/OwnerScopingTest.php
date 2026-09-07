@@ -18,7 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('synchronizes owner configuration into the core cart package on boot', function (): void {
+it('keeps core owner configuration unchanged while deriving Filament owner configuration', function (): void {
     config()->set('filament-cart.owner.enabled', true);
     config()->set('filament-cart.owner.include_global', true);
     config()->set('cart.owner.enabled', false);
@@ -29,8 +29,41 @@ it('synchronizes owner configuration into the core cart package on boot', functi
 
     expect(config('filament-cart.owner.enabled'))->toBeTrue();
     expect(config('filament-cart.owner.include_global'))->toBeTrue();
+    expect(config('cart.owner.enabled'))->toBeFalse();
+    expect(config('cart.owner.include_global'))->toBeFalse();
+});
+
+it('falls back to core owner configuration without writing back to it', function (): void {
+    config()->set('filament-cart.owner.enabled', null);
+    config()->set('filament-cart.owner.include_global', null);
+    config()->set('filament-cart.owner.auto_assign_on_create', null);
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', true);
+    config()->set('cart.owner.auto_assign_on_create', false);
+
+    $provider = new FilamentCartServiceProvider(app());
+    $provider->packageBooted();
+
+    expect(config('filament-cart.owner.enabled'))->toBeTrue();
+    expect(config('filament-cart.owner.include_global'))->toBeTrue();
     expect(config('cart.owner.enabled'))->toBeTrue();
     expect(config('cart.owner.include_global'))->toBeTrue();
+    expect(config('filament-cart.owner.auto_assign_on_create'))->toBeFalse();
+    expect(CartSnapshot::ownerScopeConfig()->enabled)->toBeTrue();
+    expect(CartSnapshot::ownerScopeConfig()->includeGlobal)->toBeTrue();
+    expect(CartSnapshot::ownerScopeConfig()->autoAssignOnCreate)->toBeFalse();
+});
+
+it('does not treat Filament-only owner configuration as core condition scoping', function (): void {
+    config()->set('filament-cart.owner.enabled', true);
+    config()->set('cart.owner.enabled', false);
+
+    $condition = new Condition;
+    $condition->owner_type = null;
+    $condition->owner_id = null;
+
+    expect(Condition::ownerScopingEnabled())->toBeFalse();
+    expect(ConditionResource::isGlobalRecordOutsideExplicitGlobalContext($condition))->toBeFalse();
 });
 
 it('scopes filament-cart snapshots and child resources by resolved owner', function (): void {

@@ -139,6 +139,11 @@ $globalConditions = Condition::forOwner(null)->active()->get();
 $allConditions = Condition::forOwner($tenant, includeGlobal: true)->get();
 ```
 
+Global condition readers in integrations must establish the owner scope before
+applying the global filter. In owner mode, validation or application without a
+resolved owner throws; use OwnerContext::withOwner(null, ...) for an intentional
+global-only operation.
+
 ## HTTP middleware integration
 
 Create middleware to set the owner context:

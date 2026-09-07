@@ -8,6 +8,7 @@ use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Support\Facades\Auth;
+use RuntimeException;
 
 class CartMigrationService
 {
@@ -67,11 +68,12 @@ class CartMigrationService
             ];
         }
 
+        $guestItems = $this->resolveGlobalStorage()->getItems($sessionId, $instance);
         $success = $this->migrateGuestCartToUser((string) $userId, $instance, $sessionId);
 
         return (object) [
             'success' => $success,
-            'itemsMerged' => $success ? 1 : 0,
+            'itemsMerged' => $success ? $this->sumItemQuantities($guestItems) : 0,
             'conflicts' => collect(),
             'message' => $success ? 'Cart migration completed successfully' : 'No items to migrate',
         ];
@@ -109,5 +111,37 @@ class CartMigrationService
         $userIdentifier = $this->getIdentifier($userId);
 
         return $this->swap($guestIdentifier, $userIdentifier, $instance);
+    }
+
+    private function resolveStorage(): StorageInterface
+    {
+        if ($this->storage !== null) {
+            return $this->storage;
+        }
+
+        if (function_exists('app')) {
+            return app(StorageInterface::class);
+        }
+
+        throw new RuntimeException('Cart storage is not available');
+    }
+
+    private function resolveGlobalStorage(): StorageInterface
+    {
+        $storage = $this->resolveStorage();
+
+        return $storage->getOwnerType() !== null ? $storage->withOwner(null) : $storage;
+    }
+
+    /**
+     * @param  array<string, mixed>  $items
+     */
+    private function sumItemQuantities(array $items): int
+    {
+        return array_reduce(
+            $items,
+            static fn (int $sum, array $item): int => $sum + (int) ($item['quantity'] ?? 0),
+            0,
+        );
     }
 }

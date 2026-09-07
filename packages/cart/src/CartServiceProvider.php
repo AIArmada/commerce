@@ -174,7 +174,7 @@ final class CartServiceProvider extends PackageServiceProvider
 
     protected function registerFactories(): void
     {
-        $this->app->singleton(CartFactory::class, fn ($app) => new CartFactory(
+        $this->app->scoped(CartFactory::class, fn ($app) => new CartFactory(
             storage: $app->make('cart.storage'),
             conditionResolver: $app->make(CartConditionResolver::class),
             conditionProviderRegistry: $app->make(ConditionProviderRegistry::class),

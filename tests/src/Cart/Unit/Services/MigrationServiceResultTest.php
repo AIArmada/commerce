@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Services\CartMigrationService;
 use Illuminate\Support\Collection;
+use Tests\Support\Cart\InMemoryStorage;
 
 it('returns detailed result object when migrating for user succeeds', function (): void {
     $user = new class
@@ -11,7 +12,13 @@ it('returns detailed result object when migrating for user succeeds', function (
         public int $id = 123;
     };
 
-    $service = new class extends CartMigrationService
+    $storage = new InMemoryStorage;
+    $storage->putItems('session-id', 'default', [
+        'item-1' => ['quantity' => 2],
+        'item-2' => ['quantity' => 3],
+    ]);
+
+    $service = new class([], $storage) extends CartMigrationService
     {
         public bool $called = false;
 
@@ -27,7 +34,7 @@ it('returns detailed result object when migrating for user succeeds', function (
 
     expect($service->called)->toBeTrue();
     expect($result->success)->toBeTrue();
-    expect($result->itemsMerged)->toBe(1);
+    expect($result->itemsMerged)->toBe(5);
     expect($result->conflicts)->toBeInstanceOf(Collection::class);
     expect($result->message)->toBe('Cart migration completed successfully');
 });

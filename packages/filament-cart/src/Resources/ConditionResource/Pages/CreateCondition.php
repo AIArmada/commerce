@@ -19,7 +19,7 @@ final class CreateCondition extends CreateRecord
             ! empty($data['rules']['factory_keys'] ?? [])
         );
 
-        if (config('cart.owner.enabled', false)) {
+        if (Condition::ownerScopingEnabled()) {
             $owner = Condition::resolveCurrentOwner();
 
             if ($owner !== null) {

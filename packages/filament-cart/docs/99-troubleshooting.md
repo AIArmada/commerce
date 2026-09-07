@@ -13,10 +13,19 @@ title: Troubleshooting
 
 ## Owner scoped data is missing
 
-- Confirm `cart.owner.enabled` and `filament-cart.owner.enabled` are synchronized.
+- Confirm cart.owner.enabled is enabled for core cart/condition data and
+  filament-cart.owner.enabled is enabled for Filament resources. They are
+  independent settings; the provider does not rewrite cart.owner.*. Enable
+  both when the stored-condition resource must be owner-scoped.
+- If a Filament setting is unset, it falls back to the corresponding core
+  setting, including auto_assign_on_create. An explicit false remains false.
 - Ensure an `OwnerResolverInterface` binding resolves the current owner.
 - Use `OwnerContext::withOwner(null, ...)` only for explicit global operations.
 - Do not query or authorize using internal `owner_scope` columns.
+
+If global-condition validation or application throws because no owner is
+resolved, establish the tenant context or wrap intentional global work in
+OwnerContext::withOwner(null, ...).
 
 ## Abandoned carts are not marked
 

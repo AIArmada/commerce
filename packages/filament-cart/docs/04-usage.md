@@ -27,6 +27,10 @@ Important fields:
 
 `owner_scope` may exist in the database for nullable-owner uniqueness, but it is an internal implementation detail.
 
+Snapshot money fields are integer minor units. Use the shared
+MoneyFormatter::formatMinor() helper for display instead of constructing
+currency-specific static Money factories.
+
 ## CartItemResource
 
 Displays normalized items for visible cart snapshots. Queries are scoped through the parent cart owner boundary.
@@ -38,6 +42,10 @@ Displays normalized cart/item conditions for visible cart snapshots.
 ## ConditionResource
 
 Manages reusable stored conditions from `aiarmada/cart`. Global rows are read-only from tenant owner contexts.
+
+When core owner mode is enabled, global-condition validation and application
+require an owner context. Use explicit global context for system-wide
+operations.
 
 ## Removed resources
 

@@ -6,6 +6,8 @@ namespace AIArmada\FilamentCart\Services;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\Condition;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Validates cart conditions before checkout.
@@ -42,7 +44,7 @@ final class CartConditionValidator
 
         if ($globalConditionNames !== []) {
             // Get names of currently active global conditions from database
-            $activeGlobalNames = Condition::global()
+            $activeGlobalNames = $this->globalConditionsQuery()
                 ->pluck('name')
                 ->toArray();
 
@@ -108,5 +110,32 @@ final class CartConditionValidator
         if ($cart->getDynamicConditions()->has($conditionName)) {
             $cart->removeDynamicCondition($conditionName);
         }
+    }
+
+    /**
+     * @return Builder<Condition>
+     */
+    private function globalConditionsQuery(): Builder
+    {
+        $query = Condition::query();
+
+        if (! Condition::ownerScopingEnabled()) {
+            return $query->global();
+        }
+
+        $owner = OwnerContext::resolve();
+
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            Condition::class . ' requires an owner context or explicit global context.',
+        );
+
+        if ($owner === null) {
+            return $query->globalOnly()->global();
+        }
+
+        return $query
+            ->forOwner($owner, (bool) (config('filament-cart.owner.include_global') ?? config('cart.owner.include_global', false)))
+            ->global();
     }
 }

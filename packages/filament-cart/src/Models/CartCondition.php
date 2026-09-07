@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Models;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 use AIArmada\FilamentCart\Database\Factories\CartConditionFactory;
-use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -196,11 +197,14 @@ final class CartCondition extends Model
 
         $rawValue = $this->value;
         $normalized = mb_ltrim($rawValue, '+');
-        $money = Money::{$this->resolveCurrency()}($normalized);
+        $formatted = MoneyFormatter::formatMinor(
+            MoneyNormalizer::toCents($normalized),
+            $this->resolveCurrency(),
+        );
 
         return str_starts_with($rawValue, '+')
-            ? '+' . $money
-            : (string) $money;
+            ? '+' . $formatted
+            : $formatted;
     }
 
     /**

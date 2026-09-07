@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Models\CartItem;
+use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 
 trait CalculatesTotals
@@ -51,10 +52,8 @@ trait CalculatesTotals
 
         $savings = $withoutConditions->subtract($withConditions);
 
-        $currency = config('cart.money.default_currency', 'USD');
-
         // Return zero if savings would be negative
-        return $savings->isNegative() || $savings->isZero() ? Money::{$currency}(0) : $savings;
+        return $savings->isNegative() || $savings->isZero() ? $this->moneyFromMinor(0) : $savings;
     }
 
     /**
@@ -121,9 +120,7 @@ trait CalculatesTotals
     {
         $finalAmount = $this->getSubtotalWithLazyPipeline();
 
-        $currency = config('cart.money.default_currency', 'USD');
-
-        return Money::{$currency}($finalAmount);
+        return $this->moneyFromMinor((int) $finalAmount);
     }
 
     /**
@@ -132,9 +129,8 @@ trait CalculatesTotals
     protected function getSubtotalWithoutConditions(): Money
     {
         $totalAmount = (int) $this->getItems()->sum(fn (CartItem $item) => $item->getRawSubtotalWithoutConditions());
-        $currency = config('cart.money.default_currency', 'USD');
 
-        return Money::{$currency}($totalAmount);
+        return $this->moneyFromMinor($totalAmount);
     }
 
     /**
@@ -144,9 +140,8 @@ trait CalculatesTotals
     {
         // Same as subtotal without conditions since we're not applying any conditions
         $totalAmount = (int) $this->getItems()->sum(fn (CartItem $item) => $item->getRawSubtotalWithoutConditions());
-        $currency = config('cart.money.default_currency', 'USD');
 
-        return Money::{$currency}($totalAmount);
+        return $this->moneyFromMinor($totalAmount);
     }
 
     /**
@@ -156,8 +151,15 @@ trait CalculatesTotals
     {
         $finalAmount = $this->getTotalWithLazyPipeline();
 
-        $currency = config('cart.money.default_currency', 'USD');
+        return $this->moneyFromMinor((int) $finalAmount);
+    }
 
-        return Money::{$currency}($finalAmount);
+    private function moneyFromMinor(int $amount): Money
+    {
+        return new Money(
+            $amount,
+            new Currency(mb_strtoupper((string) config('cart.money.default_currency', 'USD'))),
+            false,
+        );
     }
 }

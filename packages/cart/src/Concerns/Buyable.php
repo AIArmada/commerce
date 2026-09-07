@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Concerns;
 
 use AIArmada\Cart\Contracts\BuyableInterface;
+use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 
 /**
@@ -58,10 +59,13 @@ trait Buyable
      */
     public function getBuyablePrice(): Money
     {
-        $currency = config('cart.money.default_currency', 'MYR');
         $price = $this->price ?? 0;
 
-        return Money::{$currency}($price);
+        return new Money(
+            (int) $price,
+            new Currency(mb_strtoupper((string) config('cart.money.default_currency', 'MYR'))),
+            false,
+        );
     }
 
     /**

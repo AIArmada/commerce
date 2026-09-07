@@ -43,10 +43,6 @@ class MigrateCartOnLoginAction
             ];
         }
 
-        $userId = $user instanceof Model
-            ? $user->getKey()
-            : (is_object($user) && isset($user->id) ? $user->id : $user);
-
         try {
             $action = $this->migrationAction;
 
@@ -54,12 +50,15 @@ class MigrateCartOnLoginAction
                 $action = $action->withMergeStrategy($this->mergeStrategy);
             }
 
-            $success = $action->execute($userId, $instance, $sessionId);
+            $userId = $user instanceof Model
+                ? $user->getKey()
+                : (is_object($user) && isset($user->id) ? $user->id : $user);
+            $result = $action->executeForUser($userId, $instance, $sessionId);
 
             return [
-                'success' => $success,
-                'itemsMerged' => $success ? 1 : 0,
-                'message' => $success ? 'Cart migration completed successfully' : 'No items to migrate',
+                'success' => (bool) $result->success,
+                'itemsMerged' => (int) $result->itemsMerged,
+                'message' => (string) $result->message,
             ];
         } catch (Exception $e) {
             return [

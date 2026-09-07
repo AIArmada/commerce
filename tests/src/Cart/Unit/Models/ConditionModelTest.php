@@ -6,6 +6,7 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Models\Condition;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
@@ -326,6 +327,37 @@ describe('Dynamic Conditions and Rules', function (): void {
 
         expect($condition->getRuleFactoryKeys())->toBe([]);
         expect($condition->getRuleContext())->toBe([]);
+    });
+
+    it('persists normalized rules as JSON and static rules as null', function (): void {
+        $dynamic = Condition::create([
+            'name' => 'persisted_dynamic_condition',
+            'type' => 'discount',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'value' => '-10%',
+            'rules' => [
+                'factory_keys' => ['min_cart_total', ''],
+                'context' => ['min_total' => 100],
+            ],
+        ]);
+
+        $rawRules = DB::table($dynamic->getTable())->where('id', $dynamic->getKey())->value('rules');
+
+        expect($rawRules)->toBeString();
+        expect(json_decode($rawRules, true))->toBe([
+            'factory_keys' => ['min_cart_total'],
+            'context' => ['min_total' => 100],
+        ]);
+
+        $static = Condition::create([
+            'name' => 'persisted_static_condition',
+            'type' => 'discount',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'value' => '-5%',
+            'rules' => null,
+        ]);
+
+        expect(DB::table($static->getTable())->where('id', $static->getKey())->value('rules'))->toBeNull();
     });
 
     it('filters empty factory keys', function (): void {

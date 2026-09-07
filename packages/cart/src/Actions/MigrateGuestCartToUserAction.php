@@ -162,11 +162,12 @@ final class MigrateGuestCartToUserAction
         $userId = $user instanceof Model ? $user->getKey() : $user;
 
         try {
+            $guestItems = $this->resolveGlobalStorage()->getItems($sessionId, $instance);
             $success = $this->execute($userId, $instance, $sessionId);
 
             return (object) [
                 'success' => $success,
-                'itemsMerged' => $success ? 1 : 0, // Simplified for now
+                'itemsMerged' => $success ? $this->sumItemQuantities($guestItems) : 0,
                 'conflicts' => collect(),
                 'message' => $success ? 'Cart migration completed successfully' : 'No items to migrate',
             ];

@@ -89,23 +89,18 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
 
     protected function synchronizeOwnerScopeConfiguration(): void
     {
-        $filamentOwnerEnabled = (bool) config('filament-cart.owner.enabled', false);
-        $cartOwnerEnabled = (bool) config('cart.owner.enabled', false);
-
-        $enabled = $filamentOwnerEnabled || $cartOwnerEnabled;
-
-        if ($filamentOwnerEnabled) {
-            $includeGlobal = (bool) config('filament-cart.owner.include_global', false);
-        } elseif ($cartOwnerEnabled) {
-            $includeGlobal = (bool) config('cart.owner.include_global', false);
-        } else {
-            $includeGlobal = false;
-        }
-
-        config()->set('filament-cart.owner.enabled', $enabled);
-        config()->set('filament-cart.owner.include_global', $includeGlobal);
-        config()->set('cart.owner.enabled', $enabled);
-        config()->set('cart.owner.include_global', $includeGlobal);
+        config()->set(
+            'filament-cart.owner.enabled',
+            (bool) (config('filament-cart.owner.enabled') ?? config('cart.owner.enabled', false)),
+        );
+        config()->set(
+            'filament-cart.owner.include_global',
+            (bool) (config('filament-cart.owner.include_global') ?? config('cart.owner.include_global', false)),
+        );
+        config()->set(
+            'filament-cart.owner.auto_assign_on_create',
+            (bool) (config('filament-cart.owner.auto_assign_on_create') ?? config('cart.owner.auto_assign_on_create', true)),
+        );
     }
 
     /**

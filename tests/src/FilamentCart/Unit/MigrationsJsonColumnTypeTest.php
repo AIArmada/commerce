@@ -19,6 +19,7 @@ it('does not hardcode JSON columns in snapshot migrations', function (): void {
         expect($content)
             ->toBeString()
             ->not->toContain("->json('");
+        expect($content)->toContain("commerce_json_column_type('filament-cart'");
     }
 });
 
