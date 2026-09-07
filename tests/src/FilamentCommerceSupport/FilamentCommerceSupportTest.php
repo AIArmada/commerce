@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\Filament\CommerceNavigation;
 use AIArmada\FilamentCommerceSupport\FilamentCommerceSupportPlugin;
 use AIArmada\FilamentCommerceSupport\Pages\ManageCommerceNavigation;
 use AIArmada\FilamentCommerceSupport\Settings\CommerceNavigationSettings;
 use AIArmada\FilamentCommerceSupport\Support\NavigationConfigurator;
+use Filament\Navigation\NavigationItem;
+use Filament\Panel;
 
 beforeEach(function (): void {
     config()->set('filament-commerce-support.navigation.enabled', true);
@@ -31,6 +34,20 @@ it('has correct plugin id', function (): void {
     $plugin = FilamentCommerceSupportPlugin::make();
 
     expect($plugin->getId())->toBe('filament-commerce-support');
+});
+
+it('registers the canonical commerce navigation engine', function (): void {
+    config()->set('filament-commerce-support.navigation.enabled', false);
+
+    $panel = Mockery::mock(Panel::class);
+    $panel->shouldReceive('navigation')
+        ->once()
+        ->with(Mockery::type(Closure::class))
+        ->andReturnSelf();
+
+    (new FilamentCommerceSupportPlugin(app()))->register($panel);
+
+    expect($panel)->toBeInstanceOf(Panel::class);
 });
 
 it('returns the settings group name', function (): void {
@@ -84,6 +101,37 @@ it('merges overrides into commerce-support config via navigation configurator', 
     ])->and($items['AIArmada\FilamentOrders\Resources\OrderResource']['hidden'])->toBeTrue();
 });
 
+it('applies persisted settings through the canonical navigation engine', function (): void {
+    $settings = mock(CommerceNavigationSettings::class, function ($mock): void {
+        $mock->groups = [];
+        $mock->overrides = [
+            FilamentCommerceNavigationFixture::class => [
+                'hidden' => true,
+                'label' => 'Managed Products',
+                'group' => 'Operations',
+                'parent_item' => 'Catalog',
+                'sort' => 25,
+            ],
+        ];
+    });
+    app()->instance(CommerceNavigationSettings::class, $settings);
+
+    NavigationConfigurator::apply();
+
+    $item = NavigationItem::make('Products')
+        ->group('Catalog')
+        ->sort(10)
+        ->url('/products');
+
+    $configured = CommerceNavigation::configureNavigationItem($item, FilamentCommerceNavigationFixture::class);
+
+    expect($configured->isVisible())->toBeFalse()
+        ->and($configured->getLabel())->toBe('Managed Products')
+        ->and($configured->getGroup())->toBe('Operations')
+        ->and($configured->getParentItem())->toBe('Catalog')
+        ->and($configured->getSort())->toBe(25);
+});
+
 it('does not merge when navigation is disabled', function (): void {
     config()->set('filament-commerce-support.navigation.enabled', false);
 
@@ -116,3 +164,5 @@ it('merges settings groups without overriding existing code config', function ()
         'sort' => 10,
     ]);
 });
+
+final class FilamentCommerceNavigationFixture {}

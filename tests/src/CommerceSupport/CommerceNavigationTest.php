@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\Filament\CommerceNavigation;
 use AIArmada\CommerceSupport\Support\Filament\CommerceNavigationPlugin;
 use Filament\Navigation\NavigationItem;
+use Filament\Panel;
 use Illuminate\Http\Request;
 
 beforeEach(function (): void {
@@ -104,6 +105,18 @@ it('configures panels with commerce navigation groups and builder', function ():
     CommerceNavigation::configurePanel($panel);
 
     expect($panel->builder)->toBeInstanceOf(Closure::class);
+});
+
+it('registers the canonical navigation builder through its plugin', function (): void {
+    $panel = Mockery::mock(Panel::class);
+    $panel->shouldReceive('navigation')
+        ->once()
+        ->with(Mockery::type(Closure::class))
+        ->andReturnSelf();
+
+    CommerceNavigationPlugin::make()->register($panel);
+
+    expect($panel)->toBeInstanceOf(Panel::class);
 });
 
 it('memoizes the navigation builder only for the current request', function (): void {

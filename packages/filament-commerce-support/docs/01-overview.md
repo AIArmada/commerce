@@ -12,6 +12,7 @@ A Filament v5 admin panel package providing runtime navigation management for th
   - Define and reorder navigation groups (label, icon, sort, collapsible)
   - Override individual resource/page navigation settings (visibility, group assignment, sort order, parent item)
 - **Runtime config merge** — Merges persisted overrides into `commerce-support`'s navigation config at runtime, so the existing `CommerceNavigation` engine applies them automatically.
+- **Settings adapter** — `ManageCommerceNavigation` persists group and item settings; navigation discovery, resolution, and rendering remain owned by `CommerceNavigation` in `commerce-support`.
 - **Zero per-package changes** — No need to modify any existing `filament-*` package. Overrides work by FQCN.
 
 ## How it works

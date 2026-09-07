@@ -16,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Resources\Resource;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
@@ -120,6 +121,7 @@ class ManageCommerceNavigation extends Page
                 'sort' => $config['sort'] ?? 0,
                 'collapsible' => $config['collapsible'] ?? true,
                 'collapsed' => $config['collapsed'] ?? false,
+                'hidden' => $config['hidden'] ?? false,
                 'items' => $groupItems,
             ];
         }
@@ -441,7 +443,6 @@ class ManageCommerceNavigation extends Page
      */
     private function getTrueDefaultOverrides(): array
     {
-        $panel = Filament::getCurrentOrDefaultPanel();
         $defaults = [];
         $originalItems = NavigationConfigurator::$originalItemsConfig;
 
@@ -487,17 +488,8 @@ class ManageCommerceNavigation extends Page
             }
         };
 
-        foreach ($panel->getResources() as $resource) {
-            $extract(is_string($resource) ? $resource : $resource::class);
-        }
-
-        foreach ($panel->getPages() as $page) {
-            $extract(is_string($page) ? $page : $page::class);
-        }
-
-        foreach ($panel->getPageConfigurations() as $configuration) {
-            $page = $configuration->getPage();
-            $extract(is_string($page) ? $page : get_class($page));
+        foreach (CommerceNavigation::registeredNavigationComponents() as $class) {
+            $extract($class);
         }
 
         return $defaults;
@@ -508,68 +500,7 @@ class ManageCommerceNavigation extends Page
      */
     private function getTrueDefaultGroups(): array
     {
-        $groups = [];
-        $configGroups = NavigationConfigurator::$originalGroupConfig;
-
-        foreach ($configGroups as $key => $config) {
-            $groups[$key] = [
-                'label' => is_array($config) ? ($config['label'] ?? $key) : (is_string($config) ? $config : $key),
-                'icon' => is_array($config) ? ($config['icon'] ?? '') : '',
-                'sort' => is_array($config) ? ($config['sort'] ?? 0) : 0,
-                'collapsible' => is_array($config) ? ($config['collapsible'] ?? true) : true,
-                'collapsed' => is_array($config) ? ($config['collapsed'] ?? false) : false,
-            ];
-        }
-
-        // Auto-populate from panel resources/pages so they show up in the form.
-        $existingLabels = array_map(
-            static fn (array $g): string => mb_strtolower($g['label']),
-            $groups,
-        );
-        $panel = Filament::getCurrentOrDefaultPanel();
-        $groupNames = [];
-        foreach ($panel->getResources() as $resource) {
-            $class = is_string($resource) ? $resource : $resource::class;
-            if (method_exists($class, 'getNavigationGroup')) {
-                $g = $class::getNavigationGroup();
-                if (is_string($g) && $g !== '') {
-                    $groupNames[] = $g;
-                }
-            }
-        }
-        foreach ($panel->getPages() as $page) {
-            $class = is_string($page) ? $page : $page::class;
-            if (method_exists($class, 'getNavigationGroup')) {
-                $g = $class::getNavigationGroup();
-                if (is_string($g) && $g !== '') {
-                    $groupNames[] = $g;
-                }
-            }
-        }
-        foreach ($panel->getPageConfigurations() as $configuration) {
-            $page = $configuration->getPage();
-            $class = is_string($page) ? $page : get_class($page);
-            if (method_exists($class, 'getNavigationGroup')) {
-                $g = $class::getNavigationGroup();
-                if (is_string($g) && $g !== '') {
-                    $groupNames[] = $g;
-                }
-            }
-        }
-        foreach (array_unique($groupNames) as $name) {
-            if (in_array(mb_strtolower($name), $existingLabels, true)) {
-                continue;
-            }
-            $groups[$name] = [
-                'label' => $name,
-                'icon' => '',
-                'sort' => 0,
-                'collapsible' => true,
-                'collapsed' => false,
-            ];
-        }
-
-        return $groups;
+        return $this->getDefaultGroups(NavigationConfigurator::$originalGroupConfig);
     }
 
     public function content(Schema $schema): Schema
@@ -619,170 +550,22 @@ class ManageCommerceNavigation extends Page
     }
 
     /**
-     * @param  array<string, array<string, mixed>>  $groups
-     * @return list<array<string, mixed>>
-     */
-    private function normalizeGroupsForForm(array $groups): array
-    {
-        $items = [];
-
-        foreach ($groups as $key => $config) {
-            $items[] = [
-                'group_key' => $key,
-                'label' => $config['label'] ?? $key,
-                'icon' => $config['icon'] ?? '',
-                'sort' => $config['sort'] ?? 0,
-                'collapsible' => $config['collapsible'] ?? true,
-                'collapsed' => $config['collapsed'] ?? false,
-            ];
-        }
-
-        return $items;
-    }
-
-    /**
-     * @param  array<string, array<string, mixed>>  $overrides
-     * @return list<array<string, mixed>>
-     */
-    private function normalizeOverridesForForm(array $overrides): array
-    {
-        $items = [];
-
-        foreach ($overrides as $component => $config) {
-            $items[] = [
-                'component' => $component,
-                'hidden' => $config['hidden'] ?? false,
-                'label' => $config['label'] ?? '',
-                'group' => $config['group'] ?? '',
-                'sort' => $config['sort'] ?? 0,
-                'parent_item' => $config['parent_item'] ?? '',
-            ];
-        }
-
-        return $items;
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $formGroups
-     * @return array<string, array<string, mixed>>
-     */
-    private function denormalizeGroupsFromForm(array $formGroups): array
-    {
-        $groups = [];
-
-        foreach ($formGroups as $item) {
-            $key = $item['group_key'] ?? '';
-
-            if ($key === '') {
-                continue;
-            }
-
-            $config = [];
-
-            if (isset($item['label']) && $item['label'] !== '') {
-                $config['label'] = $item['label'];
-            }
-
-            if (isset($item['icon']) && $item['icon'] !== '') {
-                $config['icon'] = $item['icon'];
-            }
-
-            if (isset($item['sort']) && $item['sort'] !== '') {
-                $config['sort'] = (int) $item['sort'];
-            }
-
-            if (isset($item['collapsible'])) {
-                $config['collapsible'] = (bool) $item['collapsible'];
-            }
-
-            if (isset($item['collapsed'])) {
-                $config['collapsed'] = (bool) $item['collapsed'];
-            }
-
-            $groups[$key] = $config;
-        }
-
-        return $groups;
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $formOverrides
-     * @return array<string, array<string, mixed>>
-     */
-    private function denormalizeOverridesFromForm(array $formOverrides): array
-    {
-        $overrides = [];
-
-        foreach ($formOverrides as $item) {
-            $component = $item['component'] ?? '';
-
-            if ($component === '') {
-                continue;
-            }
-
-            $config = [];
-
-            if (isset($item['hidden'])) {
-                $config['hidden'] = (bool) $item['hidden'];
-            }
-
-            if (isset($item['label']) && $item['label'] !== '') {
-                $config['label'] = $item['label'];
-            }
-
-            if (array_key_exists('group', $item)) {
-                $config['group'] = (string) $item['group'];
-            }
-
-            if (isset($item['sort']) && $item['sort'] !== '') {
-                $config['sort'] = (int) $item['sort'];
-            }
-
-            if (isset($item['parent_item']) && $item['parent_item'] !== '') {
-                $config['parent_item'] = $item['parent_item'];
-            }
-
-            $overrides[$component] = $config;
-        }
-
-        return $overrides;
-    }
-
-    /**
      * @return array<string, string>
      */
     private function getComponentOptions(): array
     {
-        $panel = Filament::getCurrentOrDefaultPanel();
         $options = [];
 
-        foreach ($panel->getResources() as $resource) {
-            $class = is_string($resource) ? $resource : $resource::class;
-            $label = $class::getNavigationLabel();
-            $group = $class::getNavigationGroup();
+        foreach (CommerceNavigation::registeredNavigationComponents() as $class) {
+            $label = method_exists($class, 'getNavigationLabel')
+                ? $class::getNavigationLabel()
+                : class_basename($class);
+            $group = method_exists($class, 'getNavigationGroup')
+                ? $class::getNavigationGroup()
+                : null;
             $groupPrefix = $group ? "[{$group}] " : '';
-            $options[$class] = "{$groupPrefix}[Resource] {$label} — {$class}";
-        }
-
-        foreach ($panel->getPages() as $page) {
-            $class = is_string($page) ? $page : $page::class;
-            $label = $class::getNavigationLabel();
-            $group = $class::getNavigationGroup();
-            $groupPrefix = $group ? "[{$group}] " : '';
-            $options[$class] = "{$groupPrefix}[Page] {$label} — {$class}";
-        }
-
-        foreach ($panel->getPageConfigurations() as $configuration) {
-            $class = $configuration->getPage();
-
-            if (! is_string($class)) {
-                $class = get_class($class);
-            }
-
-            $label = $class::getNavigationLabel();
-            $group = $class::getNavigationGroup();
-            $groupPrefix = $group ? "[{$group}] " : '';
-            $options[$class] = "{$groupPrefix}[Page] {$label} — {$class}";
+            $type = is_subclass_of($class, Resource::class) ? 'Resource' : 'Page';
+            $options[$class] = "{$groupPrefix}[{$type}] {$label} — {$class}";
         }
 
         ksort($options);
@@ -842,85 +625,60 @@ class ManageCommerceNavigation extends Page
     }
 
     /**
+     * Resolve the canonical engine's groups into the settings form shape.
+     *
+     * @param  array<string | int, mixed>|null  $configuredGroups
      * @return array<string, array<string, mixed>>
      */
-    private function getDefaultGroups(): array
+    private function getDefaultGroups(?array $configuredGroups = null): array
     {
-        $groups = [];
-        $configGroups = config('commerce-support.filament.navigation.groups', []);
+        $configGroups = $configuredGroups ?? config('commerce-support.filament.navigation.groups', []);
 
-        foreach ($configGroups as $key => $config) {
+        if (! is_array($configGroups)) {
+            return [];
+        }
+
+        $groups = [];
+
+        foreach (CommerceNavigation::groups($configGroups) as $resolvedGroup) {
+            $label = $resolvedGroup->getLabel();
+
+            if (! is_string($label) || $label === '') {
+                continue;
+            }
+
+            $key = $this->groupKeyForLabel($configGroups, $label);
+            $config = $configGroups[$key] ?? [];
+
             $groups[$key] = [
-                'label' => is_array($config) ? ($config['label'] ?? $key) : (is_string($config) ? $config : $key),
+                'label' => is_array($config) ? ($config['label'] ?? $label) : (is_string($config) ? $config : $label),
                 'icon' => is_array($config) ? ($config['icon'] ?? '') : '',
                 'sort' => is_array($config) ? ($config['sort'] ?? 0) : 0,
                 'collapsible' => is_array($config) ? ($config['collapsible'] ?? true) : true,
                 'collapsed' => is_array($config) ? ($config['collapsed'] ?? false) : false,
+                'hidden' => is_array($config) ? ($config['hidden'] ?? false) : false,
             ];
         }
-
-        // Also extract group names from all registered resources/pages so they
-        // auto-populate. The sidebar groups are built from item group declarations,
-        // not from explicit NavigationGroup panel registrations.
-        $existingLabels = array_map(
-            static fn (array $g): string => mb_strtolower($g['label']),
-            $groups,
-        );
-        $panel = Filament::getCurrentOrDefaultPanel();
-        $groupNames = [];
-        foreach ($panel->getResources() as $resource) {
-            $class = is_string($resource) ? $resource : $resource::class;
-            if (method_exists($class, 'getNavigationGroup')) {
-                $g = $class::getNavigationGroup();
-                if (is_string($g) && $g !== '') {
-                    $groupNames[] = $g;
-                }
-            }
-        }
-        foreach ($panel->getPages() as $page) {
-            $class = is_string($page) ? $page : $page::class;
-            if (method_exists($class, 'getNavigationGroup')) {
-                $g = $class::getNavigationGroup();
-                if (is_string($g) && $g !== '') {
-                    $groupNames[] = $g;
-                }
-            }
-        }
-        foreach ($panel->getPageConfigurations() as $configuration) {
-            $page = $configuration->getPage();
-            $class = is_string($page) ? $page : get_class($page);
-            if (method_exists($class, 'getNavigationGroup')) {
-                $g = $class::getNavigationGroup();
-                if (is_string($g) && $g !== '') {
-                    $groupNames[] = $g;
-                }
-            }
-        }
-        foreach (array_unique($groupNames) as $name) {
-            if (in_array(mb_strtolower($name), $existingLabels, true)) {
-                continue;
-            }
-            $groups[$name] = [
-                'label' => $name,
-                'icon' => '',
-                'sort' => 0,
-                'collapsible' => true,
-                'collapsed' => false,
-            ];
-        }
-
-        // Sort by sort value, then by label — matching CommerceNavigation::groups().
-        uasort($groups, static function (array $a, array $b): int {
-            $sortA = (int) ($a['sort'] ?? 0);
-            $sortB = (int) ($b['sort'] ?? 0);
-            if ($sortA !== $sortB) {
-                return $sortA <=> $sortB;
-            }
-
-            return strcasecmp($a['label'] ?? '', $b['label'] ?? '');
-        });
 
         return $groups;
+    }
+
+    /**
+     * @param  array<string | int, mixed>  $configuredGroups
+     */
+    private function groupKeyForLabel(array $configuredGroups, string $label): string
+    {
+        foreach ($configuredGroups as $key => $definition) {
+            $configuredLabel = is_array($definition)
+                ? ($definition['label'] ?? $key)
+                : (is_string($definition) ? $definition : $key);
+
+            if ((string) $key === $label || (string) $configuredLabel === $label) {
+                return (string) $key;
+            }
+        }
+
+        return $label;
     }
 
     /**
@@ -950,17 +708,8 @@ class ManageCommerceNavigation extends Page
             ];
         };
 
-        foreach ($panel->getResources() as $resource) {
-            $extract(is_string($resource) ? $resource : $resource::class);
-        }
-
-        foreach ($panel->getPages() as $page) {
-            $extract(is_string($page) ? $page : $page::class);
-        }
-
-        foreach ($panel->getPageConfigurations() as $configuration) {
-            $page = $configuration->getPage();
-            $extract(is_string($page) ? $page : get_class($page));
+        foreach (CommerceNavigation::registeredNavigationComponents() as $class) {
+            $extract($class);
         }
 
         // Extract Panel's explicit group registration order
@@ -979,8 +728,6 @@ class ManageCommerceNavigation extends Page
         $itemIndex = 0;
         foreach ($defaults as $class => &$config) {
             $config['__item_index'] = $itemIndex++;
-            $config['__label'] = method_exists($class, 'getNavigationLabel') ? $class::getNavigationLabel() : class_basename($class);
-
             $groupKey = $config['group'];
             $config['__group_sort'] = 9999;
             if ($groupKey !== '') {
@@ -1023,7 +770,7 @@ class ManageCommerceNavigation extends Page
         });
 
         foreach ($defaults as &$config) {
-            unset($config['__label'], $config['__group_sort'], $config['__item_index']);
+            unset($config['__group_sort'], $config['__item_index']);
         }
         unset($config);
 
@@ -1043,13 +790,5 @@ class ManageCommerceNavigation extends Page
         }
 
         return false;
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function getGroupOptions(): array
-    {
-        return $this->getGroupKeyOptions();
     }
 }
