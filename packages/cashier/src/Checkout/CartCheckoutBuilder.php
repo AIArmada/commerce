@@ -12,6 +12,7 @@ use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Exceptions\CheckoutException;
 use AIArmada\Cashier\Exceptions\InsufficientStockException;
 use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
+use AIArmada\Inventory\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\InventoryServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -200,16 +201,21 @@ final class CartCheckoutBuilder
             return;
         }
 
-        // Use cart's inventory validation if available
-        $cartManager = app('cart');
+        // Use cart's inventory validation if available. Decorators stack
+        // (e.g. vouchers wrapping inventory), so unwrap one level to find it.
+        $manager = app('cart');
 
-        if (method_exists($cartManager, 'validateInventory')) {
-            $result = $cartManager->validateInventory($this->cart->getId());
+        if (! $manager instanceof CartManagerWithInventory && method_exists($manager, 'getBaseManager')) {
+            $manager = $manager->getBaseManager();
+        }
 
-            if (! $result['valid']) {
+        if ($manager instanceof CartManagerWithInventory) {
+            $validation = $manager->validateInventory();
+
+            if (! $validation['available']) {
                 throw new InsufficientStockException(
                     'Insufficient stock for some items',
-                    $result['insufficient_items'] ?? []
+                    $validation['issues'] ?? []
                 );
             }
         }
