@@ -80,7 +80,7 @@ it('derives promotion source attributes from the related promotion when availabl
         ->and($voucher->promotion_source_label)->toBe('Launch Campaign (LAUNCH)');
 });
 
-it('falls back to voucher metadata for promotion source attributes when relation data is unavailable', function (): void {
+it('does not derive promotion source attributes from metadata without a relation', function (): void {
     $voucher = Voucher::query()->create([
         'code' => 'WELCOME-2',
         'name' => 'Fallback Voucher',
@@ -88,18 +88,17 @@ it('falls back to voucher metadata for promotion source attributes when relation
         'value' => 1500,
         'currency' => 'MYR',
         'status' => Active::class,
-        'promotion_id' => (string) Str::uuid(),
         'metadata' => [
-            'source_promotion_id' => 'promo-fallback-id',
+            'source_promotion_id' => (string) Str::uuid(),
             'source_promotion_name' => 'Recovery Campaign',
             'source_promotion_code' => 'RECOVER',
         ],
     ])->fresh();
 
-    expect($voucher->promotion_source_id)->toBe('promo-fallback-id')
-        ->and($voucher->promotion_source_name)->toBe('Recovery Campaign')
-        ->and($voucher->promotion_source_code)->toBe('RECOVER')
-        ->and($voucher->promotion_source_label)->toBe('Recovery Campaign (RECOVER)');
+    expect($voucher->promotion_source_id)->toBeNull()
+        ->and($voucher->promotion_source_name)->toBeNull()
+        ->and($voucher->promotion_source_code)->toBeNull()
+        ->and($voucher->promotion_source_label)->toBeNull();
 });
 
 it('exposes promotion source fields in voucher infolist and table definitions', function (): void {
