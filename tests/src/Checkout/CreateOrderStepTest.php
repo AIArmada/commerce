@@ -38,6 +38,7 @@ function createCheckoutAmountReconciliationSession(array $paymentData, int $gran
             'status' => PaymentStatus::Completed->value,
             'transaction_id' => 'tx-amount-reconciliation',
             'gateway' => 'chip',
+            'currency' => 'MYR',
         ], $paymentData),
         'selected_payment_gateway' => 'chip',
         'payment_id' => 'payment-amount-reconciliation',
@@ -207,6 +208,72 @@ it('blocks payment confirmation when the reported amount mismatches the checkout
     Event::assertNotDispatched(OrderPaid::class);
     Event::assertNotDispatched(OrderProcessingStarted::class);
     Log::shouldHaveReceived('warning')->once();
+});
+
+it('blocks payment confirmation when the reported currency mismatches the checkout currency', function (): void {
+    config()->set('checkout.create_order.confirm_payment', true);
+    Event::fake([OrderPaid::class, OrderProcessingStarted::class]);
+    Log::spy();
+
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-CURRENCY-MISMATCH',
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmPayment')->never();
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $session = createCheckoutAmountReconciliationSession([
+        'amount' => 1000,
+        'currency' => 'USD',
+    ]);
+    $result = app(CreateOrderStep::class)->handle($session);
+    $freshSession = $session->fresh();
+
+    expect($result->isSuccessful())->toBeFalse()
+        ->and(data_get($freshSession?->payment_data, 'amount_reconciliation.status'))->toBe('mismatch')
+        ->and(data_get($freshSession?->payment_data, 'amount_reconciliation.reason'))->toBe('currency_mismatch')
+        ->and(data_get($freshSession?->payment_data, 'amount_reconciliation.expected_currency'))->toBe('MYR')
+        ->and(data_get($freshSession?->payment_data, 'amount_reconciliation.received_currency'))->toBe('USD')
+        ->and($freshSession?->error_message)->toBe('Payment currency does not match the checkout currency.');
+
+    Event::assertNotDispatched(OrderPaid::class);
+    Event::assertNotDispatched(OrderProcessingStarted::class);
+    Log::shouldHaveReceived('warning')->once();
+});
+
+it('blocks payment confirmation when the payment currency is missing', function (): void {
+    config()->set('checkout.create_order.confirm_payment', true);
+    Event::fake([OrderPaid::class, OrderProcessingStarted::class]);
+
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-CURRENCY-MISSING',
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmPayment')->never();
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $session = createCheckoutAmountReconciliationSession([
+        'amount' => 1000,
+        'currency' => null,
+    ]);
+    $result = app(CreateOrderStep::class)->handle($session);
+    $freshSession = $session->fresh();
+
+    expect($result->isSuccessful())->toBeFalse()
+        ->and(data_get($freshSession?->payment_data, 'amount_reconciliation.reason'))->toBe('currency_mismatch')
+        ->and(data_get($freshSession?->payment_data, 'amount_reconciliation.received_currency'))->toBeNull()
+        ->and($freshSession?->error_message)->toBe('Payment currency does not match the checkout currency.');
+
+    Event::assertNotDispatched(OrderPaid::class);
+    Event::assertNotDispatched(OrderProcessingStarted::class);
 });
 
 it('uses the checkout total when the payment amount is missing', function (): void {

@@ -317,9 +317,21 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         $expectedAmount = (int) $session->grand_total;
         $amount = (int) ($paymentData['amount'] ?? $expectedAmount);
+        $expectedCurrency = $this->normalizeCurrency($session->currency);
+        $receivedCurrency = $this->normalizeCurrency($paymentData['currency'] ?? null);
+        $currencyMatches = $expectedCurrency !== null
+            && $receivedCurrency !== null
+            && $receivedCurrency === $expectedCurrency;
 
-        if ($amount !== $expectedAmount) {
-            $this->recordPaymentAmountMismatch($session, $paymentData, $expectedAmount, $amount);
+        if ($amount !== $expectedAmount || ! $currencyMatches) {
+            $this->recordPaymentReconciliationMismatch(
+                $session,
+                $paymentData,
+                $expectedAmount,
+                $amount,
+                $expectedCurrency,
+                $receivedCurrency,
+            );
 
             return false;
         }
@@ -362,28 +374,62 @@ final class CreateOrderStep extends AbstractCheckoutStep
     /**
      * @param  array<string, mixed>  $paymentData
      */
-    private function recordPaymentAmountMismatch(
+    private function recordPaymentReconciliationMismatch(
         CheckoutSession $session,
         array $paymentData,
         int $expectedAmount,
         int $receivedAmount,
+        ?string $expectedCurrency,
+        ?string $receivedCurrency,
     ): void {
+        $amountMismatch = $receivedAmount !== $expectedAmount;
+        $currencyMismatch = $expectedCurrency === null
+            || $receivedCurrency === null
+            || $receivedCurrency !== $expectedCurrency;
+
         $paymentData['amount_reconciliation'] = [
             'status' => 'mismatch',
+            'reason' => match (true) {
+                $amountMismatch && $currencyMismatch => 'amount_and_currency_mismatch',
+                $currencyMismatch => 'currency_mismatch',
+                default => 'amount_mismatch',
+            },
             'expected_amount' => $expectedAmount,
             'received_amount' => $receivedAmount,
+            'expected_currency' => $expectedCurrency,
+            'received_currency' => $receivedCurrency,
             'recorded_at' => CarbonImmutable::now()->toIso8601String(),
         ];
 
         $session->update([
             'payment_data' => $paymentData,
-            'error_message' => 'Payment amount does not match the checkout total.',
+            'error_message' => $amountMismatch
+                ? 'Payment amount does not match the checkout total.'
+                : 'Payment currency does not match the checkout currency.',
         ]);
 
-        Log::warning('Payment confirmation aborted because the amount mismatched the checkout total', [
-            'session_id' => $session->id,
-            'expected_amount' => $expectedAmount,
-            'received_amount' => $receivedAmount,
-        ]);
+        Log::warning(
+            $amountMismatch
+                ? 'Payment confirmation aborted because the amount mismatched the checkout total'
+                : 'Payment confirmation aborted because the currency mismatched the checkout currency',
+            [
+                'session_id' => $session->id,
+                'expected_amount' => $expectedAmount,
+                'received_amount' => $receivedAmount,
+                'expected_currency' => $expectedCurrency,
+                'received_currency' => $receivedCurrency,
+            ]
+        );
+    }
+
+    private function normalizeCurrency(mixed $currency): ?string
+    {
+        if (! is_string($currency)) {
+            return null;
+        }
+
+        $normalizedCurrency = mb_strtoupper(mb_trim($currency));
+
+        return $normalizedCurrency === '' ? null : $normalizedCurrency;
     }
 }
