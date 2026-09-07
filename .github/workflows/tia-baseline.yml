@@ -38,8 +38,14 @@ jobs:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
     steps:
+      # NOTE: `ref` is required — actions/checkout detaches HEAD by default,
+      # and Pest refuses to persist the TIA graph on a detached HEAD
+      # (saveGraph/deleteState are no-ops), which would upload a
+      # graph-less baseline that every fetch discards.
       - uses: actions/checkout@v6
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
 
       - uses: shivammathur/setup-php@v2
         with:
