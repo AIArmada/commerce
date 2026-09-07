@@ -16,6 +16,9 @@ use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
@@ -76,6 +79,29 @@ it('replaces all persisted assignments when given an empty map', function (): vo
     app(SyncAddressAreaAssignmentsAction::class)->execute($address, []);
 
     expect($address->areaAssignments()->exists())->toBeFalse();
+});
+
+it('rejects cross-owner assignment synchronization before mutating assignments', function (): void {
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    $area = AddressArea::query()->where('source_id', 'postal')->firstOrFail();
+
+    $address = OwnerContext::withOwner($ownerA, fn (): Address => Address::query()->create([
+        'country_code' => 'MY',
+        'country' => 'Malaysia',
+        'state_id' => $this->state->getKey(),
+    ]));
+
+    OwnerContext::withOwner($ownerA, function () use ($address, $area): void {
+        app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+            'postal_locality' => $area->getKey(),
+        ]);
+    });
+
+    expect($address->areaAssignments()->count())->toBe(1)
+        ->and(fn (): mixed => OwnerContext::withOwner($ownerB, fn () => app(SyncAddressAreaAssignmentsAction::class)->execute($address, [])))
+        ->toThrow(AuthorizationException::class)
+        ->and($address->areaAssignments()->count())->toBe(1);
 });
 
 it('rejects areas from another hierarchy level', function (): void {
