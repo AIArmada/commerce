@@ -19,7 +19,8 @@ it('creates the event property types column in the base event migration', functi
 
     expect(Schema::hasTable($tableName))->toBeTrue()
         ->and(Schema::hasColumn($tableName, 'property_types'))->toBeTrue()
-        ->and(Schema::hasColumn($tableName, 'properties'))->toBeTrue();
+        ->and(Schema::hasColumn($tableName, 'properties'))->toBeTrue()
+        ->and(Schema::hasIndex($tableName, sprintf('%s_tracked_property_id_idempotency_key_unique', $tableName)))->toBeTrue();
 });
 
 it('creates the auth user columns in the base identity migration', function (): void {
