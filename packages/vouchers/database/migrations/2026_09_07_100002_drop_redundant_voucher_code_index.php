@@ -11,15 +11,43 @@ return new class extends Migration
     public function up(): void
     {
         $tableName = $this->vouchersTable();
-        $indexName = $tableName . '_code_index';
 
-        if (! Schema::hasTable($tableName) || ! Schema::hasIndex($tableName, $indexName)) {
+        if (! Schema::hasTable($tableName)) {
             return;
         }
 
-        Schema::table($tableName, function (Blueprint $table) use ($indexName): void {
-            $table->dropIndex($indexName);
-        });
+        $indexes = Schema::getIndexes($tableName);
+        $hasUniqueCodeIndex = false;
+
+        foreach ($indexes as $index) {
+            if (($index['columns'] ?? null) === ['code'] && ($index['unique'] ?? false)) {
+                $hasUniqueCodeIndex = true;
+
+                break;
+            }
+        }
+
+        if (! $hasUniqueCodeIndex) {
+            return;
+        }
+
+        foreach ($indexes as $index) {
+            if (($index['columns'] ?? null) !== ['code']
+                || ($index['unique'] ?? false)
+                || ($index['primary'] ?? false)) {
+                continue;
+            }
+
+            $indexName = $index['name'] ?? null;
+
+            if (! is_string($indexName) || $indexName === '') {
+                continue;
+            }
+
+            Schema::table($tableName, function (Blueprint $table) use ($indexName): void {
+                $table->dropIndex($indexName);
+            });
+        }
     }
 
     private function vouchersTable(): string

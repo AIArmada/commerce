@@ -306,8 +306,6 @@ Voucher::delete(string $code): bool
 
 // Validation
 Voucher::validate(string $code, mixed $cart): VoucherValidationResult
-Voucher::isValid(string $code): bool
-Voucher::canBeUsedBy(string $code, ?Model $user = null): bool
 Voucher::getRemainingUses(string $code): int
 
 // Usage

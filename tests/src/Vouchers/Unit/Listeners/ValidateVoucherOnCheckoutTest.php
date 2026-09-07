@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Tests\Vouchers\Unit\Listeners;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
+use AIArmada\Checkout\Events\CheckoutStarted;
+use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Vouchers\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\VoucherValidationException;
@@ -194,6 +197,28 @@ describe('ValidateVoucherOnCheckout Handle', function (): void {
 
         expect($cart->getMetadata('voucher_codes'))->toBe([]);
     });
+});
+
+it('resolves the cart from a checkout session event', function (): void {
+    $cart = createCartForListenerTest(['voucher_codes' => ['VALID']]);
+    $event = new CheckoutStarted(new CheckoutSession(['cart_id' => 'checkout-cart']));
+
+    $cartManager = Mockery::mock(CartManagerInterface::class);
+    $cartManager->shouldReceive('getById')
+        ->with('checkout-cart')
+        ->once()
+        ->andReturn($cart);
+    app()->instance(CartManagerInterface::class, $cartManager);
+
+    $mock = mockValidateVoucherCode();
+    $mock->shouldReceive('handle')
+        ->with('VALID', $cart)
+        ->once()
+        ->andReturn(VoucherValidationResult::valid());
+
+    $this->listener->handle($event);
+
+    expect($cart->getMetadata('voucher_codes'))->toBe(['VALID']);
 });
 
 describe('ValidateVoucherOnCheckout Block Mode', function (): void {

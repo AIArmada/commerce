@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Services\CartConditionResolver;
+use AIArmada\Checkout\Events\CheckoutStarted;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Listeners\IncrementVoucherAppliedCount;
+use AIArmada\Vouchers\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Services\VoucherValidator;
 use AIArmada\Vouchers\States\Active;
@@ -182,6 +184,14 @@ describe('VoucherServiceProvider', function (): void {
             }
 
             expect(count($listeners))->toBeGreaterThanOrEqual(1);
+        });
+
+        it('registers checkout-started validation when checkout is installed', function (): void {
+            expect(class_exists(CheckoutStarted::class))->toBeTrue();
+
+            $listeners = Event::getRawListeners()[CheckoutStarted::class] ?? [];
+
+            expect($listeners)->toContain(ValidateVoucherOnCheckout::class);
         });
     });
 });

@@ -10,7 +10,6 @@ use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherService;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 
@@ -127,99 +126,6 @@ test('voucher service delete returns false for non-existent', function (): void 
     expect($deleted)->toBeFalse();
 });
 
-test('voucher service is valid', function (): void {
-    $voucher = Voucher::create([
-        'code' => 'ISVALID',
-        'name' => 'Is Valid',
-        'type' => 'percentage',
-        'value' => 10,
-        'currency' => 'MYR',
-        'status' => 'active',
-    ]);
-
-    $service = app(VoucherService::class);
-
-    expect($service->isValid('isvalid'))->toBeTrue();
-});
-
-test('voucher service is valid returns false for invalid', function (): void {
-    $service = app(VoucherService::class);
-
-    expect($service->isValid('invalid'))->toBeFalse();
-});
-
-test('voucher service can be used by user', function (): void {
-    $voucher = Voucher::create([
-        'code' => 'CANUSE',
-        'name' => 'Can Use',
-        'type' => 'percentage',
-        'value' => 10,
-        'currency' => 'MYR',
-        'status' => 'active',
-        'usage_limit_per_user' => 2,
-    ]);
-
-    $user = new class extends Model
-    {
-        protected $table = 'users';
-
-        public function getMorphClass()
-        {
-            return 'User';
-        }
-
-        public function getKey()
-        {
-            return 1;
-        }
-    };
-
-    $service = app(VoucherService::class);
-
-    expect($service->canBeUsedBy('canuse', $user))->toBeTrue();
-});
-
-test('voucher service can be used by returns false when limit reached', function (): void {
-    $voucher = Voucher::create([
-        'code' => 'LIMITREACHED',
-        'name' => 'Limit Reached',
-        'type' => 'percentage',
-        'value' => 10,
-        'currency' => 'MYR',
-        'status' => 'active',
-        'usage_limit_per_user' => 1,
-    ]);
-
-    $user = new class extends Model
-    {
-        protected $table = 'users';
-
-        public function getMorphClass()
-        {
-            return 'User';
-        }
-
-        public function getKey()
-        {
-            return 1;
-        }
-    };
-
-    // Add usage
-    VoucherUsage::create([
-        'voucher_id' => $voucher->id,
-        'discount_amount' => 10,
-        'currency' => 'MYR',
-        'used_at' => now(),
-        'redeemed_by_id' => 1,
-        'redeemed_by_type' => 'User',
-    ]);
-
-    $service = app(VoucherService::class);
-
-    expect($service->canBeUsedBy('limitreached', $user))->toBeFalse();
-});
-
 test('voucher service redeem records fixed discount amount', function (): void {
     $voucher = Voucher::create([
         'code' => 'REDEEMFIXED',
@@ -285,27 +191,6 @@ test('voucher service redeem records the allocated checkout discount and voucher
     expect($usage)->not->toBeNull()
         ->and($usage?->discount_amount)->toBe(300)
         ->and($usage?->currency)->toBe('USD');
-});
-
-test('voucher service can be used by returns false for non-existent', function (): void {
-    $user = new class extends Model
-    {
-        protected $table = 'users';
-
-        public function getMorphClass()
-        {
-            return 'User';
-        }
-
-        public function getKey()
-        {
-            return 1;
-        }
-    };
-
-    $service = app(VoucherService::class);
-
-    expect($service->canBeUsedBy('nonexistent', $user))->toBeFalse();
 });
 
 test('voucher service get remaining uses', function (): void {

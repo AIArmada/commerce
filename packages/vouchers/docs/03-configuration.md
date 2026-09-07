@@ -165,6 +165,9 @@ Reservation TTL is stored in seconds and defaults to 15 minutes.
 ```
 
 This controls whether checkout should stop immediately when a voucher becomes invalid during checkout orchestration.
+When the checkout package is installed, voucher codes are revalidated on its
+`CheckoutStarted` event; invalid codes are removed, and this option can block
+the checkout with a `VoucherValidationException`.
 
 ## Affiliates Integration
 
