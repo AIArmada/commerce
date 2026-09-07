@@ -14,9 +14,6 @@ describe('PromotionType Enum', function (): void {
             expect(PromotionType::Fixed->label())->toBe('Fixed Amount');
         });
 
-        it('returns correct label for BuyXGetY', function (): void {
-            expect(PromotionType::BuyXGetY->label())->toBe('Buy X Get Y');
-        });
     });
 
     describe('icon method', function (): void {
@@ -28,9 +25,6 @@ describe('PromotionType Enum', function (): void {
             expect(PromotionType::Fixed->icon())->toBe('heroicon-o-currency-dollar');
         });
 
-        it('returns correct icon for BuyXGetY', function (): void {
-            expect(PromotionType::BuyXGetY->icon())->toBe('heroicon-o-gift');
-        });
     });
 
     describe('color method', function (): void {
@@ -42,9 +36,6 @@ describe('PromotionType Enum', function (): void {
             expect(PromotionType::Fixed->color())->toBe('primary');
         });
 
-        it('returns correct color for BuyXGetY', function (): void {
-            expect(PromotionType::BuyXGetY->color())->toBe('warning');
-        });
     });
 
     describe('formatValue method', function (): void {
@@ -60,23 +51,17 @@ describe('PromotionType Enum', function (): void {
             expect(PromotionType::Fixed->formatValue(99))->toBe('$0.99');
         });
 
-        it('formats BuyXGetY value', function (): void {
-            expect(PromotionType::BuyXGetY->formatValue(1))->toBe('Buy X Get 1');
-            expect(PromotionType::BuyXGetY->formatValue(2))->toBe('Buy X Get 2');
-        });
     });
 
     describe('enum values', function (): void {
         it('has correct string values', function (): void {
             expect(PromotionType::Percentage->value)->toBe('percentage');
             expect(PromotionType::Fixed->value)->toBe('fixed');
-            expect(PromotionType::BuyXGetY->value)->toBe('buy_x_get_y');
         });
 
         it('can be created from string', function (): void {
             expect(PromotionType::from('percentage'))->toBe(PromotionType::Percentage);
             expect(PromotionType::from('fixed'))->toBe(PromotionType::Fixed);
-            expect(PromotionType::from('buy_x_get_y'))->toBe(PromotionType::BuyXGetY);
         });
 
         it('returns null for invalid value with tryFrom', function (): void {

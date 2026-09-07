@@ -70,53 +70,6 @@ it('issues one-time vouchers linked to the source promotion', function (): void 
         ]);
 });
 
-it('maps buy x get y promotions to compound voucher configuration', function (): void {
-    $owner = new class extends Model
-    {
-        public $incrementing = false;
-
-        protected $keyType = 'string';
-    };
-    $owner->id = 'store-buyxgety-vouchers';
-    $owner->setTable('stores');
-
-    $promotion = OwnerContext::withOwner($owner, function () use ($owner): Promotion {
-        $promotion = new Promotion([
-            'name' => 'Buy 2 Get 1',
-            'code' => 'B2G1',
-            'type' => PromotionType::BuyXGetY,
-            'discount_value' => 1,
-            'min_quantity' => 2,
-            'is_active' => true,
-        ]);
-
-        $promotion->assignOwner($owner);
-        $promotion->save();
-
-        return $promotion;
-    });
-
-    $issued = IssueVouchersFromPromotion::run($promotion);
-
-    /** @var VoucherData $voucher */
-    $voucher = $issued->sole();
-
-    expect($voucher->type)->toBe(VoucherType::BuyXGetY)
-        ->and($voucher->value)->toBe(0)
-        ->and($voucher->valueConfig)->toBe([
-            'buy' => [
-                'quantity' => 2,
-                'product_matcher' => ['type' => 'all'],
-            ],
-            'get' => [
-                'quantity' => 1,
-                'discount' => '100%',
-                'selection' => 'cheapest',
-                'product_matcher' => ['type' => 'same_as_buy'],
-            ],
-        ]);
-});
-
 it('requires explicit global context before issuing vouchers from a global promotion', function (): void {
     $promotion = OwnerContext::withOwner(null, fn (): Promotion => Promotion::create([
         'name' => 'Global Promo',

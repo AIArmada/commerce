@@ -140,14 +140,6 @@ describe('Promotion Model - Extended Tests', function (): void {
             expect($promotion->calculateDiscount(3000))->toBe(3000); // Only RM30 available
         });
 
-        it('returns 0 for BuyXGetY type', function (): void {
-            $promotion = new Promotion([
-                'type' => PromotionType::BuyXGetY,
-                'discount_value' => 1,
-            ]);
-
-            expect($promotion->calculateDiscount(10000))->toBe(0);
-        });
     });
 
     describe('incrementUsage', function (): void {

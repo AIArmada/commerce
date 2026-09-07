@@ -10,9 +10,7 @@ These Action classes are the recommended entry points for promotion operations.
 
 ```php
 use AIArmada\Promotions\Actions\CreatePromotion;
-use AIArmada\Promotions\Actions\EvaluatePromotionForCart;
 use AIArmada\Promotions\Actions\DeactivatePromotion;
-use AIArmada\CommerceSupport\Targeting\TargetingContext;
 
 // Create a promotion
 $promotion = CreatePromotion::run([
@@ -21,12 +19,6 @@ $promotion = CreatePromotion::run([
     'discount_value' => 20,
     'is_active' => true,
 ]);
-
-// Evaluate eligibility against a cart context
-$eligible = EvaluatePromotionForCart::run(
-    $promotion,
-    TargetingContext::fromCart($cart, ['channel' => 'web']),
-);
 
 // Calculate the discount amount
 $discountInCents = $promotion->calculateDiscount($subtotalInCents);
@@ -143,7 +135,6 @@ Defaults applied by the action:
 - `usage_limit = 1`
 - active status
 - generated voucher codes using the promotion code/name or a custom prefix
-- `buy_x_get_y` promotions mapped into voucher `value_config`
 
 ## Conditions payload shape
 
