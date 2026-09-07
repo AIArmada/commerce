@@ -70,8 +70,11 @@ jobs:
           COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      # NOTE: plain `--tia` on purpose — Pest 5 skips TIA recording when a
+      # coverage report is active ("narrows the edges it could record").
+      # TIA still uses the coverage driver (xdebug) internally to record.
       - name: Run tests
-        run: ./vendor/bin/pest --parallel --tia --coverage --fresh
+        run: ./vendor/bin/pest --parallel --tia --fresh
 
       - name: Resolve TIA baseline path
         id: baseline
