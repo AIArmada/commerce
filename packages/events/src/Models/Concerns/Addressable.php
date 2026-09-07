@@ -7,6 +7,7 @@ namespace AIArmada\Events\Models\Concerns;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable as AddressablePivot;
+use AIArmada\Addressing\Support\AddressOwnerGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -20,16 +21,18 @@ trait Addressable
     public function addresses(): MorphToMany
     {
         if ($this->shouldUseAddressing()) {
-            return $this->morphToMany(
+            $relation = $this->morphToMany(
                 Address::class,
                 'addressable',
                 config('addressing.tables.addressables', 'addressables'),
             )
                 ->using(AddressablePivot::class)
-                ->withPivot(['id', 'type', 'label', 'is_primary', 'valid_from', 'valid_until'])
+                ->withPivot(['id', 'type', 'label', 'is_primary', 'valid_from', 'valid_until', 'owner_type', 'owner_id'])
                 ->withTimestamps()
                 ->orderBy('addressables.is_primary', 'desc')
                 ->orderBy('addressables.created_at', 'desc');
+
+            return AddressOwnerGuard::applyToRelation($relation);
         }
 
         return $this->morphToMany(

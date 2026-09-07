@@ -3,7 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Models\Address;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventLocation;
 use AIArmada\Events\Models\Venue;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 test('venue falls back to flat address columns when shared addressing is disabled', function (): void {
@@ -61,5 +67,46 @@ test('venue reads primary address data from the shared address relation when add
     expect($addressData?->line1)->toBe('123 Jalan Ampang')
         ->and($addressData?->line2)->toBe('Level 10')
         ->and($addressData?->city)->toBe('Kuala Lumpur')
-        ->and($addressData?->countryCode)->toBe('MY');
+        ->and($addressData?->countryCode)->toBe('MY')
+        ->and(DB::table('addressables')->where('address_id', $address->id)->value('owner_id'))
+        ->toBe(OwnerContext::resolve()?->getKey());
+});
+
+test('event locations keep shared addresses isolated by their event owner', function (): void {
+    config()->set('events.integrations.addressing_enabled', true);
+
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+
+    $eventA = OwnerContext::withOwner($ownerA, fn (): Event => Event::factory()->create());
+    $locationA = OwnerContext::withOwner($ownerA, fn (): EventLocation => EventLocation::factory()->create([
+        'event_id' => $eventA->id,
+    ]));
+    $addressA = OwnerContext::withOwner($ownerA, fn (): Address => Address::query()->create([
+        'line1' => 'Owner A location',
+        'country_code' => 'MY',
+    ]));
+    $addressB = OwnerContext::withOwner($ownerB, fn (): Address => Address::query()->create([
+        'line1' => 'Owner B location',
+        'country_code' => 'MY',
+    ]));
+
+    OwnerContext::withOwner($ownerA, function () use ($locationA, $addressA): void {
+        $locationA->addresses()->attach($addressA->id, [
+            'id' => (string) Str::orderedUuid(),
+            'type' => 'primary',
+            'is_primary' => true,
+        ]);
+    });
+
+    expect(OwnerContext::withOwner($ownerA, fn (): int => $locationA->addresses()->count()))->toBe(1)
+        ->and(OwnerContext::withOwner($ownerB, fn (): int => $locationA->addresses()->count()))->toBe(0);
+
+    expect(fn () => OwnerContext::withOwner($ownerB, function () use ($locationA, $addressB): void {
+        $locationA->addresses()->attach($addressB->id, [
+            'id' => (string) Str::orderedUuid(),
+            'type' => 'primary',
+            'is_primary' => true,
+        ]);
+    }))->toThrow(AuthorizationException::class);
 });
