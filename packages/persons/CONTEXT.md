@@ -49,7 +49,7 @@ keywords:
 
 ## Key surfaces
 - Models: `Affiliation`, `AffiliationRole`, `CredentialAssignment`, `CredentialDefinition`, `Person`, `PersonName`, `Title`, `TitleAssignment`, `TitleCategory`, `TitleIssuer`
-- Actions/Services: `Actions/ReorderTitleAction`, `Support/ModelResolver`
+- Actions/Services: `Actions/CreatePersonAction`, `Actions/AssignTitleAction`, `Actions/AssignCredentialAction`, `Actions/ReorderTitleAction`, `Support/ModelResolver`, `Support/PersonsModelReferenceGuard`
 - Config `persons.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `models`, `persons`, `person_names`, `title_categories`, `titles`, `title_issuers`, `title_assignments`
 
 ## Docs map

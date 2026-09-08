@@ -38,29 +38,6 @@ final class CustomerForm
                                     ->required()
                                     ->maxLength(100),
 
-                                TextInput::make('email')
-                                    ->label('Email')
-                                    ->email()
-                                    ->required()
-                                    ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule) {
-                                        $owner = OwnerUiScope::resolveOwner(Customer::class);
-                                        if ($owner !== null) {
-                                            return $rule
-                                                ->where('owner_type', $owner->getMorphClass())
-                                                ->where('owner_id', $owner->getKey());
-                                        }
-
-                                        return $rule
-                                            ->whereNull('owner_type')
-                                            ->whereNull('owner_id');
-                                    })
-                                    ->maxLength(255),
-
-                                TextInput::make('phone')
-                                    ->label('Phone')
-                                    ->tel()
-                                    ->maxLength(20),
-
                                 TextInput::make('company')
                                     ->label('Company')
                                     ->maxLength(255),

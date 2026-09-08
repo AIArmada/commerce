@@ -9,6 +9,7 @@ use AIArmada\Membership\Services\MembershipRoleSyncService;
 use AIArmada\Organizations\Contracts\OrganizationAuthorization;
 use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Models\Organization;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,11 +24,17 @@ final class TransferOrganizationOwnershipAction
         app(OrganizationAuthorization::class)->authorize($actor, $organization, 'organization.transfer-ownership');
 
         if ($actor->is($newOwner)) {
-            return DB::transaction(function () use ($organization): Organization {
+            return DB::transaction(function () use ($actor, $organization): Organization {
                 $owners = $organization->ownerMember()->lockForUpdate()->get();
 
                 if ($owners->count() !== 1) {
                     throw new RuntimeException('Organization ownership invariant violated: exactly one owner must exist.');
+                }
+
+                $currentOwner = $owners->first();
+
+                if (! $currentOwner instanceof Model || ! $currentOwner->is($actor)) {
+                    throw new AuthorizationException('Only the current owner can self-transfer organization ownership.');
                 }
 
                 return $organization;

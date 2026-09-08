@@ -10,6 +10,7 @@ use AIArmada\Contacting\Support\NormalizesSocialHandle;
 use AIArmada\Contacting\Support\NormalizesUrl;
 use AIArmada\Contacting\Support\SocialProfileConfig;
 use AIArmada\Customers\Models\Customer;
+use Carbon\CarbonImmutable;
 
 test('SocialProfile model class exists', function (): void {
     expect(class_exists(SocialProfile::class))->toBeTrue();
@@ -57,6 +58,18 @@ test('SocialProfileData from array', function (): void {
 
     expect($data->platform)->toBe('instagram');
     expect($data->handle)->toBe('@user');
+});
+
+test('SocialProfile uses only the canonical sort order attribute', function (): void {
+    $profile = new SocialProfile;
+    $profile->fill([
+        'sort_order' => 2,
+        'order_column' => 4,
+    ]);
+
+    expect($profile->sort_order)->toBe(2)
+        ->and($profile->getAttribute('order_column'))->toBeNull()
+        ->and($profile->getFillable())->not->toContain('order_column');
 });
 
 test('primary social profiles remain unique per socialable type and purpose', function (): void {
@@ -122,6 +135,47 @@ test('SocialProfile preserves explicitly supplied handle and URL values on later
     expect($profile->fresh())
         ->handle->toBe('@OperatorHandle')
         ->url->toBe('https://example.com/operator-profile?view=custom');
+});
+
+test('SocialProfile uses public defaults and filters invalid primary profiles', function (): void {
+    $customer = Customer::create([
+        'first_name' => 'Visibility',
+        'last_name' => 'Profile',
+        'email' => 'visibility-profile-' . uniqid() . '@example.com',
+        'status' => 'active',
+    ]);
+
+    $privatePrimary = $customer->addSocialProfile(new SocialProfileData(
+        platform: 'facebook',
+        purpose: 'general',
+        handle: 'private-' . uniqid(),
+        isPrimary: true,
+        isPublic: false,
+    ));
+    $publicPrimary = $customer->addSocialProfile(new SocialProfileData(
+        platform: 'instagram',
+        purpose: 'general',
+        handle: 'public-' . uniqid(),
+        isPrimary: true,
+    ));
+
+    SocialProfile::query()->create([
+        'socialable_type' => $customer->getMorphClass(),
+        'socialable_id' => $customer->getKey(),
+        'platform' => 'linkedin',
+        'purpose' => 'general',
+        'handle' => 'expired-' . uniqid(),
+        'is_primary' => true,
+        'is_public' => true,
+        'valid_until' => CarbonImmutable::now()->subMinute(),
+    ]);
+
+    expect($privatePrimary->fresh()?->is_public)->toBeFalse()
+        ->and($publicPrimary->fresh()?->is_public)->toBeTrue()
+        ->and($customer->primarySocialProfile('facebook'))->not->toBeNull()
+        ->and($customer->primarySocialProfile('facebook', publicOnly: true))->toBeNull()
+        ->and($customer->primarySocialProfile('instagram', publicOnly: true)?->id)->toBe($publicPrimary->id)
+        ->and($customer->primarySocialProfile('linkedin'))->toBeNull();
 });
 
 test('NormalizeSocialProfileAction normalizes @handle', function (): void {

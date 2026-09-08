@@ -74,19 +74,18 @@ php artisan customers:rebuild-segments --segment={uuid}
 **Problem**: Form submissions fail with validation errors
 
 **Common Issues**:
-1. Email already exists (unique constraint)
+1. Email already exists in the customer's Contacting records
 2. Required fields missing
-3. Invalid format (phone, email)
+3. Invalid Contacting value (phone or email)
 
 **Solution**:
 
 ```php
-// Check for existing customer
-$existing = Customer::where('email', $email)->first();
-
-// Use unique validation with ignore
-Forms\Components\TextInput::make('email')
-    ->unique(ignoreRecord: true);
+// Check for an existing customer through Contacting
+$existing = Customer::whereHas('contactMethods', function (Builder $query) use ($email): void {
+    $query->where('type', 'email')
+        ->where('normalized_value', mb_strtolower(mb_trim($email)));
+})->first();
 
 // Verify required fields
 Forms\Components\TextInput::make('first_name')
@@ -172,13 +171,11 @@ public static function canView(): bool
 // Verify searchable attributes are defined
 public static function getGloballySearchableAttributes(): array
 {
-    return ['first_name', 'last_name', 'email', 'phone', 'company'];
+    return ['first_name', 'last_name', 'company', 'contactMethods.value'];
 }
 
-// Check database indexes exist
-// Migrations should include:
-$table->index('email');
-$table->index('phone');
+// Contacting owns contact-value persistence and search; do not add native
+// email/phone columns to the customers table.
 
 // Rebuild search index if using Scout
 php artisan scout:import "AIArmada\Customers\Models\Customer"

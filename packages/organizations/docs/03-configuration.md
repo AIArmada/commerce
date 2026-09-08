@@ -26,6 +26,10 @@ organization migration and runtime relation on one physical table. The
 membership table retains its surrogate UUID primary key so relation managers
 can address membership rows individually.
 
+`ORGANIZATIONS_TABLE_PREFIX` supplies the default prefix for both organization
+tables. `ORGANIZATIONS_TABLE` and `ORGANIZATIONS_MEMBERS_TABLE` override the
+individual names when needed.
+
 ```php
 'middleware' => [
     'require_context' => true,
@@ -37,6 +41,20 @@ parameters can explicitly require or release context with
 `current.organization:true` or `current.organization:false`; the latter is
 only for intentionally global/public handlers and must keep their global
 owner context explicit.
+
+The default is also available as `ORGANIZATIONS_REQUIRE_CONTEXT`. The resolver
+binding is lazy and fails at resolve time with a diagnostic message if context
+is required while `NullCurrentOrganizationResolver` is still configured.
+
+## Institution topology
+
+An `Organization` is the tenant/owner aggregate. It may also be used as the
+persons package's institution model, but only when the host explicitly sets
+`persons.models.institution` to `Organization::class`. Persons treats
+`institution_id` as an opaque, nullable UUID from the organizations package's
+perspective. When persons is configured with `persons.models.institution`,
+persons rejects non-null values unless they resolve to a persisted institution;
+without that configuration, non-null institution references fail closed.
 
 ## Authorization
 

@@ -8,6 +8,7 @@ use AIArmada\Organizations\Contracts\OrganizationAuthorization;
 use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Models\Organization;
+use AIArmada\Organizations\Support\OrganizationStateTransition;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,11 @@ final class RestoreOrganizationAction
             $from = $organization->status;
 
             if ($from !== OrganizationStatus::Active) {
-                $organization->transitionToStatus(OrganizationStatus::Active, CarbonImmutable::now());
+                app(OrganizationStateTransition::class)->status(
+                    $organization,
+                    OrganizationStatus::Active,
+                    CarbonImmutable::now(),
+                );
                 $organization->save();
                 app(OrganizationLifecycleHook::class)->statusChanged($organization, $from, OrganizationStatus::Active, $actor);
             }

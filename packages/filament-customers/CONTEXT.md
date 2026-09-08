@@ -42,7 +42,7 @@ keywords:
 
 ## Key surfaces
 - Resources: `CustomerResource`, `SegmentResource`
-- Actions/Services: `Actions/MergeCustomersAction`
+- Actions/Services: `Actions/MergeCustomersAction` (thin caller of the core `customers.Actions.MergeCustomers` action)
 - Config `filament-customers.php`: `navigation`, `group`, `features`, `merge_customers`, `segment_rebuild`, `address_validation`, `resources`, `navigation_sort`, `customers`, `segments`
 
 ## Docs map

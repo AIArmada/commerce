@@ -40,9 +40,9 @@ keywords:
 - Use when: Storing contact points or social handles on any model.
 - Skip when: Message sending history — see communications.
 - Owner/security: Owner-scoped (all 3 models; features.owner config).
-- Contact rows are the canonical multi-value/history surface. Consumer-native
-  email/phone columns are legacy or cache fields and must not silently become
-  a second source of truth.
+- Contact rows are the sole canonical multi-value/history surface. Consumer
+  models must not persist duplicate native email/phone columns or fall back to
+  them.
 
 ## Key surfaces
 - Models: `ContactMethod`, `ContactSnapshot`, `SocialProfile`

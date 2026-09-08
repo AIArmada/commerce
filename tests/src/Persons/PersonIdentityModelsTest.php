@@ -9,6 +9,7 @@ use AIArmada\Persons\Enums\CredentialType;
 use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\IssuerType;
 use AIArmada\Persons\Enums\PersonNameType;
+use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Models\Affiliation;
 use AIArmada\Persons\Models\AffiliationRole;
@@ -20,6 +21,7 @@ use AIArmada\Persons\Models\Title;
 use AIArmada\Persons\Models\TitleAssignment;
 use AIArmada\Persons\Models\TitleCategory;
 use AIArmada\Persons\Models\TitleIssuer;
+use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     persons_register_morph_map('person');
@@ -33,14 +35,14 @@ describe('person identity models', function (): void {
             'family_name' => 'Rahman',
             'middle_name' => 'Bin',
             'gender' => 'male',
-            'status' => 'verified',
+            'status' => PersonStatus::Published,
         ]);
 
         expect($person->name)->toBe('Ahmad Rahman');
         expect($person->family_name)->toBe('Rahman');
         expect($person->middle_name)->toBe('Bin');
         expect($person->gender)->toBe(Gender::Male);
-        expect($person->status)->toBe('verified');
+        expect($person->status)->toBe(PersonStatus::Published);
         expect($person->slug)->toBe('ahmad-rahman-' . mb_substr($person->getKey(), 0, 8));
         expect($person->searchable_name)->toContain('ahmad rahman');
     });
@@ -295,7 +297,7 @@ describe('person identity models', function (): void {
     });
 
     it('formats display name with ordered titles', function (): void {
-        $person = Person::create(['name' => 'Ahmad Rahman', 'status' => 'verified']);
+        $person = Person::create(['name' => 'Ahmad Rahman', 'status' => PersonStatus::Published]);
         $academic = TitleCategory::create(['code' => 'academic', 'name' => 'Academic', 'sort_order' => 20]);
         $honour = TitleCategory::create(['code' => 'state_honour', 'name' => 'State Honour', 'sort_order' => 10]);
 
@@ -327,8 +329,17 @@ describe('person identity models', function (): void {
         expect($person->formatted_name)->toBe('Datuk Dr. Ahmad Rahman, PhD');
     });
 
+    it('keeps formatted name access pure when title assignments are not eager loaded', function (): void {
+        $person = Person::create(['name' => 'Pure Accessor']);
+
+        expect($person->relationLoaded('titleAssignments'))->toBeFalse();
+
+        expect($person->formatted_name)->toBe('Pure Accessor')
+            ->and($person->relationLoaded('titleAssignments'))->toBeFalse();
+    });
+
     it('orders titles by category before title within each name position', function (): void {
-        $person = Person::create(['name' => 'Ahmad Rahman', 'status' => 'verified']);
+        $person = Person::create(['name' => 'Ahmad Rahman', 'status' => PersonStatus::Published]);
         $religious = TitleCategory::create(['code' => 'religious', 'name' => 'Religious', 'sort_order' => 10]);
         $academic = TitleCategory::create(['code' => 'academic', 'name' => 'Academic', 'sort_order' => 20]);
         $professional = TitleCategory::create(['code' => 'professional', 'name' => 'Professional', 'sort_order' => 30]);
@@ -383,6 +394,30 @@ describe('person identity models', function (): void {
         expect($title->usage_position->value)->toBe('before_name');
     });
 
+    it('centralizes the published timestamp in person status transitions', function (): void {
+        $publishedAt = CarbonImmutable::parse('2026-09-08 12:00:00');
+        $person = Person::create(['name' => 'Status Transition']);
+
+        $person->transitionStatus(PersonStatus::Published, $publishedAt);
+        $person->save();
+
+        expect($person->fresh()?->status)->toBe(PersonStatus::Published)
+            ->and($person->fresh()?->published_at?->equalTo($publishedAt))->toBeTrue();
+
+        $person->transitionStatus(PersonStatus::Archived, $publishedAt->addDay());
+        $person->save();
+
+        expect($person->fresh()?->status)->toBe(PersonStatus::Archived)
+            ->and($person->fresh()?->published_at)->toBeNull();
+    });
+
+    it('rejects invalid biography shapes', function (): void {
+        expect(fn (): Person => Person::create([
+            'name' => 'Invalid Biography',
+            'bio' => ['en' => ['not', 'text']],
+        ]))->toThrow(InvalidArgumentException::class);
+    });
+
     it('creates a title issuer', function (): void {
         $issuer = TitleIssuer::create([
             'issuer_name' => 'Board of Engineers Malaysia',
@@ -391,6 +426,13 @@ describe('person identity models', function (): void {
 
         expect($issuer->issuer_name)->toBe('Board of Engineers Malaysia');
         expect($issuer->issuer_type)->toBe(IssuerType::ProfessionalBoard);
+    });
+
+    it('requires an institution for government and university title issuers', function (): void {
+        expect(fn (): TitleIssuer => TitleIssuer::create([
+            'issuer_name' => 'Government Board',
+            'issuer_type' => IssuerType::Government,
+        ]))->toThrow(InvalidArgumentException::class);
     });
 
     it('has no soft deletes or FK constraints in migrations', function (): void {

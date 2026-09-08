@@ -36,7 +36,7 @@ final class UpdateContactMethodAction
             $contactMethod->display_value = $result['display_value'];
             $contactMethod->country_code = $data->countryCode ?? $contactMethod->country_code;
             $contactMethod->is_primary = $data->isPrimary;
-            $contactMethod->is_public = $data->isPublic;
+            $contactMethod->is_public = $data->isPublic ?? $contactMethod->is_public;
             $contactMethod->is_verified = $data->isVerified;
             $contactMethod->metadata = $data->metadata;
 

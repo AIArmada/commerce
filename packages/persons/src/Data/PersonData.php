@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
+use AIArmada\Persons\Enums\Gender;
+use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Models\Person;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Optional;
@@ -29,10 +31,10 @@ final class PersonData extends Data
             name: $person->name,
             family_name: $person->family_name,
             middle_name: $person->middle_name,
-            gender: $person->gender,
+            gender: $person->gender instanceof Gender ? $person->gender->value : null,
             nationality_country_id: $person->nationality_country_id,
             slug: $person->slug,
-            status: $person->status,
+            status: $person->status instanceof PersonStatus ? $person->status->value : null,
             formatted_name: $person->formatted_name,
         );
     }

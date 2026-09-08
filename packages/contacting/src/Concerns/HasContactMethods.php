@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Contacting\Concerns;
 
 use AIArmada\Contacting\Actions\CreateContactMethodAction;
-use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Support\NormalizesEmailAddress;
-use AIArmada\Contacting\Support\NormalizesPhoneNumber;
-use AIArmada\Contacting\Support\NormalizesUrl;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -40,14 +38,25 @@ trait HasContactMethods
         return $this->contactMethods()->where('is_public', true);
     }
 
-    public function primaryContactMethod(?string $type = null, ?string $purpose = null): ?ContactMethod
+    public function primaryContactMethod(?string $type = null, ?string $purpose = null, bool $publicOnly = false): ?ContactMethod
     {
-        return $this->contactMethods()
+        $now = CarbonImmutable::now();
+        $query = $this->contactMethods()
             ->when($type !== null, fn ($query) => $query->where('type', $type))
             ->when($purpose !== null, fn ($query) => $query->where('purpose', $purpose))
             ->where('is_primary', true)
-            ->orderBy('sort_order')
-            ->first();
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('valid_from')->orWhere('valid_from', '<=', $now);
+            })
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('valid_until')->orWhere('valid_until', '>=', $now);
+            });
+
+        if ($publicOnly) {
+            $query->where('is_public', true);
+        }
+
+        return $query->orderBy('sort_order')->first();
     }
 
     /**
@@ -66,39 +75,51 @@ trait HasContactMethods
         return $this->contactMethods()->where('purpose', $purpose);
     }
 
-    public function resolveEmail(): ?string
+    public function resolveEmail(bool $publicOnly = false): ?string
     {
-        return $this->resolveContact('email');
+        return $this->resolveContact('email', $publicOnly);
     }
 
     /**
      * @return array<int, string>
      */
-    public function resolveEmails(): array
+    public function resolveEmails(bool $publicOnly = false): array
     {
-        return $this->resolveContacts('email');
+        return $this->resolveContacts('email', $publicOnly);
     }
 
-    public function resolvePhone(): ?string
+    public function resolvePhone(bool $publicOnly = false): ?string
     {
-        return $this->resolveContact('phone');
+        return $this->resolveContact('phone', $publicOnly);
     }
 
     /**
      * @return array<int, string>
      */
-    public function resolvePhones(): array
+    public function resolvePhones(bool $publicOnly = false): array
     {
-        return $this->resolveContacts('phone');
+        return $this->resolveContacts('phone', $publicOnly);
     }
 
-    private function resolveContact(string $type): ?string
+    private function resolveContact(string $type, bool $publicOnly = false): ?string
     {
-        $contact = $this->contactMethods()
+        $now = CarbonImmutable::now();
+        $query = $this->contactMethods()
             ->where('type', $type)
             ->orderByDesc('is_primary')
             ->orderBy('sort_order')
-            ->first();
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('valid_from')->orWhere('valid_from', '<=', $now);
+            })
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('valid_until')->orWhere('valid_until', '>=', $now);
+            });
+
+        if ($publicOnly) {
+            $query->where('is_public', true);
+        }
+
+        $contact = $query->first();
 
         return $contact !== null ? $this->normalizeContactValue($contact) : null;
     }
@@ -106,13 +127,25 @@ trait HasContactMethods
     /**
      * @return array<int, string>
      */
-    private function resolveContacts(string $type): array
+    private function resolveContacts(string $type, bool $publicOnly = false): array
     {
-        return $this->contactMethods()
+        $now = CarbonImmutable::now();
+        $query = $this->contactMethods()
             ->where('type', $type)
             ->orderByDesc('is_primary')
             ->orderBy('sort_order')
-            ->get()
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('valid_from')->orWhere('valid_from', '<=', $now);
+            })
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('valid_until')->orWhere('valid_until', '>=', $now);
+            });
+
+        if ($publicOnly) {
+            $query->where('is_public', true);
+        }
+
+        return $query->get()
             ->map(fn (ContactMethod $contact): ?string => $this->normalizeContactValue($contact))
             ->filter(static fn (?string $value): bool => $value !== null)
             ->values()
@@ -139,16 +172,6 @@ trait HasContactMethods
             $data = ContactMethodData::from($data);
         }
 
-        if (function_exists('app')) {
-            return app(CreateContactMethodAction::class)->execute($this, $data);
-        }
-
-        return (new CreateContactMethodAction(
-            new NormalizeContactMethodAction(
-                new NormalizesEmailAddress,
-                new NormalizesPhoneNumber,
-                new NormalizesUrl,
-            ),
-        ))->execute($this, $data);
+        return app(CreateContactMethodAction::class)->execute($this, $data);
     }
 }

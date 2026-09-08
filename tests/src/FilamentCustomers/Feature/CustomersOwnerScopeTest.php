@@ -55,7 +55,6 @@ it('apply returns global-only rows in explicit global context when model has no 
     $global = OwnerContext::withOwner(null, fn (): Customer => Customer::query()->create([
         'first_name' => 'Global',
         'last_name' => 'Customer',
-        'email' => 'global@example.com',
         'status' => 'active',
         'accepts_marketing' => false,
 
@@ -66,7 +65,6 @@ it('apply returns global-only rows in explicit global context when model has no 
     OwnerContext::withOwner($ownerA, fn (): Customer => Customer::query()->create([
         'first_name' => 'Owned',
         'last_name' => 'Customer',
-        'email' => 'owned@example.com',
         'status' => 'active',
         'accepts_marketing' => false,
 
@@ -79,12 +77,12 @@ it('apply returns global-only rows in explicit global context when model has no 
     $noScopeModel = new class extends Model {};
     $noScopeModel->setTable($tableName);
 
-    $emails = OwnerContext::withOwner(null, fn (): array => OwnerUiScope::apply($noScopeModel->newQuery(), configKey: 'customers.features.owner', includeGlobal: false)
-        ->orderBy('email')
-        ->pluck('email')
+    $names = OwnerContext::withOwner(null, fn (): array => OwnerUiScope::apply($noScopeModel->newQuery(), configKey: 'customers.features.owner', includeGlobal: false)
+        ->orderBy('first_name')
+        ->pluck('first_name')
         ->all());
 
-    expect($emails)->toEqual([$global->email]);
+    expect($names)->toEqual([$global->first_name]);
 });
 
 it('apply returns only owner rows when owner is resolved and model has no scopeForOwner', function (): void {
@@ -108,7 +106,6 @@ it('apply returns only owner rows when owner is resolved and model has no scopeF
         'id' => (string) Str::uuid(),
         'first_name' => 'Global',
         'last_name' => 'Customer',
-        'email' => 'global2@example.com',
         'status' => 'active',
         'accepts_marketing' => 0,
 
@@ -121,7 +118,6 @@ it('apply returns only owner rows when owner is resolved and model has no scopeF
     OwnerContext::withOwner($ownerA, fn (): Customer => Customer::query()->create([
         'first_name' => 'A',
         'last_name' => 'Customer',
-        'email' => 'a@example.com',
         'status' => 'active',
         'accepts_marketing' => false,
 
@@ -132,7 +128,6 @@ it('apply returns only owner rows when owner is resolved and model has no scopeF
     OwnerContext::withOwner($ownerB, fn (): Customer => Customer::query()->create([
         'first_name' => 'B',
         'last_name' => 'Customer',
-        'email' => 'b@example.com',
         'status' => 'active',
         'accepts_marketing' => false,
 
@@ -143,10 +138,10 @@ it('apply returns only owner rows when owner is resolved and model has no scopeF
     $noScopeModel = new class extends Model {};
     $noScopeModel->setTable($tableName);
 
-    $emails = OwnerUiScope::apply($noScopeModel->newQuery(), configKey: 'customers.features.owner', includeGlobal: false)
-        ->orderBy('email')
-        ->pluck('email')
+    $names = OwnerUiScope::apply($noScopeModel->newQuery(), configKey: 'customers.features.owner', includeGlobal: false)
+        ->orderBy('first_name')
+        ->pluck('first_name')
         ->all();
 
-    expect($emails)->toEqual(['a@example.com']);
+    expect($names)->toEqual(['A']);
 });

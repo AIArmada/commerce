@@ -8,6 +8,13 @@ title: Persons Overview
 
 `Person` is the shared human identity root and is intentionally unscoped. Tenant-owned commercial data belongs to `customers.Customer`, which may carry a nullable `person_id` link; the link is written explicitly by the customers package and never causes an automatic backfill or merge.
 
+The `person_names`, title taxonomy, credential taxonomy, and assignment rows
+inherit this global/shared topology. Do not attach them to an owner-scoped
+record and assume the persons tables provide tenant isolation; an application
+must authorize that attachment at its owning boundary. Scoping `Person` in a
+future release requires scoping the dependent persons tables in the same
+release.
+
 ## What this package owns
 
 - The canonical `persons` identity table
@@ -36,8 +43,9 @@ table. Event involvement remains owned by `events`; a host may attach a
 When a person is saved, a blank slug is generated from the normalized name and
 the person's short UUID, with a numeric collision suffix when necessary.
 `searchable_name` is regenerated from the person's name fields and primary
-name variants. The `status` value remains a host-defined string in this
-release.
+name variants. `status` is cast to `PersonStatus` (`active`, `published`, or
+`archived`), and `transitionStatus()` is the single lifecycle entry point for
+maintaining `published_at`.
 
 `PersonName` primary status is scoped by `(person_id, name_type,
 language_code)`. The model transaction locks the parent person before

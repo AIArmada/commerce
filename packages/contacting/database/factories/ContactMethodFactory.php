@@ -24,7 +24,7 @@ final class ContactMethodFactory extends Factory
             'normalized_value' => 'admin@example.com',
             'display_value' => 'admin@example.com',
             'is_primary' => false,
-            'is_public' => true,
+            'is_public' => null,
             'is_verified' => false,
             'metadata' => [],
         ];

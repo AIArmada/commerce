@@ -4,7 +4,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Persons\Models\Person;
 
-$tablePrefix = '';
+$tablePrefix = (string) env('PERSONS_TABLE_PREFIX', '');
 
 return [
 
@@ -28,14 +28,14 @@ return [
     // Host application may subclass package models. Resolved through ModelResolver.
     'models' => [
         'person' => env('PERSONS_MODEL_PERSON', Person::class),
-        'country' => env('PERSONS_MODEL_COUNTRY', AddressCountry::class),
+        'country' => env('PERSONS_MODEL_COUNTRY', class_exists(AddressCountry::class) ? AddressCountry::class : null),
         'institution' => env('PERSONS_MODEL_INSTITUTION'),
     ],
 
     // Optional integration toggles.
     'integrations' => [
         'addressing' => [
-            'enabled' => (bool) env('PERSONS_ADDRESSING_ENABLED', false),
+            'enabled' => (bool) env('PERSONS_ADDRESSING_ENABLED', class_exists(AddressCountry::class)),
         ],
     ],
 

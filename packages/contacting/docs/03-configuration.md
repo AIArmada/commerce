@@ -48,18 +48,26 @@ JSON column type is controlled by `commerce_json_column_type('contacting', 'json
         'include_global' => env('CONTACTING_OWNER_INCLUDE_GLOBAL', false),
         'auto_assign_on_create' => env('CONTACTING_OWNER_AUTO_ASSIGN', true),
     ],
-    'contact_snapshots' => true,
+    'contact_snapshots' => env('CONTACTING_SNAPSHOTS_ENABLED', true),
     'strict_social_platforms' => false,
     'strict_contact_types' => false,
 ],
 ```
 
-- `contact_snapshots`: Enable/disable snapshot table (default: true)
+- `contact_snapshots`: Enable/disable snapshot creation (default: true). When
+  disabled, snapshot actions throw `ContactSnapshotsDisabledException`; they do
+  not return an unsaved placeholder.
 - `owner.enabled`: Enable owner scoping for multi-tenancy
 - `owner.include_global`: Include ownerless records in owner-scoped queries
 - `owner.auto_assign_on_create`: Auto-assign current owner on creation
 - `strict_social_platforms`: When true, only allow configured platforms
 - `strict_contact_types`: When true, only allow configured contact types
+
+Contact methods default to private for `email`, `phone`, `mobile`, `whatsapp`,
+and `fax`, even when `defaults.public_by_default` is true. Website and other
+non-PII contact types use `public_by_default`. Social profiles use
+`public_by_default`. Set `is_public` explicitly when a different policy is
+required.
 
 ## Contact Method Types
 

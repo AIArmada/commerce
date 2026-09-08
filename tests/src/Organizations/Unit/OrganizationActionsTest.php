@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Organizations\OrganizationsTestCase;
-use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\Membership\Actions\AddMemberAction;
 use AIArmada\Membership\Actions\RemoveMemberAction;
 use AIArmada\Membership\Enums\MemberRole;
@@ -64,6 +63,15 @@ it('transfers ownership transactionally and protects the final owner', function 
         ->toThrow(AuthorizationException::class, 'Transfer organization ownership');
 });
 
+it('rejects an ownership transfer to a non-member target', function (): void {
+    $creator = User::factory()->create();
+    $outsider = User::factory()->create();
+    $organization = CreateOrganizationAction::make()->handle($creator, ['name' => 'Guarded Circle']);
+
+    expect(fn () => TransferOrganizationOwnershipAction::make()->handle($organization, $creator, $outsider))
+        ->toThrow(RuntimeException::class, 'already be an organization member');
+});
+
 it('does not allow a second owner through generic membership actions', function (): void {
     $creator = User::factory()->create();
     $secondUser = User::factory()->create();
@@ -108,7 +116,7 @@ it('uses the secure config fallback when the route does not override it', functi
     expect(fn () => (new CurrentOrganizationMiddleware)->handle(
         Request::create('/'),
         fn (): never => throw new RuntimeException('The request should not be called.'),
-    ))->toThrow(NoCurrentOwnerException::class);
+    ))->toThrow(LogicException::class, 'NullCurrentOrganizationResolver');
 });
 
 it('allows an explicit global route override', function (): void {

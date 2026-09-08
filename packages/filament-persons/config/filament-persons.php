@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'navigation' => [
         'group' => 'People',
+        'sort' => 30,
     ],
     'resources' => [
         'enabled' => [

@@ -94,10 +94,18 @@ final class MergeCustomersPage extends Page implements HasForms
         return Customer::query()
             ->tap(fn ($query) => OwnerUiScope::apply($query))
             ->where(function ($query) use ($search): void {
-                $query->where('email', 'like', "%{$search}%")
-                    ->orWhere('first_name', 'like', "%{$search}%")
+                $query->where('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('company', 'like', "%{$search}%");
+                    ->orWhere('company', 'like', "%{$search}%")
+                    ->orWhereHas('contactMethods', function ($contactMethods) use ($search): void {
+                        $contactMethods
+                            ->whereIn('type', ['email', 'phone', 'mobile', 'whatsapp'])
+                            ->where(function ($contactMethods) use ($search): void {
+                                $contactMethods
+                                    ->where('value', 'like', "%{$search}%")
+                                    ->orWhere('normalized_value', 'like', "%{$search}%");
+                            });
+                    });
             })
             ->limit(20)
             ->get()
@@ -118,7 +126,7 @@ final class MergeCustomersPage extends Page implements HasForms
         $parts = array_filter([
             $customer->first_name,
             $customer->last_name,
-            $customer->email,
+            $customer->resolveEmail(),
             $customer->company,
         ]);
 
@@ -150,10 +158,13 @@ final class MergeCustomersPage extends Page implements HasForms
 
         app(MergeCustomersAction::class)->execute($target, $source);
 
+        $sourceLabel = $source->resolveEmail() ?? $source->full_name;
+        $targetLabel = $target->resolveEmail() ?? $target->full_name;
+
         Notification::make()
             ->success()
             ->title('Customers merged successfully')
-            ->body("{$source->email} has been merged into {$target->email}")
+            ->body("{$sourceLabel} has been merged into {$targetLabel}")
             ->send();
     }
 

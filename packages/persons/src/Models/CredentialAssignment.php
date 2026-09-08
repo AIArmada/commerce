@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Models;
 
 use AIArmada\Persons\Enums\AssignmentStatus;
+use AIArmada\Persons\Support\ModelResolver;
+use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -56,6 +59,21 @@ class CredentialAssignment extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saving(function (CredentialAssignment $assignment): void {
+            if (! CredentialDefinition::query()->whereKey($assignment->getAttribute('credential_id'))->exists()) {
+                throw new InvalidArgumentException('The credential assignment must reference a persisted credential.');
+            }
+
+            app(PersonsModelReferenceGuard::class)->resolve(
+                ModelResolver::institutionClass(),
+                $assignment->getAttribute('issuing_institution_id'),
+                'credential issuing institution',
+            );
+        });
+    }
+
     /**
      * @return MorphTo<Model, $this>
      */
@@ -70,5 +88,16 @@ class CredentialAssignment extends Model
     public function credential(): BelongsTo
     {
         return $this->belongsTo(CredentialDefinition::class, 'credential_id');
+    }
+
+    /**
+     * @return BelongsTo<Model, $this>
+     */
+    public function issuingInstitution(): BelongsTo
+    {
+        /** @var BelongsTo<Model, $this> $relation */
+        $relation = $this->belongsTo(ModelResolver::requireInstitutionClass(), 'issuing_institution_id');
+
+        return $relation;
     }
 }

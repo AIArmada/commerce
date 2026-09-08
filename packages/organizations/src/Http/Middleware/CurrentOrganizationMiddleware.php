@@ -14,12 +14,17 @@ final class CurrentOrganizationMiddleware
 {
     public function handle(Request $request, Closure $next, ?string $required = null): mixed
     {
-        $organization = app(CurrentOrganizationResolver::class)->resolve();
         $contextRequired = $required === null
             ? (bool) config('organizations.middleware.require_context', true)
             : filter_var($required, FILTER_VALIDATE_BOOLEAN);
 
-        if ($organization === null && $contextRequired) {
+        if (! $contextRequired) {
+            return OwnerContext::withOwner(null, static fn (): mixed => $next($request));
+        }
+
+        $organization = app(CurrentOrganizationResolver::class)->resolve();
+
+        if ($organization === null) {
             throw new NoCurrentOwnerException('An organization context is required for this request.');
         }
 

@@ -107,7 +107,7 @@ The Recent Customers Widget shows a list of recently registered customers.
 
 ### Columns
 
-- **Customer**: Name with email description
+- **Customer**: Name with primary Contacting email description
 - **Status**: Customer status badge
 - **Marketing**: Whether accepts marketing
 - **Joined**: Registration date
@@ -220,8 +220,6 @@ class RecentCustomersWidget extends BaseWidget
             ->columns([
                 Tables\Columns\TextColumn::make('full_name')
                     ->label('Customer'),
-                    
-                Tables\Columns\TextColumn::make('email'),
                 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Joined')

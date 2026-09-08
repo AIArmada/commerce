@@ -20,7 +20,7 @@ final class SocialProfileData extends Data
         public readonly string | null | Optional $displayName = null,
         public readonly string | null | Optional $externalId = null,
         public readonly bool $isPrimary = false,
-        public readonly bool $isPublic = true,
+        public readonly ?bool $isPublic = null,
         public readonly bool $isVerified = false,
         public readonly mixed $verifiedAt = null,
         public readonly array $metadata = [],

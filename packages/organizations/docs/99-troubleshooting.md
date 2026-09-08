@@ -5,8 +5,11 @@ title: Organizations Troubleshooting
 ## Missing context
 
 Apply `CurrentOrganizationMiddleware` with the `true` parameter to routes that
-must have a tenant. A missing or unauthorized organization resolves to no
-context and raises `NoCurrentOwnerException` when context is required.
+must have a tenant. Configure a non-null `CurrentOrganizationResolver`; an
+unconfigured `NullCurrentOrganizationResolver` fails at resolution with a
+diagnostic `LogicException` when context is required. Once an application
+resolver is configured, a missing or unauthorized organization raises
+`NoCurrentOwnerException`.
 
 ## Ownership errors
 

@@ -6,17 +6,26 @@ title: Persons Usage
 
 ```php
 use AIArmada\Persons\Models\Person;
+use AIArmada\Persons\Enums\PersonStatus;
 
 $person = Person::create([
     'name' => 'Ahmad Rahman',
     'family_name' => 'Rahman',
     'gender' => 'male',
+    'status' => PersonStatus::Active,
 ]);
 
 // `slug` and `searchable_name` are generated on save when omitted.
 echo $person->slug;
 echo $person->searchable_name;
 ```
+
+Use transitionStatus() for lifecycle changes so published_at is set only for
+PersonStatus::Published and cleared for other statuses.
+
+The model also enforces this mapping when a status is saved directly, so
+Filament and direct Eloquent saves cannot leave a published person without a
+published_at timestamp.
 
 ## Multi-context names
 
@@ -46,6 +55,16 @@ $person->names()->create([
 
 ## Titles
 
+For reusable orchestration, use the additive core assignment actions:
+
+```php
+use AIArmada\Persons\Actions\AssignCredentialAction;
+use AIArmada\Persons\Actions\AssignTitleAction;
+
+$titleAssignment = app(AssignTitleAction::class)->execute($person, $prof->id);
+$credentialAssignment = app(AssignCredentialAction::class)->execute($person, $phd->id);
+```
+
 ```php
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Models\Title;
@@ -62,6 +81,10 @@ $person->titleAssignments()->create([
 // Formatted name reads ordered titles automatically
 echo $person->formatted_name; // "Prof Ahmad Rahman"
 ```
+
+For lists, eager-load `titleAssignments.title.category` (the Filament person
+resource does this). The formatted-name accessor is pure and never replaces
+the model's full assignment relation with its filtered display collection.
 
 ### Any model can receive titles
 
@@ -100,7 +123,7 @@ $person->credentialAssignments()->create([
 ```php
 use AIArmada\Persons\Enums\AffiliationType;
 
-// institution_id is a loose UUID — resolve to your app's institution model
+// institution_id is validated against the configured institution model
 $affiliation = $person->affiliations()->create([
     'institution_id' => $institutionId,
     'affiliation_type' => AffiliationType::Employee,
@@ -139,19 +162,25 @@ is a nullable, indexed UUID link without a database foreign-key constraint.
 
 ## Wiring country relations
 
-The package stores `country_id` / `nationality_country_id` as loose UUIDs. Add relations on your app's Person subclass:
+The package stores `country_id` / `nationality_country_id` as loose UUIDs
+and validates them through the configured model resolver. Configure the
+country model and enable the addressing integration before writing country
+pointers:
 
 When `persons.models.country` is configured, the `Title` model exposes the same
 optional country relation and the Filament title resource displays it as a
 Country column.
 
-```php
-use AIArmada\Addressing\Models\AddressCountry;
+When `persons.models.institution` is configured, `Affiliation`, `TitleIssuer`, and
+`CredentialAssignment` expose institution relations. Supplying a non-null institution
+ID without that configuration is rejected.
 
-public function nationality(): BelongsTo
-{
-    return $this->belongsTo(AddressCountry::class, 'nationality_country_id');
-}
+The core models expose the resolved country relations directly:
+
+```php
+$person->nationalityCountry;
+$title->country;
+$titleIssuer->country;
 ```
 
 ## Wiring language relations

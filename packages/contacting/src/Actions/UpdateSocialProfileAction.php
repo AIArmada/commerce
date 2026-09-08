@@ -37,7 +37,7 @@ final class UpdateSocialProfileAction
             $profile->display_name = $data->displayName instanceof Optional ? $profile->display_name : $data->displayName;
             $profile->external_id = $data->externalId instanceof Optional ? $profile->external_id : $data->externalId;
             $profile->is_primary = $data->isPrimary;
-            $profile->is_public = $data->isPublic;
+            $profile->is_public = $data->isPublic ?? $profile->is_public;
             $profile->is_verified = $data->isVerified;
             $profile->metadata = $data->metadata;
 
