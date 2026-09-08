@@ -14,7 +14,6 @@ use AIArmada\Events\Models\EventClassification;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSearchDocument;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Support\EventOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -186,7 +185,7 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
      */
     private function unscopedDocumentQuery(): Builder
     {
-        return EventSearchDocument::query()->withoutGlobalScope(EventOwnerScope::class);
+        return EventSearchDocument::query()->withoutGlobalScope('event_owner');
     }
 
     private function buildDocument(Event | EventOccurrence | EventSession $target): EventSearchDocument

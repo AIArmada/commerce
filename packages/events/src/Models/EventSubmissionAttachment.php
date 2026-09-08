@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventSubmissionAttachmentFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,6 +28,7 @@ final class EventSubmissionAttachment extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_submission_id',
@@ -53,6 +55,11 @@ final class EventSubmissionAttachment extends Model
     public function submission(): BelongsTo
     {
         return $this->belongsTo(EventSubmission::class, 'event_submission_id');
+    }
+
+    protected static function eventOwnerRelation(): string
+    {
+        return 'submission';
     }
 
     protected static function newFactory(): EventSubmissionAttachmentFactory

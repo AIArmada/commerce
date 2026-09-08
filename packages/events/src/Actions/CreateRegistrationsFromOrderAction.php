@@ -28,7 +28,7 @@ final class CreateRegistrationsFromOrderAction
         private readonly RegistrationServiceInterface $registrationService,
         private readonly EventRegistrationScopeResolver $scopeResolver,
         private readonly EventRegistrationEligibility $eligibility,
-        private readonly ExpandTicketTypeComponentsAction $expandComponents,
+        private readonly CreateEventComponentRegistrationsAction $expandComponents,
         private readonly RegisterForFreeAction $registerForFree,
         private readonly LockEventRegistrationScopeAction $lockScope,
     ) {}

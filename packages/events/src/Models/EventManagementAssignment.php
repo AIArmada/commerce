@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventManagementAssignmentFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -39,6 +40,7 @@ final class EventManagementAssignment extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',
@@ -92,6 +94,21 @@ final class EventManagementAssignment extends Model
     public function manageable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    protected static function eventOwnerRelation(): ?string
+    {
+        return null;
+    }
+
+    protected static function eventOwnerMorphRelation(): ?string
+    {
+        return 'manageable';
+    }
+
+    protected static function eventOwnerEventIdColumn(): ?string
+    {
+        return 'event_id';
     }
 
     /**

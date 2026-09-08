@@ -27,7 +27,7 @@ describe('Orders ↔ Docs Integration', function (): void {
 
         expect(interface_exists(DocServiceInterface::class))->toBeTrue();
 
-        $service = new OrderService;
+        $service = app(OrderService::class);
 
         $order = $service->createOrder(
             [
@@ -82,7 +82,7 @@ describe('Orders ↔ Docs Integration', function (): void {
 
         app()->register(OrdersServiceProvider::class);
 
-        $service = new OrderService;
+        $service = app(OrderService::class);
 
         $order = $service->createOrder(
             [

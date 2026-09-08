@@ -3,19 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\FilamentOrders\Support\FilamentOrdersCache;
 use AIArmada\Orders\Models\Order;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 uses(TestCase::class);
 
-afterEach(function (): void {
-    CarbonImmutable::setTestNow();
-});
-
-it('forgets the global cache keys for a global order', function (): void {
-    CarbonImmutable::setTestNow(CarbonImmutable::parse('2025-01-10 10:00:00'));
+it('forgets the global stats through owner-scoped cache tags', function (): void {
     Cache::spy();
 
     FilamentOrdersCache::forgetForOrder(new Order([
@@ -23,14 +19,10 @@ it('forgets the global cache keys for a global order', function (): void {
         'owner_id' => null,
     ]));
 
-    Cache::shouldHaveReceived('forget')->with('filament-orders.status-distribution.global.owner-only');
-    Cache::shouldHaveReceived('forget')->with('filament-orders.status-distribution.global.with-global');
-    Cache::shouldHaveReceived('forget')->with('filament-orders.stats.global.owner-only.2025-01-10');
-    Cache::shouldHaveReceived('forget')->with('filament-orders.stats.global.owner-only.2025-01-09');
+    Cache::shouldHaveReceived('tags')->with(['owner:' . OwnerScopeKey::GLOBAL])->twice();
 });
 
-it('forgets the owner-specific cache keys for an owned order', function (): void {
-    CarbonImmutable::setTestNow(CarbonImmutable::parse('2025-01-10 10:00:00'));
+it('forgets the owner-specific stats through owner-scoped cache tags', function (): void {
     Cache::spy();
 
     FilamentOrdersCache::forgetForOrder(new Order([
@@ -38,10 +30,9 @@ it('forgets the owner-specific cache keys for an owned order', function (): void
         'owner_id' => 'store-123',
     ]));
 
-    Cache::shouldHaveReceived('forget')->with('filament-orders.status-distribution.App\\Models\\Store:store-123.owner-only');
-    Cache::shouldHaveReceived('forget')->with('filament-orders.status-distribution.App\\Models\\Store:store-123.with-global');
-    Cache::shouldHaveReceived('forget')->with('filament-orders.stats.App\\Models\\Store:store-123.owner-only.2025-01-10');
-    Cache::shouldHaveReceived('forget')->with('filament-orders.stats.App\\Models\\Store:store-123.owner-only.2025-01-09');
+    $ownerKey = OwnerScopeKey::forTypeAndId('App\\Models\\Store', 'store-123');
+
+    Cache::shouldHaveReceived('tags')->with(['owner:' . $ownerKey])->twice();
 });
 
 it('rejects empty-string owner payloads', function (): void {
@@ -50,3 +41,20 @@ it('rejects empty-string owner payloads', function (): void {
         'owner_id' => '',
     ]));
 })->throws(InvalidArgumentException::class);
+
+it('computes dashboard statistics with one cached aggregate query', function (): void {
+    config()->set('orders.owner.enabled', false);
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    $first = FilamentOrdersCache::rememberStats();
+    $queriesAfterFirstRead = count(DB::getQueryLog());
+
+    $second = FilamentOrdersCache::rememberStats();
+
+    expect($queriesAfterFirstRead)->toBe(1)
+        ->and(count(DB::getQueryLog()))->toBe($queriesAfterFirstRead)
+        ->and($second)->toBe($first)
+        ->and($first['statusCounts'])->toHaveCount(12);
+});

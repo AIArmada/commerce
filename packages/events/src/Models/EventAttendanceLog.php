@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventAttendanceLogFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,6 +30,7 @@ final class EventAttendanceLog extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     public const UPDATED_AT = null;
 
@@ -60,6 +62,11 @@ final class EventAttendanceLog extends Model
     public function attendance(): BelongsTo
     {
         return $this->belongsTo(EventAttendance::class, 'event_attendance_id');
+    }
+
+    protected static function eventOwnerRelation(): string
+    {
+        return 'attendance.event';
     }
 
     /**

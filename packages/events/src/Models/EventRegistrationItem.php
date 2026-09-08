@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventRegistrationItemFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -40,6 +41,7 @@ final class EventRegistrationItem extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_registration_id',
@@ -92,6 +94,11 @@ final class EventRegistrationItem extends Model
     public function registration(): BelongsTo
     {
         return $this->belongsTo(EventRegistration::class, 'event_registration_id');
+    }
+
+    protected static function eventOwnerRelation(): string
+    {
+        return 'registration.event';
     }
 
     /** @return BelongsTo<TicketType, $this> */

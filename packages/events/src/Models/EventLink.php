@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventLinkFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,6 +34,7 @@ final class EventLink extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',

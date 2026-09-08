@@ -9,6 +9,7 @@ use AIArmada\Cart\Models\CartItem;
 use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Ticketing\Actions\AutoAddRequiredTicketBundlesAction;
 use AIArmada\Ticketing\Models\TicketType;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;

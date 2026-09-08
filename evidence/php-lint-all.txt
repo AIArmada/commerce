@@ -1921,8 +1921,6 @@ No syntax errors detected in packages/events/src/States/RegistrationStatus/Regis
 No syntax errors detected in packages/events/src/States/RegistrationStatus/Waitlisted.php
 No syntax errors detected in packages/events/src/Steps/CreateEventRegistrationsStep.php
 No syntax errors detected in packages/events/src/Steps/IssueEventPassesStep.php
-No syntax errors detected in packages/events/src/Support/EventOwnerScope.php
-No syntax errors detected in packages/events/src/Support/EventTenantBoundary.php
 No syntax errors detected in packages/events/src/Support/EventRegistrationScope.php
 No syntax errors detected in packages/events/src/Support/EventSubmissionOwnerScope.php
 No syntax errors detected in packages/events/src/Support/EventTicketScope.php
@@ -1930,7 +1928,6 @@ No syntax errors detected in packages/events/src/Support/EventWriteGuard.php
 No syntax errors detected in packages/events/src/Support/Integration/CommerceIntegration.php
 No syntax errors detected in packages/events/src/Support/Normalization/EventContentNormalizer.php
 No syntax errors detected in packages/events/src/Support/Policy/LifecyclePolicy.php
-No syntax errors detected in packages/events/src/Support/PolymorphicOwnerScope.php
 No syntax errors detected in packages/events/src/Traits/AcceptsEventSubmissions.php
 No syntax errors detected in packages/events/src/Traits/ApprovesEventSubmissions.php
 No syntax errors detected in packages/events/src/Traits/BelongsToEventSeries.php

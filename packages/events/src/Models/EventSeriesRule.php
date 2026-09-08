@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventSeriesRuleFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,7 @@ final class EventSeriesRule extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_series_id',
@@ -52,6 +54,11 @@ final class EventSeriesRule extends Model
     public function series(): BelongsTo
     {
         return $this->belongsTo(EventSeries::class, 'event_series_id');
+    }
+
+    protected static function eventOwnerRelation(): string
+    {
+        return 'series';
     }
 
     protected static function newFactory(): EventSeriesRuleFactory

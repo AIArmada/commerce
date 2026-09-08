@@ -137,11 +137,7 @@ final class TicketingOwnerGuard
             return true;
         }
 
-        $eventOwnerScope = 'AIArmada\\Events\\Support\\EventOwnerScope';
-
-        return class_exists($eventOwnerScope)
-            && is_callable([$eventOwnerScope, 'supports'])
-            && (bool) call_user_func([$eventOwnerScope, 'supports'], $relatedClass);
+        return method_exists($relatedClass, 'eventOwnerRelation');
     }
 
     private static function throwMissingRelation(Model $model, string $relationName): never

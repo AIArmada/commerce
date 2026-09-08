@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventApprovalRequestFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -35,6 +36,7 @@ final class EventApprovalRequest extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'approvable_type', 'approvable_id',
@@ -66,6 +68,16 @@ final class EventApprovalRequest extends Model
     public function approvable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    protected static function eventOwnerRelation(): ?string
+    {
+        return null;
+    }
+
+    protected static function eventOwnerMorphRelation(): ?string
+    {
+        return 'approvable';
     }
 
     /**

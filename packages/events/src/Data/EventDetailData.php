@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Data;
 
 use AIArmada\Events\Models\Event;
+use AIArmada\Ticketing\Data\TicketTypeData;
 use Carbon\CarbonImmutable;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Optional;

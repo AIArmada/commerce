@@ -21,7 +21,7 @@ final class RecordAgentTicketSaleAction
     public function __construct(
         private readonly RegistrationServiceInterface $registrations,
         private readonly EventRegistrationScopeResolver $scopeResolver,
-        private readonly ExpandTicketTypeComponentsAction $expandComponents,
+        private readonly CreateEventComponentRegistrationsAction $expandComponents,
         private readonly InventoryService $inventory,
         private readonly IssueEventRegistrationPassesAction $issuePasses,
     ) {}

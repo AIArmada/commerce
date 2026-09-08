@@ -18,6 +18,20 @@ final class ExpandTicketTypeComponentsAction
             return new Collection;
         }
 
-        return new Collection;
+        $components = new Collection;
+
+        foreach ($parentTicketType->components as $component) {
+            $componentTicketType = $component->componentTicketType;
+
+            if ($componentTicketType === null) {
+                continue;
+            }
+
+            for ($index = 0; $index < $component->quantity * $multiplier; $index++) {
+                $components->push($componentTicketType);
+            }
+        }
+
+        return $components;
     }
 }

@@ -11,7 +11,6 @@ use AIArmada\Events\Actions\FinalizeOccurredEventOrdersAction;
 use AIArmada\Events\Actions\FulfillEventOrderAction;
 use AIArmada\Events\Actions\StartOccurrenceCheckoutAction;
 use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
-use AIArmada\Events\Data\TicketTypeData;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
@@ -19,6 +18,7 @@ use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Ticketing\Data\TicketTypeData;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);

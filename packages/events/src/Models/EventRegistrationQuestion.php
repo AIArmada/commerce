@@ -7,6 +7,7 @@ namespace AIArmada\Events\Models;
 use AIArmada\Events\Database\Factories\EventRegistrationQuestionFactory;
 use AIArmada\Events\Enums\EventRegistrationQuestionStatus;
 use AIArmada\Events\Enums\EventRegistrationQuestionType;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use AIArmada\Events\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -44,6 +45,7 @@ class EventRegistrationQuestion extends Model implements Sortable
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
     use SortableTrait;
 
     /** @var array<string, mixed> */

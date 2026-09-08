@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventNotificationBatchFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -41,6 +42,7 @@ final class EventNotificationBatch extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',

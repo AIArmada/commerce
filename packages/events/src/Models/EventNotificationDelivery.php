@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventNotificationDeliveryFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -36,6 +37,7 @@ final class EventNotificationDelivery extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_notification_batch_id',
@@ -71,6 +73,11 @@ final class EventNotificationDelivery extends Model
     public function batch(): BelongsTo
     {
         return $this->belongsTo(EventNotificationBatch::class, 'event_notification_batch_id');
+    }
+
+    protected static function eventOwnerRelation(): string
+    {
+        return 'batch.event';
     }
 
     /**

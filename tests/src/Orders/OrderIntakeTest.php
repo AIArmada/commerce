@@ -32,6 +32,35 @@ it('creates order with intake identity', function (): void {
     expect($order->intake_id)->toBe('sess_abc123');
 });
 
+it('retries a generated order number after a unique collision', function (): void {
+    config()->set('orders.order_number.use_date', false);
+
+    $createOrder = new CreateOrder;
+    Str::createRandomStringsUsingSequence([
+        'DUPLICAT',
+        'DUPLICAT',
+        'UNIQUE01',
+    ]);
+
+    try {
+        $first = OwnerContext::withOwner(null, fn (): Order => $createOrder->execute(
+            orderData: ['currency' => 'MYR', 'subtotal' => 5000, 'grand_total' => 5000],
+            items: [['name' => 'Item A', 'quantity' => 1, 'unit_price' => 5000, 'currency' => 'MYR']],
+        ));
+
+        $second = OwnerContext::withOwner(null, fn (): Order => $createOrder->execute(
+            orderData: ['currency' => 'MYR', 'subtotal' => 5000, 'grand_total' => 5000],
+            items: [['name' => 'Item B', 'quantity' => 1, 'unit_price' => 5000, 'currency' => 'MYR']],
+        ));
+    } finally {
+        Str::createRandomStringsNormally();
+    }
+
+    expect($first->order_number)->toBe('ORD-DUPLICAT')
+        ->and($second->order_number)->toBe('ORD-UNIQUE01')
+        ->and($second->id)->not->toBe($first->id);
+});
+
 it('exact retry with same intake identity returns existing order', function (): void {
     $createOrder = new CreateOrder;
 

@@ -81,11 +81,24 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
 - Out of scope (still open): A1 serial enum-vs-morph code fix. Data-cleanup assessment RECEIVED 2026-09-07 and independently confirmed: the serials-table migration defaults `status` to the raw slug `'available'` (`000006` line 31) while the model casts to the spatie state (FQCN morphs) and Filament queries raw enum values — three raw-slug writers, so rows may hold non-morph values. Cleanup migration needed only if live rows are affected (unconfirmed, no live DB). The A1 audit finding now carries this as fix step (3).
 - **Falsification note (2026-09-07 reviewer re-derivation):** the A1 FQCN-storage premise was WRONG. Vendor source (`State::getMorphClass()` returns `static::$name ?? static::class`) plus `Available::$name = 'available'` proves the column stores slugs; the deleted enum carried byte-identical values, so badge/filter/form reads and writes were always consistent — the described corruption mechanism could not occur. The genuine defect was duplicated vocabulary only. Implemented as a behavior-preserving unification (enum deleted, Filament on state classes, zero remaining importers). A1 struck from `inventory.md`; package top severity now Medium.
 
-## Post-track: customers email unique — implemented
+## Post-track: customers email unique — implemented (moved to canonical table)
 
-- **Migration** `2026_09_07_120000_add_owner_email_uniqueness_to_customers_table.php`: owner-aware uniqueness over `LOWER(TRIM(email))` — partial uniques on pgsql/sqlite (owned rows constrained among owned, global rows among globals, owned/global may share), functional + `CASE`-gated indexes on MySQL. NULL emails never collide on any driver. Preflights fail loudly (missing columns, partial owner tuples, duplicate groups with counts); unsupported drivers throw; everything guarded and re-runnable.
-- Model hooks and resolver normalization aligned to the same `LOWER(TRIM)` semantics (code record). App-level race closed by the constraint; implementer-reported suites taken on trust.
-- Reviewed in source: index definitions, preflight queries, and driver branches verified.
+- **Migration** `2026_09_07_120000_add_owner_email_uniqueness_to_customers_table.php`
+  no longer creates uniqueness: following the native contact-layer removal,
+  it drops legacy `customers.email`/`phone` columns (guarded, no backfill).
+- **Uniqueness now lives on canonical `contact_methods`** via
+  `2026_09_08_000002_add_owner_email_uniqueness_to_contact_methods_table.php`:
+  owner-aware normalized-email uniqueness — partial uniques on pgsql/sqlite
+  (owned rows constrained among owned, global rows among globals,
+  owned/global may share), functional + `CASE`-gated indexes on MySQL.
+  Empty emails never collide on any driver. Preflights fail loudly (missing
+  columns, partial owner tuples, duplicate groups with counts); unsupported
+  drivers throw; everything guarded and re-runnable.
+- Model hook (`addContactMethod` email path) returns the existing same-customer
+  row (idempotent retries) and enforces cross-customer uniqueness with the same
+  `LOWER(TRIM)` semantics. App-level race closed by the constraint.
+- Reviewed in source: index definitions, preflight queries, driver branches,
+  and the retry lookup's owner-tuple matching verified.
 
 ## Post-track: customers person_id — implemented
 

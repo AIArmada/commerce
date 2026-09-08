@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventUpdateItemFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +29,7 @@ final class EventUpdateItem extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_update_id',
@@ -61,6 +63,11 @@ final class EventUpdateItem extends Model
     public function eventUpdate(): BelongsTo
     {
         return $this->belongsTo(EventUpdate::class, 'event_update_id');
+    }
+
+    protected static function eventOwnerRelation(): string
+    {
+        return 'eventUpdate.event';
     }
 
     protected static function newFactory(): EventUpdateItemFactory

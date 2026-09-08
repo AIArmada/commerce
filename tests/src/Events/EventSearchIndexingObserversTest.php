@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Jobs\BuildEventSearchDocumentJob;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAttribute;
 use AIArmada\Events\Models\EventAudience;
@@ -15,7 +16,7 @@ use AIArmada\Events\Observers\EventObserver;
 use AIArmada\Events\Observers\EventOccurrenceObserver;
 use AIArmada\Events\Observers\EventSessionObserver;
 use AIArmada\Events\Services\EventSearchDocumentBuilder;
-use AIArmada\Events\Support\EventOwnerScope;
+use Illuminate\Support\Facades\Queue;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -80,6 +81,19 @@ it('indexes and removes search documents when the event changes', function (): v
     expect(EventSearchDocument::where('event_id', $event->id)->exists())->toBeFalse();
 });
 
+it('queues search indexing when queue mode is enabled', function (): void {
+    $event = createIndexedSearchEvent();
+    config()->set('events.search.queue_indexing', true);
+    Queue::fake();
+
+    (new EventObserver(app(EventSearchDocumentBuilder::class)))->saved($event);
+
+    Queue::assertPushed(BuildEventSearchDocumentJob::class, function (BuildEventSearchDocumentJob $job) use ($event): bool {
+        return $job->targetType === Event::class
+            && $job->targetId === $event->getKey();
+    });
+});
+
 it('does not index hidden event records', function (): void {
     $event = createIndexedSearchEvent();
     $builder = app(EventSearchDocumentBuilder::class);
@@ -117,7 +131,7 @@ it('removes search documents after an owned event has been deleted', function ()
         $observer->deleted($event);
 
         expect(EventSearchDocument::query()
-            ->withoutGlobalScope(EventOwnerScope::class)
+            ->withoutGlobalScope('event_owner')
             ->where('event_id', $eventId)
             ->exists())->toBeFalse();
     });

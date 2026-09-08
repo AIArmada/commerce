@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventRegistrationFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use AIArmada\Events\States\RegistrationStatus\Completed;
 use AIArmada\Events\States\RegistrationStatus\Pending;
 use AIArmada\Events\States\RegistrationStatus\RegistrationStatus as RegistrationStatusState;
@@ -85,6 +86,7 @@ class EventRegistration extends Model
     use HasStates;
     use HasUuids;
     use Notifiable;
+    use ScopesByEventOwner;
 
     public const array CAPACITY_BLOCKING_STATUSES = [
         'pending',

@@ -15,8 +15,6 @@
 /mnt/data/commerce3/packages/customers/src/Services/CustomerResolver.php:282:                            ->whereRaw('LOWER(COALESCE(normalized_value, value)) = ?', [$normalizedEmail]);
 /mnt/data/commerce3/packages/cashier/src/Support/OwnerScopedQuery.php:137:            return $query->whereRaw('1 = 0');
 /mnt/data/commerce3/packages/cashier/src/Support/OwnerScopedQuery.php:140:        return $query->whereRaw('1 = 0');
-/mnt/data/commerce3/packages/events/src/Support/PolymorphicOwnerScope.php:44:                    $relationQuery->whereRaw('1 = 0');
-/mnt/data/commerce3/packages/events/src/Support/PolymorphicOwnerScope.php:63:                    $relationQuery->whereRaw('1 = 0');
 /mnt/data/commerce3/packages/customers/src/Models/Segment.php:319:                default => $query->whereRaw('1 = 0'),
 /mnt/data/commerce3/packages/growth/src/Actions/AggregateExperimentMetrics.php:373:            return SignalEvent::query()->whereRaw('1 = 0');
 /mnt/data/commerce3/packages/vouchers/database/migrations/2001_04_01_000003_create_voucher_wallets_table.php:40:        DB::statement("CREATE UNIQUE INDEX IF NOT EXISTS voucher_wallets_one_active_per_holder ON {$tableName} (voucher_id, holder_type, holder_id) WHERE redeemed_at IS NULL");

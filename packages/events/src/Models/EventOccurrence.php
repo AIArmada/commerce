@@ -10,6 +10,7 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Database\Factories\EventOccurrenceFactory;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Concerns\RegistersEventMedia;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Seating\Models\SeatMap;
@@ -101,6 +102,7 @@ final class EventOccurrence extends Model implements HasMedia
         RegistersEventMedia::registerMediaCollections insteadof InteractsWithMedia;
         RegistersEventMedia::registerMediaConversions insteadof InteractsWithMedia;
     }
+    use ScopesByEventOwner;
 
     public const DRAFT = 'draft';
 

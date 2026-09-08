@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventAvailabilityBlockFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -46,6 +47,7 @@ final class EventAvailabilityBlock extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'blockable_type', 'blockable_id',
@@ -89,6 +91,16 @@ final class EventAvailabilityBlock extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    protected static function eventOwnerMorphRelation(): ?string
+    {
+        return 'blockable';
+    }
+
+    protected static function eventOwnerEventIdColumn(): ?string
+    {
+        return 'event_id';
     }
 
     /**

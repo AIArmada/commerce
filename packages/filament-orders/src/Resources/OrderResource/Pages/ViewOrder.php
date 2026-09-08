@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrders\Resources\OrderResource\Pages;
 
 use AIArmada\FilamentOrders\Resources\OrderResource;
-use AIArmada\Jnt\Shipping\JntShippingDriver;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
@@ -98,31 +97,22 @@ class ViewOrder extends ViewRecord
                     return $user ? Gate::forUser($user)->allows('update', $record) : false;
                 })
                 ->form(function (): array {
-                    // Check if FulfillmentHandler (shipping integration) is available
-                    $hasFulfillmentHandler = app()->bound(FulfillmentHandler::class);
+                    $fulfillmentHandler = $this->getBoundFulfillmentHandler();
                     $carriers = $this->getAvailableCarriers();
 
-                    if ($hasFulfillmentHandler && $carriers !== []) {
-                        // Shipping integration available - show carrier selection
+                    if ($fulfillmentHandler !== null && $carriers !== []) {
                         return [
                             Select::make('carrier')
                                 ->label('Shipping Carrier')
                                 ->options($carriers)
-                                ->default(config('shipping.drivers.default', 'jnt'))
                                 ->required()
                                 ->helperText('Shipment will be created automatically via carrier API'),
-                            Select::make('service')
-                                ->label('Service Type')
-                                ->options([
-                                    'standard' => 'Standard Delivery',
-                                    'express' => 'Express Delivery',
-                                    'EZ' => 'J&T EZ',
-                                ])
-                                ->default('standard'),
+                            TextInput::make('service')
+                                ->label('Service')
+                                ->required(),
                         ];
                     }
 
-                    // Fallback to manual input
                     return [
                         TextInput::make('carrier')
                             ->label('Carrier')
@@ -136,14 +126,14 @@ class ViewOrder extends ViewRecord
                     try {
                         $service = app(OrderService::class);
 
-                        // Check if FulfillmentHandler is available for API-based shipping
-                        if (app()->bound(FulfillmentHandler::class) && ! isset($data['tracking_number'])) {
-                            /** @var FulfillmentHandler $fulfillmentHandler */
-                            $fulfillmentHandler = app(FulfillmentHandler::class);
+                        $fulfillmentHandler = $this->getBoundFulfillmentHandler();
+                        $carriers = $this->getAvailableCarriers();
+
+                        if ($fulfillmentHandler !== null && $carriers !== [] && ! isset($data['tracking_number'])) {
 
                             $result = $fulfillmentHandler->createShipment($record, [
-                                'carrier' => $data['carrier'] ?? config('shipping.drivers.default', 'jnt'),
-                                'service' => $data['service'] ?? 'standard',
+                                'carrier' => $data['carrier'],
+                                'service' => $data['service'],
                             ]);
 
                             if (! $result['success']) {
@@ -151,14 +141,12 @@ class ViewOrder extends ViewRecord
                             }
 
                             // Update order with tracking info from API
-                            $service->ship(
-                                $record,
-                                $this->getCarrierName($data['carrier'] ?? 'jnt'),
-                                $result['tracking_number'] ?? 'PENDING',
-                            );
+                            $carrierName = $this->getCarrierName($data['carrier']);
+
+                            $service->ship($record, $carrierName, $result['tracking_number'] ?? 'PENDING');
 
                             Notification::make()
-                                ->title('Order shipped via ' . $this->getCarrierName($data['carrier'] ?? 'jnt'))
+                                ->title('Order shipped via ' . $carrierName)
                                 ->body('Tracking number: ' . ($result['tracking_number'] ?? 'Pending'))
                                 ->success()
                                 ->send();
@@ -342,16 +330,30 @@ class ViewOrder extends ViewRecord
      */
     protected function getAvailableCarriers(): array
     {
-        $carriers = [];
+        $handler = $this->getBoundFulfillmentHandler();
 
-        // Check for JNT integration
-        if (class_exists(JntShippingDriver::class)) {
-            $carriers['jnt'] = 'J&T Express';
+        if ($handler === null || ! method_exists($handler, 'availableCarriers')) {
+            return [];
         }
 
-        // Check for manual shipping driver
-        if ($carriers === []) {
-            $carriers['manual'] = 'Manual Shipping';
+        $availableCarriers = call_user_func([$handler, 'availableCarriers']);
+
+        if (! is_array($availableCarriers)) {
+            return [];
+        }
+
+        $carriers = [];
+
+        foreach ($availableCarriers as $code => $label) {
+            if (is_int($code) && is_string($label)) {
+                $carriers[$label] = $label;
+
+                continue;
+            }
+
+            if (is_string($code) && is_string($label) && $code !== '' && $label !== '') {
+                $carriers[$code] = $label;
+            }
         }
 
         return $carriers;
@@ -362,10 +364,17 @@ class ViewOrder extends ViewRecord
      */
     protected function getCarrierName(string $carrierCode): string
     {
-        return match ($carrierCode) {
-            'jnt' => 'J&T Express',
-            'manual' => 'Manual',
-            default => ucfirst($carrierCode),
-        };
+        return $this->getAvailableCarriers()[$carrierCode] ?? $carrierCode;
+    }
+
+    private function getBoundFulfillmentHandler(): ?FulfillmentHandler
+    {
+        if (! app()->bound(FulfillmentHandler::class)) {
+            return null;
+        }
+
+        $handler = app(FulfillmentHandler::class);
+
+        return $handler instanceof FulfillmentHandler ? $handler : null;
     }
 }

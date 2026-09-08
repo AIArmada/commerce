@@ -9,6 +9,7 @@ use AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 use AIArmada\FilamentOrders\Resources\OrderResource\Schemas\OrderForm;
 use AIArmada\FilamentOrders\Resources\OrderResource\Schemas\OrderInfolist;
 use AIArmada\FilamentOrders\Resources\OrderResource\Tables\OrdersTable;
+use AIArmada\FilamentOrders\Support\FilamentOrdersCache;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Completed;
@@ -60,7 +61,8 @@ final class OrderResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = self::getEloquentQuery()->whereState('status', [PendingPayment::class, Processing::class])->count();
+        $includeGlobal = (bool) config('orders.owner.include_global', false);
+        $count = FilamentOrdersCache::rememberStats($includeGlobal)['pendingOrders'];
 
         return $count > 0 ? (string) $count : null;
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventInvolvementFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use AIArmada\Events\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -54,6 +55,7 @@ class EventInvolvement extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',

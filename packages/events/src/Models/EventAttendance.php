@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventAttendanceFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Ticketing\Models\Pass;
 use Carbon\CarbonImmutable;
@@ -44,6 +45,7 @@ class EventAttendance extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',

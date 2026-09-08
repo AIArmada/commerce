@@ -8,14 +8,22 @@ use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Support\EventTicketScope;
+use AIArmada\Ticketing\Actions\ExpandTicketTypeComponentsAction;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 
-final class ExpandTicketTypeComponentsAction
+/**
+ * Creates event registrations for ticketing components.
+ *
+ * Ticketing owns component discovery; events owns the event-registration
+ * projection because ticketing cannot depend on this package's event models.
+ */
+final class CreateEventComponentRegistrationsAction
 {
     public function __construct(
         private readonly RegistrationServiceInterface $registrations,
         private readonly EventRegistrationScopeResolver $scopeResolver,
+        private readonly ExpandTicketTypeComponentsAction $components,
     ) {}
 
     /**
@@ -36,6 +44,7 @@ final class ExpandTicketTypeComponentsAction
             return new Collection;
         }
 
+        $this->components->handle($ticketType, $multiplier);
         $ticketType->loadMissing('ticketable', 'components.componentTicketType');
 
         $target = EventTicketScope::target($ticketType);
@@ -57,14 +66,13 @@ final class ExpandTicketTypeComponentsAction
 
         foreach ($ticketType->components as $component) {
             $componentQuantity = $component->quantity * $multiplier;
-
             $componentTicketType = $component->getRelation('componentTicketType');
 
             if ($componentTicketType === null) {
                 continue;
             }
 
-            for ($i = 0; $i < $componentQuantity; $i++) {
+            for ($index = 0; $index < $componentQuantity; $index++) {
                 $child = $this->registrations->register(array_merge($scopeData, [
                     'registrant_type' => $parentRegistration->registrant_type,
                     'registrant_id' => $parentRegistration->registrant_id,
@@ -86,7 +94,7 @@ final class ExpandTicketTypeComponentsAction
                         'status' => $status,
                     ]],
                     'participants' => $parentRegistration->participants->map(
-                        fn ($p) => Arr::only($p->toArray(), [
+                        fn ($participant) => Arr::only($participant->toArray(), [
                             'name',
                             'email',
                             'phone',

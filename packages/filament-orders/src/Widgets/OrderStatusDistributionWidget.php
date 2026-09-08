@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentOrders\Support\FilamentOrdersCache;
 use AIArmada\Orders\Models\Order;
-use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 final class OrderStatusDistributionWidget extends ChartWidget
@@ -44,22 +41,7 @@ final class OrderStatusDistributionWidget extends ChartWidget
         ];
 
         $includeGlobal = (bool) config('orders.owner.include_global', false);
-
-        $owner = OwnerContext::resolve();
-        $ownerKey = $owner ? ($owner->getMorphClass() . ':' . $owner->getKey()) : 'global';
-
-        $cacheKey = sprintf('filament-orders.status-distribution.%s.%s', $ownerKey, $includeGlobal ? 'with-global' : 'owner-only');
-
-        /** @var array<string, int> $countsByStatus */
-        $countsByStatus = Cache::remember($cacheKey, CarbonImmutable::now()->addSeconds(30), function () use ($includeGlobal): array {
-            return Order::query()
-                ->forOwner(includeGlobal: $includeGlobal)
-                ->select('status', DB::raw('COUNT(*) as aggregate'))
-                ->groupBy('status')
-                ->pluck('aggregate', 'status')
-                ->map(fn ($value): int => (int) $value)
-                ->all();
-        });
+        $countsByStatus = FilamentOrdersCache::rememberStats($includeGlobal)['statusCounts'];
 
         $counts = [];
         $labels = [];

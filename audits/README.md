@@ -31,7 +31,7 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | customers | filament-customers | No | Yes | High | `customers.md` | Done |
 | docs | filament-docs | Done | Yes | High | `docs.md` | Open |
 | engagement | filament-engagement | No | Yes | High | `engagement.md` | Done |
-| events | filament-events | No | Yes | High | `events.md` | Open |
+| events | filament-events | No | Yes | High | `events.md` | Done |
 | feedback | filament-feedback | No | Yes | High | `feedback.md` | Done |
 | growth | filament-growth | Done | No | Medium | `growth.md` | Done |
 | inventory | filament-inventory | Done | Yes | Medium | `inventory.md` | Open |

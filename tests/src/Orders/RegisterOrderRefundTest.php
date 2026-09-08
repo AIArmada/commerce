@@ -49,6 +49,31 @@ describe('RegisterOrderRefund', function (): void {
         expect($order->status)->toBeInstanceOf(Refunded::class);
     });
 
+    it('rejects a refund that exceeds the remaining refundable amount', function (): void {
+        $order = Order::create([
+            'order_number' => 'ORD-REF-OVER-' . uniqid(),
+            'status' => Returned::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+
+        OrderPayment::create([
+            'order_id' => $order->id,
+            'gateway' => 'stripe',
+            'amount' => 10000,
+            'currency' => 'MYR',
+            'status' => PaymentStatus::Completed,
+            'paid_at' => now(),
+        ]);
+
+        $action = new RegisterOrderRefund;
+        $action->execute($order, 8000, 'ref_txn_accepted', 'Partial refund');
+
+        expect(fn () => $action->execute($order, 3000, 'ref_txn_rejected', 'Over allocation'))
+            ->toThrow(InvalidArgumentException::class, 'remaining refundable amount of 2000');
+    });
+
     it('throws when order cannot be refunded', function (): void {
         $order = Order::create([
             'order_number' => 'ORD-NOREF-' . uniqid(),

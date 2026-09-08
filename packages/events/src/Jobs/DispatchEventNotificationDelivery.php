@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Jobs;
 
+use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Traits\OwnerContextJob;
+use AIArmada\Communications\Data\CommunicationContextData;
+use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventNotificationDelivery;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Notifications\EventChangeNoticeNotification;
 use AIArmada\Events\Services\EventNotificationDispatcher;
 use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
@@ -19,16 +26,35 @@ use Illuminate\Support\Facades\Mail;
 use RuntimeException;
 use Throwable;
 
-final class DispatchEventNotificationDelivery implements ShouldBeUnique, ShouldQueue
+final class DispatchEventNotificationDelivery implements OwnerScopedJob, ShouldBeUnique, ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
+    use OwnerContextJob;
     use Queueable;
+
+    public readonly string $deliveryId;
+
+    public readonly ?string $ownerType;
+
+    public readonly string | int | null $ownerId;
+
+    public readonly bool $ownerIsGlobal;
 
     public int $tries;
 
-    public function __construct(public string $deliveryId)
-    {
+    public function __construct(
+        string $deliveryId,
+        ?string $ownerType = null,
+        string | int | null $ownerId = null,
+        ?bool $ownerIsGlobal = null,
+    ) {
+        $owner = OwnerContext::resolve();
+
+        $this->deliveryId = $deliveryId;
+        $this->ownerType = $ownerType ?? $owner?->getMorphClass();
+        $this->ownerId = $ownerId ?? $owner?->getKey();
+        $this->ownerIsGlobal = $ownerIsGlobal ?? ($owner === null && OwnerContext::isExplicitGlobal());
         $this->tries = max(1, (int) config('events.change_notices.delivery.max_attempts', 5));
     }
 
@@ -45,9 +71,19 @@ final class DispatchEventNotificationDelivery implements ShouldBeUnique, ShouldQ
         return is_array($configured) ? array_values(array_map('intval', array_filter($configured, 'is_numeric'))) : [10, 30, 120, 300];
     }
 
-    public function handle(EventNotificationDispatcher $dispatcher): void
+    public function ownerContext(): OwnerJobContext
+    {
+        return new OwnerJobContext(
+            ownerType: $this->ownerType,
+            ownerId: $this->ownerId,
+            ownerIsGlobal: $this->ownerIsGlobal,
+        );
+    }
+
+    protected function performJob(): void
     {
         $delivery = $this->claim();
+        $dispatcher = app(EventNotificationDispatcher::class);
 
         if (! $delivery instanceof EventNotificationDelivery) {
             $existing = EventNotificationDelivery::query()->find($this->deliveryId);
@@ -72,10 +108,14 @@ final class DispatchEventNotificationDelivery implements ShouldBeUnique, ShouldQ
                 throw new RuntimeException('invalid_recipient');
             }
 
-            Mail::raw((string) ($batch->message ?: $batch->title), static function ($message) use ($address, $batch, $delivery): void {
-                $message->to($address)->subject($batch->title);
-                $message->getSymfonyMessage()->getHeaders()->addTextHeader('X-Event-Delivery-Id', $delivery->id);
-            });
+            if ($this->communicationsAreAvailable()) {
+                $this->deliverViaCommunications($delivery, $batch, $recipient);
+            } else {
+                Mail::raw((string) ($batch->message ?: $batch->title), static function ($message) use ($address, $batch, $delivery): void {
+                    $message->to($address)->subject($batch->title);
+                    $message->getSymfonyMessage()->getHeaders()->addTextHeader('X-Event-Delivery-Id', $delivery->id);
+                });
+            }
 
             $delivery->forceFill([
                 'status' => 'sent',
@@ -99,19 +139,76 @@ final class DispatchEventNotificationDelivery implements ShouldBeUnique, ShouldQ
 
     public function failed(Throwable $throwable): void
     {
-        $delivery = EventNotificationDelivery::query()->find($this->deliveryId);
+        $owner = $this->ownerContext()->toOwnerModel();
 
-        if (! $delivery instanceof EventNotificationDelivery || $delivery->status === 'sent') {
+        OwnerContext::withOwner($owner, function () use ($throwable): void {
+            $delivery = EventNotificationDelivery::query()->find($this->deliveryId);
+
+            if (! $delivery instanceof EventNotificationDelivery || $delivery->status === 'sent') {
+                return;
+            }
+
+            $delivery->forceFill([
+                'status' => 'dead',
+                'dead_at' => CarbonImmutable::now(),
+                'leased_at' => null,
+                'last_error_code' => $delivery->last_error_code ?? $this->safeCode($throwable),
+            ])->save();
+            app(EventNotificationDispatcher::class)->refreshBatch($delivery->batch()->firstOrFail());
+        });
+    }
+
+    private function communicationsAreAvailable(): bool
+    {
+        if (! class_exists('AIArmada\\Communications\\Facades\\Communications')
+            || ! interface_exists('AIArmada\\Communications\\Contracts\\CommunicationManager')) {
+            return false;
+        }
+
+        return app()->bound('AIArmada\\Communications\\Contracts\\CommunicationManager');
+    }
+
+    private function deliverViaCommunications(
+        EventNotificationDelivery $delivery,
+        EventNotificationBatch $batch,
+        Model $recipient,
+    ): void {
+        $event = $batch->event()->firstOrFail();
+        $notification = new EventChangeNoticeNotification($batch->title, $batch->message);
+        $context = CommunicationContextData::from([
+            'category' => 'transactional',
+            'purpose' => 'event-change-notice',
+            'subjectType' => $event->getMorphClass(),
+            'subjectId' => (string) $event->getKey(),
+            'batchId' => (string) $batch->getKey(),
+            'metadata' => [
+                'event_id' => (string) $event->getKey(),
+                'event_notification_batch_id' => (string) $batch->getKey(),
+                'event_notification_delivery_id' => (string) $delivery->getKey(),
+            ],
+        ]);
+
+        $manager = app('AIArmada\\Communications\\Contracts\\CommunicationManager');
+        $communication = $manager->notify(
+            $recipient,
+            $notification,
+            $context,
+        );
+
+        if (! $communication->exists || ! class_exists('AIArmada\\Communications\\Actions\\AttachCommunicationReferenceAction')) {
             return;
         }
 
-        $delivery->forceFill([
-            'status' => 'dead',
-            'dead_at' => CarbonImmutable::now(),
-            'leased_at' => null,
-            'last_error_code' => $delivery->last_error_code ?? $this->safeCode($throwable),
-        ])->save();
-        app(EventNotificationDispatcher::class)->refreshBatch($delivery->batch()->firstOrFail());
+        app('AIArmada\\Communications\\Actions\\AttachCommunicationReferenceAction')->handle(
+            communicationId: (string) $communication->getKey(),
+            referenceType: $event->getMorphClass(),
+            referenceId: (string) $event->getKey(),
+            role: 'event',
+            metadata: [
+                'event_notification_batch_id' => (string) $batch->getKey(),
+                'event_notification_delivery_id' => (string) $delivery->getKey(),
+            ],
+        );
     }
 
     private function claim(): ?EventNotificationDelivery

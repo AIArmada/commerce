@@ -561,6 +561,27 @@ reported and taken on trust; code correctness was verified directly.
   `FulfillmentQueue` carrier/config logic, checkout document callers,
   inventory/promotions listener behavior.
 
+## Events ownership migration (implemented, one holding found + fixed)
+
+- **7/46/11 split verified in source:** 7 direct `HasOwner`, 46
+  `ScopesByEventOwner` relation seam, 11 intentional exceptions of 64
+  models. Three scope classes deleted after parity; two "scopes" kept
+  as verified value objects; submission scope retained as distinct.
+- **Forks deleted** into canonical ticketing (quota constructor with
+  guarded inventory check); zero `Events\Data` references remain.
+- **Bridge:** comms-manager delivery with event context + reference
+  attach (string-class refs, no hard dep).
+- **Traits 24→9, helpers deleted**, eligibility/policy/queue/venue
+  items closed per audit.
+- **Holding finding (review-caught, fixed):** addressable guard lost
+  its owner check with the boundary deletion (existence-only). Fixed:
+  owner-tuple enforcement via `belongsToOwner()` + explicit-global
+  handling, fail-closed; venue isolation test covers both directions.
+- Suites: Events 244 passed (1105 assertions), FilamentEvents 18
+  passed (181 assertions); Ticketing + Addressing canaries green.
+  No migration. Out-of-set edits (4 ticketing files, 1 addressing
+  guard) all verified necessary and listed in `events.md`.
+
 ## Fairness log
 
 - Orders checkout-context concern: not present, dropped correctly.

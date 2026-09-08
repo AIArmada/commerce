@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventItineraryItemFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -37,6 +38,7 @@ final class EventItineraryItem extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_itinerary_id',
@@ -82,6 +84,11 @@ final class EventItineraryItem extends Model
     public function itinerary(): BelongsTo
     {
         return $this->belongsTo(EventItinerary::class, 'event_itinerary_id');
+    }
+
+    protected static function eventOwnerRelation(): string
+    {
+        return 'itinerary.event';
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventReportFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -46,6 +47,7 @@ final class EventReport extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'reportable_type', 'reportable_id',
@@ -82,6 +84,16 @@ final class EventReport extends Model
     public function reportable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    protected static function eventOwnerMorphRelation(): ?string
+    {
+        return 'reportable';
+    }
+
+    protected static function eventOwnerEventIdColumn(): ?string
+    {
+        return 'event_id';
     }
 
     /**

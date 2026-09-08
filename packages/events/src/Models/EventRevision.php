@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventRevisionFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -51,6 +52,7 @@ final class EventRevision extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'revisable_type', 'revisable_id',
@@ -93,6 +95,16 @@ final class EventRevision extends Model
     public function revisable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    protected static function eventOwnerMorphRelation(): ?string
+    {
+        return 'revisable';
+    }
+
+    protected static function eventOwnerEventIdColumn(): ?string
+    {
+        return 'event_id';
     }
 
     /**

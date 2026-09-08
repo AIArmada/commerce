@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventSubmissionLogFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,7 @@ final class EventSubmissionLog extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     public const UPDATED_AT = null;
 
@@ -55,6 +57,11 @@ final class EventSubmissionLog extends Model
     public function submission(): BelongsTo
     {
         return $this->belongsTo(EventSubmission::class, 'event_submission_id');
+    }
+
+    protected static function eventOwnerRelation(): string
+    {
+        return 'submission';
     }
 
     /**

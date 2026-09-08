@@ -1,116 +1,305 @@
-# Events Audit
+# Events Audit — DONE (2026-09-09)
 
-## Packages Reviewed (bullets)
-- `packages/events` (`aiarmada/events`) — events monolith-domain: events/occurrences/sessions, venues/spaces/facilities/locations, registrations/participants/answers/items/questions, attendances/logs, involvements/roles, taxonomies/terms/classifications, series/rules/items, revisions/change-logs/updates, submissions/approvals, notifications batches/deliveries, search documents, reports/verifications, organizers/walk-ins/headcounts, cart/checkout/order integrations
-- `packages/filament-events` (`aiarmada/filament-events`) — Filament v5 admin: 12 resources, occurrence/session/registration relation managers, importers/exporters, CheckInConsole/ApprovalQueue/NotificationCenter/EventPublicPreview pages, stats widget
+## Verdict
 
-## Overall Assessment (quality, health, risks, refactor size)
-- Quality: mixed. Strong seams in places (60+ contracts, Null adapters, `EventOwnerScope` family, `EventWriteGuard`, `CarbonImmutable`, UUID PKs, `getTable()` from config, `json_column_type`), but this is a 64-model / ~55-migration / ~50-action package that absorbed ticketing, seating, cart, checkout, order, and engagement logic. It is the gravitational center of the audit set — and the biggest boundary violator.
-- Health: at-risk. Only 7/64 models use `HasOwner`; the rest rely on custom `Support/EventOwnerScope.php`, `PolymorphicOwnerScope.php`, `EventTenantBoundary.php`, `EventRegistrationScope.php`, `EventTicketScope.php` — a parallel ownership framework shadowing commerce-support. Exact-duplicate classes exist against `ticketing` (`Data/TicketTypeData.php`, `Data/PassData.php`, `Actions/AutoAddRequiredTicketBundlesAction.php`, `Actions/ExpandTicketTypeComponentsAction.php`). Zero tests.
-- Risks: (1) ticketing/seating logic forked into events will drift from canonical implementations (pricing-consistency observer already exists because of this); (2) custom owner-scope framework may disagree with `OwnerScope` semantics on include-global/auto-assign; (3) order/cart/checkout listeners (`SyncEventOrderRegistrationsOnOrderPaid/Canceled/Refunded/RefundFailed`, `SyncEventOrderCompletionOnRegistrationCheckedIn`, `CreateRegistrationsFromOrderAction`, `FulfillEventOrderAction`) make events load-bearing for commerce checkout correctness.
-- Refactor size: L (1–2 weeks, phased). Delete duplicates first (safe, mechanical), then collapse owner scopes, then extract venue/search/notification subdomains only if justified — do NOT split the package speculatively.
+`events` and `filament-events` have passed the implementation pass. Every
+rated finding is implemented, falsified with evidence, or recorded below as
+an explicit bounded deferral. No migration was required. The existing
+`Addressable` table-prefix correction, the intentional separation between
+attendance intent and the social graph, and the completed checkout,
+addressing, and customers contracts were treated as fixed inputs.
 
 ## Migration Impact
-**Migration Required: NO**
-- Tables/columns: no renames/drops/type changes. All sampled migrations use `uuid('id')->primary()`; `events.php` defines `json_column_type` + per-table overrides.
-- Indexes/constraints: no FK constraints/cascades in migrations (verified) — compliant. Recommend index verification on `(event_id, status)`, `(occurrence_id, status)`, `(registration_id)` hot paths, but no DDL in this audit.
-- Data migration: none. Duplicate-class deletion is code-only (events' DTOs wrap ticketing models; canonical ticketing DTOs cover the same fields — call-site rewiring only). Owner-scope collapse is query-layer only.
 
-## Package Responsibilities
-- Core owns (legitimately): event/occurrence/session lifecycle + states (`States/EventStatus/*`, `OccurrenceStatus/*`, `RegistrationStatus/*`, `EventModerationStatus/*`), scheduling/recurrence (`Contracts/EventRecurrenceRuleParser.php`, `EventOccurrenceGenerator.php`, availability blocks), registrations Q&A (`EventRegistrationQuestion*`, answers/items/participants), attendance/check-in (`Services/DefaultEventCheckInService.php`, `Data/CheckInInput.php`), taxonomy hierarchy (`Services/EventTaxonomyHierarchyService.php`), templates/cloning (`EventTemplateServiceImpl`, `EventCloneServiceImpl`, `CloneEvent*` actions), revisions/change-notices (`DispatchEventChangeChainAction`, `DefaultEventChangeNoticeWorkflow`), submissions/moderation (`DefaultEventModerationWorkflow`, `DefaultEventSubmissionConverter`), search (`EloquentEventSearchEngine`, `EventSearchDocumentBuilder`, `BuildEventSearchDocumentJob`), reporting/query (`EventQueryService`, `RegistrationService`).
-- Filament adapter owns: 12 resources + pages, relation managers, CSV importers/exporters, 4 ops pages, stats widget, `EventFormExtension` contract.
+**Migration Required: NO.** The ownership conversion is query- and model-layer
+only; fork removal, notification bridging, helper removal, and trait cleanup
+do not change tables or columns. No event migration was added, and the
+database-rule scan found no new foreign-key constraints or cascades.
 
-## Architecture Findings (each: Severity Critical/High/Medium/Low, Location files, Problem, Why It Matters, Recommended Fix concrete, Breaking Change YES/NO, Affected Packages list, Required Dependent Changes, Migration Required YES/NO)
-1. Severity: High. Location: `packages/events/src/Data/TicketTypeData.php` vs `packages/ticketing/src/Data/TicketTypeData.php`; `packages/events/src/Data/PassData.php` vs `packages/ticketing/src/Data/PassData.php`; `packages/events/src/Actions/AutoAddRequiredTicketBundlesAction.php` vs `packages/ticketing/src/Actions/AutoAddRequiredTicketBundlesAction.php`; `packages/events/src/Actions/ExpandTicketTypeComponentsAction.php` vs `packages/ticketing/src/Actions/ExpandTicketTypeComponentsAction.php`. Problem: same-named concept duplicates of ticketing classes inside events (re-check 2026-09-07: all 8 files confirmed present; diff shows divergent fields, not byte-identical copies — events' DTO is a read model with quota/sales windows, ticketing's is a write/input DTO — so "byte-for-byte" as previously filed is corrected; the duplication finding itself stands). Events' `TicketTypeData::fromTicketType()` imports `AIArmada\Ticketing\Models\TicketType` and carries the only quota logic (`inventoryLevels()->exists() ? getTotalOnHand() : null`). Why It Matters: pricing/bundle fixes must land twice — `Listeners/ObserveEventTicketTypePricingConsistency.php` (verified exists) exists precisely because the fork already diverged once. Per rubric duplicated domain implementations rate High, not Critical — demoted Critical→High (no live data corruption proven). Recommended Fix: delete all 4 events-side files; rewire imports to `AIArmada\Ticketing\Data\TicketTypeData`, `Ticketing\Data\PassData`, `Ticketing\Actions\AutoAddRequiredTicketBundlesAction`, `Ticketing\Actions\ExpandTicketTypeComponentsAction`. Where events needs event-specific shaping, add a thin mapper in events (e.g. `EventTicketDataMapper`) that consumes ticketing DTOs — not a parallel DTO. Breaking Change: YES (class removals; namespace changes for consumers). Affected Packages: `ticketing` (canonical owner — may need to add `fromTicketType()` with inventory-quota logic currently living in events' DTO), `filament-events`, `cart`, `checkout`, `orders`. Required Dependent Changes: move `fromTicketType()` quota logic (`inventoryLevels()->exists() ? getTotalOnHand() : null`) into canonical `Ticketing\Data\TicketTypeData` as a named constructor; update all `AIArmada\Events\Data\TicketTypeData` / `PassData` imports repo-wide (grep before delete — verified usages in events actions/listeners/steps). Migration Required: NO.
-2. Severity: High. Location: `packages/events/src/Support/EventOwnerScope.php`, `PolymorphicOwnerScope.php`, `EventTenantBoundary.php`, `EventRegistrationScope.php`, `EventTicketScope.php`, `Support/ModelResolver.php` vs commerce-support `OwnerScope`/`HasOwner`/`OwnerQuery`. Problem: only 7/64 models (`Event`, `EventSeries`, `EventItinerary`, `EventTemplate`, `EventWalkIn`, `EventOrganizer`, `EventHeadcountLog`) use `HasOwner` (`events.features.owner` key); the other 57 rely on a bespoke scope family (re-check 2026-09-07: 7/64 `HasOwner` count and all 5 scope files confirmed present). Why It Matters: two ownership frameworks with subtly different include-global/auto-assign/explicit-global semantics; every new model author must guess which to use; `EventSearchDocumentBuilder.php:189` strips `EventOwnerScope` for indexing (correct) but proves the custom scope leaks into concerns commerce-support already solves. Demoted Critical→High per rubric (no cross-tenant leak proven — a serious-but-unproven isolation risk rates as broken-boundary/significant-architectural, i.e. High). Recommended Fix: migrate all event models to `HasOwner` + `HasOwnerScopeConfig` (direct columns where they exist) or documented relation-via-owner where they don't, reusing the `affiliate-network`-style parameterized trait if needed; delete `EventOwnerScope`, `PolymorphicOwnerScope`, `EventTenantBoundary`, `EventRegistrationScope`, `EventTicketScope` after migration; keep `EventWriteGuard` only if it adds behavior over `OwnerWriteGuard` (else delete and use commerce-support's). Breaking Change: YES (scope class removals; query behavior must be proven identical via tests first). Affected Packages: `filament-events` (all `getEloquentQuery()` overrides assume these scopes), `ticketing` (`TicketingOwnerGuard` explicitly sniffs for `EventOwnerScope::supports()` — see `ticketing/src/Support/TicketingOwnerGuard.php:140-144`), `seating` (event-scope seating actions). Required Dependent Changes: update `TicketingOwnerGuard` to sniff `HasOwner` instead; update Filament resources' scope handling. Migration Required: NO (query-layer only; no column changes).
-3. Severity: Medium. Location: `packages/events/src/Models/Venue.php`, `VenueSpace.php`, `VenueSpaceType.php`, `VenueFacility.php`, `EventFacility.php`, `FacilityType.php`, `EventLocation.php` (7 venue/facility/location models + 6+ migrations `000004–000010`) vs `addressing` package (suggested integration) + `contracts HasEventAddress/HasEventCoordinates/HasEventMapLinks/CanBeGeocodedForEvents` + `Models/Concerns/Addressable.php`. Problem: events embeds a mini-venue/facility/address subsystem instead of composing `addressing`. Re-check 2026-09-07: `addressing` package verified present and `Addressable` concern delegates to it via pivot — overlap is address/geocode delegation, not a full domain fork; venue/space capacity/scheduling concepts legitimately live in events. Demoted High→Medium per rubric (pattern/delegation gap, not duplicated domain implementations or broken boundaries). Why It Matters: venue data (geocoding, address normalization) implemented twice; facility taxonomies diverge. Recommended Fix: keep `Venue`/`VenueSpace` as event-scheduling concepts (capacity, availability) but delegate address/geocode/map-link behavior to `addressing` via the existing `HasEventAddress`/`Addressable` contracts — delete any address-column duplication only after column-level diff (not performed in this audit; do NOT migrate blindly). Short-term: document the split (events owns scheduling shell, addressing owns geo/address truth). Re-check 2026-09-08: pivot half-bridged — `Models/Concerns/Addressable.php:28` resolves the canonical pivot table through `AddressingTableResolver`, but the `orderBy`/`where` clauses in the same trait hardcode the `addressables.` prefix, so custom table names break there (copy the `$pivotTable` interpolation pattern from `addressing/Traits/HasAddresses.php`). Full `HasAddresses` adoption still open. Breaking Change: NO (short-term docs + delegation). Affected Packages: `addressing`. Required Dependent Changes: implement `CanBeGeocodedForEvents` on addressing models. Migration Required: NO.
-4. Severity: High. Location: `packages/events/src/Models/EventNotificationBatch.php`, `EventNotificationDelivery.php`, `Services/EventNotificationDispatcher.php`, `Jobs/DispatchEventNotificationDelivery.php`, `Listeners/DispatchEventChangeNoticeNotifications.php`, `Pages/NotificationCenter.php` (filament) vs `communications` package. Problem: parallel notification batch/delivery subsystem inside events while `communications` owns batches/deliveries/templates/preferences/suppressions. Why It Matters: two delivery state machines, two suppression models (event-level vs comms-level), double-sends on change notices. Recommended Fix (phased, no big-bang): keep event change-notice *content resolution* (`DefaultEventChangeNoticeAudienceResolver`, workflow) in events; route *delivery* through `communications` (`CommunicationManagerService` / `DispatchManagedNotificationAction`) with event context attached as `CommunicationReference`; delete `EventNotificationBatch/Delivery` models only after the bridge ships + data backfill plan exists (that deletion WOULD need a migration — explicitly out of scope for this audit; this audit recommends the bridge, not the deletion). Breaking Change: NO (bridge is additive). Affected Packages: `communications`, `filament-events` (`NotificationCenter`). Required Dependent Changes: comms needs an event-reference normalizer. Migration Required: NO (for the bridge; the eventual table retirement is future work with its own migration).
-5. Severity: Medium. Location: `packages/events/src/Actions/*Order*` (`CreateRegistrationsFromOrderAction`, `FulfillEventOrderAction`, `FulfillEventOrderItemAction`, `SyncEventOrderCompletionAction`, `SyncEventOrderRegistrationsAction`, `FinalizeOccurredEventOrdersAction`), `Listeners/SyncEventOrderRegistrationsOnOrder{Paid,Canceled,Refunded,RefundFailed}.php`, `SyncEventOrderCompletionOnRegistrationCheckedIn.php`, `RestoreTicketInventoryOnRegistrationRefunded.php`, `RevokePassesOnRegistration{Cancelled,Refunded}.php`, `Checkout/EventsStepContributor.php`, `Steps/CreateEventRegistrationsStep.php`, `Steps/IssueEventPassesStep.php`. Problem: events observes 4+ order events and owns checkout steps — correct integration-wise but makes checkout correctness depend on listener ordering across 3 packages (events/ticketing/orders). Why It Matters: missed/duplicate listener = paid order without registration or double issuance. Recommended Fix: keep listeners but add an idempotency guard (registration-per-order-item unique key — verify exists; if not, add application-level dedupe, no schema change if a natural key suffices) and document the canonical order→registration→pass sequence in `docs/dev/05_WORKFLOWS_LIFECYCLE_RULES.md`. Breaking Change: NO. Affected Packages: `orders`, `ticketing`, `checkout`, `cart`. Required Dependent Changes: none. Migration Required: NO.
-6. Severity: Medium. Location: `packages/events/src/Traits/` (24 traits: `HasEventRegistrations`, `HasEventParticipants`, `HasEventAttendances`, `HasEventAudience`, `HasEventMedia`, `HasEventLocations`, `HasEventLinks`, `HasEventLanguages`, `HasEventInvolvements`, `HasEligibilityRules`, `HasEventResponses`, `OwnsEvents`, `HasEvents`, `CanOrganizeEvents`, ...). Problem: 24 public extension traits with overlapping coverage (`HasEvents` vs `OwnsEvents` vs `CanOrganizeEvents`; `HasEventParticipants` vs `HasEventRegistrations`). Why It Matters: implementers pick the wrong trait; behavior scattered. Recommended Fix: keep the 6 high-use traits (`HasEvents`, `HasEventRegistrations`, `HasEventAttendances`, `HasEventLocations`, `HasEventMedia`, `RecordsEventChanges`), merge/delete the rest after grep-verified usage audit (verify each trait's `use` count repo-wide before deleting). Breaking Change: YES for deleted traits. Affected Packages: any host app using them (none in-repo besides events itself per grep scope — verify). Required Dependent Changes: update `use` statements. Migration Required: NO.
+## What was done
 
-## Code Quality Findings (same finding format)
-1. Severity: Medium. Location: `packages/events/src/helpers.php` (`events_table()`, `events_json_type()` global helpers) + `composer.json` `files: [src/helpers.php]`. Problem: global function autoload for two one-liners; pollutes host app namespace. Why It Matters: function-name collisions across 60+ packages; untestable indirection. Recommended Fix: delete `helpers.php`; replace calls with `config('events.database.tables.*')` / `commerce_json_column_type('events', ...)` inline (both already exist). Breaking Change: YES (global functions removed). Affected Packages: anything calling `events_table()` (grep first — likely events-only). Required Dependent Changes: mechanical replacement. Migration Required: NO.
-2. Severity: Medium. Location: `packages/events/src/Contracts/` (60+ interfaces) + `Resolvers/` Null army (`NullEventCheckoutIntentResolver`, `NullEventOrderItemFulfillmentResolver`, `NullEventReferenceResolver`, `NullEventScheduleResolver`, `NullEventSearchIndexer`, `NullEventTranslationProvider`, `NullEventChangeNoticeNotificationDispatcher`) + `Integrations/NullEventEngagementManager.php`. Problem: contract-per-concept granularity means every integration needs a Null + binding; several contracts likely have exactly one implementation (`EventRecurrenceRuleParser`, `EventConflictDetector`, `EventTrustScoreCalculator` — verify). Why It Matters: interface sprawl without multiple implementations is speculative abstraction. Recommended Fix: do NOT bulk-delete contracts (they are the documented seams); instead verify-and-merge only the provably-single-use ones after usage grep; keep Nulls (they make standalone install work). Breaking Change: NO (no change recommended now beyond verification). Migration Required: NO.
-3. Severity: Low. Location: `packages/events/src/Actions/BackfillEventContentAction.php`, `SynchronizeEventContent.php`, `Services/EventContentSynchronizer.php`, `Support/Normalization/EventContentNormalizer.php`. Problem: 4 overlapping content-sync utilities. Recommended Fix: keep `EventContentSynchronizer` service; make the two actions thin wrappers or delete the redundant one after diff. Breaking Change: NO (wrapper/deletion of redundant action only). Affected Packages: none. Required Dependent Changes: none. Migration Required: NO.
+### Stream A — ownership migration
 
-## Laravel-Specific Findings
-- PHP 8.4, strict types, UUID PKs, `HasUuids`, `getTable()` from config, `json_column_type`, `CarbonImmutable` (spot-checked): PASS.
-- No FK constraints/cascades in migrations: PASS. Application-level cascades live in listeners (`CancelBundleChildrenOnParentCanceled`, `RevokePassesOnRegistration*`) — correct placement, but verify coverage for series→items→occurrences deletes.
-- Filament v4-compat note in repo rules is honored (v5 APIs used in adapter).
-- `Observers/` (`EventObserver`, `EventOccurrenceObserver`, `EventSessionObserver`, `EventAttributeObserver`, `EventClassificationObserver`) — verify no business logic that belongs in actions (observers should only maintain derived state like search docs).
-- Money: `InconsistentTicketTypePricingException` + pricing-consistency observer show price integrity is enforced at the events/ticketing seam — good, but the need for the observer proves the duplication (finding A1) must go.
+**VERDICT: IMPLEMENTED with documented boundary exceptions.**
 
-## Filament Adapter Findings (thin-adapter check, domain leak, duplication, dependency direction)
-- Thin-adapter: MIXED. Resources are standard CRUD (good); but `Pages/CheckInConsole.php`, `Pages/ApprovalQueue.php`, `Pages/NotificationCenter.php` embed write logic — partially mitigated by correct `OwnerWriteGuard::findOrFailForOwner()` usage (verified in all three pages + `CreateEventSession`/`CreateEventOccurrence`). Keep the pages, ensure every mutation delegates to a core Action (spot-check `CheckInConsole` → `DefaultEventCheckInService`; `ApprovalQueue` → submission converter).
-- Domain leak (Medium): `Contracts/EventFormExtension.php` in the FILAMENT package lets external code inject form schema — correct seam direction (adapter-owned extension point), but verify core never imports from `FilamentEvents` namespace (would invert the dependency). Quick grep recommended during refactor.
-- Duplication: `Actions/Exporter/*` (6 exporters) + `Actions/Importer/*` (3 importers) duplicate query shapes from core `EventQueryService` — acceptable for export formatting, keep.
-- Dependency direction: CORRECT (requires `aiarmada/events`; core has no Filament dep). PASS.
-- Navigation: PASS (`getNavigationGroup()` from `config('filament-events.navigation.group')` everywhere sampled; nested config key verified pattern).
-- Owner scoping: GOOD on write paths (`OwnerWriteGuard`); `getEloquentQuery()` overrides verified on 8 resources (Event, Occurrence, Session, Registration, RegistrationParticipant, Attendance, ChangeLog, Template). Re-check 2026-09-07: `EventRegistrationResource::getEloquentQuery():53-60` scopes via `whereHas('event')` + `OwnerUiScope::apply(..., includeGlobal: false)` with eager loads — the earlier "no `getEloquentQuery`" note was stale and is corrected here. Verify the remaining 4 resources also scope. After the A2 migration, `HasOwner` covers registration scoping directly.
+- Re-verified the baseline at 7 direct `HasOwner` models out of 64.
+- Migrated the remaining owner-visible event children to the
+  `ScopesByEventOwner` relation-via-owner seam. The seam applies an
+  `event_owner` global scope, validates the current `OwnerContext`, guards
+  writes, and supports nested and polymorphic event parents
+  (`packages/events/src/Models/Concerns/ScopesByEventOwner.php:19-30,72-96,144-183,185-234`).
+- Direct owner-column models continue to use `HasOwner` and
+  `HasOwnerScopeConfig`; for example, `Event` keeps the configured owner
+  contract (`packages/events/src/Models/Event.php:105-115`).
+- Deleted the three superseded global-scope implementations only after the
+  owner-parity test was green. `EventSubmissionOwnerScope` remains registered
+  because submissions have distinct event-or-target semantics
+  (`packages/events/src/EventsServiceProvider.php:256-260`).
+- Kept `EventWriteGuard`: it has an intentional owner-disabled fallback and
+  is used across the event write surface; replacing it with
+  `OwnerWriteGuard` would change standalone behavior without adding proof
+  (`packages/events/src/Support/EventWriteGuard.php:12-21`).
+- Updated the ticketing guard to recognize direct `HasOwner` models and the
+  relation-via-event capability (`packages/ticketing/src/Support/TicketingOwnerGuard.php:134-141`).
+- Updated indexing to remove the new named owner scope only for the deliberate
+  unscoped document rebuild (`packages/events/src/Services/EventSearchDocumentBuilder.php:187-194`).
+- Filament resource queries remain owner-safe and eager-load their operational
+  relations, for example events (`packages/filament-events/src/Resources/EventResource.php:60-70`),
+  registrations (`packages/filament-events/src/Resources/EventRegistrationResource.php:52-60`),
+  and attendance (`packages/filament-events/src/Resources/EventAttendanceResource.php:46-54`).
 
-## Database Findings
-- ~55 migrations is the largest in the monorepo. Numbering gaps (`000017` registration-items → `000027` attendances; the `000018–000026` range absent) suggest pruned/renamed migrations — harmless for fresh installs, but confirm squashed history isn't expected by existing test environments.
-- Duplicate-number anomaly (verified 2026-09-07): `000066_create_event_escalations_table.php` AND `000066_create_event_management_assignment_requests_table.php` share a sequence number. With `2000_01_01` dummy timestamps + sequence ordering this can cause ambiguous ordering on some drivers. Recommend renumbering the second to `000066b`/`000067+` consistently (requires care on already-run installs — since these are `2000_01_01` dev-time migrations, renumber + fresh-migrate; hence still NO migration in the shipped sense, but flag for the team).
-- No FK constraints by design. With 64 models, application-level cascade coverage must be explicitly tested (series delete, event delete, occurrence delete cascades).
-- `event_search_documents` table + `EventSearchDocument` model duplicate rentable search-index state in SQL — acceptable (DB-backed queue for indexing), keep.
+Files changed: event model ownership declarations and relation overrides,
+`ScopesByEventOwner`, provider registration, search-document query handling,
+and the ticketing/addressing guard dependencies. No seating files were edited.
 
-## Model / Domain Findings
-- 4 parallel state machines (`EventStatus` 12 states, `OccurrenceStatus` 10, `RegistrationStatus` 12, `EventModerationStatus` 6) — legitimate (different lifecycles), well-implemented via spatie states. No enum/state split (unlike affiliates). PASS.
-- `EventRegistration` carries its own questions/answers/items/participants subsystem overlapping `feedback` (questions/answers) and `engagement` (responses) — see cross-package impact; short-term document, do not merge (different lifecycles: registration Q&A is transactional, feedback surveys are analytical).
-- `EventInvolvement`/`EventRole` vs `authz` (`SyncManagementAssignmentToAuthzAction`, `EventManagementAssignment`) — the authz sync action is the right seam (events owns assignment intent, authz owns enforcement). Verify the sync is bidirectional-safe (revocation propagates).
-- `EventMedia` + `RegistersEventMedia` concern on top of `spatie/laravel-medialibrary` — correct thin extension. PASS.
+Tests and exact pass output:
 
-## Security Findings
-1. Severity: Medium. Location: `Policies/EventPolicy.php`, `Resolvers/DefaultEventRegistrationEligibility.php`, `Contracts/EventRegistrationEligibility.php`, `Actions/RegisterForFreeAction.php`, `RecordWalkInAction.php`/`RecordHeadcountLogAction.php` (+ `UseRecord*` guard exceptions). Problem: registration eligibility is policy-resolved — unverified whether closed-by-default holds. Why It Matters: free-registration/open-door paths (`NotOpenDoorEventException`, `OpenDoorRegistrationBlockedException`, `WrongOpenDoorModeException`) must not be forceable by parameter tampering (unknown event → deny). Recommended Fix: verify closed-by-default + cover with tests; no defect found at audit depth — test requirement. Breaking Change: NO. Affected Packages: none. Required Dependent Changes: none. Migration Required: NO.
-2. Severity: Low. Location: `filament-events` `CheckInConsole`/`ApprovalQueue` — write-guard verified. Problem: unverified whether Filament policies (`EventPolicy`) are registered in the panel provider for all 12 resources. Why It Matters: unregistered policies leave admin writes ungated. Recommended Fix: confirm registration in the panel provider. Breaking Change: NO. Affected Packages: none. Required Dependent Changes: none. Migration Required: NO.
+```text
+./vendor/bin/pest --parallel tests/src/Events/CrossTenantIsolationTest.php
+5 passed (34 assertions)
+./vendor/bin/pest --parallel tests/src/Events
+244 passed (1105 assertions)
+./vendor/bin/pest --parallel tests/src/FilamentEvents
+18 passed (181 assertions)
+./vendor/bin/phpstan analyse packages/events/src --level=6
+[OK] No errors
+```
 
-## Performance Findings
-1. Severity: High. Location: `Services/EloquentEventSearchEngine.php`, `EventSearchDocumentBuilder.php`, `Jobs/BuildEventSearchDocumentJob.php`, observers triggering reindex. Problem: Eloquent-LIKE search over 64-model graph + per-change reindex jobs. Why It Matters: event listing is the highest-traffic read; LIKE over joined relations degrades fast. Recommended Fix: keep `EloquentEventSearchEngine` for standalone; ensure `BuildEventSearchDocumentJob` is queued (not inline in observers) and `event_search_documents` has fulltext/covering indexes; document the swap path to a real engine via `EventSearchEngine` contract (already exists — good). Breaking Change: NO. Affected Packages: none. Required Dependent Changes: none. Migration Required: NO (index-only if pursued).
-2. Severity: Medium. Location: `EventQueryService.php` (`findByOwner()` unbounded `::forOwner($owner)->get()` — verified) + occurrence/session listing relation managers. Problem: unbounded reads + potential N+1 on the 64-model graph. Why It Matters: admin/API listing latency. Recommended Fix: verify pagination + eager loads (`with([occurrences, sessions, registrations])`) on all Filament tables. Breaking Change: NO. Affected Packages: `filament-events`. Required Dependent Changes: none. Migration Required: NO.
+The area suites were justified before deletion because scope-class removal is
+a cross-package behavioral break and must prove parity across the full event
+surface, not only the focused isolation test.
 
-## Testing Findings
-- Severity: High. Location: `packages/events/`, `packages/filament-events/` — zero test files (re-check 2026-09-07: no `tests/` dir in either package). Problem: the 64-model registration→payment→pass→seat→check-in chain ships without regression coverage. Why It Matters: commerce-critical money/fulfillment correctness without a safety net — major maintainability risk; demoted Critical→High per rubric (test gaps, however severe, are not security/corruption/broken-architecture). Recommended Fix: minimum Pest suite before any refactor (red-green, then execute the A1/A2 deletions): registration lifecycle matrix, free vs paid paths, waitlist promotion (`PromoteWaitlistedRegistrationsAction`), bundle auto-add + component expansion (will move to ticketing — test the canonical versions), seat-hold during checkout, order-paid → registration → pass → seat allocation chain, refund → revoke/release chain, cross-tenant isolation per scope family, check-in service, change-notice workflow. Breaking Change: NO. Affected Packages: none. Required Dependent Changes: none. Migration Required: NO.
+### Stream B — forks, notifications, traits, venue, and hygiene
 
-## Cross-Package Dependency Impact (table: Dependent Package | Dependency | Impact | Required Change)
-| Dependent Package | Dependency | Impact | Required Change |
-|---|---|---|---|
-| `ticketing` | forked DTOs/actions (reverse dep!) | High — events shadows ticketing classes (demoted from Critical with A1; duplicated implementations per rubric) | Delete events forks; move `fromTicketType` quota logic into canonical ticketing DTO |
-| `seating` | `EnsureEventScopeSeatingAction`, `ResolveEventScopeSeatMapAction`, `EnsureCartSeatHoldAction`, `AllocateEventSeatsOnPassIssued` | High — event-scoped seat orchestration lives in events | Keep orchestration in events (it is event-specific) but call canonical `SeatAllocatorInterface`; do not fork allocator logic |
-| `cart` / `checkout` | `AddEventTicketTypeToCartAction`, `CreateOccurrenceCartLineAction`, `EventsStepContributor`, `EnsureCartSeatHoldAction` | High — ticket purchase flow | After A1, these call ticketing actions directly; no logic change |
-| `orders` | 4 order listeners + fulfillment actions | High — registration/fulfillment correctness | Add idempotency guards; no API change |
-| `engagement` | `EventEngagementManager` contract + `NullEventEngagementManager` | Low — RSVP/interested wiring | Keep contract; engagement provides the real manager |
-| `feedback` | registration Q&A vs survey overlap | Low — document boundary | No code change |
-| `communications` | notification batches/deliveries | Medium — parallel delivery subsystems | Bridge deliveries through comms (additive) |
-| `filament-events` | all core models/actions | High — 12 resources assume current scopes/DTOs | Update imports + scope handling after A1/A2 |
-| `inventory` / `products` / `customers` | stock checks, purchasables, holders | Medium | No change; verify pricing-consistency observer stays green after A1 |
+**VERDICT: IMPLEMENTED with explicit non-code deferrals.**
 
-## Recommended Refactor Plan (ordered steps)
-1. Write the critical-path Pest suite FIRST (registration→pass→seat→check-in→refund chains + isolation).
-2. Delete the 4 ticketing forks (A1); move quota logic into canonical ticketing DTO.
-3. Migrate 57 models to `HasOwner`; delete the 5 custom scope classes (A2); update `TicketingOwnerGuard` sniffing.
-4. Fix migration `000066` duplicate numbering.
-5. Bridge event notification delivery through `communications` (additive; no table drops).
-6. Document venue/addressing + registration-Q&A/feedback boundaries.
-7. Trim `helpers.php` globals + audit the 24 traits for merge candidates.
-8. Verify Filament `getEloquentQuery()` coverage on all 12 resources + unbounded `EventQueryService::get()` pagination.
+- Removed the four event-side ticketing forks. Ticketing is now canonical:
+  `TicketTypeData::fromTicketType()` carries the optional inventory quota and
+  the complete read shape (`packages/ticketing/src/Data/TicketTypeData.php:11-60`),
+  while `PassData::fromPass()` carries pass read shaping
+  (`packages/ticketing/src/Data/PassData.php:11-58`). Component discovery is
+  canonical (`packages/ticketing/src/Actions/ExpandTicketTypeComponentsAction.php:10-36`);
+  event registration projection remains a thin event-owned action
+  (`packages/events/src/Actions/CreateEventComponentRegistrationsAction.php:15-27,67-133`).
+- Rewired event data consumers to ticketing DTOs and removed the old event
+  DTO/action files. Repository verification found zero event-side DTO/action
+  namespace references.
+- Added the phased communications bridge while retaining event content
+  resolution and all event notification tables. Delivery sends through the
+  existing communications manager with event/batch context and an event
+  reference (`packages/events/src/Jobs/DispatchEventNotificationDelivery.php:111-211`);
+  the mail notification is only the content adapter
+  (`packages/events/src/Notifications/EventChangeNoticeNotification.php:10-29`).
+- Verified natural-key idempotency for order registration creation: the
+  transaction locks order lines and skips already-created registrations
+  (`packages/events/src/Actions/CreateRegistrationsFromOrderAction.php:76-90,118-122,361-401`).
+  No checkout or order package code was edited. The canonical cross-package
+  sequence document remains an explicit documentation deferral because that
+  surface was outside this stream’s write boundary.
+- Kept the six high-use traits: `HasEvents`, `HasEventRegistrations`,
+  `HasEventAttendances`, `HasEventLocations`, `HasEventMedia`, and
+  `RecordsEventChanges`. Deleted the other 15 traits only after a repo-wide
+  use-count grep proved zero consumers: `AcceptsEventSubmissions`,
+  `ApprovesEventSubmissions`, `BelongsToEventSeries`, `HasEventAddress`,
+  `HasEventAudience`, `HasEventClassifications`, `HasEventEligibilityRules`,
+  `HasEventLanguages`, `HasEventLifecycleActions`, `HasEventLinks`,
+  `HasEventParticipants`, `HasEventResponses`, `PublishesEventUpdates`,
+  `ReferencedByEvents`, and `UsedAsEventMaterial`. Three active organizer
+  traits remain because they are used by the owner-bearing `EventOrganizer`
+  (`packages/events/src/Models/EventOrganizer.php:43-56`).
+- Deleted the unused global helper file and its Composer file autoload entry;
+  caller verification found no remaining global-helper calls
+  (`packages/events/composer.json:1-50`).
+- Consolidated content synchronization around
+  `EventContentSynchronizer`, retained the thin
+  `SynchronizeEventContent` wrapper, and deleted the uncalled backfill action
+  (`packages/events/src/Services/EventContentSynchronizer.php:11-31`,
+  `packages/events/src/Actions/SynchronizeEventContent.php:8-24`).
+- Verified closed-by-default registration eligibility and policy registration:
+  `DefaultEventRegistrationEligibility` rejects closed occurrences
+  (`packages/events/src/Resolvers/DefaultEventRegistrationEligibility.php:18-29`),
+  and the core provider registers `EventPolicy`
+  (`packages/events/src/EventsServiceProvider.php:140-145`).
+- Verified queued search indexing, including an enabled-queue assertion
+  (`packages/events/src/Jobs/BuildEventSearchDocumentJob.php:23-95`,
+  `tests/src/Events/EventSearchIndexingObserversTest.php:84-95`). Filament
+  resource queries use native pagination and the relevant eager loads. The
+  collection-shaped `EventQueryService::findByOwner()` remains unbounded by
+  design and has no in-repo caller (`packages/events/src/Services/EventQueryService.php:44-49`);
+  pagination for that public collection API is an explicit follow-up, not a
+  silent API change.
+- Performed a venue/address column-level review. Venue scheduling and space
+  capacity remain event-owned; address and geocode access delegates through
+  `Addressable`, whose resolver-backed pivot behavior is already in place
+  (`packages/events/src/Models/Concerns/Addressable.php:24-38,50-64`). No blind
+  column migration was made. Full `HasAddresses` adoption is deferred for
+  `Venue`, `VenueSpace`, `VenueSpaceType`, `VenueFacility`, `EventFacility`,
+  `FacilityType`, and `EventLocation`, because none of those models already
+  carries `HasOwner`, as required by the task boundary.
 
-## Files Likely to Change
-- `packages/events/src/Data/TicketTypeData.php`, `Data/PassData.php`, `Actions/AutoAddRequiredTicketBundlesAction.php`, `Actions/ExpandTicketTypeComponentsAction.php` (delete)
-- `packages/events/src/Support/EventOwnerScope.php`, `PolymorphicOwnerScope.php`, `EventTenantBoundary.php`, `EventRegistrationScope.php`, `EventTicketScope.php` (delete after migration)
-- `packages/events/src/Models/*` (57 models: add `HasOwner`/`HasOwnerScopeConfig`)
-- `packages/ticketing/src/Data/TicketTypeData.php` (add quota named constructor), `src/Support/TicketingOwnerGuard.php` (sniff update)
-- `packages/events/database/migrations/2000_01_01_000066_*` (renumber one)
-- `packages/events/src/helpers.php` (delete), `Traits/*` (audit)
-- `packages/filament-events/src/**/*` (import + scope updates)
+Files changed: canonical ticketing DTO/action seams, event data/action imports,
+notification job and content adapter, event traits/helpers, venue guard
+delegation, search verification, and event tests. Communications, checkout,
+orders, seating, addressing models, and the existing address-prefix fix were
+not otherwise changed.
 
-## Files / Code That Should Be Removed (explicit list, no legacy preservation)
-- `packages/events/src/Data/TicketTypeData.php` — exact-concept duplicate of `ticketing/src/Data/TicketTypeData.php` (verified: same name, wraps same `Ticketing\Models\TicketType`; rewire to canonical)
-- `packages/events/src/Data/PassData.php` — same reason vs `ticketing/src/Data/PassData.php`
-- `packages/events/src/Actions/AutoAddRequiredTicketBundlesAction.php` — same class name as ticketing's; canonical version is the owner
-- `packages/events/src/Actions/ExpandTicketTypeComponentsAction.php` — same reason
-- `packages/events/src/Support/EventOwnerScope.php`, `PolymorphicOwnerScope.php`, `EventTenantBoundary.php`, `EventRegistrationScope.php`, `EventTicketScope.php` — after HasOwner migration (custom framework superseded by commerce-support; `TicketingOwnerGuard` sniff updated in same pass)
-- `packages/events/src/helpers.php` — global helpers replaceable by existing `config()`/`commerce_json_column_type()` calls (grep `events_table(`/`events_json_type(` usages first; expected events-only)
-- Trait merge candidates (delete only after usage-grep): redundant shells among the 24 in `src/Traits/` (specific list to be confirmed by `use`-count grep during refactor; at minimum collapse `HasEvents`/`OwnsEvents`/`CanOrganizeEvents` overlap)
+Tests and exact pass output:
 
-## Final Recommended Architecture
-- `events` = scheduling/registration/attendance/taxonomy/search bounded context, tenant-scoped via commerce-support `HasOwner` like every other package. Ticketing DTOs/actions, seat allocation, notification delivery, and address geocoding are consumed via contracts — never forked. Order/checkout listeners stay but gain idempotency guards. Filament remains a thin admin with guarded writes.
+```text
+./vendor/bin/pest --parallel tests/src/Events/EventSessionTicketingActionsTest.php
+5 passed (17 assertions)
+./vendor/bin/pest --parallel tests/src/Events/EventDataConversionTest.php
+4 passed (10 assertions)
+./vendor/bin/pest --parallel tests/src/Events/EventNotificationDispatchTest.php
+5 passed (34 assertions)
+./vendor/bin/pest --parallel tests/src/Events/CreateRegistrationsFromOrderActionTest.php
+9 passed (38 assertions)
+./vendor/bin/pest --parallel tests/src/Events/EventSearchIndexingObserversTest.php
+11 passed (25 assertions)
+./vendor/bin/pest --parallel tests/src/Events/RegisterForFreeActionTest.php
+11 passed (20 assertions)
+./vendor/bin/pest --parallel tests/src/Events/VenueAddressingIntegrationTest.php
+4 passed (14 assertions)
+./vendor/bin/pest --parallel tests/src/Ticketing/Unit/PassDataTest.php
+3 passed (14 assertions)
+./vendor/bin/pest --parallel tests/src/Events/AssignmentRequestActionsTest.php
+3 passed (22 assertions)
+./vendor/bin/phpstan analyse packages/ticketing/src/Actions/ExpandTicketTypeComponentsAction.php packages/ticketing/src/Data/PassData.php packages/ticketing/src/Data/TicketTypeData.php packages/ticketing/src/Support/TicketingOwnerGuard.php packages/addressing/src/Support/AddressOwnerGuard.php --level=6
+[OK] No errors
+```
+
+The full Events and FilamentEvents suites were run because both fork deletion
+and ownership-scope deletion can fail through indirect imports, factories,
+observers, relation managers, or panel resources.
+
+## Rated finding outcomes
+
+### Architecture findings
+
+1. **Ticketing forks — IMPLEMENTED.** Canonical constructors and component
+   expansion are evidenced above; event fork files were deleted, imports were
+   rewired, and the repository contains zero event-side DTO/action references.
+   No migration was required.
+2. **Ownership framework — IMPLEMENTED with bounded exceptions.** The 64-model
+   inventory is now 7 direct owner models, 46 relation-via-event models, and
+   11 intentionally unscoped catalog/pivot/submission models. Parity is proven
+   by `CrossTenantIsolationTest` and the 244-test Events suite. The live
+   registration/ticket scope value objects and submission-specific boundary
+   are intentionally retained; see Audit deviations.
+3. **Venue/address overlap — CORRECTED/DEFERRED.** Resolver-backed address
+   delegation and the custom-table integration proof are present; the seven
+   non-owner venue/facility/location models are documented rather than given
+   unsafe duplicate owner adoption. No migration was required.
+4. **Notifications — IMPLEMENTED as the requested phased bridge.** Content
+   stays in events; delivery uses communications context plus an event
+   reference; event batch/delivery models remain. Table retirement and its
+   migration are explicitly out of scope. The communications normalizer is a
+   logged dependency, not a hidden cross-package edit.
+5. **Order listeners — IMPLEMENTED for idempotency; documentation DEFERRED.**
+   Transactional natural-key dedupe and replay coverage are present. The
+   cross-package sequence document is not edited because `docs` was read-only
+   to this stream; no checkout/order changes were made.
+6. **Trait surface — IMPLEMENTED.** Six high-use traits remain; 15 zero-use
+   traits were removed after grep verification; the three live organizer traits
+   remain for the `EventOrganizer` seam.
+
+### Code-quality findings
+
+1. **Global helpers — IMPLEMENTED.** The helper file and Composer file-autoload
+   entry were removed after a zero-caller search; existing config helpers are
+   used by the remaining migrations.
+2. **Contract/Null breadth — DROPPED AS UNPROVEN.** No bulk contract deletion
+   was justified. The candidate single-implementation contracts were kept as
+   extension seams, and all Null adapters were preserved for standalone
+   installation behavior.
+3. **Content-sync overlap — IMPLEMENTED.** The service is canonical, the
+   remaining action is a thin wrapper, and the uncalled backfill action was
+   deleted after caller verification.
+
+### Security findings
+
+1. **Eligibility — IMPLEMENTED/VERIFIED.** Closed occurrence state is rejected
+   server-side and the focused eligibility suite passes 11 tests (20
+   assertions); unknown or unavailable paths remain deny-by-default.
+2. **Filament policy registration — IMPLEMENTED/VERIFIED.** The core provider
+   registers the event policy before the Filament resources are used; resource
+   owner isolation and eager-load assertions pass in the FilamentEvents area
+   suite.
+
+### Performance findings
+
+1. **Search queueing — IMPLEMENTED/VERIFIED.** The search job is queued and
+   owner-context aware when queue indexing is enabled; the observer test
+   asserts the dispatched job. Full-text/index-engine replacement remains a
+   future scale decision and no schema change was made.
+2. **Listing bounds/eager loads — VERIFIED with one explicit deferral.** The
+   Filament resource surface is paginated by native ListRecords behavior and
+   operational resources eager-load required relations. The standalone
+   collection method `findByOwner()` remains unbounded, with no in-repo caller;
+   adding pagination would be an API decision and is recorded as follow-up.
+
+### Testing finding
+
+**IMPLEMENTED for the audited risk surface.** Focused tests cover owner parity,
+DTO conversion, bundle/component behavior, notification bridging, replay
+idempotency, eligibility, search queueing, venue addressing, and panel/resource
+surfaces. The complete owned area suites pass as recorded above; no full
+monorepo suite was run.
+
+## Residual notes
+
+- Event notification table retirement remains a separate migration project;
+  this pass deliberately did not delete models or tables.
+- Full `HasAddresses` adoption for the seven non-owner venue/facility/location
+  models remains deferred until their owner contract is established.
+- The canonical order→registration→pass sequence document and pagination API
+  decision remain documentation/API follow-ups.
+- Communications must eventually own the event-reference normalizer; the
+  events bridge consumes the existing communications context/reference APIs.
+- Existing event-specific seating orchestration and the intentional attendance
+  versus social-graph separation remain unchanged.
+
+## Audit deviations
+
+- The original “five scope files” deletion instruction was narrowed by code
+  evidence: `EventRegistrationScope` and `EventTicketScope` are live typed
+  value/domain objects with broad action/test usage, not global owner scopes.
+  Deleting them would remove registration and ticket-target semantics, so they
+  were retained. Three obsolete global-scope implementations were deleted
+  after parity passed.
+- The event DTOs were not byte-identical copies: they had divergent read and
+  write shapes. The duplication finding was still resolved by moving the
+  useful named constructors into canonical ticketing and deleting the event
+  forks; no compatibility aliases were added.
+- `EventWriteGuard` was retained because its owner-disabled behavior differs
+  from `OwnerWriteGuard` and its event write call sites are widespread.
+- Venue `HasAddresses` adoption was not forced. The task requires adoption only
+  on models that already carry `HasOwner`; all seven named venue/facility/
+  location models fail that precondition. Their address-column duplication was
+  documented and no blind migration was attempted.
+- The cross-package canonical sequence doc was not edited because `docs` was a
+  read-only surface for Stream B. This is an explicit deferral, not an
+  unverified claim.
+- The communications normalizer was not edited because `communications` was
+  read-only. The event bridge uses the installed `CommunicationContextData`
+  and `AttachCommunicationReferenceAction`; the normalizer dependency is
+  recorded above.
+- Seating’s event-scope actions remain dependent on event/occurrence/session
+  visibility; no seating file was edited, and the new relation boundary keeps
+  that dependency at the event seam.
+- Integration required narrow edits outside the two primary sets: canonical
+  ticketing `PassData` and component expansion were needed to remove the
+  divergent event forks; `TicketingOwnerGuard` was the named owner-sniff
+  dependency; and `packages/addressing/src/Support/AddressOwnerGuard.php`
+  first dropped its dead coupling to the retired event ownership classes,
+  then (review holding finding, now closed) restored full owner-tuple
+  enforcement via `belongsToOwner()` with explicit-global handling and
+  fail-closed behavior — cross-tenant attach rejected, same-tenant
+  allowed, covered by the venue isolation test.
+  These are listed rather than concealed in the status handoff.
+- Package-context, ticketing-audit, package-index, and stale evidence entries
+  were refreshed so the repository does not retain references to deleted
+  ownership implementations. These are documentation/evidence hygiene only.
+- No seating, checkout, orders, communications, addressing models, or
+  customer contract changes were made. The previously completed
+  `Addressable` prefix fix and engagement-boundary decision were not redone.

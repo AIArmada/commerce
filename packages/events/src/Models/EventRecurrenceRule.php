@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventRecurrenceRuleFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -59,6 +60,7 @@ final class EventRecurrenceRule extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',
@@ -131,6 +133,16 @@ final class EventRecurrenceRule extends Model
     public function recurrenceTarget(): MorphTo
     {
         return $this->morphTo(__FUNCTION__, 'recurrence_target_type', 'recurrence_target_id');
+    }
+
+    protected static function eventOwnerMorphRelation(): ?string
+    {
+        return 'recurrenceTarget';
+    }
+
+    protected static function eventOwnerEventIdColumn(): ?string
+    {
+        return 'event_id';
     }
 
     protected static function newFactory(): EventRecurrenceRuleFactory

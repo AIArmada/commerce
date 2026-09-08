@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventRegistrationAnswerFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,6 +34,7 @@ final class EventRegistrationAnswer extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'event_registration_id',
@@ -79,6 +81,11 @@ final class EventRegistrationAnswer extends Model
     public function registration(): BelongsTo
     {
         return $this->belongsTo(EventRegistration::class, 'event_registration_id');
+    }
+
+    protected static function eventOwnerRelation(): string
+    {
+        return 'registration.event';
     }
 
     /**

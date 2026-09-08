@@ -40,11 +40,12 @@ keywords:
 ## Decide fast
 - Use when: Event scheduling, venues, registrations, attendance.
 - Skip when: Ticket inventory/pricing — see ticketing; seat maps — see seating; shared human identity — see persons.
-- Owner/security: Owner-scoped with EventOwnerScope family.
+- Owner/security: direct owner models use commerce-support `HasOwner`; event
+  children use the documented relation-via-event owner boundary.
 
 ## Key surfaces
 - Models: `Event`, `EventAccessPolicy`, `EventApprovalRequest`, `EventAttendance`, `EventAttendanceLog`, `EventAttribute`, `EventAudience`, `EventAudienceProfile`, `EventAvailabilityBlock`, `EventChangeLog`
-- Actions/Services: `Actions/AddEventTicketTypeToCartAction`, `Actions/AllocateEventSeatsOnPassIssued`, `Actions/ApproveAssignmentRequestAction`, `Actions/ArchiveEventRegistrationQuestionAction`, `Actions/AutoAddRequiredTicketBundlesAction`, `Actions/BackfillEventContentAction`, `Actions/BatchCreateOccurrencesAction`, `Actions/CancelAssignmentRequestAction`
+- Actions/Services: `Actions/AddEventTicketTypeToCartAction`, `Actions/AllocateEventSeatsOnPassIssued`, `Actions/ApproveAssignmentRequestAction`, `Actions/ArchiveEventRegistrationQuestionAction`, `Actions/CreateEventComponentRegistrationsAction`, `Actions/BatchCreateOccurrencesAction`, `Actions/CancelAssignmentRequestAction`, `Actions/SynchronizeEventContent`
 - Config `events.php`: `enabled`, `include_global`, `auto_assign_on_create`, `models`, `event`, `registration`, `attendance`, `submission`, `registration_question`, `database`
 
 ## Docs map

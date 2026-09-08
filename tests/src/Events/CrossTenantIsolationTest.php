@@ -24,6 +24,7 @@ use AIArmada\Events\Models\EventSubmission;
 use AIArmada\Events\Models\EventSubmissionAttachment;
 use AIArmada\Events\Models\EventTemplate;
 use AIArmada\Events\Models\EventTemplateItem;
+use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Auth\Access\AuthorizationException;
 
 it('fails closed when an owner-protected child query has no owner context', function (): void {
@@ -126,6 +127,35 @@ it('isolates event-bound child reads and writes by owner', function (): void {
 
         expect($eventA->changeLogs()->count())->toBe(1);
     });
+});
+
+it('keeps ticketable event children owner guarded', function (): void {
+    config()->set('events.features.owner.enabled', true);
+    config()->set('ticketing.features.owner.enabled', true);
+
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+
+    [, $occurrenceA] = OwnerContext::withOwner($ownerA, function (): array {
+        $event = Event::factory()->create();
+
+        return [$event, EventOccurrence::factory()->create(['event_id' => $event->id])];
+    });
+
+    $ticketType = OwnerContext::withOwner($ownerA, function () use ($occurrenceA): TicketType {
+        return TicketType::factory()->create([
+            'ticketable_type' => $occurrenceA->getMorphClass(),
+            'ticketable_id' => $occurrenceA->getKey(),
+        ]);
+    });
+
+    expect($ticketType->exists)->toBeTrue()
+        ->and(fn () => OwnerContext::withOwner($ownerB, function () use ($occurrenceA): TicketType {
+            return TicketType::factory()->create([
+                'ticketable_type' => $occurrenceA->getMorphClass(),
+                'ticketable_id' => $occurrenceA->getKey(),
+            ]);
+        }))->toThrow(AuthorizationException::class);
 });
 
 it('isolates polymorphic, submission, series, and template records by owner', function (): void {

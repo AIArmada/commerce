@@ -45,10 +45,7 @@
     "psr-4": {
       "AIArmada\\Events\\": "src/",
       "AIArmada\\Events\\Database\\Factories\\": "database/factories"
-    },
-    "files": [
-      "src/helpers.php"
-    ]
+    }
   },
   "extra": {
     "laravel": {

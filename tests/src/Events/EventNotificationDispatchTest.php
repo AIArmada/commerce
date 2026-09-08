@@ -3,12 +3,17 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Communications\Contracts\CommunicationManager;
+use AIArmada\Communications\Data\CommunicationContextData;
+use AIArmada\Communications\Models\Communication;
+use AIArmada\Communications\Models\CommunicationReference;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Events\Jobs\DispatchEventNotificationDelivery;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventNotificationDelivery;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Notifications\EventChangeNoticeNotification;
 use AIArmada\Events\Services\EventNotificationDispatcher;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
@@ -16,6 +21,7 @@ use Illuminate\Support\Facades\Queue;
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
     config()->set('contacting.features.owner.enabled', false);
+    config()->set('communications.features.owner.enabled', false);
     config()->set('events.change_notices.channels', ['mail']);
     config()->set('events.change_notices.delivery.max_attempts', 3);
 });
@@ -96,6 +102,82 @@ it('delivers mail idempotently and completes the batch', function (): void {
             ->and($delivery->fresh()->attempt_count)->toBe(1)
             ->and($batch->fresh()->status)->toBe('sent')
             ->and($batch->fresh()->sent_at)->not->toBeNull();
+    });
+});
+
+it('bridges event delivery through communications with an event reference', function (): void {
+    Mail::fake();
+
+    OwnerContext::withOwner(null, function (): void {
+        $event = Event::factory()->create();
+        $registration = EventRegistration::factory()->create([
+            'event_id' => $event->id,
+            'status' => 'confirmed',
+        ]);
+        $participant = $registration->participants()->create([
+            'event_id' => $event->id,
+            'name' => 'Alice Example',
+            'is_primary' => true,
+        ]);
+        $participant->addContactMethod(ContactMethodData::email('alice@example.com'));
+
+        $batch = EventNotificationBatch::factory()->create([
+            'event_id' => $event->id,
+            'audience_scope' => 'registrants',
+            'title' => 'Room changed',
+            'message' => 'The event room has changed.',
+            'status' => 'processing',
+        ]);
+        $delivery = EventNotificationDelivery::query()->create([
+            'event_notification_batch_id' => $batch->id,
+            'recipient_type' => $registration->getMorphClass(),
+            'recipient_id' => $registration->id,
+            'channel' => 'mail',
+            'status' => 'pending',
+            'max_attempts' => 3,
+        ]);
+
+        $communication = Communication::query()->create([
+            'direction' => 'outbound',
+            'category' => 'transactional',
+            'priority' => 'normal',
+            'purpose' => 'event-change-notice',
+            'status' => 'draft',
+        ]);
+
+        $capturedContext = null;
+        $manager = mock(CommunicationManager::class);
+        $manager->shouldReceive('notify')
+            ->once()
+            ->withArgs(function (mixed $notifiable, mixed $notification, mixed $context) use (&$capturedContext): bool {
+                $capturedContext = $context;
+
+                return $notifiable instanceof EventRegistration
+                    && $notification instanceof EventChangeNoticeNotification;
+            })
+            ->andReturn($communication);
+        app()->instance(CommunicationManager::class, $manager);
+
+        app()->call([new DispatchEventNotificationDelivery($delivery->id), 'handle']);
+
+        Mail::assertNothingSent();
+        expect($delivery->fresh()->status)->toBe('sent');
+        expect(CommunicationReference::query()->withoutOwnerScope()->count())->toBe(1);
+
+        $communication = Communication::query()
+            ->where('purpose', 'event-change-notice')
+            ->sole();
+        $reference = CommunicationReference::query()
+            ->where('communication_id', $communication->id)
+            ->sole();
+
+        expect($capturedContext)->toBeInstanceOf(CommunicationContextData::class)
+            ->and($capturedContext->subjectId)->toBe($event->id)
+            ->and($capturedContext->batchId)->toBe($batch->id)
+            ->and($reference->reference_type)->toBe($event->getMorphClass())
+            ->and($reference->reference_id)->toBe($event->id)
+            ->and($reference->role)->toBe('event')
+            ->and($delivery->fresh()->status)->toBe('sent');
     });
 });
 

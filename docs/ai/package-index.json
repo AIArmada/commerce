@@ -373,7 +373,7 @@
   ],
   "use_when": "Event scheduling, venues, registrations, attendance.",
   "skip_when": "Ticket inventory/pricing \u2014 see ticketing; seat maps \u2014 see seating.",
-  "owner": "Owner-scoped with EventOwnerScope family.",
+  "owner": "Owner-scoped through commerce-support HasOwner and relation-via-event boundaries.",
   "paired": "filament-events",
   "context": "packages/events/CONTEXT.md",
   "overview": "packages/events/docs/01-overview.md"

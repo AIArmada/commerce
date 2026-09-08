@@ -274,7 +274,7 @@ describe('Order Model', function (): void {
             ]);
 
             $orderId = $order->id;
-            $order->delete();
+            $order->delete(force: true);
 
             expect(Order::find($orderId))->toBeNull();
             expect(OrderItem::where('order_id', $orderId)->count())->toBe(0);
@@ -282,6 +282,36 @@ describe('Order Model', function (): void {
             expect(OrderPayment::where('order_id', $orderId)->count())->toBe(0);
             expect(OrderRefund::where('order_id', $orderId)->count())->toBe(0);
             expect(OrderNote::where('order_id', $orderId)->count())->toBe(0);
+        });
+
+        it('protects paid and final orders unless deletion is explicitly forced', function (): void {
+            $paidOrder = Order::create([
+                'order_number' => 'ORD-DEL-PAID-' . uniqid(),
+                'status' => Processing::class,
+                'currency' => 'MYR',
+                'subtotal' => 5000,
+                'grand_total' => 5000,
+                'paid_at' => now(),
+            ]);
+
+            $finalOrder = Order::create([
+                'order_number' => 'ORD-DEL-FINAL-' . uniqid(),
+                'status' => Completed::class,
+                'currency' => 'MYR',
+                'subtotal' => 5000,
+                'grand_total' => 5000,
+            ]);
+
+            expect(fn (): ?bool => $paidOrder->delete())
+                ->toThrow(LogicException::class, 'must be cancelled or refunded instead of deleted');
+            expect(fn (): ?bool => $finalOrder->delete())
+                ->toThrow(LogicException::class, 'must be cancelled or refunded instead of deleted');
+
+            expect($paidOrder->fresh())->not->toBeNull()
+                ->and($finalOrder->fresh())->not->toBeNull();
+
+            expect($paidOrder->delete(force: true))->toBeTrue()
+                ->and($finalOrder->delete(force: true))->toBeTrue();
         });
     });
 

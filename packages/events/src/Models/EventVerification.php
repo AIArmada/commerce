@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventVerificationFactory;
+use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -45,6 +46,7 @@ final class EventVerification extends Model
 {
     use HasFactory;
     use HasUuids;
+    use ScopesByEventOwner;
 
     protected $fillable = [
         'verifiable_type', 'verifiable_id',
@@ -79,6 +81,16 @@ final class EventVerification extends Model
     public function verifiable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    protected static function eventOwnerMorphRelation(): ?string
+    {
+        return 'verifiable';
+    }
+
+    protected static function eventOwnerEventIdColumn(): ?string
+    {
+        return 'event_id';
     }
 
     /**

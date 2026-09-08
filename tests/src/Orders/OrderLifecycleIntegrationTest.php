@@ -21,7 +21,7 @@ beforeEach(function (): void {
 
 describe('Order Lifecycle Integration', function (): void {
     it('can handle complete order lifecycle from creation to completion', function (): void {
-        $service = new OrderService;
+        $service = app(OrderService::class);
 
         // 1. Create order
         $orderData = [
@@ -94,7 +94,7 @@ describe('Order Lifecycle Integration', function (): void {
     });
 
     it('can handle order return and refund process', function (): void {
-        $service = new OrderService;
+        $service = app(OrderService::class);
 
         // Create and process order to delivered state
         $order = Order::create([
@@ -129,7 +129,7 @@ describe('Order Lifecycle Integration', function (): void {
     });
 
     it('can handle order cancellation with refund', function (): void {
-        $service = new OrderService;
+        $service = app(OrderService::class);
 
         // Create order in pending payment state
         $order = Order::create([
