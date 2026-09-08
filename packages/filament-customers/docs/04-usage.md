@@ -19,7 +19,7 @@ The Customer Resource provides complete CRUD operations for customer management 
 The customer list includes:
 
 **Columns:**
-- Customer name with email (searchable)
+- Customer name with the primary Contacting email description (searchable)
 - Status badge (colored by status)
 - Marketing opt-in status
 - Segment badges
@@ -48,10 +48,11 @@ The customer form is organized into sections:
 ```php
 - First Name * (required)
 - Last Name * (required)
-- Email * (required, unique per owner)
-- Phone (tel input)
 - Company
 ```
+
+Contact methods are edited in the Contact Methods relation manager supplied by
+`filament-contacting`; they are not duplicated in the customer form.
 
 **Preferences (2 columns):**
 ```php
@@ -75,8 +76,8 @@ The customer view page displays comprehensive information:
 
 **Customer Overview:**
 - Full name
-- Email (copyable)
-- Phone (copyable)
+- Primary Contacting email (copyable)
+- Primary Contacting phone (copyable)
 - Status badge
 
 **Activity:**
@@ -90,7 +91,7 @@ The customer view page displays comprehensive information:
 #### Addresses
 
 Manage customer addresses with:
-- Label, type, recipient, company, phone
+- Label, type, recipient, company
 - Address lines, city, state, postcode, country
 - Default billing/shipping toggles
 - Actions: Set as billing, Set as shipping, Delete
@@ -104,6 +105,12 @@ Customer notes with:
 - Created by user
 - Actions: Pin/Unpin, Edit, Delete
 
+#### Contact Methods
+
+When `filament-contacting` is installed, manage the customer's canonical
+email, phone, mobile, WhatsApp, and other contact methods in this relation
+manager.
+
 ### Header Actions
 
 On view page:
@@ -114,11 +121,11 @@ On view page:
 Customers are globally searchable by:
 - First name
 - Last name
-- Email
-- Phone
 - Company
+- Contacting contact value
 
-Search results show customer name and email.
+Search results show the customer name; the table and infolist resolve contact
+values from Contacting.
 
 ### Owner Scoping
 
@@ -232,7 +239,7 @@ Customer selections in forms are also scoped:
 Forms\Components\Select::make('customers')
     ->relationship(
         name: 'customers',
-        titleAttribute: 'email',
+        titleAttribute: 'full_name',
         modifyQueryUsing: fn (Builder $query) =>
             OwnerUiScope::apply($query, includeGlobal: false)
     );

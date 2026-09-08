@@ -6,11 +6,13 @@ use AIArmada\Addressing\Data\AddressLocationData;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaAssignment;
+use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Models\City;
+use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\AddressLocationScope;
 use AIArmada\Addressing\Traits\HasAddresses;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     $this->owner = new class extends Model
@@ -30,10 +32,42 @@ beforeEach(function (): void {
     $this->otherOwner = new ($this->owner::class);
     $this->otherOwner->save();
 
+    $country = AddressCountry::query()->create([
+        'iso2' => 'MY',
+        'name' => 'Malaysia',
+    ]);
+    $state = State::query()->create([
+        'country_id' => $country->getKey(),
+        'name' => 'Selangor',
+    ]);
+    $city = City::query()->create([
+        'country_id' => $country->getKey(),
+        'state_id' => $state->getKey(),
+        'name' => 'Shah Alam',
+    ]);
     $this->location = [
-        'country_id' => (string) Str::uuid(),
-        'state_id' => (string) Str::uuid(),
-        'city_id' => (string) Str::uuid(),
+        'country_id' => $country->getKey(),
+        'state_id' => $state->getKey(),
+        'city_id' => $city->getKey(),
+    ];
+
+    $otherCountry = AddressCountry::query()->create([
+        'iso2' => 'SG',
+        'name' => 'Singapore',
+    ]);
+    $otherState = State::query()->create([
+        'country_id' => $otherCountry->getKey(),
+        'name' => 'Singapore',
+    ]);
+    $otherCity = City::query()->create([
+        'country_id' => $otherCountry->getKey(),
+        'state_id' => $otherState->getKey(),
+        'name' => 'Singapore',
+    ]);
+    $this->otherLocation = [
+        'country_id' => $otherCountry->getKey(),
+        'state_id' => $otherState->getKey(),
+        'city_id' => $otherCity->getKey(),
     ];
 
     $this->matchingArea = AddressArea::query()->create([
@@ -70,8 +104,8 @@ beforeEach(function (): void {
 
     $otherAddress = Address::query()->create([
         'line1' => 'Other address',
-        'country_code' => 'MY',
-        ...array_map(static fn (): string => (string) Str::uuid(), $this->location),
+        'country_code' => 'SG',
+        ...$this->otherLocation,
     ]);
     AddressAreaAssignment::query()->create([
         'address_id' => $otherAddress->getKey(),

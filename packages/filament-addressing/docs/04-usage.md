@@ -50,6 +50,11 @@ resources such as countries, states, cities, areas, and postcodes remain
 global. Global address work must enter explicit global context in the owning
 application.
 
+Resource enablement and read-only checks stay in this adapter because they
+describe Filament UI policy. Core model-class resolution belongs to
+`addressing\Support\ModelResolver`; the adapter does not duplicate that
+domain resolver.
+
 ## Manage Areas
 
 Areas are user/importer-owned reference data.

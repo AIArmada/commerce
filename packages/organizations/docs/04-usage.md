@@ -29,6 +29,11 @@ Use the supplied lifecycle actions for public/private transitions and
 active/suspended/archived transitions. Use membership actions for all member
 writes so the organization ownership guard is applied.
 
+Adding a member resolves a persisted user through the membership relation and
+rejects an unknown or forged user ID. Invitations intentionally accept an
+email address for an unregistered invitee; the invitation workflow, rather
+than member attachment, creates the later membership.
+
 ## Current context
 
 The middleware resolves the organization through the configured resolver and
@@ -39,3 +44,15 @@ member.
 The shipped default requires context. Public or intentionally global routes
 must pass `required:false` explicitly and should enter an explicit global
 owner context in the handler.
+
+## Lifecycle and audit hook
+
+Archive, restore, suspend, public, private, and ownership-transfer workflows
+are exposed as core actions. Each transition is centralized through the
+organization state-transition service and invokes `OrganizationLifecycleHook`;
+bind that hook to the host activity logger when lifecycle audit records are
+required.
+
+Restoring an organization makes its status active but retains terminal
+timestamps as historical facts. Use `isActive()` together with the lifecycle
+timestamps when presenting current state.

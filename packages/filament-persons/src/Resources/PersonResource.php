@@ -20,6 +20,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class PersonResource extends Resource
@@ -40,6 +41,12 @@ class PersonResource extends Resource
         $sort = config('filament-persons.resources.navigation_sort.person');
 
         return is_numeric($sort) ? (int) $sort : null;
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with('titleAssignments.title.category');
     }
 
     public static function form(Schema $schema): Schema

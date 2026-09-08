@@ -19,7 +19,7 @@ final class ContactMethodData extends Data
         public readonly string | null | Optional $displayValue = null,
         public readonly string | null | Optional $countryCode = null,
         public readonly bool $isPrimary = false,
-        public readonly bool $isPublic = true,
+        public readonly ?bool $isPublic = null,
         public readonly bool $isVerified = false,
         public readonly mixed $verifiedAt = null,
         public readonly array $metadata = [],

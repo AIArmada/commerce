@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
+use AIArmada\Persons\Models\CredentialDefinition;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -42,6 +43,11 @@ final class CredentialAssignmentsRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
+                    ->mutateFormDataUsing(function (array $data): array {
+                        CredentialDefinition::query()->findOrFail($data['credential_id']);
+
+                        return $data;
+                    })
                     ->form([
                         Select::make('credential_id')
                             ->label('Credential')

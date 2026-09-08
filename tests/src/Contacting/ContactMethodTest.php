@@ -11,6 +11,7 @@ use AIArmada\Contacting\Support\NormalizesEmailAddress;
 use AIArmada\Contacting\Support\NormalizesPhoneNumber;
 use AIArmada\Contacting\Support\NormalizesUrl;
 use AIArmada\Customers\Models\Customer;
+use Carbon\CarbonImmutable;
 
 test('ContactMethod model class exists', function (): void {
     expect(class_exists(ContactMethod::class))->toBeTrue();
@@ -111,6 +112,18 @@ test('ContactMethodData from array', function (): void {
     expect($data->isPublic)->toBeFalse();
 });
 
+test('ContactMethod uses only the canonical sort order attribute', function (): void {
+    $contactMethod = new ContactMethod;
+    $contactMethod->fill([
+        'sort_order' => 2,
+        'order_column' => 4,
+    ]);
+
+    expect($contactMethod->sort_order)->toBe(2)
+        ->and($contactMethod->getAttribute('order_column'))->toBeNull()
+        ->and($contactMethod->getFillable())->not->toContain('order_column');
+});
+
 test('ContactMethod preserves an explicitly supplied display value while normalizing search value', function (): void {
     $customer = Customer::create([
         'first_name' => 'Display',
@@ -134,6 +147,52 @@ test('ContactMethod preserves an explicitly supplied display value while normali
     expect($contactMethod->fresh())
         ->display_value->toBe('+60 12-345 6789 ext. 5')
         ->normalized_value->toBe('+60123456789');
+});
+
+test('ContactMethod uses channel-aware visibility defaults and filters invalid contacts', function (): void {
+    $customer = Customer::create([
+        'first_name' => 'Visibility',
+        'last_name' => 'Contact',
+        'email' => 'visibility-contact-' . uniqid() . '@example.com',
+        'status' => 'active',
+    ]);
+
+    $primary = $customer->addContactMethod(new ContactMethodData(
+        type: 'email',
+        purpose: 'general',
+        value: 'private-primary-' . uniqid() . '@example.com',
+        isPrimary: true,
+    ));
+    $public = $customer->addContactMethod(new ContactMethodData(
+        type: 'email',
+        purpose: 'general',
+        value: 'public-secondary-' . uniqid() . '@example.com',
+        isPublic: true,
+    ));
+
+    ContactMethod::query()->create([
+        'contactable_type' => $customer->getMorphClass(),
+        'contactable_id' => $customer->getKey(),
+        'type' => 'email',
+        'purpose' => 'general',
+        'value' => 'expired-' . uniqid() . '@example.com',
+        'is_public' => true,
+        'valid_until' => CarbonImmutable::now()->subMinute(),
+    ]);
+    ContactMethod::query()->create([
+        'contactable_type' => $customer->getMorphClass(),
+        'contactable_id' => $customer->getKey(),
+        'type' => 'email',
+        'purpose' => 'general',
+        'value' => 'future-' . uniqid() . '@example.com',
+        'is_public' => true,
+        'valid_from' => CarbonImmutable::now()->addMinute(),
+    ]);
+
+    expect($primary->fresh()?->is_public)->toBeFalse()
+        ->and($customer->resolveEmail())->toBe($primary->normalized_value)
+        ->and($customer->resolveEmails())->toEqual([$primary->normalized_value, $public->normalized_value])
+        ->and($customer->resolveEmails(publicOnly: true))->toEqual([$public->normalized_value]);
 });
 
 test('NormalizeContactMethodAction normalizes email', function (): void {

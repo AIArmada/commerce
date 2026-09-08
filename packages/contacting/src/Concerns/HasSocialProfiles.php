@@ -7,6 +7,8 @@ namespace AIArmada\Contacting\Concerns;
 use AIArmada\Contacting\Actions\CreateSocialProfileAction;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Models\SocialProfile;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -36,14 +38,25 @@ trait HasSocialProfiles
         return $this->socialProfiles()->where('is_public', true);
     }
 
-    public function primarySocialProfile(?string $platform = null, ?string $purpose = null): ?SocialProfile
+    public function primarySocialProfile(?string $platform = null, ?string $purpose = null, bool $publicOnly = false): ?SocialProfile
     {
-        return $this->socialProfiles()
+        $now = CarbonImmutable::now();
+        $query = $this->socialProfiles()
             ->when($platform !== null, fn ($query) => $query->where('platform', $platform))
             ->when($purpose !== null, fn ($query) => $query->where('purpose', $purpose))
             ->where('is_primary', true)
-            ->orderBy('sort_order')
-            ->first();
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('valid_from')->orWhere('valid_from', '<=', $now);
+            })
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('valid_until')->orWhere('valid_until', '>=', $now);
+            });
+
+        if ($publicOnly) {
+            $query->where('is_public', true);
+        }
+
+        return $query->orderBy('sort_order')->first();
     }
 
     /**

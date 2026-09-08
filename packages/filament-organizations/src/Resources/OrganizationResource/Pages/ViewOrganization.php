@@ -52,6 +52,7 @@ final class ViewOrganization extends ViewRecord
                 ->action(function (Organization $record): void {
                     $actor = Filament::auth()->user();
                     abort_unless($actor instanceof Model, 403);
+                    OrganizationResource::authorizeRecord($record, 'organization.change-visibility');
                     app(MakeOrganizationPublicAction::class)->handle($record, $actor);
                 }),
             Action::make('makePrivate')
@@ -61,6 +62,7 @@ final class ViewOrganization extends ViewRecord
                 ->action(function (Organization $record): void {
                     $actor = Filament::auth()->user();
                     abort_unless($actor instanceof Model, 403);
+                    OrganizationResource::authorizeRecord($record, 'organization.change-visibility');
                     app(MakeOrganizationPrivateAction::class)->handle($record, $actor);
                 }),
             Action::make('suspend')
@@ -69,6 +71,7 @@ final class ViewOrganization extends ViewRecord
                 ->action(function (Organization $record): void {
                     $actor = Filament::auth()->user();
                     abort_unless($actor instanceof Model, 403);
+                    OrganizationResource::authorizeRecord($record, 'organization.change-status');
                     app(SuspendOrganizationAction::class)->handle($record, $actor);
                 }),
             Action::make('archive')
@@ -77,6 +80,7 @@ final class ViewOrganization extends ViewRecord
                 ->action(function (Organization $record): void {
                     $actor = Filament::auth()->user();
                     abort_unless($actor instanceof Model, 403);
+                    OrganizationResource::authorizeRecord($record, 'organization.change-status');
                     app(ArchiveOrganizationAction::class)->handle($record, $actor);
                 }),
             Action::make('restore')
@@ -84,6 +88,7 @@ final class ViewOrganization extends ViewRecord
                 ->action(function (Organization $record): void {
                     $actor = Filament::auth()->user();
                     abort_unless($actor instanceof Model, 403);
+                    OrganizationResource::authorizeRecord($record, 'organization.change-status');
                     app(RestoreOrganizationAction::class)->handle($record, $actor);
                 }),
             Action::make('transferOwnership')
@@ -105,7 +110,9 @@ final class ViewOrganization extends ViewRecord
                     $actor = Filament::auth()->user();
                     abort_unless($actor instanceof Model, 403);
                     OrganizationResource::authorizeRecord($record, 'organization.transfer-ownership');
-                    $newOwner = $record->members()->whereKey($data['user_id'])->first();
+                    $userId = $data['user_id'] ?? null;
+                    abort_unless(is_string($userId) && $userId !== '', 422);
+                    $newOwner = $record->members()->whereKey($userId)->first();
                     abort_unless($newOwner instanceof Model, 404);
                     app(TransferOrganizationOwnershipAction::class)->handle($record, $actor, $newOwner);
                 }),

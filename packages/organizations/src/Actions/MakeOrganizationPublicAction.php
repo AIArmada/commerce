@@ -8,6 +8,7 @@ use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Contracts\OrganizationVisibilityTransitionAuthorizer;
 use AIArmada\Organizations\Enums\OrganizationVisibility;
 use AIArmada\Organizations\Models\Organization;
+use AIArmada\Organizations\Support\OrganizationStateTransition;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,11 @@ final class MakeOrganizationPublicAction
             $from = $organization->visibility;
 
             if ($from !== OrganizationVisibility::Public) {
-                $organization->transitionToVisibility(OrganizationVisibility::Public, CarbonImmutable::now());
+                app(OrganizationStateTransition::class)->visibility(
+                    $organization,
+                    OrganizationVisibility::Public,
+                    CarbonImmutable::now(),
+                );
                 $organization->save();
                 app(OrganizationLifecycleHook::class)->visibilityChanged($organization, $from, OrganizationVisibility::Public, $actor);
             }

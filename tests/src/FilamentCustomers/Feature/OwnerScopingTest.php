@@ -56,7 +56,6 @@ it('scopes CustomerResource query to the resolved owner', function (): void {
     OwnerContext::withOwner($ownerA, fn (): Customer => Customer::query()->create([
         'first_name' => 'Alice',
         'last_name' => 'A',
-        'email' => 'alice-a@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
 
@@ -67,7 +66,6 @@ it('scopes CustomerResource query to the resolved owner', function (): void {
     OwnerContext::withOwner($ownerB, fn (): Customer => Customer::query()->create([
         'first_name' => 'Bob',
         'last_name' => 'B',
-        'email' => 'bob-b@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
 
@@ -75,8 +73,8 @@ it('scopes CustomerResource query to the resolved owner', function (): void {
         'owner_id' => $ownerB->getKey(),
     ]));
 
-    $emails = CustomerResource::getEloquentQuery()->pluck('email')->all();
-    expect($emails)->toEqual(['alice-a@example.com']);
+    $names = CustomerResource::getEloquentQuery()->pluck('first_name')->all();
+    expect($names)->toEqual(['Alice']);
 });
 
 it('scopes SegmentResource query to the resolved owner', function (): void {

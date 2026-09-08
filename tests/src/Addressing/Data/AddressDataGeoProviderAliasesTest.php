@@ -9,9 +9,9 @@ it('accepts latitude', function (): void {
     expect($data->latitude)->toBe(3.1712);
 });
 
-it('accepts lat alias', function (): void {
+it('does not accept the removed lat alias', function (): void {
     $data = AddressData::from(['lat' => 3.1712]);
-    expect($data->latitude)->toBe(3.1712);
+    expect($data->latitude)->toBeNull();
 });
 
 it('accepts longitude', function (): void {
@@ -19,14 +19,14 @@ it('accepts longitude', function (): void {
     expect($data->longitude)->toBe(101.6678);
 });
 
-it('accepts lng alias', function (): void {
+it('does not accept the removed lng alias', function (): void {
     $data = AddressData::from(['lng' => 101.6678]);
-    expect($data->longitude)->toBe(101.6678);
+    expect($data->longitude)->toBeNull();
 });
 
-it('accepts lon alias', function (): void {
+it('does not accept the removed lon alias', function (): void {
     $data = AddressData::from(['lon' => 101.6678]);
-    expect($data->longitude)->toBe(101.6678);
+    expect($data->longitude)->toBeNull();
 });
 
 it('accepts formatted_address', function (): void {
@@ -64,22 +64,22 @@ it('accepts placeId alias', function (): void {
     expect($data->providerPlaceId)->toBe('place-id-123');
 });
 
-it('accepts google_place_id alias', function (): void {
+it('does not accept the removed google_place_id alias', function (): void {
     $data = AddressData::from(['google_place_id' => 'google-place-123']);
-    expect($data->providerPlaceId)->toBe('google-place-123');
+    expect($data->providerPlaceId)->toBeNull();
 });
 
-it('accepts googlePlaceId alias', function (): void {
+it('does not accept the removed googlePlaceId alias', function (): void {
     $data = AddressData::from(['googlePlaceId' => 'google-place-123']);
-    expect($data->providerPlaceId)->toBe('google-place-123');
+    expect($data->providerPlaceId)->toBeNull();
 });
 
-it('keeps existing address field aliases working with geo fields', function (): void {
+it('keeps existing address field aliases working with canonical geo fields', function (): void {
     $data = AddressData::from([
         'address_line_1' => '123 Main St',
         'postal_code' => '50450',
-        'lat' => 3.1712,
-        'lng' => 101.6678,
+        'latitude' => 3.1712,
+        'longitude' => 101.6678,
     ]);
     expect($data->line1)->toBe('123 Main St');
     expect($data->postcode)->toBe('50450');

@@ -6,13 +6,13 @@ namespace AIArmada\Persons\Models;
 
 use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Support\ModelResolver;
+use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use LogicException;
 
 /**
  * @property string $id
@@ -46,6 +46,14 @@ class Title extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (Title $title): void {
+            app(PersonsModelReferenceGuard::class)->resolve(
+                ModelResolver::countryClass(),
+                $title->getAttribute('country_id'),
+                'title country',
+            );
+        });
+
         static::deleting(function (Title $title): void {
             $title->assignments()->get()->each->delete();
         });
@@ -77,14 +85,8 @@ class Title extends Model
      */
     public function country(): BelongsTo
     {
-        $countryClass = ModelResolver::countryClass();
-
-        if ($countryClass === null) {
-            throw new LogicException('Configure persons.models.country before resolving a title country.');
-        }
-
         /** @var BelongsTo<Model, $this> $relation */
-        $relation = $this->belongsTo($countryClass, 'country_id');
+        $relation = $this->belongsTo(ModelResolver::requireCountryClass(), 'country_id');
 
         return $relation;
     }

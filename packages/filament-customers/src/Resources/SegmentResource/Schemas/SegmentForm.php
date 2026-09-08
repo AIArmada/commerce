@@ -146,7 +146,7 @@ final class SegmentForm
                                     ->label('Customers')
                                     ->relationship(
                                         name: 'customers',
-                                        titleAttribute: 'email',
+                                        titleAttribute: 'full_name',
                                         modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false),
                                     )
                                     ->multiple()

@@ -30,7 +30,7 @@ keywords:
 
 ## Guardrails
 - Adapter only: no domain models/actions/calculations. Keep all business rules in `persons`.
-- Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope).
+- Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope). Taxonomy and institution IDs are revalidated in relation-manager handlers; this does not replace authorization in an owner-scoped attaching model.
 - If behavior or calculations change, move them to `persons` and keep this package UI-only.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 

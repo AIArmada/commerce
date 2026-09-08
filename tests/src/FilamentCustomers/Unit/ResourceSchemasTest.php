@@ -70,6 +70,14 @@ it('builds CustomerResource form/table/infolist schemas', function (): void {
         ->and($segmentFilter->queriesRelationships())->toBeFalse();
 });
 
+it('uses Contacting for customer contact search and display identity', function (): void {
+    expect(CustomerResource::getRecordTitleAttribute())->toBe('full_name')
+        ->and(CustomerResource::getGloballySearchableAttributes())
+        ->toContain('contactMethods.value')
+        ->not->toContain('email')
+        ->not->toContain('phone');
+});
+
 it('builds SegmentResource form/table schemas', function (): void {
     $schema = SegmentResource::form(Schema::make(filamentCustomers_makeSchemaLivewire()));
     expect($schema->getComponents())->not()->toBeEmpty();

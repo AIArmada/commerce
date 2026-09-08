@@ -28,7 +28,7 @@ return [
             'include_global' => env('CONTACTING_OWNER_INCLUDE_GLOBAL', false),
             'auto_assign_on_create' => env('CONTACTING_OWNER_AUTO_ASSIGN', true),
         ],
-        'contact_snapshots' => true,
+        'contact_snapshots' => env('CONTACTING_SNAPSHOTS_ENABLED', true),
         'strict_social_platforms' => false,
         'strict_contact_types' => false,
     ],

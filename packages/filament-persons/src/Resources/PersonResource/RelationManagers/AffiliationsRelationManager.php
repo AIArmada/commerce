@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
+use AIArmada\Persons\Support\ModelResolver;
+use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -57,6 +59,19 @@ class AffiliationsRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
+                    ->mutateFormDataUsing(function (array $data): array {
+                        $institutionId = $data['institution_id'] ?? null;
+
+                        if ($institutionId !== null && $institutionId !== '') {
+                            app(PersonsModelReferenceGuard::class)->resolve(
+                                ModelResolver::institutionClass(),
+                                $institutionId,
+                                'affiliation institution',
+                            );
+                        }
+
+                        return $data;
+                    })
                     ->form([
                         Select::make('affiliation_type')
                             ->options([

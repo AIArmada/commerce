@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPersons\Resources\PersonResource\Schemas;
 
 use AIArmada\Persons\Enums\Gender;
+use AIArmada\Persons\Enums\PersonStatus;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -33,13 +34,17 @@ class PersonForm
                             ->options(Gender::class),
                         DateTimePicker::make('date_of_birth')
                             ->native(false),
-                        TextInput::make('status')
-                            ->maxLength(50),
+                        Select::make('status')
+                            ->options(PersonStatus::class)
+                            ->default(PersonStatus::Active->value)
+                            ->required(),
                     ]),
                 Section::make('Biography')
                     ->components([
-                        Textarea::make('bio')
-                            ->rows(5),
+                        KeyValue::make('bio')
+                            ->keyLabel('Locale')
+                            ->valueLabel('Text')
+                            ->addButtonLabel('Add translation'),
                     ]),
             ]);
     }

@@ -35,7 +35,7 @@ final class CustomersTable
                     ->label('Customer')
                     ->searchable(['first_name', 'last_name'])
                     ->sortable()
-                    ->description(fn ($record) => $record->email),
+                    ->description(fn (Customer $record): ?string => $record->resolveEmail()),
 
                 TextColumn::make('status')
                     ->label('Status')

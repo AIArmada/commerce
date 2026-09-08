@@ -60,7 +60,6 @@ it('CustomerStatsWidget is owner-scoped for counts and aggregates', function ():
     OwnerContext::withOwner($ownerA, fn (): Customer => Customer::query()->create([
         'first_name' => 'A1',
         'last_name' => 'User',
-        'email' => 'a1@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
         'created_at' => Carbon::now()->subDays(2),
@@ -71,7 +70,6 @@ it('CustomerStatsWidget is owner-scoped for counts and aggregates', function ():
     OwnerContext::withOwner($ownerB, fn (): Customer => Customer::query()->create([
         'first_name' => 'B1',
         'last_name' => 'User',
-        'email' => 'b1@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
         'created_at' => Carbon::now()->subDays(2),
@@ -112,7 +110,6 @@ it('RecentCustomersWidget query is owner-scoped', function (): void {
     OwnerContext::withOwner($ownerA, fn (): Customer => Customer::query()->create([
         'first_name' => 'A',
         'last_name' => 'High',
-        'email' => 'a-high@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
         'owner_type' => $ownerA->getMorphClass(),
@@ -122,7 +119,6 @@ it('RecentCustomersWidget query is owner-scoped', function (): void {
     OwnerContext::withOwner($ownerB, fn (): Customer => Customer::query()->create([
         'first_name' => 'B',
         'last_name' => 'High',
-        'email' => 'b-high@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
         'owner_type' => $ownerB->getMorphClass(),
@@ -140,6 +136,6 @@ it('RecentCustomersWidget query is owner-scoped', function (): void {
         return $method->invoke($table);
     })();
 
-    $emails = $query->pluck('email')->all();
-    expect($emails)->toEqual(['a-high@example.com']);
+    $names = $query->pluck('first_name')->all();
+    expect($names)->toEqual(['A']);
 });

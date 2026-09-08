@@ -16,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -61,6 +62,18 @@ class TitleIssuerResource extends Resource
                                 'organization' => 'Organization',
                             ])
                             ->required(),
+                        TextInput::make('institution_id')
+                            ->label('Institution ID')
+                            ->visible(fn (Get $get): bool => in_array(
+                                $get('issuer_type'),
+                                ['government', 'university'],
+                                true,
+                            ))
+                            ->required(fn (Get $get): bool => in_array(
+                                $get('issuer_type'),
+                                ['government', 'university'],
+                                true,
+                            )),
                     ]),
             ]);
     }

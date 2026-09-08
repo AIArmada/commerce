@@ -13,6 +13,7 @@ use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Services\CustomerResolver;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -49,7 +50,7 @@ describe('CustomerResolver', function (): void {
             user: null,
             sessionCustomer: null,
             billingData: [
-                'email' => $existing->email,
+                'email' => $email,
                 'line1' => '123 Changed Street',
                 'city' => 'Kuala Lumpur',
                 'postcode' => '50000',
@@ -107,7 +108,7 @@ describe('CustomerResolver', function (): void {
             ->and($resolved?->id)->toBe($guest->id);
     });
 
-    it('resolves existing guest customer by raw email column even without contact methods', function (): void {
+    it('does not reuse a guest without a canonical contact method', function (): void {
         $resolver = new CustomerResolver(new CreateCustomer, new UpdateCustomerProfile);
 
         $owner = CustomersTestOwner::query()->create(['name' => 'Resolver Owner']);
@@ -141,7 +142,9 @@ describe('CustomerResolver', function (): void {
 
         expect($resolved)
             ->not->toBeNull()
-            ->and($resolved?->id)->toBe($guest->id);
+            ->and($resolved?->id)->not->toBe($guest->id)
+            ->and(OwnerContext::withOwner($owner, fn (): ?string => $resolved?->resolveEmail()))->toBe($email)
+            ->and(OwnerContext::withOwner($owner, fn (): int => $guest->legacyAddresses()->count()))->toBe(0);
     });
 
     it('resolves existing guest customer by email contact method even without normalized value', function (): void {
@@ -376,8 +379,12 @@ describe('CustomerResolver', function (): void {
         expect($unscopedGuest)->toBeNull()
             ->and($customerB)->not->toBeNull()
             ->and($customerB?->getKey())->not->toBe($customerA->getKey())
-            ->and(Customer::query()->forOwner($ownerA)->where('email', $email)->count())->toBe(1)
-            ->and(Customer::query()->forOwner($ownerB)->where('email', $email)->count())->toBe(1);
+            ->and(OwnerContext::withOwner($ownerA, fn (): int => Customer::query()
+                ->whereHas('contactMethods', fn (Builder $query): Builder => $query->where('type', 'email')->where('value', $email))
+                ->count()))->toBe(1)
+            ->and(OwnerContext::withOwner($ownerB, fn (): int => Customer::query()
+                ->whereHas('contactMethods', fn (Builder $query): Builder => $query->where('type', 'email')->where('value', $email))
+                ->count()))->toBe(1);
     });
 
     it('rejects duplicate customer emails within one owner scope', function (): void {
@@ -413,10 +420,10 @@ describe('CustomerResolver', function (): void {
             );
         }))->toThrow(ValidationException::class);
 
-        expect(fn () => OwnerContext::withOwner($owner, function () use ($first, $second): void {
+        expect(fn () => OwnerContext::withOwner($owner, function () use ($email, $second): void {
             (new UpdateCustomerProfile)->execute(
                 $second,
-                ['email' => $first->email],
+                ['email' => $email],
                 [],
                 null,
             );

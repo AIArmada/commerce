@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\Schemas;
 
+use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
@@ -21,11 +22,13 @@ final class CustomerInfolist
                     ->schema([
                         TextEntry::make('full_name')
                             ->label('Name'),
-                        TextEntry::make('email')
+                        TextEntry::make('primary_email')
                             ->label('Email')
+                            ->getStateUsing(fn (Customer $record): ?string => $record->resolveEmail())
                             ->copyable(),
-                        TextEntry::make('phone')
+                        TextEntry::make('primary_phone')
                             ->label('Phone')
+                            ->getStateUsing(fn (Customer $record): ?string => $record->resolvePhone())
                             ->copyable(),
                         TextEntry::make('company')
                             ->label('Company')

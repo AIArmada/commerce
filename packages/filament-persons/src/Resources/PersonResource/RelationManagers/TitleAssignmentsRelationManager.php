@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
 use AIArmada\Persons\Enums\AssignmentStatus;
+use AIArmada\Persons\Models\Title;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -51,6 +52,11 @@ final class TitleAssignmentsRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
+                    ->mutateFormDataUsing(function (array $data): array {
+                        Title::query()->findOrFail($data['title_id']);
+
+                        return $data;
+                    })
                     ->form([
                         Select::make('title_id')
                             ->label('Title')

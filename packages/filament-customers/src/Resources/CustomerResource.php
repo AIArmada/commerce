@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCustomers\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\FilamentContacting\RelationManagers\ContactMethodsRelationManager;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Pages;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Schemas\CustomerForm;
@@ -37,7 +38,7 @@ class CustomerResource extends Resource
         return is_numeric($sort) ? (int) $sort : null;
     }
 
-    protected static ?string $recordTitleAttribute = 'email';
+    protected static ?string $recordTitleAttribute = 'full_name';
 
     public static function getNavigationBadge(): ?string
     {
@@ -76,10 +77,16 @@ class CustomerResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
+        $relations = [
             RelationManagers\AddressesRelationManager::class,
             RelationManagers\NotesRelationManager::class,
         ];
+
+        if (class_exists(ContactMethodsRelationManager::class)) {
+            $relations[] = ContactMethodsRelationManager::class;
+        }
+
+        return $relations;
     }
 
     public static function getPages(): array
@@ -94,6 +101,6 @@ class CustomerResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['first_name', 'last_name', 'email', 'phone', 'company'];
+        return ['first_name', 'last_name', 'company', 'contactMethods.value'];
     }
 }

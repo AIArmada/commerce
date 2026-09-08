@@ -37,6 +37,20 @@ it('snapshots address data from AddressData', function (): void {
     expect($snapshot->address_id)->toBeNull();
 });
 
+it('rejects an empty snapshot reason', function (): void {
+    $snapshotable = new class extends Model
+    {
+        protected $table = 'test_models';
+    };
+    $snapshotable->save();
+
+    expect(fn (): AddressSnapshot => $this->action->execute(
+        $snapshotable,
+        AddressData::from(['line1' => '123 Main St', 'countryCode' => 'MY']),
+        reason: '   ',
+    ))->toThrow(InvalidArgumentException::class, 'non-empty string');
+});
+
 it('snapshots address from Address model', function (): void {
     $snapshotable = new class extends Model
     {

@@ -29,7 +29,7 @@ class RecentCustomersWidget extends BaseWidget
             ->columns([
                 Tables\Columns\TextColumn::make('full_name')
                     ->label('Customer')
-                    ->description(fn ($record) => $record->email),
+                    ->description(fn (Customer $record): ?string => $record->resolveEmail()),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')

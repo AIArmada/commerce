@@ -5,16 +5,25 @@ declare(strict_types=1);
 namespace AIArmada\Contacting\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\Contacting\Exceptions\ContactSnapshotsDisabledException;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Models\ContactSnapshot;
 use AIArmada\Contacting\Models\SocialProfile;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 final class CreateContactSnapshotAction
 {
     public function fromContactMethod(Model $snapshotable, ContactMethod $contactMethod, ?string $reason = null): ContactSnapshot
     {
+        $this->assertSnapshotsEnabled();
+        $ownerValue = $contactMethod->getRelationValue('owner');
+        $owner = $ownerValue instanceof Model ? $ownerValue : null;
+        $this->assertOwnerMatches($snapshotable, $owner);
+
         return $this->persistSnapshot(
             $this->makeSnapshot(
                 snapshotable: $snapshotable,
@@ -30,14 +39,19 @@ final class CreateContactSnapshotAction
                 displayValue: $contactMethod->display_value,
                 isPublic: $contactMethod->is_public,
                 payload: $contactMethod->toArray(),
-                owner: $contactMethod->owner,
+                owner: $owner,
             ),
-            $contactMethod->owner,
+            $owner,
         );
     }
 
     public function fromSocialProfile(Model $snapshotable, SocialProfile $socialProfile, ?string $reason = null): ContactSnapshot
     {
+        $this->assertSnapshotsEnabled();
+        $ownerValue = $socialProfile->getRelationValue('owner');
+        $owner = $ownerValue instanceof Model ? $ownerValue : null;
+        $this->assertOwnerMatches($snapshotable, $owner);
+
         return $this->persistSnapshot(
             $this->makeSnapshot(
                 snapshotable: $snapshotable,
@@ -53,9 +67,9 @@ final class CreateContactSnapshotAction
                 displayValue: $socialProfile->display_name ?? $socialProfile->handle,
                 isPublic: $socialProfile->is_public,
                 payload: $socialProfile->toArray(),
-                owner: $socialProfile->owner,
+                owner: $owner,
             ),
-            $socialProfile->owner,
+            $owner,
         );
     }
 
@@ -66,17 +80,21 @@ final class CreateContactSnapshotAction
      */
     public function fromBundle(Model $snapshotable, iterable $contactMethods, iterable $socialProfiles, ?string $reason = null): Collection
     {
-        $snapshots = new Collection;
+        $this->assertSnapshotsEnabled();
 
-        foreach ($contactMethods as $cm) {
-            $snapshots->push($this->fromContactMethod($snapshotable, $cm, $reason));
-        }
+        return DB::transaction(function () use ($contactMethods, $reason, $snapshotable, $socialProfiles): Collection {
+            $snapshots = new Collection;
 
-        foreach ($socialProfiles as $sp) {
-            $snapshots->push($this->fromSocialProfile($snapshotable, $sp, $reason));
-        }
+            foreach ($contactMethods as $cm) {
+                $snapshots->push($this->fromContactMethod($snapshotable, $cm, $reason));
+            }
 
-        return $snapshots;
+            foreach ($socialProfiles as $sp) {
+                $snapshots->push($this->fromSocialProfile($snapshotable, $sp, $reason));
+            }
+
+            return $snapshots;
+        });
     }
 
     /**
@@ -122,14 +140,65 @@ final class CreateContactSnapshotAction
 
     private function persistSnapshot(ContactSnapshot $snapshot, ?Model $owner): ContactSnapshot
     {
-        if (! (bool) config('contacting.features.contact_snapshots', true)) {
-            return $snapshot;
-        }
+        $this->assertSnapshotsEnabled();
 
         return OwnerContext::withOwner($owner, function () use ($snapshot): ContactSnapshot {
             $snapshot->save();
 
             return $snapshot;
         });
+    }
+
+    private function assertSnapshotsEnabled(): void
+    {
+        if ((bool) config('contacting.features.contact_snapshots', true)) {
+            return;
+        }
+
+        throw new ContactSnapshotsDisabledException(
+            'Contact snapshots are disabled; enable contacting.features.contact_snapshots before creating one.',
+        );
+    }
+
+    private function assertOwnerMatches(Model $snapshotable, ?Model $sourceOwner): void
+    {
+        [$sourceType, $sourceId] = $sourceOwner instanceof Model
+            ? [$sourceOwner->getMorphClass(), (string) $sourceOwner->getKey()]
+            : [null, null];
+        [$targetType, $targetId] = $this->ownerTuple($snapshotable);
+
+        if ($sourceType === $targetType && $sourceId === $targetId) {
+            return;
+        }
+
+        throw new AuthorizationException('The contact source and snapshotable must share the same owner context.');
+    }
+
+    /**
+     * @return array{0: string|null, 1: string|null}
+     */
+    private function ownerTuple(Model $model): array
+    {
+        if (! method_exists($model::class, 'ownerScopeConfig')) {
+            return [null, null];
+        }
+
+        $config = call_user_func([$model::class, 'ownerScopeConfig']);
+
+        if (! $config instanceof OwnerScopeConfig) {
+            return [null, null];
+        }
+
+        if (! $config->enabled) {
+            return [null, null];
+        }
+
+        $type = $model->getAttribute($config->ownerTypeColumn);
+        $id = $model->getAttribute($config->ownerIdColumn);
+
+        return [
+            $type === null ? null : (string) $type,
+            $id === null ? null : (string) $id,
+        ];
     }
 }

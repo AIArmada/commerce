@@ -4,14 +4,21 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Exports;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Contacting\Models\SocialProfile;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
+use Illuminate\Database\Eloquent\Builder;
 
 final class SocialProfileExporter extends Exporter
 {
     protected static ?string $model = SocialProfile::class;
+
+    public static function modifyQuery(Builder $query): Builder
+    {
+        return OwnerUiScope::apply($query, includeGlobal: false);
+    }
 
     public static function getColumns(): array
     {

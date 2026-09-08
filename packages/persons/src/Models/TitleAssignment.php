@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -54,6 +55,21 @@ class TitleAssignment extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saving(function (TitleAssignment $assignment): void {
+            if (! Title::query()->whereKey($assignment->getAttribute('title_id'))->exists()) {
+                throw new InvalidArgumentException('The title assignment must reference a persisted title.');
+            }
+
+            $issuerId = $assignment->getAttribute('issuer_id');
+
+            if ($issuerId !== null && ! TitleIssuer::query()->whereKey($issuerId)->exists()) {
+                throw new InvalidArgumentException('The title assignment issuer must reference a persisted title issuer.');
+            }
+        });
+    }
+
     /**
      * @return MorphTo<Model, $this>
      */
@@ -68,5 +84,13 @@ class TitleAssignment extends Model
     public function title(): BelongsTo
     {
         return $this->belongsTo(Title::class, 'title_id');
+    }
+
+    /**
+     * @return BelongsTo<TitleIssuer, $this>
+     */
+    public function issuer(): BelongsTo
+    {
+        return $this->belongsTo(TitleIssuer::class, 'issuer_id');
     }
 }

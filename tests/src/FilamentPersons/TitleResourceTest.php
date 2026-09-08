@@ -11,7 +11,9 @@ use Filament\Tables\Table;
 
 it('shows the configured country column for titles', function (): void {
     $originalCountryClass = config('persons.models.country');
+    $originalAddressingEnabled = config('persons.integrations.addressing.enabled');
 
+    config()->set('persons.integrations.addressing.enabled', true);
     config()->set('persons.models.country', AddressCountry::class);
 
     try {
@@ -25,5 +27,6 @@ it('shows the configured country column for titles', function (): void {
             ->toBeInstanceOf(AddressCountry::class);
     } finally {
         config()->set('persons.models.country', $originalCountryClass);
+        config()->set('persons.integrations.addressing.enabled', $originalAddressingEnabled);
     }
 });

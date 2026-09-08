@@ -19,7 +19,7 @@ final class TitleIssuerFactory extends Factory
     {
         return [
             'issuer_name' => $this->faker->company(),
-            'issuer_type' => IssuerType::Government,
+            'issuer_type' => IssuerType::ProfessionalBoard,
         ];
     }
 }

@@ -14,7 +14,6 @@ describe('Address Model', function (): void {
         $this->customer = Customer::create([
             'first_name' => 'Address',
             'last_name' => 'Test',
-            'email' => 'address-' . uniqid() . '@example.com',
             'status' => CustomerStatus::Active,
         ]);
     });
@@ -220,8 +219,8 @@ describe('Address Model', function (): void {
                 'state' => 'WP',
                 'postcode' => '50000',
                 'country' => 'MY',
-                'phone' => '+60123456789',
             ]);
+            $address->addContactMethod(ContactMethodData::phone('+60123456789', 'MY'));
 
             $label = $address->toShippingLabel();
 
@@ -229,7 +228,8 @@ describe('Address Model', function (): void {
                 ->and($label['name'])->toBe('Jane Doe')
                 ->and($label['company'])->toBe('Test Corp')
                 ->and($label['line1'])->toBe('123 Main St')
-                ->and($label['city'])->toBe('KL');
+                ->and($label['city'])->toBe('KL')
+                ->and($label['phone'])->toBe('+60123456789');
         });
 
         it('falls back to customer name when no recipient', function (): void {
@@ -248,7 +248,7 @@ describe('Address Model', function (): void {
     });
 
     describe('Resolver address payload', function (): void {
-        it('stores legacy address columns alongside line fields', function (): void {
+        it('stores address fields and customer contact methods separately', function (): void {
             $resolver = app(CustomerResolver::class);
 
             $customer = $resolver->resolve(
@@ -274,7 +274,8 @@ describe('Address Model', function (): void {
 
             expect($address)->not->toBeNull()
                 ->and($address?->line1)->toBe('123 Resolver St')
-                ->and($address?->line2)->toBe('Suite 200');
+                ->and($address?->line2)->toBe('Suite 200')
+                ->and($customer?->resolvePhone())->toBe('+60123456789');
         });
     });
 

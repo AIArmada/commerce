@@ -21,7 +21,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use Override;
 
 /**
  * @property string $id
@@ -76,32 +75,11 @@ final class SocialProfile extends Model
         'verified_at',
         'valid_from',
         'valid_until',
-        'order_column',
         'sort_order',
         'metadata',
     ];
 
     protected static string $ownerScopeConfigKey = 'contacting.features.owner';
-
-    #[Override]
-    public function setAttribute($key, $value): mixed
-    {
-        if ($key === 'order_column') {
-            return parent::setAttribute('sort_order', $value);
-        }
-
-        return parent::setAttribute($key, $value);
-    }
-
-    #[Override]
-    public function getAttribute($key): mixed
-    {
-        if ($key === 'order_column') {
-            return parent::getAttribute('sort_order');
-        }
-
-        return parent::getAttribute($key);
-    }
 
     public function getTable(): string
     {
@@ -271,12 +249,23 @@ final class SocialProfile extends Model
 
             $this->socialable()->lockForUpdate()->firstOrFail();
 
+            // saving() validates the socialable and owner before this demotion query runs.
             SocialProfile::query()
                 ->where('socialable_type', $this->socialable_type)
                 ->where('socialable_id', $this->socialable_id)
                 ->where('platform', $this->platform)
                 ->where('purpose', $this->purpose)
                 ->whereKeyNot($this->getKey())
+                ->where(function (Builder $query): void {
+                    if ($this->owner_type === null) {
+                        $query->whereNull('owner_type')->whereNull('owner_id');
+
+                        return;
+                    }
+
+                    $query->where('owner_type', $this->owner_type)
+                        ->where('owner_id', $this->owner_id);
+                })
                 ->lockForUpdate()
                 ->update(['is_primary' => false]);
         });

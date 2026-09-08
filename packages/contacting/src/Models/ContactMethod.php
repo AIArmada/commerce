@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use Override;
 
 /**
  * @property string $id
@@ -72,32 +71,11 @@ final class ContactMethod extends Model
         'verified_at',
         'valid_from',
         'valid_until',
-        'order_column',
         'sort_order',
         'metadata',
     ];
 
     protected static string $ownerScopeConfigKey = 'contacting.features.owner';
-
-    #[Override]
-    public function setAttribute($key, $value): mixed
-    {
-        if ($key === 'order_column') {
-            return parent::setAttribute('sort_order', $value);
-        }
-
-        return parent::setAttribute($key, $value);
-    }
-
-    #[Override]
-    public function getAttribute($key): mixed
-    {
-        if ($key === 'order_column') {
-            return parent::getAttribute('sort_order');
-        }
-
-        return parent::getAttribute($key);
-    }
 
     public function getTable(): string
     {
@@ -200,7 +178,10 @@ final class ContactMethod extends Model
     private function applyDefaultFlags(): void
     {
         if ($this->is_public === null) {
-            $this->is_public = (bool) config('contacting.defaults.public_by_default', true);
+            $this->is_public = match (mb_strtolower((string) $this->type)) {
+                'email', 'phone', 'mobile', 'whatsapp', 'fax' => false,
+                default => (bool) config('contacting.defaults.public_by_default', true),
+            };
         }
 
         if ($this->is_verified === null) {
@@ -258,12 +239,23 @@ final class ContactMethod extends Model
 
             $this->contactable()->lockForUpdate()->firstOrFail();
 
+            // saving() validates the contactable and owner before this demotion query runs.
             ContactMethod::query()
                 ->where('contactable_type', $this->contactable_type)
                 ->where('contactable_id', $this->contactable_id)
                 ->where('type', $this->type)
                 ->where('purpose', $this->purpose)
                 ->where('id', '!=', $this->id)
+                ->where(function (Builder $query): void {
+                    if ($this->owner_type === null) {
+                        $query->whereNull('owner_type')->whereNull('owner_id');
+
+                        return;
+                    }
+
+                    $query->where('owner_type', $this->owner_type)
+                        ->where('owner_id', $this->owner_id);
+                })
                 ->lockForUpdate()
                 ->update(['is_primary' => false]);
         });

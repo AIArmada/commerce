@@ -91,6 +91,11 @@ class Organization extends Model implements MembershipMutationGuard
             && $this->status === OrganizationStatus::Active;
     }
 
+    public function isActive(): bool
+    {
+        return $this->status === OrganizationStatus::Active;
+    }
+
     public function isPrivate(): bool
     {
         return $this->visibility === OrganizationVisibility::Private;

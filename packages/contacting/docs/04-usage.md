@@ -7,9 +7,9 @@ title: Contacting Usage
 ## Canonical contact values
 
 `ContactMethod` and `SocialProfile` rows are the canonical multi-value contact
-surface. A consumer may expose a native email/phone column for legacy or
-cache purposes, but new identity code should read the contacting relation and
-must not add another contact column without a synchronization decision.
+surface. Models that use Contacting must not expose duplicate native
+email/phone columns or use them as fallbacks. Read and write contact values
+through the Contacting relations and actions.
 
 Save-time normalization always refreshes `normalized_value`. An explicitly
 provided `display_value`, social handle, or social URL is preserved on later
@@ -35,6 +35,10 @@ class Institution extends Model
 ```
 
 ## Create Email Contact
+
+Email, phone, mobile, WhatsApp, and fax contacts default to private. Websites
+and social profiles use `contacting.defaults.public_by_default`; set
+`is_public` explicitly for directory or publication flows.
 
 ```php
 use AIArmada\Contacting\Actions\CreateContactMethodAction;
@@ -195,9 +199,21 @@ app(CreateContactSnapshotAction::class)->fromBundle(
 
 If the organizer changes their WhatsApp later, the event snapshot remains unchanged.
 
+Snapshot creation is transactional for bundles. Source and snapshotable owner
+tuples must match, and a disabled snapshot feature throws
+`ContactSnapshotsDisabledException`. The stable snapshot reason is a
+non-empty string such as `event_public_contact`.
+
+`sort_order` is the canonical ordering column. The removed `order_column`
+compatibility alias is not accepted.
+
 ## Imports and owner isolation
 
 Contact and social CSV importers resolve the row's polymorphic target through
 `ContactingModelReferenceGuard` before validation and persistence. Owner-scoped
 targets must be visible in the current `OwnerContext`; a forged cross-owner
 ID is rejected and creates no contact row.
+
+Filament exports are also owner-scoped and exclude global rows by default.
+Enable `filament-contacting.tables.show_owner_columns` when owner diagnostics
+are needed in the admin UI.

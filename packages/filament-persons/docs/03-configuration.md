@@ -10,6 +10,7 @@ The package configuration lives in `config/filament-persons.php`:
 return [
     'navigation' => [
         'group' => 'People',
+        'sort' => 30,
     ],
     'resources' => [
         'enabled' => [
@@ -29,8 +30,10 @@ return [
 ```
 
 Set an entry in `resources.enabled` to `false` to keep that resource out of
-the panel. Navigation groups and sort positions are read at runtime by each
-resource, so panel-specific navigation overrides remain possible.
+the panel. `navigation.sort` registers the group order with the Commerce
+navigation builder; `resources.navigation_sort.*` controls item order. All
+values are read at runtime, so panel-specific navigation overrides remain
+possible.
 
 Publish the configuration when a local copy is needed:
 

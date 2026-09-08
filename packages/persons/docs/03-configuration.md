@@ -12,18 +12,23 @@ php artisan vendor:publish --tag="persons-config"
 
 ## Table names
 
-All table names are configurable and default to unprefixed names. Override per table via env or by editing the published config:
+All table names are configurable. They default to the value of
+`PERSONS_TABLE_PREFIX` (empty by default), and each table can be overridden
+individually:
 
 ```php
 'database' => [
     'table_prefix' => '',
     'tables' => [
-        'persons' => env('PERSONS_TABLE_PERSONS', 'persons'),
-        'person_names' => env('PERSONS_TABLE_PERSON_NAMES', 'person_names'),
+        'persons' => env('PERSONS_TABLE_PERSONS', $tablePrefix . 'persons'),
+        'person_names' => env('PERSONS_TABLE_PERSON_NAMES', $tablePrefix . 'person_names'),
         // ...
     ],
 ],
 ```
+
+The published config uses `PERSONS_TABLE_PREFIX` as the fallback for every table,
+while the per-table variables take precedence.
 
 ## JSON column type
 
@@ -41,22 +46,33 @@ The host application may subclass package models. `Person` is resolved through `
 ```php
 'models' => [
     'person' => env('PERSONS_MODEL_PERSON', \AIArmada\Persons\Models\Person::class),
-    'country' => env('PERSONS_MODEL_COUNTRY', \AIArmada\Addressing\Models\AddressCountry::class),
-    'institution' => env('PERSONS_MODEL_INSTITUTION'), // no default — application-specific
+    'country' => env('PERSONS_MODEL_COUNTRY', class_exists(\AIArmada\Addressing\Models\AddressCountry::class)
+        ? \AIArmada\Addressing\Models\AddressCountry::class
+        : null),
+    'institution' => env('PERSONS_MODEL_INSTITUTION'),
 ],
 ```
 
-Leave `institution` unset when there is no host institution model; `affiliations.institution_id` then stores as a plain nullable UUID.
+Leave `institution` unset when there is no host institution model. An
+`institution_id` value is rejected until a valid Eloquent institution model is
+configured; null remains valid.
 
 ## Optional integrations
 
 ```php
 'integrations' => [
-    'addressing' => ['enabled' => (bool) env('PERSONS_ADDRESSING_ENABLED', false)],
+    'addressing' => [
+        'enabled' => (bool) env('PERSONS_ADDRESSING_ENABLED', class_exists(\AIArmada\Addressing\Models\AddressCountry::class)),
+    ],
 ],
 ```
 
-- **addressing** — enables nationality/title/issuer country relations. Requires `aiarmada/addressing`.
+- **addressing** — enables nationality/title/issuer country relations. It
+  defaults on when `AddressCountry` is available and can be disabled with
+  `PERSONS_ADDRESSING_ENABLED=false`.
+
+When addressing is disabled, country pointers must remain null and any
+configured country relation is fail-closed.
 
 ### Media
 

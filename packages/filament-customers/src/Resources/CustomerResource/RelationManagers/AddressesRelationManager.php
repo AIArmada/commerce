@@ -53,11 +53,6 @@ class AddressesRelationManager extends RelationManager
                     ->label('Company')
                     ->maxLength(255),
 
-                Forms\Components\TextInput::make('phone')
-                    ->label('Phone')
-                    ->tel()
-                    ->maxLength(20),
-
                 Forms\Components\TextInput::make('line1')
                     ->label('Address Line 1')
                     ->required()
