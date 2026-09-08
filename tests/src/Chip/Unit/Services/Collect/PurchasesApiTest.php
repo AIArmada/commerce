@@ -90,6 +90,57 @@ beforeEach(function (): void {
     $this->apiWithoutCache = new PurchasesApi(null, $this->client);
 });
 
+it('rejects mixed-currency checkout products in the collect API', function (): void {
+    $client = ClientDetailsData::from(['email' => 'buyer@example.com']);
+    $products = [
+        ProductData::from(['name' => 'MYR item', 'price' => 1000, 'currency' => 'MYR']),
+        ProductData::from(['name' => 'USD item', 'price' => 1000, 'currency' => 'USD']),
+    ];
+
+    expect(fn () => $this->apiWithoutCache->createCheckoutPurchase($products, $client))
+        ->toThrow(ChipValidationException::class, 'Checkout product currency must match the purchase currency.');
+});
+
+it('rejects a checkout currency override that differs from its products', function (): void {
+    $client = ClientDetailsData::from(['email' => 'buyer@example.com']);
+    $products = [ProductData::from(['name' => 'MYR item', 'price' => 1000, 'currency' => 'MYR'])];
+
+    expect(fn () => $this->apiWithoutCache->createCheckoutPurchase($products, $client, [
+        'purchase_overrides' => ['currency' => 'USD'],
+    ]))->toThrow(ChipValidationException::class, 'cannot differ from its products');
+});
+
+it('rejects a response with a different currency than the request', function (): void {
+    $this->client->shouldReceive('post')
+        ->once()
+        ->andReturn(chipPurchaseResponse(['purchase' => ['currency' => 'USD']]));
+
+    expect(fn () => $this->apiWithoutCache->create([
+        'client' => ['email' => 'buyer@example.com'],
+        'purchase' => [
+            'currency' => 'MYR',
+            'products' => [['name' => 'Item', 'price' => 1000]],
+        ],
+        'brand_id' => 'brand_123',
+    ]))->toThrow(ChipValidationException::class, 'unexpected currency');
+});
+
+it('rejects an unreconciled stable total contract', function (): void {
+    expect(fn () => $this->apiWithoutCache->create([
+        'client' => ['email' => 'buyer@example.com'],
+        'purchase' => [
+            'currency' => 'MYR',
+            'products' => [['name' => 'Item', 'price' => 1000]],
+            'subtotal_override' => 1000,
+            'total_discount_override' => 0,
+            'total_tax_override' => 0,
+            'total_override' => 999,
+            'total' => 999,
+        ],
+        'brand_id' => 'brand_123',
+    ]))->toThrow(ChipValidationException::class, 'total overrides do not reconcile');
+});
+
 describe('Collect Purchases API', function (): void {
     it('creates a purchase with client payload', function (): void {
         $requestData = [

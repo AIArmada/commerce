@@ -11,6 +11,7 @@ use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
 use Carbon\CarbonImmutable;
 use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -85,6 +86,20 @@ final class FeedbackTestimonial extends Model
             'published_at' => 'immutable_datetime',
             'hidden_at' => 'immutable_datetime',
         ];
+    }
+
+    /**
+     * Scope public testimonials to approved, published, and visible records.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query
+            ->where('status', FeedbackTestimonialStatus::Published->value)
+            ->whereNotNull('published_at')
+            ->whereNull('hidden_at');
     }
 
     public function response(): BelongsTo

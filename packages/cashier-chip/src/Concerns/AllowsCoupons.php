@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Billing\Coupon;
+use AIArmada\CashierChip\Billing\VoucherIntegration;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
-use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
+use LogicException;
 
 trait AllowsCoupons
 {
@@ -133,16 +134,11 @@ trait AllowsCoupons
     /**
      * Retrieve a coupon by its ID (voucher code).
      *
-     * Returns null if the vouchers package is not installed.
+     * @throws LogicException when the vouchers integration is unavailable.
      */
     protected function retrieveCoupon(string $couponId): ?Coupon
     {
-        if (! class_exists(VoucherService::class)) {
-            return null;
-        }
-
-        /** @var VoucherService $service */
-        $service = app(VoucherService::class);
+        $service = VoucherIntegration::service();
 
         $voucherData = $service->find($couponId);
 
@@ -182,12 +178,7 @@ trait AllowsCoupons
      */
     protected function recordCouponUsage(string $couponId, int $discountAmount, mixed $redeemedBy = null): void
     {
-        if (! class_exists(VoucherService::class)) {
-            return;
-        }
-
-        /** @var VoucherService $service */
-        $service = app(VoucherService::class);
+        $service = VoucherIntegration::service();
 
         $currency = config('cashier-chip.currency', 'MYR');
 

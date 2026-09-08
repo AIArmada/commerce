@@ -39,7 +39,6 @@ abstract class CashierChipTestCase extends Orchestra
         Cashier::$registersRoutes = true;
         Cashier::$deactivatePastDue = true;
         Cashier::$deactivateIncomplete = true;
-        Cashier::formatCurrencyUsing(null);
         Cashier::unfake();
 
         Cashier::useCustomerModel(User::class);
@@ -105,7 +104,6 @@ abstract class CashierChipTestCase extends Orchestra
         $app['config']->set('chip.collect.api_key', 'test_secret_key');
         $app['config']->set('chip.collect.brand_id', 'test_brand_id');
         $app['config']->set('chip.environment', 'sandbox');
-        $app['config']->set('chip.integrations.docs.paid_doc_type', null);
 
         // Configure Cashier CHIP settings
         $app['config']->set('cashier-chip.currency', 'MYR');

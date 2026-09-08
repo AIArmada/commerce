@@ -51,22 +51,6 @@ describe('Cashier', function (): void {
         $this->assertInstanceOf(FakeChipCollectService::class, $fake);
     });
 
-    it('format amount', function (): void {
-        $formatted = Cashier::formatAmount(1000, 'MYR');
-
-        $this->assertIsString($formatted);
-    });
-
-    it('format amount with custom formatter', function (): void {
-        Cashier::formatCurrencyUsing(function ($amount, $currency) {
-            return "CUSTOM: {$currency} {$amount}";
-        });
-
-        $formatted = Cashier::formatAmount(1000, 'MYR');
-
-        $this->assertEquals('CUSTOM: MYR 1000', $formatted);
-    });
-
     it('ignore routes', function (): void {
         Cashier::ignoreRoutes();
 

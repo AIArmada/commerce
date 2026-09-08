@@ -163,14 +163,14 @@ ChipSend::deleteSendWebhook(int $id): void
 ```php
 Chip::purchase()
     ->brand(string $brandId): self
-    ->currency(string $currency = 'MYR'): self
+    ->currency(string $currency): self
     ->customer(string $email, ?string $fullName, ?string $phone, ?string $country): self
     ->email(string $email): self
     ->clientId(string $clientId): self
     ->billingAddress(string $street, string $city, string $zip, ?string $state, ?string $country): self
     ->shippingAddress(string $street, string $city, string $zip, ?string $state, ?string $country): self
-    ->addProductCents(string $name, int $price, int $quantity = 1, int $discount = 0, float $taxPercent = 0): self
-    ->addProductMoney(string $name, Money $price, int $quantity = 1, ?Money $discount = null, float $taxPercent = 0): self
+    ->addProductCents(string $name, int $price, string|float|int $quantity = 1, int $discount = 0, float $taxPercent = 0): self
+    ->addProductMoney(string $name, Money $price, string|float|int $quantity = 1, ?Money $discount = null, float $taxPercent = 0): self
     ->addProductObject(ProductData $product): self
     ->addLineItem(LineItemInterface $item): self
     ->fromCheckoutable(CheckoutableInterface $checkoutable): self
@@ -307,18 +307,6 @@ SendWebhookReceived::$payload: array<string, mixed>
 
 The dedicated CHIP Send webhook route verifies the raw request with the Send webhook's SHA-512 RSA signature and dispatches the verified JSON object unchanged. The payload shape depends on the configured Send `event_hooks` value; no synthetic Send status event is created by the package.
 
-### RunChipPurchaseDocGenerationAction
-
-```php
-use AIArmada\Chip\Actions\RunChipPurchaseDocGenerationAction;
-
-$action = app(RunChipPurchaseDocGenerationAction::class);
-
-$action->execute(string $purchaseId, array $payload, DocData $docData, string $docTypeConfigKey): void
-```
-
-Generates a document (invoice/credit note) from a CHIP payment event. Guards against duplicates per payment ID. No-ops when `aiarmada/docs` is not installed.
-
 ### SyncChipRecordsFromApiAction
 
 ```php
@@ -335,22 +323,9 @@ $action->handle(
 ): array{processed: int, synced: int, skipped: int, failed: int, errors: array<int, string>}
 ```
 
-Fetches CHIP purchases from the remote API and stores them locally via `StoreWebhookData`. Optionally links checkout customers via `ChipCustomerBridge`. Supports dry-run mode and status filtering.
+Fetches CHIP purchases from the remote API and stores them locally via `StoreWebhookData`. It does not reach into checkout or customer packages; downstream subscribers can consume the stable CHIP webhook event payload instead. Supports dry-run mode and status filtering.
 
 ## Support Classes
-
-### ChipCustomerBridge
-
-```php
-use AIArmada\Chip\Support\ChipCustomerBridge;
-
-$bridge = app(ChipCustomerBridge::class);
-
-$bridge->findCheckoutSessionByPaymentId(string $paymentId): ?Model
-$bridge->linkCustomer(Model $checkoutSession, array $payload, string $source = 'chip_customer_bridge'): void
-```
-
-Integrates with `aiarmada/checkout` and `aiarmada/customers` to link a CHIP client ID to a local customer model after a completed checkout session. The checkout session model and customer model classes are configurable via `chip.integrations.customer_bridge.*`.
 
 ### ChipOwnerTuple
 
@@ -370,9 +345,10 @@ Utility for embedding and extracting the owner tuple (`__owner_type`, `__owner_i
 use AIArmada\Chip\Support\ChipPaymentStatusMapper;
 
 ChipPaymentStatusMapper::map(string $chipStatus): PaymentStatus
+ChipPaymentStatusMapper::mapWebhook(?string $chipStatus, string $eventType): PaymentStatus
 ```
 
-Maps CHIP-internal status strings to the standardized `AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus` enum used by the unified gateway interface.
+Maps CHIP-internal status strings and webhook event types to the standardized `AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus` enum used by the unified gateway interface. Recognized webhook event types take precedence over the payload status.
 
 ### ChipWebhookOwnerResolver
 
@@ -395,24 +371,6 @@ ResolveWebhookPurchaseId::fromAnyPayload(array $payload): ?string
 ```
 
 Extracts the CHIP purchase ID from webhook payloads. `fromPaymentPayload` handles payment-shaped refund completion payloads (`related_to.id`), while `fromAnyPayload` falls back to the top-level `id` or `data.id` field.
-
-### BuildChipDocData
-
-```php
-use AIArmada\Chip\Support\BuildChipDocData;
-use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Events\PurchasePaid;
-use AIArmada\Chip\Events\PaymentRefunded;
-use AIArmada\Docs\DataObjects\DocData;
-use AIArmada\Docs\Models\Doc;
-
-$builder = app(BuildChipDocData::class);
-
-$builder->forPayment(Purchase $purchase, PurchasePaid $event, DocType $docType): DocData
-$builder->forRefund(Purchase $purchase, PaymentRefunded $event, DocType $docType, ?Doc $originalInvoice): DocData
-```
-
-Builds `DocData` objects from CHIP payment and refund events for use with `RunChipPurchaseDocGenerationAction`. Extracts customer data, line items, and metadata from the purchase and event data.
 
 ### WebhookOwnerBatchRunner
 

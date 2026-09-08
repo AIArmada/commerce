@@ -49,18 +49,20 @@ $event->feedbackForms(); // MorphMany
 $event->createFeedbackFormFromTemplate('post-event-feedback');
 ```
 
-## Add questions
+## Add questions and sections
 
 ```php
-use AIArmada\Feedback\Actions\CreateFeedbackQuestionAction;
+use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 
-app(CreateFeedbackQuestionAction::class)->execute(
+app(SaveFeedbackFormStructureAction::class)->saveQuestion(
     formId: $form->id,
-    key: 'overall_rating',
-    type: 'rating',
-    label: 'Overall rating',
-    isRequired: true,
-    settings: ['min' => 1, 'max' => 5],
+    data: [
+        'key' => 'overall_rating',
+        'type' => 'rating',
+        'label' => 'Overall rating',
+        'is_required' => true,
+        'settings' => ['min' => 1, 'max' => 5],
+    ],
 );
 ```
 

@@ -168,6 +168,8 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
      */
     public function subscription(string $type = 'default'): ?Subscription
     {
+        $this->loadMissing('subscriptions.items', 'subscriptions.billable');
+
         return $this->subscriptions->where('type', $type)->first();
     }
 
@@ -240,6 +242,8 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
      */
     public function onProduct(string $product): bool
     {
+        $this->loadMissing('subscriptions.items', 'subscriptions.billable');
+
         return ! is_null($this->subscriptions->first(function (Subscription $subscription) use ($product) {
             return $subscription->valid() && $subscription->hasProduct($product);
         }));
@@ -250,6 +254,8 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
      */
     public function onPrice(string $price): bool
     {
+        $this->loadMissing('subscriptions.items', 'subscriptions.billable');
+
         return ! is_null($this->subscriptions->first(function (Subscription $subscription) use ($price) {
             return $subscription->valid() && $subscription->hasPrice($price);
         }));

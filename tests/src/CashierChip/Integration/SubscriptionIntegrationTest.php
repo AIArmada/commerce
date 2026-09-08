@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Billing\Discount;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
+use AIArmada\CashierChip\Invoice\Invoice;
+use AIArmada\CashierChip\Subscription\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
@@ -423,6 +425,72 @@ describe('SubscriptionIntegration', function (): void {
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
         $this->assertNull($subscription->latestPayment());
+    });
+
+    it('builds payment and invoice history from completed renewal attempts', function (): void {
+        $user = $this->createUser([
+            'chip_id' => 'cli_payment_history_123',
+            'email' => 'history@example.com',
+        ]);
+        $subscription = Subscription::factory()->for($user, 'owner')->create();
+        $purchase = $this->fakeChip->createPurchase([
+            'client_id' => $user->chip_id,
+            'client' => [
+                'email' => $user->email,
+                'full_name' => $user->name,
+            ],
+            'purchase' => [
+                'currency' => 'MYR',
+                'products' => [[
+                    'name' => 'Monthly plan',
+                    'price' => 1000,
+                    'quantity' => 1,
+                    'discount' => 0,
+                ]],
+                'total' => 1000,
+            ],
+        ]);
+        $this->fakeChip->markPurchaseAsPaid($purchase->id);
+
+        RenewalAttempt::create([
+            'subscription_id' => $subscription->id,
+            'status' => 'completed',
+            'amount_minor' => 1000,
+            'period_key' => '2026-09',
+            'purchase_id' => $purchase->id,
+            'completed_at' => now(),
+        ]);
+
+        $payment = $subscription->latestPayment();
+        $invoice = $subscription->latestInvoice();
+
+        expect($payment)->not->toBeNull()
+            ->and($payment?->id())->toBe($purchase->id)
+            ->and($payment?->isSucceeded())->toBeTrue()
+            ->and($invoice)->toBeInstanceOf(Invoice::class)
+            ->and($invoice?->id())->toBe($purchase->id)
+            ->and($subscription->invoices())->toHaveCount(1);
+    });
+
+    it('builds an upcoming invoice from the current subscription items', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_upcoming_invoice_123']);
+        $subscription = Subscription::factory()->for($user, 'owner')->create([
+            'chip_price' => 'price_monthly',
+            'next_billing_at' => now()->addMonth(),
+        ]);
+        SubscriptionItem::factory()->for($subscription)->create([
+            'chip_price' => 'price_monthly',
+            'chip_product' => 'Monthly plan',
+            'unit_amount' => 1200,
+            'quantity' => 2,
+        ]);
+
+        $invoice = $subscription->upcomingInvoice();
+
+        expect($invoice)->toBeInstanceOf(Invoice::class)
+            ->and($invoice?->rawTotal())->toBe(2400)
+            ->and($invoice?->status())->toBe('created')
+            ->and($invoice?->invoiceItems())->toHaveCount(1);
     });
 
     it('add price', function (): void {

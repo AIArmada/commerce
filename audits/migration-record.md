@@ -113,6 +113,18 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
   defaults()`. Suites: resolver regression 3 passed,
   OwnerColumns migration 3 passed, architecture guard 4 passed.
 
+## Post-track: feedback 9-file split — implemented (dev-only)
+
+- Shipped `2000_01_01_000001_create_feedback_tables.php` (9 tables, one
+  file) replaced by `2000_01_01_000001`–`000009` one-table files, same
+  date prefix preserving order. Schema-identical: mechanical per-table
+  comparison shows zero statement differences; only delta is the
+  replicated shared JSON-column preamble. Old file deleted.
+- Authorized under the dev-only rule (delegation-playbook §5): no
+  production exists; dev DBs take delete-and-rerun. No backfill.
+  Suites green against the new files (Feedback 50/138,
+  FilamentFeedback 8/31).
+
 ## Deployment gates
 
 1. **Addressing cutover** — the migration fails closed on ownerless rows by design; on a fresh/dev DB just remove the rows and rerun. Never backfill.

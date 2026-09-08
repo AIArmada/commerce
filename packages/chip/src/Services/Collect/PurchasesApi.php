@@ -55,7 +55,25 @@ final class PurchasesApi extends CollectApi
             ['data' => $data]
         );
 
-        return PurchaseData::from($response);
+        $purchase = PurchaseData::from($response);
+        $requestCurrency = $this->normalizeCurrency($data['purchase']['currency'] ?? null);
+
+        if ($purchase->getCurrency() !== $requestCurrency) {
+            throw new ChipValidationException('CHIP returned a purchase in an unexpected currency.', [
+                'request_currency' => $requestCurrency,
+                'response_currency' => $purchase->getCurrency(),
+            ]);
+        }
+
+        $expectedTotal = $data['purchase']['total_override'] ?? $data['purchase']['total'] ?? null;
+        if ($expectedTotal !== null && $purchase->getAmountInCents() !== $this->normalizeMinorAmount($expectedTotal, 'purchase total')) {
+            throw new ChipValidationException('CHIP returned a purchase with an unexpected total.', [
+                'expected_total' => $expectedTotal,
+                'response_total' => $purchase->getAmountInCents(),
+            ]);
+        }
+
+        return $purchase;
     }
 
     /**
@@ -355,6 +373,33 @@ final class PurchasesApi extends CollectApi
      */
     public function createCheckoutPurchase(array $products, ClientDetailsData $client, array $options = []): PurchaseData
     {
+        $currency = $this->normalizeCurrency($options['currency'] ?? config('chip.defaults.currency', 'MYR'));
+
+        foreach ($products as $product) {
+            if ($product->getCurrency() !== $currency) {
+                throw new ChipValidationException('Checkout product currency must match the purchase currency.', [
+                    'purchase_currency' => $currency,
+                    'product_currency' => $product->getCurrency(),
+                ]);
+            }
+        }
+
+        /** @var array<string, mixed> $purchaseOverrides */
+        $purchaseOverrides = ! empty($options['purchase_overrides']) && is_array($options['purchase_overrides'])
+            ? array_filter(
+                $options['purchase_overrides'],
+                static fn ($value) => $value !== null
+            )
+            : [];
+        $overrideCurrency = $this->normalizeCurrency($purchaseOverrides['currency'] ?? $currency);
+
+        if ($overrideCurrency !== $currency) {
+            throw new ChipValidationException('Checkout purchase currency cannot differ from its products.', [
+                'purchase_currency' => $overrideCurrency,
+                'product_currency' => $currency,
+            ]);
+        }
+
         $data = [
             'client' => $client->toArray(),
             'purchase' => [
@@ -362,7 +407,7 @@ final class PurchasesApi extends CollectApi
                     fn (ProductData $product) => $product->toArray(),
                     $products
                 ),
-                'currency' => $options['currency'] ?? config('chip.defaults.currency', 'MYR'),
+                'currency' => $currency,
             ],
             'brand_id' => $this->client->getBrandId(),
             'send_receipt' => $options['send_receipt'] ?? config('chip.defaults.send_receipt', false),
@@ -370,15 +415,14 @@ final class PurchasesApi extends CollectApi
             'platform' => config('chip.defaults.platform', 'api'),
         ];
 
-        if (! empty($options['purchase_overrides']) && is_array($options['purchase_overrides'])) {
+        if ($purchaseOverrides !== []) {
             $data['purchase'] = array_merge(
                 $data['purchase'],
-                array_filter(
-                    $options['purchase_overrides'],
-                    static fn ($value) => $value !== null
-                )
+                $purchaseOverrides
             );
         }
+
+        $data['purchase']['currency'] = $overrideCurrency;
 
         // Only add reference if it's not null/empty
         if (! empty($options['reference'])) {
@@ -461,14 +505,120 @@ final class PurchasesApi extends CollectApi
             throw new ChipValidationException('client.email is required when client payload is provided');
         }
 
-        if (! isset($data['purchase']['products']) || empty($data['purchase']['products'])) {
+        if (! isset($data['purchase']['products']) || ! is_array($data['purchase']['products']) || empty($data['purchase']['products'])) {
             throw new ChipValidationException('Purchase must have at least one product');
         }
 
+        $currency = $this->normalizeCurrency($data['purchase']['currency'] ?? null);
+        $subtotal = 0;
+
         foreach ($data['purchase']['products'] as $product) {
-            if (! isset($product['name']) || ! isset($product['price'])) {
+            if (! is_array($product) || ! isset($product['name']) || ! isset($product['price'])) {
                 throw new ChipValidationException('Each product must have name and price');
             }
+
+            $price = $this->normalizeMinorAmount($product['price'], 'product price');
+            $quantity = $this->normalizeQuantity($product['quantity'] ?? 1);
+            $discount = $this->normalizeMinorAmount($product['discount'] ?? 0, 'product discount');
+
+            if ($price < 0 || $discount < 0 || $discount > $price) {
+                throw new ChipValidationException('Product price and discount must be non-negative, with discount no greater than price.');
+            }
+
+            $subtotal += $price * $quantity;
         }
+
+        $subtotalOverride = $this->nullableMinorAmount($data['purchase']['subtotal_override'] ?? null, 'subtotal override');
+        $discountOverride = $this->nullableMinorAmount($data['purchase']['total_discount_override'] ?? null, 'total discount override');
+        $taxOverride = $this->nullableMinorAmount($data['purchase']['total_tax_override'] ?? null, 'total tax override');
+        $totalOverride = $this->nullableMinorAmount($data['purchase']['total_override'] ?? null, 'total override');
+
+        if ($subtotalOverride !== null && $subtotalOverride !== $subtotal) {
+            throw new ChipValidationException('Purchase subtotal override does not match the sum of line items.', [
+                'line_items_subtotal' => $subtotal,
+                'subtotal_override' => $subtotalOverride,
+            ]);
+        }
+
+        if ($totalOverride !== null) {
+            if ($subtotalOverride === null || $discountOverride === null || $taxOverride === null) {
+                throw new ChipValidationException('Total override requires subtotal, discount, and tax overrides.');
+            }
+
+            $calculatedTotal = $subtotalOverride - $discountOverride + $taxOverride;
+            if ($calculatedTotal !== $totalOverride) {
+                throw new ChipValidationException('Purchase total overrides do not reconcile.', [
+                    'calculated_total' => $calculatedTotal,
+                    'total_override' => $totalOverride,
+                ]);
+            }
+        }
+
+        if (isset($data['purchase']['total'])) {
+            $total = $this->normalizeMinorAmount($data['purchase']['total'], 'purchase total');
+
+            if ($totalOverride !== null && $total !== $totalOverride) {
+                throw new ChipValidationException('Purchase total must match the total override.', [
+                    'total' => $total,
+                    'total_override' => $totalOverride,
+                ]);
+            }
+        }
+    }
+
+    private function normalizeCurrency(mixed $currency): string
+    {
+        if (! is_string($currency)) {
+            throw new ChipValidationException('Purchase currency must be a three-letter ISO 4217 code.');
+        }
+
+        $currency = mb_strtoupper(mb_trim($currency));
+
+        if (! preg_match('/^[A-Z]{3}$/', $currency)) {
+            throw new ChipValidationException('Purchase currency must be a three-letter ISO 4217 code.');
+        }
+
+        return $currency;
+    }
+
+    private function normalizeMinorAmount(mixed $amount, string $field): int
+    {
+        if (is_int($amount)) {
+            return $amount;
+        }
+
+        if (is_float($amount) && is_finite($amount) && floor($amount) === $amount) {
+            return (int) $amount;
+        }
+
+        if (is_string($amount) && filter_var(mb_trim($amount), FILTER_VALIDATE_INT) !== false) {
+            return (int) mb_trim($amount);
+        }
+
+        throw new ChipValidationException("{$field} must be an integer amount in minor units.");
+    }
+
+    private function nullableMinorAmount(mixed $amount, string $field): ?int
+    {
+        return $amount === null ? null : $this->normalizeMinorAmount($amount, $field);
+    }
+
+    private function normalizeQuantity(mixed $quantity): int
+    {
+        if (is_int($quantity)) {
+            $normalized = $quantity;
+        } elseif (is_float($quantity) && is_finite($quantity) && floor($quantity) === $quantity) {
+            $normalized = (int) $quantity;
+        } elseif (is_string($quantity) && filter_var(mb_trim($quantity), FILTER_VALIDATE_INT) !== false) {
+            $normalized = (int) mb_trim($quantity);
+        } else {
+            throw new ChipValidationException('Product quantity must be an integer.');
+        }
+
+        if ($normalized < 1) {
+            throw new ChipValidationException('Product quantity must be an integer greater than zero.');
+        }
+
+        return $normalized;
     }
 }

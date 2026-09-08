@@ -8,10 +8,12 @@ use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Paused;
 use Akaunting\Money\Money;
+use Illuminate\Database\Eloquent\Model;
 
 uses(CashierChipTestCase::class);
 
@@ -159,6 +161,14 @@ describe('AllowsCoupons', function (): void {
         $this->assertSame(0, $harness->exposeCalculateCouponDiscount(10_000));
     });
 
+    it('fails loudly when coupon paths are disabled', function (): void {
+        $this->app['config']->set('cashier-chip.integrations.vouchers.enabled', false);
+
+        $harness = new AllowsCouponsHarness;
+        $harness->withCoupon('COUPON_123');
+        $harness->exposeCalculateCouponDiscount(10_000);
+    })->throws(LogicException::class);
+
     it('calculate coupon discount returns discount when coupon exists', function (): void {
         $voucher = VoucherData::fromArray([
             'id' => 'v_5',
@@ -233,7 +243,7 @@ final class AllowsCouponsHarness
     }
 }
 
-final class FakeVoucherService
+final class FakeVoucherService extends VoucherService
 {
     /** @var array<int, array{code: string, discountAmount: Money, channel: ?string, metadata: ?array, redeemedBy: mixed}> */
     public array $recordUsageCalls = [];
@@ -258,7 +268,9 @@ final class FakeVoucherService
         Money $discountAmount,
         ?string $channel = null,
         ?array $metadata = null,
-        mixed $redeemedBy = null,
+        ?Model $redeemedBy = null,
+        ?string $notes = null,
+        ?VoucherModel $voucherModel = null,
     ): void {
         $this->recordUsageCalls[] = [
             'code' => $code,

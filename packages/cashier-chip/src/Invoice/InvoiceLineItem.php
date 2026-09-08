@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Invoice;
 
-use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Chip\Data\ProductData;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonSerializable;
@@ -153,6 +153,6 @@ class InvoiceLineItem implements Arrayable, Jsonable, JsonSerializable
      */
     protected function formatAmount(int $amount): string
     {
-        return Cashier::formatAmount($amount, $this->currency());
+        return MoneyFormatter::formatMinor($amount, $this->currency());
     }
 }

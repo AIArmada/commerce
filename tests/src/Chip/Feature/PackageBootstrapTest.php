@@ -3,14 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\ChipServiceProvider;
-use AIArmada\Chip\Events\PaymentRefunded;
-use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\Chip\Listeners\GenerateDocOnPayment;
-use AIArmada\Chip\Listeners\GenerateDocOnRefund;
-use AIArmada\Chip\Support\DocsIntegrationRegistrar;
+use AIArmada\Chip\Models\Webhook;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
@@ -65,36 +60,14 @@ describe('Package bootstrap', function (): void {
         expect(config('chip.webhooks.route'))->toBe('/chip/webhooks');
         expect(config('chip.collect.public_key'))->toBe('test_public_key');
         expect(config('chip.webhooks.store_webhooks'))->toBeTrue();
-        expect(config('chip.integrations.docs.enabled'))->toBeFalse();
-        expect(config('chip.integrations.docs.auto_generate_invoice'))->toBeFalse();
-        expect(config('chip.integrations.docs.auto_generate_credit_note'))->toBeFalse();
-        expect(config('chip.integrations.docs.generate_pdf'))->toBeFalse();
     });
 
-    it('does not register docs listeners when the docs integration remains at its defaults', function (): void {
-        Event::shouldReceive('listen')->never();
+    it('configures the CHIP webhook row through its Webhook subclass', function (): void {
+        $chipConfig = collect(config('webhook-client.configs'))
+            ->firstWhere('name', Webhook::WEBHOOK_NAME);
 
-        $registrar = new DocsIntegrationRegistrar;
-
-        $registrar->register();
-    });
-
-    it('registers docs listeners only when the docs integration is explicitly enabled', function (): void {
-        config()->set('chip.integrations.docs.enabled', true);
-        config()->set('chip.integrations.docs.auto_generate_invoice', true);
-        config()->set('chip.integrations.docs.auto_generate_credit_note', true);
-
-        Event::shouldReceive('listen')
-            ->once()
-            ->with(PurchasePaid::class, GenerateDocOnPayment::class);
-
-        Event::shouldReceive('listen')
-            ->once()
-            ->with(PaymentRefunded::class, GenerateDocOnRefund::class);
-
-        $registrar = new DocsIntegrationRegistrar;
-
-        $registrar->register();
+        expect($chipConfig)->toBeArray()
+            ->and($chipConfig['webhook_model'])->toBe(Webhook::class);
     });
 
     it('registers the package webhook route without signature middleware', function (): void {

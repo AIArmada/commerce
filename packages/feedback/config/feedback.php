@@ -33,6 +33,17 @@ return [
         'testimonials' => true,
     ],
 
+    'security' => [
+        'invitation_rate_limit' => [
+            'max_attempts' => 60,
+            'decay_seconds' => 60,
+        ],
+    ],
+
+    'analytics' => [
+        'dashboard_cache_ttl' => 30,
+    ],
+
     'http' => [
         'route_prefix' => 'feedback',
     ],

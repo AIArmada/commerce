@@ -13,8 +13,6 @@ use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Akaunting\Money\Currency;
-use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -63,14 +61,6 @@ final class Cashier
     public static string $subscriptionItemModel = SubscriptionItem::class;
 
     /**
-     * The custom currency formatter.
-     */
-    /**
-     * @var callable(int, ?string, ?string, array<string, mixed>): string|null
-     */
-    protected static $formatCurrencyUsing = null;
-
-    /**
      * The fake CHIP service for testing.
      */
     protected static ?FakeChipCollectService $fakeChip = null;
@@ -91,7 +81,6 @@ final class Cashier
      *   customerModel: class-string<Model>,
      *   subscriptionModel: class-string<Model>,
      *   subscriptionItemModel: class-string<Model>,
-     *   formatCurrencyUsing: (callable(int, ?string, ?string, array<string, mixed>): string)|null,
      *   fakeChip: FakeChipCollectService|null,
      *   isFake: bool
      * }
@@ -104,7 +93,6 @@ final class Cashier
         'customerModel' => Model::class,
         'subscriptionModel' => Subscription::class,
         'subscriptionItemModel' => SubscriptionItem::class,
-        'formatCurrencyUsing' => null,
         'fakeChip' => null,
         'isFake' => false,
     ];
@@ -276,7 +264,6 @@ final class Cashier
             'customerModel' => static::$customerModel,
             'subscriptionModel' => static::$subscriptionModel,
             'subscriptionItemModel' => static::$subscriptionItemModel,
-            'formatCurrencyUsing' => static::$formatCurrencyUsing,
             'fakeChip' => static::$fakeChip,
             'isFake' => static::$isFake,
         ];
@@ -297,37 +284,8 @@ final class Cashier
         static::useCustomerModel(self::$octaneDefaults['customerModel']);
         static::useSubscriptionModel(self::$octaneDefaults['subscriptionModel']);
         static::useSubscriptionItemModel(self::$octaneDefaults['subscriptionItemModel']);
-        static::formatCurrencyUsing(self::$octaneDefaults['formatCurrencyUsing']);
         static::$fakeChip = self::$octaneDefaults['fakeChip'];
         static::$isFake = self::$octaneDefaults['isFake'];
-    }
-
-    /**
-     * Set the custom currency formatter.
-     */
-    public static function formatCurrencyUsing(?callable $callback): void
-    {
-        static::$formatCurrencyUsing = $callback;
-    }
-
-    /**
-     * Format the given amount into a displayable currency.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public static function formatAmount(int $amount, ?string $currency = null, ?string $locale = null, array $options = []): string
-    {
-        if (static::$formatCurrencyUsing) {
-            return call_user_func(static::$formatCurrencyUsing, $amount, $currency, $locale, $options);
-        }
-
-        $currency = mb_strtoupper($currency ?? config('cashier-chip.currency', 'MYR'));
-        $locale = $locale ?? config('cashier-chip.currency_locale', 'ms_MY');
-
-        // Akaunting\Money expects amount in cents/minor units
-        $money = new Money($amount, new Currency($currency), false);
-
-        return $money->format();
     }
 
     public static function maximumAmount(): int

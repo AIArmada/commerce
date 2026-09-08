@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Models\FeedbackInvitation;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\RateLimiter;
 use RuntimeException;
 
 final class ResolveFeedbackInvitationTokenAction
@@ -16,6 +17,17 @@ final class ResolveFeedbackInvitationTokenAction
     public function execute(string $rawToken): FeedbackInvitation
     {
         $tokenHash = hash('sha256', $rawToken);
+
+        $allowed = RateLimiter::attempt(
+            "feedback-invitation-token:{$tokenHash}",
+            (int) config('feedback.security.invitation_rate_limit.max_attempts', 60),
+            static fn (): bool => true,
+            (int) config('feedback.security.invitation_rate_limit.decay_seconds', 60),
+        );
+
+        if (! $allowed) {
+            throw new RuntimeException('Too many invitation token attempts.');
+        }
 
         $invitation = FeedbackInvitation::query()
             ->withoutOwnerScope()

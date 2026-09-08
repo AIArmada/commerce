@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class CsatCalculator
 {
-    public function calculate(FeedbackForm $form, ?string $questionKey = null): CsatResultData
+    public function calculate(?FeedbackForm $form = null, ?string $questionKey = null): CsatResultData
     {
         $query = $this->baseQuery($form, $questionKey);
 
@@ -60,13 +60,16 @@ final class CsatCalculator
         );
     }
 
-    private function baseQuery(FeedbackForm $form, ?string $questionKey = null): Builder
+    private function baseQuery(?FeedbackForm $form = null, ?string $questionKey = null): Builder
     {
         /** @var Builder<FeedbackResponse> $query */
         $query = FeedbackResponse::query()
-            ->where('feedback_form_id', $form->id)
             ->where('status', 'submitted')
             ->whereNotNull('score');
+
+        if ($form !== null) {
+            $query->where('feedback_form_id', $form->id);
+        }
 
         if ($questionKey !== null) {
             $query->whereHas('answers', function (Builder $q) use ($questionKey): void {

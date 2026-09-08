@@ -33,6 +33,11 @@ title: Feedback Package Overview
 - `FeedbackTemplate` — reusable form blueprint stored as JSON
 - `FeedbackTestimonial` — moderated public testimonial extracted from responses
 
+Public testimonial consumers must use `FeedbackTestimonial::published()` or the
+`publishedFeedbackTestimonials()` relation. Both require the Published status,
+the publication timestamp, and no hidden timestamp; pending and merely approved
+records are never public.
+
 ## Tenant scoping
 
 All tenant-owned models use `owner_type` / `owner_id` columns with `HasOwner` and `HasOwnerScopeConfig` from `commerce-support`. Every query and write path enforces owner isolation.
@@ -42,3 +47,6 @@ All tenant-owned models use `owner_type` / `owner_id` columns with `HasOwner` an
 - `events` — Attach feedback forms to events, occurrences, sessions, speakers, and venues
 - `certificates` — Listen to `FeedbackResponseSubmitted` for certificate eligibility
 - `engagement` — Consume approved/published testimonials
+
+See [Feedback Data Boundaries](05-boundaries.md) for the registration, survey,
+and social-signal ownership rules.

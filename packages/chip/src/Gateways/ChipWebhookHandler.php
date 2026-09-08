@@ -8,8 +8,8 @@ use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
+use AIArmada\Chip\Support\ChipPaymentStatusMapper;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentIntentInterface;
-use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 use AIArmada\CommerceSupport\Contracts\Payment\WebhookHandlerInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\WebhookPayload;
 use AIArmada\CommerceSupport\Exceptions\WebhookVerificationException;
@@ -50,7 +50,7 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
             throw new InvalidArgumentException('CHIP webhook payload contains an unsupported event_type.');
         }
 
-        $status = $this->mapChipStatus(
+        $status = ChipPaymentStatusMapper::mapWebhook(
             is_string($data['status'] ?? null) ? $data['status'] : null,
             $eventType,
         );
@@ -137,52 +137,6 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
         } catch (Throwable) {
             return null;
         }
-    }
-
-    /**
-     * Map CHIP status to universal PaymentStatus.
-     */
-    private function mapChipStatus(?string $chipStatus, string $eventType): PaymentStatus
-    {
-        $eventStatus = match ($eventType) {
-            'purchase.created' => PaymentStatus::CREATED,
-            'purchase.paid', 'purchase.captured', 'purchase.settled' => PaymentStatus::PAID,
-            'purchase.payment_failure', 'purchase.refund_failure',
-            'purchase.capture_failure', 'purchase.release_failure' => PaymentStatus::FAILED,
-            'purchase.cancelled', 'purchase.released' => PaymentStatus::CANCELLED,
-            'purchase.hold', 'purchase.preauthorized' => PaymentStatus::AUTHORIZED,
-            'purchase.pending_execute', 'purchase.pending_charge',
-            'purchase.viewed' => PaymentStatus::PENDING,
-            'purchase.pending_capture', 'purchase.pending_release',
-            'purchase.pending_refund', 'purchase.pending_recurring_token_delete' => PaymentStatus::PROCESSING,
-            'payment.refunded' => PaymentStatus::REFUNDED,
-            'payment.charged_back' => PaymentStatus::DISPUTED,
-            'payment.chargeback_reversed' => PaymentStatus::PROCESSING,
-            'payout.created', 'payout.pending' => PaymentStatus::PENDING,
-            'payout.failed' => PaymentStatus::FAILED,
-            'payout.success' => PaymentStatus::PAID,
-            default => null,
-        };
-
-        if ($eventStatus !== null) {
-            return $eventStatus;
-        }
-
-        return match ($chipStatus) {
-            'created' => PaymentStatus::CREATED,
-            'sent', 'viewed', 'overdue', 'pending_execute', 'pending_charge' => PaymentStatus::PENDING,
-            'pending_capture', 'pending_release', 'pending_refund' => PaymentStatus::PROCESSING,
-            'hold' => PaymentStatus::AUTHORIZED,
-            'preauthorized' => PaymentStatus::AUTHORIZED,
-            'paid', 'cleared', 'settled' => PaymentStatus::PAID,
-            'refunded' => PaymentStatus::REFUNDED,
-            'cancelled', 'released' => PaymentStatus::CANCELLED,
-            'expired' => PaymentStatus::EXPIRED,
-            'chargeback' => PaymentStatus::DISPUTED,
-            'error' => PaymentStatus::FAILED,
-            'blocked' => PaymentStatus::FAILED,
-            default => throw new InvalidArgumentException('CHIP webhook payload contains an unsupported status.'),
-        };
     }
 
     /**

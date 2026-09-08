@@ -8,7 +8,7 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Model;
@@ -68,7 +68,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function amount(): string
     {
-        return Cashier::formatAmount($this->rawAmount(), $this->currency());
+        return MoneyFormatter::formatMinor($this->rawAmount(), $this->currency());
     }
 
     /**
@@ -108,7 +108,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isSucceeded(): bool
     {
-        return $this->purchaseStatus()->isSuccessful();
+        return $this->purchase->isPaid();
     }
 
     /**
@@ -116,17 +116,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isPending(): bool
     {
-        return in_array($this->purchaseStatus(), [
-            PurchaseStatus::CREATED,
-            PurchaseStatus::SENT,
-            PurchaseStatus::VIEWED,
-            PurchaseStatus::OVERDUE,
-            PurchaseStatus::PENDING_EXECUTE,
-            PurchaseStatus::PENDING_CHARGE,
-            PurchaseStatus::PENDING_CAPTURE,
-            PurchaseStatus::PENDING_RELEASE,
-            PurchaseStatus::PENDING_REFUND,
-        ], true);
+        return $this->purchase->isPending();
     }
 
     /**
@@ -134,7 +124,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isExpired(): bool
     {
-        return $this->purchaseStatus() === PurchaseStatus::EXPIRED;
+        return $this->purchase->status === 'expired';
     }
 
     /**
@@ -142,7 +132,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isFailed(): bool
     {
-        return in_array($this->purchaseStatus(), [PurchaseStatus::ERROR, PurchaseStatus::BLOCKED], true);
+        return $this->purchase->hasError();
     }
 
     /**
@@ -150,7 +140,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isCancelled(): bool
     {
-        return in_array($this->purchaseStatus(), [PurchaseStatus::CANCELLED, PurchaseStatus::RELEASED], true);
+        return $this->purchase->isCancelled() || $this->purchase->status === 'released';
     }
 
     /**
@@ -158,7 +148,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isRefunded(): bool
     {
-        return $this->purchaseStatus() === PurchaseStatus::REFUNDED;
+        return $this->purchase->isRefunded();
     }
 
     /**
@@ -174,7 +164,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function requiresCapture(): bool
     {
-        return $this->purchaseStatus() === PurchaseStatus::HOLD;
+        return $this->purchase->isOnHold();
     }
 
     /**
@@ -182,12 +172,12 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isProcessing(): bool
     {
-        return in_array($this->purchaseStatus(), [
-            PurchaseStatus::PENDING_EXECUTE,
-            PurchaseStatus::PENDING_CHARGE,
-            PurchaseStatus::PENDING_CAPTURE,
-            PurchaseStatus::PENDING_RELEASE,
-            PurchaseStatus::PENDING_REFUND,
+        return in_array($this->purchase->status, [
+            'pending_execute',
+            'pending_charge',
+            'pending_capture',
+            'pending_release',
+            'pending_refund',
         ], true);
     }
 
@@ -337,10 +327,5 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     public function jsonSerialize(): array
     {
         return $this->toArray();
-    }
-
-    private function purchaseStatus(): PurchaseStatus
-    {
-        return PurchaseStatus::from($this->purchase->status);
     }
 }

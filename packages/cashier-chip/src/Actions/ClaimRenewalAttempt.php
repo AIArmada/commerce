@@ -20,6 +20,7 @@ final class ClaimRenewalAttempt
     {
         return DB::transaction(function () use ($subscriptionId): ?RenewalAttempt {
             $subscription = Subscription::query()
+                ->with('items')
                 ->lockForUpdate()
                 ->find($subscriptionId);
 

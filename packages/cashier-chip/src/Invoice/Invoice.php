@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Invoice;
 
-use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -188,17 +187,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      */
     public function open(): bool
     {
-        return in_array($this->purchaseStatus(), [
-            PurchaseStatus::CREATED,
-            PurchaseStatus::SENT,
-            PurchaseStatus::VIEWED,
-            PurchaseStatus::OVERDUE,
-            PurchaseStatus::PENDING_EXECUTE,
-            PurchaseStatus::PENDING_CHARGE,
-            PurchaseStatus::PENDING_CAPTURE,
-            PurchaseStatus::PENDING_RELEASE,
-            PurchaseStatus::PENDING_REFUND,
-        ], true);
+        return $this->purchase->isPending();
     }
 
     /**
@@ -214,10 +203,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      */
     public function voided(): bool
     {
-        return in_array($this->purchaseStatus(), [
-            PurchaseStatus::CANCELLED,
-            PurchaseStatus::RELEASED,
-        ], true);
+        return $this->purchase->isCancelled() || $this->purchase->status === 'released';
     }
 
     /**
@@ -241,11 +227,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      */
     public function isUncollectible(): bool
     {
-        return in_array($this->purchaseStatus(), [
-            PurchaseStatus::ERROR,
-            PurchaseStatus::BLOCKED,
-            PurchaseStatus::EXPIRED,
-        ], true);
+        return $this->purchase->hasError() || $this->purchase->status === 'expired';
     }
 
     /**
@@ -461,11 +443,6 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      */
     protected function formatAmount(int $amount): string
     {
-        return Cashier::formatAmount($amount, $this->currency());
-    }
-
-    private function purchaseStatus(): PurchaseStatus
-    {
-        return PurchaseStatus::from($this->purchase->status);
+        return MoneyFormatter::formatMinor($amount, $this->currency());
     }
 }

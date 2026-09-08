@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\ChipCollectService;
+use Akaunting\Money\Money;
 
 describe('PurchaseBuilder', function (): void {
     beforeEach(function (): void {
@@ -298,5 +300,33 @@ describe('PurchaseBuilder', function (): void {
 
         expect($result)->toBeInstanceOf(PurchaseData::class)
             ->and($result->id)->toBe('test-purchase-id');
+    });
+
+    it('requires an explicit currency before adding products', function (): void {
+        expect(fn () => $this->builder->addProductCents('Product', 1000))
+            ->toThrow(ChipValidationException::class, 'Call currency() before adding purchase products.');
+    });
+
+    it('rejects non-integral product quantities', function (): void {
+        expect(fn () => $this->builder
+            ->currency('MYR')
+            ->addProductCents('Product', 1000, 1.5))
+            ->toThrow(ChipValidationException::class, 'Product quantity must be an integer.');
+    });
+
+    it('normalizes integral float quantities to integer strings', function (): void {
+        $data = $this->builder
+            ->currency('MYR')
+            ->addProductCents('Product', 1000, 2.0)
+            ->toArray();
+
+        expect($data['purchase']['products'][0]['quantity'])->toBe('2');
+    });
+
+    it('rejects mixed product currencies', function (): void {
+        expect(fn () => $this->builder
+            ->currency('MYR')
+            ->addProductMoney('USD Product', Money::USD(1000)))
+            ->toThrow(ChipValidationException::class, 'Product price currency must match the purchase currency.');
     });
 });

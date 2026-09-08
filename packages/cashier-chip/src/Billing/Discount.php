@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Billing;
 
-use AIArmada\Vouchers\Services\VoucherService;
-use Carbon\Carbon;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -93,11 +93,11 @@ class Discount implements Arrayable, Jsonable, JsonSerializable
             }
 
             if (is_int($this->discount['start'])) {
-                return Carbon::createFromTimestamp($this->discount['start']);
+                return CarbonImmutable::createFromTimestamp($this->discount['start']);
             }
 
             if (is_string($this->discount['start'])) {
-                return Carbon::parse($this->discount['start']);
+                return CarbonImmutable::parse($this->discount['start']);
             }
         }
 
@@ -115,11 +115,11 @@ class Discount implements Arrayable, Jsonable, JsonSerializable
             }
 
             if (is_int($this->discount['end'])) {
-                return Carbon::createFromTimestamp($this->discount['end']);
+                return CarbonImmutable::createFromTimestamp($this->discount['end']);
             }
 
             if (is_string($this->discount['end'])) {
-                return Carbon::parse($this->discount['end']);
+                return CarbonImmutable::parse($this->discount['end']);
             }
         }
 
@@ -147,7 +147,7 @@ class Discount implements Arrayable, Jsonable, JsonSerializable
 
         $currency = $this->discount['currency'] ?? config('cashier-chip.currency', 'MYR');
 
-        return Cashier::formatAmount($amount, $currency);
+        return MoneyFormatter::formatMinor($amount, $currency);
     }
 
     /**
@@ -189,12 +189,7 @@ class Discount implements Arrayable, Jsonable, JsonSerializable
      */
     protected function retrieveCoupon(string $couponId): ?Coupon
     {
-        if (! class_exists(VoucherService::class)) {
-            return null;
-        }
-
-        /** @var VoucherService $service */
-        $service = app(VoucherService::class);
+        $service = VoucherIntegration::service();
 
         $voucherData = $service->find($couponId);
 

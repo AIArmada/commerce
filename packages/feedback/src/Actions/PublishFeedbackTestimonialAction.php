@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
 use AIArmada\Feedback\Events\FeedbackTestimonialPublished;
 use AIArmada\Feedback\Models\FeedbackTestimonial;
@@ -14,6 +15,8 @@ final class PublishFeedbackTestimonialAction
 {
     public function execute(FeedbackTestimonial $testimonial): FeedbackTestimonial
     {
+        $testimonial = OwnerWriteGuard::findOrFailForOwner(FeedbackTestimonial::class, $testimonial->id);
+
         if ($testimonial->status === FeedbackTestimonialStatus::Published) {
             return $testimonial;
         }

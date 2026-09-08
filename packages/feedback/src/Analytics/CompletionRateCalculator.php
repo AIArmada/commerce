@@ -9,20 +9,27 @@ use AIArmada\Feedback\Models\FeedbackResponse;
 
 final class CompletionRateCalculator
 {
-    public function calculate(FeedbackForm $form): float
+    public function calculate(?FeedbackForm $form = null): float
     {
-        $total = FeedbackResponse::query()
-            ->where('feedback_form_id', $form->id)
-            ->count();
+        $totalQuery = FeedbackResponse::query();
+
+        if ($form !== null) {
+            $totalQuery->where('feedback_form_id', $form->id);
+        }
+
+        $total = $totalQuery->count();
 
         if ($total === 0) {
             return 0.0;
         }
 
-        $submitted = FeedbackResponse::query()
-            ->where('feedback_form_id', $form->id)
-            ->where('status', 'submitted')
-            ->count();
+        $submittedQuery = FeedbackResponse::query()->where('status', 'submitted');
+
+        if ($form !== null) {
+            $submittedQuery->where('feedback_form_id', $form->id);
+        }
+
+        $submitted = $submittedQuery->count();
 
         return round(($submitted / $total) * 100, 2);
     }

@@ -10,6 +10,7 @@ use AIArmada\CashierChip\Exceptions\InvalidCustomer;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Models\ChipCustomerLink;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 trait ManagesCustomer // @phpstan-ignore trait.unused
@@ -321,6 +322,6 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
      */
     protected function formatAmount(int $amount): string
     {
-        return Cashier::formatAmount($amount, $this->preferredCurrency());
+        return MoneyFormatter::formatMinor($amount, $this->preferredCurrency());
     }
 }

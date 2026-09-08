@@ -13,7 +13,6 @@ use AIArmada\Feedback\Models\FeedbackInvitation;
 use AIArmada\Feedback\Support\FeedbackModelReferenceGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
 final class SendFeedbackInvitationAction
 {
@@ -35,7 +34,7 @@ final class SendFeedbackInvitationAction
             $this->referenceGuard->validate($recipient);
         }
 
-        $rawToken = Str::random(64);
+        $rawToken = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $rawToken);
 
         $invitation = FeedbackInvitation::create([

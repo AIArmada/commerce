@@ -266,6 +266,100 @@ reported and taken on trust; code correctness was verified directly.
   assertions), FilamentAuthz 140 passed (251), FilamentAuthzScoped 12
   passed (32); PHPStan level 6 clean on both source packages.
 
+## Feedback surveys (implemented, one held proposal)
+
+- **A2 action collapse:** `SaveFeedbackFormStructureAction`
+  (`packages/feedback/src/Actions/SaveFeedbackFormStructureAction.php:14`)
+  is the single owner-guarded structure writer
+  (`OwnerWriteGuard::findOrFailForOwner` on form + section with
+  belongs-to-form check); six CRUD actions deleted; relation managers
+  and template/duplicate flows rewired; enum-to-string visibility
+  handling fixed in duplication.
+- **A3 static cache:** deleted; `QuestionTypeRegistry::disabledTypes()`
+  iterates `cases()` directly
+  (`packages/feedback/src/Support/QuestionTypeRegistry.php:11`).
+- **A4/A5 collision falsified + documented:** feedback-side names
+  already namespaced; new `docs/05-boundaries.md` draws the
+  registration/survey/social-signal lines. No edits in `engagement`
+  or `events`.
+- **Widgets:** all nine consume owner-keyed `FeedbackAnalyticsService`
+  (e.g. `FeedbackNpsWidget.php:15`); dashboard composes widgets
+  explicitly (`FeedbackDashboard.php:35`).
+- **Security:** `bin2hex(random_bytes(32))` issuance
+  (`SendFeedbackInvitationAction.php:37`), hashed + rate-limited
+  lookup with expiry/cancelled/submitted guards and a lookup-only
+  `withoutOwnerScope` window
+  (`ResolveFeedbackInvitationTokenAction.php:21-55`); testimonial
+  `scopePublished` gate (approved + published + visible,
+  `FeedbackTestimonial.php:91`).
+- Suites: Feedback Area 50 passed (138 assertions),
+  FilamentFeedback Area 8 passed (31 assertions); PHPStan level 6
+  clean on both packages.
+- **Implemented (2026-09-08, was held then dropped):** 9-file migration
+  split (`2000_01_01_000001`–`000009`), schema-identical — mechanical
+  per-table verification, only delta the replicated shared preamble.
+  Dev-only delete-and-rerun; no backfill.
+- **Deferred:** queued analytics recalc (no aggregate table exists).
+- Corrected audit claims: "zero tests" was stale at implementation
+  time; raw-`DB::table` scoring already applied `OwnerQuery`
+  (`CalculateFeedbackResponseScoreAction.php:18`).
+
+## Chip gateway (implemented, one held window)
+
+- **A-2 single webhook writer:** configured `Webhook` subclass
+  (`Webhook::class` as spatie `webhook_model`) is the `webhook_calls`
+  system of record with owner scoping
+  (`ChipServiceProvider.php:111`, `Models/Webhook.php:40`); vendor
+  migration frozen; `WebhookLogger` + parallel writer deleted.
+- **A-4/C-1 amount trust:** explicit currency, int-only quantities,
+  per-component currency assertions, line-item subtotal and
+  checkout-total reconciliation, response amount/currency validation
+  (`PurchaseBuilder.php:196`, `PurchasesApi.php:374`).
+- **A-5 canonical mapping:** `ChipPaymentStatusMapper::mapWebhook`
+  (`ChipPaymentStatusMapper.php:52`) gives recognized events precedence;
+  both CHIP consumers delegate.
+- **A-6 sprawl removed:** checkout customer/document bridges,
+  listeners, and support classes deleted; typed `WebhookReceived`
+  (`:30`) / `PurchaseEvent` (`:27`) payload contract retained; generic
+  `ChipCustomerDirectory` (contract-bound subjects, no checkout
+  hardcoding) kept.
+- **C-2 verified as-is:** `ChipCollectService` already fronts the
+  `Services/Collect/*Api` facades (`:33`).
+- Suites: Chip 1049 passed (2723 assertions, 4 skipped),
+  FilamentChip 17 passed (73 assertions); PHPStan level 6 clean.
+- **HELD (not dropped): crash recovery.** `PurchasesApi` posts the
+  remote purchase before writing the idempotency cache — death between
+  the lines re-posts on retry. Needs durable provider idempotency or
+  a database outbox/ledger. First target for the money-path adversary.
+- Dependencies logged (untouched): checkout-side amount assertions +
+  event/status precedence; checkout/docs/customer subscribers for the
+  new event contract.
+
+## Cashier CHIP billing (implemented)
+
+- **A-3 canonical collapse (owned side):** local status mapping +
+  billing formatter deleted; `Payment` uses `PurchaseData` +
+  `MoneyFormatter` (`Payment.php:71`); `findBillable()` retained
+  (`Cashier.php:105`) for the read-only `cashier` caller.
+- **A-4 explicit loading:** `$with` removed; `loadMissing` at call
+  sites (`Subscription.php:232`, `ManagesSubscriptions.php:171`);
+  owner-batched renewal queries (`RenewSubscriptionsCommand.php:64`).
+- **A-5 loud vouchers:** `VoucherIntegration::assertAvailable`
+  (`:22`) throws naming the missing package or the disabling flag,
+  with config + usage docs.
+- **A-6 narrowed scopes:** `OwnerBatchRunner` iteration; blanket
+  `withoutGlobalScopes` gone.
+- **C-1/C-2/C-3:** `CarbonImmutable` (`Coupon.php:11`,
+  `Discount.php:8`); ordered UUIDs + create-then-prune
+  (`Subscription.php:680`); renewal-attempt/CHIP-history-backed
+  `latestPayment`/`upcomingInvoice`/`latestInvoice`/`invoices`
+  (`Subscription.php:1005,1124,1188`).
+- Suites: CashierChip 545 passed (908 assertions),
+  FilamentCashierChip 93 passed (226 assertions); PHPStan level 6
+  clean. No migration required. Delegation chain verified end to end
+  (`ChipGateway:58` → `Cashier::chip:189` → `ChipCollectService:51`
+  → canonical `*Api` facades).
+
 ## Fairness log
 
 - Orders checkout-context concern: not present, dropped correctly.

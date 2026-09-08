@@ -7,42 +7,8 @@ use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
-use Akaunting\Money\Currency;
-use Akaunting\Money\Money;
 
 uses(CashierChipTestCase::class);
-
-it('can format amount with default currency', function (): void {
-    $formatted = Cashier::formatAmount(10000);
-
-    expect($formatted)->toBeString();
-    // 10000 cents = 100.00 in main currency unit
-    // The format may be like "RM 100.00" or "$100.00"
-    expect($formatted)->toMatch('/\d+/');
-});
-
-it('can format amount with specific currency', function (): void {
-    $formatted = Cashier::formatAmount(10000, 'USD', 'en_US');
-
-    expect($formatted)->toBeString();
-    // 10000 cents = 100.00 USD
-    expect($formatted)->toMatch('/\d+/');
-});
-
-it('can use custom currency formatter', function (): void {
-    Cashier::formatCurrencyUsing(function ($amount, $currency) {
-        return 'CUSTOM: ' . $amount . ' ' . $currency;
-    });
-
-    $formatted = Cashier::formatAmount(10000, 'MYR');
-
-    expect($formatted)->toBe('CUSTOM: 10000 MYR');
-
-    // Reset formatter - use a no-op function instead of null
-    Cashier::formatCurrencyUsing(function ($amount, $currency, $locale, $options) {
-        return (new Money($amount, new Currency($currency ?? 'MYR'), true))->format($locale ?? 'en_US');
-    });
-});
 
 it('can set custom customer model', function (): void {
     Cashier::useCustomerModel(User::class);
@@ -98,8 +64,6 @@ it('restores boot-time static configuration between requests', function (): void
     Cashier::useCustomerModel(Subscription::class);
     Cashier::useSubscriptionModel(User::class);
     Cashier::useSubscriptionItemModel(User::class);
-    Cashier::formatCurrencyUsing(fn ($amount, $currency, $locale, $options) => 'mutated');
-
     Cashier::restoreOctaneDefaults();
 
     expect(Cashier::$registersRoutes)->toBeTrue()
@@ -109,6 +73,5 @@ it('restores boot-time static configuration between requests', function (): void
         ->and(Cashier::$subscriptionModel)->toBe(Subscription::class)
         ->and(Cashier::$subscriptionItemModel)->toBe(SubscriptionItem::class)
         ->and(Cashier::isFake())->toBeFalse()
-        ->and(Cashier::getFake())->toBeNull()
-        ->and(Cashier::formatAmount(1000, 'MYR'))->not->toBe('mutated');
+        ->and(Cashier::getFake())->toBeNull();
 });

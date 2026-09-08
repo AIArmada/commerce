@@ -11,10 +11,10 @@ The `aiarmada/chip` package is the direct CHIP gateway integration for Commerce.
 ## What this package owns
 
 - CHIP Collect purchases, payments, clients, and refunds
-- Subject-to-CHIP customer links used by billing packages
+- CHIP customer-directory primitives used by billing packages
 - CHIP Send bank accounts, payout instructions, payout limits, and payout webhooks
 - CHIP webhook routing, signature verification, and webhook storage
-- CHIP health checks, analytics, gateway registration, and docs integration hooks
+- CHIP health checks, analytics, and gateway registration
 
 ## What this package does not own
 
@@ -28,15 +28,15 @@ The `aiarmada/chip` package is the direct CHIP gateway integration for Commerce.
 - [`aiarmada/filament-chip`](../../filament-chip/docs/01-overview.md) — Filament admin resources and analytics for CHIP data
 - [`aiarmada/cashier-chip`](../../cashier-chip/docs/01-overview.md) — Cashier-style subscription billing on top of CHIP
 - [`aiarmada/checkout`](../../checkout/docs/01-overview.md) — checkout orchestration that may use CHIP for payment collection
-- [`aiarmada/docs`](../../docs/docs/01-overview.md) — optional, disabled-by-default document integration hooks registered by the package
+- [`aiarmada/docs`](../../docs/01-overview.md) — a downstream package that may subscribe to CHIP events
 - [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner scoping and payment gateway contracts
 
 ## Main models services or surfaces
 
 - **Models** — CHIP purchases, payments, webhooks, bank accounts, clients, send instructions, send limits, send webhooks, and company statements
 - **Services** — collect, send, customer directory, analytics, webhook, and gateway registration services
-- **Actions** — reusable action classes for webhook dispatch, document generation, and API record syncing
-- **Support** — utility classes for customer bridging, owner tuple handling, payment status mapping, webhook purchase ID resolution, document data building, and webhook owner batch processing
+- **Actions** — reusable action classes for webhook dispatch and API record syncing
+- **Support** — utility classes for owner tuple handling, payment status mapping, webhook purchase ID resolution, and webhook owner batch processing
 - **Infrastructure** — webhook middleware, health-check commands, and payment gateway integration
 
 ## Owner scoping and security notes
@@ -96,13 +96,10 @@ CHIP is a Malaysian fintech payment gateway that offers:
 │  Actions                                                     │
 │  ├─ DispatchChipWebhookAction                                │
 │  ├─ SendWebhookController                                      │
-│  ├─ RunChipPurchaseDocGenerationAction                       │
 │  └─ SyncChipRecordsFromApiAction                             │
 ├─────────────────────────────────────────────────────────────┤
 │  Support                                                     │
-│  ├─ ChipCustomerBridge        ├─ ChipPaymentStatusMapper     │
 │  ├─ ChipOwnerTuple            ├─ ResolveWebhookPurchaseId   │
-│  ├─ ChipWebhookOwnerResolver  ├─ BuildChipDocData           │
 │  └─ WebhookOwnerBatchRunner                                  │
 ├─────────────────────────────────────────────────────────────┤
 │  Clients          │  Builders           │  Events           │
@@ -121,6 +118,7 @@ use AIArmada\Chip\Facades\Chip;
 
 // Create a simple purchase
 $purchase = Chip::purchase()
+    ->currency('MYR')
     ->email('customer@example.com')
     ->addProductCents('Premium Plan', 9900) // RM 99.00
     ->successUrl(route('payment.success'))

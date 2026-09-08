@@ -54,6 +54,10 @@ command and make sure it runs inside the correct owner context in multi-tenant a
 The package provides dedicated Action classes for common billing operations. These are the
 canonical entry points for non-trivial workflows and are fully tested.
 
+Coupon and promotion-code methods require the optional aiarmada/vouchers package. The
+integration auto-detects that package by default and fails loudly if it is unavailable; see
+[Configuration](03-configuration.md#integrations) for the explicit integration setting.
+
 ```php
 use AIArmada\CashierChip\Actions\CancelChipSubscription;
 use AIArmada\CashierChip\Actions\ChargeChipCustomer;

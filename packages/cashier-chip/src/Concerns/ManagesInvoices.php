@@ -31,7 +31,8 @@ trait ManagesInvoices // @phpstan-ignore trait.unused
             return collect();
         }
 
-        // Get all subscriptions and their invoices
+        $this->loadMissing('subscriptions.items', 'subscriptions.billable');
+
         $invoices = collect();
 
         foreach ($this->subscriptions as $subscription) {

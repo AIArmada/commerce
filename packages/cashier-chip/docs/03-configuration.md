@@ -49,6 +49,17 @@ The owner-scope settings mirror the multitenancy contract from `commerce-support
 | --- | --- | --- |
 | `rate_limits.charges_per_minute` | Maximum charge attempts accepted per minute by package throttles | `30` |
 
+## Integrations
+
+Coupon and promotion-code paths require `aiarmada/vouchers`. The default `null` value
+auto-detects the optional package and throws a clear `LogicException` when a coupon path is
+used without it. Set `integrations.vouchers.enabled` to `false` to disable the integration;
+coupon paths still fail loudly rather than silently skipping validation or usage recording.
+
+| Key | Purpose | Default |
+| --- | --- | --- |
+| `integrations.vouchers.enabled` | Enable the vouchers-backed coupon integration | `null` (auto-detect, fail loudly) |
+
 ## HTTP and webhooks
 
 | Key | Purpose |

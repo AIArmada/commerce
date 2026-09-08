@@ -76,12 +76,9 @@ describe('SyncChipRecordsFromApiCommand', function (): void {
             ->assertExitCode(0);
     });
 
-    it('returns success when no purchase ids can be resolved', function (): void {
-        $this->artisan(SyncChipRecordsFromApiCommand::class, [
-            '--from' => '2030-01-01',
-            '--to' => '2030-01-01',
-        ])
-            ->expectsOutput('No CHIP purchase IDs found to sync.')
+    it('returns success when no purchase ids are provided', function (): void {
+        $this->artisan(SyncChipRecordsFromApiCommand::class)
+            ->expectsOutput('Provide one or more --purchase-id values to sync CHIP purchases.')
             ->assertExitCode(0);
     });
 });

@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\CreateFeedbackQuestionAction;
-use AIArmada\Feedback\Actions\CreateFeedbackQuestionOptionAction;
-use AIArmada\Feedback\Actions\CreateFeedbackSectionAction;
 use AIArmada\Feedback\Actions\DeleteFeedbackFormAction;
 use AIArmada\Feedback\Actions\DeleteFeedbackQuestionAction;
 use AIArmada\Feedback\Actions\DeleteFeedbackSectionAction;
+use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
@@ -23,17 +21,15 @@ use AIArmada\Feedback\Models\FeedbackTestimonial;
 it('deletes the complete feedback form aggregate', function (): void {
     $form = app(CreateFeedbackFormAction::class)
         ->execute(new CreateFeedbackFormData(name: 'Delete Aggregate'));
-    $section = app(CreateFeedbackSectionAction::class)
-        ->execute($form->id, 'Section');
-    $question = app(CreateFeedbackQuestionAction::class)->execute(
-        formId: $form->id,
-        key: 'comment',
-        type: 'short_text',
-        label: 'Comment',
-        sectionId: $section->id,
-    );
-    app(CreateFeedbackQuestionOptionAction::class)
-        ->execute($question->id, 'Option', 'option');
+    $structure = app(SaveFeedbackFormStructureAction::class);
+    $section = $structure->saveSection($form->id, ['title' => 'Section']);
+    $question = $structure->saveQuestion($form->id, [
+        'key' => 'comment',
+        'type' => 'short_text',
+        'label' => 'Comment',
+        'feedback_section_id' => $section->id,
+    ]);
+    $structure->saveOption($question->id, ['label' => 'Option', 'value' => 'option']);
 
     $response = FeedbackResponse::query()->create([
         'feedback_form_id' => $form->id,
@@ -80,12 +76,11 @@ it('deletes the complete feedback form aggregate', function (): void {
 it('nulls testimonial answer references when deleting a question', function (): void {
     $form = app(CreateFeedbackFormAction::class)
         ->execute(new CreateFeedbackFormData(name: 'Delete Question'));
-    $question = app(CreateFeedbackQuestionAction::class)->execute(
-        formId: $form->id,
-        key: 'comment',
-        type: 'short_text',
-        label: 'Comment',
-    );
+    $question = app(SaveFeedbackFormStructureAction::class)->saveQuestion($form->id, [
+        'key' => 'comment',
+        'type' => 'short_text',
+        'label' => 'Comment',
+    ]);
     $response = FeedbackResponse::query()->create([
         'feedback_form_id' => $form->id,
         'status' => 'submitted',
@@ -113,15 +108,14 @@ it('nulls testimonial answer references when deleting a question', function (): 
 it('nulls question section references when deleting a section', function (): void {
     $form = app(CreateFeedbackFormAction::class)
         ->execute(new CreateFeedbackFormData(name: 'Delete Section'));
-    $section = app(CreateFeedbackSectionAction::class)
-        ->execute($form->id, 'Section');
-    $question = app(CreateFeedbackQuestionAction::class)->execute(
-        formId: $form->id,
-        key: 'comment',
-        type: 'short_text',
-        label: 'Comment',
-        sectionId: $section->id,
-    );
+    $structure = app(SaveFeedbackFormStructureAction::class);
+    $section = $structure->saveSection($form->id, ['title' => 'Section']);
+    $question = $structure->saveQuestion($form->id, [
+        'key' => 'comment',
+        'type' => 'short_text',
+        'label' => 'Comment',
+        'feedback_section_id' => $section->id,
+    ]);
 
     app(DeleteFeedbackSectionAction::class)->execute($section);
 

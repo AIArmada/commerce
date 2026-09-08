@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\CreateFeedbackQuestionAction;
+use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
@@ -42,12 +42,11 @@ it('rejects an invitation issued for another form', function (): void {
 it('rejects question ids from another form', function (): void {
     $formA = publishedFeedbackForm('Question Form A');
     $formB = publishedFeedbackForm('Question Form B');
-    $questionA = app(CreateFeedbackQuestionAction::class)->execute(
-        formId: $formA->id,
-        key: 'comment',
-        type: 'short_text',
-        label: 'Comment',
-    );
+    $questionA = app(SaveFeedbackFormStructureAction::class)->saveQuestion($formA->id, [
+        'key' => 'comment',
+        'type' => 'short_text',
+        'label' => 'Comment',
+    ]);
 
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(
         new SubmitFeedbackResponseData(
@@ -62,14 +61,13 @@ it('rejects question ids from another form', function (): void {
 
 it('submits and scores answers inside the current owner scope', function (): void {
     $form = publishedFeedbackForm('Scored Form');
-    $question = app(CreateFeedbackQuestionAction::class)->execute(
-        formId: $form->id,
-        key: 'nps',
-        type: 'nps',
-        label: 'Recommend us',
-        isRequired: true,
-        isScored: true,
-    );
+    $question = app(SaveFeedbackFormStructureAction::class)->saveQuestion($form->id, [
+        'key' => 'nps',
+        'type' => 'nps',
+        'label' => 'Recommend us',
+        'is_required' => true,
+        'is_scored' => true,
+    ]);
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(
         new SubmitFeedbackResponseData(

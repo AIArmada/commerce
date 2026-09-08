@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Chip;
 
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
-use AIArmada\Chip\Actions\RunChipPurchaseDocGenerationAction;
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Clients\ChipSendClient;
 use AIArmada\Chip\Commands\ChipHealthCheckCommand;
@@ -16,21 +15,17 @@ use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\Chip\Listeners\LinkChipCustomerFromCheckoutCompletion;
 use AIArmada\Chip\Listeners\StoreWebhookData;
+use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\ChipCustomerDirectory;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Services\WebhookService;
-use AIArmada\Chip\Support\BuildChipDocData;
-use AIArmada\Chip\Support\ChipCustomerBridge;
-use AIArmada\Chip\Support\DocsIntegrationRegistrar;
 use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use InvalidArgumentException;
@@ -42,10 +37,6 @@ use Spatie\WebhookClient\WebhookClientServiceProvider;
 final class ChipServiceProvider extends PackageServiceProvider
 {
     use ValidatesConfiguration;
-
-    private const CUSTOMER_MODEL = 'AIArmada\\Customers\\Models\\Customer';
-
-    private const CHECKOUT_COMPLETED_EVENT = 'AIArmada\\Checkout\\Events\\CheckoutCompleted';
 
     public function configurePackage(Package $package): void
     {
@@ -117,7 +108,7 @@ final class ChipServiceProvider extends PackageServiceProvider
             'signature_validator' => Webhooks\ChipSpatieSignatureValidator::class,
             'webhook_profile' => Webhooks\ChipWebhookProfile::class,
             'webhook_response' => Webhooks\ChipWebhookResponse::class,
-            'webhook_model' => WebhookCall::class,
+            'webhook_model' => Webhook::class,
             'store_headers' => [
                 'x-signature',
             ],
@@ -144,8 +135,6 @@ final class ChipServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        $this->registerMorphAliases();
-
         $this->validateConfiguration('chip', [
             'collect.api_key',
             'collect.brand_id',
@@ -154,7 +143,6 @@ final class ChipServiceProvider extends PackageServiceProvider
         $this->validateWebhookBrandIdMap();
         $this->configureWebhookRoutes();
         $this->registerEventListeners();
-        $this->bootDocsIntegration();
     }
 
     /**
@@ -178,13 +166,6 @@ final class ChipServiceProvider extends PackageServiceProvider
         ];
     }
 
-    protected function bootDocsIntegration(): void
-    {
-        /** @var DocsIntegrationRegistrar $registrar */
-        $registrar = $this->app->make(DocsIntegrationRegistrar::class);
-        $registrar->register();
-    }
-
     protected function registerMiddleware(): void
     {
         $this->app->singleton(VerifyWebhookSignature::class, function ($app): VerifyWebhookSignature {
@@ -197,34 +178,6 @@ final class ChipServiceProvider extends PackageServiceProvider
     protected function registerEventListeners(): void
     {
         Event::listen(WebhookReceived::class, StoreWebhookData::class);
-        $this->registerCheckoutCustomerBridgeListener();
-    }
-
-    private function registerCheckoutCustomerBridgeListener(): void
-    {
-        if (! class_exists(self::CHECKOUT_COMPLETED_EVENT)) {
-            return;
-        }
-
-        Event::listen(self::CHECKOUT_COMPLETED_EVENT, LinkChipCustomerFromCheckoutCompletion::class);
-    }
-
-    protected function registerMorphAliases(): void
-    {
-        $customerModel = config('chip.integrations.customer_bridge.customer_model', self::CUSTOMER_MODEL);
-        $customerMorphAlias = config('chip.integrations.customer_bridge.customer_morph_alias', 'Customer');
-
-        if (! is_string($customerModel) || $customerModel === '' || ! class_exists($customerModel)) {
-            return;
-        }
-
-        if (! is_string($customerMorphAlias) || $customerMorphAlias === '') {
-            return;
-        }
-
-        Relation::morphMap([
-            $customerMorphAlias => $customerModel,
-        ]);
     }
 
     protected function registerServices(): void
@@ -264,15 +217,11 @@ final class ChipServiceProvider extends PackageServiceProvider
     protected function registerActions(): void
     {
         $this->app->singleton(DispatchChipWebhookAction::class);
-        $this->app->singleton(RunChipPurchaseDocGenerationAction::class);
-        $this->app->singleton(BuildChipDocData::class);
     }
 
     protected function registerSupport(): void
     {
-        $this->app->singleton(ChipCustomerBridge::class);
         $this->app->singleton(WebhookOwnerBatchRunner::class);
-        $this->app->singleton(DocsIntegrationRegistrar::class);
     }
 
     protected function registerClients(): void

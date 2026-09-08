@@ -420,7 +420,7 @@ Cashier::useSubscriptionItemModel(string $subscriptionItemModel): void
 Cashier::fake(?FakeChipClient $fakeClient = null): FakeChipCollectService
 
 // Format amount for display
-Cashier::formatAmount(int $amount, ?string $currency = null, ?string $locale = null, array $options = []): string
+MoneyFormatter::formatMinor(int $amount, string $currency): string
 
 // Find billable by CHIP client ID
 Cashier::findBillable(?string $chipId): ?Model

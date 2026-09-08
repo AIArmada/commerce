@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Payment;
 
-use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -51,7 +50,7 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
      */
     public function amount(): string
     {
-        return Cashier::formatAmount($this->rawAmount(), $this->currency());
+        return MoneyFormatter::formatMinor($this->rawAmount(), $this->currency());
     }
 
     /**
@@ -84,7 +83,7 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isCompleted(): bool
     {
-        return $this->purchaseStatus()->isSuccessful();
+        return $this->purchase->isPaid();
     }
 
     /**
@@ -92,17 +91,7 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isPending(): bool
     {
-        return in_array($this->purchaseStatus(), [
-            PurchaseStatus::CREATED,
-            PurchaseStatus::SENT,
-            PurchaseStatus::VIEWED,
-            PurchaseStatus::OVERDUE,
-            PurchaseStatus::PENDING_EXECUTE,
-            PurchaseStatus::PENDING_CHARGE,
-            PurchaseStatus::PENDING_CAPTURE,
-            PurchaseStatus::PENDING_RELEASE,
-            PurchaseStatus::PENDING_REFUND,
-        ], true);
+        return $this->purchase->isPending();
     }
 
     /**
@@ -110,11 +99,7 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isFailed(): bool
     {
-        return in_array($this->purchaseStatus(), [
-            PurchaseStatus::ERROR,
-            PurchaseStatus::BLOCKED,
-            PurchaseStatus::EXPIRED,
-        ], true);
+        return $this->purchase->hasError() || $this->purchase->status === 'expired';
     }
 
     /**
@@ -166,10 +151,5 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
     public function jsonSerialize(): array
     {
         return $this->toArray();
-    }
-
-    private function purchaseStatus(): PurchaseStatus
-    {
-        return PurchaseStatus::from($this->purchase->status);
     }
 }

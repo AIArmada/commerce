@@ -114,6 +114,10 @@ describe('PurchaseBuilder Interface Integration', function (): void {
             $checkoutable = Mockery::mock(CheckoutableInterface::class);
             $checkoutable->shouldReceive('getCheckoutCurrency')->andReturn('MYR');
             $checkoutable->shouldReceive('getCheckoutLineItems')->andReturn([$lineItem1, $lineItem2]);
+            $checkoutable->shouldReceive('getCheckoutSubtotal')->andReturn(Money::MYR(13000));
+            $checkoutable->shouldReceive('getCheckoutDiscount')->andReturn(Money::MYR(500));
+            $checkoutable->shouldReceive('getCheckoutTax')->andReturn(Money::MYR(180));
+            $checkoutable->shouldReceive('getCheckoutTotal')->andReturn(Money::MYR(12680));
             $checkoutable->shouldReceive('getCheckoutReference')->andReturn('CART-001');
             $checkoutable->shouldReceive('getCheckoutNotes')->andReturn('Please deliver quickly');
             $checkoutable->shouldReceive('getCheckoutMetadata')->andReturn(['order_id' => 'ORDER-123']);
@@ -127,6 +131,11 @@ describe('PurchaseBuilder Interface Integration', function (): void {
                 ->and($data['purchase']['products'])->toHaveCount(2)
                 ->and($data['reference'])->toBe('CART-001')
                 ->and($data['purchase']['notes'])->toBe('Please deliver quickly');
+
+            expect($data['purchase']['subtotal_override'])->toBe(13000)
+                ->and($data['purchase']['total_discount_override'])->toBe(500)
+                ->and($data['purchase']['total_tax_override'])->toBe(180)
+                ->and($data['purchase']['total_override'])->toBe(12680);
         });
 
         it('handles checkoutable without notes', function (): void {
@@ -141,6 +150,10 @@ describe('PurchaseBuilder Interface Integration', function (): void {
             $checkoutable = Mockery::mock(CheckoutableInterface::class);
             $checkoutable->shouldReceive('getCheckoutCurrency')->andReturn('MYR');
             $checkoutable->shouldReceive('getCheckoutLineItems')->andReturn([$lineItem]);
+            $checkoutable->shouldReceive('getCheckoutSubtotal')->andReturn(Money::MYR(1000));
+            $checkoutable->shouldReceive('getCheckoutDiscount')->andReturn(Money::MYR(0));
+            $checkoutable->shouldReceive('getCheckoutTax')->andReturn(Money::MYR(0));
+            $checkoutable->shouldReceive('getCheckoutTotal')->andReturn(Money::MYR(1000));
             $checkoutable->shouldReceive('getCheckoutReference')->andReturn('REF-001');
             $checkoutable->shouldReceive('getCheckoutNotes')->andReturn(null);
             $checkoutable->shouldReceive('getCheckoutMetadata')->andReturn([]);
@@ -248,6 +261,10 @@ describe('PurchaseBuilder Interface Integration', function (): void {
             $checkoutable = Mockery::mock(CheckoutableInterface::class);
             $checkoutable->shouldReceive('getCheckoutCurrency')->andReturn('MYR');
             $checkoutable->shouldReceive('getCheckoutLineItems')->andReturn([$lineItem]);
+            $checkoutable->shouldReceive('getCheckoutSubtotal')->andReturn(Money::MYR(9900));
+            $checkoutable->shouldReceive('getCheckoutDiscount')->andReturn(Money::MYR(990));
+            $checkoutable->shouldReceive('getCheckoutTax')->andReturn(Money::MYR(0));
+            $checkoutable->shouldReceive('getCheckoutTotal')->andReturn(Money::MYR(8910));
             $checkoutable->shouldReceive('getCheckoutReference')->andReturn('ORDER-2025-001');
             $checkoutable->shouldReceive('getCheckoutNotes')->andReturn(null);
             $checkoutable->shouldReceive('getCheckoutMetadata')->andReturn([]);
@@ -281,6 +298,10 @@ describe('PurchaseBuilder Interface Integration', function (): void {
                 ->and($data['purchase']['products'][0]['name'])->toBe('Premium Widget')
                 ->and($data['purchase']['products'][0]['price'])->toBe(9900)
                 ->and($data['purchase']['products'][0]['discount'])->toBe(990);
+
+            expect($data['purchase']['subtotal_override'])->toBe(9900)
+                ->and($data['purchase']['total_discount_override'])->toBe(990)
+                ->and($data['purchase']['total_override'])->toBe(8910);
 
             // Verify reference
             expect($data['reference'])->toBe('ORDER-2025-001');

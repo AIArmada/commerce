@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Billing;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\States\Active;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonSerializable;
@@ -169,12 +170,12 @@ class Coupon implements Arrayable, Jsonable, JsonSerializable
         }
 
         // Check if started
-        if ($this->voucher->startsAt && Carbon::instance($this->voucher->startsAt)->isFuture()) {
+        if ($this->voucher->startsAt && CarbonImmutable::instance($this->voucher->startsAt)->isFuture()) {
             return false;
         }
 
         // Check if expired
-        if ($this->voucher->expiresAt && Carbon::instance($this->voucher->expiresAt)->isPast()) {
+        if ($this->voucher->expiresAt && CarbonImmutable::instance($this->voucher->expiresAt)->isPast()) {
             return false;
         }
 
@@ -194,7 +195,7 @@ class Coupon implements Arrayable, Jsonable, JsonSerializable
      */
     public function isExpired(): bool
     {
-        return $this->voucher->expiresAt && Carbon::instance($this->voucher->expiresAt)->isPast();
+        return $this->voucher->expiresAt && CarbonImmutable::instance($this->voucher->expiresAt)->isPast();
     }
 
     /**
@@ -306,6 +307,6 @@ class Coupon implements Arrayable, Jsonable, JsonSerializable
      */
     protected function formatAmount(int $amount): string
     {
-        return Cashier::formatAmount($amount, $this->currency());
+        return MoneyFormatter::formatMinor($amount, $this->currency());
     }
 }

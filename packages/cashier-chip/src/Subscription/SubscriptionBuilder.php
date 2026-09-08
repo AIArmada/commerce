@@ -7,13 +7,13 @@ namespace AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\Actions\CreateChipSubscription;
 use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\CashierChip\Billing\Coupon;
+use AIArmada\CashierChip\Billing\VoucherIntegration;
 use AIArmada\CashierChip\Concerns\AllowsCoupons;
 use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Vouchers\Services\VoucherService;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
@@ -526,11 +526,7 @@ class SubscriptionBuilder
      */
     public function retrieveCoupon(string $couponId): ?Coupon
     {
-        if (! class_exists(VoucherService::class)) {
-            return null;
-        }
-
-        $service = app(VoucherService::class);
+        $service = VoucherIntegration::service();
         $voucherData = $service->find($couponId);
 
         if (! $voucherData) {

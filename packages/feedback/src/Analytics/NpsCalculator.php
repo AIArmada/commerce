@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class NpsCalculator
 {
-    public function calculate(FeedbackForm $form, ?string $questionKey = null): NpsResultData
+    public function calculate(?FeedbackForm $form = null, ?string $questionKey = null): NpsResultData
     {
         $query = $this->baseQuery($form, $questionKey);
 
@@ -58,13 +58,16 @@ final class NpsCalculator
         );
     }
 
-    private function baseQuery(FeedbackForm $form, ?string $questionKey = null): Builder
+    private function baseQuery(?FeedbackForm $form = null, ?string $questionKey = null): Builder
     {
         /** @var Builder<FeedbackResponse> $query */
         $query = FeedbackResponse::query()
-            ->where('feedback_form_id', $form->id)
             ->where('status', 'submitted')
             ->whereNotNull('score');
+
+        if ($form !== null) {
+            $query->where('feedback_form_id', $form->id);
+        }
 
         if ($questionKey !== null) {
             $query->whereHas('answers', function (Builder $q) use ($questionKey): void {

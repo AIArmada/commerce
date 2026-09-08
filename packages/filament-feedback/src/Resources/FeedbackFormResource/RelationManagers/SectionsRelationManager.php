@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers;
 
-use AIArmada\Feedback\Actions\CreateFeedbackSectionAction;
 use AIArmada\Feedback\Actions\DeleteFeedbackSectionAction;
-use AIArmada\Feedback\Actions\UpdateFeedbackSectionAction;
+use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Models\FeedbackSection;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -37,11 +36,9 @@ final class SectionsRelationManager extends RelationManager
                         TextInput::make('order_column')->numeric()->default(0),
                     ])
                     ->action(function (array $data): void {
-                        app(CreateFeedbackSectionAction::class)->execute(
+                        app(SaveFeedbackFormStructureAction::class)->saveSection(
                             formId: $this->getOwnerRecord()->getKey(),
-                            title: $data['title'],
-                            key: $data['key'] ?? null,
-                            orderColumn: (int) ($data['order_column'] ?? 0),
+                            data: $data,
                         );
                     }),
             ])
@@ -53,7 +50,11 @@ final class SectionsRelationManager extends RelationManager
                         TextInput::make('order_column')->numeric(),
                     ])
                     ->action(function (FeedbackSection $record, array $data): void {
-                        app(UpdateFeedbackSectionAction::class)->execute($record, $data);
+                        app(SaveFeedbackFormStructureAction::class)->saveSection(
+                            formId: $this->getOwnerRecord()->getKey(),
+                            data: $data,
+                            section: $record,
+                        );
                     }),
                 DeleteAction::make()
                     ->action(function (FeedbackSection $record): void {

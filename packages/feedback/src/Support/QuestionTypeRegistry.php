@@ -8,20 +8,17 @@ use AIArmada\Feedback\Enums\FeedbackQuestionType;
 
 final class QuestionTypeRegistry
 {
-    private static ?array $disabledTypes = null;
-
     public static function disabledTypes(): array
     {
-        if (self::$disabledTypes === null) {
-            self::$disabledTypes = [];
-            foreach (FeedbackQuestionType::cases() as $type) {
-                if ($type->isDisabled()) {
-                    self::$disabledTypes[] = $type->value;
-                }
+        $disabledTypes = [];
+
+        foreach (FeedbackQuestionType::cases() as $type) {
+            if ($type->isDisabled()) {
+                $disabledTypes[] = $type->value;
             }
         }
 
-        return self::$disabledTypes;
+        return $disabledTypes;
     }
 
     public static function isTypeAvailable(string $type): bool

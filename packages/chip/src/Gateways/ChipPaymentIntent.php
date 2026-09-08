@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Gateways;
 
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\Chip\Support\ChipPaymentStatusMapper;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentIntentInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 use Akaunting\Money\Money;
@@ -40,7 +40,7 @@ final readonly class ChipPaymentIntent implements PaymentIntentInterface
 
     public function getStatus(): PaymentStatus
     {
-        return $this->mapChipStatus($this->purchase->status);
+        return ChipPaymentStatusMapper::map($this->purchase->status);
     }
 
     public function getCheckoutUrl(): ?string
@@ -137,35 +137,5 @@ final readonly class ChipPaymentIntent implements PaymentIntentInterface
     public function getPurchase(): PurchaseData
     {
         return $this->purchase;
-    }
-
-    /**
-     * Map CHIP status to universal PaymentStatus.
-     */
-    private function mapChipStatus(string $chipStatus): PaymentStatus
-    {
-        return match (PurchaseStatus::from($chipStatus)) {
-            PurchaseStatus::CREATED => PaymentStatus::CREATED,
-            PurchaseStatus::SENT,
-            PurchaseStatus::VIEWED,
-            PurchaseStatus::OVERDUE,
-            PurchaseStatus::PENDING_EXECUTE,
-            PurchaseStatus::PENDING_CHARGE => PaymentStatus::PENDING,
-            PurchaseStatus::PENDING_CAPTURE,
-            PurchaseStatus::PENDING_RELEASE,
-            PurchaseStatus::PENDING_REFUND => PaymentStatus::PROCESSING,
-            PurchaseStatus::HOLD,
-            PurchaseStatus::PREAUTHORIZED => PaymentStatus::AUTHORIZED,
-            PurchaseStatus::PAID,
-            PurchaseStatus::CLEARED,
-            PurchaseStatus::SETTLED => PaymentStatus::PAID,
-            PurchaseStatus::REFUNDED => PaymentStatus::REFUNDED,
-            PurchaseStatus::CANCELLED,
-            PurchaseStatus::RELEASED => PaymentStatus::CANCELLED,
-            PurchaseStatus::EXPIRED => PaymentStatus::EXPIRED,
-            PurchaseStatus::CHARGEBACK => PaymentStatus::DISPUTED,
-            PurchaseStatus::ERROR,
-            PurchaseStatus::BLOCKED => PaymentStatus::FAILED,
-        };
     }
 }

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Actions;
 
+use AIArmada\CashierChip\Billing\VoucherIntegration;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionCreated;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
-use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Exception;
@@ -126,11 +126,7 @@ final class CreateChipSubscription
 
     private function recordCouponUsage(string $couponId, int $discountAmount, mixed $redeemedBy = null): void
     {
-        if (! class_exists(VoucherService::class)) {
-            return;
-        }
-
-        $service = app(VoucherService::class);
+        $service = VoucherIntegration::service();
         $currency = config('cashier-chip.currency', 'MYR');
 
         $service->recordUsage(

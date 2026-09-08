@@ -5,8 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\CreateFeedbackQuestionAction;
-use AIArmada\Feedback\Actions\CreateFeedbackSectionAction;
+use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
@@ -59,7 +58,10 @@ it('rejects cross-owner child ids', function (): void {
 
     expect(fn () => OwnerContext::withOwner(
         $ownerA,
-        fn () => app(CreateFeedbackSectionAction::class)->execute($formB->id, 'Invalid Section'),
+        fn () => app(SaveFeedbackFormStructureAction::class)->saveSection(
+            $formB->id,
+            ['title' => 'Invalid Section'],
+        ),
     ))->toThrow(AuthorizationException::class);
 });
 
@@ -68,15 +70,17 @@ it('rejects sections from another form under the same owner', function (): void 
         ->execute(new CreateFeedbackFormData(name: 'Form A'));
     $formB = app(CreateFeedbackFormAction::class)
         ->execute(new CreateFeedbackFormData(name: 'Form B'));
-    $sectionA = app(CreateFeedbackSectionAction::class)
-        ->execute($formA->id, 'Section A');
+    $sectionA = app(SaveFeedbackFormStructureAction::class)
+        ->saveSection($formA->id, ['title' => 'Section A']);
 
-    expect(fn () => app(CreateFeedbackQuestionAction::class)->execute(
+    expect(fn () => app(SaveFeedbackFormStructureAction::class)->saveQuestion(
         formId: $formB->id,
-        key: 'invalid',
-        type: 'short_text',
-        label: 'Invalid question',
-        sectionId: $sectionA->id,
+        data: [
+            'key' => 'invalid',
+            'type' => 'short_text',
+            'label' => 'Invalid question',
+            'feedback_section_id' => $sectionA->id,
+        ],
     ))->toThrow(InvalidArgumentException::class);
 });
 

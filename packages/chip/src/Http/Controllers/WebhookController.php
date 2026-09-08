@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
+use LogicException;
 use Spatie\WebhookClient\Exceptions\InvalidConfig;
 use Spatie\WebhookClient\WebhookConfigRepository;
 use Spatie\WebhookClient\WebhookProcessor;
@@ -54,7 +55,25 @@ class WebhookController extends Controller
             throw InvalidConfig::couldNotFindConfig($routeName);
         }
 
-        $response = (new WebhookProcessor($request, $config))->process();
+        $processor = function () use ($request, $config): JsonResponse {
+            $response = (new WebhookProcessor($request, $config))->process();
+
+            if (! $response instanceof JsonResponse) {
+                throw new LogicException('CHIP webhook response must be a JSON response.');
+            }
+
+            return $response;
+        };
+
+        if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
+            $owner = ChipWebhookOwnerResolver::resolveFromPayload($payload);
+
+            if ($owner !== null) {
+                return OwnerContext::withOwner($owner, $processor);
+            }
+        }
+
+        $response = $processor();
 
         /** @var JsonResponse $response */
         return $response;

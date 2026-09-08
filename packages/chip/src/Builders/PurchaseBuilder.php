@@ -39,8 +39,20 @@ final class PurchaseBuilder
     /**
      * Set purchase currency
      */
-    public function currency(string $currency = 'MYR'): self
+    public function currency(string $currency): self
     {
+        $currency = mb_strtoupper(mb_trim($currency));
+
+        if (! preg_match('/^[A-Z]{3}$/', $currency)) {
+            throw new ChipValidationException('Purchase currency must be a three-letter ISO 4217 code.');
+        }
+
+        $existingCurrency = $this->data['purchase']['currency'] ?? null;
+
+        if ($existingCurrency !== null && $existingCurrency !== $currency && ! empty($this->data['purchase']['products'])) {
+            throw new ChipValidationException('Purchase currency cannot change after products have been added.');
+        }
+
         $this->data['purchase']['currency'] = $currency;
 
         return $this;
@@ -69,16 +81,28 @@ final class PurchaseBuilder
         }
 
         $currency = $price->getCurrency()->getCurrency();
+        $purchaseCurrency = $this->purchaseCurrency();
 
-        // Ensure currency is set on the purchase
-        if (! isset($this->data['purchase']['currency'])) {
-            $this->data['purchase']['currency'] = $currency;
+        if ($currency !== $purchaseCurrency) {
+            throw new ChipValidationException('Product price currency must match the purchase currency.', [
+                'purchase_currency' => $purchaseCurrency,
+                'product_currency' => $currency,
+            ]);
+        }
+
+        $normalizedQuantity = $this->normalizeQuantity($quantity);
+
+        if ($discount !== null && $discount->getCurrency()->getCurrency() !== $purchaseCurrency) {
+            throw new ChipValidationException('Product discount currency must match the purchase currency.', [
+                'purchase_currency' => $purchaseCurrency,
+                'discount_currency' => $discount->getCurrency()->getCurrency(),
+            ]);
         }
 
         $product = [
             'name' => $name,
             'price' => $priceAmount,
-            'quantity' => (string) $quantity,
+            'quantity' => (string) $normalizedQuantity,
         ];
 
         if ($discount !== null && $discount->getAmount() > 0) {
@@ -103,12 +127,19 @@ final class PurchaseBuilder
      */
     public function addProductObject(ProductData $product): self
     {
-        // Ensure currency is set on the purchase
-        if (! isset($this->data['purchase']['currency'])) {
-            $this->data['purchase']['currency'] = $product->getCurrency();
+        $purchaseCurrency = $this->purchaseCurrency();
+
+        if ($product->getCurrency() !== $purchaseCurrency) {
+            throw new ChipValidationException('Product currency must match the purchase currency.', [
+                'purchase_currency' => $purchaseCurrency,
+                'product_currency' => $product->getCurrency(),
+            ]);
         }
 
-        $this->data['purchase']['products'][] = $product->toArray();
+        $productData = $product->toArray();
+        $productData['quantity'] = (string) $this->normalizeQuantity($product->quantity);
+
+        $this->data['purchase']['products'][] = $productData;
 
         return $this;
     }
@@ -131,8 +162,8 @@ final class PurchaseBuilder
     /**
      * Add a product using price in cents (convenience method).
      *
-     * This creates a Money object internally using the purchase currency.
-     * Use addProductMoney() for explicit currency control.
+     * This creates a Money object internally using the explicitly configured purchase currency.
+     * Use addProductMoney() for direct currency control.
      *
      * @throws ChipValidationException If price is negative
      */
@@ -144,7 +175,7 @@ final class PurchaseBuilder
         float $taxPercent = 0,
         ?string $category = null
     ): self {
-        $currency = $this->data['purchase']['currency'] ?? config('chip.defaults.currency', 'MYR');
+        $currency = $this->purchaseCurrency();
 
         return $this->addProductMoney(
             name: $name,
@@ -164,12 +195,64 @@ final class PurchaseBuilder
      */
     public function fromCheckoutable(CheckoutableInterface $checkoutable): self
     {
-        $this->currency($checkoutable->getCheckoutCurrency());
+        $currency = mb_strtoupper(mb_trim($checkoutable->getCheckoutCurrency()));
+        $subtotal = $checkoutable->getCheckoutSubtotal();
+        $checkoutDiscount = $checkoutable->getCheckoutDiscount();
+        $tax = $checkoutable->getCheckoutTax();
+        $total = $checkoutable->getCheckoutTotal();
+
+        $this->assertMoneyCurrency($subtotal, $currency, 'checkout subtotal');
+        $this->assertMoneyCurrency($checkoutDiscount, $currency, 'checkout discount');
+        $this->assertMoneyCurrency($tax, $currency, 'checkout tax');
+        $this->assertMoneyCurrency($total, $currency, 'checkout total');
+        $this->currency($currency);
         $this->reference($checkoutable->getCheckoutReference());
 
-        foreach ($checkoutable->getCheckoutLineItems() as $item) {
+        /** @var list<LineItemInterface> $lineItems */
+        $lineItems = iterator_to_array($checkoutable->getCheckoutLineItems(), false);
+        $lineItemsSubtotal = 0;
+
+        foreach ($lineItems as $item) {
+            $quantity = $this->normalizeQuantity($item->getLineItemQuantity());
+            $price = $item->getLineItemPrice();
+            $lineItemDiscount = $item->getLineItemDiscount();
+
+            $this->assertMoneyCurrency($price, $currency, 'line item price');
+            $this->assertMoneyCurrency($lineItemDiscount, $currency, 'line item discount');
+
+            $lineItemsSubtotal += (int) $price->getAmount() * $quantity;
+        }
+
+        $subtotalAmount = (int) $subtotal->getAmount();
+        $discountAmount = (int) $checkoutDiscount->getAmount();
+        $taxAmount = (int) $tax->getAmount();
+        $totalAmount = (int) $total->getAmount();
+
+        if ($lineItemsSubtotal !== $subtotalAmount) {
+            throw new ChipValidationException('Checkout line items do not match the checkout subtotal.', [
+                'line_items_subtotal' => $lineItemsSubtotal,
+                'checkout_subtotal' => $subtotalAmount,
+            ]);
+        }
+
+        $calculatedTotal = $subtotalAmount - $discountAmount + $taxAmount;
+
+        if ($calculatedTotal !== $totalAmount) {
+            throw new ChipValidationException('Checkout totals do not reconcile.', [
+                'calculated_total' => $calculatedTotal,
+                'checkout_total' => $totalAmount,
+            ]);
+        }
+
+        foreach ($lineItems as $item) {
             $this->addLineItem($item);
         }
+
+        $this->data['purchase']['subtotal_override'] = $subtotalAmount;
+        $this->data['purchase']['total_discount_override'] = $discountAmount;
+        $this->data['purchase']['total_tax_override'] = $taxAmount;
+        $this->data['purchase']['total_override'] = $totalAmount;
+        $this->data['purchase']['total'] = $totalAmount;
 
         if ($checkoutable->getCheckoutNotes() !== null) {
             $this->notes($checkoutable->getCheckoutNotes());
@@ -514,6 +597,8 @@ final class PurchaseBuilder
      */
     public function create(): PurchaseData
     {
+        $this->purchaseCurrency();
+
         // Use brand_id from config if not set
         if (! isset($this->data['brand_id'])) {
             $this->data['brand_id'] = config('chip.collect.brand_id');
@@ -534,5 +619,54 @@ final class PurchaseBuilder
     public function save(): PurchaseData
     {
         return $this->create();
+    }
+
+    private function purchaseCurrency(): string
+    {
+        $currency = $this->data['purchase']['currency'] ?? null;
+
+        if (! is_string($currency) || $currency === '') {
+            throw new ChipValidationException('Call currency() before adding purchase products.');
+        }
+
+        return $currency;
+    }
+
+    private function normalizeQuantity(string | float | int $quantity): int
+    {
+        if (is_float($quantity) && (! is_finite($quantity) || floor($quantity) !== $quantity)) {
+            throw new ChipValidationException('Product quantity must be an integer.');
+        }
+
+        if (is_int($quantity)) {
+            $normalized = $quantity;
+        } elseif (is_float($quantity)) {
+            $normalized = (int) $quantity;
+        } else {
+            $value = mb_trim($quantity);
+            $validated = filter_var($value, FILTER_VALIDATE_INT);
+
+            if ($value === '' || $validated === false) {
+                throw new ChipValidationException('Product quantity must be an integer.');
+            }
+
+            $normalized = (int) $validated;
+        }
+
+        if ($normalized < 1) {
+            throw new ChipValidationException('Product quantity must be an integer.');
+        }
+
+        return $normalized;
+    }
+
+    private function assertMoneyCurrency(Money $money, string $currency, string $field): void
+    {
+        if ($money->getCurrency()->getCurrency() !== $currency) {
+            throw new ChipValidationException("{$field} currency must match the checkout currency.", [
+                'checkout_currency' => $currency,
+                'money_currency' => $money->getCurrency()->getCurrency(),
+            ]);
+        }
     }
 }

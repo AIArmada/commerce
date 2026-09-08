@@ -52,6 +52,7 @@ The `Chip` facade provides direct access to the Collect API.
 use AIArmada\Chip\Facades\Chip;
 
 $purchase = Chip::purchase()
+    ->currency('MYR')
     // Customer details
     ->customer('customer@example.com', 'John Doe', '+60123456789')
     
@@ -86,6 +87,7 @@ For a purchase without a stable reference, use an explicit replay key:
 $purchase = Chip::purchase()
     ->idempotencyKey('checkout-session-123')
     ->reference('ORD-2024-001')
+    ->currency('MYR')
     ->addProductCents('Premium Plan', 9900)
     ->email('customer@example.com')
     ->create();
@@ -110,6 +112,7 @@ $purchase = Chip::purchase()
 // Create pre-authorized purchase (hold funds without charging)
 $purchase = Chip::purchase()
     ->customer('customer@example.com')
+    ->currency('MYR')
     ->addProductCents('Reservation', 50000)
     ->preAuthorize(true)
     ->create();
@@ -179,20 +182,6 @@ $chipCustomerId = $directory->getChipCustomerId($user);
 ```
 
 The directory stores links in `chip_customers` and applies owner scoping through `commerce-support` when CHIP owner mode is enabled.
-
-### Checkout Customer Bridge
-
-When `aiarmada/checkout` and `aiarmada/customers` are installed, CHIP automatically listens for completed CHIP checkout sessions and links the local checkout customer to the CHIP `client_id` from `payment_data.gateway_response`.
-
-The listener writes to `chip_customers` with an idempotent upsert, so replayed checkout completion events update the existing customer link instead of creating duplicates.
-
-To backfill older checkout sessions where `chip_purchases`, `chip_payments`, and `chip_clients` already exist but `chip_customers` is missing, re-sync the purchase payload from CHIP:
-
-```bash
-php artisan chip:sync-from-api --purchase-id=purchase_uuid --overwrite-existing
-```
-
-`--overwrite-existing` is required for those backfills because the sync command skips locally stored purchases by default. Live checkout completion does not use that command path, so normal production inserts are not gated by this option.
 
 ### Account Information
 
@@ -403,28 +392,9 @@ final class HandleSendWebhook
 
 The package does not invent a status-to-event mapping for Send. CHIP Send supplies the resource payload and the configured hook category; applications decide how to persist or act on it.
 
-### RunChipPurchaseDocGenerationAction
-
-Generates documents (invoices, credit notes) from CHIP payment events when the optional `aiarmada/docs` package is installed:
-
-```php
-use AIArmada\Chip\Actions\RunChipPurchaseDocGenerationAction;
-use AIArmada\Chip\Support\BuildChipDocData;
-use AIArmada\Docs\Enums\DocType;
-
-app(RunChipPurchaseDocGenerationAction::class)->execute(
-    purchaseId: 'purchase_abc123',
-    payload: $webhookPayload,
-    docData: app(BuildChipDocData::class)->forPayment($purchase, $event, DocType::Invoice),
-    docTypeConfigKey: 'chip.integrations.docs.invoice',
-);
-```
-
-The action guards against duplicate document generation for the same payment ID and safely returns early when the `Docs` package is not installed.
-
 ### SyncChipRecordsFromApiAction
 
-Syncs CHIP purchase records from the remote API into local storage, optionally linking checkout customers:
+Syncs CHIP purchase records from the remote API into local storage. It emits the normal CHIP payload/event seam for downstream integrations; it does not link checkout customers itself:
 
 ```php
 use AIArmada\Chip\Actions\SyncChipRecordsFromApiAction;
@@ -440,7 +410,7 @@ $summary = app(SyncChipRecordsFromApiAction::class)->handle(
 // $summary = ['processed' => 2, 'synced' => 0, 'skipped' => 2, 'failed' => 0, 'errors' => []]
 ```
 
-Use `dryRun: true` to preview which purchases would be synced. Use `overwriteExisting: true` to re-sync purchases already stored locally (required for backfill scenarios). When `aiarmada/checkout` and `aiarmada/customers` are installed, each synced purchase also creates a CHIP customer link via `ChipCustomerBridge`.
+Use `dryRun: true` to preview which purchases would be synced. Use `overwriteExisting: true` to re-sync purchases already stored locally (required for backfill scenarios). Downstream checkout or customer integrations should subscribe to the stable CHIP webhook events if they need to link records.
 
 ## Artisan Commands
 
@@ -449,3 +419,4 @@ Use `dryRun: true` to preview which purchases would be synced. Use `overwriteExi
 | `chip:health-check` | Check CHIP API connectivity and credentials |
 | `chip:retry-webhooks` | Retry failed webhooks |
 | `chip:clean-webhooks` | Clean old webhook records |
+| `chip:sync-from-api --purchase-id=<id>` | Sync explicitly supplied CHIP purchase IDs |

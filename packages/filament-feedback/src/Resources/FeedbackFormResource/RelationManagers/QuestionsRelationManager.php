@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers;
 
-use AIArmada\Feedback\Actions\CreateFeedbackQuestionAction;
 use AIArmada\Feedback\Actions\DeleteFeedbackQuestionAction;
-use AIArmada\Feedback\Actions\UpdateFeedbackQuestionAction;
+use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Enums\FeedbackQuestionType;
 use AIArmada\Feedback\Models\FeedbackQuestion;
 use Filament\Actions\CreateAction;
@@ -50,15 +49,9 @@ final class QuestionsRelationManager extends RelationManager
                             ->relationship('section', 'title'),
                     ])
                     ->action(function (array $data): void {
-                        app(CreateFeedbackQuestionAction::class)->execute(
+                        app(SaveFeedbackFormStructureAction::class)->saveQuestion(
                             formId: $this->getOwnerRecord()->getKey(),
-                            key: $data['key'],
-                            type: $data['type'],
-                            label: $data['label'],
-                            isRequired: (bool) ($data['is_required'] ?? false),
-                            isScored: (bool) ($data['is_scored'] ?? false),
-                            orderColumn: (int) ($data['order_column'] ?? 0),
-                            sectionId: $data['feedback_section_id'] ?? null,
+                            data: $data,
                         );
                     }),
             ])
@@ -79,7 +72,11 @@ final class QuestionsRelationManager extends RelationManager
                             ->relationship('section', 'title'),
                     ])
                     ->action(function (FeedbackQuestion $record, array $data): void {
-                        app(UpdateFeedbackQuestionAction::class)->execute($record, $data);
+                        app(SaveFeedbackFormStructureAction::class)->saveQuestion(
+                            formId: $this->getOwnerRecord()->getKey(),
+                            data: $data,
+                            question: $record,
+                        );
                     }),
                 DeleteAction::make()
                     ->action(function (FeedbackQuestion $record): void {

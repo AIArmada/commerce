@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\CustomerPortal\Pages;
 
-use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithBillable;
 use BackedEnum;
 use Exception;
@@ -147,7 +147,7 @@ class Subscriptions extends Page
     {
         $currency = config('cashier-chip.currency', 'MYR');
 
-        return Cashier::formatAmount($amount, $currency);
+        return MoneyFormatter::formatMinor($amount, $currency);
     }
 
     /**
@@ -165,6 +165,7 @@ class Subscriptions extends Page
 
         return $billable->subscriptions()
             ->whereIn('chip_status', $activeStatuses)
+            ->with(['items', 'billable'])
             ->get();
     }
 
@@ -181,6 +182,7 @@ class Subscriptions extends Page
 
         return $billable->subscriptions()
             ->onGracePeriod()
+            ->with(['items', 'billable'])
             ->get();
     }
 

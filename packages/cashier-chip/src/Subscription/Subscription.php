@@ -7,6 +7,7 @@ namespace AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\Discount;
+use AIArmada\CashierChip\Billing\VoucherIntegration;
 use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
@@ -17,10 +18,10 @@ use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
 use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\CashierChip\Payment\Payment;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -38,8 +39,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
+use Throwable;
 
 /**
  * CHIP Subscription Model
@@ -76,6 +79,7 @@ use LogicException;
  * @property string|null $owner_id
  * @property-read Model&BillableContract $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, SubscriptionItem> $items
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, RenewalAttempt> $renewalAttempts
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static> whereCanceled()
  * @method static \Illuminate\Database\Eloquent\Builder<static> whereNotOnTrial()
@@ -126,11 +130,6 @@ class Subscription extends Model
         'coupon_applied_at',
     ];
 
-    /**
-     * The relations to eager load on every query.
-     */
-    protected $with = ['items'];
-
     public function getTable(): string
     {
         $tables = config('cashier-chip.database.tables', []);
@@ -179,6 +178,16 @@ class Subscription extends Model
     }
 
     /**
+     * Get the renewal attempts recorded for the subscription.
+     *
+     * @return HasMany<RenewalAttempt, $this>
+     */
+    public function renewalAttempts(): HasMany
+    {
+        return $this->hasMany(RenewalAttempt::class, 'subscription_id');
+    }
+
+    /**
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
@@ -220,6 +229,8 @@ class Subscription extends Model
      */
     public function hasProduct(string $product): bool
     {
+        $this->loadMissing('items');
+
         return $this->items->contains(function (SubscriptionItem $item) use ($product) {
             return $item->chip_product === $product;
         });
@@ -231,6 +242,8 @@ class Subscription extends Model
     public function hasPrice(string $price): bool
     {
         if ($this->hasMultiplePrices()) {
+            $this->loadMissing('items');
+
             return $this->items->contains(function (SubscriptionItem $item) use ($price) {
                 return $item->chip_price === $price;
             });
@@ -678,27 +691,33 @@ class Subscription extends Model
                 ? array_values($prices)[0]
                 : array_keys($prices)[0];
 
-            // Delete existing items and create new ones
-            $this->items()->delete();
+            $existingItemIds = $this->items()->pluck('id')->all();
+            $createdItems = [];
 
             foreach ($prices as $priceKey => $priceValue) {
                 $price = is_string($priceValue) ? $priceValue : $priceKey;
                 $quantity = is_array($priceValue) ? ($priceValue['quantity'] ?? 1) : 1;
                 $quantity = max(1, (int) $quantity);
 
-                $this->createTrustedSubscriptionItem([
+                $createdItems[] = $this->createTrustedSubscriptionItem([
                     'owner_type' => $this->owner_type,
                     'owner_id' => $this->owner_id,
-                    'chip_id' => 'si_' . uniqid() . '_' . time(),
+                    'chip_id' => Str::orderedUuid()->toString(),
                     'chip_product' => $options['product'] ?? null,
                     'chip_price' => $price,
                     'quantity' => $quantity,
                 ]);
             }
 
+            if ($existingItemIds !== []) {
+                $this->items()->whereIn('id', $existingItemIds)->delete();
+            }
+
+            $firstNewItem = $createdItems[0];
+
             $this->fill([
                 'chip_price' => $isSinglePrice ? $firstPrice : null,
-                'quantity' => $isSinglePrice ? ($this->items()->first()->quantity ?? null) : null,
+                'quantity' => $isSinglePrice ? $firstNewItem?->quantity : null,
                 'ends_at' => null,
             ])->save();
 
@@ -898,12 +917,18 @@ class Subscription extends Model
             return null;
         }
 
+        $billable = $this->billableModel();
+
+        if (! $billable instanceof BillableContract) {
+            return null;
+        }
+
         return new Discount([
             'coupon' => $this->coupon_id,
             'amount' => $this->coupon_discount,
             'start' => $this->coupon_applied_at,
             'end' => $this->calculateDiscountEnd(),
-            'currency' => $this->customer->preferredCurrency(),
+            'currency' => $billable->preferredCurrency(),
         ]);
     }
 
@@ -979,9 +1004,30 @@ class Subscription extends Model
      */
     public function latestPayment(): ?Payment
     {
-        // For CHIP, we would need to track payments separately
-        // This is a placeholder implementation
-        return null;
+        $billable = $this->billableModel();
+        $attempt = $this->renewalAttempts()
+            ->whereNotNull('purchase_id')
+            ->orderByDesc('completed_at')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (! $attempt instanceof RenewalAttempt) {
+            return null;
+        }
+
+        $purchase = $this->purchaseForAttempt($attempt);
+
+        if (! $purchase instanceof PurchaseData) {
+            return null;
+        }
+
+        $payment = new Payment($purchase);
+
+        if ($billable instanceof Model && $billable instanceof BillableContract) {
+            $payment->setCustomer($billable);
+        }
+
+        return $payment;
     }
 
     /**
@@ -1009,30 +1055,34 @@ class Subscription extends Model
     {
         $this->guardAgainstIncomplete();
 
-        if ($this->items->contains('chip_price', $price)) {
-            throw SubscriptionUpdateFailure::duplicatePrice($this, $price);
-        }
+        return DB::transaction(function () use ($price, $quantity, $options): static {
+            $this->loadMissing('items');
 
-        $this->createTrustedSubscriptionItem([
-            'owner_type' => $this->owner_type,
-            'owner_id' => $this->owner_id,
-            'chip_id' => 'si_' . uniqid() . '_' . time(),
-            'chip_product' => $options['product'] ?? null,
-            'chip_price' => $price,
-            'quantity' => $quantity,
-            'unit_amount' => $options['unit_amount'] ?? null,
-        ]);
+            if ($this->items->contains('chip_price', $price)) {
+                throw SubscriptionUpdateFailure::duplicatePrice($this, $price);
+            }
 
-        $this->unsetRelation('items');
+            $this->createTrustedSubscriptionItem([
+                'owner_type' => $this->owner_type,
+                'owner_id' => $this->owner_id,
+                'chip_id' => Str::orderedUuid()->toString(),
+                'chip_product' => $options['product'] ?? null,
+                'chip_price' => $price,
+                'quantity' => $quantity,
+                'unit_amount' => $options['unit_amount'] ?? null,
+            ]);
 
-        if ($this->hasSinglePrice()) {
-            $this->fill([
-                'chip_price' => null,
-                'quantity' => null,
-            ])->save();
-        }
+            $this->unsetRelation('items');
 
-        return $this;
+            if ($this->hasSinglePrice()) {
+                $this->fill([
+                    'chip_price' => null,
+                    'quantity' => null,
+                ])->save();
+            }
+
+            return $this;
+        });
     }
 
     /**
@@ -1077,9 +1127,49 @@ class Subscription extends Model
             return null;
         }
 
-        // For CHIP, upcoming invoices would need to be calculated locally
-        // This is a placeholder - implement based on your business logic
-        return null;
+        if (! $this->next_billing_at) {
+            return null;
+        }
+
+        $billable = $this->billableModel();
+
+        if (! $billable instanceof Model || ! $billable instanceof BillableContract) {
+            return null;
+        }
+
+        $this->loadMissing('items');
+
+        if ($this->items->isEmpty()) {
+            return null;
+        }
+
+        $currency = $billable->preferredCurrency();
+        $total = $this->calculateSubscriptionAmount() - (int) ($this->coupon_discount ?? 0);
+
+        $purchase = PurchaseData::from([
+            'id' => "upcoming-{$this->id}",
+            'type' => 'purchase',
+            'client' => [
+                'email' => $billable->chipEmail(),
+                'full_name' => $billable->chipName(),
+            ],
+            'purchase' => [
+                'currency' => $currency,
+                'products' => $this->items->map(fn (SubscriptionItem $item): array => [
+                    'name' => $item->chip_product ?? $item->chip_price ?? 'Subscription item',
+                    'price' => $item->unit_amount ?? 0,
+                    'quantity' => $item->quantity ?? 1,
+                    'discount' => 0,
+                ])->all(),
+                'total' => max(0, $total),
+            ],
+            'brand_id' => config('chip.collect.brand_id', ''),
+            'status' => 'created',
+            'reference' => "Subscription {$this->type}",
+            'due' => $this->next_billing_at->timestamp,
+        ]);
+
+        return new Invoice($billable, $purchase);
     }
 
     /**
@@ -1087,9 +1177,7 @@ class Subscription extends Model
      */
     public function latestInvoice(): ?Invoice
     {
-        // For CHIP, invoices would need to be tracked separately
-        // This is a placeholder - implement based on your invoice storage
-        return null;
+        return $this->invoices()->first();
     }
 
     /**
@@ -1099,8 +1187,32 @@ class Subscription extends Model
      */
     public function invoices(): Collection
     {
-        // For CHIP, invoices would need to be tracked separately
-        return collect();
+        $billable = $this->billableModel();
+
+        if (! $billable instanceof Model || ! $billable instanceof BillableContract) {
+            return collect();
+        }
+
+        $seenPurchaseIds = [];
+
+        return $this->renewalAttempts()
+            ->whereNotNull('purchase_id')
+            ->orderByDesc('completed_at')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (RenewalAttempt $attempt) use ($billable, &$seenPurchaseIds): ?Invoice {
+                $purchase = $this->purchaseForAttempt($attempt);
+
+                if (! $purchase instanceof PurchaseData || isset($seenPurchaseIds[$purchase->id])) {
+                    return null;
+                }
+
+                $seenPurchaseIds[$purchase->id] = true;
+
+                return new Invoice($billable, $purchase);
+            })
+            ->filter(fn (?Invoice $invoice): bool => $invoice instanceof Invoice)
+            ->values();
     }
 
     /**
@@ -1180,7 +1292,9 @@ class Subscription extends Model
      */
     public function calculateSubscriptionAmount(): int
     {
-        return $this->items->sum(function ($item) {
+        $this->loadMissing('items');
+
+        return $this->items->sum(function (SubscriptionItem $item): int {
             return ($item->unit_amount ?? 0) * ($item->quantity ?? 1);
         });
     }
@@ -1266,6 +1380,31 @@ class Subscription extends Model
         return OwnerContext::resolve();
     }
 
+    private function billableModel(): ?Model
+    {
+        $this->loadMissing('billable');
+        $billable = $this->getRelation('billable');
+
+        if (! $billable instanceof Model || ! $billable instanceof BillableContract) {
+            return null;
+        }
+
+        return $billable;
+    }
+
+    private function purchaseForAttempt(RenewalAttempt $attempt): ?PurchaseData
+    {
+        if (! is_string($attempt->purchase_id) || $attempt->purchase_id === '') {
+            return null;
+        }
+
+        try {
+            return Cashier::chip()->getPurchase($attempt->purchase_id);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -1337,12 +1476,7 @@ class Subscription extends Model
      */
     protected function retrieveCoupon(string $couponId): ?Coupon
     {
-        if (! class_exists(VoucherService::class)) {
-            return null;
-        }
-
-        /** @var VoucherService $service */
-        $service = app(VoucherService::class);
+        $service = VoucherIntegration::service();
 
         $voucherData = $service->find($couponId);
 
@@ -1358,21 +1492,22 @@ class Subscription extends Model
      */
     protected function recordCouponUsage(string $couponId, int $discountAmount): void
     {
-        if (! class_exists(VoucherService::class)) {
-            return;
+        $service = VoucherIntegration::service();
+
+        $billable = $this->billableModel();
+
+        if (! $billable instanceof BillableContract) {
+            throw new LogicException('A billable model is required to record coupon usage.');
         }
 
-        /** @var VoucherService $service */
-        $service = app(VoucherService::class);
-
-        $currency = $this->customer->preferredCurrency();
+        $currency = $billable->preferredCurrency();
 
         $service->recordUsage(
             code: $couponId,
             discountAmount: Money::$currency($discountAmount),
             channel: 'subscription',
             metadata: ['subscription_id' => $this->id],
-            redeemedBy: $this->customer,
+            redeemedBy: $billable,
         );
     }
 

@@ -58,9 +58,14 @@ by habit:
 ## 5. Environment constraints
 
 - No live database (local SQLite `:memory:`, prod unreachable). Every
-  migration step individually guarded and re-runnable; never claim prod
-  safety you cannot verify. New migration files only; never edit shipped
-  ones (a single exception requires an idempotency proof in the prompt).
+  migration step individually guarded and re-runnable.
+- Migrations are development-only: no production database exists, and
+  dev databases are delete-and-rerun (see `migration-record.md`
+  deployment gates). New files by default; editing shipped migrations
+  is allowed — outcome-identical edits apply cleanly anywhere, anything
+  else takes the delete-and-rerun path (drop the dev DB and re-migrate;
+  never hand-patch a dev DB into shape). Record shipped edits in
+  `migration-record.md` as deviations. No backfills.
 - No DB FK constraints/cascades. PHP 8.4. No soft deletes. Money is
   integer minor units.
 - Tenant writes via `OwnerWriteGuard` / `ResolveOwnedModelOrFailAction` /

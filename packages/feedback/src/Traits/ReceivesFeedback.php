@@ -33,6 +33,11 @@ trait ReceivesFeedback
         return $this->morphMany(FeedbackTestimonial::class, 'subject');
     }
 
+    public function publishedFeedbackTestimonials(): MorphMany
+    {
+        return $this->feedbackTestimonials()->published();
+    }
+
     public function createFeedbackFormFromTemplate(string | FeedbackTemplate $template, array $overrides = []): FeedbackForm
     {
         if (is_string($template)) {

@@ -14,6 +14,7 @@ use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Subscription\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -72,9 +73,8 @@ class RenewSubscriptionsCommand extends Command
     protected function processRenewals(bool $dryRun, int $graceHours): array
     {
         $summary = ['renewed' => 0, 'failed' => 0, 'unknown' => 0, 'skipped' => 0];
-        $query = Subscription::withoutGlobalScopes();
-        $query = (new Subscription)->scopeForOwner($query);
-        $query->whereActive()
+        Subscription::query()
+            ->whereActive()
             ->whereNotNull('next_billing_at')
             ->where('next_billing_at', '<=', CarbonImmutable::now()->subHours($graceHours))
             ->select('id')
@@ -106,7 +106,7 @@ class RenewSubscriptionsCommand extends Command
 
     protected function executeAttempt(RenewalAttempt $attempt): string
     {
-        $subscription = $attempt->subscription()->with('billable')->first();
+        $subscription = $attempt->subscription()->with(['billable', 'items'])->first();
         $billable = $subscription?->billable;
 
         if (! $subscription instanceof Subscription || ! $billable instanceof Model || ! $billable instanceof BillableContract) {
@@ -166,7 +166,6 @@ class RenewSubscriptionsCommand extends Command
         } catch (Throwable $throwable) {
             Log::warning('CHIP renewal outcome requires reconciliation.', [
                 'renewal_attempt_id' => $attempt->id,
-                'subscription_id' => $subscription->id,
                 'exception' => $throwable::class,
             ]);
             $this->recordUnknown($attempt, null, 'TRANSPORT_OUTCOME_UNKNOWN');
@@ -180,14 +179,14 @@ class RenewSubscriptionsCommand extends Command
         $billable = $subscription->billable;
         $currency = $billable instanceof BillableContract ? $billable->preferredCurrency() : 'MYR';
 
-        return Cashier::formatAmount($subscription->calculateSubscriptionAmount(), $currency);
+        return MoneyFormatter::formatMinor($subscription->calculateSubscriptionAmount(), $currency);
     }
 
     private function recordSuccess(RenewalAttempt $attempt, Subscription $subscription, Payment $payment): void
     {
         $changed = DB::transaction(function () use ($attempt, $subscription, $payment): bool {
             $lockedAttempt = RenewalAttempt::query()->lockForUpdate()->find($attempt->id);
-            $lockedSubscription = Subscription::query()->withoutGlobalScopes()->lockForUpdate()->find($subscription->id);
+            $lockedSubscription = Subscription::query()->with('items')->lockForUpdate()->find($subscription->id);
 
             if (! $lockedAttempt instanceof RenewalAttempt || ! $lockedSubscription instanceof Subscription || $lockedAttempt->status !== 'claimed') {
                 return false;
@@ -258,7 +257,7 @@ class RenewSubscriptionsCommand extends Command
             ])->save();
 
             if ($subscription instanceof Subscription) {
-                Subscription::query()->withoutGlobalScopes()->whereKey($subscription->id)->update([
+                Subscription::query()->whereKey($subscription->id)->update([
                     'chip_status' => SubscriptionStatus::PastDue,
                     'past_due_at' => CarbonImmutable::now(),
                     'updated_at' => CarbonImmutable::now(),

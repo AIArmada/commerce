@@ -63,6 +63,13 @@ $subscription = $user->newSubscription('default', 'price_monthly')
     ->create($user->defaultPaymentMethod()?->id());
 ```
 
+## Coupons and Promotion Codes
+
+Coupon and promotion-code methods require the optional aiarmada/vouchers package. The default
+cashier-chip.integrations.vouchers.enabled value auto-detects the package and throws a clear
+LogicException when it is missing. Setting the flag to false also makes coupon paths fail
+loudly instead of silently skipping validation or usage recording.
+
 ### Via Checkout
 
 Collect payment details during subscription:

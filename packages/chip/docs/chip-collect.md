@@ -42,6 +42,7 @@ return redirect($purchase->checkout_url);
 
 ```php
 $purchase = Chip::purchase()
+    ->currency('MYR')
     ->customer('customer@example.com', 'John Doe', '+60123456789')
     ->addProductCents('Product A', 5000, 2)
     ->addProductCents('Product B', 3000, 1)
@@ -58,6 +59,7 @@ use Akaunting\Money\Money;
 
 Chip::purchase()
     ->customer('customer@example.com')
+    ->currency('MYR')
     ->addProductMoney('Product', Money::MYR(9900), 1)
     ->successUrl(route('success'))
     ->create();
@@ -71,6 +73,7 @@ use AIArmada\Chip\Enums\FpxType;
 
 $purchase = Chip::purchase()
     ->customer('customer@example.com')
+    ->currency('MYR')
     ->addProductCents('Product', 9900)
     ->successUrl(route('success'))
     ->create();
