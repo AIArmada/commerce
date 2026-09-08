@@ -6,6 +6,7 @@ use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
+use AIArmada\Events\Contracts\EventEngagementManager;
 use Illuminate\Database\Eloquent\Model;
 
 it('rejects non-marker models at the manager signature', function (): void {
@@ -36,5 +37,12 @@ it('rejects marker objects that are not Eloquent models at the boundary', functi
     };
 
     expect(fn (): mixed => $manager->follow($actor, new EngagementSubject))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('rejects non-model state inputs at the events adapter boundary', function (): void {
+    $adapter = app(EventEngagementManager::class);
+
+    expect(fn (): array => $adapter->stateFor(new EngagementActor, 'not-a-model'))
         ->toThrow(InvalidArgumentException::class);
 });

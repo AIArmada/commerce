@@ -9,7 +9,7 @@ use InvalidArgumentException;
 
 final class EngagementModelGuard
 {
-    public static function assertModel(object $value, string $argument): void
+    public static function requireModel(mixed $value, string $argument): Model
     {
         if (! $value instanceof Model) {
             throw new InvalidArgumentException(sprintf(
@@ -19,6 +19,13 @@ final class EngagementModelGuard
         }
 
         assert(is_a($value, Model::class));
+
+        return $value;
+    }
+
+    public static function assertModel(object $value, string $argument): void
+    {
+        self::requireModel($value, $argument);
     }
 
     public static function assertContract(mixed $value, string $contract, string $argument): void

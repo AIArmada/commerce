@@ -92,13 +92,17 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
 
     public function stateFor(mixed $actor, mixed $eventTarget): array
     {
+        $actor = EngagementModelGuard::requireModel($actor, 'actor');
+        $eventTarget = EngagementModelGuard::requireModel($eventTarget, 'event target');
+        $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+        $eventTargetIdentity = EngagementModelGuard::identity($eventTarget, 'event target');
         $response = $this->stateResolver->responseFor($actor, $eventTarget);
 
         $share = Share::query()
-            ->where('sharer_type', $actor->getMorphClass())
-            ->where('sharer_id', $actor->getKey())
-            ->where('shareable_type', $eventTarget->getMorphClass())
-            ->where('shareable_id', $eventTarget->getKey())
+            ->where('sharer_type', $actorIdentity['type'])
+            ->where('sharer_id', $actorIdentity['id'])
+            ->where('shareable_type', $eventTargetIdentity['type'])
+            ->where('shareable_id', $eventTargetIdentity['id'])
             ->whereIn('status', [ShareStatus::Created, ShareStatus::Shared])
             ->first();
 

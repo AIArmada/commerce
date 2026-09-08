@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Listeners;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Actions\AttachCommunicationReferenceAction;
 use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Engagement\Events\ReminderDue;
+use AIArmada\Engagement\Models\Reminder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 use InvalidArgumentException;
@@ -21,7 +23,7 @@ final class DispatchReminderThroughCommunications
 
     public function handle(ReminderDue $event): void
     {
-        $reminder = $event->reminder;
+        $reminder = OwnerWriteGuard::findOrFailForOwner(Reminder::class, $event->reminder->getKey());
         $recipient = $reminder->recipient;
 
         if (! $recipient instanceof Model) {

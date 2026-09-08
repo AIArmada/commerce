@@ -97,8 +97,8 @@ final class ReconcileEngagementCountersCommand extends Command
             match ($type) {
                 'bookmarks' => $this->counterService->recalculateBookmarks($subject),
                 'responses' => $this->counterService->recalculateResponses($subject),
-                'followers' => $this->counterService->recalculate($subject),
-                'reactions' => $this->counterService->recalculate($subject),
+                'followers' => $this->counterService->recalculateFollowers($subject),
+                'reactions' => $this->counterService->recalculateReactions($subject),
                 default => null,
             };
 

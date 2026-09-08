@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\Remindable;
@@ -109,12 +110,14 @@ final class DefaultReminderManager implements ReminderManager
 
     public function markSent(Reminder $reminder): void
     {
+        $reminder = OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
         $reminder->update(['status' => 'sent', 'sent_at' => CarbonImmutable::now()]);
         event(new ReminderSent($reminder));
     }
 
     public function markFailed(Reminder $reminder, string $reason): void
     {
+        $reminder = OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
         $reminder->update([
             'status' => 'failed',
             'failed_at' => CarbonImmutable::now(),

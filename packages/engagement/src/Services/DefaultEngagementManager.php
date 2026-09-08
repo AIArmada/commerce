@@ -16,6 +16,9 @@ use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Contracts\Respondable;
 use AIArmada\Engagement\Contracts\Shareable;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
+use AIArmada\Engagement\Enums\BookmarkStatus;
+use AIArmada\Engagement\Enums\FollowStatus;
+use AIArmada\Engagement\Enums\ReactionStatus;
 use AIArmada\Engagement\Enums\ResponseStatus;
 use AIArmada\Engagement\Enums\ShareStatus;
 use AIArmada\Engagement\Events\BookmarkAddedToCollection;
@@ -75,11 +78,11 @@ final class DefaultEngagementManager implements EngagementManager
                 ->where('followable_id', $subjectIdentity['id'])
                 ->first();
 
-            if ($existing && $existing->status === 'active') {
+            if ($existing && $existing->status === FollowStatus::Active) {
                 return $existing;
             }
 
-            if ($existing && $existing->status !== 'active') {
+            if ($existing && $existing->status !== FollowStatus::Active) {
                 $existing->update([
                     'status' => 'active',
                     'unfollowed_at' => null,
@@ -194,7 +197,7 @@ final class DefaultEngagementManager implements EngagementManager
                 ->where('bookmarkable_id', $subjectIdentity['id'])
                 ->first();
 
-            if ($existing && $existing->status === 'active') {
+            if ($existing && $existing->status === BookmarkStatus::Active) {
                 return $existing;
             }
 
@@ -369,7 +372,7 @@ final class DefaultEngagementManager implements EngagementManager
                 ->where('reaction_type', $reactionType)
                 ->first();
 
-            if ($existing && $existing->status === 'active') {
+            if ($existing && $existing->status === ReactionStatus::Active) {
                 return $existing;
             }
 

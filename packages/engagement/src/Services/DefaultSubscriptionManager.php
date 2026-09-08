@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\Subscribable;
@@ -107,6 +108,7 @@ final class DefaultSubscriptionManager implements SubscriptionManager
 
     public function muteSubscription(Subscription $subscription): Subscription
     {
+        $subscription = OwnerWriteGuard::findOrFailForOwner(Subscription::class, $subscription->getKey());
         $subscription->update(['status' => SubscriptionStatus::Muted, 'muted_at' => CarbonImmutable::now()]);
         event(new SubscriptionMuted($subscription));
 
@@ -115,6 +117,7 @@ final class DefaultSubscriptionManager implements SubscriptionManager
 
     public function unmuteSubscription(Subscription $subscription): Subscription
     {
+        $subscription = OwnerWriteGuard::findOrFailForOwner(Subscription::class, $subscription->getKey());
         $subscription->update([
             'status' => SubscriptionStatus::Active,
             'muted_at' => null,

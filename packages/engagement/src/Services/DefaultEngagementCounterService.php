@@ -125,13 +125,16 @@ final class DefaultEngagementCounterService implements EngagementCounterService
                 ],
             );
         }
+
+        $this->recalculateResponses($subject);
+        $this->recalculateReactions($subject);
     }
 
     /**
-     * Compute all base counters in one database round trip.
+     * Compute base counters in one database round trip.
      *
-     * The individual public count methods remain available for callers that
-     * request one counter, while reconciliation avoids four identical scans.
+     * Keyed response and reaction counters are reconciled separately so direct
+     * writes cannot leave per-type values stale.
      *
      * @return array<string, int>
      */
@@ -224,7 +227,9 @@ final class DefaultEngagementCounterService implements EngagementCounterService
 
     private function recalculateResponsesByIdentity(string $subjectType, string $subjectId, ?string $responseType = null): void
     {
-        $counterKeys = array_values(array_unique(array_filter(['', $responseType], static fn (?string $key): bool => $key !== null)));
+        $counterKeys = $responseType === null
+            ? $this->counterKeysForResponses($subjectType, $subjectId)
+            : ['', $responseType];
 
         foreach ($counterKeys as $counterKey) {
             EngagementCounter::query()->updateOrCreate(
@@ -249,7 +254,9 @@ final class DefaultEngagementCounterService implements EngagementCounterService
 
     private function recalculateReactionsByIdentity(string $subjectType, string $subjectId, ?string $reactionType = null): void
     {
-        $counterKeys = array_values(array_unique(array_filter(['', $reactionType], static fn (?string $key): bool => $key !== null)));
+        $counterKeys = $reactionType === null
+            ? $this->counterKeysForReactions($subjectType, $subjectId)
+            : ['', $reactionType];
 
         foreach ($counterKeys as $counterKey) {
             EngagementCounter::query()->updateOrCreate(
@@ -279,6 +286,58 @@ final class DefaultEngagementCounterService implements EngagementCounterService
         }
 
         return $query->count();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function counterKeysForResponses(string $subjectType, string $subjectId): array
+    {
+        $activeKeys = Response::query()
+            ->where('respondable_type', $subjectType)
+            ->where('respondable_id', $subjectId)
+            ->where('status', 'active')
+            ->distinct()
+            ->pluck('response_type')
+            ->map(static fn (mixed $key): string => (string) $key)
+            ->all();
+
+        $storedKeys = EngagementCounter::query()
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', $subjectId)
+            ->where('counter_type', 'responses')
+            ->where('counter_key', '<>', '')
+            ->pluck('counter_key')
+            ->map(static fn (mixed $key): string => (string) $key)
+            ->all();
+
+        return array_values(array_unique(array_merge([''], $activeKeys, $storedKeys)));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function counterKeysForReactions(string $subjectType, string $subjectId): array
+    {
+        $activeKeys = Reaction::query()
+            ->where('reactable_type', $subjectType)
+            ->where('reactable_id', $subjectId)
+            ->where('status', 'active')
+            ->distinct()
+            ->pluck('reaction_type')
+            ->map(static fn (mixed $key): string => (string) $key)
+            ->all();
+
+        $storedKeys = EngagementCounter::query()
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', $subjectId)
+            ->where('counter_type', 'reactions')
+            ->where('counter_key', '<>', '')
+            ->pluck('counter_key')
+            ->map(static fn (mixed $key): string => (string) $key)
+            ->all();
+
+        return array_values(array_unique(array_merge([''], $activeKeys, $storedKeys)));
     }
 
     public function onFollowCreated(FollowCreated $event): void
