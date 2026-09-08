@@ -11,6 +11,7 @@ use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Models\Product;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 
@@ -18,90 +19,94 @@ final class EnsureCheckoutOfferProduct
 {
     public function handle(CheckoutOfferProductData $offer): Product
     {
-        return OwnerContext::withOwner(null, function () use ($offer): Product {
-            $product = Product::query()->createOrFirst(
-                ['slug' => $offer->productSlug],
-                ['name' => $offer->name],
+        if (! OwnerContext::isExplicitGlobal()) {
+            throw new AuthorizationException(
+                'Ensuring a checkout offer product requires an explicit global owner context.',
             );
-            $supportsVariants = $offer->supportsVariants ?? $offer->productType->supportsVariantsByDefault();
-            $tracksInventory = $offer->tracksInventory ?? $offer->productType->tracksInventoryByDefault();
+        }
 
-            $product->fill([
-                'name' => $offer->name,
-                'short_description' => $offer->shortDescription,
-                'description' => $offer->description,
-                'sku' => $offer->sku,
-                'type' => $offer->productType,
-                'status' => $offer->productStatus,
-                'visibility' => $offer->productVisibility,
-                'price' => $this->basePriceForProduct($offer->priceAmount, $offer->compareAmount),
-                'compare_price' => $offer->compareAmount,
-                'currency' => $offer->currency,
-                'is_featured' => $offer->isFeatured,
-                'is_taxable' => $offer->isTaxable,
-                'requires_shipping' => $offer->requiresShipping,
-                'meta_title' => $offer->metaTitle,
-                'meta_description' => $offer->metaDescription,
-                'metadata' => $offer->metadata,
-            ]);
+        $product = Product::query()->createOrFirst(
+            ['slug' => $offer->productSlug],
+            ['name' => $offer->name],
+        );
+        $supportsVariants = $offer->supportsVariants ?? $offer->productType->supportsVariantsByDefault();
+        $tracksInventory = $offer->tracksInventory ?? $offer->productType->tracksInventoryByDefault();
 
-            $product->supports_variants = $supportsVariants;
-            $product->tracks_inventory = $tracksInventory;
+        $product->fill([
+            'name' => $offer->name,
+            'short_description' => $offer->shortDescription,
+            'description' => $offer->description,
+            'sku' => $offer->sku,
+            'type' => $offer->productType,
+            'status' => $offer->productStatus,
+            'visibility' => $offer->productVisibility,
+            'price' => $this->basePriceForProduct($offer->priceAmount, $offer->compareAmount),
+            'compare_price' => $offer->compareAmount,
+            'currency' => $offer->currency,
+            'is_featured' => $offer->isFeatured,
+            'is_taxable' => $offer->isTaxable,
+            'requires_shipping' => $offer->requiresShipping,
+            'meta_title' => $offer->metaTitle,
+            'meta_description' => $offer->metaDescription,
+            'metadata' => $offer->metadata,
+        ]);
 
-            if ($product->wasRecentlyCreated && $product->published_at === null) {
-                $product->published_at = CarbonImmutable::now();
-            }
+        $product->supports_variants = $supportsVariants;
+        $product->tracks_inventory = $tracksInventory;
 
-            if ($product->isDirty()) {
-                $product->save();
-            }
+        if ($product->wasRecentlyCreated && $product->published_at === null) {
+            $product->published_at = CarbonImmutable::now();
+        }
 
-            $priceList = PriceList::query()->createOrFirst(
-                ['slug' => $offer->priceListSlug],
-                ['name' => $offer->priceListName],
-            );
+        if ($product->isDirty()) {
+            $product->save();
+        }
 
-            $priceList->fill([
-                'name' => $offer->priceListName,
-                'description' => $offer->priceListDescription,
-                'currency' => $offer->currency,
-                'priority' => $offer->priceListPriority,
-                'is_default' => $offer->priceListIsDefault,
-                'is_active' => $offer->priceListIsActive,
-            ]);
+        $priceList = PriceList::query()->createOrFirst(
+            ['slug' => $offer->priceListSlug],
+            ['name' => $offer->priceListName],
+        );
 
-            if ($priceList->isDirty()) {
-                $priceList->save();
-            }
+        $priceList->fill([
+            'name' => $offer->priceListName,
+            'description' => $offer->priceListDescription,
+            'currency' => $offer->currency,
+            'priority' => $offer->priceListPriority,
+            'is_default' => $offer->priceListIsDefault,
+            'is_active' => $offer->priceListIsActive,
+        ]);
 
-            $price = Price::query()->createOrFirst(
-                [
-                    'price_list_id' => $priceList->getKey(),
-                    'priceable_type' => $product->getMorphClass(),
-                    'priceable_id' => $product->getKey(),
-                    'min_quantity' => 1,
-                ],
-                [
-                    'amount' => $offer->priceAmount,
-                    'compare_amount' => $offer->compareAmount,
-                    'currency' => $offer->currency,
-                ],
-            );
+        if ($priceList->isDirty()) {
+            $priceList->save();
+        }
 
-            $price->fill([
+        $price = Price::query()->createOrFirst(
+            [
+                'price_list_id' => $priceList->getKey(),
+                'priceable_type' => $product->getMorphClass(),
+                'priceable_id' => $product->getKey(),
+                'min_quantity' => 1,
+            ],
+            [
                 'amount' => $offer->priceAmount,
                 'compare_amount' => $offer->compareAmount,
                 'currency' => $offer->currency,
-            ]);
+            ],
+        );
 
-            if ($price->isDirty()) {
-                $price->save();
-            }
+        $price->fill([
+            'amount' => $offer->priceAmount,
+            'compare_amount' => $offer->compareAmount,
+            'currency' => $offer->currency,
+        ]);
 
-            $this->ensureInventory($product, $offer);
+        if ($price->isDirty()) {
+            $price->save();
+        }
 
-            return $product->fresh() ?? $product;
-        });
+        $this->ensureInventory($product, $offer);
+
+        return $product->fresh() ?? $product;
     }
 
     private function basePriceForProduct(int $priceAmount, ?int $compareAmount): int

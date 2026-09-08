@@ -6,6 +6,8 @@ namespace AIArmada\Checkout\Actions;
 
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CheckoutNotificationCallbackResolver;
+use AIArmada\Checkout\Support\CheckoutPaymentReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -25,9 +27,15 @@ final class ProcessCheckoutPaymentNotification
      * @param  array<string, mixed>  $context
      * @param  array<int, string>  $expectedGateways
      */
-    public function handle(array $payload, ?string $callbackType = null, array $context = [], array $expectedGateways = []): void
+    public function handle(array $payload, array $expectedGateways, ?string $callbackType = null, array $context = []): void
     {
-        $sessionId = $this->extractSessionId($payload);
+        if ($expectedGateways === []) {
+            Log::warning('Checkout payment notification has no trusted gateway context', $this->logContext($context));
+
+            return;
+        }
+
+        $sessionId = $this->extractSessionId($payload, $expectedGateways);
 
         if ($sessionId === null) {
             Log::warning('Checkout payment notification missing session reference', $this->logContext($context));
@@ -49,38 +57,40 @@ final class ProcessCheckoutPaymentNotification
             return;
         }
 
-        if ($expectedGateways !== [] && ! $this->gatewayMatches($sessionId, $expectedGateways, $context)) {
+        $session = CheckoutSession::withoutOwnerScope()
+            ->whereKey($sessionId)
+            ->first();
+
+        if ($session === null) {
+            Log::warning('Checkout payment notification session not found', $this->logContext($context, [
+                'session_id' => $sessionId,
+            ]));
+
             return;
         }
 
-        $this->handleCallback->handle(
-            sessionId: $sessionId,
-            callbackType: $callbackType,
-            payload: $payload,
-        );
+        OwnerContext::withOwner($session->hasOwner() ? $session->owner : null, function () use ($session, $sessionId, $expectedGateways, $context, $callbackType, $payload): void {
+            if (! $this->gatewayMatches($session, $expectedGateways, $context)) {
+                return;
+            }
+
+            $this->handleCallback->handle(
+                sessionId: $sessionId,
+                callbackType: $callbackType,
+                payload: $payload,
+            );
+        });
     }
 
     /**
      * @param  array<int, string>  $expectedGateways
      * @param  array<string, mixed>  $context
      */
-    private function gatewayMatches(string $sessionId, array $expectedGateways, array $context): bool
+    private function gatewayMatches(CheckoutSession $session, array $expectedGateways, array $context): bool
     {
-        $session = CheckoutSession::withoutOwnerScope()
-            ->whereKey($sessionId)
-            ->first();
-
-        if ($session === null) {
-            Log::warning('Checkout payment notification session not found for gateway check', $this->logContext($context, [
-                'session_id' => $sessionId,
-            ]));
-
-            return false;
-        }
-
         if (! in_array((string) $session->selected_payment_gateway, $expectedGateways, true)) {
             Log::info('Checkout payment notification ignored for unexpected payment gateway', $this->logContext($context, [
-                'session_id' => $sessionId,
+                'session_id' => $session->getKey(),
                 'selected_payment_gateway' => $session->selected_payment_gateway,
                 'expected_gateways' => $expectedGateways,
             ]));
@@ -94,30 +104,30 @@ final class ProcessCheckoutPaymentNotification
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function extractSessionId(array $payload): ?string
+    private function extractSessionId(array $payload, array $expectedGateways): ?string
     {
-        $reference = Arr::get($payload, 'reference');
+        $references = [];
 
-        if (is_string($reference) && $reference !== '') {
-            return $reference;
+        if (array_intersect($expectedGateways, ['chip', 'cashier-chip']) !== []) {
+            $references[] = Arr::get($payload, 'reference');
         }
 
-        $metadataSessionId = Arr::get($payload, 'metadata.checkout_session_id');
-
-        if (is_string($metadataSessionId) && $metadataSessionId !== '') {
-            return $metadataSessionId;
+        if (in_array('cashier', $expectedGateways, true)) {
+            $references[] = Arr::get($payload, 'metadata.checkout_session_id');
+            $references[] = Arr::get($payload, 'data.object.metadata.checkout_session_id');
+            $references[] = Arr::get($payload, 'data.object.client_reference_id');
         }
 
-        $objectMetadataSessionId = Arr::get($payload, 'data.object.metadata.checkout_session_id');
+        foreach ($references as $reference) {
+            if (! is_string($reference) || $reference === '') {
+                continue;
+            }
 
-        if (is_string($objectMetadataSessionId) && $objectMetadataSessionId !== '') {
-            return $objectMetadataSessionId;
-        }
+            $sessionId = CheckoutPaymentReference::sessionId($reference);
 
-        $clientReferenceId = Arr::get($payload, 'data.object.client_reference_id');
-
-        if (is_string($clientReferenceId) && $clientReferenceId !== '') {
-            return $clientReferenceId;
+            if ($sessionId !== null) {
+                return $sessionId;
+            }
         }
 
         return null;

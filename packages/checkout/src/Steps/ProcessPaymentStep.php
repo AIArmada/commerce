@@ -12,13 +12,16 @@ use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Events\CheckoutPaymentCompleted;
+use AIArmada\Checkout\Exceptions\PaymentException;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Checkout\States\PaymentFailed;
 use AIArmada\Checkout\States\PaymentProcessing;
 use AIArmada\Checkout\States\Processing;
+use AIArmada\Checkout\Support\CheckoutPaymentReference;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Throwable;
@@ -97,16 +100,13 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             ]);
         }
 
-        $callbackToken = $this->ensureCallbackToken($session);
+        $gatewayIdentifier = $processor->getIdentifier();
+        $this->incrementPaymentAttempts($session, $gatewayIdentifier);
+
+        $this->ensureCallbackToken($session);
 
         // Build payment request
-        $paymentRequest = $this->buildPaymentRequest($session);
-
-        // Increment payment attempts
-        $session->update([
-            'payment_attempts' => $session->payment_attempts + 1,
-            'selected_payment_gateway' => $processor->getIdentifier(),
-        ]);
+        $paymentRequest = $this->buildPaymentRequest($session, $gatewayIdentifier);
         $session->transitionStatus(PaymentProcessing::class);
 
         // Process payment
@@ -123,6 +123,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             'status' => $result->status->value,
             'amount' => $result->amount ?? $session->grand_total,
             'currency' => $result->currency,
+            'reference' => CheckoutPaymentReference::forSession($session),
             'gateway_response' => $result->gatewayResponse,
             'processed_at' => CarbonImmutable::now()->toIso8601String(),
         ]);
@@ -271,7 +272,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         return $processor->voidPayment($paymentId, $reason);
     }
 
-    private function buildPaymentRequest(CheckoutSession $session): PaymentRequest
+    private function buildPaymentRequest(CheckoutSession $session, string $gateway): PaymentRequest
     {
         $billingData = $session->billing_data ?? [];
         $customer = $session->customer;
@@ -309,16 +310,17 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         return new PaymentRequest(
             amount: $session->grand_total,
             currency: $session->currency,
-            gateway: $session->selected_payment_gateway,
+            gateway: $gateway,
             description: "Order checkout - Session {$session->id}",
             customerEmail: $customerEmail,
             customerName: $customerName,
             customerPhone: $customerPhone,
-            successUrl: $this->buildCallbackUrl('success', $session),
-            failureUrl: $this->buildCallbackUrl('failure', $session),
-            cancelUrl: $this->buildCallbackUrl('cancel', $session),
+            successUrl: $this->buildCallbackUrl('success', $session, $gateway),
+            failureUrl: $this->buildCallbackUrl('failure', $session, $gateway),
+            cancelUrl: $this->buildCallbackUrl('cancel', $session, $gateway),
             metadata: [
-                'checkout_session_id' => $session->id,
+                'checkout_session_id' => CheckoutPaymentReference::forSession($session),
+                'checkout_gateway' => $gateway,
                 'cart_id' => $session->cart_id,
                 'customer_id' => $session->customer_id,
                 'billable_type' => $session->billable_type,
@@ -333,15 +335,15 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         );
     }
 
-    private function buildCallbackUrl(string $type, CheckoutSession $session): string
+    private function buildCallbackUrl(string $type, CheckoutSession $session, string $gateway): string
     {
         $callbackToken = $session->payment_data['callback_token'] ?? null;
 
         $routeName = match ($type) {
-            'success' => 'checkout.payment.success',
-            'failure' => 'checkout.payment.failure',
-            'cancel' => 'checkout.payment.cancel',
-            default => 'checkout.payment.success',
+            'success' => "checkout.payment.{$gateway}.success",
+            'failure' => "checkout.payment.{$gateway}.failure",
+            'cancel' => "checkout.payment.{$gateway}.cancel",
+            default => "checkout.payment.{$gateway}.success",
         };
 
         // Use route if available, fall back to config path
@@ -353,7 +355,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         }
 
         $prefix = mb_trim((string) config('checkout.routes.prefix', 'checkout'), '/');
-        $callbackPath = mb_trim((string) config("checkout.routes.callbacks.{$type}", "payment/{$type}"), '/');
+        $callbackPath = mb_trim((string) config("checkout.routes.callbacks.{$type}.{$gateway}", "payment/{$gateway}/{$type}"), '/');
         $path = mb_trim($prefix . '/' . $callbackPath, '/');
         $separator = str_contains($path, '?') ? '&' : '?';
 
@@ -361,6 +363,29 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             'session' => $session->id,
             'checkout_callback_token' => $callbackToken,
         ]));
+    }
+
+    private function incrementPaymentAttempts(CheckoutSession $session, string $gateway): void
+    {
+        $retryLimit = max(0, (int) config('checkout.payment.retry_limit', 3));
+        $updated = $session->newQuery()
+            ->whereKey($session->getKey())
+            ->where('payment_attempts', '<', $retryLimit)
+            ->update([
+                'payment_attempts' => DB::raw('payment_attempts + 1'),
+                'selected_payment_gateway' => $gateway,
+            ]);
+
+        if ($updated !== 1) {
+            $attempts = (int) ($session->newQuery()
+                ->whereKey($session->getKey())
+                ->value('payment_attempts') ?? $session->payment_attempts);
+
+            throw PaymentException::retryLimitExceeded($attempts, $retryLimit);
+        }
+
+        $session->setAttribute('payment_attempts', (int) $session->payment_attempts + 1);
+        $session->setAttribute('selected_payment_gateway', $gateway);
     }
 
     private function resolveModelEmail(?Model $model): ?string
@@ -402,13 +427,17 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         $paymentData = $session->payment_data ?? [];
         $callbackToken = $paymentData['callback_token'] ?? null;
 
-        if (is_string($callbackToken) && $callbackToken !== '') {
+        if (is_string($callbackToken)
+            && $callbackToken !== ''
+            && ! is_string($paymentData['callback_token_consumed_at'] ?? null)
+        ) {
             return $callbackToken;
         }
 
         $callbackToken = Str::random(40);
         $paymentData['callback_token'] = $callbackToken;
         $paymentData['callback_token_created_at'] = CarbonImmutable::now()->toIso8601String();
+        unset($paymentData['callback_token_consumed_at']);
 
         $session->update(['payment_data' => $paymentData]);
 

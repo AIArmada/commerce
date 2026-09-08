@@ -74,12 +74,15 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        $this->configureSpatieWebhookClient();
+
         $this->validateConfiguration('checkout', [
             'defaults.currency',
         ]);
 
         $this->validateStepConfiguration();
         $this->validateOwnerConfiguration();
+        $this->validateCallbackTokenConfiguration();
         $this->validatePaymentGatewayConfiguration();
         $this->registerDefaultSteps();
         $this->registerOptionalIntegrations();
@@ -149,10 +152,7 @@ final class CheckoutServiceProvider extends PackageServiceProvider
     protected function registerPaymentGatewayResolver(): void
     {
         $this->app->singleton(function (): PaymentGatewayResolver {
-            $resolver = new PaymentGatewayResolver(
-                config('checkout.payment.default_gateway'),
-                config('checkout.payment.gateway_priority', ['chip', 'cashier-chip', 'cashier']),
-            );
+            $resolver = new PaymentGatewayResolver;
 
             app(RegisterBuiltInPaymentProcessors::class)->register($resolver);
 
@@ -227,15 +227,42 @@ final class CheckoutServiceProvider extends PackageServiceProvider
             return;
         }
 
-        $configName = 'checkout.webhook';
         $configs = config('webhook-client.configs', []);
 
         if (! is_array($configs)) {
             $configs = [];
         }
 
-        $configs = array_values(array_filter($configs, static function (mixed $existingConfig): bool {
+        $webhookRoutes = config('checkout.routes.webhooks', []);
+
+        if (! is_array($webhookRoutes) || $webhookRoutes === []) {
+            $webhookRoutes = [
+                'chip' => [
+                    'path' => 'chip',
+                    'config' => 'checkout.webhook.chip',
+                    'gateways' => ['chip', 'cashier-chip'],
+                ],
+                'stripe' => [
+                    'path' => 'stripe',
+                    'config' => 'checkout.webhook.stripe',
+                    'gateways' => ['cashier'],
+                ],
+            ];
+        }
+        $checkoutConfigNames = ['checkout.webhook'];
+
+        foreach ($webhookRoutes as $webhookRoute) {
+            if (is_array($webhookRoute) && is_string($webhookRoute['config'] ?? null)) {
+                $checkoutConfigNames[] = $webhookRoute['config'];
+            }
+        }
+
+        $configs = array_values(array_filter($configs, static function (mixed $existingConfig) use ($checkoutConfigNames): bool {
             if (! is_array($existingConfig)) {
+                return false;
+            }
+
+            if (in_array($existingConfig['name'] ?? null, $checkoutConfigNames, true)) {
                 return false;
             }
 
@@ -244,26 +271,32 @@ final class CheckoutServiceProvider extends PackageServiceProvider
             return is_string($processWebhookJob) && $processWebhookJob !== '';
         }));
 
-        foreach ($configs as $existingConfig) {
-            if (is_array($existingConfig) && ($existingConfig['name'] ?? null) === $configName) {
-                return;
+        foreach ($webhookRoutes as $gateway => $webhookRoute) {
+            if (! is_array($webhookRoute)) {
+                continue;
             }
-        }
 
-        $configs[] = [
-            'name' => $configName,
-            'signing_secret' => '',
-            'signature_header_name' => 'x-signature',
-            'signature_validator' => Webhooks\CheckoutSpatieSignatureValidator::class,
-            'webhook_profile' => Webhooks\CheckoutWebhookProfile::class,
-            'webhook_response' => Webhooks\CheckoutWebhookResponse::class,
-            'webhook_model' => WebhookCall::class,
-            'store_headers' => [
-                'x-signature',
-                'stripe-signature',
-            ],
-            'process_webhook_job' => Webhooks\ProcessCheckoutWebhook::class,
-        ];
+            $configName = $webhookRoute['config'] ?? null;
+
+            if (! is_string($configName) || $configName === '') {
+                continue;
+            }
+
+            $configs[] = [
+                'name' => $configName,
+                'signing_secret' => '',
+                'signature_header_name' => $gateway === 'stripe' ? 'stripe-signature' : 'x-signature',
+                'signature_validator' => Webhooks\CheckoutSpatieSignatureValidator::class,
+                'webhook_profile' => Webhooks\CheckoutWebhookProfile::class,
+                'webhook_response' => Webhooks\CheckoutWebhookResponse::class,
+                'webhook_model' => WebhookCall::class,
+                'store_headers' => [
+                    'x-signature',
+                    'stripe-signature',
+                ],
+                'process_webhook_job' => Webhooks\ProcessCheckoutWebhook::class,
+            ];
+        }
 
         config([
             'webhook-client.configs' => $configs,
@@ -297,6 +330,27 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
         if (! $hasCashier && ! $hasCashierChip && ! $hasChip) {
             throw MissingPaymentGatewayException::noGatewayInstalled();
+        }
+
+        if ($hasCashier && app()->environment('production') && ! filled(config('checkout.webhooks.stripe.secret'))) {
+            throw new RuntimeException(
+                'Checkout Stripe webhook verification requires CHECKOUT_STRIPE_WEBHOOK_SECRET in production.',
+            );
+        }
+    }
+
+    protected function validateCallbackTokenConfiguration(): void
+    {
+        $ttl = (int) config('checkout.payment.callback_token_ttl', 0);
+        $maxAttempts = (int) config('checkout.payment.callback_rate_limit.max_attempts', 0);
+        $decaySeconds = (int) config('checkout.payment.callback_rate_limit.decay_seconds', 0);
+
+        if ($ttl < 1 || $ttl > 60 * 60 * 24) {
+            throw new RuntimeException('Checkout callback token TTL must be between 1 second and 24 hours.');
+        }
+
+        if ($maxAttempts < 1 || $decaySeconds < 1) {
+            throw new RuntimeException('Checkout callback rate limiting must define positive attempts and decay values.');
         }
     }
 

@@ -8,6 +8,7 @@ use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Data\CheckoutCallbackResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CheckoutCallbackStatePolicy;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 final readonly class HandleCheckoutPaymentCallback
@@ -41,8 +42,16 @@ final readonly class HandleCheckoutPaymentCallback
             }
 
             $result = $this->checkoutService->handlePaymentCallback($session, $callbackType, $payload);
+            $processedSession = $session->fresh() ?? $session;
 
-            return CheckoutCallbackResult::processed($session->fresh() ?? $session, $result);
+            if ($callbackType === 'success' && $result->success) {
+                $paymentData = $processedSession->payment_data ?? [];
+                $paymentData['callback_token_consumed_at'] = CarbonImmutable::now()->toIso8601String();
+                $processedSession->update(['payment_data' => $paymentData]);
+                $processedSession->refresh();
+            }
+
+            return CheckoutCallbackResult::processed($processedSession, $result);
         }, 3);
     }
 }

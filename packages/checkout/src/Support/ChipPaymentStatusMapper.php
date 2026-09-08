@@ -5,46 +5,25 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Support;
 
 use AIArmada\Checkout\Enums\PaymentStatus;
-use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Enums\WebhookEventType;
+use AIArmada\Chip\Support\ChipPaymentStatusMapper as CanonicalChipPaymentStatusMapper;
+use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus as UniversalPaymentStatus;
 use InvalidArgumentException;
 
+/**
+ * Translate CHIP's canonical universal payment status into checkout's result
+ * enum. CHIP owns provider status mapping; checkout owns this boundary type.
+ */
 final readonly class ChipPaymentStatusMapper
 {
     public function fromPurchaseStatus(string $status): PaymentStatus
     {
-        $statusValue = $status;
-        $status = PurchaseStatus::tryFrom($statusValue);
-
-        if ($status === null) {
-            throw new InvalidArgumentException("Unsupported CHIP purchase status: {$statusValue}");
-        }
-
-        return match ($status) {
-            PurchaseStatus::PAID,
-            PurchaseStatus::CLEARED,
-            PurchaseStatus::SETTLED => PaymentStatus::Completed,
-            PurchaseStatus::CREATED,
-            PurchaseStatus::SENT,
-            PurchaseStatus::VIEWED,
-            PurchaseStatus::OVERDUE,
-            PurchaseStatus::PENDING_EXECUTE,
-            PurchaseStatus::PENDING_CHARGE => PaymentStatus::Pending,
-            PurchaseStatus::PENDING_CAPTURE,
-            PurchaseStatus::PENDING_RELEASE,
-            PurchaseStatus::PENDING_REFUND,
-            PurchaseStatus::HOLD,
-            PurchaseStatus::PREAUTHORIZED => PaymentStatus::Processing,
-            PurchaseStatus::ERROR,
-            PurchaseStatus::BLOCKED,
-            PurchaseStatus::CHARGEBACK => PaymentStatus::Failed,
-            PurchaseStatus::CANCELLED,
-            PurchaseStatus::EXPIRED,
-            PurchaseStatus::RELEASED => PaymentStatus::Cancelled,
-            PurchaseStatus::REFUNDED => PaymentStatus::Refunded,
-        };
+        return $this->toCheckoutStatus(CanonicalChipPaymentStatusMapper::map($status));
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     */
     public function fromCallbackPayload(array $payload): PaymentStatus
     {
         $eventTypeValue = $payload['event_type'] ?? null;
@@ -59,38 +38,33 @@ final readonly class ChipPaymentStatusMapper
             throw new InvalidArgumentException("Unsupported CHIP event_type: {$eventTypeValue}");
         }
 
-        return match ($eventType) {
-            WebhookEventType::PurchasePaid,
-            WebhookEventType::PurchaseCaptured,
-            WebhookEventType::PurchaseSettled => PaymentStatus::Completed,
-            WebhookEventType::PurchaseRefundFailure,
-            WebhookEventType::PurchaseCaptureFailure,
-            WebhookEventType::PurchaseReleaseFailure,
-            WebhookEventType::PurchasePaymentFailure => PaymentStatus::Failed,
-            WebhookEventType::PurchaseCancelled,
-            WebhookEventType::PurchaseReleased => PaymentStatus::Cancelled,
-            WebhookEventType::PaymentRefunded => PaymentStatus::Refunded,
-            WebhookEventType::PaymentChargedBack => PaymentStatus::Failed,
-            WebhookEventType::PaymentChargebackReversed => PaymentStatus::Processing,
-            WebhookEventType::PayoutCreated,
-            WebhookEventType::PayoutPending,
-            WebhookEventType::PayoutFailed,
-            WebhookEventType::PayoutSuccess => throw new InvalidArgumentException('Payout events are not checkout payment callbacks.'),
-            default => $this->fromPurchaseStatus($this->requiredStatus($payload)),
-        };
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function requiredStatus(array $payload): string
-    {
-        $status = $payload['status'] ?? null;
-
-        if (! is_string($status)) {
-            throw new InvalidArgumentException('CHIP callback payload must contain status.');
+        if ($eventType->isPayoutEvent()) {
+            throw new InvalidArgumentException('Payout events are not checkout payment callbacks.');
         }
 
-        return $status;
+        $status = $payload['status'] ?? null;
+
+        return $this->toCheckoutStatus(CanonicalChipPaymentStatusMapper::mapWebhook(
+            is_string($status) ? $status : null,
+            $eventType->value,
+        ));
+    }
+
+    private function toCheckoutStatus(UniversalPaymentStatus $status): PaymentStatus
+    {
+        return match ($status) {
+            UniversalPaymentStatus::CREATED,
+            UniversalPaymentStatus::PENDING => PaymentStatus::Pending,
+            UniversalPaymentStatus::PROCESSING,
+            UniversalPaymentStatus::AUTHORIZED => PaymentStatus::Processing,
+            UniversalPaymentStatus::PAID => PaymentStatus::Completed,
+            UniversalPaymentStatus::PARTIALLY_REFUNDED => PaymentStatus::PartiallyRefunded,
+            UniversalPaymentStatus::REFUNDED => PaymentStatus::Refunded,
+            UniversalPaymentStatus::FAILED,
+            UniversalPaymentStatus::DISPUTED => PaymentStatus::Failed,
+            UniversalPaymentStatus::CANCELLED,
+            UniversalPaymentStatus::EXPIRED => PaymentStatus::Cancelled,
+            UniversalPaymentStatus::REQUIRES_ACTION => PaymentStatus::Processing,
+        };
     }
 }

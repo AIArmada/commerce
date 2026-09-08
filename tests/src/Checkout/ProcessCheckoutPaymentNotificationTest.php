@@ -13,6 +13,7 @@ use AIArmada\Checkout\States\PaymentFailed;
 use AIArmada\Checkout\States\PaymentProcessing;
 use AIArmada\Checkout\States\Pending;
 use AIArmada\Checkout\States\Processing;
+use AIArmada\Checkout\Support\CheckoutPaymentReference;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\mock;
@@ -32,8 +33,9 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
 
         $action = app(ProcessCheckoutPaymentNotification::class);
         $action->handle(
-            payload: ['reference' => $session->id],
+            payload: ['reference' => CheckoutPaymentReference::forSession($session)],
             callbackType: 'success',
+            expectedGateways: ['chip'],
         );
     });
 
@@ -50,7 +52,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
 
         $action = app(ProcessCheckoutPaymentNotification::class);
         $action->handle(
-            payload: ['reference' => $session->id],
+            payload: ['reference' => CheckoutPaymentReference::forSession($session)],
             callbackType: 'success',
             expectedGateways: ['chip', 'cashier-chip'],
         );
@@ -72,8 +74,9 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
 
         $action = app(ProcessCheckoutPaymentNotification::class);
         $action->handle(
-            payload: ['reference' => $session->id],
+            payload: ['reference' => CheckoutPaymentReference::forSession($session)],
             callbackType: 'success',
+            expectedGateways: ['chip'],
         );
     });
 
@@ -90,8 +93,9 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
 
         $action = app(ProcessCheckoutPaymentNotification::class);
         $action->handle(
-            payload: ['reference' => $session->id],
+            payload: ['reference' => CheckoutPaymentReference::forSession($session)],
             callbackType: 'success',
+            expectedGateways: ['chip'],
         );
     });
 
@@ -111,8 +115,9 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
 
         $action = app(ProcessCheckoutPaymentNotification::class);
         $action->handle(
-            payload: ['reference' => $session->id],
+            payload: ['reference' => CheckoutPaymentReference::forSession($session)],
             callbackType: 'failure',
+            expectedGateways: ['chip'],
         );
     });
 
@@ -132,8 +137,9 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
 
         $action = app(ProcessCheckoutPaymentNotification::class);
         $action->handle(
-            payload: ['reference' => $session->id],
+            payload: ['reference' => CheckoutPaymentReference::forSession($session)],
             callbackType: 'cancel',
+            expectedGateways: ['chip'],
         );
     });
 
@@ -146,6 +152,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
         $action->handle(
             payload: ['status' => 'paid'],
             callbackType: 'success',
+            expectedGateways: ['chip'],
         );
     });
 
@@ -156,8 +163,9 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
 
         $action = app(ProcessCheckoutPaymentNotification::class);
         $action->handle(
-            payload: ['reference' => (string) Str::uuid()],
+            payload: ['reference' => 'chk_' . (string) Str::uuid()],
             callbackType: 'success',
+            expectedGateways: ['chip'],
         );
     });
 
@@ -179,8 +187,9 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
 
         $action = app(ProcessCheckoutPaymentNotification::class);
         $action->handle(
-            payload: ['reference' => $session->id],
+            payload: ['reference' => CheckoutPaymentReference::forSession($session)],
             callbackType: 'success',
+            expectedGateways: ['chip'],
         );
     });
 
@@ -198,8 +207,9 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
 
         $action = app(ProcessCheckoutPaymentNotification::class);
         $action->handle(
-            payload: ['reference' => $session->id],
+            payload: ['reference' => CheckoutPaymentReference::forSession($session)],
             callbackType: 'success',
+            expectedGateways: ['chip'],
         );
     });
 
@@ -220,8 +230,9 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
 
         $action = app(ProcessCheckoutPaymentNotification::class);
         $action->handle(
-            payload: ['reference' => $session->id],
+            payload: ['reference' => CheckoutPaymentReference::forSession($session)],
             callbackType: 'success',
+            expectedGateways: ['chip'],
         );
     });
 
@@ -229,7 +240,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
         $session = CheckoutSession::create([
             'cart_id' => 'test-notification-metadata-ref',
             'status' => AwaitingPayment::class,
-            'selected_payment_gateway' => 'chip',
+            'selected_payment_gateway' => 'cashier',
         ]);
 
         $checkoutService = mock(CheckoutServiceInterface::class);
@@ -241,8 +252,9 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
 
         $action = app(ProcessCheckoutPaymentNotification::class);
         $action->handle(
-            payload: ['metadata' => ['checkout_session_id' => $session->id]],
+            payload: ['metadata' => ['checkout_session_id' => CheckoutPaymentReference::forSession($session)]],
             callbackType: 'success',
+            expectedGateways: ['cashier'],
         );
     });
 });

@@ -12,6 +12,7 @@ use AIArmada\Checkout\Data\PaymentRequest;
 use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Support\CheckoutPaymentReference;
 use Throwable;
 
 /**
@@ -50,7 +51,7 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
                 return PaymentResult::failed('Cashier requires a billable customer model');
             }
 
-            $options = $this->buildChargeOptions($request);
+            $options = $this->buildChargeOptions($session, $request);
             $provider = $this->requestedProvider($request);
             $gateway = app(GatewayManager::class)->gateway($provider);
             $provider = $gateway->name();
@@ -314,9 +315,13 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
     /**
      * @return array<string, mixed>
      */
-    private function buildChargeOptions(PaymentRequest $request): array
+    private function buildChargeOptions(CheckoutSession $session, PaymentRequest $request): array
     {
         $description = $request->description ?? 'Payment';
+        $metadata = array_merge($request->metadata, [
+            'checkout_session_id' => CheckoutPaymentReference::forSession($session),
+            'checkout_gateway' => $this->getIdentifier(),
+        ]);
 
         return [
             'description' => $description,
@@ -325,8 +330,8 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
             'failure_url' => $request->failureUrl,
             'cancel_url' => $request->cancelUrl,
             'currency' => $request->currency,
-            'reference' => $description,
-            'metadata' => $request->metadata,
+            'reference' => CheckoutPaymentReference::forSession($session),
+            'metadata' => $metadata,
         ];
     }
 

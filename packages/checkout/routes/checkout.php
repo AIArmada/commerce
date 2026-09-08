@@ -12,8 +12,8 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | These routes handle payment callbacks and webhooks for the checkout flow.
-| The callback routes handle user redirects from payment gateways.
-| The webhook route handles async payment notifications.
+| Callback routes are gateway-specific so the URL selects the gateway contract.
+| Webhook routes are also gateway-specific for signature verification.
 |
 | All route paths are configurable via checkout.routes config.
 |
@@ -22,22 +22,37 @@ use Illuminate\Support\Facades\Route;
 Route::prefix(config('checkout.routes.prefix', 'checkout'))
     ->middleware(config('checkout.routes.middleware', ['web']))
     ->group(function (): void {
-        // Payment callback routes (user redirects from gateway)
-        Route::get(config('checkout.routes.callbacks.success', 'payment/success'), [PaymentCallbackController::class, 'success'])
-            ->name('checkout.payment.success');
+        foreach (config('checkout.routes.callbacks', []) as $type => $gatewayRoutes) {
+            if (! is_array($gatewayRoutes)) {
+                continue;
+            }
 
-        Route::get(config('checkout.routes.callbacks.failure', 'payment/failure'), [PaymentCallbackController::class, 'failure'])
-            ->name('checkout.payment.failure');
+            foreach ($gatewayRoutes as $gateway => $path) {
+                if (! is_string($path) || $path === '') {
+                    continue;
+                }
 
-        Route::get(config('checkout.routes.callbacks.cancel', 'payment/cancel'), [PaymentCallbackController::class, 'cancel'])
-            ->name('checkout.payment.cancel');
+                Route::get($path, [PaymentCallbackController::class, $type])
+                    ->name("checkout.payment.{$gateway}.{$type}");
+            }
+        }
     });
 
-// Webhook route (uses different middleware - no CSRF, no session)
-// Signature verification is enforced via checkout Spatie signature validator.
 Route::prefix(config('checkout.routes.webhook_prefix', 'webhooks'))
     ->middleware(config('checkout.routes.webhook_middleware', ['api']))
     ->group(function (): void {
-        Route::post(config('checkout.routes.webhook_path', 'checkout'), CheckoutWebhookController::class)
-            ->name('checkout.webhook');
+        foreach (config('checkout.routes.webhooks', []) as $webhook) {
+            if (! is_array($webhook)) {
+                continue;
+            }
+
+            $path = $webhook['path'] ?? null;
+            $name = $webhook['config'] ?? null;
+
+            if (! is_string($path) || $path === '' || ! is_string($name) || $name === '') {
+                continue;
+            }
+
+            Route::post($path, CheckoutWebhookController::class)->name($name);
+        }
     });

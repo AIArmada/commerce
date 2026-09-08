@@ -256,9 +256,15 @@ Applied voucher payloads in checkout also include `promotion_id` when the vouche
 
 ## CHIP
 
-When `aiarmada/chip` is installed and `checkout.integrations.chip.enabled` is `true`, checkout listens to CHIP purchase events and forwards them into the same internal payment-callback flow used by `POST /webhooks/checkout`.
+When `aiarmada/chip` is installed and `checkout.integrations.chip.enabled` is `true`, checkout listens to typed CHIP purchase events and forwards them into the same internal payment-callback flow used by `POST /webhooks/chip`.
 
-This keeps checkout gateway-agnostic while letting CHIP remain the single webhook ingress. The recommended setup is to register only `config('chip.webhooks.route', '/chip/webhooks')` in the CHIP dashboard. Disable this integration if you want checkout to rely on `/webhooks/checkout` for CHIP callbacks instead.
+This keeps checkout gateway-agnostic while letting CHIP remain the single webhook ingress. The recommended setup is to register only `config('chip.webhooks.route', '/chip/webhooks')` in the CHIP dashboard. Disable this integration if you want checkout to consume CHIP deliveries through `/webhooks/chip` instead.
+
+`ChipIntegrationRegistrar` subscribes the checkout bridge to the concrete typed
+purchase events (`PurchasePaid`, `PurchasePaymentFailure`, and
+`PurchaseCancelled`). The bridge accepts the shared `PurchaseEvent` contract,
+normalizes the provider reference at the boundary, and supplies the mandatory
+`['chip', 'cashier-chip']` gateway set to checkout.
 
 ```php
 'integrations' => [
@@ -354,12 +360,15 @@ All callback entrypoints (redirect controller, webhook, CHIP events) converge on
 - `ProcessCheckoutPaymentNotification` — extracts session from webhook payload, then calls `HandleCheckoutPaymentCallback`
 - `HandleChipPurchaseEventForCheckout` — resolves callback type from CHIP event, delegates to `ProcessCheckoutPaymentNotification`
 
-### CHIP support classes
+### CHIP checkout adapters
 
-CHIP-specific logic is consolidated in shared support classes used by both `ChipProcessor` and `CashierChipProcessor`:
+Checkout keeps a small adapter seam because its `PaymentStatus` and
+`PaymentResult` contracts differ from CHIP's universal Commerce Support payment
+contracts. The adapters are shared by `ChipProcessor` and
+`CashierChipProcessor`:
 
 | Class | Purpose |
 |-------|---------|
 | `ChipPurchasePayloadBuilder` | Builds the CHIP purchase payload from `PaymentRequest` and `CheckoutSession` |
-| `ChipPaymentStatusMapper` | Normalizes CHIP status strings to `PaymentStatus` enum |
+| `ChipPaymentStatusMapper` | Translates CHIP callback/status values to checkout's `PaymentStatus` enum |
 | `ChipRefundGateway` | Handles CHIP refund and void calls |

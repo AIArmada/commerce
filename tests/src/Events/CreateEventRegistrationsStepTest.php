@@ -31,8 +31,6 @@ it('reuses snapshot participants and uses the purchaser when none were assigned'
         $customer = Customer::create([
             'first_name' => 'Maya',
             'last_name' => 'Jones',
-            'email' => 'maya@example.com',
-            'phone' => '+60111222333',
             'is_guest' => false,
         ]);
         $customer->addContactMethod(ContactMethodData::email('maya@example.com'));
@@ -171,13 +169,11 @@ it('reuses snapshot participants and uses the purchaser when none were assigned'
     });
 });
 
-it('uses the customer email and phone columns when purchaser participants are built', function (): void {
+it('uses the customer contact methods when purchaser participants are built', function (): void {
     OwnerContext::withOwner(null, function (): void {
         $customer = Customer::create([
             'first_name' => 'Raw',
             'last_name' => 'Source',
-            'email' => 'fresh@example.com',
-            'phone' => '+60123456789',
             'is_guest' => false,
         ]);
 
@@ -250,8 +246,8 @@ it('uses the customer email and phone columns when purchaser participants are bu
             ->and($captured)->toHaveCount(1)
             ->and($captured[0])->toBe([
                 'name' => 'Raw Source',
-                'email' => 'fresh@example.com',
-                'phone' => '+60123456789',
+                'email' => 'stale@example.com',
+                'phone' => '+60987654321',
                 'is_primary' => true,
             ]);
     });

@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Support;
 
 use AIArmada\Checkout\Actions\ProcessCheckoutPaymentNotification;
-use AIArmada\Chip\Events\PurchaseCancelled;
-use AIArmada\Chip\Events\PurchasePaid;
-use AIArmada\Chip\Events\PurchasePaymentFailure;
+use AIArmada\Chip\Events\PurchaseEvent;
 
 final class HandleChipPurchaseEventForCheckout
 {
@@ -15,16 +13,21 @@ final class HandleChipPurchaseEventForCheckout
         private readonly ProcessCheckoutPaymentNotification $processCheckoutPaymentNotification,
     ) {}
 
-    public function handle(PurchasePaid | PurchasePaymentFailure | PurchaseCancelled $event): void
+    public function handle(PurchaseEvent $event): void
     {
-        $callbackType = match (true) {
-            $event instanceof PurchasePaid => 'success',
-            $event instanceof PurchasePaymentFailure => 'failure',
-            $event instanceof PurchaseCancelled => 'cancel',
+        $callbackType = match ($event->getEventTypeValue()) {
+            'purchase.paid' => 'success',
+            'purchase.payment_failure' => 'failure',
+            'purchase.cancelled' => 'cancel',
+            default => null,
         };
 
+        if ($callbackType === null) {
+            return;
+        }
+
         $this->processCheckoutPaymentNotification->handle(
-            payload: $event->payload,
+            payload: $this->normalizePayload($event->payload),
             callbackType: $callbackType,
             context: [
                 'source' => 'chip.event',
@@ -33,5 +36,28 @@ final class HandleChipPurchaseEventForCheckout
             ],
             expectedGateways: ['chip', 'cashier-chip'],
         );
+    }
+
+    /**
+     * CHIP events expose the provider reference unchanged. Normalize a UUID
+     * reference at this gateway boundary; the checkout notification action
+     * only accepts the namespaced checkout form.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function normalizePayload(array $payload): array
+    {
+        $reference = $payload['reference'] ?? null;
+
+        if (is_string($reference)) {
+            $normalizedReference = CheckoutPaymentReference::normalizeChipReference($reference);
+
+            if ($normalizedReference !== null) {
+                $payload['reference'] = $normalizedReference;
+            }
+        }
+
+        return $payload;
     }
 }

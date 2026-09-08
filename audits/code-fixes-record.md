@@ -471,6 +471,59 @@ reported and taken on trust; code correctness was verified directly.
   passed (204 assertions); PHPStan level 6 clean. No migration.
 - Deferred: dashboard batching (≤3-query test unclaimed).
 
+## Checkout hardening (implemented)
+
+- **A-3/A-4 owned ingress:** `checkout.webhooks.stripe.secret`
+  (production fail-closed); per-gateway routes select verifiers,
+  payload shape only validates.
+- **A-5 canonical delegation:** mapper delegates to chip's canonical
+  (`toCheckoutStatus` wrapper only); builder/refund verified as
+  translation layers (payload arrays, session-id keys) and retained.
+- **A-6 single precedence:** `payment.gateway_priority` config sole
+  source; ctor defaults neutralized.
+- **A-7 token discipline:** 24h TTL + single-use consume + 10/60 rate
+  limit with timing-safe compare.
+- **C-1/C-2:** atomic `DB::raw` increment under row guard + retry
+  limit; `chk_`-prefixed references with gateway match and
+  owner-context re-entry.
+- **L-3/S-3:** production warning on null transformer; explicit
+  global enforcement with message.
+- **Falsified:** default event steps, unused hard requirements.
+- **Deferred (correct):** voucher-cache invalidation (mutable
+  provider ops need a contract outside checkout); cashier
+  single-gateway split (cashier track).
+- Suites: Checkout 263 passed (962 assertions); PHPStan level 6
+  clean. Adversarial proofs unmodified and green.
+
+## Engagement social graph (implemented + re-reviewed)
+
+- **Typed contracts:** `CanInteract` actor bound + subject markers on
+  all manager methods; `EngagementModelGuard::requireModel` /
+  `requireContract` at boundaries (`EngagementModelGuard.php`,
+  `EngagementEventEngagementManager stateFor`).
+- **Trait delegates:** 14 public names kept over two internal
+  helpers; parity-tested.
+- **Bridge decided:** intentional separation (attendance intent vs
+  social graph); phantom subscription-matching listener deleted with
+  zero references remaining — fixed input for the events track.
+- **Reminders + batching:** communications dispatch for delivery;
+  both commands on `OwnerBatchRunner` (`chunkById(100)`).
+- **Counters:** transactional writes, keyed reconciliation of stale
+  per-type values, documented cadence.
+- **Filament/security:** record re-resolution everywhere;
+  owner-spoof + per-owner cache tests.
+- **Re-review caught 4 live defects:** non-model `stateFor` inputs
+  accepted; subscription/reminder mutations and delivery missing
+  owner revalidation; string-vs-enum status comparisons defeating
+  follow/bookmark/reaction idempotency (always-false `=== 'active'`
+  on cast attributes); stale keyed counters never reset + CLI mapped
+  to the wrong recalculators. All fixed with regressions
+  (`ContractBoundaryTest`, `OwnerWriteBoundaryTest`,
+  `CounterReconciliationTest`, duplicate-follow test).
+- Suites: Engagement 47 passed (157 assertions),
+  FilamentEngagement 5 passed (30 assertions); PHPStan level 6
+  clean. No migration required.
+
 ## Fairness log
 
 - Orders checkout-context concern: not present, dropped correctly.

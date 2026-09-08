@@ -80,6 +80,21 @@ describe('PaymentGatewayResolver', function (): void {
         expect($resolver->getDefaultGateway())->toBe('available');
     });
 
+    it('uses checkout config as the runtime precedence source', function (): void {
+        config()->set('checkout.payment.default_gateway', 'missing');
+        config()->set('checkout.payment.gateway_priority', ['second', 'first']);
+
+        $resolver = new PaymentGatewayResolver;
+        $resolver->register('first', createMockProcessor('first'));
+        $resolver->register('second', createMockProcessor('second'));
+
+        expect($resolver->getDefaultGateway())->toBe('second');
+
+        config()->set('checkout.payment.gateway_priority', ['first', 'second']);
+
+        expect($resolver->getDefaultGateway())->toBe('first');
+    });
+
     it('throws exception when no gateway available', function (): void {
         $resolver = new PaymentGatewayResolver(null, []);
 

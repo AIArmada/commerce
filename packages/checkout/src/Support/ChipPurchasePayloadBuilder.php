@@ -36,7 +36,7 @@ final readonly class ChipPurchasePayloadBuilder
                 'phone' => $request->customerPhone,
             ], static fn (mixed $value): bool => $value !== null
                 && (! is_string($value) || mb_trim($value) !== '')),
-            'reference' => $session->id,
+            'reference' => CheckoutPaymentReference::forSession($session),
             'idempotency_key' => $this->idempotencyKey($session),
             'success_redirect' => $request->successUrl,
             'failure_redirect' => $request->failureUrl,

@@ -87,22 +87,36 @@ final class EventRegistrationResource extends Resource
                     ->label('Email')
                     ->state(function (EventRegistration $record): ?string {
                         $registrant = $record->registrant;
-                        if ($registrant instanceof Customer && $registrant->email) {
-                            return $registrant->email;
+                        if ($registrant instanceof Customer) {
+                            return $registrant->resolveEmail()
+                                ?? static::participantContactValue($record->participants->first(), 'email');
                         }
 
                         return static::participantContactValue($record->participants->first(), 'email');
                     })
                     ->copyable()
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query
-                        ->whereHas('registrant', fn (Builder $q) => $q
-                            ->where('email', 'like', "%{$search}%"))),
+                        ->whereHasMorph(
+                            'registrant',
+                            [Customer::class],
+                            fn (Builder $registrantQuery): Builder => $registrantQuery->whereHas(
+                                'contactMethods',
+                                fn (Builder $contactQuery): Builder => $contactQuery
+                                    ->where('type', 'email')
+                                    ->where(function (Builder $valueQuery) use ($search): void {
+                                        $valueQuery
+                                            ->where('normalized_value', 'like', "%{$search}%")
+                                            ->orWhere('value', 'like', "%{$search}%");
+                                    }),
+                            ),
+                        )),
                 Tables\Columns\TextColumn::make('registrant.phone')
                     ->label('Phone')
                     ->state(function (EventRegistration $record): ?string {
                         $registrant = $record->registrant;
-                        if ($registrant instanceof Customer && $registrant->phone) {
-                            return $registrant->phone;
+                        if ($registrant instanceof Customer) {
+                            return $registrant->resolvePhone()
+                                ?? static::participantContactValue($record->participants->first(), 'phone');
                         }
 
                         return static::participantContactValue($record->participants->first(), 'phone');

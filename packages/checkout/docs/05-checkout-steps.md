@@ -98,6 +98,14 @@ Dispatches document generation:
 - Triggers receipt creation when checkout document generation is explicitly enabled
 - Dispatches notifications
 
+## Optional Package-Contributed Steps
+
+Event-ticketing steps are not part of checkout's core defaults. When the events
+integration is installed, its tagged `StepContributor` may add
+`create_event_registrations`; it adds `issue_event_passes` only when
+`events.features.auto_issue_passes` is enabled. Other integrations can use the
+same contributor seam without adding their steps to `config/checkout.php`.
+
 ## Step Result
 
 Each step returns a `StepResult`:

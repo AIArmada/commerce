@@ -16,7 +16,6 @@ use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Throwable;
 
@@ -403,62 +402,20 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
 
     private function resolveCustomerEmail(mixed $customer): ?string
     {
-        if (! $customer instanceof Model || ! method_exists($customer, 'contactMethods')) {
+        if (! $customer instanceof Model || ! method_exists($customer, 'resolveEmail')) {
             return null;
         }
 
-        $email = $this->cleanString($customer->getAttribute('email'));
-
-        if ($email !== null) {
-            return mb_strtolower($email);
-        }
-
-        $contactMethods = call_user_func([$customer, 'contactMethods']);
-
-        if (! $contactMethods instanceof MorphMany) {
-            return null;
-        }
-
-        $emailContactMethod = $contactMethods
-            ->where('type', 'email')
-            ->orderByDesc('is_primary')
-            ->orderBy('sort_order')
-            ->first();
-
-        return $this->cleanString(
-            $emailContactMethod?->getAttribute('normalized_value')
-                ?? $emailContactMethod?->getAttribute('value'),
-        );
+        return $this->cleanString(call_user_func([$customer, 'resolveEmail']));
     }
 
     private function resolveCustomerPhone(mixed $customer): ?string
     {
-        if (! $customer instanceof Model || ! method_exists($customer, 'contactMethods')) {
+        if (! $customer instanceof Model || ! method_exists($customer, 'resolvePhone')) {
             return null;
         }
 
-        $phone = $this->cleanString($customer->getAttribute('phone'));
-
-        if ($phone !== null) {
-            return $phone;
-        }
-
-        $contactMethods = call_user_func([$customer, 'contactMethods']);
-
-        if (! $contactMethods instanceof MorphMany) {
-            return null;
-        }
-
-        $phoneContactMethod = $contactMethods
-            ->where('type', 'phone')
-            ->orderByDesc('is_primary')
-            ->orderBy('sort_order')
-            ->first();
-
-        return $this->cleanString(
-            $phoneContactMethod?->getAttribute('normalized_value')
-                ?? $phoneContactMethod?->getAttribute('value'),
-        );
+        return $this->cleanString(call_user_func([$customer, 'resolvePhone']));
     }
 
     private function cleanString(mixed $value): ?string

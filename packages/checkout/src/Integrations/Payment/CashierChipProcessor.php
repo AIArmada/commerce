@@ -10,6 +10,7 @@ use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Data\PaymentRequest;
 use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Support\CheckoutPaymentReference;
 use AIArmada\Checkout\Support\ChipPaymentStatusMapper;
 use AIArmada\Checkout\Support\ChipPurchasePayloadBuilder;
 use AIArmada\Checkout\Support\ChipRefundGateway;
@@ -130,14 +131,19 @@ final class CashierChipProcessor implements PaymentCompensationInterface, Paymen
         CheckoutSession $session,
         PaymentRequest $request,
     ): PaymentResult {
+        $metadata = array_merge($request->metadata, [
+            'checkout_session_id' => CheckoutPaymentReference::forSession($session),
+            'checkout_gateway' => $this->getIdentifier(),
+        ]);
+
         /** @phpstan-ignore method.notFound */
         $payment = $customer->charge($request->amount, null, [
             'product_name' => $request->description,
             'success_url' => $request->successUrl,
             'failure_url' => $request->failureUrl,
             'cancel_url' => $request->cancelUrl,
-            'metadata' => $request->metadata,
-            'reference' => $request->description,
+            'metadata' => $metadata,
+            'reference' => CheckoutPaymentReference::forSession($session),
             'currency' => $request->currency,
             'idempotency_key' => $this->payloadBuilder->idempotencyKey($session),
         ]);

@@ -15,11 +15,15 @@ final class PaymentGatewayResolver implements PaymentGatewayResolverInterface
     private array $processors = [];
 
     /**
+     * Constructor values are test seams for isolated resolver instances. The
+     * package service provider constructs this resolver without values so
+     * checkout.payment is the single runtime source of truth.
+     *
      * @param  array<string>  $priority
      */
     public function __construct(
-        private readonly ?string $defaultGateway,
-        private readonly array $priority = ['cashier', 'cashier-chip', 'chip'],
+        private readonly ?string $defaultGateway = null,
+        private readonly array $priority = [],
     ) {}
 
     public function resolve(?string $gateway = null): PaymentProcessorInterface
@@ -48,14 +52,24 @@ final class PaymentGatewayResolver implements PaymentGatewayResolverInterface
 
     public function getDefaultGateway(): string
     {
-        // Use configured default if available
-        if ($this->defaultGateway !== null && $this->hasGateway($this->defaultGateway)) {
-            return $this->defaultGateway;
+        /**
+         * Resolution order is explicit gateway, configured default, configured
+         * priority, then the first registered processor. The provider passes
+         * no defaults, so changing checkout.payment changes this order without
+         * relying on a constructor fallback.
+         */
+        $defaultGateway = $this->defaultGateway ?? config('checkout.payment.default_gateway');
+
+        if (is_string($defaultGateway) && $defaultGateway !== '' && $this->hasGateway($defaultGateway)) {
+            return $defaultGateway;
         }
 
-        // Fall back to priority order
-        foreach ($this->priority as $gateway) {
-            if ($this->hasGateway($gateway)) {
+        $priority = $this->priority !== []
+            ? $this->priority
+            : config('checkout.payment.gateway_priority', []);
+
+        foreach (is_array($priority) ? $priority : [] as $gateway) {
+            if (is_string($gateway) && $this->hasGateway($gateway)) {
                 return $gateway;
             }
         }

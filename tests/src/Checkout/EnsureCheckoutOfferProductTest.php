@@ -10,6 +10,7 @@ use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Models\Product;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -42,7 +43,7 @@ it('creates a checkout offer product with price list, price, and seeded inventor
         inventoryNote: 'Seeded by checkout offer bootstrap test.',
     );
 
-    $product = app(EnsureCheckoutOfferProduct::class)->handle($offer);
+    $product = OwnerContext::withOwner(null, fn (): Product => app(EnsureCheckoutOfferProduct::class)->handle($offer));
 
     $priceList = OwnerContext::withOwner(null, static fn (): ?PriceList => PriceList::query()
         ->where('slug', $offer->priceListSlug)
@@ -83,8 +84,8 @@ it('is idempotent when ensuring the same checkout offer product twice', function
         priceListName: 'Checkout Offer Idempotent ' . $suffix,
     );
 
-    $firstProduct = app(EnsureCheckoutOfferProduct::class)->handle($offer);
-    $secondProduct = app(EnsureCheckoutOfferProduct::class)->handle($offer);
+    $firstProduct = OwnerContext::withOwner(null, fn (): Product => app(EnsureCheckoutOfferProduct::class)->handle($offer));
+    $secondProduct = OwnerContext::withOwner(null, fn (): Product => app(EnsureCheckoutOfferProduct::class)->handle($offer));
 
     $productCount = OwnerContext::withOwner(null, static fn (): int => Product::query()->where('slug', $offer->productSlug)->count());
     $priceListCount = OwnerContext::withOwner(null, static fn (): int => PriceList::query()->where('slug', $offer->priceListSlug)->count());
@@ -100,4 +101,20 @@ it('is idempotent when ensuring the same checkout offer product twice', function
         ->and($priceCount)->toBe(1)
         ->and($secondProduct->supportsVariants())->toBeFalse()
         ->and($secondProduct->tracksInventory())->toBeFalse();
+});
+
+it('requires an explicit global owner context before publishing an offer product', function (): void {
+    $offer = new CheckoutOfferProductData(
+        productSlug: 'checkout-offer-global-context-required',
+        priceListSlug: 'checkout-offer-global-context-required-public',
+        name: 'Checkout Offer Global Context Required',
+        description: 'Offer product used to verify global context enforcement.',
+        sku: 'checkout-offer-global-context-required',
+        priceAmount: 1000,
+        currency: 'MYR',
+        priceListName: 'Checkout Offer Global Context Required Public',
+    );
+
+    expect(fn (): Product => app(EnsureCheckoutOfferProduct::class)->handle($offer))
+        ->toThrow(AuthorizationException::class);
 });

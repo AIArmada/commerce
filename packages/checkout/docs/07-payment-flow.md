@@ -81,18 +81,22 @@ The package registers routes for handling payment gateway callbacks:
 
 | Route | Name | Purpose |
 |-------|------|---------|
-| `GET /checkout/payment/success` | `checkout.payment.success` | Successful payment return |
-| `GET /checkout/payment/failure` | `checkout.payment.failure` | Failed payment return |
-| `GET /checkout/payment/cancel` | `checkout.payment.cancel` | Cancelled payment return |
-| `POST /webhooks/checkout` | `checkout.webhook` | Webhook notifications |
+| `GET /checkout/payment/chip/success` | `checkout.payment.chip.success` | CHIP successful payment return |
+| `GET /checkout/payment/chip/failure` | `checkout.payment.chip.failure` | CHIP failed payment return |
+| `GET /checkout/payment/chip/cancel` | `checkout.payment.chip.cancel` | CHIP cancelled payment return |
+| `GET /checkout/payment/cashier-chip/success` | `checkout.payment.cashier-chip.success` | Cashier CHIP successful payment return |
+| `GET /checkout/payment/cashier/success` | `checkout.payment.cashier.success` | Cashier/Stripe successful payment return |
+| `POST /webhooks/chip` | `checkout.webhook.chip` | CHIP and Cashier CHIP webhook notifications |
+| `POST /webhooks/stripe` | `checkout.webhook.stripe` | Cashier/Stripe webhook notifications |
 
 ### CHIP Default Setup
 
 When `aiarmada/chip` is installed and `checkout.integrations.chip.enabled` is `true` (the default), the recommended setup is to register only the CHIP webhook route from `config('chip.webhooks.route', '/chip/webhooks')` in the CHIP dashboard.
 
-In that flow, CHIP verifies and processes the delivery first, then checkout listens to the resulting typed CHIP events and calls `handlePaymentCallback()` internally. You do not need to send the same CHIP webhook to `POST /webhooks/checkout` as well.
+In that flow, CHIP verifies and processes the delivery first, then checkout listens to the resulting typed CHIP purchase events and calls `handlePaymentCallback()` internally. You do not need to send the same CHIP webhook to `POST /webhooks/chip` as well.
 
-Keep `POST /webhooks/checkout` for other gateways, or disable `checkout.integrations.chip.enabled` if you want checkout to consume CHIP webhooks directly.
+Keep the explicit Stripe route for Cashier/Stripe deliveries. The route, not a
+header or payload shape, selects the verifier and the allowed gateway set.
 
 ### Route Configuration
 
@@ -105,6 +109,18 @@ Configure routes in `config/checkout.php`:
     'middleware' => ['web'],
     'webhook_prefix' => 'webhooks',
     'webhook_middleware' => ['api'],
+    'webhooks' => [
+        'chip' => [
+            'path' => 'chip',
+            'config' => 'checkout.webhook.chip',
+            'gateways' => ['chip', 'cashier-chip'],
+        ],
+        'stripe' => [
+            'path' => 'stripe',
+            'config' => 'checkout.webhook.stripe',
+            'gateways' => ['cashier'],
+        ],
+    ],
 ],
 ```
 
@@ -131,9 +147,10 @@ When a user returns from a successful payment, the `PaymentCallbackController::s
 1. Resolves the checkout session using the configured session query parameter (or `checkout_session_id` as a fallback)
 2. Performs an intentional cross-tenant lookup because gateway redirects do not carry owner context
 3. Guards that lookup with `hash_equals()` against the per-session callback token stored in `payment_data.callback_token`
-4. Wraps the callback in a database transaction and locks the session row with `lockForUpdate()` to avoid duplicate completion races
-5. Short-circuits straight to the success response if the session is already `Completed`
-6. Verifies payment with the gateway and redirects or renders based on the configured response mode
+4. Enforces `payment.callback_token_ttl`, rate-limits attempts per session, and rejects consumed tokens unless the session is already completed
+5. Wraps the callback in a database transaction and locks the session row with `lockForUpdate()` to avoid duplicate completion races
+6. Consumes the token after a successful callback and short-circuits completed-session replays without re-confirming payment
+7. Verifies payment with the gateway and redirects or renders based on the configured response mode
 
 ```php
 // The controller handles this automatically, but you can also:
@@ -176,12 +193,13 @@ For asynchronous payment confirmation, use the webhook endpoint:
 
 ### Webhook Request Format
 
-The webhook controller extracts the session ID from various payload formats:
+The webhook controller is selected by the explicit gateway route and accepts
+only the namespaced reference for that route's gateway set:
 
 **CHIP format:**
 ```json
 {
-    "reference": "checkout-session-uuid",
+    "reference": "chk_550e8400-e29b-41d4-a716-446655440000",
     "status": "paid"
 }
 ```
@@ -191,7 +209,9 @@ The webhook controller extracts the session ID from various payload formats:
 {
     "data": {
         "object": {
-            "client_reference_id": "checkout-session-uuid",
+            "metadata": {
+                "checkout_session_id": "chk_550e8400-e29b-41d4-a716-446655440000"
+            },
             "status": "complete"
         }
     }
@@ -199,7 +219,7 @@ The webhook controller extracts the session ID from various payload formats:
 ```
 
 - `acknowledged` - Webhook received but no action needed
-- `ignored` - Session not found or invalid state
+- `ignored` - Session not found, reference is not namespaced, or the selected gateway does not match the route
 
 ### Idempotent Handling
 
@@ -219,17 +239,17 @@ When integrating with payment gateways, get the callback URLs:
 $sessionParam = config('checkout.defaults.session_query_param', 'session');
 $callbackToken = $session->payment_data['callback_token'] ?? null;
 
-$successUrl = route('checkout.payment.success', [
+$successUrl = route('checkout.payment.chip.success', [
     $sessionParam => $session->id,
     'checkout_callback_token' => $callbackToken,
 ]);
 
-$failureUrl = route('checkout.payment.failure', [
+$failureUrl = route('checkout.payment.chip.failure', [
     $sessionParam => $session->id,
     'checkout_callback_token' => $callbackToken,
 ]);
 
-$cancelUrl = route('checkout.payment.cancel', [
+$cancelUrl = route('checkout.payment.chip.cancel', [
     $sessionParam => $session->id,
     'checkout_callback_token' => $callbackToken,
 ]);
@@ -239,25 +259,11 @@ Package-generated URLs use `checkout_callback_token`; the callback controller al
 
 ## Webhook Security
 
-For production, implement webhook signature verification:
-
-```php
-// In a custom middleware
-class VerifyWebhookSignature
-{
-    public function handle($request, Closure $next)
-    {
-        $signature = $request->header('X-Signature');
-        $payload = $request->getContent();
-        
-        if (!$this->verifySignature($payload, $signature)) {
-            abort(401, 'Invalid signature');
-        }
-        
-        return $next($request);
-    }
-}
-```
+Checkout's Spatie signature validator selects CHIP or Stripe from the explicit
+webhook route. Keep `CHECKOUT_WEBHOOK_VERIFY_SIGNATURE=true` in production;
+disabling verification is rejected there. Configure
+`CHECKOUT_STRIPE_WEBHOOK_SECRET` for the Stripe route. CHIP verification
+continues to use the CHIP package's own webhook configuration.
 
 Configure webhook middleware in `config/checkout.php`:
 

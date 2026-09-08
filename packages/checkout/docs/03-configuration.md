@@ -148,6 +148,11 @@ return [
         'default_gateway' => env('CHECKOUT_DEFAULT_GATEWAY', 'chip'),
         'gateway_priority' => ['chip', 'cashier-chip', 'cashier'],
         'retry_limit' => 3,
+        'callback_token_ttl' => 60 * 60 * 24,
+        'callback_rate_limit' => [
+            'max_attempts' => 10,
+            'decay_seconds' => 60,
+        ],
         'gateways' => [
             'cashier' => [
                 'enabled' => true,
@@ -183,13 +188,36 @@ return [
         'prefix' => env('CHECKOUT_ROUTE_PREFIX', 'checkout'),
         'middleware' => ['web'],
         'callbacks' => [
-            'success' => 'payment/success',
-            'failure' => 'payment/failure',
-            'cancel' => 'payment/cancel',
+            'success' => [
+                'chip' => 'payment/chip/success',
+                'cashier-chip' => 'payment/cashier-chip/success',
+                'cashier' => 'payment/cashier/success',
+            ],
+            'failure' => [
+                'chip' => 'payment/chip/failure',
+                'cashier-chip' => 'payment/cashier-chip/failure',
+                'cashier' => 'payment/cashier/failure',
+            ],
+            'cancel' => [
+                'chip' => 'payment/chip/cancel',
+                'cashier-chip' => 'payment/cashier-chip/cancel',
+                'cashier' => 'payment/cashier/cancel',
+            ],
         ],
         'webhook_prefix' => env('CHECKOUT_WEBHOOK_PREFIX', 'webhooks'),
-        'webhook_path' => 'checkout',
         'webhook_middleware' => ['api'],
+        'webhooks' => [
+            'chip' => [
+                'path' => 'chip',
+                'config' => 'checkout.webhook.chip',
+                'gateways' => ['chip', 'cashier-chip'],
+            ],
+            'stripe' => [
+                'path' => 'stripe',
+                'config' => 'checkout.webhook.stripe',
+                'gateways' => ['cashier'],
+            ],
+        ],
     ],
 
     /*
@@ -212,12 +240,15 @@ return [
     |--------------------------------------------------------------------------
     |
     | - CHIP: Uses config('chip.webhooks.verify_signature')
-    | - Stripe: Uses config('cashier.gateways.stripe.webhook_secret')
+    | - Stripe: Uses the checkout-owned secret below
     |
     */
     'webhooks' => [
         'verify_signature' => env('CHECKOUT_WEBHOOK_VERIFY_SIGNATURE', true),
         'log_channel' => env('CHECKOUT_WEBHOOK_LOG_CHANNEL'),
+        'stripe' => [
+            'secret' => env('CHECKOUT_STRIPE_WEBHOOK_SECRET'),
+        ],
     ],
 
     /*
@@ -253,6 +284,13 @@ Checkout document generation is disabled by default. The `dispatch_documents` st
 | `defaults.session_ttl` | int | `86400` | Session expiration in seconds |
 | `defaults.session_query_param` | string | `session` | Query param for session ID in URLs |
 | `defaults.shipping_rate` | int | `1000` | Fallback shipping rate in cents |
+
+`expires_at` controls the 24-hour default session lifetime and callback eligibility;
+it does not automatically delete a session row. `cart_snapshot`, `payment_data`,
+`pricing_data`, `discount_data`, and `tax_data` are operational/audit snapshots.
+Keep them for the period required by payment reconciliation, order support, and
+your privacy/compliance policy, then prune the containing session rows through
+your application's retention process.
 
 ### Models
 
@@ -306,13 +344,19 @@ Checkout validates core step invariants during provider boot.
 | `payment.default_gateway` | string | `chip` | Default payment gateway |
 | `payment.gateway_priority` | array | `['chip', 'cashier-chip', 'cashier']` | Gateway resolution order |
 | `payment.retry_limit` | int | `3` | Max payment retry attempts |
+| `payment.callback_token_ttl` | int | `86400` | Callback-token lifetime in seconds; provider validation caps it at 24 hours |
+| `payment.callback_rate_limit.max_attempts` | int | `10` | Callback attempts allowed per session during the decay window |
+| `payment.callback_rate_limit.decay_seconds` | int | `60` | Callback rate-limit decay window |
 
 The `payment.gateways.*.enabled` flags are config constants in the package config (all `true` by default), not environment-driven toggles.
 
-Gateway-specific configuration references the related package configs:
+Gateway processors may read their provider package configuration, but checkout's
+gateway selection, references, callback security, and webhook verification stay
+owned by checkout:
 - **CHIP** (`chip`): Uses `config('chip.*')`
 - **Cashier CHIP** (`cashier-chip`): Uses `config('cashier-chip.*')`
 - **Cashier** (`cashier`): Uses `config('cashier.*')`
+- **Stripe webhook secret**: Uses `CHECKOUT_STRIPE_WEBHOOK_SECRET` via `config('checkout.webhooks.stripe.secret')`; checkout never reads Cashier's secret key.
 
 ### Create Order Settings
 
@@ -326,8 +370,10 @@ Gateway-specific configuration references the related package configs:
 |-----|------|---------|-------------|
 | `routes.enabled` | bool | `true` | Enable/disable checkout routes |
 | `routes.prefix` | string | `checkout` | Route prefix |
-| `routes.callbacks.*` | string | `payment/*` | Payment callback paths |
+| `routes.callbacks.<type>.<gateway>` | string | `payment/<gateway>/<type>` | Gateway-specific payment callback paths |
 | `routes.webhook_prefix` | string | `webhooks` | Webhook route prefix |
+| `routes.webhooks.<gateway>.path` | string | `chip` / `stripe` | Explicit per-gateway webhook path |
+| `routes.webhooks.<gateway>.config` | string | `checkout.webhook.<gateway>` | Spatie webhook config and route name |
 
 ### Response Mode and Views
 
@@ -425,6 +471,7 @@ CHECKOUT_JSON_COLUMN_TYPE=jsonb
 
 # Payment gateway
 CHECKOUT_DEFAULT_GATEWAY=chip
+CHECKOUT_STRIPE_WEBHOOK_SECRET=
 
 # Routes
 CHECKOUT_ROUTES_ENABLED=true

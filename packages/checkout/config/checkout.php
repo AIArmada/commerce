@@ -72,8 +72,6 @@ return [
             'process_payment' => true,
             'persist_customer' => true,
             'create_order' => true,
-            'create_event_registrations' => true,
-            'issue_event_passes' => true,
             'dispatch_documents' => true,
         ],
         'order' => [
@@ -87,8 +85,6 @@ return [
             'process_payment',
             'persist_customer',
             'create_order',
-            'create_event_registrations',
-            'issue_event_passes',
             'dispatch_documents',
         ],
     ],
@@ -162,9 +158,9 @@ return [
     | Payment Gateways
     |--------------------------------------------------------------------------
     |
-    | Configure payment gateway integration. When using 'chip' or 'jnt', the
-    | checkout package references their respective package configs directly
-    | to avoid configuration mismatches.
+    | Configure payment gateway integration. Provider processors may read their
+    | provider package settings, while checkout owns resolution, references,
+    | callback security, and webhook routing.
     |
     | Gateway options: 'chip', 'stripe', 'cashier', 'cashier-chip'. Optional
     | provider packages can contribute a PaymentProcessorInterface by binding
@@ -176,6 +172,11 @@ return [
         'gateway_priority' => ['chip', 'cashier-chip', 'cashier'],
         'prefer_actor' => (bool) env('CHECKOUT_PREFER_ACTOR', false),
         'retry_limit' => 3,
+        'callback_token_ttl' => 60 * 60 * 24,
+        'callback_rate_limit' => [
+            'max_attempts' => 10,
+            'decay_seconds' => 60,
+        ],
 
         'gateways' => [
             'cashier' => [
@@ -206,15 +207,37 @@ return [
 
         // Payment callback routes (user redirects from gateway)
         'callbacks' => [
-            'success' => 'payment/success',
-            'failure' => 'payment/failure',
-            'cancel' => 'payment/cancel',
+            'success' => [
+                'chip' => 'payment/chip/success',
+                'cashier-chip' => 'payment/cashier-chip/success',
+                'cashier' => 'payment/cashier/success',
+            ],
+            'failure' => [
+                'chip' => 'payment/chip/failure',
+                'cashier-chip' => 'payment/cashier-chip/failure',
+                'cashier' => 'payment/cashier/failure',
+            ],
+            'cancel' => [
+                'chip' => 'payment/chip/cancel',
+                'cashier-chip' => 'payment/cashier-chip/cancel',
+                'cashier' => 'payment/cashier/cancel',
+            ],
         ],
 
-        // Webhook configuration
         'webhook_prefix' => env('CHECKOUT_WEBHOOK_PREFIX', 'webhooks'),
-        'webhook_path' => 'checkout',
         'webhook_middleware' => ['api'],
+        'webhooks' => [
+            'chip' => [
+                'path' => 'chip',
+                'config' => 'checkout.webhook.chip',
+                'gateways' => ['chip', 'cashier-chip'],
+            ],
+            'stripe' => [
+                'path' => 'stripe',
+                'config' => 'checkout.webhook.stripe',
+                'gateways' => ['cashier'],
+            ],
+        ],
     ],
 
     /*
@@ -277,12 +300,15 @@ return [
     | Webhook signature verification settings. When enabled, webhooks are
     | validated using the source gateway's verification mechanism:
     | - CHIP: Uses config('chip.webhooks.verify_signature') and public key
-    | - Stripe: Uses config('cashier.gateways.stripe.webhook_secret')
+    | - Stripe: Uses the checkout-owned secret below
     |
     */
     'webhooks' => [
         'verify_signature' => env('CHECKOUT_WEBHOOK_VERIFY_SIGNATURE', true),
         'log_channel' => env('CHECKOUT_WEBHOOK_LOG_CHANNEL'),
+        'stripe' => [
+            'secret' => env('CHECKOUT_STRIPE_WEBHOOK_SECRET'),
+        ],
     ],
 
     /*

@@ -29,6 +29,7 @@ use AIArmada\Checkout\States\Processing;
 use AIArmada\Checkout\Steps\CreateOrderStep;
 use AIArmada\Checkout\Steps\ProcessPaymentStep;
 use AIArmada\Checkout\Steps\ReserveInventoryStep;
+use AIArmada\Checkout\Support\CheckoutPaymentReference;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchaseCancelled;
 use AIArmada\Chip\Events\PurchasePaid;
@@ -170,7 +171,10 @@ describe('PaymentCallbackController', function (): void {
         $session = CheckoutSession::create([
             'cart_id' => 'test-cart-123',
             'selected_payment_gateway' => 'chip',
-            'payment_data' => ['callback_token' => 'valid-callback-token'],
+            'payment_data' => [
+                'callback_token' => 'valid-callback-token',
+                'callback_token_created_at' => now()->toIso8601String(),
+            ],
         ]);
 
         $request = Request::create('/checkout/payment/cancel', 'GET', [
@@ -189,7 +193,10 @@ describe('PaymentCallbackController', function (): void {
         $session = CheckoutSession::create([
             'cart_id' => 'test-cart-alt',
             'selected_payment_gateway' => 'chip',
-            'payment_data' => ['callback_token' => 'valid-callback-token'],
+            'payment_data' => [
+                'callback_token' => 'valid-callback-token',
+                'callback_token_created_at' => now()->toIso8601String(),
+            ],
         ]);
 
         $request = Request::create('/checkout/payment/cancel', 'GET', [
@@ -207,7 +214,10 @@ describe('PaymentCallbackController', function (): void {
         $session = CheckoutSession::create([
             'cart_id' => 'test-cart-cancel',
             'selected_payment_gateway' => 'chip',
-            'payment_data' => ['callback_token' => 'valid-callback-token'],
+            'payment_data' => [
+                'callback_token' => 'valid-callback-token',
+                'callback_token_created_at' => now()->toIso8601String(),
+            ],
         ]);
 
         $request = Request::create('/checkout/payment/cancel', 'GET', [
@@ -226,7 +236,10 @@ describe('PaymentCallbackController', function (): void {
         $session = CheckoutSession::create([
             'cart_id' => 'test-cart-fail',
             'selected_payment_gateway' => 'chip',
-            'payment_data' => ['callback_token' => 'valid-callback-token'],
+            'payment_data' => [
+                'callback_token' => 'valid-callback-token',
+                'callback_token_created_at' => now()->toIso8601String(),
+            ],
         ]);
 
         $request = Request::create('/checkout/payment/failure', 'GET', [
@@ -250,7 +263,10 @@ describe('PaymentCallbackController', function (): void {
             'status' => Completed::class,
             'completed_at' => now(),
             'selected_payment_gateway' => 'chip',
-            'payment_data' => ['callback_token' => 'valid-callback-token'],
+            'payment_data' => [
+                'callback_token' => 'valid-callback-token',
+                'callback_token_created_at' => now()->toIso8601String(),
+            ],
         ]);
 
         $request = Request::create('/checkout/payment/failure', 'GET', [
@@ -274,7 +290,10 @@ describe('PaymentCallbackController', function (): void {
             'status' => Completed::class,
             'completed_at' => now(),
             'selected_payment_gateway' => 'chip',
-            'payment_data' => ['callback_token' => 'valid-callback-token'],
+            'payment_data' => [
+                'callback_token' => 'valid-callback-token',
+                'callback_token_created_at' => now()->toIso8601String(),
+            ],
         ]);
 
         $request = Request::create('/checkout/payment/cancel', 'GET', [
@@ -320,7 +339,10 @@ describe('PaymentCallbackController', function (): void {
             'status' => AwaitingPayment::class,
             'selected_payment_gateway' => 'chip',
             'payment_redirect_url' => 'https://gateway.example.test/pay',
-            'payment_data' => ['callback_token' => 'valid-callback-token'],
+            'payment_data' => [
+                'callback_token' => 'valid-callback-token',
+                'callback_token_created_at' => now()->toIso8601String(),
+            ],
         ]);
 
         $firstRequest = Request::create('/checkout/payment/success', 'GET', [
@@ -347,7 +369,10 @@ describe('PaymentCallbackController', function (): void {
         $session = CheckoutSession::create([
             'cart_id' => 'test-cart-invalid-token',
             'selected_payment_gateway' => 'chip',
-            'payment_data' => ['callback_token' => 'valid-callback-token'],
+            'payment_data' => [
+                'callback_token' => 'valid-callback-token',
+                'callback_token_created_at' => now()->toIso8601String(),
+            ],
         ]);
 
         $request = Request::create('/checkout/payment/cancel', 'GET', [
@@ -372,7 +397,10 @@ describe('PaymentCallbackController', function (): void {
             'grand_total' => 5000,
             'currency' => 'MYR',
             'payment_id' => null, // payment not actually made
-            'payment_data' => ['callback_token' => 'legit-token'],
+            'payment_data' => [
+                'callback_token' => 'legit-token',
+                'callback_token_created_at' => now()->toIso8601String(),
+            ],
         ]);
 
         $request = Request::create('/checkout/payment/success', 'GET', [
@@ -1180,7 +1208,7 @@ describe('CheckoutService', function (): void {
             'selected_payment_gateway' => 'chip',
         ]);
 
-        $payload = chipCheckoutWebhookPayload($session->id, 'paid');
+        $payload = chipCheckoutWebhookPayload(CheckoutPaymentReference::forSession($session), 'paid');
 
         $checkoutService = mock(CheckoutServiceInterface::class);
         /** @var Expectation $callbackExpectation */
@@ -1207,7 +1235,7 @@ describe('CheckoutService', function (): void {
             'selected_payment_gateway' => 'chip',
         ]);
 
-        $payload = chipCheckoutWebhookPayload($session->id, 'error');
+        $payload = chipCheckoutWebhookPayload(CheckoutPaymentReference::forSession($session), 'error');
 
         $checkoutService = mock(CheckoutServiceInterface::class);
         /** @var Expectation $callbackExpectation */
@@ -1234,7 +1262,7 @@ describe('CheckoutService', function (): void {
             'selected_payment_gateway' => 'chip',
         ]);
 
-        $payload = chipCheckoutWebhookPayload($session->id, 'cancelled');
+        $payload = chipCheckoutWebhookPayload(CheckoutPaymentReference::forSession($session), 'cancelled');
 
         $checkoutService = mock(CheckoutServiceInterface::class);
         /** @var Expectation $callbackExpectation */
@@ -1262,7 +1290,7 @@ describe('CheckoutService', function (): void {
             'completed_at' => now(),
         ]);
 
-        $payload = chipCheckoutWebhookPayload($session->id, 'paid');
+        $payload = chipCheckoutWebhookPayload(CheckoutPaymentReference::forSession($session), 'paid');
 
         $checkoutService = mock(CheckoutServiceInterface::class);
         $checkoutService->shouldReceive('handlePaymentCallback')->never();
@@ -1279,7 +1307,7 @@ describe('CheckoutService', function (): void {
             'selected_payment_gateway' => 'cashier',
         ]);
 
-        $payload = chipCheckoutWebhookPayload($session->id, 'paid');
+        $payload = chipCheckoutWebhookPayload(CheckoutPaymentReference::forSession($session), 'paid');
 
         $checkoutService = mock(CheckoutServiceInterface::class);
         $checkoutService->shouldReceive('handlePaymentCallback')->never();
@@ -1599,6 +1627,7 @@ describe('CheckoutService', function (): void {
             ],
             'payment_data' => [
                 'callback_token' => 'callback-token',
+                'callback_token_created_at' => now()->toIso8601String(),
             ],
         ]);
 

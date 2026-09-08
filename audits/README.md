@@ -30,7 +30,7 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | contacting | filament-contacting | No | Yes | High | `contacting.md` | Done |
 | customers | filament-customers | No | Yes | High | `customers.md` | Done |
 | docs | filament-docs | Done | Yes | High | `docs.md` | Open |
-| engagement | filament-engagement | No | Yes | High | `engagement.md` | Open |
+| engagement | filament-engagement | No | Yes | High | `engagement.md` | Done |
 | events | filament-events | No | Yes | High | `events.md` | Open |
 | feedback | filament-feedback | No | Yes | High | `feedback.md` | Done |
 | growth | filament-growth | Done | No | Medium | `growth.md` | Done |
@@ -53,7 +53,7 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 
 | Package | Migration | Breaking Changes | Highest Severity | Audit File | Status |
 |---|---|---|---|---|
-| checkout | No | Yes | High | `checkout.md` | Open |
+| checkout | No | Yes | High | `checkout.md` | Done |
 | csuite | No | No | Medium | `csuite.md` | Open |
 | membership | No | Yes | Medium | `membership.md` | Open |
 | moderation | No | Yes | High | `moderation.md` | Open |

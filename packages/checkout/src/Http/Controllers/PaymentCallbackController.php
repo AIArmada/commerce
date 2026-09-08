@@ -7,10 +7,15 @@ namespace AIArmada\Checkout\Http\Controllers;
 use AIArmada\Checkout\Actions\BuildCheckoutSessionViewData;
 use AIArmada\Checkout\Actions\HandleCheckoutPaymentCallback;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\States\Completed;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\RateLimiter;
+use Throwable;
 
 final class PaymentCallbackController extends Controller
 {
@@ -117,16 +122,88 @@ final class PaymentCallbackController extends Controller
             return null;
         }
 
+        if (! $this->callbackRouteMatchesGateway($request, $session)) {
+            return null;
+        }
+
+        $rateLimitKey = $this->callbackRateLimitKey($session);
+        $maxAttempts = (int) config('checkout.payment.callback_rate_limit.max_attempts', 10);
+        $decaySeconds = (int) config('checkout.payment.callback_rate_limit.decay_seconds', 60);
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
+            return null;
+        }
+
+        RateLimiter::hit($rateLimitKey, $decaySeconds);
+
         $providedToken = $request->query('checkout_callback_token')
             ?? $request->query('callback_token')
             ?? $request->query('token');
-        $expectedToken = $session->payment_data['callback_token'] ?? null;
+        $paymentData = $session->payment_data ?? [];
+        $expectedToken = $paymentData['callback_token'] ?? null;
+        $createdAt = $paymentData['callback_token_created_at'] ?? null;
+        $consumedAt = $paymentData['callback_token_consumed_at'] ?? null;
 
-        if (! is_string($providedToken) || ! is_string($expectedToken) || $expectedToken === '') {
+        if (! is_string($providedToken)
+            || ! is_string($expectedToken)
+            || $expectedToken === ''
+            || ! is_string($createdAt)
+            || $createdAt === ''
+            || (is_string($consumedAt) && ! ($session->status instanceof Completed))
+        ) {
+            return null;
+        }
+
+        try {
+            $expiresAt = CarbonImmutable::parse($createdAt)
+                ->addSeconds((int) config('checkout.payment.callback_token_ttl', 0));
+        } catch (Throwable) {
+            return null;
+        }
+
+        if ($expiresAt->isPast()) {
             return null;
         }
 
         return hash_equals($expectedToken, $providedToken) ? $sessionId : null;
+    }
+
+    private function callbackRouteMatchesGateway(Request $request, CheckoutSession $session): bool
+    {
+        $route = $request->route();
+
+        if (! $route instanceof Route) {
+            return true;
+        }
+
+        $routeName = $route->getName();
+
+        if (! is_string($routeName)) {
+            return false;
+        }
+
+        $segments = explode('.', $routeName);
+        $gateway = $segments[2] ?? null;
+
+        $configuredGateways = config('checkout.routes.callbacks.success', []);
+
+        if (! is_array($configuredGateways)
+            || ! is_string($gateway)
+            || ! array_key_exists($gateway, $configuredGateways)
+        ) {
+            return false;
+        }
+
+        return (string) $session->selected_payment_gateway === $gateway;
+    }
+
+    private function callbackRateLimitKey(CheckoutSession $session): string
+    {
+        return 'checkout:callback:' . hash('sha256', implode('|', [
+            (string) ($session->owner_type ?? 'global'),
+            (string) ($session->owner_id ?? 'global'),
+            (string) $session->getKey(),
+        ]));
     }
 
     private function respondSuccess(CheckoutSession $session): RedirectResponse | View

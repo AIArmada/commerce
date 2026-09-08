@@ -93,7 +93,7 @@ it('creates payments through the unified billable and payment contracts', functi
                 && $options['failure_url'] === 'https://example.test/failure'
                 && $options['cancel_url'] === 'https://example.test/cancel'
                 && $options['currency'] === 'MYR'
-                && $options['metadata']['checkout_session_id'] === 'session-456'),
+                && $options['metadata']['checkout_session_id'] === 'chk_session-456'),
         )
         ->andReturn($payment);
 

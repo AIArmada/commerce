@@ -32,6 +32,10 @@ keywords:
 ## Guardrails
 - Owns models, actions, services, events, calculations, and persistence rules.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
+- Payment callbacks and webhooks are gateway-specific routes; do not infer a gateway from request headers or payload shape.
+- Checkout payment references are namespaced as `chk_<session-uuid>` and always carry the selected gateway.
+- Stripe webhook verification uses checkout's own `checkout.webhooks.stripe.secret`; missing production configuration fails closed.
+- Global offer-product writes require an explicit global `OwnerContext`.
 
 ## Decide fast
 - Use when: End-to-end purchase flow across cart/pricing/shipping/payments/orders.
@@ -41,7 +45,7 @@ keywords:
 ## Key surfaces
 - Models: `CheckoutSession`
 - Actions/Services: `Actions/BuildCheckoutSessionViewData`, `Actions/CheckoutFinalizer`, `Actions/EnsureCheckoutOfferProduct`, `Actions/HandleCheckoutPaymentCallback`, `Actions/ProcessCheckoutPaymentNotification`, `Actions/ValidatePromoCodeAction`, `Services/CheckoutService`, `Services/CheckoutStepRegistry`
-- Config `checkout.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `checkout_sessions`, `defaults`, `currency`, `session_ttl`, `session_query_param`, `shipping_rate`
+- Config `checkout.php`: `database`, `tables`, `owner`, `payment`, `routes`, `checkout_sessions`, `defaults`, `currency`, `session_ttl`, `session_query_param`, `shipping_rate`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

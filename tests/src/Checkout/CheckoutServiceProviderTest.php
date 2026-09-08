@@ -42,6 +42,15 @@ describe('CheckoutServiceProvider', function (): void {
         expect($provides)->toHaveCount(7);
     });
 
+    it('keeps event-ticketing steps outside the core checkout defaults', function (): void {
+        $registry = app(CheckoutStepRegistry::class);
+
+        expect(config('checkout.steps.enabled.create_event_registrations'))->toBeNull()
+            ->and(config('checkout.steps.enabled.issue_event_passes'))->toBeNull()
+            ->and($registry->getOrder())->toContain('create_event_registrations')
+            ->and($registry->getOrder())->toContain('issue_event_passes');
+    });
+
     it('does not register chip listeners when the chip checkout integration is disabled', function (): void {
         config()->set('checkout.integrations.chip.enabled', false);
 

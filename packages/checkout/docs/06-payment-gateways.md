@@ -14,18 +14,24 @@ The checkout package supports multiple payment gateways through the `PaymentGate
 | `cashier-chip` | `aiarmada/cashier-chip` | CHIP billing bridge that uses billable `charge()` flows first and falls back to guest CHIP purchases |
 | `chip` | `aiarmada/chip` | Direct Chip integration |
 
-## Gateway Priority
+## Gateway Resolution
 
-Gateways are resolved by priority:
+At runtime the resolver uses one documented order: an explicitly requested
+gateway, `payment.default_gateway` when that processor is registered,
+`payment.gateway_priority`, then the first registered processor. The service
+provider reads both config values directly, so config is the precedence source.
 
 ```php
 // config/checkout.php
 'payment' => [
+    'default_gateway' => 'chip',
     'gateway_priority' => ['cashier', 'cashier-chip', 'chip'],
 ],
 ```
 
-The first available gateway is used unless a specific gateway is requested.
+The first available gateway in that order is used unless a specific gateway is
+requested. The payment attempt is incremented atomically and cannot exceed
+`payment.retry_limit` before a new provider purchase is created.
 
 ## Cashier CHIP Bridge Behavior
 
@@ -91,7 +97,17 @@ $request = new PaymentRequest(
                                └─────────┘
 ```
 
-In redirect flows, checkout stores a callback token in `payment_data.callback_token` before creating the payment and preserves it across retries. The callback routes use that token to reject forged or stale gateway returns.
+In redirect flows, checkout stores a callback token and
+`payment_data.callback_token_created_at` before creating the payment and
+preserves it across retries. The callback routes use that token to reject
+forged or expired gateway returns, rate-limit attempts per session, and consume
+the token after a successful completion. A completed session may safely replay
+the same return URL without re-running payment confirmation.
+
+Provider references sent to checkout are namespaced as `chk_<session-uuid>`.
+The selected gateway is also recorded in `payment_data.gateway` and the
+`checkout_gateway` metadata field; webhook entry points require that gateway
+match before acting.
 
 ## Payment Request
 
@@ -108,9 +124,9 @@ $request = new PaymentRequest(
     customerEmail: 'customer@example.com',
     customerName: 'John Doe',
     customerPhone: '+60123456789',
-    successUrl: route('checkout.payment.success'),
-    failureUrl: route('checkout.payment.failure'),
-    cancelUrl: route('checkout.payment.cancel'),
+    successUrl: route('checkout.payment.chip.success'),
+    failureUrl: route('checkout.payment.chip.failure'),
+    cancelUrl: route('checkout.payment.chip.cancel'),
     metadata: ['order_id' => 'order_123'],
 );
 ```
@@ -245,13 +261,30 @@ Built-in processors (cashier, cashier-chip, chip) are registered by `RegisterBui
 
 ## Webhook Handling
 
-Each gateway has its own webhook handler. Configure webhooks in your routes:
+Checkout registers one explicit webhook route per gateway:
 
 ```php
-// routes/web.php
-Route::post('/webhooks/chip', ChipWebhookController::class);
-Route::post('/webhooks/stripe', StripeWebhookController::class);
+// config/checkout.php
+'routes' => [
+    'webhook_prefix' => 'webhooks',
+    'webhooks' => [
+        'chip' => [
+            'path' => 'chip',
+            'config' => 'checkout.webhook.chip',
+            'gateways' => ['chip', 'cashier-chip'],
+        ],
+        'stripe' => [
+            'path' => 'stripe',
+            'config' => 'checkout.webhook.stripe',
+            'gateways' => ['cashier'],
+        ],
+    ],
+],
 ```
+
+Set `CHECKOUT_STRIPE_WEBHOOK_SECRET` for Stripe. Checkout does not read a
+secret from Cashier; production boot fails closed when the checkout-owned
+secret is missing.
 
 The checkout package listens for payment completion events:
 
