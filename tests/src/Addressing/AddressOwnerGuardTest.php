@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventLocation;
 use Illuminate\Auth\Access\AuthorizationException;
