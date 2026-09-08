@@ -27,7 +27,6 @@ uses(CashierChipTestCase::class);
  * Mock seam: HTTP client only (`ChipCollectClient`) inside a REAL
  * `ChipCollectService`/`PurchasesApi` with the real array cache.
  */
-
 function adversaryTwoStepCreatedResponse(): array
 {
     return [

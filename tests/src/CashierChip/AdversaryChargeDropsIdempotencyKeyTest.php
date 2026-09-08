@@ -28,7 +28,6 @@ uses(CashierChipTestCase::class);
  * `ChipCollectService`/`PurchasesApi` with the real array cache. The
  * cashier-chip Action under test is unmocked.
  */
-
 function adversaryActionPurchaseResponse(array $overrides = []): array
 {
     return array_replace_recursive([

@@ -22,7 +22,6 @@ use Illuminate\Support\Facades\Cache;
  *
  * Mock seam: HTTP client only (`ChipCollectClient`).
  */
-
 function adversaryKeylessPurchaseResponse(array $overrides = []): array
 {
     return array_replace_recursive([
