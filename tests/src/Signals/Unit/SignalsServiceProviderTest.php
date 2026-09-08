@@ -6,16 +6,7 @@ use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Signals\Console\Commands\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Console\Commands\ProcessSignalAlertsCommand;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
-use AIArmada\Signals\Listeners\RecordAffiliateAttributedSignal;
-use AIArmada\Signals\Listeners\RecordAffiliateConversionRecordedSignal;
-use AIArmada\Signals\Listeners\RecordCartClearedSignal;
-use AIArmada\Signals\Listeners\RecordCartItemAddedSignal;
-use AIArmada\Signals\Listeners\RecordCartItemRemovedSignal;
-use AIArmada\Signals\Listeners\RecordCheckoutCompletedSignal;
-use AIArmada\Signals\Listeners\RecordCheckoutStartedSignal;
-use AIArmada\Signals\Listeners\RecordOrderPaidSignal;
-use AIArmada\Signals\Listeners\RecordVoucherAppliedSignal;
-use AIArmada\Signals\Listeners\RecordVoucherRemovedSignal;
+use AIArmada\Signals\Listeners\RecordCommerceSignal;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Services\CommerceSignalsRecorder;
 use AIArmada\Signals\Services\Geocoders\NominatimGeocoder;
@@ -27,6 +18,7 @@ use AIArmada\Signals\Services\SignalsDashboardService;
 use AIArmada\Signals\Services\TrackedPropertyResolver;
 use AIArmada\Signals\SignalsServiceProvider;
 use AIArmada\Signals\Support\CommerceSignalsIntegrationRegistrar;
+use AIArmada\Signals\Support\SignalEventMap;
 use Illuminate\Support\Facades\Event;
 use Mockery\MockInterface;
 use Spatie\LaravelPackageTools\Package;
@@ -87,14 +79,45 @@ it('registers optional checkout and order listeners', function (): void {
 
     app(CommerceSignalsIntegrationRegistrar::class)->boot();
 
-    Event::assertListening('AIArmada\\Affiliates\\Events\\AffiliateAttributed', RecordAffiliateAttributedSignal::class);
-    Event::assertListening('AIArmada\\Affiliates\\Events\\AffiliateConversionRecorded', RecordAffiliateConversionRecordedSignal::class);
-    Event::assertListening('AIArmada\\Cart\\Events\\ItemAdded', RecordCartItemAddedSignal::class);
-    Event::assertListening('AIArmada\\Cart\\Events\\ItemRemoved', RecordCartItemRemovedSignal::class);
-    Event::assertListening('AIArmada\\Cart\\Events\\CartCleared', RecordCartClearedSignal::class);
-    Event::assertListening('AIArmada\\Checkout\\Events\\CheckoutStarted', RecordCheckoutStartedSignal::class);
-    Event::assertListening('AIArmada\\Checkout\\Events\\CheckoutCompleted', RecordCheckoutCompletedSignal::class);
-    Event::assertListening('AIArmada\\Orders\\Events\\OrderPaid', RecordOrderPaidSignal::class);
-    Event::assertListening('AIArmada\\Vouchers\\Events\\VoucherApplied', RecordVoucherAppliedSignal::class);
-    Event::assertListening('AIArmada\\Vouchers\\Events\\VoucherRemoved', RecordVoucherRemovedSignal::class);
+    Event::assertListening('AIArmada\\Affiliates\\Events\\AffiliateAttributed', RecordCommerceSignal::class);
+    Event::assertListening('AIArmada\\Affiliates\\Events\\AffiliateConversionRecorded', RecordCommerceSignal::class);
+    Event::assertListening('AIArmada\\Cart\\Events\\ItemAdded', RecordCommerceSignal::class);
+    Event::assertListening('AIArmada\\Cart\\Events\\ItemRemoved', RecordCommerceSignal::class);
+    Event::assertListening('AIArmada\\Cart\\Events\\CartCleared', RecordCommerceSignal::class);
+    Event::assertListening('AIArmada\\Checkout\\Events\\CheckoutStarted', RecordCommerceSignal::class);
+    Event::assertListening('AIArmada\\Checkout\\Events\\CheckoutCompleted', RecordCommerceSignal::class);
+    Event::assertListening('AIArmada\\Orders\\Events\\OrderPaid', RecordCommerceSignal::class);
+    Event::assertListening('AIArmada\\Vouchers\\Events\\VoucherApplied', RecordCommerceSignal::class);
+    Event::assertListening('AIArmada\\Vouchers\\Events\\VoucherRemoved', RecordCommerceSignal::class);
+});
+
+it('keeps one explicit mapping for each commerce signal listener source', function (): void {
+    $eventClasses = [
+        'AIArmada\\Affiliates\\Events\\AffiliateAttributed',
+        'AIArmada\\Affiliates\\Events\\AffiliateConversionRecorded',
+        'AIArmada\\AffiliateNetwork\\Events\\OfferCreated',
+        'AIArmada\\AffiliateNetwork\\Events\\OfferUpdated',
+        'AIArmada\\AffiliateNetwork\\Events\\ApplicationSubmitted',
+        'AIArmada\\AffiliateNetwork\\Events\\ApplicationApproved',
+        'AIArmada\\AffiliateNetwork\\Events\\NetworkConversionRecorded',
+        'AIArmada\\Cart\\Events\\ItemAdded',
+        'AIArmada\\Cart\\Events\\ItemRemoved',
+        'AIArmada\\Cart\\Events\\CartCleared',
+        'AIArmada\\FilamentCart\\Events\\CartSnapshotSynced',
+        'AIArmada\\FilamentCart\\Events\\CartCheckoutStarted',
+        'AIArmada\\FilamentCart\\Events\\CartAbandoned',
+        'AIArmada\\FilamentCart\\Events\\HighValueCartDetected',
+        'AIArmada\\Checkout\\Events\\CheckoutStarted',
+        'AIArmada\\Checkout\\Events\\CheckoutCompleted',
+        'AIArmada\\Orders\\Events\\OrderPaid',
+        'AIArmada\\Orders\\Events\\OrderRefunded',
+        'AIArmada\\Vouchers\\Events\\VoucherApplied',
+        'AIArmada\\Vouchers\\Events\\VoucherRemoved',
+    ];
+
+    $mappings = array_map(static fn (string $eventClass): ?array => SignalEventMap::for($eventClass), $eventClasses);
+
+    expect($mappings)->toHaveCount(20)
+        ->and($mappings)->each->not->toBeNull()
+        ->and(array_unique(array_map(static fn (array $mapping): string => $mapping['method'], $mappings)))->toHaveCount(20);
 });

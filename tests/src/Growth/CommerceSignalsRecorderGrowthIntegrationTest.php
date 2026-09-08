@@ -13,6 +13,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Services\CommerceSignalsRecorder;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -196,4 +197,19 @@ it('uses the tracked property owner for growth enrichment when only a resolver o
         ->and(data_get($orderPaid?->properties, 'experiment_contexts.0.experiment_id'))->toBe((string) $experiment->getKey())
         ->and(data_get($orderPaid?->properties, 'experiment_contexts.0.variant_id'))->toBe((string) $variant->getKey())
         ->and(data_get($orderPaid?->properties, 'order_id'))->toBe((string) $order->getKey());
+});
+
+it('throws when a trusted checkout source is missing its required revenue field', function (): void {
+    $owner = growthRecorderOwner();
+    growthRecorderTrackedProperty($owner);
+
+    $checkoutSession = new CheckoutSession;
+    $checkoutSession->setRawAttributes([
+        'id' => (string) Str::uuid(),
+        'created_at' => CarbonImmutable::now(),
+    ]);
+    $checkoutSession->setRelation('owner', $owner);
+
+    expect(fn (): ?object => app(CommerceSignalsRecorder::class)->recordCheckoutStarted($checkoutSession))
+        ->toThrow(InvalidArgumentException::class, 'grand_total');
 });

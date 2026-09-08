@@ -310,18 +310,16 @@ describe('ResolveCustomerStep', function (): void {
             ->and($resolved?->paymentCustomer?->getShippingCountry())->toBe('AU');
     });
 
-    it('prefers the customer email and phone columns when contact methods are stale', function (): void {
+    it('resolves email and phone from contacting rows now that native columns are removed', function (): void {
         $customer = OwnerContext::withOwner(null, function (): Customer {
             $customer = Customer::query()->create([
                 'first_name' => 'Payment',
-                'last_name' => 'Fallback',
-                'email' => 'fresh@example.com',
-                'phone' => '+60123456789',
+                'last_name' => 'Contacting',
                 'status' => 'active',
                 'is_guest' => false,
             ]);
 
-            $customer->addContactMethod(ContactMethodData::email('stale@example.com'));
+            $customer->addContactMethod(ContactMethodData::email('contacting@example.com'));
             $customer->addContactMethod(ContactMethodData::phone('+60987654321', countryCode: 'MY'));
 
             return $customer;
@@ -339,7 +337,7 @@ describe('ResolveCustomerStep', function (): void {
         ));
 
         expect($resolved)->not->toBeNull()
-            ->and($resolved?->paymentCustomer?->getCustomerEmail())->toBe('fresh@example.com')
-            ->and($resolved?->paymentCustomer?->getCustomerPhone())->toBe('+60123456789');
+            ->and($resolved?->paymentCustomer?->getCustomerEmail())->toBe('contacting@example.com')
+            ->and($resolved?->paymentCustomer?->getCustomerPhone())->toBe('+60987654321');
     });
 });

@@ -8,6 +8,7 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
+use AIArmada\CashierChip\Support\IdempotencyKey;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\RateLimiter;
@@ -56,6 +57,7 @@ final class ChargeChipCustomer
 
         $builder = Cashier::chip()->purchase()
             ->currency($currency);
+        $builder = IdempotencyKey::apply($builder, $options);
 
         $productName = $options['product_name'] ?? 'One-time charge';
         $builder->addProductCents($productName, $amount);

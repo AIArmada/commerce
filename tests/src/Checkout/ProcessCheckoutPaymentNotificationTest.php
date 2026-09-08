@@ -203,16 +203,19 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
         );
     });
 
-    it('skips callbacks for sessions in payment failed state', function (): void {
+    it('processes success callbacks for sessions in payment failed state', function (): void {
         $session = CheckoutSession::create([
-            'cart_id' => 'test-notification-payment-failed-skip',
+            'cart_id' => 'test-notification-payment-failed-process',
             'status' => Pending::class,
             'selected_payment_gateway' => 'chip',
         ]);
         $session->transitionStatus(PaymentFailed::class);
 
         $checkoutService = mock(CheckoutServiceInterface::class);
-        $checkoutService->shouldReceive('handlePaymentCallback')->never();
+        $checkoutService->shouldReceive('handlePaymentCallback')
+            ->once()
+            ->withArgs(fn (CheckoutSession $s, string $type): bool => $s->id === $session->id && $type === 'success')
+            ->andReturn(CheckoutResult::success($session));
         app()->instance(CheckoutServiceInterface::class, $checkoutService);
 
         $action = app(ProcessCheckoutPaymentNotification::class);

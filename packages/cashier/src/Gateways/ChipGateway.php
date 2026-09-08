@@ -25,6 +25,7 @@ use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\PaymentData;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipApiException;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
@@ -215,6 +216,10 @@ class ChipGateway extends AbstractGateway
         try {
             $purchase = $this->client()->getPurchase($paymentId);
 
+            if (! $this->purchaseBelongsToCurrentBillable($purchase)) {
+                return null;
+            }
+
             return new ChipPayment(new Payment($purchase));
         } catch (Throwable $e) {
             if ($this->isNotFoundException($e)) {
@@ -239,6 +244,10 @@ class ChipGateway extends AbstractGateway
         try {
             $purchase = $this->client()->getPurchase($invoiceId);
 
+            if (! $this->purchaseBelongsToCurrentBillable($purchase)) {
+                return null;
+            }
+
             return new Chip\ChipInvoice($purchase);
         } catch (Throwable $e) {
             if ($this->isNotFoundException($e)) {
@@ -251,6 +260,21 @@ class ChipGateway extends AbstractGateway
             ]);
 
             throw GatewayRetrievalException::create('chip', 'invoice', $invoiceId, $e);
+        }
+    }
+
+    private function purchaseBelongsToCurrentBillable(PurchaseData $purchase): bool
+    {
+        $clientId = $purchase->getClientId();
+
+        if ($clientId === null || mb_trim($clientId) === '') {
+            return false;
+        }
+
+        try {
+            return CashierChip::findBillable($clientId) instanceof BillableContract;
+        } catch (Throwable) {
+            return false;
         }
     }
 

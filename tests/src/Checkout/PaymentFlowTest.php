@@ -534,6 +534,7 @@ describe('CreateOrderStep', function (): void {
                 'status' => PaymentStatus::Completed->value,
                 'transaction_id' => 'tx-payment-failed',
                 'gateway' => 'chip',
+                'amount' => 1000,
                 'currency' => 'USD',
             ],
             'selected_payment_gateway' => 'chip',
@@ -584,6 +585,7 @@ describe('CreateOrderStep', function (): void {
                 'status' => PaymentStatus::Completed->value,
                 'transaction_id' => 'tx-retry-safe',
                 'gateway' => 'chip',
+                'amount' => 1000,
                 'currency' => 'USD',
             ],
             'selected_payment_gateway' => 'chip',
@@ -640,6 +642,7 @@ describe('CreateOrderStep', function (): void {
                 'status' => PaymentStatus::Completed->value,
                 'transaction_id' => 'tx-payment-failed-no-inv',
                 'gateway' => 'chip',
+                'amount' => 1000,
                 'currency' => 'USD',
             ],
             'selected_payment_gateway' => 'chip',
@@ -696,6 +699,7 @@ describe('CreateOrderStep', function (): void {
             'payment_data' => [
                 'status' => PaymentStatus::Completed->value,
                 'transaction_id' => 'txn_paid_inventory_123',
+                'amount' => 1000,
                 'currency' => 'USD',
             ],
             'subtotal' => 1000,
@@ -1474,7 +1478,7 @@ describe('CheckoutService', function (): void {
             ->and($downstreamTracker->executed)->toBeFalse();
     });
 
-    it('continues with inventory before customer persistence after successful payment callbacks', function (): void {
+    it('refuses status-only callbacks without amount evidence', function (): void {
         $tracker = new class
         {
             /** @var array<int, string> */
@@ -1600,10 +1604,9 @@ describe('CheckoutService', function (): void {
 
         $result = $service->handlePaymentCallback($session, 'success', ['status' => 'paid']);
 
-        expect($result->success)->toBeTrue()
-            ->and($tracker->steps)->toBe(['reserve_inventory', 'persist_customer', 'create_order'])
-            ->and($session->fresh()->status instanceof Completed)->toBeTrue()
-            ->and(data_get($session->fresh()->payment_data, 'currency'))->toBeNull();
+        expect($result->success)->toBeFalse()
+            ->and($session->fresh()->status instanceof Completed)->toBeFalse()
+            ->and($tracker->steps)->toBe([]);
     });
 
     it('dispatches CheckoutCompleted exactly once for a completed checkout', function (): void {

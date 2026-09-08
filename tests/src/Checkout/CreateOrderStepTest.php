@@ -276,8 +276,9 @@ it('blocks payment confirmation when the payment currency is missing', function 
     Event::assertNotDispatched(OrderProcessingStarted::class);
 });
 
-it('uses the checkout total when the payment amount is missing', function (): void {
+it('fails closed when the payment amount is missing', function (): void {
     config()->set('checkout.create_order.confirm_payment', true);
+    Event::fake([OrderPaid::class, OrderProcessingStarted::class]);
 
     $order = new Order;
     $order->forceFill([
@@ -287,14 +288,17 @@ it('uses the checkout total when the payment amount is missing', function (): vo
 
     $orderService = mock(OrderServiceInterface::class);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')
-        ->once()
-        ->withArgs(fn (...$arguments): bool => ($arguments[3] ?? null) === 1000)
-        ->andReturn($order);
+    $orderService->shouldReceive('confirmPayment')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession([]);
     $result = app(CreateOrderStep::class)->handle($session);
+    $freshSession = $session->fresh();
 
-    expect($result->isSuccessful())->toBeTrue();
+    expect($result->isSuccessful())->toBeFalse()
+        ->and(data_get($freshSession?->payment_data, 'amount_reconciliation.reason'))->toBe('amount_missing')
+        ->and($freshSession?->error_message)->toBe('Payment amount does not match the checkout total.');
+
+    Event::assertNotDispatched(OrderPaid::class);
+    Event::assertNotDispatched(OrderProcessingStarted::class);
 });

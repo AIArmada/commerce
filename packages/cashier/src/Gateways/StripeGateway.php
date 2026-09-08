@@ -220,6 +220,10 @@ class StripeGateway extends AbstractGateway
         try {
             $paymentIntent = $this->client()->paymentIntents->retrieve($paymentId);
 
+            if (! $this->stripeCustomerBelongsToCurrentOwner($paymentIntent->customer ?? null)) {
+                return null;
+            }
+
             return new StripePayment(new Payment($paymentIntent));
         } catch (InvalidRequestException $e) {
             if ($e->getHttpStatus() === 404) {
@@ -240,6 +244,10 @@ class StripeGateway extends AbstractGateway
         try {
             $invoice = $this->client()->invoices->retrieve($invoiceId);
 
+            if (! $this->stripeCustomerBelongsToCurrentOwner($invoice->customer ?? null)) {
+                return null;
+            }
+
             return new StripeInvoice($invoice);
         } catch (InvalidRequestException $e) {
             if ($e->getHttpStatus() === 404) {
@@ -250,6 +258,17 @@ class StripeGateway extends AbstractGateway
         } catch (Throwable $e) {
             throw GatewayRetrievalException::create('stripe', 'invoice', $invoiceId, $e);
         }
+    }
+
+    private function stripeCustomerBelongsToCurrentOwner(mixed $customer): bool
+    {
+        $customerId = is_string($customer) ? $customer : data_get($customer, 'id');
+
+        if (! is_string($customerId) || mb_trim($customerId) === '') {
+            return false;
+        }
+
+        return $this->resolveBillableByGatewayId(mb_trim($customerId)) instanceof BillableContract;
     }
 
     /**

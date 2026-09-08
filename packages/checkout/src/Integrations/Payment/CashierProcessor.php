@@ -69,6 +69,9 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
     {
         try {
             $paymentId = $payload['id'] ?? $payload['payment_id'] ?? null;
+            $paymentId = is_string($paymentId) && mb_trim($paymentId) !== ''
+                ? mb_trim($paymentId)
+                : null;
             $status = $payload['status'] ?? 'unknown';
             $status = is_string($status) ? mb_strtolower(mb_trim($status)) : 'unknown';
 
@@ -82,11 +85,23 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
                 default => PaymentStatus::Processing,
             };
 
+            $amount = $this->minorAmount($payload['amount'] ?? data_get($payload, 'data.object.amount'));
+            $currency = $this->currency($payload['currency'] ?? data_get($payload, 'data.object.currency'));
+
+            if ($paymentStatus === PaymentStatus::Completed && ($amount === null || $currency === null)) {
+                return PaymentResult::failed(
+                    'Cashier callback is missing integer amount or currency evidence.',
+                    paymentId: $paymentId,
+                );
+            }
+
             return new PaymentResult(
                 status: $paymentStatus,
                 paymentId: $paymentId,
-                transactionId: $payload['transaction_id'] ?? null,
-                message: $payload['message'] ?? null,
+                transactionId: is_string($payload['transaction_id'] ?? null) ? $payload['transaction_id'] : null,
+                message: is_string($payload['message'] ?? null) ? $payload['message'] : null,
+                amount: $amount,
+                currency: $currency,
                 gatewayResponse: $payload,
                 provider: is_string($payload['provider'] ?? null) ? $payload['provider'] : null,
             );
@@ -266,6 +281,34 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
     private function resolveBillable(CheckoutSession $session): ?BillableContract
     {
         return $session->billable instanceof BillableContract ? $session->billable : null;
+    }
+
+    private function minorAmount(mixed $amount): ?int
+    {
+        if (is_int($amount)) {
+            return $amount >= 0 ? $amount : null;
+        }
+
+        if (! is_string($amount) || ! preg_match('/^\d+$/', mb_trim($amount))) {
+            return null;
+        }
+
+        $validated = filter_var($amount, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 0],
+        ]);
+
+        return is_int($validated) ? $validated : null;
+    }
+
+    private function currency(mixed $currency): ?string
+    {
+        if (! is_string($currency)) {
+            return null;
+        }
+
+        $currency = mb_strtoupper(mb_trim($currency));
+
+        return preg_match('/^[A-Z]{3}$/', $currency) === 1 ? $currency : null;
     }
 
     /**

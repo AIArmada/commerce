@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Services\SignalEventConditionMatcher;
 use AIArmada\Signals\Services\SignalEventConditionQueryService;
 use Carbon\CarbonImmutable;
 
@@ -75,8 +76,21 @@ it('supports typed property operators for numeric and string comparisons', funct
         ],
     );
 
+    $matchingEvent = $query->firstOrFail();
+    $nonMatchingEvent = SignalEvent::query()
+        ->where('event_name', 'order.paid')
+        ->where($matchingEvent->getKeyName(), '!=', $matchingEvent->getKey())
+        ->firstOrFail();
+    $matcher = app(SignalEventConditionMatcher::class);
+    $conditions = [
+        ['field' => 'properties.checkout.gateway', 'operator' => 'not_equals', 'value' => 'stripe'],
+        ['field' => 'properties.checkout.attempt_count', 'operator' => 'greater_than_or_equal', 'value' => '2'],
+    ];
+
     expect($query->count())->toBe(1)
-        ->and($query->first()?->properties['checkout']['gateway'] ?? null)->toBe('chip');
+        ->and($matchingEvent->properties['checkout']['gateway'] ?? null)->toBe('chip')
+        ->and($matcher->matches($matchingEvent, $conditions))->toBeTrue()
+        ->and($matcher->matches($nonMatchingEvent, $conditions))->toBeFalse();
 });
 
 it('fails closed for numeric property comparisons when stored property types are not numeric', function (): void {

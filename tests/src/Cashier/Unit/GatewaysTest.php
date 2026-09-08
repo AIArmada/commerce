@@ -197,7 +197,7 @@ describe('Gateways', function (): void {
             $directory = Mockery::mock(ChipCustomerDirectoryInterface::class);
             $directory->shouldReceive('findByChipCustomerId')
                 ->once()
-                ->with('cli_missing')
+                ->with('cli_missing', null)
                 ->andReturn(null);
 
             $this->app->instance(ChipCustomerDirectoryInterface::class, $directory);

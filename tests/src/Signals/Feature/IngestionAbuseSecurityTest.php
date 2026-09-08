@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 
 uses(SignalsTestCase::class);
@@ -120,6 +121,31 @@ it('rate limits browser ingestion by property key and client address', function 
 
     $this->postJson('/api/signals/collect/browser-event', $payload)->assertAccepted();
     $this->postJson('/api/signals/collect/browser-event', $payload)->assertStatus(429);
+});
+
+it('applies the public abuse validator to identify and geolocation payloads', function (): void {
+    createSecureSignalsProperty($this, 'public-abuse-key');
+
+    $this->postJson('/api/signals/collect/identify', [
+        'write_key' => 'public-abuse-key',
+        'anonymous_id' => 'anonymous-abuse-id',
+        'revenue_minor' => 100,
+    ])->assertUnprocessable();
+
+    $this->postJson('/api/signals/collect/geo', [
+        'write_key' => 'public-abuse-key',
+        'session_identifier' => 'session-abuse-id',
+        'latitude' => 3.14,
+        'longitude' => 101.68,
+        'revenue_minor' => 100,
+    ])->assertUnprocessable();
+});
+
+it('puts all public collect endpoints behind the named throttle', function (): void {
+    foreach (['identify', 'browser-event', 'pageview', 'geo'] as $endpoint) {
+        expect(Route::getRoutes()->getByName('signals.collect.' . $endpoint)?->gatherMiddleware())
+            ->toContain('throttle:signals-collect');
+    }
 });
 
 it('requires a valid trusted signature and rejects replayed requests', function (): void {

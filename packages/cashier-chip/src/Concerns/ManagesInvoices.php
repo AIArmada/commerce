@@ -67,6 +67,17 @@ trait ManagesInvoices // @phpstan-ignore trait.unused
                 $purchase = $purchaseData;
             }
 
+            $purchaseClientId = $purchase->getClientId();
+            $billableChipId = $this->chipId();
+
+            if (! is_string($purchaseClientId)
+                || mb_trim($purchaseClientId) === ''
+                || ! is_string($billableChipId)
+                || mb_trim($billableChipId) === ''
+                || $purchaseClientId !== $billableChipId) {
+                return null;
+            }
+
             return new Invoice($this, $purchase);
         } catch (Throwable) {
             return null;

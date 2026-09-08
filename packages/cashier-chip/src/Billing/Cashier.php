@@ -108,7 +108,24 @@ final class Cashier
             return null;
         }
 
-        $link = static::chipCustomerDirectory()->findByChipCustomerId($chipId);
+        $owner = null;
+        if ((bool) config('cashier-chip.features.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+
+            if ($owner === null) {
+                return null;
+            }
+        }
+
+        return static::resolveBillable($chipId, $owner);
+    }
+
+    /**
+     * @return (Model&BillableContract)|null
+     */
+    private static function resolveBillable(string $chipId, ?Model $owner = null): ?Model
+    {
+        $link = static::chipCustomerDirectory()->findByChipCustomerId($chipId, $owner);
         $subject = $link?->subject;
 
         /** @var (Model&BillableContract)|null $billable */
@@ -146,18 +163,10 @@ final class Cashier
         $shouldValidateBillableOwner = (bool) config('cashier-chip.features.owner.validate_billable_owner', true);
 
         if (! $shouldValidateBillableOwner) {
-            return static::findBillable($chipId);
+            return static::resolveBillable($chipId);
         }
 
-        $link = static::chipCustomerDirectory()->findByChipCustomerId($chipId, $owner);
-        $subject = $link?->subject;
-
-        /** @var (Model&BillableContract)|null $billable */
-        $billable = $subject instanceof Model && static::isBillableModel($subject)
-            ? $subject
-            : null;
-
-        return $billable;
+        return static::resolveBillable($chipId, $owner);
     }
 
     private static function isBillableModel(Model $subject): bool

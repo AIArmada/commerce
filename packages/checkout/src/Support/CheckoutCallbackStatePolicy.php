@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Support;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Checkout\States\Completed;
+use AIArmada\Checkout\States\PaymentFailed;
 use AIArmada\Checkout\States\PaymentProcessing;
 use AIArmada\Checkout\States\Pending;
 use AIArmada\Checkout\States\Processing;
@@ -17,7 +18,8 @@ final readonly class CheckoutCallbackStatePolicy
     {
         $isInPaymentState = $session->status instanceof AwaitingPayment
             || $session->status instanceof PaymentProcessing
-            || $session->status instanceof Processing;
+            || $session->status instanceof Processing
+            || $session->status instanceof PaymentFailed;
 
         if ($callbackType === 'success') {
             return $isInPaymentState;

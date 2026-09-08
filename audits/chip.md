@@ -31,15 +31,26 @@ the explicitly held crash-recovery window below.
 
 ## Residual notes
 
-- **Crash recovery HELD (not dropped):** `PurchasesApi` posts the
-  remote purchase before writing the idempotency cache — process death
-  between the two lines re-posts on retry. Requires durable provider
-  idempotency or a database outbox/ledger. This is the top-model
-  adversary's first target.
-- Checkout-side amount assertions and event/status precedence, plus
-  checkout/docs/customer subscribers for the new event contract, are
-  logged dependencies for the checkout track — no checkout files were
-  touched here.
+- **Crash recovery CLOSED (2026-09-08, was held):** durable
+  `PurchaseIdempotencyLedger` (`chip/src/Support/
+  PurchaseIdempotencyLedger.php:45`) reserves before the remote post
+  and replays after it. Precise semantics (independent re-verification):
+  crash between post and record leaves a pending reservation and the
+  retry fails closed demanding reconciliation — no double-charge, but
+  not transparent replay either. Mutation legs carry deterministic
+  operation keys with locking + cached responses (`PurchasesApi.php:238`);
+  explicit-blank keys throw at every entrypoint including raw `create()`.
+  Null-cache construction bypasses mutation protection, but the
+  container always injects a real cache — accepted residual, not a live
+  path. All 10 adversarial proofs green; see `code-fixes-record.md`.
+- Checkout-side amount assertions and event/status precedence (logged
+  as dependencies) were implemented in the same pass —
+  `CashierProcessor` fail-closed evidence, `CreateOrderStep` blocking
+  reconciliation, paid-wins callback policy; see `checkout.md`
+  post-track note. Token TTL (A-7) and CHIP-cluster deletion (A-5)
+  remain checkout-track work.
+- Checkout/docs/customer subscribers for the new event contract remain
+  a logged dependency — no docs/customer files were touched here.
 
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.

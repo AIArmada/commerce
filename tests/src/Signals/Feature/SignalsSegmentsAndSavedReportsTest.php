@@ -130,7 +130,7 @@ it('blocks owner reassignment after a signal record has been created', function 
     $property->assignOwner($ownerB);
 
     expect(fn (): bool => $property->save())
-        ->toThrow(InvalidArgumentException::class, 'Cross-tenant write blocked: owner columns cannot be reassigned after creation.');
+        ->toThrow(InvalidArgumentException::class, 'Owner columns cannot be reassigned after creation.');
 });
 
 it('blocks saved reports from referencing another owners property or segment', function (): void {

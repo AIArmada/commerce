@@ -179,3 +179,27 @@ No table/column/index/constraint changes. `finalization_phase`/`finalization_err
 
 ## Final Recommended Architecture
 Checkout stays a headless orchestrator: registry + executor with compensations, single-gateway processors resolved from config, one amount-assertion service gating order creation/confirmation, URL-routed webhooks with package-owned secrets, expiring single-use callback tokens, and namespaced references. Domain math stays in `cart`/`pricing`/`shipping`/`tax`; charges stay in `cashier`/`cashier-chip`/`chip`; persistence stays in `orders`/`inventory`. No new packages, no Filament adapter.
+
+## Post-track: money-path adversary fixes (2026-09-08, package still Open)
+
+- Amount evidence fail-closed: `CashierProcessor` rejects Completed
+  callbacks missing integer amount/currency
+  (`Integrations/Payment/CashierProcessor.php:88`);
+  `CheckoutService` demotes evidence-less verified results to Failed
+  with warning log (`Services/CheckoutService.php:385`);
+  `CreateOrderStep` blocks confirmation on amount/currency mismatch
+  (returns false after recording reconciliation;
+  `Steps/CreateOrderStep.php:318`).
+- Paid-wins reconciliation: success callbacks accepted from
+  `PaymentFailed`; `Completed` idempotent; failure-after-paid absorbed
+  (`Support/CheckoutCallbackStatePolicy.php:19`).
+- Stale tests updated to the intended behavior (fail-closed amount,
+  paid-wins, owner-aware directory mock): `CreateOrderStepTest`,
+  `PaymentFlowTest` fixtures gained amount evidence,
+  `ProcessCheckoutPaymentNotificationTest` paid-from-failed case.
+- Still open (untouched): A-3 secret coupling, A-4 sniffing, A-5 CHIP
+  cluster deletion, A-6 precedence, A-7 token TTL, C-1/C-2/C-3.
+- Re-verification hardening (2026-09-08): evidence gate moved into the
+  completion guard itself (no evidence-less path completes, including
+  prevalidated results); status-only callbacks refused with regression
+  coverage; explicit-blank idempotency keys throw at every entrypoint.

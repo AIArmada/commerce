@@ -20,7 +20,14 @@ this repo. Copy them in; do not paraphrase away the teeth.
 No union-type overloads kept, no `class_alias`, no deprecated stubs, no
 old+new side by side, no "keep just in case." Delete the old shape, update
 every internal consumer in the same commit. A consumer that cannot be
-updated is a blocking finding — report it, never shim it.
+updated is a blocking finding — report it, never shim it. Hidden
+legacies count too: a database column (or table) that exists only for
+backward compatibility — renamed-but-kept columns, alias pairs where
+one shadows the other, write-only leftovers — is removed like any other
+dead shape. Verify zero readers with your own repo-wide `rg` first
+(excluding docs/audits), then drop the column (dev-only: edit the
+shipped create migration or add an alter migration per §5), delete its
+accessors/fillable entries, and migrate its callers in the same pass.
 
 ## 3. Smart test execution (read this twice)
 
@@ -61,11 +68,13 @@ by habit:
   migration step individually guarded and re-runnable.
 - Migrations are development-only: no production database exists, and
   dev databases are delete-and-rerun (see `migration-record.md`
-  deployment gates). New files by default; editing shipped migrations
-  is allowed — outcome-identical edits apply cleanly anywhere, anything
-  else takes the delete-and-rerun path (drop the dev DB and re-migrate;
-  never hand-patch a dev DB into shape). Record shipped edits in
-  `migration-record.md` as deviations. No backfills.
+  deployment gates). Both editing shipped migration files and adding
+  new migration files (including for new tables) are allowed when the
+  audit calls for them. Outcome-identical edits apply cleanly anywhere;
+  anything else takes the delete-and-rerun path (drop the dev DB and
+  re-migrate; never hand-patch a dev DB into shape). Record shipped
+  edits and new-table migrations in `migration-record.md` as
+  deviations. No backfills.
 - No DB FK constraints/cascades. PHP 8.4. No soft deletes. Money is
   integer minor units.
 - Tenant writes via `OwnerWriteGuard` / `ResolveOwnedModelOrFailAction` /
@@ -77,3 +86,17 @@ Per item: VERDICT (implemented / corrected / dropped) with `file:line`
 evidence from your own verification, files changed, tests added + exact
 pass output. End with an **"Audit deviations"** section for everywhere the
 input was wrong — that section is the most valuable part of the output.
+
+## 7. Model authorization (code-write discipline)
+
+- Writing code — source, migrations, tests, config, docs — is allowed
+  ONLY for streams the prompt explicitly marks implementation-authorized.
+  That marking is reserved for the approved implementation model
+  (currently ChatGPT 5.6 Luna) and must name it; a bare "implement"
+  without the designation authorizes nothing.
+- Any stream without the marking is read-only: verify, review, report,
+  and new proof-test files only. If the task needs a code change, log
+  it as a dependency for an authorized stream — do not implement it.
+- Main-agent integration edits (stale-test updates, audit conversions,
+  record-keeping) follow the same rule: they are code writes and
+  require the designation.

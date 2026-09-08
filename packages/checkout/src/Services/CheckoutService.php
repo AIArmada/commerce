@@ -352,6 +352,7 @@ final class CheckoutService implements CheckoutServiceInterface
     private function verifyAndCompletePayment(CheckoutSession $session, array $payload): CheckoutResult
     {
         $paymentVerified = false;
+        $hasPaymentEvidence = false;
         $paymentResult = null;
 
         if (! empty($payload) && $this->paymentResolver !== null) {
@@ -384,26 +385,47 @@ final class CheckoutService implements CheckoutServiceInterface
 
         if ($paymentResult !== null) {
             $paymentVerified = $paymentResult->status === PaymentStatus::Completed;
+            $hasPaymentEvidence = $this->hasPaymentEvidence($paymentResult);
+            $verificationStatus = $paymentVerified && ! $hasPaymentEvidence
+                ? PaymentStatus::Failed
+                : $paymentResult->status;
+
+            if ($paymentVerified && ! $hasPaymentEvidence) {
+                Log::warning('Checkout payment verification failed because gateway evidence was incomplete', [
+                    'session_id' => $session->id,
+                    'payment_id' => $paymentResult->paymentId,
+                    'amount_present' => $paymentResult->amount !== null,
+                    'currency_present' => $paymentResult->currency !== null,
+                ]);
+            }
+
+            $paymentData = array_merge($session->payment_data ?? [], [
+                'status' => $verificationStatus->value,
+                'verification_status' => $verificationStatus->value,
+                'verified_at' => CarbonImmutable::now()->toIso8601String(),
+                'payment_id' => $paymentResult->paymentId ?? $session->payment_id,
+                'transaction_id' => $paymentResult->transactionId ?? ($session->payment_data['transaction_id'] ?? null),
+                'provider' => $paymentResult->provider ?? ($session->payment_data['provider'] ?? null),
+                'gateway_response' => $paymentResult->gatewayResponse !== []
+                    ? $paymentResult->gatewayResponse
+                    : ($session->payment_data['gateway_response'] ?? null),
+            ]);
+
+            if ($paymentResult->amount !== null) {
+                $paymentData['amount'] = $paymentResult->amount;
+            }
+
+            if ($paymentResult->currency !== null) {
+                $paymentData['currency'] = $paymentResult->currency;
+            }
 
             $session->update([
                 'payment_id' => $paymentResult->paymentId ?? $session->payment_id,
-                'payment_data' => array_merge($session->payment_data ?? [], [
-                    'status' => $paymentResult->status->value,
-                    'verification_status' => $paymentResult->status->value,
-                    'verified_at' => CarbonImmutable::now()->toIso8601String(),
-                    'payment_id' => $paymentResult->paymentId ?? $session->payment_id,
-                    'transaction_id' => $paymentResult->transactionId ?? ($session->payment_data['transaction_id'] ?? null),
-                    'provider' => $paymentResult->provider ?? ($session->payment_data['provider'] ?? null),
-                    'amount' => $paymentResult->amount ?? ($session->payment_data['amount'] ?? null),
-                    'currency' => $paymentResult->currency,
-                    'gateway_response' => $paymentResult->gatewayResponse !== []
-                        ? $paymentResult->gatewayResponse
-                        : ($session->payment_data['gateway_response'] ?? null),
-                ]),
+                'payment_data' => $paymentData,
             ]);
         }
 
-        if (! $paymentVerified) {
+        if (! $paymentVerified || ! $hasPaymentEvidence) {
             return CheckoutResult::failed($session, 'Payment could not be verified');
         }
 
@@ -420,6 +442,19 @@ final class CheckoutService implements CheckoutServiceInterface
 
             return $this->continueFromStep($session, 'process_payment');
         });
+    }
+
+    private function hasPaymentEvidence(PaymentResult $paymentResult): bool
+    {
+        if ($paymentResult->amount === null || $paymentResult->amount < 0) {
+            return false;
+        }
+
+        if (! is_string($paymentResult->currency)) {
+            return false;
+        }
+
+        return preg_match('/^[A-Z]{3}$/', mb_strtoupper(mb_trim($paymentResult->currency))) === 1;
     }
 
     private function checkPaymentStatus(

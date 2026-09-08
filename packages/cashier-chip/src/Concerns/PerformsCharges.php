@@ -8,11 +8,10 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
-use AIArmada\Chip\Builders\PurchaseBuilder;
+use AIArmada\CashierChip\Support\IdempotencyKey;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Support\Facades\RateLimiter;
-use InvalidArgumentException;
 use SensitiveParameter;
 use Throwable;
 
@@ -57,7 +56,7 @@ trait PerformsCharges // @phpstan-ignore trait.unused
 
         $builder = Cashier::chip()->purchase()
             ->currency($currency);
-        $builder = $this->applyIdempotencyKey($builder, $options);
+        $builder = IdempotencyKey::apply($builder, $options);
 
         // Add the product
         $productName = $options['product_name'] ?? 'One-time charge';
@@ -155,7 +154,7 @@ trait PerformsCharges // @phpstan-ignore trait.unused
 
         $builder = Cashier::chip()->purchase()
             ->currency($currency);
-        $builder = $this->applyIdempotencyKey($builder, $options);
+        $builder = IdempotencyKey::apply($builder, $options);
 
         // Add the product
         $productName = $options['product_name'] ?? 'Payment';
@@ -220,24 +219,6 @@ trait PerformsCharges // @phpstan-ignore trait.unused
         } catch (Throwable) {
             return null;
         }
-    }
-
-    /**
-     * @param  array<string, mixed>  $options
-     */
-    private function applyIdempotencyKey(PurchaseBuilder $builder, array $options): PurchaseBuilder
-    {
-        $idempotencyKey = $options['idempotency_key'] ?? null;
-
-        if ($idempotencyKey === null) {
-            return $builder;
-        }
-
-        if (! is_string($idempotencyKey) || mb_trim($idempotencyKey) === '') {
-            throw new InvalidArgumentException('The idempotency_key option must be a non-empty string.');
-        }
-
-        return $builder->idempotencyKey($idempotencyKey);
     }
 
     /**

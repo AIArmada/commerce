@@ -44,6 +44,36 @@ it('renders the explicit signals tracker directive into html responses', functio
         ->assertSee('data-session-id="sigs_', false);
 });
 
+it('escapes tracker attribute values', function (): void {
+    config()->set('signals.integrations.browser.auto_inject', false);
+
+    $owner = User::query()->firstOrFail();
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Signals Escaped Attribute Property',
+        'slug' => 'signals-escaped-attribute-property',
+        'write_key' => 'browser-key" onerror="alert(1)',
+        'type' => 'website',
+        'timezone' => 'UTC',
+        'currency' => 'MYR',
+        'is_active' => true,
+    ]);
+    $property->assignOwner($owner)->save();
+
+    $path = '/signals-escaped-attribute-' . Str::lower(Str::random(8));
+
+    $this->app['router']->middleware('web')->get($path, static function () {
+        return response(Blade::render('<!doctype html><html><body>@signalsTracker</body></html>'));
+    });
+
+    $content = $this->get($path)->getContent();
+
+    expect($content)
+        ->toContain('data-write-key="browser-key&quot; onerror=&quot;alert(1)"')
+        ->not->toContain('data-write-key="browser-key" onerror="alert(1)"');
+});
+
 it('uses the authenticated model email when auth tracking is enabled', function (): void {
     config()->set('signals.integrations.browser.auto_inject', false);
     config()->set('signals.features.auth_tracking.enabled', true);

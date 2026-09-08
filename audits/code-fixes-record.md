@@ -163,7 +163,7 @@ reported and taken on trust; code correctness was verified directly.
   them, plus a lean composer require. Keeps the foundation honest going
   forward.
 
-## Identity cluster (implemented, one deferral)
+## Identity cluster (implemented; audits converting to DONE)
 
 - **Persons:** slug/searchable generation hook on saving, transactional
   scoped primary-name demotion, Filament search on `searchable_name`,
@@ -171,9 +171,10 @@ reported and taken on trust; code correctness was verified directly.
   `Person` = shared root, `Customer` = owner-scoped + `person_id`,
   `Organization` = tenant, `EventOrganizer` = event-scoped.
 - **Customers pilot:** `Customer::person()` relation +
-  `LinkCustomerToPerson` action (owner-safe), `HasAddresses` adopted with
-  `legacyAddresses()` retention and legacy bridge. **Dependency decision
-  ratified:** customers hard-requires addressing (unconditional trait use;
+  `LinkCustomerToPerson` action (owner-safe, plus `executeByKey` for
+  ID callers), `HasAddresses` adopted with `legacyAddresses()`
+  retention and legacy bridge. **Dependency decision ratified:**
+  customers hard-requires addressing (unconditional trait use;
   one-directional, no cycle) — recorded as policy for the orders pilot.
   Doctrine now mechanical: addressing CONTEXT declares canonical-addressing
   policy, and the architecture guard test pins addressing `require` +
@@ -193,11 +194,41 @@ reported and taken on trust; code correctness was verified directly.
   package-tools only) + consumer-namespace independence
   (`CommerceSupportArchitectureTest.php:94-136`, 4 passed). Resolver
   regression suite `AddressingTableResolverTest.php` green (3 passed).
-- **Deferred (honest):** physical persons/org partial-unique and covering
-  indexes — blocked by the one-migration rule; app-level mitigations in
-  place. Orders/events addressing follow-ups open (events trait keeps
-  hardcoded `addressables.` column prefixes — see `events.md` finding 3
-  re-check).
+- **Full stream (this pass):** fail-closed reference guards
+  (`PersonsModelReferenceGuard`), `PersonStatus` enum + transition,
+  pure formatted-name, bio/issuer invariants, gapless reorder,
+  lazy resolver binding, `OrganizationStateTransition`, transfer
+  actor/target assertions + audit hook, member revalidation, snapshot
+  hardening (fail-closed + transactional + owner-mismatch rejection),
+  channel-aware privacy defaults, exporter owner scope, full
+  `ModelResolver`, canonical-only aliases, FK-authoritative
+  normalization, provider validation, snapshot reason contract,
+  segment tuple scoping, `CustomerProfileNormalizer`,
+  `MergeCustomers` core action, `HasOwner`-only auto-assign,
+  `Create/Update` optional `personId` linkage. Orders (287/664) +
+  Checkout (253/931) canaries green.
+- **Native contact-layer removal (backward-compat purge, dev-only
+  migration edit):** `customers.email`, `customers.phone` dropped via
+  the guarded cutover migration (no backfill); Customer model and all
+  owned paths Contacting-only. Downstream reads in cashier/checkout/
+  events degrade to null (null-safe) — logged dependencies for the
+  owning tracks, not blockers. One stale checkout expectation rewritten
+  to the Contacting-only doctrine.
+- **Falsified, not implemented:** `ResolvesAddressingResources` merge
+  (adapter-only seam, documented); contacting-to-`suggest` demotion
+  (overruled by ratified hard-dep policy); non-addressing
+  `lat`/`lng`/`google_place_id` hits (independent contracts in
+  Signals/Events/legacy JSON).
+- **Judgment calls (kept):** invitations accept unregistered emails;
+  restore retains historical suspension/archive timestamps;
+  payment-subject driver stays pending cashier track.
+- **Deferred (honest):** physical index batches (persons partial/
+  covering, org member/slug uniques, customers pivots, contacting
+  partial-primary/timestamps) — app-level guards, locks, and
+  transactional paths in place; dev-only rule now permits the batch
+  as a follow-up. Orders/events addressing follow-ups open (events
+  full-trait adoption; hardcoded prefixes already fixed — see
+  `events.md` finding 3 re-check).
 
 ## Cashier multiplexer collapse (implemented)
 
@@ -359,6 +390,86 @@ reported and taken on trust; code correctness was verified directly.
   clean. No migration required. Delegation chain verified end to end
   (`ChipGateway:58` → `Cashier::chip:189` → `ChipCollectService:51`
   → canonical `*Api` facades).
+
+## Money-path adversary fixes (implemented)
+
+- **Crash recovery (chip):** durable `PurchaseIdempotencyLedger`
+  (`chip/src/Support/PurchaseIdempotencyLedger.php:45`) reserves
+  before the remote post and replays after; mutation legs keyed +
+  locked + cached (`PurchasesApi.php:238`); keyless checkout purchases
+  get deterministic payload-derived keys with explicit blanks still
+  throwing (`PurchasesApi.php:655`).
+- **Key forwarding (cashier-chip):** shared `IdempotencyKey` adapter
+  (`Support/IdempotencyKey.php:15`) used by `ChargeChipCustomer`
+  (`:58`); recurring-token path reaches the keyed seam
+  (`PerformsCharges.php:96`).
+- **Tenant isolation:** owner-blind billable lookup returns null
+  (`Billing/Cashier.php:111`); invoice `client_id` exact-match
+  (`ManagesInvoices.php:70`); gateway retrieval scoped on both
+  gateways (`ChipGateway.php:214`, `StripeGateway.php:218`).
+- **Callback evidence (checkout):** fail-closed amount/currency
+  (`CashierProcessor.php:88`), evidence demotion with warning
+  (`CheckoutService.php:385`), blocking reconciliation
+  (`CreateOrderStep.php:318`), paid-wins policy
+  (`CheckoutCallbackStatePolicy.php:19`).
+- All 10 adversarial proofs green; suites green (Chip 1052/2730,
+  CashierChip 549/919, Cashier 256/524, Checkout 253/931, filaments
+  green); PHPStan L6 clean on touched packages.
+- **Independent re-verification corrections:** the crash proof only
+  exercised cache flush, not mid-flight termination — confirmed the
+  pending-reservation path fails closed (reconciliation demanded, no
+  replay, no double-charge); the evidence gate now requires amount
+  evidence at the completion guard itself
+  (`CheckoutService.php:427`), closing the prevalidated-Completed
+  hole; explicit-blank keys throw at every entrypoint including raw
+  `create()`; null-cache mutation bypass accepted as unreachable via
+  the container. One more stale test rewritten (status-only callback
+  now refused).
+- **Stale tests updated to intended behavior** (8 total): directory mock
+  owner arg, fail-closed amount case, amount evidence in 4 fixtures,
+  paid-from-failed processing, status-only refusal.
+- **Caveat (follow-up, not blocking):** payload-derived keys are only
+  as unique as the payload — callers must keep passing explicit
+  `reference` (session id); the derived path is a retry backstop, not
+  a key substitute. Consider a warning log when deriving.
+
+## Signals analytics (implemented)
+
+- **A1 recorder split:** per-source `Recorders/*`
+  (affiliate/network/cart/checkout/order/voucher) behind narrow
+  shapes; `SignalRecorderSupport` throws on missing trusted fields;
+  browser parsing lenient + documented; recorder 887→207 lines.
+- **A2 single owner path:** `AutoAssignsSignalOwnerOnCreate`
+  deleted; all 12 models `HasOwner` (isolation suite across models).
+- **A3 endpoint hardening:** `throttle:signals-collect` + payload
+  caps, field allowlists, per-property/IP limits on all four public
+  routes; HMAC server-outcome path untouched as reference.
+- **A4 listener map:** 20 listeners → explicit `SignalEventMap` +
+  single `RecordCommerceSignal`.
+- **A5 already delegated:** mutation guards on `OwnerWriteGuard` in
+  baseline — verified, no change.
+- **Q1 canonical condition:** `SignalCondition` owns operator
+  matching + SQL compilation with fail-closed on bad match types.
+- Suites: Signals 98 passed (748 assertions), FilamentSignals 26
+  passed (80 assertions); PHPStan level 6 clean. No migration.
+- Deferred: rollup reads, prod `EXPLAIN` review,
+  `InteractionRuleService` extraction, clarity-only job rename.
+
+## Growth experiments (implemented)
+
+- **A2 thin delegator (kept deliberately):** 11 active call sites
+  with mixed owner configs make removal unsafe; documented as the
+  thin delegation point.
+- **A3 action split:** pure builders + `MetricsCalculator`
+  (no persistence/queries); actions orchestrate with signatures
+  intact; adapter math deleted.
+- **Q1 transitions:** `Experiment::transitionTo()` centralizes
+  status→timestamp; archive + UI routed through it.
+- **F1 adapters on core:** services/calculator called; no hardcoded
+  currency; assignment-mutation gap falsified (no such actions).
+- Suites: Growth 144 passed (452 assertions), FilamentGrowth 59
+  passed (204 assertions); PHPStan level 6 clean. No migration.
+- Deferred: dashboard batching (≤3-query test unclaimed).
 
 ## Fairness log
 

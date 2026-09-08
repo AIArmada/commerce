@@ -316,14 +316,14 @@ final class CreateOrderStep extends AbstractCheckoutStep
             ?? 'unknown';
 
         $expectedAmount = (int) $session->grand_total;
-        $amount = (int) ($paymentData['amount'] ?? $expectedAmount);
+        $amount = $this->minorAmount($paymentData['amount'] ?? null);
         $expectedCurrency = $this->normalizeCurrency($session->currency);
         $receivedCurrency = $this->normalizeCurrency($paymentData['currency'] ?? null);
         $currencyMatches = $expectedCurrency !== null
             && $receivedCurrency !== null
             && $receivedCurrency === $expectedCurrency;
 
-        if ($amount !== $expectedAmount || ! $currencyMatches) {
+        if ($amount === null || $amount !== $expectedAmount || ! $currencyMatches) {
             $this->recordPaymentReconciliationMismatch(
                 $session,
                 $paymentData,
@@ -378,11 +378,11 @@ final class CreateOrderStep extends AbstractCheckoutStep
         CheckoutSession $session,
         array $paymentData,
         int $expectedAmount,
-        int $receivedAmount,
+        ?int $receivedAmount,
         ?string $expectedCurrency,
         ?string $receivedCurrency,
     ): void {
-        $amountMismatch = $receivedAmount !== $expectedAmount;
+        $amountMismatch = $receivedAmount === null || $receivedAmount !== $expectedAmount;
         $currencyMismatch = $expectedCurrency === null
             || $receivedCurrency === null
             || $receivedCurrency !== $expectedCurrency;
@@ -390,6 +390,8 @@ final class CreateOrderStep extends AbstractCheckoutStep
         $paymentData['amount_reconciliation'] = [
             'status' => 'mismatch',
             'reason' => match (true) {
+                $receivedAmount === null && $receivedCurrency === null => 'amount_and_currency_missing',
+                $receivedAmount === null => 'amount_missing',
                 $amountMismatch && $currencyMismatch => 'amount_and_currency_mismatch',
                 $currencyMismatch => 'currency_mismatch',
                 default => 'amount_mismatch',
@@ -420,6 +422,23 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 'received_currency' => $receivedCurrency,
             ]
         );
+    }
+
+    private function minorAmount(mixed $amount): ?int
+    {
+        if (is_int($amount)) {
+            return $amount >= 0 ? $amount : null;
+        }
+
+        if (! is_string($amount) || ! preg_match('/^\d+$/', mb_trim($amount))) {
+            return null;
+        }
+
+        $validated = filter_var($amount, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 0],
+        ]);
+
+        return is_int($validated) ? $validated : null;
     }
 
     private function normalizeCurrency(mixed $currency): ?string
