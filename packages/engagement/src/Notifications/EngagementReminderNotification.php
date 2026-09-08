@@ -6,6 +6,7 @@ namespace AIArmada\Engagement\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 final class EngagementReminderNotification extends Notification implements ShouldQueue
@@ -30,9 +31,11 @@ final class EngagementReminderNotification extends Notification implements Shoul
         return config('engagement.reminder.default_channels', ['mail', 'database']);
     }
 
-    public function toMail(object $notifiable): mixed
+    public function toMail(object $notifiable): MailMessage
     {
-        return null;
+        return (new MailMessage)
+            ->subject('Reminder')
+            ->line('You have a scheduled reminder.');
     }
 
     /**

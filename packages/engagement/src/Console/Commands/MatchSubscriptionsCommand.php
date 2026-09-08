@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Console\Commands;
 
+use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Engagement\Contracts\Subscribable;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Models\Subscription;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -47,39 +48,49 @@ final class MatchSubscriptionsCommand extends Command
             return self::FAILURE;
         }
 
-        $query = $modelClass::query();
+        if (! is_a($modelClass, Subscribable::class, true)) {
+            $this->error("Subject type [{$subjectType}] must implement " . Subscribable::class . '.');
 
-        $usesOwnerScope = in_array(HasOwner::class, class_uses_recursive($modelClass), true);
-
-        if ($usesOwnerScope) {
-            $query = $query->withoutGlobalScope(OwnerScope::class);
+            return self::FAILURE;
         }
 
-        /** @var Model|null $model */
-        $model = $query->find($subjectId);
+        $found = false;
+        $runner = new OwnerBatchRunner(
+            Subscription::class,
+            [
+                'enabled' => 'engagement.owner.enabled',
+                'include_global' => 'engagement.owner.include_global',
+            ],
+        );
 
-        if (! $model instanceof Model) {
+        $processed = OwnerContext::withOwner(null, function () use ($runner, $modelClass, $subjectId, $trigger, &$found): int {
+            return (int) $runner->forEach(function () use ($modelClass, $subjectId, $trigger, &$found): int {
+                /** @var Model|null $model */
+                $model = $modelClass::query()->find($subjectId);
+
+                if (! $model instanceof Model) {
+                    return 0;
+                }
+
+                $found = true;
+                $context = $this->buildMatchContext($model);
+                $matches = 0;
+
+                foreach ($this->subscriptionManager->matchingSubscriptions($model, $trigger, $context) as $_subscription) {
+                    $matches++;
+                }
+
+                return $matches;
+            })->sum();
+        });
+
+        if (! $found) {
             $this->error("Subject not found for type [{$subjectType}] with ID [{$subjectId}].");
 
             return self::FAILURE;
         }
 
-        $owner = null;
-
-        if ($usesOwnerScope) {
-            $model->loadMissing('owner');
-
-            /** @var Model|null $owner */
-            $owner = $model->getRelation('owner');
-        }
-        $context = $this->buildMatchContext($model);
-
-        OwnerContext::withOwner($owner, function () use ($model, $trigger, $context): void {
-            foreach ($this->subscriptionManager->matchingSubscriptions($model, $trigger, $context) as $_subscription) {
-            }
-        });
-
-        $this->info("Processed subscription matches for trigger: {$trigger}");
+        $this->info("Processed {$processed} subscription matches for trigger: {$trigger}");
 
         return self::SUCCESS;
     }

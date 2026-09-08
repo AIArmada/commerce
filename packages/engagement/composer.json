@@ -25,6 +25,7 @@
         "spatie/laravel-package-tools": "^1.93.1"
     },
     "suggest": {
+        "aiarmada/communications": "Routes due reminder notifications through the managed communications delivery path.",
         "aiarmada/events": "Enables EventEngagementManager integration adapter.",
         "filament/filament": "Enables the Filament admin UI for engagement management."
     },

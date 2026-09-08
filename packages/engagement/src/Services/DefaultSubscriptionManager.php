@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Services;
 
+use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
+use AIArmada\Engagement\Contracts\Subscribable;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Events\SubscriptionCancelled;
@@ -13,10 +15,11 @@ use AIArmada\Engagement\Events\SubscriptionMatched;
 use AIArmada\Engagement\Events\SubscriptionMuted;
 use AIArmada\Engagement\Events\SubscriptionUnmuted;
 use AIArmada\Engagement\Models\Subscription;
+use AIArmada\Engagement\Support\EngagementModelGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
-use InvalidArgumentException;
+use Illuminate\Database\Eloquent\Model;
 
 final class DefaultSubscriptionManager implements SubscriptionManager
 {
@@ -24,8 +27,14 @@ final class DefaultSubscriptionManager implements SubscriptionManager
         private readonly EngagementPolicyResolver $policy,
     ) {}
 
-    public function subscribe(mixed $subscriber, mixed $subject = null, string $subscriptionType = 'updates', array $criteria = [], array $options = []): Subscription
+    public function subscribe(CanInteract $subscriber, ?Subscribable $subject = null, string $subscriptionType = 'updates', array $criteria = [], array $options = []): Subscription
     {
+        EngagementModelGuard::assertContract($subscriber, CanInteract::class, 'subscriber');
+
+        if ($subject !== null) {
+            EngagementModelGuard::assertContract($subject, Subscribable::class, 'subject');
+        }
+
         if (! $this->policy->canSubscribe($subscriber, $subject, $subscriptionType)) {
             throw new AuthorizationException('Subscribing to this subject is not authorized.');
         }
@@ -53,11 +62,13 @@ final class DefaultSubscriptionManager implements SubscriptionManager
             return $existing;
         }
 
+        $subscriberIdentity = EngagementModelGuard::identity($subscriber, 'subscriber');
+        $subjectIdentity = $subject === null ? null : EngagementModelGuard::identity($subject, 'subject');
         $subscription = Subscription::query()->create([
-            'subscriber_type' => $subscriber->getMorphClass(),
-            'subscriber_id' => $subscriber->getKey(),
-            'subscribable_type' => $subject?->getMorphClass(),
-            'subscribable_id' => $subject?->getKey(),
+            'subscriber_type' => $subscriberIdentity['type'],
+            'subscriber_id' => $subscriberIdentity['id'],
+            'subscribable_type' => $subjectIdentity['type'] ?? null,
+            'subscribable_id' => $subjectIdentity['id'] ?? null,
             'subscription_type' => $subscriptionType,
             'criteria' => $criteria,
             'status' => SubscriptionStatus::Active,
@@ -72,8 +83,14 @@ final class DefaultSubscriptionManager implements SubscriptionManager
         return $subscription;
     }
 
-    public function unsubscribe(mixed $subscriber, mixed $subject = null, string $subscriptionType = 'updates', array $criteria = []): void
+    public function unsubscribe(CanInteract $subscriber, ?Subscribable $subject = null, string $subscriptionType = 'updates', array $criteria = []): void
     {
+        EngagementModelGuard::assertContract($subscriber, CanInteract::class, 'subscriber');
+
+        if ($subject !== null) {
+            EngagementModelGuard::assertContract($subject, Subscribable::class, 'subject');
+        }
+
         $subscription = $this->findMatchingSubscription(
             $subscriber,
             $subject,
@@ -107,10 +124,13 @@ final class DefaultSubscriptionManager implements SubscriptionManager
         return $subscription;
     }
 
-    public function matchingSubscriptions(mixed $subject, string $trigger, array $context = []): iterable
+    public function matchingSubscriptions(Subscribable $subject, string $trigger, array $context = []): iterable
     {
-        $subjectType = $subject->getMorphClass();
-        $subjectId = $subject->getKey();
+        EngagementModelGuard::assertContract($subject, Subscribable::class, 'subject');
+
+        $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+        $subjectType = $subjectIdentity['type'];
+        $subjectId = $subjectIdentity['id'];
         $context = $this->normalizeCriteria($context);
 
         $subscriptions = Subscription::query()
@@ -126,7 +146,7 @@ final class DefaultSubscriptionManager implements SubscriptionManager
                             ->whereNull('subscribable_id');
                     });
             })
-            ->cursor();
+            ->lazyById(100);
 
         foreach ($subscriptions as $subscription) {
             if (! $this->criteriaMatches($subscription->criteria ?? [], $context)) {
@@ -140,8 +160,8 @@ final class DefaultSubscriptionManager implements SubscriptionManager
     }
 
     private function findMatchingSubscription(
-        mixed $subscriber,
-        mixed $subject,
+        CanInteract $subscriber,
+        ?Subscribable $subject,
         string $subscriptionType,
         array $criteria,
         ?string $status = null,
@@ -173,21 +193,19 @@ final class DefaultSubscriptionManager implements SubscriptionManager
         return null;
     }
 
-    private function morphClass(mixed $model): string
+    private function morphClass(object $model): string
     {
-        if (! is_object($model) || ! method_exists($model, 'getMorphClass')) {
-            throw new InvalidArgumentException('Subscriptions require morphable subscriber and subject models.');
-        }
+        EngagementModelGuard::assertModel($model, 'subscription model');
 
+        /** @var Model $model */
         return $model->getMorphClass();
     }
 
-    private function morphKey(mixed $model): string
+    private function morphKey(object $model): string
     {
-        if (! is_object($model) || ! method_exists($model, 'getKey')) {
-            throw new InvalidArgumentException('Subscriptions require morphable subscriber and subject models.');
-        }
+        EngagementModelGuard::assertModel($model, 'subscription model');
 
+        /** @var Model $model */
         return (string) $model->getKey();
     }
 

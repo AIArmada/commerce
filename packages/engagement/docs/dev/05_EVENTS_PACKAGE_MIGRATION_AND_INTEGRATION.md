@@ -239,7 +239,7 @@ EventRecordingAvailable
 EventStartingSoon
 ```
 
-Interactions package listens to these to match subscriptions/reminders.
+Engagement does not register an automatic listener for these events. Run `engagement:match-subscriptions` explicitly when the host application wants content-based matching.
 
 Example:
 

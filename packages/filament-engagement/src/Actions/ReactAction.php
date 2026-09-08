@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEngagement\Actions;
 
 use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use Filament\Actions\Action;
 use Filament\Forms;
 
@@ -21,6 +22,7 @@ final class ReactAction
                     ->required(),
             ])
             ->action(function (array $data, $record): void {
+                $record = ActionRecordResolver::resolveOrFail($record);
                 app(EngagementManager::class)->react(auth()->user(), $record, $data['reaction_type']);
             });
     }

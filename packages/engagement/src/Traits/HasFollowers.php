@@ -6,18 +6,19 @@ namespace AIArmada\Engagement\Traits;
 
 use AIArmada\Engagement\Models\Follow;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /** @mixin Model */
 trait HasFollowers
 {
+    use ReceivesEngagement;
+
     /**
      * @return MorphMany<Follow, $this>
      */
     public function follows(): MorphMany
     {
-        return $this->morphMany(Follow::class, 'followable');
+        return $this->engagementRelation(Follow::class, 'followable');
     }
 
     /**
@@ -26,13 +27,11 @@ trait HasFollowers
      */
     public function scopeActiveFollows(Builder $query): Builder
     {
-        return $query->whereHas('follows', function (Builder $q): void {
-            $q->active();
-        });
+        return $this->activeEngagementScope($query, 'follows');
     }
 
     public function followersCount(): int
     {
-        return $this->follows()->active()->count();
+        return $this->engagementCount('followers');
     }
 }

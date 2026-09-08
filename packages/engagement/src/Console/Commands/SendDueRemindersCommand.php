@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Console\Commands;
 
+use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderDue;
@@ -27,39 +27,54 @@ final class SendDueRemindersCommand extends Command
 
     public function handle(): int
     {
-        $count = 0;
         $now = CarbonImmutable::now();
-        $batchSize = (int) config('engagement.reminder.batch_size', 100);
+        $remaining = max(0, (int) config('engagement.reminder.batch_size', 100));
+        $runner = new OwnerBatchRunner(
+            Reminder::class,
+            [
+                'enabled' => 'engagement.owner.enabled',
+                'include_global' => 'engagement.owner.include_global',
+            ],
+        );
 
-        $reminders = Reminder::query()
-            ->withoutOwnerScope()
-            ->whereIn('status', [ReminderStatus::Pending, ReminderStatus::Scheduled])
-            ->where('remind_at', '<=', $now)
-            ->where(function ($query) use ($now): void {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', $now);
-            })
-            ->orderBy('remind_at')
-            ->limit($batchSize)
-            ->cursor();
+        $count = OwnerContext::withOwner(null, function () use ($runner, $now, &$remaining): int {
+            return (int) $runner->forEach(function () use ($now, &$remaining): int {
+                if ($remaining === 0) {
+                    return 0;
+                }
 
-        foreach ($reminders as $reminder) {
-            if ($reminder->status !== ReminderStatus::Pending && $reminder->status !== ReminderStatus::Scheduled) {
-                continue;
-            }
+                $count = 0;
+                Reminder::query()
+                    ->whereIn('status', [ReminderStatus::Pending, ReminderStatus::Scheduled])
+                    ->where('remind_at', '<=', $now)
+                    ->where(function ($query) use ($now): void {
+                        $query->whereNull('expires_at')
+                            ->orWhere('expires_at', '>', $now);
+                    })
+                    ->orderBy('remind_at')
+                    ->limit($remaining)
+                    ->chunkById(100, function ($reminders) use (&$remaining, &$count): bool {
+                        foreach ($reminders as $reminder) {
+                            if ($remaining === 0) {
+                                return false;
+                            }
 
-            $owner = OwnerTupleParser::fromTypeAndId(
-                $reminder->owner_type,
-                $reminder->owner_id,
-            )->toOwnerModel();
+                            if ($reminder->status !== ReminderStatus::Pending && $reminder->status !== ReminderStatus::Scheduled) {
+                                continue;
+                            }
 
-            OwnerContext::withOwner($owner, function () use ($reminder): void {
-                event(new ReminderDue($reminder));
-                $this->reminderManager->markSent($reminder);
-            });
+                            event(new ReminderDue($reminder));
+                            $this->reminderManager->markSent($reminder);
+                            $remaining--;
+                            $count++;
+                        }
 
-            $count++;
-        }
+                        return $remaining > 0;
+                    });
+
+                return $count;
+            })->sum();
+        });
 
         $this->info("Sent {$count} reminders.");
 

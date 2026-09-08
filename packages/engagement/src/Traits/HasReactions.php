@@ -12,12 +12,14 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 /** @mixin Model */
 trait HasReactions
 {
+    use ReceivesEngagement;
+
     /**
      * @return MorphMany<Reaction, $this>
      */
     public function reactions(): MorphMany
     {
-        return $this->morphMany(Reaction::class, 'reactable');
+        return $this->engagementRelation(Reaction::class, 'reactable');
     }
 
     /**
@@ -26,8 +28,6 @@ trait HasReactions
      */
     public function scopeActiveReactions(Builder $query): Builder
     {
-        return $query->whereHas('reactions', function (Builder $q): void {
-            $q->active();
-        });
+        return $this->activeEngagementScope($query, 'reactions');
     }
 }

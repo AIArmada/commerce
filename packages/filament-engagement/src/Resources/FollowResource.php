@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Support\ModelResolver;
+use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -92,18 +93,26 @@ final class FollowResource extends Resource
             ])
             ->actions([
                 Action::make('mute')
-                    ->action(fn (Follow $record): Follow => app(EngagementManager::class)
-                        ->muteFollow($record->follower, $record->followable))
+                    ->action(function (Follow $record): Follow {
+                        $record = ActionRecordResolver::resolve($record);
+
+                        return app(EngagementManager::class)->muteFollow($record->follower, $record->followable);
+                    })
                     ->requiresConfirmation()
                     ->visible(fn (Follow $record) => $record->isActive()),
                 Action::make('unmute')
-                    ->action(fn (Follow $record): Follow => app(EngagementManager::class)
-                        ->unmuteFollow($record->follower, $record->followable))
+                    ->action(function (Follow $record): Follow {
+                        $record = ActionRecordResolver::resolve($record);
+
+                        return app(EngagementManager::class)->unmuteFollow($record->follower, $record->followable);
+                    })
                     ->requiresConfirmation()
                     ->visible(fn (Follow $record) => $record->isMuted()),
                 Action::make('unfollow')
-                    ->action(fn (Follow $record) => app(EngagementManager::class)
-                        ->unfollow($record->follower, $record->followable))
+                    ->action(function (Follow $record): void {
+                        $record = ActionRecordResolver::resolve($record);
+                        app(EngagementManager::class)->unfollow($record->follower, $record->followable);
+                    })
                     ->requiresConfirmation()
                     ->visible(fn (Follow $record) => $record->isActive()),
             ])
@@ -112,6 +121,7 @@ final class FollowResource extends Resource
                     ->action(function ($records): void {
                         foreach ($records as $record) {
                             if ($record instanceof Follow && $record->isActive()) {
+                                $record = ActionRecordResolver::resolve($record);
                                 app(EngagementManager::class)
                                     ->muteFollow($record->follower, $record->followable);
                             }
@@ -121,6 +131,7 @@ final class FollowResource extends Resource
                     ->action(function ($records): void {
                         foreach ($records as $record) {
                             if ($record instanceof Follow && $record->isActive()) {
+                                $record = ActionRecordResolver::resolve($record);
                                 app(EngagementManager::class)
                                     ->unfollow($record->follower, $record->followable);
                             }

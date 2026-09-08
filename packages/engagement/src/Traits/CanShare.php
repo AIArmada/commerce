@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Traits;
 
-use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Share;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait CanShare
 {
+    use InteractsWithEngagement;
+
     /** @return MorphMany<Share, $this> */
     public function shares(): MorphMany
     {
@@ -18,6 +19,6 @@ trait CanShare
 
     public function share(mixed $subject, array $options = []): Share
     {
-        return app(EngagementManager::class)->share($this, $subject, $options);
+        return $this->engagementManager()->share($this->engagementActor(), $subject, $options);
     }
 }

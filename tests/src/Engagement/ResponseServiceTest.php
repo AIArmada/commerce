@@ -3,51 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\Engagement\Contracts\EngagementManager;
-use AIArmada\Engagement\Contracts\Respondable;
 use AIArmada\Engagement\Enums\ResponseStatus;
 use AIArmada\Engagement\Models\Response;
+use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
+use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 
 beforeEach(function (): void {
     $this->manager = app(EngagementManager::class);
-    $this->actor = new class
-    {
-        public function getMorphClass(): string
-        {
-            return 'user';
-        }
-
-        public function getKey(): string
-        {
-            return 'user-1';
-        }
-    };
-    $this->subject = new class implements Respondable
-    {
-        public function allowedResponseTypes(): array
-        {
-            return ['interested', 'going', 'maybe'];
-        }
-
-        public function defaultResponseVisibility(): string
-        {
-            return 'public';
-        }
-
-        public function allowsMultipleResponsesFromSameResponder(): bool
-        {
-            return false;
-        }
-
-        public function getMorphClass(): string
-        {
-            return 'event_occurrence';
-        }
-
-        public function getKey(): string
-        {
-            return 'occ-1';
-        }
-    };
+    $this->actor = new EngagementActor;
+    $this->subject = new EngagementSubject;
 });
 
 it('creates a response', function (): void {

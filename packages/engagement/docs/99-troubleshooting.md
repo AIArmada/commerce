@@ -31,9 +31,9 @@ Schedule::command('engagement:match-subscriptions')->hourly();
 
 Check that the subscription criteria (`criteria` JSON column) matches the data passed to `matchingSubscriptions()`.
 
-### Events integration not working
+### Events adapter rejects an event model
 
-Verify both `aiarmada/events` and `aiarmada/engagement` are installed. The adapter auto-detects via `class_exists()` in the service provider. No manual configuration is needed.
+The engagement manager requires `CanInteract` on actors and the matching subject marker contract. Add the contract to the host event model (and the corresponding public trait when needed), or keep event attendance flows in the events package. Publication events are intentionally not auto-forwarded to engagement subscriptions.
 
 ### Share URL generation failing
 

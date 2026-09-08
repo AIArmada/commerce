@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Models\Subscription;
 use AIArmada\Engagement\Support\ModelResolver;
+use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -82,21 +83,29 @@ final class SubscriptionResource extends Resource
             ])
             ->actions([
                 Action::make('mute')
-                    ->action(fn (Subscription $record): Subscription => app(SubscriptionManager::class)
-                        ->muteSubscription($record))
+                    ->action(function (Subscription $record): Subscription {
+                        $record = ActionRecordResolver::resolve($record);
+
+                        return app(SubscriptionManager::class)->muteSubscription($record);
+                    })
                     ->requiresConfirmation(),
                 Action::make('unmute')
-                    ->action(fn (Subscription $record): Subscription => app(SubscriptionManager::class)
-                        ->unmuteSubscription($record))
+                    ->action(function (Subscription $record): Subscription {
+                        $record = ActionRecordResolver::resolve($record);
+
+                        return app(SubscriptionManager::class)->unmuteSubscription($record);
+                    })
                     ->requiresConfirmation(),
                 Action::make('unsubscribe')
-                    ->action(fn (Subscription $record) => app(SubscriptionManager::class)
-                        ->unsubscribe(
+                    ->action(function (Subscription $record): void {
+                        $record = ActionRecordResolver::resolve($record);
+                        app(SubscriptionManager::class)->unsubscribe(
                             $record->subscriber,
                             $record->subscribable,
                             $record->subscription_type,
                             $record->criteria ?? [],
-                        ))
+                        );
+                    })
                     ->requiresConfirmation(),
             ]);
     }

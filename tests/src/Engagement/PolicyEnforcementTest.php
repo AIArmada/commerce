@@ -6,6 +6,8 @@ use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
+use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
@@ -42,31 +44,8 @@ beforeEach(function (): void {
         }
     });
 
-    $this->actor = new class
-    {
-        public function getMorphClass(): string
-        {
-            return 'user';
-        }
-
-        public function getKey(): string
-        {
-            return 'user-1';
-        }
-    };
-
-    $this->subject = new class
-    {
-        public function getMorphClass(): string
-        {
-            return 'subject';
-        }
-
-        public function getKey(): string
-        {
-            return 'subject-1';
-        }
-    };
+    $this->actor = new EngagementActor;
+    $this->subject = new EngagementSubject;
 });
 
 it('enforces every engagement policy decision', function (): void {

@@ -11,11 +11,13 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 /** @mixin Model */
 trait HasReminders
 {
+    use ReceivesEngagement;
+
     /**
      * @return MorphMany<Reminder, $this>
      */
     public function reminders(): MorphMany
     {
-        return $this->morphMany(Reminder::class, 'remindable');
+        return $this->engagementRelation(Reminder::class, 'remindable');
     }
 }

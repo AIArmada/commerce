@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement;
 
+use AIArmada\Communications\CommunicationsServiceProvider;
 use AIArmada\Engagement\Console\Commands\MatchSubscriptionsCommand;
 use AIArmada\Engagement\Console\Commands\ReconcileEngagementCountersCommand;
 use AIArmada\Engagement\Console\Commands\SendDueRemindersCommand;
@@ -17,11 +18,18 @@ use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Events\BookmarkArchived;
 use AIArmada\Engagement\Events\BookmarkCreated;
 use AIArmada\Engagement\Events\BookmarkRemoved;
+use AIArmada\Engagement\Events\FollowCreated;
+use AIArmada\Engagement\Events\FollowMuted;
+use AIArmada\Engagement\Events\FollowRemoved;
+use AIArmada\Engagement\Events\FollowUnmuted;
+use AIArmada\Engagement\Events\ReactionCreated;
+use AIArmada\Engagement\Events\ReactionRemoved;
+use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Events\ResponseCancelled;
 use AIArmada\Engagement\Events\ResponseChanged;
 use AIArmada\Engagement\Events\ResponseCreated;
 use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
-use AIArmada\Engagement\Listeners\MatchSubscriptionsOnEventOccurrencePublished;
+use AIArmada\Engagement\Listeners\DispatchReminderThroughCommunications;
 use AIArmada\Engagement\Services\DefaultEngagementCounterService;
 use AIArmada\Engagement\Services\DefaultEngagementManager;
 use AIArmada\Engagement\Services\DefaultEngagementPolicyResolver;
@@ -30,7 +38,6 @@ use AIArmada\Engagement\Services\DefaultReminderManager;
 use AIArmada\Engagement\Services\DefaultShareUrlGenerator;
 use AIArmada\Engagement\Services\DefaultSubscriptionManager;
 use AIArmada\Events\Contracts\EventEngagementManager;
-use AIArmada\Events\Events\EventPublished;
 use AIArmada\Events\EventsServiceProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use Spatie\LaravelPackageTools\Package;
@@ -65,7 +72,7 @@ final class EngagementServiceProvider extends PackageServiceProvider
         $this->app->bind(ShareUrlGenerator::class, DefaultShareUrlGenerator::class);
 
         $this->registerEventsIntegration();
-        $this->registerEventListeners();
+        $this->registerReminderDeliveryListener();
         $this->registerCounterListeners();
     }
 
@@ -85,20 +92,18 @@ final class EngagementServiceProvider extends PackageServiceProvider
         );
     }
 
-    private function registerEventListeners(): void
+    private function registerReminderDeliveryListener(): void
     {
-        if (! class_exists(EventsServiceProvider::class)) {
+        if (! class_exists(CommunicationsServiceProvider::class)) {
             return;
         }
 
         $dispatcher = $this->app->make(Dispatcher::class);
 
-        if (class_exists(EventPublished::class)) {
-            $dispatcher->listen(
-                EventPublished::class,
-                MatchSubscriptionsOnEventOccurrencePublished::class,
-            );
-        }
+        $dispatcher->listen(
+            ReminderDue::class,
+            DispatchReminderThroughCommunications::class,
+        );
     }
 
     private function registerCounterListeners(): void
@@ -106,9 +111,15 @@ final class EngagementServiceProvider extends PackageServiceProvider
         $service = $this->app->make(EngagementCounterService::class);
         $dispatcher = $this->app->make(Dispatcher::class);
 
+        $dispatcher->listen(FollowCreated::class, $service->onFollowCreated(...));
+        $dispatcher->listen(FollowRemoved::class, $service->onFollowRemoved(...));
+        $dispatcher->listen(FollowMuted::class, $service->onFollowMuted(...));
+        $dispatcher->listen(FollowUnmuted::class, $service->onFollowUnmuted(...));
         $dispatcher->listen(BookmarkCreated::class, $service->onBookmarkCreated(...));
         $dispatcher->listen(BookmarkRemoved::class, $service->onBookmarkRemoved(...));
         $dispatcher->listen(BookmarkArchived::class, $service->onBookmarkArchived(...));
+        $dispatcher->listen(ReactionCreated::class, $service->onReactionCreated(...));
+        $dispatcher->listen(ReactionRemoved::class, $service->onReactionRemoved(...));
         $dispatcher->listen(ResponseCreated::class, $service->onResponseCreated(...));
         $dispatcher->listen(ResponseChanged::class, $service->onResponseChanged(...));
         $dispatcher->listen(ResponseCancelled::class, $service->onResponseCancelled(...));

@@ -10,6 +10,7 @@ use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Support\ModelResolver;
+use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -94,16 +95,21 @@ final class ReminderResource extends Resource
                         [ReminderStatus::Pending, ReminderStatus::Scheduled],
                         true,
                     ))
-                    ->action(fn (Reminder $record) => app(ReminderManager::class)
-                        ->cancelReminder(
+                    ->action(function (Reminder $record): void {
+                        $record = ActionRecordResolver::resolve($record);
+                        app(ReminderManager::class)->cancelReminder(
                             $record->recipient,
                             $record->remindable,
                             $record->reminder_type,
-                        ))
+                        );
+                    })
                     ->requiresConfirmation(),
                 Action::make('mark sent')
                     ->label('Mark Sent')
-                    ->action(fn (Reminder $record) => app(ReminderManager::class)->markSent($record))
+                    ->action(function (Reminder $record): void {
+                        $record = ActionRecordResolver::resolve($record);
+                        app(ReminderManager::class)->markSent($record);
+                    })
                     ->requiresConfirmation(),
             ]);
     }

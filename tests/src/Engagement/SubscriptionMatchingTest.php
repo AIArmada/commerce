@@ -6,6 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Events\SubscriptionMatched;
+use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
+use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use AIArmada\Events\Events\EventPublished;
 use AIArmada\Events\Models\Event;
 use Illuminate\Support\Facades\Artisan;
@@ -13,66 +15,34 @@ use Illuminate\Support\Facades\Event as EventFacade;
 
 beforeEach(function (): void {
     $this->manager = app(SubscriptionManager::class);
-    $this->subscriber = new class
-    {
-        public function getMorphClass(): string
-        {
-            return 'user';
-        }
-
-        public function getKey(): string
-        {
-            return 'user-1';
-        }
-    };
+    $this->subscriber = new EngagementActor;
 });
 
-it('matches subscriptions for published events', function (): void {
-    EventFacade::fake([SubscriptionMatched::class]);
-
+it('does not auto-match subscriptions when an events publication is dispatched', function (): void {
     $owner = User::query()->create([
-        'name' => 'Subscription Owner',
-        'email' => 'subscription-owner-' . uniqid() . '@example.com',
+        'name' => 'Publication Separation Owner',
+        'email' => 'publication-separation-' . uniqid() . '@example.com',
         'password' => 'secret',
     ]);
     $event = OwnerContext::withOwner($owner, function (): Event {
-        return Event::factory()->published()->create([
-            'visibility' => 'public',
-            'delivery_mode' => 'online',
-        ]);
+        return Event::factory()->published()->create();
     });
 
-    OwnerContext::withOwner($owner, function () use ($event): void {
-        $this->manager->subscribe($this->subscriber, $event, 'updates', [
-            'visibility' => 'public',
-            'delivery_mode' => 'online',
-        ]);
+    OwnerContext::withOwner($owner, function (): void {
+        $this->manager->subscribe($this->subscriber, null, 'updates');
     });
+
+    EventFacade::fake([SubscriptionMatched::class]);
 
     event(new EventPublished($event));
 
-    EventFacade::assertDispatched(SubscriptionMatched::class, function (SubscriptionMatched $matched): bool {
-        return $matched->subscription->subscriber_id === 'user-1'
-            && $matched->subject instanceof Event
-            && $matched->trigger === 'event_published';
-    });
+    EventFacade::assertNotDispatched(SubscriptionMatched::class);
 });
 
 it('does not match subscriptions with non-matching subject', function (): void {
-    $this->manager->subscribe($this->subscriber, $this->subscriber, 'updates');
+    $this->manager->subscribe($this->subscriber, new EngagementSubject, 'updates');
 
-    $subject = new class
-    {
-        public function getMorphClass(): string
-        {
-            return 'event_occurrence';
-        }
-
-        public function getKey(): string
-        {
-            return 'occ-1';
-        }
-    };
+    $subject = new EngagementSubject;
 
     $matches = iterator_to_array(
         $this->manager->matchingSubscriptions($subject, 'event_occurrence_published', [])
@@ -88,50 +58,50 @@ it('matches subscriptions through the console command', function (): void {
         'password' => 'secret',
     ]);
 
-    $event = OwnerContext::withOwner($owner, function (): Event {
-        return Event::factory()->published()->create([
-            'visibility' => 'public',
-            'delivery_mode' => 'online',
+    $subject = OwnerContext::withOwner($owner, function (): EngagementSubject {
+        return EngagementSubject::query()->create([
+            'name' => 'Subscription Command Subject',
+            'email' => 'subscription-command-subject-' . uniqid() . '@example.com',
+            'password' => 'secret',
         ]);
     });
 
-    OwnerContext::withOwner($owner, function () use ($event): void {
-        $this->manager->subscribe($this->subscriber, $event, 'updates', [
-            'visibility' => 'public',
-            'delivery_mode' => 'online',
-        ]);
+    OwnerContext::withOwner($owner, function () use ($subject): void {
+        $this->manager->subscribe($this->subscriber, $subject, 'updates');
     });
 
     EventFacade::fake([SubscriptionMatched::class]);
 
     expect(Artisan::call('engagement:match-subscriptions', [
-        'subjectType' => Event::class,
-        'subjectId' => $event->id,
+        'subjectType' => EngagementSubject::class,
+        'subjectId' => $subject->id,
         '--trigger' => 'event_published',
     ]))->toBe(0);
 
     EventFacade::assertDispatched(SubscriptionMatched::class, function (SubscriptionMatched $matched): bool {
-        return $matched->subscription->subscriber_id === 'user-1'
-            && $matched->subject instanceof Event
+        return $matched->subscription->subscriber_id === $this->subscriber->getKey()
+            && $matched->subject instanceof EngagementSubject
             && $matched->trigger === 'event_published';
     });
 });
 
 it('matches global subscriptions for subjects without an owner relation', function (): void {
-    $subject = User::query()->create([
-        'name' => 'Global Subscription Subject',
-        'email' => 'global-subject-' . uniqid() . '@example.com',
-        'password' => 'secret',
-    ]);
+    $subject = OwnerContext::withOwner(null, function (): EngagementSubject {
+        return EngagementSubject::query()->create([
+            'name' => 'Global Subscription Subject',
+            'email' => 'global-subject-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+    });
 
     OwnerContext::withOwner(null, function () use ($subject): void {
-        $this->manager->subscribe($subject, $subject, 'updates');
+        $this->manager->subscribe($this->subscriber, $subject, 'updates');
     });
 
     EventFacade::fake([SubscriptionMatched::class]);
 
     expect(Artisan::call('engagement:match-subscriptions', [
-        'subjectType' => User::class,
+        'subjectType' => EngagementSubject::class,
         'subjectId' => $subject->id,
         '--trigger' => 'user_updated',
     ]))->toBe(0);

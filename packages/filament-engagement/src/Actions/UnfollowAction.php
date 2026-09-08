@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEngagement\Actions;
 
 use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use Filament\Actions\Action;
 
 final class UnfollowAction
@@ -17,6 +18,7 @@ final class UnfollowAction
             ->color('danger')
             ->requiresConfirmation()
             ->action(function ($livewire, $record): void {
+                $record = ActionRecordResolver::resolveOrFail($record);
                 app(EngagementManager::class)->unfollow(auth()->user(), $record);
             });
     }

@@ -12,12 +12,14 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 /** @mixin Model */
 trait HasBookmarks
 {
+    use ReceivesEngagement;
+
     /**
      * @return MorphMany<Bookmark, $this>
      */
     public function bookmarks(): MorphMany
     {
-        return $this->morphMany(Bookmark::class, 'bookmarkable');
+        return $this->engagementRelation(Bookmark::class, 'bookmarkable');
     }
 
     /**
@@ -26,8 +28,6 @@ trait HasBookmarks
      */
     public function scopeActiveBookmarks(Builder $query): Builder
     {
-        return $query->whereHas('bookmarks', function (Builder $q): void {
-            $q->active();
-        });
+        return $this->activeEngagementScope($query, 'bookmarks');
     }
 }

@@ -4,19 +4,50 @@ title: Usage
 
 All engagement actions go through service contracts. Bind your own implementation to customize behavior.
 
+## Model contracts
+
+Manager boundaries are intentionally typed. Actor models must implement `CanInteract`; subject models must implement the marker contract for the operation they support. The marker interfaces describe the data needed by notifications and policy resolution, while the model itself supplies the Eloquent identity used for persistence.
+
+```php
+use AIArmada\Engagement\Contracts\CanInteract;
+use AIArmada\Engagement\Contracts\Followable;
+
+class User extends Model implements CanInteract
+{
+    public function interactionDisplayName(): string { return $this->name; }
+
+    public function interactionNotificationRoute(?string $channel = null): mixed
+    {
+        return $this->routeNotificationFor($channel);
+    }
+}
+
+class Speaker extends Model implements Followable
+{
+    public function followableName(): string { return $this->name; }
+    public function followableUrl(): ?string { return route('speakers.show', $this); }
+    public function followableImage(): ?string { return null; }
+    public function defaultFollowNotificationLevel(): ?string { return 'all'; }
+}
+```
+
+Passing a model that does not implement the required marker fails at the manager signature instead of failing during morph resolution.
+
 ## Following
 
 ```php
+use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Contracts\Followable;
 use AIArmada\Engagement\Traits\CanFollow;
 use AIArmada\Engagement\Traits\HasFollowers;
 
-// Actor model uses CanFollow trait
-class User extends Model { use CanFollow; }
+// Actor model implements CanInteract and uses CanFollow
+class User extends Model implements CanInteract { use CanFollow; }
 
-// Subject model uses HasFollowers trait
-class Speaker extends Model { use HasFollowers; }
+// Subject model implements Followable and uses HasFollowers
+class Speaker extends Model implements Followable { use HasFollowers; }
 
 // Follow a speaker
 $follow = app(EngagementManager::class)->follow($user, $speaker);
@@ -38,14 +69,16 @@ Follow statuses: `active`, `muted`, `unfollowed`, `blocked`. The package never d
 ## Bookmarking
 
 ```php
+use AIArmada\Engagement\Contracts\Bookmarkable;
+use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Traits\CanBookmark;
 use AIArmada\Engagement\Traits\HasBookmarks;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
-class User extends Model { use CanBookmark; }
-class Event extends Model { use HasBookmarks; }
+class User extends Model implements CanInteract { use CanBookmark; }
+class Event extends Model implements Bookmarkable { use HasBookmarks; }
 
 // Bookmark an event
 $bookmark = app(EngagementManager::class)->bookmark($user, $event);
@@ -70,13 +103,15 @@ app(EngagementManager::class)->removeBookmarkFromCollection($user, $bookmark, $c
 ## Responding (RSVP)
 
 ```php
+use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Contracts\Respondable;
 use AIArmada\Engagement\Traits\CanRespond;
 use AIArmada\Engagement\Traits\HasResponses;
 
-class User extends Model { use CanRespond; }
-class Occurrence extends Model { use HasResponses; }
+class User extends Model implements CanInteract { use CanRespond; }
+class Occurrence extends Model implements Respondable { use HasResponses; }
 
 // RSVP with a response type
 app(EngagementManager::class)->respond($user, $occurrence, 'going');
@@ -96,13 +131,15 @@ Common response types: `interested`, `going`, `maybe`, `not_going`. The response
 ## Reactions
 
 ```php
+use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Contracts\Reactable;
 use AIArmada\Engagement\Traits\CanReact;
 use AIArmada\Engagement\Traits\HasReactions;
 
-class User extends Model { use CanReact; }
-class Recording extends Model { use HasReactions; }
+class User extends Model implements CanInteract { use CanReact; }
+class Recording extends Model implements Reactable { use HasReactions; }
 
 // React to a recording
 app(EngagementManager::class)->react($user, $recording, 'like');
@@ -122,11 +159,14 @@ Common reaction types: `like`, `love`, `useful`, `support`, `insightful`, `funny
 ## Subscriptions
 
 ```php
+use AIArmada\Engagement\Contracts\CanInteract;
+use AIArmada\Engagement\Contracts\Subscribable;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Traits\CanSubscribe;
 use AIArmada\Engagement\Traits\HasSubscriptions;
 
-class User extends Model { use CanSubscribe; }
+class User extends Model implements CanInteract { use CanSubscribe; }
+class Event extends Model implements Subscribable { use HasSubscriptions; }
 
 // Subscribe to all online events
 $subscription = app(SubscriptionManager::class)->subscribe(
@@ -164,12 +204,14 @@ The `engagement:match-subscriptions` command processes subscriptions against mat
 ## Reminders
 
 ```php
+use AIArmada\Engagement\Contracts\CanInteract;
+use AIArmada\Engagement\Contracts\Remindable;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Traits\CanSetReminders;
 use AIArmada\Engagement\Traits\HasReminders;
 
-class User extends Model { use CanSetReminders; }
-class Occurrence extends Model { use HasReminders; }
+class User extends Model implements CanInteract { use CanSetReminders; }
+class Occurrence extends Model implements Remindable { use HasReminders; }
 
 // Set a reminder
 $reminder = app(ReminderManager::class)->setReminder(
@@ -185,21 +227,23 @@ $reminder = app(ReminderManager::class)->setReminder(
 // Cancel reminder
 app(ReminderManager::class)->cancelReminder($user, $occurrence, 'before_start');
 
-// The engagement:send-due-reminders command processes due reminders
+// The engagement:send-due-reminders command detects due reminders
 $due = app(ReminderManager::class)->dueReminders();
 ```
 
-Schedule `engagement:send-due-reminders` in your console kernel to deliver pending reminders.
+Schedule `engagement:send-due-reminders` in your console kernel. Engagement owns due detection and the `ReminderDue`/`ReminderSent` lifecycle; when `aiarmada/communications` is installed, the due event is delivered through `DispatchManagedNotificationAction` and receives an `engagement_reminder` communication reference. Without communications, host applications may provide their own `ReminderDue` listener.
 
 ## Sharing
 
 ```php
+use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Contracts\Shareable;
 use AIArmada\Engagement\Traits\CanShare;
 use AIArmada\Engagement\Traits\HasShares;
 
-class User extends Model { use CanShare; }
-class Event extends Model { use HasShares; }
+class User extends Model implements CanInteract { use CanShare; }
+class Event extends Model implements Shareable { use HasShares; }
 
 // Share an event to WhatsApp
 $share = app(EngagementManager::class)->share($user, $event, [
@@ -234,6 +278,9 @@ $counter->recalculate($event);
 ```
 
 Counters can be cached via the `EngagementCounter` model for performant display.
+All manager writes update the affected cached counters synchronously inside the
+same transaction. Direct model writes and imports bypass those lifecycle events;
+schedule `engagement:reconcile-counters` at least hourly as the repair cadence.
 
 ## Working with the state resolver
 
@@ -250,12 +297,14 @@ $subscriptions = $resolver->subscriptionsFor($user, $event);
 $reminders = $resolver->remindersFor($user, $occurrence);
 ```
 
-## Events package integration
+## Events package adapter and attendance separation
 
-When `aiarmada/events` is installed, the engagement package auto-registers an `EventEngagementManager` that connects engagement actions to event domain events. The bridge delegates all actions — `follow`, `bookmark`, `respond`, `subscribe`, `remind`, and `share` — through the engagement package's `EngagementManager`, creating proper persisted records with lifecycle events.
+When `aiarmada/events` is installed, the engagement package can bind an `EventEngagementManager` adapter for explicit calls. Event registration remains transactional attendance intent; engagement responses remain social-graph intent. The package does not automatically translate an `Interested` registration or an event-publication event into an engagement response or subscription match.
+
+Use `engagement:match-subscriptions` explicitly for content-based matching. The subject model supplied to that command must implement `Subscribable`.
 
 ```php
-// Sharing an event persists a Share record via EngagementManager
+// Sharing a compatible event subject persists a Share record via EngagementManager
 app(EngagementManager::class)->share($user, $event, ['channel' => 'twitter']);
 // → Share record created with status 'created', then 'shared'
 // → ShareCreated and ShareCompleted dispatched
@@ -263,7 +312,7 @@ app(EngagementManager::class)->share($user, $event, ['channel' => 'twitter']);
 
 The `stateFor()` method includes a `share` key with the active share's `id`, `share_url`, `share_token`, `channel`, `status`, and `shared_at`.
 
-To support rich share metadata, implement the `Shareable` contract on your event subject models, or add duck-type methods (`shareUrl()`, `shareTitle()`, `shareDescription()`, `shareImage()`). The `Event` model already includes these duck-type methods.
+To support rich share metadata, implement the `Shareable` contract on your event subject models. The typed manager does not use duck-typed share methods as a substitute for the contract.
 
 ```php
 $event->shareUrl();        // Generated from configured route

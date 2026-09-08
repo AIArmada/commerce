@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Contracts;
 
 use AIArmada\Engagement\Models\Bookmark;
+use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Models\Reminder;
@@ -13,33 +14,33 @@ use AIArmada\Engagement\Models\Share;
 
 interface EngagementManager
 {
-    public function follow(mixed $actor, mixed $subject, array $options = []): Follow;
+    public function follow(CanInteract $actor, Followable $subject, array $options = []): Follow;
 
-    public function unfollow(mixed $actor, mixed $subject, array $options = []): void;
+    public function unfollow(CanInteract $actor, Followable $subject, array $options = []): void;
 
-    public function muteFollow(mixed $actor, mixed $subject, array $options = []): Follow;
+    public function muteFollow(CanInteract $actor, Followable $subject, array $options = []): Follow;
 
-    public function unmuteFollow(mixed $actor, mixed $subject, array $options = []): Follow;
+    public function unmuteFollow(CanInteract $actor, Followable $subject, array $options = []): Follow;
 
-    public function bookmark(mixed $actor, mixed $subject, array $options = []): Bookmark;
+    public function bookmark(CanInteract $actor, Bookmarkable $subject, array $options = []): Bookmark;
 
-    public function removeBookmark(mixed $actor, mixed $subject, array $options = []): void;
+    public function removeBookmark(CanInteract $actor, Bookmarkable $subject, array $options = []): void;
 
-    public function archiveBookmark(mixed $actor, mixed $subject, array $options = []): void;
+    public function archiveBookmark(CanInteract $actor, Bookmarkable $subject, array $options = []): void;
 
-    public function respond(mixed $actor, mixed $subject, string $responseType, array $options = []): Response;
+    public function respond(CanInteract $actor, Respondable $subject, string $responseType, array $options = []): Response;
 
-    public function cancelResponse(mixed $actor, mixed $subject, array $options = []): void;
+    public function cancelResponse(CanInteract $actor, Respondable $subject, array $options = []): void;
 
-    public function react(mixed $actor, mixed $subject, string $reactionType, array $options = []): Reaction;
+    public function react(CanInteract $actor, Reactable $subject, string $reactionType, array $options = []): Reaction;
 
-    public function removeReaction(mixed $actor, mixed $subject, ?string $reactionType = null, array $options = []): void;
+    public function removeReaction(CanInteract $actor, Reactable $subject, ?string $reactionType = null, array $options = []): void;
 
-    public function remind(mixed $actor, mixed $subject, array $options = []): Reminder;
+    public function remind(CanInteract $actor, Remindable $subject, array $options = []): Reminder;
 
-    public function share(mixed $actor, mixed $subject, array $options = []): Share;
+    public function share(CanInteract $actor, Shareable $subject, array $options = []): Share;
 
-    public function addBookmarkToCollection(mixed $actor, mixed $bookmark, mixed $collection, array $options = []): void;
+    public function addBookmarkToCollection(CanInteract $actor, Bookmark $bookmark, BookmarkCollection $collection, array $options = []): void;
 
-    public function removeBookmarkFromCollection(mixed $actor, mixed $bookmark, mixed $collection, array $options = []): void;
+    public function removeBookmarkFromCollection(CanInteract $actor, Bookmark $bookmark, BookmarkCollection $collection, array $options = []): void;
 }

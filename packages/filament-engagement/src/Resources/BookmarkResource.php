@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Bookmark;
 use AIArmada\Engagement\Support\ModelResolver;
+use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -90,17 +91,22 @@ final class BookmarkResource extends Resource
             ])
             ->actions([
                 Action::make('remove')
-                    ->action(fn (Bookmark $record) => app(EngagementManager::class)
-                        ->removeBookmark($record->bookmarker, $record->bookmarkable))
+                    ->action(function (Bookmark $record): void {
+                        $record = ActionRecordResolver::resolve($record);
+                        app(EngagementManager::class)->removeBookmark($record->bookmarker, $record->bookmarkable);
+                    })
                     ->requiresConfirmation()
                     ->visible(fn (Bookmark $record) => $record->isActive()),
                 Action::make('restore')
-                    ->action(fn (Bookmark $record): Bookmark => app(EngagementManager::class)
-                        ->bookmark($record->bookmarker, $record->bookmarkable, [
+                    ->action(function (Bookmark $record): Bookmark {
+                        $record = ActionRecordResolver::resolve($record);
+
+                        return app(EngagementManager::class)->bookmark($record->bookmarker, $record->bookmarkable, [
                             'notes' => $record->notes,
                             'source' => $record->source,
                             'metadata' => $record->metadata,
-                        ]))
+                        ]);
+                    })
                     ->requiresConfirmation()
                     ->visible(fn (Bookmark $record) => $record->isRemoved()),
             ])
@@ -109,6 +115,7 @@ final class BookmarkResource extends Resource
                     ->action(function ($records): void {
                         foreach ($records as $record) {
                             if ($record instanceof Bookmark && $record->isActive()) {
+                                $record = ActionRecordResolver::resolve($record);
                                 app(EngagementManager::class)
                                     ->removeBookmark($record->bookmarker, $record->bookmarkable);
                             }

@@ -5,33 +5,13 @@ declare(strict_types=1);
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Enums\BookmarkStatus;
 use AIArmada\Engagement\Models\Bookmark;
+use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
+use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 
 beforeEach(function (): void {
     $this->manager = app(EngagementManager::class);
-    $this->actor = new class
-    {
-        public function getMorphClass(): string
-        {
-            return 'user';
-        }
-
-        public function getKey(): string
-        {
-            return 'user-1';
-        }
-    };
-    $this->subject = new class
-    {
-        public function getMorphClass(): string
-        {
-            return 'event';
-        }
-
-        public function getKey(): string
-        {
-            return 'event-1';
-        }
-    };
+    $this->actor = new EngagementActor;
+    $this->subject = new EngagementSubject;
 });
 
 it('creates a bookmark', function (): void {

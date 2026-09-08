@@ -6,43 +6,21 @@ use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Enums\SubscriptionStatus;
-use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Models\Subscription;
+use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
+use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 
 beforeEach(function (): void {
     $this->manager = app(EngagementManager::class);
     $this->subscriptionManager = app(SubscriptionManager::class);
-    $this->actor = new class
-    {
-        public function getMorphClass(): string
-        {
-            return 'user';
-        }
-
-        public function getKey(): string
-        {
-            return 'user-1';
-        }
-    };
-    $this->subject = new class
-    {
-        public function getMorphClass(): string
-        {
-            return 'event_occurrence';
-        }
-
-        public function getKey(): string
-        {
-            return 'occ-1';
-        }
-    };
+    $this->actor = new EngagementActor;
+    $this->subject = new EngagementSubject;
 });
 
 it('creates a subscription', function (): void {
     $subscription = $this->subscriptionManager->subscribe($this->actor, $this->subject, 'updates');
 
-    expect($subscription)->toBeInstanceOf(Subscription::class)
-        ->and($subscription->status)->toBe(SubscriptionStatus::Active);
+    expect($subscription->status)->toBe(SubscriptionStatus::Active);
 });
 
 it('unsubscribes via status change', function (): void {
@@ -58,8 +36,7 @@ it('creates a reminder via engagement manager', function (): void {
         'remind_at' => now()->addHours(1),
     ]);
 
-    expect($reminder)->toBeInstanceOf(Reminder::class)
-        ->and($reminder->status)->toBe(ReminderStatus::Pending);
+    expect($reminder->status)->toBe(ReminderStatus::Pending);
 });
 
 it('unmutes a subscription through the domain manager', function (): void {

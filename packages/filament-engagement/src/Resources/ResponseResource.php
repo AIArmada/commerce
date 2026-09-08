@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Support\ModelResolver;
+use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -87,17 +88,22 @@ final class ResponseResource extends Resource
             ->actions([
                 Action::make('cancel')
                     ->visible(fn (Response $record): bool => $record->isActive())
-                    ->action(fn (Response $record) => app(EngagementManager::class)
-                        ->cancelResponse($record->responder, $record->respondable))
+                    ->action(function (Response $record): void {
+                        $record = ActionRecordResolver::resolve($record);
+                        app(EngagementManager::class)->cancelResponse($record->responder, $record->respondable);
+                    })
                     ->requiresConfirmation(),
                 Action::make('restore')
                     ->visible(fn (Response $record): bool => $record->isCancelled())
-                    ->action(fn (Response $record): Response => app(EngagementManager::class)
-                        ->respond($record->responder, $record->respondable, $record->response_type, [
+                    ->action(function (Response $record): Response {
+                        $record = ActionRecordResolver::resolve($record);
+
+                        return app(EngagementManager::class)->respond($record->responder, $record->respondable, $record->response_type, [
                             'visibility' => $record->visibility,
                             'source' => $record->source,
                             'metadata' => $record->metadata,
-                        ]))
+                        ]);
+                    })
                     ->requiresConfirmation(),
             ]);
     }

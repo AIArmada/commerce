@@ -4,37 +4,19 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Communications\Models\Communication;
+use AIArmada\Communications\Models\CommunicationReference;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
+use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use Illuminate\Support\Facades\Artisan;
 
 beforeEach(function (): void {
     $this->manager = app(ReminderManager::class);
-    $this->recipient = new class
-    {
-        public function getMorphClass(): string
-        {
-            return 'user';
-        }
-
-        public function getKey(): string
-        {
-            return 'user-1';
-        }
-    };
-    $this->subject = new class
-    {
-        public function getMorphClass(): string
-        {
-            return 'event';
-        }
-
-        public function getKey(): string
-        {
-            return 'event-1';
-        }
-    };
+    $this->recipient = new EngagementActor;
+    $this->subject = new EngagementSubject;
 });
 
 it('only dispatches pending or scheduled reminders', function (): void {
@@ -42,7 +24,7 @@ it('only dispatches pending or scheduled reminders', function (): void {
         'remind_at' => now()->subMinute(),
     ]);
 
-    $due = $this->manager->dueReminders();
+    $due = collect($this->manager->dueReminders());
     expect($due)->not->toBeEmpty();
     expect($due->first()->status)->toBeIn([ReminderStatus::Pending, ReminderStatus::Scheduled]);
 
@@ -102,7 +84,18 @@ it('processes due reminders across owners', function (): void {
 
     foreach ([$ownerA, $ownerB] as $owner) {
         OwnerContext::withOwner($owner, function () use ($owner): void {
-            app(ReminderManager::class)->setReminder($owner, $owner, 'follow_up', [
+            $recipient = EngagementActor::query()->create([
+                'name' => 'Reminder Recipient ' . $owner->getKey(),
+                'email' => 'reminder-recipient-' . $owner->getKey() . '@example.com',
+                'password' => 'secret',
+            ]);
+            $subject = EngagementSubject::query()->create([
+                'name' => 'Reminder Subject ' . $owner->getKey(),
+                'email' => 'reminder-subject-' . $owner->getKey() . '@example.com',
+                'password' => 'secret',
+            ]);
+
+            app(ReminderManager::class)->setReminder($recipient, $subject, 'follow_up', [
                 'remind_at' => now()->subMinute(),
             ]);
         });
@@ -110,5 +103,9 @@ it('processes due reminders across owners', function (): void {
 
     expect(Artisan::call('engagement:send-due-reminders'))->toBe(0)
         ->and(Reminder::query()->withoutOwnerScope()->where('status', ReminderStatus::Sent)->count())
+        ->toBe(2)
+        ->and(Communication::query()->withoutOwnerScope()->where('purpose', 'engagement.reminder')->count())
+        ->toBe(2)
+        ->and(CommunicationReference::query()->withoutOwnerScope()->where('role', 'engagement_reminder')->count())
         ->toBe(2);
 });

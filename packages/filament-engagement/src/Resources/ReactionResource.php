@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Support\ModelResolver;
+use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -80,16 +81,21 @@ final class ReactionResource extends Resource
             ->actions([
                 Action::make('remove')
                     ->visible(fn (Reaction $record): bool => $record->isActive())
-                    ->action(fn (Reaction $record) => app(EngagementManager::class)
-                        ->removeReaction($record->reactor, $record->reactable, $record->reaction_type))
+                    ->action(function (Reaction $record): void {
+                        $record = ActionRecordResolver::resolve($record);
+                        app(EngagementManager::class)->removeReaction($record->reactor, $record->reactable, $record->reaction_type);
+                    })
                     ->requiresConfirmation(),
                 Action::make('restore')
                     ->visible(fn (Reaction $record): bool => $record->isRemoved())
-                    ->action(fn (Reaction $record): Reaction => app(EngagementManager::class)
-                        ->react($record->reactor, $record->reactable, $record->reaction_type, [
+                    ->action(function (Reaction $record): Reaction {
+                        $record = ActionRecordResolver::resolve($record);
+
+                        return app(EngagementManager::class)->react($record->reactor, $record->reactable, $record->reaction_type, [
                             'source' => $record->source,
                             'metadata' => $record->metadata,
-                        ]))
+                        ]);
+                    })
                     ->requiresConfirmation(),
             ]);
     }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Services;
 
+use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
+use AIArmada\Engagement\Contracts\Remindable;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Events\ReminderCancelled;
 use AIArmada\Engagement\Events\ReminderCreated;
@@ -12,6 +14,7 @@ use AIArmada\Engagement\Events\ReminderFailed;
 use AIArmada\Engagement\Events\ReminderScheduled;
 use AIArmada\Engagement\Events\ReminderSent;
 use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Support\EngagementModelGuard;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -22,8 +25,11 @@ final class DefaultReminderManager implements ReminderManager
         private readonly EngagementPolicyResolver $policy,
     ) {}
 
-    public function setReminder(mixed $recipient, mixed $subject, string $reminderType, array $options = []): Reminder
+    public function setReminder(CanInteract $recipient, Remindable $subject, string $reminderType, array $options = []): Reminder
     {
+        EngagementModelGuard::assertContract($recipient, CanInteract::class, 'recipient');
+        EngagementModelGuard::assertContract($subject, Remindable::class, 'subject');
+
         if (! $this->policy->canSetReminder($recipient, $subject, $reminderType)) {
             throw new AuthorizationException('Setting this reminder is not authorized.');
         }
@@ -35,11 +41,13 @@ final class DefaultReminderManager implements ReminderManager
             $remindAt = CarbonImmutable::now()->addDay();
         }
 
+        $recipientIdentity = EngagementModelGuard::identity($recipient, 'recipient');
+        $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
         $reminder = Reminder::query()->create([
-            'recipient_type' => $recipient->getMorphClass(),
-            'recipient_id' => $recipient->getKey(),
-            'remindable_type' => $subject->getMorphClass(),
-            'remindable_id' => $subject->getKey(),
+            'recipient_type' => $recipientIdentity['type'],
+            'recipient_id' => $recipientIdentity['id'],
+            'remindable_type' => $subjectIdentity['type'],
+            'remindable_id' => $subjectIdentity['id'],
             'reminder_type' => $reminderType,
             'status' => 'pending',
             'remind_at' => $remindAt,
@@ -62,13 +70,18 @@ final class DefaultReminderManager implements ReminderManager
         return $reminder;
     }
 
-    public function cancelReminder(mixed $recipient, mixed $subject, string $reminderType, array $options = []): void
+    public function cancelReminder(CanInteract $recipient, Remindable $subject, string $reminderType, array $options = []): void
     {
+        EngagementModelGuard::assertContract($recipient, CanInteract::class, 'recipient');
+        EngagementModelGuard::assertContract($subject, Remindable::class, 'subject');
+
+        $recipientIdentity = EngagementModelGuard::identity($recipient, 'recipient');
+        $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
         $reminder = Reminder::query()
-            ->where('recipient_type', $recipient->getMorphClass())
-            ->where('recipient_id', $recipient->getKey())
-            ->where('remindable_type', $subject->getMorphClass())
-            ->where('remindable_id', $subject->getKey())
+            ->where('recipient_type', $recipientIdentity['type'])
+            ->where('recipient_id', $recipientIdentity['id'])
+            ->where('remindable_type', $subjectIdentity['type'])
+            ->where('remindable_id', $subjectIdentity['id'])
             ->where('reminder_type', $reminderType)
             ->whereIn('status', ['pending', 'scheduled'])
             ->first();

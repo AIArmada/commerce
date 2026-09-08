@@ -9,9 +9,9 @@ use DateTimeInterface;
 
 interface ReminderManager
 {
-    public function setReminder(mixed $recipient, mixed $subject, string $reminderType, array $options = []): Reminder;
+    public function setReminder(CanInteract $recipient, Remindable $subject, string $reminderType, array $options = []): Reminder;
 
-    public function cancelReminder(mixed $recipient, mixed $subject, string $reminderType, array $options = []): void;
+    public function cancelReminder(CanInteract $recipient, Remindable $subject, string $reminderType, array $options = []): void;
 
     /** @return iterable<Reminder> */
     public function dueReminders(?DateTimeInterface $at = null): iterable;

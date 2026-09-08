@@ -5,9 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Engagement\Contracts\Bookmarkable;
+use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
+use AIArmada\Engagement\Contracts\Followable;
+use AIArmada\Engagement\Contracts\Reactable;
+use AIArmada\Engagement\Contracts\Remindable;
 use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Contracts\Respondable;
+use AIArmada\Engagement\Contracts\Shareable;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
 use AIArmada\Engagement\Enums\ResponseStatus;
 use AIArmada\Engagement\Enums\ShareStatus;
@@ -35,8 +42,10 @@ use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Models\Share;
+use AIArmada\Engagement\Support\EngagementModelGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class DefaultEngagementManager implements EngagementManager
@@ -47,377 +56,464 @@ final class DefaultEngagementManager implements EngagementManager
         private readonly ShareUrlGenerator $shareUrlGenerator,
     ) {}
 
-    public function follow(mixed $actor, mixed $subject, array $options = []): Follow
+    public function follow(CanInteract $actor, Followable $subject, array $options = []): Follow
     {
-        $this->authorize(
-            $this->policy->canFollow($actor, $subject),
-            'Following this subject is not authorized.',
-        );
+        $this->assertModels($actor, $subject, Followable::class);
 
-        $existing = Follow::query()
-            ->where('follower_type', $actor->getMorphClass())
-            ->where('follower_id', $actor->getKey())
-            ->where('followable_type', $subject->getMorphClass())
-            ->where('followable_id', $subject->getKey())
-            ->first();
+        return DB::transaction(function () use ($actor, $subject, $options): Follow {
+            $this->authorize(
+                $this->policy->canFollow($actor, $subject),
+                'Following this subject is not authorized.',
+            );
 
-        if ($existing && $existing->status === 'active') {
-            return $existing;
-        }
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $existing = Follow::query()
+                ->where('follower_type', $actorIdentity['type'])
+                ->where('follower_id', $actorIdentity['id'])
+                ->where('followable_type', $subjectIdentity['type'])
+                ->where('followable_id', $subjectIdentity['id'])
+                ->first();
 
-        if ($existing && $existing->status !== 'active') {
-            $existing->update([
+            if ($existing && $existing->status === 'active') {
+                return $existing;
+            }
+
+            if ($existing && $existing->status !== 'active') {
+                $existing->update([
+                    'status' => 'active',
+                    'unfollowed_at' => null,
+                    'followed_at' => CarbonImmutable::now(),
+                ]);
+                event(new FollowCreated($existing));
+
+                return $existing;
+            }
+
+            $follow = Follow::query()->create([
+                'follower_type' => $actorIdentity['type'],
+                'follower_id' => $actorIdentity['id'],
+                'followable_type' => $subjectIdentity['type'],
+                'followable_id' => $subjectIdentity['id'],
                 'status' => 'active',
-                'unfollowed_at' => null,
+                'notification_level' => $options['notification_level']
+                    ?? config('engagement.defaults.follow_notification_level', 'all'),
                 'followed_at' => CarbonImmutable::now(),
+                'source' => $options['source'] ?? null,
+                'metadata' => $options['metadata'] ?? null,
             ]);
-            event(new FollowCreated($existing));
 
-            return $existing;
-        }
+            event(new FollowCreated($follow));
 
-        $follow = Follow::query()->create([
-            'follower_type' => $actor->getMorphClass(),
-            'follower_id' => $actor->getKey(),
-            'followable_type' => $subject->getMorphClass(),
-            'followable_id' => $subject->getKey(),
-            'status' => 'active',
-            'notification_level' => $options['notification_level']
-                ?? config('engagement.defaults.follow_notification_level', 'all'),
-            'followed_at' => CarbonImmutable::now(),
-            'source' => $options['source'] ?? null,
-            'metadata' => $options['metadata'] ?? null,
-        ]);
-
-        event(new FollowCreated($follow));
-
-        return $follow;
+            return $follow;
+        });
     }
 
-    public function unfollow(mixed $actor, mixed $subject, array $options = []): void
+    public function unfollow(CanInteract $actor, Followable $subject, array $options = []): void
     {
-        $follow = Follow::query()
-            ->where('follower_type', $actor->getMorphClass())
-            ->where('follower_id', $actor->getKey())
-            ->where('followable_type', $subject->getMorphClass())
-            ->where('followable_id', $subject->getKey())
-            ->where('status', 'active')
-            ->first();
+        $this->assertModels($actor, $subject, Followable::class);
 
-        if ($follow) {
-            $follow->update(['status' => 'unfollowed', 'unfollowed_at' => CarbonImmutable::now()]);
-            event(new FollowRemoved($follow));
-        }
+        DB::transaction(function () use ($actor, $subject): void {
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $follow = Follow::query()
+                ->where('follower_type', $actorIdentity['type'])
+                ->where('follower_id', $actorIdentity['id'])
+                ->where('followable_type', $subjectIdentity['type'])
+                ->where('followable_id', $subjectIdentity['id'])
+                ->where('status', 'active')
+                ->first();
+
+            if ($follow) {
+                $follow->update(['status' => 'unfollowed', 'unfollowed_at' => CarbonImmutable::now()]);
+                event(new FollowRemoved($follow));
+            }
+        });
     }
 
-    public function muteFollow(mixed $actor, mixed $subject, array $options = []): Follow
+    public function muteFollow(CanInteract $actor, Followable $subject, array $options = []): Follow
     {
-        $follow = Follow::query()
-            ->where('follower_type', $actor->getMorphClass())
-            ->where('follower_id', $actor->getKey())
-            ->where('followable_type', $subject->getMorphClass())
-            ->where('followable_id', $subject->getKey())
-            ->where('status', 'active')
-            ->firstOrFail();
+        $this->assertModels($actor, $subject, Followable::class);
 
-        $follow->update(['status' => 'muted', 'muted_at' => CarbonImmutable::now()]);
-        event(new FollowMuted($follow));
+        return DB::transaction(function () use ($actor, $subject): Follow {
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $follow = Follow::query()
+                ->where('follower_type', $actorIdentity['type'])
+                ->where('follower_id', $actorIdentity['id'])
+                ->where('followable_type', $subjectIdentity['type'])
+                ->where('followable_id', $subjectIdentity['id'])
+                ->where('status', 'active')
+                ->firstOrFail();
 
-        return $follow;
+            $follow->update(['status' => 'muted', 'muted_at' => CarbonImmutable::now()]);
+            event(new FollowMuted($follow));
+
+            return $follow;
+        });
     }
 
-    public function unmuteFollow(mixed $actor, mixed $subject, array $options = []): Follow
+    public function unmuteFollow(CanInteract $actor, Followable $subject, array $options = []): Follow
     {
-        $follow = Follow::query()
-            ->where('follower_type', $actor->getMorphClass())
-            ->where('follower_id', $actor->getKey())
-            ->where('followable_type', $subject->getMorphClass())
-            ->where('followable_id', $subject->getKey())
-            ->where('status', 'muted')
-            ->firstOrFail();
+        $this->assertModels($actor, $subject, Followable::class);
 
-        $follow->update(['status' => 'active', 'muted_at' => null]);
-        event(new FollowUnmuted($follow));
+        return DB::transaction(function () use ($actor, $subject): Follow {
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $follow = Follow::query()
+                ->where('follower_type', $actorIdentity['type'])
+                ->where('follower_id', $actorIdentity['id'])
+                ->where('followable_type', $subjectIdentity['type'])
+                ->where('followable_id', $subjectIdentity['id'])
+                ->where('status', 'muted')
+                ->firstOrFail();
 
-        return $follow;
+            $follow->update(['status' => 'active', 'muted_at' => null]);
+            event(new FollowUnmuted($follow));
+
+            return $follow;
+        });
     }
 
-    public function bookmark(mixed $actor, mixed $subject, array $options = []): Bookmark
+    public function bookmark(CanInteract $actor, Bookmarkable $subject, array $options = []): Bookmark
     {
-        $this->authorize(
-            $this->policy->canBookmark($actor, $subject),
-            'Bookmarking this subject is not authorized.',
-        );
+        $this->assertModels($actor, $subject, Bookmarkable::class);
 
-        $existing = Bookmark::query()
-            ->where('bookmarker_type', $actor->getMorphClass())
-            ->where('bookmarker_id', $actor->getKey())
-            ->where('bookmarkable_type', $subject->getMorphClass())
-            ->where('bookmarkable_id', $subject->getKey())
-            ->first();
+        return DB::transaction(function () use ($actor, $subject, $options): Bookmark {
+            $this->authorize(
+                $this->policy->canBookmark($actor, $subject),
+                'Bookmarking this subject is not authorized.',
+            );
 
-        if ($existing && $existing->status === 'active') {
-            return $existing;
-        }
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $existing = Bookmark::query()
+                ->where('bookmarker_type', $actorIdentity['type'])
+                ->where('bookmarker_id', $actorIdentity['id'])
+                ->where('bookmarkable_type', $subjectIdentity['type'])
+                ->where('bookmarkable_id', $subjectIdentity['id'])
+                ->first();
 
-        if ($existing) {
-            $existing->update([
+            if ($existing && $existing->status === 'active') {
+                return $existing;
+            }
+
+            if ($existing) {
+                $existing->update([
+                    'status' => 'active',
+                    'removed_at' => null,
+                    'bookmarked_at' => CarbonImmutable::now(),
+                ]);
+                event(new BookmarkCreated($existing));
+
+                return $existing;
+            }
+
+            $bookmark = Bookmark::query()->create([
+                'bookmarker_type' => $actorIdentity['type'],
+                'bookmarker_id' => $actorIdentity['id'],
+                'bookmarkable_type' => $subjectIdentity['type'],
+                'bookmarkable_id' => $subjectIdentity['id'],
                 'status' => 'active',
-                'removed_at' => null,
+                'notes' => $options['notes'] ?? null,
                 'bookmarked_at' => CarbonImmutable::now(),
+                'source' => $options['source'] ?? null,
+                'metadata' => $options['metadata'] ?? null,
             ]);
-            event(new BookmarkCreated($existing));
 
-            return $existing;
-        }
+            event(new BookmarkCreated($bookmark));
 
-        $bookmark = Bookmark::query()->create([
-            'bookmarker_type' => $actor->getMorphClass(),
-            'bookmarker_id' => $actor->getKey(),
-            'bookmarkable_type' => $subject->getMorphClass(),
-            'bookmarkable_id' => $subject->getKey(),
-            'status' => 'active',
-            'notes' => $options['notes'] ?? null,
-            'bookmarked_at' => CarbonImmutable::now(),
-            'source' => $options['source'] ?? null,
-            'metadata' => $options['metadata'] ?? null,
-        ]);
-
-        event(new BookmarkCreated($bookmark));
-
-        return $bookmark;
+            return $bookmark;
+        });
     }
 
-    public function removeBookmark(mixed $actor, mixed $subject, array $options = []): void
+    public function removeBookmark(CanInteract $actor, Bookmarkable $subject, array $options = []): void
     {
-        $bookmark = Bookmark::query()
-            ->where('bookmarker_type', $actor->getMorphClass())
-            ->where('bookmarker_id', $actor->getKey())
-            ->where('bookmarkable_type', $subject->getMorphClass())
-            ->where('bookmarkable_id', $subject->getKey())
-            ->where('status', 'active')
-            ->first();
+        $this->assertModels($actor, $subject, Bookmarkable::class);
 
-        if ($bookmark) {
-            $bookmark->update(['status' => 'removed', 'removed_at' => CarbonImmutable::now()]);
-            event(new BookmarkRemoved($bookmark));
-        }
+        DB::transaction(function () use ($actor, $subject): void {
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $bookmark = Bookmark::query()
+                ->where('bookmarker_type', $actorIdentity['type'])
+                ->where('bookmarker_id', $actorIdentity['id'])
+                ->where('bookmarkable_type', $subjectIdentity['type'])
+                ->where('bookmarkable_id', $subjectIdentity['id'])
+                ->where('status', 'active')
+                ->first();
+
+            if ($bookmark) {
+                $bookmark->update(['status' => 'removed', 'removed_at' => CarbonImmutable::now()]);
+                event(new BookmarkRemoved($bookmark));
+            }
+        });
     }
 
-    public function archiveBookmark(mixed $actor, mixed $subject, array $options = []): void
+    public function archiveBookmark(CanInteract $actor, Bookmarkable $subject, array $options = []): void
     {
-        $bookmark = Bookmark::query()
-            ->where('bookmarker_type', $actor->getMorphClass())
-            ->where('bookmarker_id', $actor->getKey())
-            ->where('bookmarkable_type', $subject->getMorphClass())
-            ->where('bookmarkable_id', $subject->getKey())
-            ->where('status', 'active')
-            ->first();
+        $this->assertModels($actor, $subject, Bookmarkable::class);
 
-        if ($bookmark) {
-            $bookmark->update(['status' => 'archived', 'archived_at' => CarbonImmutable::now()]);
-            event(new BookmarkArchived($bookmark));
-        }
+        DB::transaction(function () use ($actor, $subject): void {
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $bookmark = Bookmark::query()
+                ->where('bookmarker_type', $actorIdentity['type'])
+                ->where('bookmarker_id', $actorIdentity['id'])
+                ->where('bookmarkable_type', $subjectIdentity['type'])
+                ->where('bookmarkable_id', $subjectIdentity['id'])
+                ->where('status', 'active')
+                ->first();
+
+            if ($bookmark) {
+                $bookmark->update(['status' => 'archived', 'archived_at' => CarbonImmutable::now()]);
+                event(new BookmarkArchived($bookmark));
+            }
+        });
     }
 
-    public function respond(mixed $actor, mixed $subject, string $responseType, array $options = []): Response
+    public function respond(CanInteract $actor, Respondable $subject, string $responseType, array $options = []): Response
     {
-        $this->authorize(
-            $this->policy->canRespond($actor, $subject, $responseType),
-            'Responding to this subject is not authorized.',
-        );
+        $this->assertModels($actor, $subject, Respondable::class);
 
-        $existing = Response::query()
-            ->where('responder_type', $actor->getMorphClass())
-            ->where('responder_id', $actor->getKey())
-            ->where('respondable_type', $subject->getMorphClass())
-            ->where('respondable_id', $subject->getKey())
-            ->first();
+        return DB::transaction(function () use ($actor, $subject, $responseType, $options): Response {
+            $this->authorize(
+                $this->policy->canRespond($actor, $subject, $responseType),
+                'Responding to this subject is not authorized.',
+            );
 
-        if ($existing) {
-            $oldType = $existing->response_type;
-            $existing->update([
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $existing = Response::query()
+                ->where('responder_type', $actorIdentity['type'])
+                ->where('responder_id', $actorIdentity['id'])
+                ->where('respondable_type', $subjectIdentity['type'])
+                ->where('respondable_id', $subjectIdentity['id'])
+                ->first();
+
+            if ($existing) {
+                $oldType = $existing->response_type;
+                $existing->update([
+                    'response_type' => $responseType,
+                    'status' => ResponseStatus::Active,
+                    'changed_at' => CarbonImmutable::now(),
+                    'cancelled_at' => null,
+                    'metadata' => array_merge(
+                        (array) $existing->metadata,
+                        ['previous_response_type' => $oldType],
+                    ),
+                ]);
+                event(new ResponseChanged($existing, $oldType));
+
+                return $existing;
+            }
+
+            $response = Response::query()->create([
+                'responder_type' => $actorIdentity['type'],
+                'responder_id' => $actorIdentity['id'],
+                'respondable_type' => $subjectIdentity['type'],
+                'respondable_id' => $subjectIdentity['id'],
                 'response_type' => $responseType,
-                'status' => ResponseStatus::Active,
-                'changed_at' => CarbonImmutable::now(),
-                'cancelled_at' => null,
-                'metadata' => array_merge(
-                    (array) $existing->metadata,
-                    ['previous_response_type' => $oldType],
-                ),
-            ]);
-            event(new ResponseChanged($existing, $oldType));
-
-            return $existing;
-        }
-
-        $response = Response::query()->create([
-            'responder_type' => $actor->getMorphClass(),
-            'responder_id' => $actor->getKey(),
-            'respondable_type' => $subject->getMorphClass(),
-            'respondable_id' => $subject->getKey(),
-            'response_type' => $responseType,
-            'status' => 'active',
-            'visibility' => $options['visibility']
-                ?? config('engagement.defaults.response_visibility', 'public'),
-            'responded_at' => CarbonImmutable::now(),
-            'source' => $options['source'] ?? null,
-            'metadata' => $options['metadata'] ?? null,
-        ]);
-
-        event(new ResponseCreated($response));
-
-        return $response;
-    }
-
-    public function cancelResponse(mixed $actor, mixed $subject, array $options = []): void
-    {
-        $response = Response::query()
-            ->where('responder_type', $actor->getMorphClass())
-            ->where('responder_id', $actor->getKey())
-            ->where('respondable_type', $subject->getMorphClass())
-            ->where('respondable_id', $subject->getKey())
-            ->where('status', 'active')
-            ->first();
-
-        if ($response) {
-            $response->update(['status' => 'cancelled', 'cancelled_at' => CarbonImmutable::now()]);
-            event(new ResponseCancelled($response));
-        }
-    }
-
-    public function react(mixed $actor, mixed $subject, string $reactionType, array $options = []): Reaction
-    {
-        $this->authorize(
-            $this->policy->canReact($actor, $subject, $reactionType),
-            'Reacting to this subject is not authorized.',
-        );
-
-        $existing = Reaction::query()
-            ->where('reactor_type', $actor->getMorphClass())
-            ->where('reactor_id', $actor->getKey())
-            ->where('reactable_type', $subject->getMorphClass())
-            ->where('reactable_id', $subject->getKey())
-            ->where('reaction_type', $reactionType)
-            ->first();
-
-        if ($existing && $existing->status === 'active') {
-            return $existing;
-        }
-
-        if ($existing) {
-            $existing->update([
                 'status' => 'active',
-                'removed_at' => null,
-                'reacted_at' => CarbonImmutable::now(),
+                'visibility' => $options['visibility']
+                    ?? config('engagement.defaults.response_visibility', 'public'),
+                'responded_at' => CarbonImmutable::now(),
+                'source' => $options['source'] ?? null,
+                'metadata' => $options['metadata'] ?? null,
             ]);
-            event(new ReactionCreated($existing));
 
-            return $existing;
-        }
+            event(new ResponseCreated($response));
 
-        $reaction = Reaction::query()->create([
-            'reactor_type' => $actor->getMorphClass(),
-            'reactor_id' => $actor->getKey(),
-            'reactable_type' => $subject->getMorphClass(),
-            'reactable_id' => $subject->getKey(),
-            'reaction_type' => $reactionType,
-            'status' => 'active',
-            'reacted_at' => CarbonImmutable::now(),
-            'source' => $options['source'] ?? null,
-            'metadata' => $options['metadata'] ?? null,
-        ]);
-
-        event(new ReactionCreated($reaction));
-
-        return $reaction;
+            return $response;
+        });
     }
 
-    public function removeReaction(mixed $actor, mixed $subject, ?string $reactionType = null, array $options = []): void
+    public function cancelResponse(CanInteract $actor, Respondable $subject, array $options = []): void
     {
-        $query = Reaction::query()
-            ->where('reactor_type', $actor->getMorphClass())
-            ->where('reactor_id', $actor->getKey())
-            ->where('reactable_type', $subject->getMorphClass())
-            ->where('reactable_id', $subject->getKey())
-            ->where('status', 'active');
+        $this->assertModels($actor, $subject, Respondable::class);
 
-        if ($reactionType) {
-            $query->where('reaction_type', $reactionType);
-        }
+        DB::transaction(function () use ($actor, $subject): void {
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $response = Response::query()
+                ->where('responder_type', $actorIdentity['type'])
+                ->where('responder_id', $actorIdentity['id'])
+                ->where('respondable_type', $subjectIdentity['type'])
+                ->where('respondable_id', $subjectIdentity['id'])
+                ->where('status', 'active')
+                ->first();
 
-        foreach ($query->get() as $reaction) {
-            $reaction->update(['status' => 'removed', 'removed_at' => CarbonImmutable::now()]);
-            event(new ReactionRemoved($reaction));
-        }
+            if ($response) {
+                $response->update(['status' => 'cancelled', 'cancelled_at' => CarbonImmutable::now()]);
+                event(new ResponseCancelled($response));
+            }
+        });
     }
 
-    public function remind(mixed $actor, mixed $subject, array $options = []): Reminder
+    public function react(CanInteract $actor, Reactable $subject, string $reactionType, array $options = []): Reaction
     {
+        $this->assertModels($actor, $subject, Reactable::class);
+
+        return DB::transaction(function () use ($actor, $subject, $reactionType, $options): Reaction {
+            $this->authorize(
+                $this->policy->canReact($actor, $subject, $reactionType),
+                'Reacting to this subject is not authorized.',
+            );
+
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $existing = Reaction::query()
+                ->where('reactor_type', $actorIdentity['type'])
+                ->where('reactor_id', $actorIdentity['id'])
+                ->where('reactable_type', $subjectIdentity['type'])
+                ->where('reactable_id', $subjectIdentity['id'])
+                ->where('reaction_type', $reactionType)
+                ->first();
+
+            if ($existing && $existing->status === 'active') {
+                return $existing;
+            }
+
+            if ($existing) {
+                $existing->update([
+                    'status' => 'active',
+                    'removed_at' => null,
+                    'reacted_at' => CarbonImmutable::now(),
+                ]);
+                event(new ReactionCreated($existing));
+
+                return $existing;
+            }
+
+            $reaction = Reaction::query()->create([
+                'reactor_type' => $actorIdentity['type'],
+                'reactor_id' => $actorIdentity['id'],
+                'reactable_type' => $subjectIdentity['type'],
+                'reactable_id' => $subjectIdentity['id'],
+                'reaction_type' => $reactionType,
+                'status' => 'active',
+                'reacted_at' => CarbonImmutable::now(),
+                'source' => $options['source'] ?? null,
+                'metadata' => $options['metadata'] ?? null,
+            ]);
+
+            event(new ReactionCreated($reaction));
+
+            return $reaction;
+        });
+    }
+
+    public function removeReaction(CanInteract $actor, Reactable $subject, ?string $reactionType = null, array $options = []): void
+    {
+        $this->assertModels($actor, $subject, Reactable::class);
+
+        DB::transaction(function () use ($actor, $subject, $reactionType): void {
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $query = Reaction::query()
+                ->where('reactor_type', $actorIdentity['type'])
+                ->where('reactor_id', $actorIdentity['id'])
+                ->where('reactable_type', $subjectIdentity['type'])
+                ->where('reactable_id', $subjectIdentity['id'])
+                ->where('status', 'active');
+
+            if ($reactionType) {
+                $query->where('reaction_type', $reactionType);
+            }
+
+            foreach ($query->get() as $reaction) {
+                $reaction->update(['status' => 'removed', 'removed_at' => CarbonImmutable::now()]);
+                event(new ReactionRemoved($reaction));
+            }
+        });
+    }
+
+    public function remind(CanInteract $actor, Remindable $subject, array $options = []): Reminder
+    {
+        $this->assertModels($actor, $subject, Remindable::class);
+
         return $this->reminderManager->setReminder($actor, $subject, $options['reminder_type'] ?? 'before_start', $options);
     }
 
-    public function share(mixed $actor, mixed $subject, array $options = []): Share
+    public function share(CanInteract $actor, Shareable $subject, array $options = []): Share
     {
-        $share = Share::query()->create([
-            'sharer_type' => $actor->getMorphClass(),
-            'sharer_id' => $actor->getKey(),
-            'shareable_type' => $subject->getMorphClass(),
-            'shareable_id' => $subject->getKey(),
-            'channel' => $options['channel'] ?? null,
-            'destination' => $options['destination'] ?? null,
-            'share_token' => $options['token'] ?? Str::random(16),
-            'message' => $options['message'] ?? null,
-            'status' => ShareStatus::Created,
-            'share_intent_at' => CarbonImmutable::now(),
-            'metadata' => $options['metadata'] ?? null,
-        ]);
+        $this->assertModels($actor, $subject, Shareable::class);
 
-        event(new ShareCreated($share));
-
-        if ($options['complete'] ?? true) {
-            $shareUrl = $this->shareUrlGenerator->generateShareUrl($subject, $options);
-            $share->update([
-                'share_url' => $shareUrl,
-                'status' => ShareStatus::Shared,
-                'shared_at' => CarbonImmutable::now(),
+        return DB::transaction(function () use ($actor, $subject, $options): Share {
+            $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
+            $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
+            $share = Share::query()->create([
+                'sharer_type' => $actorIdentity['type'],
+                'sharer_id' => $actorIdentity['id'],
+                'shareable_type' => $subjectIdentity['type'],
+                'shareable_id' => $subjectIdentity['id'],
+                'channel' => $options['channel'] ?? null,
+                'destination' => $options['destination'] ?? null,
+                'share_token' => $options['token'] ?? Str::random(16),
+                'message' => $options['message'] ?? null,
+                'status' => ShareStatus::Created,
+                'share_intent_at' => CarbonImmutable::now(),
+                'metadata' => $options['metadata'] ?? null,
             ]);
-            event(new ShareCompleted($share));
-        }
 
-        return $share;
+            event(new ShareCreated($share));
+
+            if ($options['complete'] ?? true) {
+                $shareUrl = $this->shareUrlGenerator->generateShareUrl($subject, $options);
+                $share->update([
+                    'share_url' => $shareUrl,
+                    'status' => ShareStatus::Shared,
+                    'shared_at' => CarbonImmutable::now(),
+                ]);
+                event(new ShareCompleted($share));
+            }
+
+            return $share;
+        });
     }
 
-    public function addBookmarkToCollection(mixed $actor, mixed $bookmark, mixed $collection, array $options = []): void
+    public function addBookmarkToCollection(CanInteract $actor, Bookmark $bookmark, BookmarkCollection $collection, array $options = []): void
     {
-        $bookmark = OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmark->getKey());
-        $collection = OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->getKey());
+        EngagementModelGuard::assertContract($actor, CanInteract::class, 'actor');
 
-        BookmarkCollectionItem::query()->firstOrCreate([
-            'bookmark_collection_id' => $collection->getKey(),
-            'bookmark_id' => $bookmark->getKey(),
-        ], [
-            'added_at' => CarbonImmutable::now(),
-            'notes' => $options['notes'] ?? null,
-        ]);
+        DB::transaction(function () use ($bookmark, $collection, $options): void {
+            $bookmark = OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmark->getKey());
+            $collection = OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->getKey());
 
-        event(new BookmarkAddedToCollection($bookmark, $collection));
+            BookmarkCollectionItem::query()->firstOrCreate([
+                'bookmark_collection_id' => $collection->getKey(),
+                'bookmark_id' => $bookmark->getKey(),
+            ], [
+                'added_at' => CarbonImmutable::now(),
+                'notes' => $options['notes'] ?? null,
+            ]);
+
+            event(new BookmarkAddedToCollection($bookmark, $collection));
+        });
     }
 
-    public function removeBookmarkFromCollection(mixed $actor, mixed $bookmark, mixed $collection, array $options = []): void
+    public function removeBookmarkFromCollection(CanInteract $actor, Bookmark $bookmark, BookmarkCollection $collection, array $options = []): void
     {
-        $bookmark = OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmark->getKey());
-        $collection = OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->getKey());
+        EngagementModelGuard::assertContract($actor, CanInteract::class, 'actor');
 
-        $item = BookmarkCollectionItem::query()
-            ->where('bookmark_collection_id', $collection->getKey())
-            ->where('bookmark_id', $bookmark->getKey())
-            ->first();
+        DB::transaction(function () use ($bookmark, $collection): void {
+            $bookmark = OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmark->getKey());
+            $collection = OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->getKey());
+            $item = BookmarkCollectionItem::query()
+                ->where('bookmark_collection_id', $collection->getKey())
+                ->where('bookmark_id', $bookmark->getKey())
+                ->first();
 
-        if ($item) {
-            $item->update(['removed_at' => CarbonImmutable::now()]);
-            event(new BookmarkRemovedFromCollection($bookmark, $collection));
-        }
+            if ($item) {
+                $item->update(['removed_at' => CarbonImmutable::now()]);
+                event(new BookmarkRemovedFromCollection($bookmark, $collection));
+            }
+        });
+    }
+
+    private function assertModels(CanInteract $actor, object $subject, string $subjectContract): void
+    {
+        EngagementModelGuard::assertContract($actor, CanInteract::class, 'actor');
+        EngagementModelGuard::assertContract($subject, $subjectContract, 'subject');
     }
 
     private function authorize(bool $allowed, string $message): void

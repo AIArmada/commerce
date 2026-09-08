@@ -8,6 +8,12 @@ use AIArmada\Engagement\Contracts\EngagementCounterService;
 use AIArmada\Engagement\Events\BookmarkArchived;
 use AIArmada\Engagement\Events\BookmarkCreated;
 use AIArmada\Engagement\Events\BookmarkRemoved;
+use AIArmada\Engagement\Events\FollowCreated;
+use AIArmada\Engagement\Events\FollowMuted;
+use AIArmada\Engagement\Events\FollowRemoved;
+use AIArmada\Engagement\Events\FollowUnmuted;
+use AIArmada\Engagement\Events\ReactionCreated;
+use AIArmada\Engagement\Events\ReactionRemoved;
 use AIArmada\Engagement\Events\ResponseCancelled;
 use AIArmada\Engagement\Events\ResponseChanged;
 use AIArmada\Engagement\Events\ResponseCreated;
@@ -35,11 +41,7 @@ final class DefaultEngagementCounterService implements EngagementCounterService
 
     public function countFollowers(mixed $subject): int
     {
-        return Follow::query()
-            ->where('followable_type', $subject->getMorphClass())
-            ->where('followable_id', $subject->getKey())
-            ->where('status', 'active')
-            ->count();
+        return $this->countFollowersByIdentity($subject->getMorphClass(), (string) $subject->getKey());
     }
 
     public function countBookmarks(mixed $subject): int
@@ -61,6 +63,15 @@ final class DefaultEngagementCounterService implements EngagementCounterService
         return Bookmark::query()
             ->where('bookmarkable_type', $subjectType)
             ->where('bookmarkable_id', $subjectId)
+            ->where('status', 'active')
+            ->count();
+    }
+
+    private function countFollowersByIdentity(string $subjectType, string $subjectId): int
+    {
+        return Follow::query()
+            ->where('followable_type', $subjectType)
+            ->where('followable_id', $subjectId)
             ->where('status', 'active')
             ->count();
     }
@@ -130,26 +141,22 @@ final class DefaultEngagementCounterService implements EngagementCounterService
             ->where('followable_type', $subjectType)
             ->where('followable_id', $subjectId)
             ->where('status', 'active')
-            ->selectRaw('COUNT(*) as followers')
-            ->selectRaw('COUNT(*)');
+            ->selectRaw('COUNT(*) as followers');
         $bookmarks = Bookmark::query()
             ->where('bookmarkable_type', $subjectType)
             ->where('bookmarkable_id', $subjectId)
             ->where('status', 'active')
-            ->selectRaw('COUNT(*) as bookmarks')
-            ->selectRaw('COUNT(*)');
+            ->selectRaw('COUNT(*) as bookmarks');
         $responses = Response::query()
             ->where('respondable_type', $subjectType)
             ->where('respondable_id', $subjectId)
             ->where('status', 'active')
-            ->selectRaw('COUNT(*) as responses')
-            ->selectRaw('COUNT(*)');
+            ->selectRaw('COUNT(*) as responses');
         $reactions = Reaction::query()
             ->where('reactable_type', $subjectType)
             ->where('reactable_id', $subjectId)
             ->where('status', 'active')
-            ->selectRaw('COUNT(*) as reactions')
-            ->selectRaw('COUNT(*)');
+            ->selectRaw('COUNT(*) as reactions');
 
         $totals = DB::query()
             ->selectSub($followers, 'followers')
@@ -169,6 +176,27 @@ final class DefaultEngagementCounterService implements EngagementCounterService
     public function recalculateBookmarks(mixed $subject): void
     {
         $this->recalculateBookmarksByIdentity($subject->getMorphClass(), (string) $subject->getKey());
+    }
+
+    public function recalculateFollowers(mixed $subject): void
+    {
+        $this->recalculateFollowersByIdentity($subject->getMorphClass(), (string) $subject->getKey());
+    }
+
+    private function recalculateFollowersByIdentity(string $subjectType, string $subjectId): void
+    {
+        EngagementCounter::query()->updateOrCreate(
+            [
+                'subject_type' => $subjectType,
+                'subject_id' => $subjectId,
+                'counter_type' => 'followers',
+                'counter_key' => '',
+            ],
+            [
+                'count_value' => $this->countFollowersByIdentity($subjectType, $subjectId),
+                'recalculated_at' => CarbonImmutable::now(),
+            ],
+        );
     }
 
     private function recalculateBookmarksByIdentity(string $subjectType, string $subjectId): void
@@ -212,6 +240,83 @@ final class DefaultEngagementCounterService implements EngagementCounterService
                 ],
             );
         }
+    }
+
+    public function recalculateReactions(mixed $subject, ?string $reactionType = null): void
+    {
+        $this->recalculateReactionsByIdentity($subject->getMorphClass(), (string) $subject->getKey(), $reactionType);
+    }
+
+    private function recalculateReactionsByIdentity(string $subjectType, string $subjectId, ?string $reactionType = null): void
+    {
+        $counterKeys = array_values(array_unique(array_filter(['', $reactionType], static fn (?string $key): bool => $key !== null)));
+
+        foreach ($counterKeys as $counterKey) {
+            EngagementCounter::query()->updateOrCreate(
+                [
+                    'subject_type' => $subjectType,
+                    'subject_id' => $subjectId,
+                    'counter_type' => 'reactions',
+                    'counter_key' => $counterKey,
+                ],
+                [
+                    'count_value' => $this->countReactionsByIdentity($subjectType, $subjectId, $counterKey === '' ? null : $counterKey),
+                    'recalculated_at' => CarbonImmutable::now(),
+                ],
+            );
+        }
+    }
+
+    private function countReactionsByIdentity(string $subjectType, string $subjectId, ?string $reactionType = null): int
+    {
+        $query = Reaction::query()
+            ->where('reactable_type', $subjectType)
+            ->where('reactable_id', $subjectId)
+            ->where('status', 'active');
+
+        if ($reactionType !== null) {
+            $query->where('reaction_type', $reactionType);
+        }
+
+        return $query->count();
+    }
+
+    public function onFollowCreated(FollowCreated $event): void
+    {
+        $this->recalculateFollowersByIdentity($event->follow->followable_type, (string) $event->follow->followable_id);
+    }
+
+    public function onFollowRemoved(FollowRemoved $event): void
+    {
+        $this->recalculateFollowersByIdentity($event->follow->followable_type, (string) $event->follow->followable_id);
+    }
+
+    public function onFollowMuted(FollowMuted $event): void
+    {
+        $this->recalculateFollowersByIdentity($event->follow->followable_type, (string) $event->follow->followable_id);
+    }
+
+    public function onFollowUnmuted(FollowUnmuted $event): void
+    {
+        $this->recalculateFollowersByIdentity($event->follow->followable_type, (string) $event->follow->followable_id);
+    }
+
+    public function onReactionCreated(ReactionCreated $event): void
+    {
+        $this->recalculateReactionsByIdentity(
+            $event->reaction->reactable_type,
+            (string) $event->reaction->reactable_id,
+            $event->reaction->reaction_type,
+        );
+    }
+
+    public function onReactionRemoved(ReactionRemoved $event): void
+    {
+        $this->recalculateReactionsByIdentity(
+            $event->reaction->reactable_type,
+            (string) $event->reaction->reactable_id,
+            $event->reaction->reaction_type,
+        );
     }
 
     public function onBookmarkCreated(BookmarkCreated $event): void

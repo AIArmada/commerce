@@ -17,7 +17,7 @@ title: Engagement Overview
 - Share tracking (WhatsApp, Telegram, email, etc.)
 - Interaction counters for followers, bookmarks, responses, reactions
 - Console commands for delivering due reminders and matching subscriptions
-- Events package integration for engagement-driven event recommendations
+- Optional Events package adapter for explicit engagement actions
 
 ## What this package does not own
 
@@ -47,7 +47,7 @@ title: Engagement Overview
 - Reminder delivery schedule with Laravel Notifications
 - Share tracking with unique tokens and channel attribution
 - Interaction counters with follower/bookmark/reaction/response counts
-- Events package integration for engagement-driven event recommendations
+- Explicit Events package adapter calls; event attendance is not mirrored into social responses
 - 7 service contracts, all with default implementations
 
 ## Contracts and Services
@@ -103,3 +103,5 @@ Apply to your models to add engagement capabilities:
 - PHP 8.4+
 - Laravel 11+
 - `aiarmada/commerce-support`
+
+Engagement actors must implement `CanInteract`. Each subject passed to a manager must implement the marker contract for that primitive (`Followable`, `Bookmarkable`, `Respondable`, `Reactable`, `Remindable`, `Shareable`, or `Subscribable`).
