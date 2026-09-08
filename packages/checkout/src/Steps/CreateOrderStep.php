@@ -7,9 +7,11 @@ namespace AIArmada\Checkout\Steps;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Support\CheckoutCartResolver;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -74,28 +76,46 @@ final class CreateOrderStep extends AbstractCheckoutStep
             $shippingData = $session->shipping_data ?? [];
             $billingData = $session->billing_data ?? [];
 
-            $orderData = [
-                'customer_id' => $customer?->getKey(),
-                'customer_type' => $customer?->getMorphClass(),
-                'subtotal' => $session->subtotal,
-                'discount_total' => $session->discount_total,
-                'shipping_total' => $session->shipping_total,
-                'tax_total' => $session->tax_total,
-                'grand_total' => $session->grand_total,
-                'currency' => $session->currency,
-                'metadata' => $this->buildOrderMetadata($session, $paymentData),
-            ];
+            $liveCart = app(CheckoutCartResolver::class)->resolveLiveCart($session);
 
-            $items = $this->buildOrderItems($session);
+            if ($liveCart !== null) {
+                if (! $customer instanceof Model) {
+                    return $this->failed('Checkout customer is required to create an order');
+                }
 
-            $order = $orderService->createOrder(
-                orderData: $orderData,
-                items: $items,
-                billingAddress: $billingData ?: null,
-                shippingAddress: $shippingData ?: null,
-                intakeSource: 'checkout',
-                intakeId: $session->getKey(),
-            );
+                $order = $orderService->createFromCart(
+                    cart: $liveCart,
+                    customer: $customer,
+                    billingAddress: $billingData ?: null,
+                    shippingAddress: $shippingData ?: null,
+                    intakeSource: 'checkout',
+                    intakeId: $session->getKey(),
+                    sessionId: $session->id,
+                );
+            } else {
+                $orderData = [
+                    'customer_id' => $customer?->getKey(),
+                    'customer_type' => $customer?->getMorphClass(),
+                    'subtotal' => $session->subtotal,
+                    'discount_total' => $session->discount_total,
+                    'shipping_total' => $session->shipping_total,
+                    'tax_total' => $session->tax_total,
+                    'grand_total' => $session->grand_total,
+                    'currency' => $session->currency,
+                    'metadata' => $this->buildOrderMetadata($session, $paymentData),
+                ];
+
+                $items = $this->buildOrderItems($session);
+
+                $order = $orderService->createOrder(
+                    orderData: $orderData,
+                    items: $items,
+                    billingAddress: $billingData ?: null,
+                    shippingAddress: $shippingData ?: null,
+                    intakeSource: 'checkout',
+                    intakeId: $session->getKey(),
+                );
+            }
 
             // Persist order_id immediately — before payment confirmation — so retries reuse this order
             $session->order_id = $order->id;

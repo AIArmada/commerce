@@ -63,10 +63,12 @@ reported and taken on trust; code correctness was verified directly.
   uniqueness with self-exclusion.
 - Filament merge search was already owner-scoped (`OwnerUiScope`) — no
   change needed.
-- Post-track migration (see `migration-record.md` appendix): owner-aware
-  email unique (driver-aware partial/functional indexes, preflights).
-  App-level race remains possible without it; the constraint is the real
-  invariant.
+- Post-track migration (see `migration-record.md` appendix): uniqueness
+  moved to canonical `contact_methods` after the native contact-layer
+  removal (`2026_09_08_000002`, driver-aware partial/functional indexes,
+  preflights); the old `customers`-table migration now only drops the
+  legacy columns. Same-customer email retries are idempotent; no legacy
+  columns were restored. App-level race closed by the constraint.
 
 ## Checkout — compensation (follow-up, implemented)
 
@@ -523,6 +525,41 @@ reported and taken on trust; code correctness was verified directly.
 - Suites: Engagement 47 passed (157 assertions),
   FilamentEngagement 5 passed (30 assertions); PHPStan level 6
   clean. No migration required.
+
+## Orders bridge + enforcement (implemented)
+
+- **Typed cart bridge:** `CreateOrderFromCart::execute(Cart |
+  CartManagerInterface, ...)` with explicit money mapping, nullable
+  session id, owner-guarded customer; `OrderService::createFromCart`
+  mirrored. No `CartContract` exists — typed against what's available.
+  Duck-typed payloads fail; fake-cart mapping tests added.
+- **DI + owner holes closed:** constructor injection;
+  `AssertsOrderOwnerBoundary` on all mutations; 6/6 policies
+  registered (`OrdersServiceProvider.php:46-51`); owner default
+  aligned.
+- **Doc pipeline:** `BuildsOrderPdf` deleted into `BuildsOrderDocs`;
+  generators render-only.
+- **Carriers:** bound-handler resolution with manual fallback;
+  hardcoded J&T + `shipping.drivers.default` reads deleted
+  (`availableCarriers()` itself remains a shipping-track item).
+- **Delete safety:** transactional cascade, paid/final guard, force
+  override, cancel/refund documented over delete.
+- **Address/config:** canonical delegation with fallback + snapshot
+  coverage; status shadow deleted; operator strings env-overridable
+  (brand defaults retained — documented, not debranded).
+- **Routes/widgets/listeners:** invoice throttle + sandbox/timeout
+  audit; single OwnerCache aggregate (15s TTL); queued inventory
+  bridges; conditional health registration.
+- **Small items verified:** order-number retry, note-author check,
+  item-status cast, per-order notification routing, admin-only
+  internal notes.
+- Suites: Orders 323 passed (725 assertions), FilamentOrders 22
+  passed (65 assertions); PHPStan level 6 clean. No migration
+  (NULL-unsafe uniques deferred).
+- **Logged caller dependencies (main-agent follow-up, not this
+  stream):** `CreateOrderStep` typed call + session id,
+  `FulfillmentQueue` carrier/config logic, checkout document callers,
+  inventory/promotions listener behavior.
 
 ## Fairness log
 

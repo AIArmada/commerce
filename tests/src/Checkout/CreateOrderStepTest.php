@@ -6,8 +6,10 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
+use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
@@ -15,6 +17,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Processing;
 use AIArmada\Checkout\Steps\ApplyDiscountsStep;
 use AIArmada\Checkout\Steps\CreateOrderStep;
+use AIArmada\Customers\Models\Customer;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderProcessingStarted;
@@ -49,6 +52,126 @@ function createCheckoutAmountReconciliationSession(array $paymentData, int $gran
 
     return $session->transitionStatus(Processing::class);
 }
+
+it('prefers the typed live cart bridge and never calls the snapshot builder path', function (): void {
+    config()->set('checkout.create_order.confirm_payment', false);
+
+    $customer = new Customer;
+    $customer->forceFill(['id' => 'customer-live-cart']);
+
+    $cart = new BaseCart(
+        new InMemoryStorage,
+        'typed-live-cart',
+        events: null,
+        eventsEnabled: false,
+    );
+    $cart->add('typed-live-item', 'Typed Live Item', 1250, 2, ['sku' => 'TYPED-LIVE-001']);
+
+    $session = CheckoutSession::create([
+        'cart_id' => 'typed-live-cart-id',
+        'cart_snapshot' => [
+            'items' => [
+                ['name' => 'Snapshot Item', 'quantity' => 1, 'price' => 1],
+            ],
+        ],
+        'billing_data' => ['line1' => 'Billing Street'],
+        'shipping_data' => ['line1' => 'Shipping Street'],
+        'payment_data' => ['type' => 'free_order'],
+        'subtotal' => 1,
+        'grand_total' => 1,
+        'currency' => 'MYR',
+    ]);
+    $session->setRelation('customer', $customer);
+    $session->transitionStatus(Processing::class);
+
+    $cartManager = mock(CartManagerInterface::class);
+    $cartManager->shouldReceive('getById')
+        ->once()
+        ->with($session->cart_id)
+        ->andReturn($cart);
+    app()->instance(CartManagerInterface::class, $cartManager);
+
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-TYPED-LIVE-CART',
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createFromCart')
+        ->once()
+        ->withArgs(function (...$arguments) use ($cart, $customer, $session): bool {
+            return ($arguments[0] ?? null) === $cart
+                && ($arguments[1] ?? null) === $customer
+                && ($arguments[2] ?? null) === ['line1' => 'Billing Street']
+                && ($arguments[3] ?? null) === ['line1' => 'Shipping Street']
+                && ($arguments[4] ?? null) === 'checkout'
+                && ($arguments[5] ?? null) === $session->getKey()
+                && ($arguments[6] ?? null) === $session->id;
+        })
+        ->andReturn($order);
+    $orderService->shouldReceive('createOrder')->never();
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $result = app(CreateOrderStep::class)->handle($session);
+
+    expect($result->isSuccessful())->toBeTrue()
+        ->and($session->fresh()?->order_id)->toBe($order->id);
+});
+
+it('falls back to the snapshot builder only when the live cart is gone', function (): void {
+    config()->set('checkout.create_order.confirm_payment', false);
+
+    $customer = new Customer;
+    $customer->forceFill(['id' => 'customer-missing-cart']);
+
+    $session = CheckoutSession::create([
+        'cart_id' => 'missing-live-cart-id',
+        'cart_snapshot' => [
+            'items' => [
+                ['name' => 'Snapshot Item', 'quantity' => 1, 'price' => 900],
+            ],
+        ],
+        'payment_data' => ['type' => 'free_order'],
+        'subtotal' => 900,
+        'grand_total' => 900,
+        'currency' => 'MYR',
+    ]);
+    $session->setRelation('customer', $customer);
+    $session->transitionStatus(Processing::class);
+
+    $cartManager = mock(CartManagerInterface::class);
+    $cartManager->shouldReceive('getById')
+        ->once()
+        ->with($session->cart_id)
+        ->andReturnNull();
+    app()->instance(CartManagerInterface::class, $cartManager);
+
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-SNAPSHOT-FALLBACK',
+    ]);
+
+    $capturedOrderData = null;
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')
+        ->once()
+        ->andReturnUsing(function (array $orderData) use (&$capturedOrderData, $order): Order {
+            $capturedOrderData = $orderData;
+
+            return $order;
+        });
+    $orderService->shouldReceive('createFromCart')->never();
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $result = app(CreateOrderStep::class)->handle($session);
+
+    expect($result->isSuccessful())->toBeTrue()
+        ->and(data_get($capturedOrderData, 'subtotal'))->toBe(900)
+        ->and(data_get($capturedOrderData, 'grand_total'))->toBe(900)
+        ->and($session->fresh()?->order_id)->toBe($order->id);
+});
 
 it('refreshes voucher-driven affiliate overrides before creating order metadata', function (): void {
     config()->set('checkout.integrations.vouchers.enabled', true);
@@ -128,6 +251,13 @@ it('refreshes voucher-driven affiliate overrides before creating order metadata'
         ->and(data_get($session->cart_snapshot, 'metadata.promo_code'))->toBe('AFFE2E3SAVE5')
         ->and($session->discount_total)->toBe(500)
         ->and($session->grand_total)->toBe(9200);
+
+    $snapshotCartManager = mock(CartManagerInterface::class);
+    $snapshotCartManager->shouldReceive('getById')
+        ->once()
+        ->with($session->cart_id)
+        ->andReturnNull();
+    app()->instance(CartManagerInterface::class, $snapshotCartManager);
 
     $capturedOrderData = null;
 

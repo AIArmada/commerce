@@ -16,6 +16,7 @@ use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Component;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -239,18 +240,7 @@ class FulfillmentQueue extends Page implements HasTable
 
                         return $user ? Gate::forUser($user)->allows('update', $record) : false;
                     })
-                    ->form([
-                        Forms\Components\Select::make('carrier')
-                            ->label('Carrier')
-                            ->options($this->getCarrierOptions())
-                            ->required()
-                            ->searchable(),
-
-                        Forms\Components\TextInput::make('tracking_number')
-                            ->label('Tracking Number')
-                            ->required()
-                            ->maxLength(100),
-                    ])
+                    ->form(fn (): array => $this->getFulfillmentForm())
                     ->action(function (Order $record, array $data): void {
                         try {
                             $service = app(OrderService::class);
@@ -287,31 +277,82 @@ class FulfillmentQueue extends Page implements HasTable
     }
 
     /**
-     * Get carrier options from shipping config.
+     * @return array<int, Component>
+     */
+    protected function getFulfillmentForm(): array
+    {
+        $carriers = $this->getCarrierOptions();
+
+        if ($carriers === []) {
+            return [
+                Forms\Components\TextInput::make('carrier')
+                    ->label('Carrier')
+                    ->required(),
+                Forms\Components\TextInput::make('tracking_number')
+                    ->label('Tracking Number')
+                    ->required()
+                    ->maxLength(100),
+            ];
+        }
+
+        return [
+            Forms\Components\Select::make('carrier')
+                ->label('Carrier')
+                ->options($carriers)
+                ->required()
+                ->searchable(),
+            Forms\Components\TextInput::make('tracking_number')
+                ->label('Tracking Number')
+                ->required()
+                ->maxLength(100),
+        ];
+    }
+
+    /**
+     * Get carrier options from the bound fulfillment handler.
      *
      * @return array<string, string>
      */
     protected function getCarrierOptions(): array
     {
-        $carriers = (array) config('filament-shipping.carriers', []);
+        $handlerContract = implode('\\', [
+            'AIArmada',
+            'Orders',
+            'Contracts',
+            'FulfillmentHandler',
+        ]);
 
-        if ($carriers === []) {
-            $carriers = (array) config('shipping.drivers', []);
+        if (! class_exists($handlerContract) || ! app()->bound($handlerContract)) {
+            return [];
         }
 
-        if ($carriers === []) {
-            return [
-                'manual' => 'Manual',
-                'poslaju' => 'Pos Laju',
-                'dhl' => 'DHL',
-                'fedex' => 'FedEx',
-                'jnt' => 'J&T Express',
-            ];
+        $handler = app($handlerContract);
+
+        if (! is_object($handler) || ! method_exists($handler, 'availableCarriers')) {
+            return [];
         }
 
-        return collect($carriers)
-            ->mapWithKeys(fn ($config, $code) => [$code => $config['name'] ?? ucfirst($code)])
-            ->toArray();
+        $availableCarriers = call_user_func([$handler, 'availableCarriers']);
+
+        if (! is_array($availableCarriers)) {
+            return [];
+        }
+
+        $carriers = [];
+
+        foreach ($availableCarriers as $code => $label) {
+            if (is_int($code) && is_string($label)) {
+                $carriers[$label] = $label;
+
+                continue;
+            }
+
+            if (is_string($code) && is_string($label) && $code !== '' && $label !== '') {
+                $carriers[$code] = $label;
+            }
+        }
+
+        return $carriers;
     }
 
     /**

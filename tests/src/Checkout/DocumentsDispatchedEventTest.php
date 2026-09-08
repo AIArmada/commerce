@@ -6,6 +6,8 @@ use AIArmada\Checkout\Events\DocumentsDispatched;
 use AIArmada\Checkout\Jobs\GenerateCheckoutDocumentsJob;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\DispatchDocumentGenerationStep;
+use AIArmada\Docs\Contracts\DocServiceInterface;
+use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Models\Order;
@@ -13,6 +15,47 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 
 describe('DocumentsDispatched event', function (): void {
+    it('routes invoice and receipt creation through the order document actions', function (): void {
+        config()->set('orders.owner.enabled', false);
+        config()->set('docs.owner.enabled', false);
+
+        $createdDocumentTypes = [];
+        $docService = mock(DocServiceInterface::class);
+        $docService->shouldReceive('create')
+            ->twice()
+            ->withArgs(function (DocData $data) use (&$createdDocumentTypes): bool {
+                $createdDocumentTypes[] = $data->docType;
+
+                return in_array($data->docType, [DocType::Invoice->value, DocType::Receipt->value], true);
+            })
+            ->andReturnUsing(fn (DocData $data): Doc => new Doc(['doc_type' => $data->docType]));
+        app()->instance(DocServiceInterface::class, $docService);
+
+        $order = checkoutDocumentGenerationOrder('action-routing');
+        $session = CheckoutSession::create([
+            'cart_id' => 'cart-docs-action-routing',
+            'order_id' => $order->id,
+            'payment_id' => 'pay_checkout_docs_routing',
+            'selected_payment_gateway' => 'chip',
+            'payment_data' => [
+                'transaction_id' => 'txn_checkout_docs_routing',
+                'gateway' => 'chip',
+            ],
+        ]);
+
+        (new GenerateCheckoutDocumentsJob(
+            sessionId: $session->id,
+            orderId: $order->id,
+            documentTypes: ['invoice', 'receipt'],
+            ownerIsGlobal: true,
+        ))->handle();
+
+        expect($createdDocumentTypes)->toBe([
+            DocType::Invoice->value,
+            DocType::Receipt->value,
+        ]);
+    });
+
     it('skips document dispatch when checkout document generation remains at its defaults', function (): void {
         Bus::fake();
 
