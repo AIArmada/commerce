@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Cache;
  * Mock seam: HTTP client only (`ChipCollectClient`). The cache is the real
  * array store; the package logic under test is unmocked.
  */
-
 function adversaryCrashPurchaseResponse(array $overrides = []): array
 {
     return array_replace_recursive([

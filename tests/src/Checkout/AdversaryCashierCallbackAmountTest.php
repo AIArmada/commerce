@@ -34,7 +34,6 @@ use Illuminate\Contracts\Events\Dispatcher;
  * `CashierProcessor`, tracked stub steps only to avoid unrelated
  * integrations.
  */
-
 function adversaryCallbackTrackedStep(string $identifier, array $dependencies = []): CheckoutStepInterface
 {
     return new class($identifier, $dependencies) implements CheckoutStepInterface
