@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\CartCondition as CoreCondition;
 use AIArmada\Cart\Facades\Cart as CartFacade;
-use AIArmada\Cart\Snapshots\CartSnapshot as CartSnapshot;
+use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
 use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
 

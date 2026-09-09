@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Events\CartAbandoned;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Pending;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Cart\Events\CartAbandoned;
 use AIArmada\FilamentCart\Listeners\SendCartAbandonedNotification;
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\FilamentCart\Notifications\CartAbandonedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;

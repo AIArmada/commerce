@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSyncManager;
 use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
 use AIArmada\Cart\Snapshots\SyncNormalizedCartJob;
+use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 

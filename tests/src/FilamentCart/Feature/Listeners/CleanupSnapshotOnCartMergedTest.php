@@ -5,14 +5,14 @@ declare(strict_types=1);
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
+use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
+use AIArmada\Cart\Snapshots\CleanupSnapshotOnCartMerged;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Cart\Snapshots\CleanupSnapshotOnCartMerged;
-use AIArmada\Cart\Snapshots\CartSnapshot as CartSnapshot;
-use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
-use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 
