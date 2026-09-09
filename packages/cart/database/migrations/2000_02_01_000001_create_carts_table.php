@@ -44,9 +44,9 @@ return new class extends Migration
         $driver = ConnectionDriver::name(Schema::getConnection());
 
         if ($jsonType === 'jsonb' && $driver === 'pgsql') {
-            DB::statement("CREATE INDEX IF NOT EXISTS carts_items_gin_index ON \"{$tableName}\" USING GIN (\"items\")");
-            DB::statement("CREATE INDEX IF NOT EXISTS carts_conditions_gin_index ON \"{$tableName}\" USING GIN (\"conditions\")");
-            DB::statement("CREATE INDEX IF NOT EXISTS carts_metadata_gin_index ON \"{$tableName}\" USING GIN (\"metadata\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_items_gin_index ON \"{$tableName}\" USING GIN (\"items\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_conditions_gin_index ON \"{$tableName}\" USING GIN (\"conditions\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_metadata_gin_index ON \"{$tableName}\" USING GIN (\"metadata\")");
         }
 
         if ($driver === 'pgsql') {
@@ -64,31 +64,31 @@ return new class extends Migration
     private function addPostgreSQLIndexes(string $tableName, string $jsonType): void
     {
         DB::statement("
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_lookup_covering
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS {$tableName}_lookup_covering
             ON \"{$tableName}\" (owner_type, owner_id, identifier, instance)
             INCLUDE (id, version, updated_at, expires_at)
         ");
 
         DB::statement("
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_active
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS {$tableName}_active
             ON \"{$tableName}\" (owner_type, owner_id, expires_at, identifier, instance)
         ");
 
         DB::statement("
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_expired
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS {$tableName}_expired
             ON \"{$tableName}\" (owner_type, owner_id, expires_at)
             WHERE expires_at IS NOT NULL
         ");
 
         if ($jsonType === 'jsonb') {
             DB::statement("
-                CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_analytics
+                CREATE INDEX CONCURRENTLY IF NOT EXISTS {$tableName}_analytics
                 ON \"{$tableName}\" (owner_type, owner_id, updated_at, instance)
                 WHERE items IS NOT NULL AND items != '[]'::jsonb
             ");
         } else {
             DB::statement("
-                CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_analytics
+                CREATE INDEX CONCURRENTLY IF NOT EXISTS {$tableName}_analytics
                 ON \"{$tableName}\" (owner_type, owner_id, updated_at, instance)
                 WHERE items IS NOT NULL
             ");
@@ -98,9 +98,9 @@ return new class extends Migration
     private function addMySQLIndexes(string $tableName): void
     {
         $indexes = [
-            'idx_carts_lookup_covering' => '(owner_type, owner_id, identifier, instance, id, version, updated_at, expires_at)',
-            'idx_carts_expired' => '(owner_type, owner_id, expires_at)',
-            'idx_carts_analytics' => '(owner_type, owner_id, updated_at, instance)',
+            "{$tableName}_lookup_covering" => '(owner_type, owner_id, identifier, instance, id, version, updated_at, expires_at)',
+            "{$tableName}_expired" => '(owner_type, owner_id, expires_at)',
+            "{$tableName}_analytics" => '(owner_type, owner_id, updated_at, instance)',
         ];
 
         foreach ($indexes as $indexName => $columns) {

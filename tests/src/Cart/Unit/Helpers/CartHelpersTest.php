@@ -2,19 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Cart as CartClass;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
-
-require_once __DIR__ . '/../../../../../packages/cart/src/helpers.php';
 
 it('returns current cart instance when no name is given', function (): void {
     $manager = app('cart');
     expect($manager)->toBeInstanceOf(CartManagerInterface::class);
 
-    $cart = cart();
+    $cart = Cart::getCurrentCart();
 
-    expect($cart)->toBeInstanceOf(CartClass::class);
+    expect($cart)->toBeInstanceOf(\AIArmada\Cart\Cart::class);
 
     Cart::clear();
     Cart::add('helper-item', 'Helper Item', 10.00, 1);
@@ -23,9 +20,9 @@ it('returns current cart instance when no name is given', function (): void {
 });
 
 it('returns named instance when name is given', function (): void {
-    $wishlist = cart('wishlist');
+    $wishlist = Cart::getCartInstance('wishlist');
 
-    expect($wishlist)->toBeInstanceOf(CartClass::class);
+    expect($wishlist)->toBeInstanceOf(\AIArmada\Cart\Cart::class);
     expect($wishlist->instance())->toBe('wishlist');
 
     $wishlist->add('wishlist-item', 'Wishlist Item', 5.00, 2);

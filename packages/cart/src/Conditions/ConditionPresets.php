@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Conditions;
 
+use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
 
@@ -50,7 +51,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'discount',
-            target: TargetPresets::cartSubtotal(),
+            target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
             value: "-{$percentage}%",
             attributes: ['preset' => 'percentage_discount'],
             order: 10
@@ -70,7 +71,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'discount',
-            target: TargetPresets::cartSubtotal(),
+            target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
             value: -$amountCents,
             attributes: ['preset' => 'fixed_discount'],
             order: 10
@@ -92,7 +93,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'discount',
-            target: TargetPresets::cartSubtotal(),
+            target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
             value: "-{$percentage}%",
             attributes: [
                 'preset' => 'percentage_discount_minimum',
@@ -118,7 +119,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'discount',
-            target: TargetPresets::cartSubtotal(),
+            target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
             value: -$amountCents,
             attributes: [
                 'preset' => 'fixed_discount_minimum',
@@ -143,7 +144,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'shipping_discount',
-            target: TargetPresets::cartShipping(),
+            target: Target::cart()->phase(ConditionPhase::SHIPPING)->applyAggregate()->build(),
             value: '-100%',
             attributes: ['preset' => 'free_shipping'],
             order: 100
@@ -163,7 +164,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'shipping_discount',
-            target: TargetPresets::cartShipping(),
+            target: Target::cart()->phase(ConditionPhase::SHIPPING)->applyAggregate()->build(),
             value: '-100%',
             attributes: [
                 'preset' => 'free_shipping_over',
@@ -187,7 +188,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'shipping',
-            target: TargetPresets::cartShipping(),
+            target: Target::cart()->phase(ConditionPhase::SHIPPING)->applyAggregate()->build(),
             value: $amountCents,
             attributes: ['preset' => 'flat_rate_shipping'],
             order: 50
@@ -207,7 +208,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'shipping_discount',
-            target: TargetPresets::cartShipping(),
+            target: Target::cart()->phase(ConditionPhase::SHIPPING)->applyAggregate()->build(),
             value: "-{$percentage}%",
             attributes: ['preset' => 'shipping_discount'],
             order: 100
@@ -231,7 +232,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'tax',
-            target: TargetPresets::cartTax(),
+            target: Target::cart()->phase(ConditionPhase::TAX)->applyAggregate()->build(),
             value: "+{$percentage}%",
             attributes: ['preset' => 'tax_rate'],
             order: 200
@@ -248,7 +249,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'tax_exemption',
-            target: TargetPresets::cartTax(),
+            target: Target::cart()->phase(ConditionPhase::TAX)->applyAggregate()->build(),
             value: '-100%',
             attributes: ['preset' => 'tax_exempt'],
             order: 250
@@ -272,7 +273,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'fee',
-            target: TargetPresets::cartGrandTotal(),
+            target: Target::cart()->phase(ConditionPhase::GRAND_TOTAL)->applyAggregate()->build(),
             value: $amountCents,
             attributes: ['preset' => 'service_fee'],
             order: 300
@@ -292,7 +293,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'surcharge',
-            target: TargetPresets::cartGrandTotal(),
+            target: Target::cart()->phase(ConditionPhase::GRAND_TOTAL)->applyAggregate()->build(),
             value: "+{$percentage}%",
             attributes: ['preset' => 'surcharge'],
             order: 300
@@ -314,7 +315,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'fee',
-            target: TargetPresets::cartGrandTotal(),
+            target: Target::cart()->phase(ConditionPhase::GRAND_TOTAL)->applyAggregate()->build(),
             value: $feeCents,
             attributes: [
                 'preset' => 'small_order_fee',
@@ -346,7 +347,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'discount',
-            target: TargetPresets::cartSubtotal(),
+            target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
             value: "-{$percentage}%",
             attributes: [
                 'preset' => 'flash_sale',
@@ -378,7 +379,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'discount',
-            target: TargetPresets::cartSubtotal(),
+            target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
             value: "-{$percentage}%",
             attributes: [
                 'preset' => 'happy_hour',
@@ -406,7 +407,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'discount',
-            target: TargetPresets::cartSubtotal(),
+            target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
             value: "-{$percentage}%",
             attributes: ['preset' => 'weekend_discount'],
             order: 5,
@@ -435,7 +436,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'discount',
-            target: TargetPresets::cartSubtotal(),
+            target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
             value: "-{$percentage}%",
             attributes: [
                 'preset' => 'customer_tag_discount',
@@ -479,7 +480,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'item_discount',
-            target: TargetPresets::itemsPerItem(),
+            target: Target::items()->phase(ConditionPhase::ITEM_DISCOUNT)->applyPerItem()->build(),
             value: "-{$percentage}%",
             attributes: ['preset' => 'item_percentage_discount'],
             order: 10
@@ -499,7 +500,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'item_discount',
-            target: TargetPresets::itemsPerItem(),
+            target: Target::items()->phase(ConditionPhase::ITEM_DISCOUNT)->applyPerItem()->build(),
             value: -$amountCents,
             attributes: ['preset' => 'item_fixed_discount'],
             order: 10
@@ -525,7 +526,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'discount',
-            target: TargetPresets::cartSubtotal(),
+            target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
             value: "-{$percentage}%",
             attributes: [
                 'preset' => 'bulk_quantity_discount',
@@ -567,7 +568,7 @@ final class ConditionPresets
             $conditions[] = new CartCondition(
                 name: "{$name} ({$percentage}%)",
                 type: 'discount',
-                target: TargetPresets::cartSubtotal(),
+                target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
                 value: "-{$percentage}%",
                 attributes: [
                     'preset' => 'tiered_discount',
@@ -603,7 +604,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'discount',
-            target: TargetPresets::cartSubtotal(),
+            target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
             value: "-{$percentage}%",
             attributes: [
                 'preset' => 'discount_with_product',
@@ -629,7 +630,7 @@ final class ConditionPresets
         return new CartCondition(
             name: $name,
             type: 'discount',
-            target: TargetPresets::cartSubtotal(),
+            target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
             value: "-{$percentage}%",
             attributes: [
                 'preset' => 'discount_with_any_product',

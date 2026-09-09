@@ -4,21 +4,15 @@ title: Multitenancy
 
 # Multitenancy
 
-Filament Cart uses `commerce-support` owner scoping.
-
-Filament owner configuration is not a write-through switch for the core Cart
-package. filament-cart.owner.enabled and filament-cart.owner.include_global
-fall back to their cart.owner.* counterparts only when unset. Enable
-cart.owner.enabled explicitly when core carts or stored conditions must be
-owner-scoped; installing the admin adapter alone does not change that setting.
-For the stored-condition resource, enable both owner flags; the core
-Condition model remains the authority for condition ownership.
+Filament Cart uses the core Cart package's `commerce-support` owner scoping.
+Configure `cart.owner.*` once; the adapter does not have a second owner
+configuration or write-through mutation.
 
 ## Core contract
 
-Filament Cart treats snapshot rows and snapshot children as owner-scoped records.
-Their owner configuration falls back to the core cart settings when the
-Filament setting is unset, including auto-assignment on create.
+Filament Cart treats core snapshot rows and snapshot children as owner-scoped
+records. The core cart settings are authoritative, including auto-assignment
+on create.
 
 - owner-scoped rows use `owner_type` + `owner_id`
 - global rows use `null` + `null`
@@ -80,7 +74,7 @@ Queued synchronization jobs should use `OwnerContextJob` (preferably via `OwnerS
 
 ## Commands
 
-`cart:mark-abandoned` is fail-closed in owner mode.
+`cart:clear-abandoned --mark-only` is fail-closed in owner mode.
 
 - without owner context: fails unless `--all-owners` is passed
 - `--all-owners` requires explicit confirmation for mutation

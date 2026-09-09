@@ -6,12 +6,12 @@ use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Events\CartSnapshotSynced;
-use AIArmada\FilamentCart\Events\HighValueCartDetected;
-use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Models\CartCondition;
-use AIArmada\FilamentCart\Models\CartItem;
-use AIArmada\FilamentCart\Services\NormalizedCartSynchronizer;
+use AIArmada\Cart\Events\CartSnapshotSynced;
+use AIArmada\Cart\Events\HighValueCartDetected;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
+use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
+use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
@@ -151,7 +151,7 @@ describe('NormalizedCartSynchronizer', function (): void {
 
     it('deletes only the targeted owner snapshot when identifiers collide across owners', function (): void {
         config()->set('cart.owner.enabled', true);
-        config()->set('filament-cart.owner.enabled', true);
+        config()->set('cart.owner.enabled', true);
 
         $ownerA = User::query()->create([
             'name' => 'Owner A',
@@ -208,7 +208,7 @@ describe('NormalizedCartSynchronizer', function (): void {
 
     it('does not overwrite another owners cart snapshot when owner mode is enabled', function (): void {
         config()->set('cart.owner.enabled', true);
-        config()->set('filament-cart.owner.enabled', true);
+        config()->set('cart.owner.enabled', true);
 
         $ownerA = User::query()->create([
             'name' => 'Owner A',
@@ -339,7 +339,7 @@ describe('NormalizedCartSynchronizer', function (): void {
     it('emits snapshot and high-value events only when material fields change', function (): void {
         Event::fake([CartSnapshotSynced::class, HighValueCartDetected::class]);
 
-        config()->set('filament-cart.analytics.high_value_threshold_minor', 1000);
+        config()->set('cart.snapshots.analytics.high_value_threshold_minor', 1000);
 
         $this->storage->shouldReceive('getItems')->andReturn([
             'item-1' => [

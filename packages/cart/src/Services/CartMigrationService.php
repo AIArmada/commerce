@@ -8,7 +8,6 @@ use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Support\Facades\Auth;
-use RuntimeException;
 
 class CartMigrationService
 {
@@ -16,8 +15,11 @@ class CartMigrationService
 
     private ?StorageInterface $storage = null;
 
-    public function __construct(array $config = [], ?StorageInterface $storage = null)
-    {
+    public function __construct(
+        array $config = [],
+        ?StorageInterface $storage = null,
+        private readonly ?MigrateGuestCartToUserAction $migrationAction = null,
+    ) {
         $this->config = $config;
         $this->storage = $storage;
     }
@@ -37,46 +39,14 @@ class CartMigrationService
 
     public function migrateGuestCartToUser(string | int $userId, string $instance, string $sessionId): bool
     {
-        $registry = app(CartMergeStrategyRegistry::class);
-
         $strategyName = $this->config['merge_strategy'] ?? config('cart.migration.merge_strategy', 'add_quantities');
 
-        $action = new MigrateGuestCartToUserAction($registry, $this->storage);
-
-        return $action->execute($userId, $instance, $sessionId, null, $strategyName);
+        return $this->resolveMigrationAction()->execute($userId, $instance, $sessionId, null, $strategyName);
     }
 
     public function migrateGuestCartForUser(mixed $user, string $instance, ?string $sessionId): object
     {
-        if ($sessionId === null || $sessionId === '') {
-            return (object) [
-                'success' => false,
-                'itemsMerged' => 0,
-                'conflicts' => collect(),
-                'message' => 'No guest session to migrate',
-            ];
-        }
-
-        $userId = is_object($user) && isset($user->id) ? $user->id : null;
-
-        if ($userId === null) {
-            return (object) [
-                'success' => false,
-                'itemsMerged' => 0,
-                'conflicts' => collect(),
-                'message' => 'Invalid user for migration',
-            ];
-        }
-
-        $guestItems = $this->resolveGlobalStorage()->getItems($sessionId, $instance);
-        $success = $this->migrateGuestCartToUser((string) $userId, $instance, $sessionId);
-
-        return (object) [
-            'success' => $success,
-            'itemsMerged' => $success ? $this->sumItemQuantities($guestItems) : 0,
-            'conflicts' => collect(),
-            'message' => $success ? 'Cart migration completed successfully' : 'No items to migrate',
-        ];
+        return $this->resolveMigrationAction()->executeForUser($user, $instance, $sessionId);
     }
 
     public function getCurrentIdentifier(): string
@@ -113,35 +83,15 @@ class CartMigrationService
         return $this->swap($guestIdentifier, $userIdentifier, $instance);
     }
 
-    private function resolveStorage(): StorageInterface
+    private function resolveMigrationAction(): MigrateGuestCartToUserAction
     {
-        if ($this->storage !== null) {
-            return $this->storage;
+        if ($this->migrationAction !== null) {
+            return $this->migrationAction;
         }
 
-        if (function_exists('app')) {
-            return app(StorageInterface::class);
-        }
-
-        throw new RuntimeException('Cart storage is not available');
-    }
-
-    private function resolveGlobalStorage(): StorageInterface
-    {
-        $storage = $this->resolveStorage();
-
-        return $storage->getOwnerType() !== null ? $storage->withOwner(null) : $storage;
-    }
-
-    /**
-     * @param  array<string, mixed>  $items
-     */
-    private function sumItemQuantities(array $items): int
-    {
-        return array_reduce(
-            $items,
-            static fn (int $sum, array $item): int => $sum + (int) ($item['quantity'] ?? 0),
-            0,
+        return new MigrateGuestCartToUserAction(
+            app(CartMergeStrategyRegistry::class),
+            $this->storage,
         );
     }
 }

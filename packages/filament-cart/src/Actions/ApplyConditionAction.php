@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Actions;
 
+use AIArmada\Cart\Actions\ApplyStoredCondition;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Services\OwnerActionGuard;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\KeyValue;
@@ -18,6 +20,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final class ApplyConditionAction extends Action
 {
@@ -47,11 +50,11 @@ final class ApplyConditionAction extends Action
                     ->helperText('Override the default condition name if needed'),
             ])
             ->action(function (array $data, $record, $livewire): void {
-                $cart = OwnerActionGuard::resolveCartRecord($record, $livewire);
+                $cart = self::resolveCartRecord($record, $livewire);
                 $customName = ! empty($data['custom_name']) ? $data['custom_name'] : null;
 
                 try {
-                    $action = app(ApplyConditionToCartAction::class);
+                    $action = app(ApplyStoredCondition::class);
                     $condition = $action->apply($cart, (string) $data['condition_id'], $customName);
 
                     Notification::make()
@@ -100,10 +103,10 @@ final class ApplyConditionAction extends Action
             ])
             ->action(function (array $data, $record): void {
                 $customName = ! empty($data['custom_name']) ? $data['custom_name'] : null;
-                $cart = OwnerActionGuard::resolveCartRecord($record->cart ?? null);
+                $cart = self::resolveCartRecord($record->cart ?? null);
 
                 try {
-                    $action = app(ApplyConditionToCartAction::class);
+                    $action = app(ApplyStoredCondition::class);
                     $condition = $action->applyToItem($cart, $record->item_id, (string) $data['condition_id'], $customName);
 
                     Notification::make()
@@ -164,7 +167,7 @@ final class ApplyConditionAction extends Action
             return $query->globalOnly();
         }
 
-        return $query->forOwner($owner, (bool) (config('filament-cart.owner.include_global') ?? config('cart.owner.include_global', false)));
+        return $query->forOwner($owner, (bool) config('cart.owner.include_global', false));
     }
 
     /**
@@ -268,10 +271,10 @@ final class ApplyConditionAction extends Action
                     ->default([]),
             ])
             ->action(function (array $data, $record, $livewire): void {
-                $cart = OwnerActionGuard::resolveCartRecord($record, $livewire);
+                $cart = self::resolveCartRecord($record, $livewire);
 
                 try {
-                    $action = app(ApplyConditionToCartAction::class);
+                    $action = app(ApplyStoredCondition::class);
                     $condition = $action->applyCustom($cart, $data);
 
                     Notification::make()
@@ -307,5 +310,33 @@ final class ApplyConditionAction extends Action
     private static function ruleOptionsHint(): string
     {
         return collect(self::ruleOptions())->keys()->implode(', ');
+    }
+
+    private static function resolveCartRecord(mixed $record, mixed $livewire = null): CartSnapshot
+    {
+        $cart = $record instanceof CartSnapshot ? $record : null;
+
+        if ($cart === null && is_object($livewire) && method_exists($livewire, 'getOwnerRecord')) {
+            $ownerRecord = $livewire->getOwnerRecord();
+            $cart = $ownerRecord instanceof CartSnapshot ? $ownerRecord : null;
+        }
+
+        if (! $cart instanceof CartSnapshot) {
+            throw new InvalidArgumentException('Cart actions require a cart snapshot record.');
+        }
+
+        if (! CartSnapshot::ownerScopingEnabled()) {
+            return $cart;
+        }
+
+        /** @var CartSnapshot $validated */
+        $validated = OwnerWriteGuard::findOrFailForOwner(
+            CartSnapshot::class,
+            (string) $cart->getKey(),
+            includeGlobal: false,
+            message: 'Cart is not accessible in the current owner scope.',
+        );
+
+        return $validated;
     }
 }

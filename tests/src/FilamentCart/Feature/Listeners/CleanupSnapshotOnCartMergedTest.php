@@ -9,10 +9,10 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\FilamentCart\Listeners\CleanupSnapshotOnCartMerged;
-use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
-use AIArmada\FilamentCart\Models\CartCondition;
-use AIArmada\FilamentCart\Models\CartItem;
+use AIArmada\Cart\Snapshots\CleanupSnapshotOnCartMerged;
+use AIArmada\Cart\Snapshots\CartSnapshot as CartSnapshot;
+use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
+use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 
@@ -289,9 +289,9 @@ describe('CartMerged Event Updates', function (): void {
 
     it('moves a global guest snapshot into the current owner scope when owner mode is enabled', function (): void {
         config()->set('cart.owner.enabled', true);
-        config()->set('filament-cart.owner.enabled', true);
+        config()->set('cart.owner.enabled', true);
         config()->set('cart.owner.include_global', false);
-        config()->set('filament-cart.owner.include_global', false);
+        config()->set('cart.owner.include_global', false);
 
         $owner = User::query()->create([
             'name' => 'Snapshot Owner',

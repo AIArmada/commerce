@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources;
 
-use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Models\CartItem;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
 use AIArmada\FilamentCart\Resources\CartItemResource\Pages\ListCartItems;
 use AIArmada\FilamentCart\Resources\CartItemResource\Pages\ViewCartItem;
 use AIArmada\FilamentCart\Resources\CartItemResource\Schemas\CartItemForm;

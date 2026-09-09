@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Pages;
 
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use BackedEnum;
@@ -80,7 +80,7 @@ class CartDashboard extends Page
     {
         $widgets = [];
 
-        if (config('filament-cart.widgets.abandoned_carts', true) && config('filament-cart.features.abandonment_tracking', true)) {
+        if (config('filament-cart.widgets.abandoned_carts', true) && config('cart.snapshots.abandonment_tracking', true)) {
             $widgets[] = AbandonedCartsWidget::class;
         }
 

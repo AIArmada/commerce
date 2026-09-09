@@ -6,7 +6,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Testing\ExampleRulesFactory;
-use Tests\Support\Cart\InMemoryStorage;
+use AIArmada\Cart\Testing\InMemoryStorage;
 
 beforeEach(function (): void {
     $this->storage = new InMemoryStorage;

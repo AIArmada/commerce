@@ -76,7 +76,7 @@ final class ConditionResource extends Resource
             return $query->globalOnly();
         }
 
-        return $query->forOwner($owner, (bool) (config('filament-cart.owner.include_global') ?? config('cart.owner.include_global', false)));
+        return $query->forOwner($owner, (bool) config('cart.owner.include_global', false));
     }
 
     public static function getRelations(): array

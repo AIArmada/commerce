@@ -19,16 +19,25 @@ final class CreateCondition extends CreateRecord
             ! empty($data['rules']['factory_keys'] ?? [])
         );
 
+        return $data;
+    }
+
+    protected function handleRecordCreation(array $data): Condition
+    {
+        $condition = new Condition;
+        $condition->fill($data);
+
         if (Condition::ownerScopingEnabled()) {
             $owner = Condition::resolveCurrentOwner();
 
             if ($owner !== null) {
-                $data['owner_type'] = $owner->getMorphClass();
-                $data['owner_id'] = (string) $owner->getKey();
+                $condition->assignOwner($owner);
             }
         }
 
-        return $data;
+        $condition->save();
+
+        return $condition;
     }
 
     protected function getRedirectUrl(): string

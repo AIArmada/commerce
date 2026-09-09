@@ -8,17 +8,13 @@ title: Troubleshooting
 
 - Ensure `FilamentCartServiceProvider` is loaded.
 - Confirm cart events are enabled via `cart.events`.
-- Check that queue sync is configured correctly if `filament-cart.synchronization.queue_sync` is enabled.
+- Check that queue sync is configured correctly if `cart.snapshots.synchronization.queue_sync` is enabled.
 - Verify the source cart storage contains the expected identifier and instance.
 
 ## Owner scoped data is missing
 
-- Confirm cart.owner.enabled is enabled for core cart/condition data and
-  filament-cart.owner.enabled is enabled for Filament resources. They are
-  independent settings; the provider does not rewrite cart.owner.*. Enable
-  both when the stored-condition resource must be owner-scoped.
-- If a Filament setting is unset, it falls back to the corresponding core
-  setting, including auto_assign_on_create. An explicit false remains false.
+- Confirm `cart.owner.enabled` is enabled for core cart/condition data. The
+  adapter uses the same setting and does not maintain a second owner switch.
 - Ensure an `OwnerResolverInterface` binding resolves the current owner.
 - Use `OwnerContext::withOwner(null, ...)` only for explicit global operations.
 - Do not query or authorize using internal `owner_scope` columns.
@@ -32,8 +28,8 @@ OwnerContext::withOwner(null, ...).
 Run the command manually first:
 
 ```bash
-php artisan cart:mark-abandoned --dry-run
-php artisan cart:mark-abandoned
+php artisan cart:clear-abandoned --mark-only --dry-run
+php artisan cart:clear-abandoned --mark-only
 ```
 
 Check that snapshots have:
@@ -61,8 +57,11 @@ Then manage reports, alert rules, alert logs, channels, and destinations from `f
 Check the threshold:
 
 ```php
-'analytics' => [
-    'high_value_threshold_minor' => 10000,
+// config/cart.php
+'snapshots' => [
+    'analytics' => [
+        'high_value_threshold_minor' => 10000,
+    ],
 ],
 ```
 

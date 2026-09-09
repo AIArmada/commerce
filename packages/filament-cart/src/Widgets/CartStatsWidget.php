@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Support\CartMoney;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -21,9 +22,22 @@ final class CartStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
+        $owner = Cart::resolveCurrentOwner();
+
+        /** @var array<int, Stat> $stats */
+        $stats = OwnerCache::remember($owner, 'filament-cart.stats', 60, fn (): array => $this->buildStats());
+
+        return $stats;
+    }
+
+    /**
+     * @return array<int, Stat>
+     */
+    private function buildStats(): array
+    {
         $base = Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords());
         $recentCutoff = CarbonImmutable::now()->subMinutes(30);
-        $highValueThreshold = (int) config('filament-cart.analytics.high_value_threshold_minor', 10000);
+        $highValueThreshold = (int) config('cart.snapshots.analytics.high_value_threshold_minor', 10000);
         $yesterday = CarbonImmutable::now()->subDay();
 
         $activeCarts = (clone $base)->where('last_activity_at', '>=', $recentCutoff)->count();
@@ -99,6 +113,6 @@ final class CartStatsWidget extends BaseWidget
 
     private function formatMoney(int $amount): string
     {
-        return MoneyFormatter::formatMinor($amount, (string) config('cart.money.default_currency', 'USD'));
+        return CartMoney::formatMinor($amount);
     }
 }

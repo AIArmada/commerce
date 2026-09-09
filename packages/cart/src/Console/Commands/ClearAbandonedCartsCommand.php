@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Console\Commands;
 
 use AIArmada\Cart\Models\CartModel;
+use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Cart\Support\CartOwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
@@ -24,10 +25,15 @@ final class ClearAbandonedCartsCommand extends Command
      */
     protected $signature = 'cart:clear-abandoned 
                           {--days=7 : Number of days after which cart is considered abandoned}
+                          {--mark-only : Mark abandoned cart snapshots without deleting live carts}
+                          {--minutes= : Minutes of inactivity before marking a snapshot as abandoned}
                           {--expired : Only delete carts that have passed their expires_at timestamp}
                           {--dry-run : Show what would be deleted without actually deleting}
                           {--delete : Physically delete carts that already have abandoned_at set (skips detection)}
                           {--all-owners : Process every owner when no owner context is available}
+                          {--confirm-all-owners : Confirm multi-owner snapshot mutation}
+                          {--max-affected=1000 : Maximum snapshots that may be marked in one run}
+                          {--force-threshold : Allow snapshot updates above max-affected threshold}
                           {--strict-owner-tuples : Abort when encountering malformed owner tuples}
                           {--batch-size=1000 : Number of records to process in each batch}';
 
@@ -41,6 +47,10 @@ final class ClearAbandonedCartsCommand extends Command
      */
     public function handle(): int
     {
+        if ((bool) $this->option('mark-only')) {
+            return $this->markSnapshotsOnly();
+        }
+
         $days = (int) $this->option('days');
         $useExpired = $this->option('expired');
         $dryRun = $this->option('dry-run');
@@ -119,6 +129,183 @@ final class ClearAbandonedCartsCommand extends Command
             ownerType: null,
             ownerId: null,
         );
+    }
+
+    private function markSnapshotsOnly(): int
+    {
+        if (! config('cart.snapshots.abandonment_tracking', true)) {
+            $this->warn('Snapshot abandonment tracking is disabled via cart.snapshots.abandonment_tracking.');
+
+            return self::SUCCESS;
+        }
+
+        $minutesOption = $this->option('minutes');
+        $minutes = is_numeric($minutesOption)
+            ? (int) $minutesOption
+            : (int) config('cart.snapshots.abandonment_detection_minutes', 30);
+        $minutes = max(0, $minutes);
+        $dryRun = (bool) $this->option('dry-run');
+        $allOwners = (bool) $this->option('all-owners');
+        $confirmAllOwners = (bool) $this->option('confirm-all-owners');
+        $maxAffected = max(1, (int) $this->option('max-affected'));
+        $forceThreshold = (bool) $this->option('force-threshold');
+        $strictOwnerTuples = (bool) $this->option('strict-owner-tuples');
+
+        if ($dryRun) {
+            $this->warn('DRY RUN MODE - No snapshot rows will be updated');
+        }
+
+        if ($allOwners && ! $dryRun && ! $confirmAllOwners) {
+            $this->error('Multi-owner snapshot mutation requires --confirm-all-owners. Run once with --dry-run first.');
+
+            return self::FAILURE;
+        }
+
+        if (
+            CartSnapshot::ownerScopingEnabled()
+            && OwnerContext::resolve() === null
+            && ! OwnerContext::isExplicitGlobal()
+        ) {
+            if (! $allOwners) {
+                $this->error('Owner scoping is enabled but no owner context was resolved. Pass --all-owners to process every owner.');
+
+                return self::FAILURE;
+            }
+
+            return $this->markSnapshotsForAllOwners(
+                minutes: $minutes,
+                dryRun: $dryRun,
+                maxAffected: $maxAffected,
+                forceThreshold: $forceThreshold,
+                strictOwnerTuples: $strictOwnerTuples,
+            );
+        }
+
+        $candidateCount = $this->countAbandonedSnapshots($minutes);
+
+        if (! $dryRun && ! $forceThreshold && $candidateCount > $maxAffected) {
+            $this->error("Refusing to mark {$candidateCount} snapshots: exceeds --max-affected={$maxAffected}. Use --force-threshold to proceed.");
+
+            return self::FAILURE;
+        }
+
+        $marked = $this->processAbandonedSnapshots($minutes, $dryRun);
+
+        $this->info("Marked {$marked} snapshot(s) as abandoned.");
+
+        return self::SUCCESS;
+    }
+
+    private function markSnapshotsForAllOwners(
+        int $minutes,
+        bool $dryRun,
+        int $maxAffected,
+        bool $forceThreshold,
+        bool $strictOwnerTuples,
+    ): int {
+        $columns = OwnerTupleColumns::forModelClass(CartSnapshot::class);
+        $owners = OwnerContext::withOwner(null, fn () => CartSnapshot::query()
+            ->withoutOwnerScope()
+            ->select([$columns->ownerTypeColumn, $columns->ownerIdColumn])
+            ->distinct()
+            ->get());
+
+        $ownerBatches = [];
+        $totalCandidates = 0;
+
+        foreach ($owners as $row) {
+            $parsed = OwnerTupleParser::fromRow(
+                row: $row,
+                columns: $columns,
+                allowMalformed: true,
+            );
+
+            if ($parsed->isUnresolved()) {
+                $message = sprintf(
+                    'Malformed owner tuple encountered (owner_type: %s, owner_id: %s).',
+                    $row->{$columns->ownerTypeColumn} ?? 'null',
+                    $row->{$columns->ownerIdColumn} === null ? 'null' : (string) $row->{$columns->ownerIdColumn},
+                );
+
+                if ($strictOwnerTuples) {
+                    $this->error($message);
+
+                    return self::FAILURE;
+                }
+
+                $this->warn("Skipping {$message}");
+
+                continue;
+            }
+
+            $owner = $parsed->toOwnerModel();
+            $count = (int) OwnerContext::withOwner($owner, fn (): int => $this->countAbandonedSnapshots($minutes));
+            $ownerBatches[] = ['owner' => $owner, 'count' => $count];
+            $totalCandidates += $count;
+        }
+
+        if ($owners->isEmpty()) {
+            $count = (int) OwnerContext::withOwner(null, fn (): int => $this->countAbandonedSnapshots($minutes));
+            $ownerBatches[] = ['owner' => null, 'count' => $count];
+            $totalCandidates += $count;
+        }
+
+        if (! $dryRun && ! $forceThreshold && $totalCandidates > $maxAffected) {
+            $this->error("Refusing to mark {$totalCandidates} snapshots: exceeds --max-affected={$maxAffected}. Use --force-threshold to proceed.");
+
+            return self::FAILURE;
+        }
+
+        $totalMarked = 0;
+
+        foreach ($ownerBatches as $batch) {
+            $totalMarked += (int) OwnerContext::withOwner(
+                $batch['owner'],
+                fn (): int => $this->processAbandonedSnapshots($minutes, $dryRun),
+            );
+        }
+
+        $this->info("Marked {$totalMarked} snapshot(s) as abandoned across owners.");
+
+        return self::SUCCESS;
+    }
+
+    private function countAbandonedSnapshots(int $minutes): int
+    {
+        return $this->abandonedSnapshotsQuery($minutes)->count();
+    }
+
+    private function processAbandonedSnapshots(int $minutes, bool $dryRun): int
+    {
+        $snapshots = $this->abandonedSnapshotsQuery($minutes)->get();
+
+        foreach ($snapshots as $snapshot) {
+            if (! $dryRun) {
+                $snapshot->markAsAbandoned();
+            }
+        }
+
+        return $snapshots->count();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<CartSnapshot>
+     */
+    private function abandonedSnapshotsQuery(int $minutes): \Illuminate\Database\Eloquent\Builder
+    {
+        $cutoff = CarbonImmutable::now()->subMinutes($minutes);
+
+        return CartSnapshot::query()->forOwner()
+            ->where('items_count', '>', 0)
+            ->whereNotNull('checkout_started_at')
+            ->whereNull('checkout_abandoned_at')
+            ->where(function ($query) use ($cutoff): void {
+                $query->where('last_activity_at', '<', $cutoff)
+                    ->orWhere(function ($fallback) use ($cutoff): void {
+                        $fallback->whereNull('last_activity_at')
+                            ->where('checkout_started_at', '<', $cutoff);
+                    });
+            });
     }
 
     private function handleAllOwners(

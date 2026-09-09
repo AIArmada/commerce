@@ -1,6 +1,6 @@
 # AIArmada Cart
 
-A modern, production-grade shopping cart engine for Laravel 12 applications.
+A modern, production-grade shopping cart engine for Laravel 13 applications.
 
 ## Features
 
@@ -15,7 +15,7 @@ A modern, production-grade shopping cart engine for Laravel 12 applications.
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12.x
+- Laravel 13.x
 
 ## Installation
 
@@ -42,7 +42,7 @@ php artisan migrate
 use AIArmada\Cart\Facades\Cart;
 
 // Add items
-Cart::add('laptop-001', 'MacBook Pro 16"', 2499.00, 1, [
+Cart::add('laptop-001', 'MacBook Pro 16"', 249900, 1, [
     'sku' => 'MBP16-2024',
     'color' => 'Space Gray',
 ]);
@@ -62,7 +62,7 @@ Cart::update('laptop-001', ['quantity' => 2]);
 Cart::remove('laptop-001');
 
 // Multiple instances
-Cart::instance('wishlist')->add('monitor-001', 'Display', 599.00);
+Cart::instance('wishlist')->add('monitor-001', 'Display', 59900);
 ```
 
 ## Storage
@@ -84,7 +84,8 @@ Apply discounts, taxes, and fees at different calculation phases:
 
 ```php
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\Cart\Conditions\TargetPresets;
+use AIArmada\Cart\Conditions\ConditionPhase;
+use AIArmada\Cart\Conditions\Target;
 
 // Percentage discount
 Cart::addDiscount('summer-sale', '20%');
@@ -96,7 +97,7 @@ Cart::addDiscount('welcome', '-10.00');
 $condition = new CartCondition(
     name: 'vip-discount',
     type: 'discount',
-    target: TargetPresets::cartSubtotal(),
+    target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build(),
     value: '-15%',
     rules: [fn($cart) => auth()->user()?->isVip()],
 );

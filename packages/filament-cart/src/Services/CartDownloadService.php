@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Services;
 
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Snapshots\CartSnapshot;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class CartDownloadService
 {
-    public function download(Cart $cart): StreamedResponse
+    public function download(CartSnapshot $cart): StreamedResponse
     {
         $payload = $this->payload($cart);
 
@@ -27,7 +27,7 @@ final class CartDownloadService
     /**
      * @return array<string, mixed>
      */
-    public function payload(Cart $cart): array
+    public function payload(CartSnapshot $cart): array
     {
         return [
             'id' => $cart->id,
@@ -42,7 +42,7 @@ final class CartDownloadService
         ];
     }
 
-    public function filename(Cart $cart): string
+    public function filename(CartSnapshot $cart): string
     {
         $instance = $this->normalizeFileComponent($cart->instance, 'default');
         $identifier = $this->normalizeFileComponent($cart->identifier, 'cart');

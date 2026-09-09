@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Contracts;
 
-use Akaunting\Money\Money;
-
 /**
  * Interface for products that can be added to the cart.
  *
@@ -26,9 +24,9 @@ use Akaunting\Money\Money;
  *         return $this->name;
  *     }
  *
- *     public function getBuyablePrice(): Money
+ *     public function getBuyablePrice(): int
  *     {
- *         return Money::MYR($this->price);
+ *         return (int) $this->price;
  *     }
  *
  *     public function canBePurchased(?int $quantity = null): bool
@@ -61,11 +59,11 @@ interface BuyableInterface
     public function getBuyableName(): string;
 
     /**
-     * Get the price as a Money object.
+     * Get the unit price in integer minor units.
      *
      * This should return the unit price (not multiplied by quantity).
      */
-    public function getBuyablePrice(): Money;
+    public function getBuyablePrice(): int;
 
     /**
      * Check if this item can be purchased.

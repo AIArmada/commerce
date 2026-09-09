@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Actions;
 
-use AIArmada\FilamentCart\Models\CartCondition;
-use AIArmada\FilamentCart\Services\OwnerActionGuard;
+use AIArmada\Cart\Actions\RemoveStoredConditions;
+use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use InvalidArgumentException;
 
 final class RemoveConditionAction extends Action
 {
@@ -27,11 +30,12 @@ final class RemoveConditionAction extends Action
             ->modalDescription('Are you sure you want to remove this condition from the cart?')
             ->modalSubmitActionLabel('Remove Condition')
             ->action(function (CartCondition $record): void {
-                $cart = OwnerActionGuard::authorizeCartCondition($record);
-
                 try {
-                    $action = app(RemoveConditionFromCartAction::class);
-                    $action->removeCondition($record);
+                    $removed = app(RemoveStoredConditions::class)->removeSnapshotCondition($record);
+
+                    if (! $removed) {
+                        throw new Exception('Condition not found or could not be removed');
+                    }
 
                     Notification::make()
                         ->title('Condition Removed')
@@ -68,11 +72,10 @@ final class RemoveConditionAction extends Action
             ->modalDescription('Are you sure you want to remove all conditions from this cart? This action cannot be undone.')
             ->modalSubmitActionLabel('Clear All Conditions')
             ->action(function ($record, $livewire): void {
-                $cart = OwnerActionGuard::resolveCartRecord($record, $livewire);
+                $cart = self::resolveCartRecord($record, $livewire);
 
                 try {
-                    $action = app(RemoveConditionFromCartAction::class);
-                    $action->clearAll($cart);
+                    app(RemoveStoredConditions::class)->clearAll($cart);
 
                     Notification::make()
                         ->title('All Conditions Cleared')
@@ -118,11 +121,10 @@ final class RemoveConditionAction extends Action
                     ->helperText('All conditions of this type will be removed'),
             ])
             ->action(function (array $data, $record, $livewire): void {
-                $cart = OwnerActionGuard::resolveCartRecord($record, $livewire);
+                $cart = self::resolveCartRecord($record, $livewire);
 
                 try {
-                    $action = app(RemoveConditionFromCartAction::class);
-                    $action->clearByType($cart, $data['type']);
+                    app(RemoveStoredConditions::class)->clearByType($cart, (string) $data['type']);
 
                     Notification::make()
                         ->title('Conditions Cleared')
@@ -138,5 +140,33 @@ final class RemoveConditionAction extends Action
                         ->send();
                 }
             });
+    }
+
+    private static function resolveCartRecord(mixed $record, mixed $livewire = null): CartSnapshot
+    {
+        $cart = $record instanceof CartSnapshot ? $record : null;
+
+        if ($cart === null && is_object($livewire) && method_exists($livewire, 'getOwnerRecord')) {
+            $ownerRecord = $livewire->getOwnerRecord();
+            $cart = $ownerRecord instanceof CartSnapshot ? $ownerRecord : null;
+        }
+
+        if (! $cart instanceof CartSnapshot) {
+            throw new InvalidArgumentException('Cart actions require a cart snapshot record.');
+        }
+
+        if (! CartSnapshot::ownerScopingEnabled()) {
+            return $cart;
+        }
+
+        /** @var CartSnapshot $validated */
+        $validated = OwnerWriteGuard::findOrFailForOwner(
+            CartSnapshot::class,
+            (string) $cart->getKey(),
+            includeGlobal: false,
+            message: 'Cart is not accessible in the current owner scope.',
+        );
+
+        return $validated;
     }
 }

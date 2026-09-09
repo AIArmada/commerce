@@ -6,11 +6,11 @@ use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Conditions\Enums\ConditionApplication;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
-use AIArmada\Cart\Conditions\TargetPresets;
+use AIArmada\Cart\Conditions\Target;
 
-describe('TargetPresets', function (): void {
+describe('built-in target compositions', function (): void {
     it('creates cart subtotal target', function (): void {
-        $target = TargetPresets::cartSubtotal();
+        $target = Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build();
 
         expect($target)->toBeInstanceOf(ConditionTarget::class)
             ->and($target->scope)->toBe(ConditionScope::CART)
@@ -19,7 +19,7 @@ describe('TargetPresets', function (): void {
     });
 
     it('creates cart grand total target', function (): void {
-        $target = TargetPresets::cartGrandTotal();
+        $target = Target::cart()->phase(ConditionPhase::GRAND_TOTAL)->applyAggregate()->build();
 
         expect($target)->toBeInstanceOf(ConditionTarget::class)
             ->and($target->scope)->toBe(ConditionScope::CART)
@@ -28,7 +28,7 @@ describe('TargetPresets', function (): void {
     });
 
     it('creates cart shipping target', function (): void {
-        $target = TargetPresets::cartShipping();
+        $target = Target::cart()->phase(ConditionPhase::SHIPPING)->applyAggregate()->build();
 
         expect($target)->toBeInstanceOf(ConditionTarget::class)
             ->and($target->scope)->toBe(ConditionScope::CART)
@@ -37,7 +37,7 @@ describe('TargetPresets', function (): void {
     });
 
     it('creates cart taxable target', function (): void {
-        $target = TargetPresets::cartTaxable();
+        $target = Target::cart()->phase(ConditionPhase::TAXABLE)->applyAggregate()->build();
 
         expect($target)->toBeInstanceOf(ConditionTarget::class)
             ->and($target->scope)->toBe(ConditionScope::CART)
@@ -46,7 +46,7 @@ describe('TargetPresets', function (): void {
     });
 
     it('creates cart tax target', function (): void {
-        $target = TargetPresets::cartTax();
+        $target = Target::cart()->phase(ConditionPhase::TAX)->applyAggregate()->build();
 
         expect($target)->toBeInstanceOf(ConditionTarget::class)
             ->and($target->scope)->toBe(ConditionScope::CART)
@@ -55,7 +55,7 @@ describe('TargetPresets', function (): void {
     });
 
     it('creates items per item target', function (): void {
-        $target = TargetPresets::itemsPerItem();
+        $target = Target::items()->phase(ConditionPhase::ITEM_DISCOUNT)->applyPerItem()->build();
 
         expect($target)->toBeInstanceOf(ConditionTarget::class)
             ->and($target->scope)->toBe(ConditionScope::ITEMS)
@@ -64,7 +64,7 @@ describe('TargetPresets', function (): void {
     });
 
     it('creates items pre item target', function (): void {
-        $target = TargetPresets::itemsPreItem();
+        $target = Target::items()->phase(ConditionPhase::PRE_ITEM)->applyAggregate()->build();
 
         expect($target)->toBeInstanceOf(ConditionTarget::class)
             ->and($target->scope)->toBe(ConditionScope::ITEMS)
@@ -73,7 +73,7 @@ describe('TargetPresets', function (): void {
     });
 
     it('creates custom aggregate target', function (): void {
-        $target = TargetPresets::customAggregate();
+        $target = Target::custom()->build();
 
         expect($target)->toBeInstanceOf(ConditionTarget::class)
             ->and($target->scope)->toBe(ConditionScope::CUSTOM)

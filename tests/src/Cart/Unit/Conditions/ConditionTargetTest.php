@@ -7,7 +7,6 @@ use AIArmada\Cart\Conditions\Enums\ConditionApplication;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Conditions\Target;
-use AIArmada\Cart\Conditions\TargetPresets;
 
 it('parses DSL targets with filters and grouping', function (): void {
     $dsl = 'items:attributes.category=electronics;quantity>=2@item_discount/per-item#seller';
@@ -54,8 +53,11 @@ it('serializes target definitions', function (): void {
     expect($array['application'])->toBe('aggregate');
 });
 
-it('provides helpful target presets', function (): void {
-    expect(TargetPresets::cartSubtotal()->toDsl())->toBe('cart@cart_subtotal/aggregate')
-        ->and(TargetPresets::cartGrandTotal()->toDsl())->toBe('cart@grand_total/aggregate')
-        ->and(TargetPresets::itemsPerItem()->toDsl())->toBe('items@item_discount/per-item');
+it('composes standard targets with the fluent builder', function (): void {
+    expect(Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->applyAggregate()->build()->toDsl())
+        ->toBe('cart@cart_subtotal/aggregate')
+        ->and(Target::cart()->phase(ConditionPhase::GRAND_TOTAL)->applyAggregate()->build()->toDsl())
+        ->toBe('cart@grand_total/aggregate')
+        ->and(Target::items()->phase(ConditionPhase::ITEM_DISCOUNT)->applyPerItem()->build()->toDsl())
+        ->toBe('items@item_discount/per-item');
 });

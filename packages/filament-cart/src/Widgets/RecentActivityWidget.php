@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Support\CartMoney;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -47,9 +47,10 @@ class RecentActivityWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('total_cents')
                     ->label('Value')
-                    ->money(fn ($record): string => is_string($record->currency ?? null) && $record->currency !== ''
-                        ? mb_strtoupper($record->currency)
-                        : $this->resolveCurrency(), divideBy: 100),
+                    ->formatStateUsing(fn ($state, $record): string => CartMoney::formatMinor(
+                        (int) $state,
+                        is_string($record->currency ?? null) ? $record->currency : null,
+                    )),
 
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Updated')
@@ -82,26 +83,8 @@ class RecentActivityWidget extends BaseWidget
             ->orderByDesc('updated_at')
             ->limit(50);
 
-        if ((bool) config('filament-cart.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-
-            OwnerContext::assertResolvedOrExplicitGlobal(
-                $owner,
-                Cart::class . ' requires an owner context or explicit global context.',
-            );
-
-            if ($owner === null) {
-                $query->globalOnly();
-            } else {
-                $query->forOwner($owner, (bool) config('filament-cart.owner.include_global', false));
-            }
-        }
+        $query->forOwner(includeGlobal: Cart::includeGlobalRecords());
 
         return $query;
-    }
-
-    private function resolveCurrency(): string
-    {
-        return mb_strtoupper(config('cart.money.default_currency', 'USD'));
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Models\Traits;
 
+use AIArmada\Cart\Support\CartMoney;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 
@@ -257,7 +258,7 @@ trait MoneyTrait
     {
         return new Money(
             $amount,
-            new Currency(mb_strtoupper((string) config('cart.money.default_currency', 'USD'))),
+            new Currency(CartMoney::currency()),
             false,
         );
     }

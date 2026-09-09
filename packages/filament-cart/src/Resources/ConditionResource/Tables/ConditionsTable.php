@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources\ConditionResource\Tables;
 
 use AIArmada\Cart\Models\Condition;
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentCart\Resources\ConditionResource;
-use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -68,13 +67,7 @@ final class ConditionsTable
                     ->alignEnd()
                     ->badge()
                     ->color(fn (string $state): string => str_contains($state, '%') ? 'info' : 'secondary')
-                    ->formatStateUsing(fn (?string $state) => match (true) {
-                        $state === null => self::formatMoney(0),
-                        str_contains($state, '%') => $state,
-                        default => (str_starts_with($state, '+')
-                            ? '+' . self::formatMoney((int) mb_ltrim($state, '+'))
-                            : self::formatMoney((int) $state))
-                    })
+                    ->formatStateUsing(fn (?string $state, Condition $record): string => $record->formatted_value)
                     ->sortable(),
 
                 TextColumn::make('operator')
@@ -216,7 +209,7 @@ final class ConditionsTable
                 DeleteAction::make()
                     ->visible(fn (Condition $record): bool => ConditionResource::canDelete($record))
                     ->using(function (Condition $record): void {
-                        OwnerActionGuard::authorizeStoredCondition($record)->delete();
+                        self::authorizeCondition($record)->delete();
                     }),
             ])
             ->bulkActions([
@@ -231,7 +224,7 @@ final class ConditionsTable
                                     throw new RuntimeException('Shared global conditions can only be modified from explicit global context.');
                                 }
 
-                                OwnerActionGuard::authorizeStoredCondition($record)->delete();
+                                self::authorizeCondition($record)->delete();
                             }
                         }),
                 ]),
@@ -240,8 +233,20 @@ final class ConditionsTable
             ->poll('30s');
     }
 
-    private static function formatMoney(int $amount): string
+    private static function authorizeCondition(Condition $condition): Condition
     {
-        return MoneyFormatter::formatMinor($amount, (string) config('cart.money.default_currency', 'USD'));
+        if (! Condition::ownerScopingEnabled()) {
+            return $condition;
+        }
+
+        /** @var Condition $validated */
+        $validated = OwnerWriteGuard::findOrFailForOwner(
+            Condition::class,
+            (string) $condition->getKey(),
+            includeGlobal: false,
+            message: 'Condition is not accessible in the current owner scope.',
+        );
+
+        return $validated;
     }
 }

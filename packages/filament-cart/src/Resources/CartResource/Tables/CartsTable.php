@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartResource\Tables;
 
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Support\CartMoney;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentCart\Resources\CartResource;
-use AIArmada\FilamentCart\Services\CartInstanceManager;
-use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -71,13 +72,19 @@ final class CartsTable
                 TextColumn::make('subtotal')
                     ->label('Subtotal')
                     ->alignEnd()
-                    ->money(fn (Cart $record): string => $record->currency, divideBy: 100)
+                    ->formatStateUsing(fn (int | string | null $state, Cart $record): string => CartMoney::formatMinor(
+                        (int) $state,
+                        $record->currency,
+                    ))
                     ->sortable(),
 
                 TextColumn::make('total')
                     ->label('Total')
                     ->alignEnd()
-                    ->money(fn (Cart $record): string => $record->currency, divideBy: 100)
+                    ->formatStateUsing(fn (int | string | null $state, Cart $record): string => CartMoney::formatMinor(
+                        (int) $state,
+                        $record->currency,
+                    ))
                     ->sortable(),
 
                 TextColumn::make('savings')
@@ -86,7 +93,10 @@ final class CartsTable
                     ->badge()
                     ->color('success')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->money(fn (Cart $record): string => $record->currency, divideBy: 100)
+                    ->formatStateUsing(fn (int | string | null $state, Cart $record): string => CartMoney::formatMinor(
+                        (int) $state,
+                        $record->currency,
+                    ))
                     ->sortable(),
 
                 TextColumn::make('currency')
@@ -160,7 +170,7 @@ final class CartsTable
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function (Cart $record): void {
-                            $cart = OwnerActionGuard::authorizeCart($record);
+                            $cart = self::authorizeCart($record);
 
                             app(CartInstanceManager::class)
                                 ->resolveForSnapshot($cart)
@@ -177,7 +187,7 @@ final class CartsTable
                     DeleteAction::make()
                         ->icon(Heroicon::OutlinedXMark)
                         ->using(function (Cart $record): void {
-                            $cart = OwnerActionGuard::authorizeCart($record);
+                            $cart = self::authorizeCart($record);
 
                             app(CartInstanceManager::class)
                                 ->resolveForSnapshot($cart)
@@ -197,7 +207,7 @@ final class CartsTable
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Cart> $records */
                         $records->each(function (Cart $record): void {
-                            $cart = OwnerActionGuard::authorizeCart($record);
+                            $cart = self::authorizeCart($record);
 
                             app(CartInstanceManager::class)
                                 ->resolveForSnapshot($cart)
@@ -213,7 +223,7 @@ final class CartsTable
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Cart> $records */
                         $records->each(function (Cart $record): void {
-                            $cart = OwnerActionGuard::authorizeCart($record);
+                            $cart = self::authorizeCart($record);
 
                             app(CartInstanceManager::class)
                                 ->resolveForSnapshot($cart)
@@ -224,5 +234,22 @@ final class CartsTable
             ->defaultSort('updated_at', 'desc')
             ->poll(fn (): string => self::resolvePollingInterval())
             ->striped();
+    }
+
+    private static function authorizeCart(Cart $cart): Cart
+    {
+        if (! Cart::ownerScopingEnabled()) {
+            return $cart;
+        }
+
+        /** @var Cart $validated */
+        $validated = OwnerWriteGuard::findOrFailForOwner(
+            Cart::class,
+            (string) $cart->getKey(),
+            includeGlobal: false,
+            message: 'Cart is not accessible in the current owner scope.',
+        );
+
+        return $validated;
     }
 }

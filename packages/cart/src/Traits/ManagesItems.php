@@ -13,6 +13,8 @@ use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Exceptions\UnknownModelException;
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Support\CartLimits;
+use AIArmada\Cart\Support\CartMoney;
 
 trait ManagesItems
 {
@@ -227,6 +229,13 @@ trait ManagesItems
         // Normalize ID to string for consistent handling
         $id = (string) $id;
 
+        $cartItems = $this->getItems();
+
+        $limits = CartLimits::fromConfig();
+        if (! $cartItems->has((string) $id) && $cartItems->count() >= $limits->maxItems) {
+            throw new InvalidCartItemException("Cart cannot contain more than {$limits->maxItems} items");
+        }
+
         // Create cart item
         $item = $this->createCartItem([
             'id' => $id,
@@ -239,7 +248,6 @@ trait ManagesItems
         ]);
 
         // Check if item already exists in cart
-        $cartItems = $this->getItems();
         $isFirstItem = $cartItems->isEmpty();
 
         if ($cartItems->has($id)) {
@@ -348,6 +356,8 @@ trait ManagesItems
      */
     private function validateCartItem(array $data): void
     {
+        $limits = CartLimits::fromConfig();
+
         if (empty($data['id'])) {
             throw new InvalidCartItemException('Cart item ID is required');
         }
@@ -356,12 +366,20 @@ trait ManagesItems
             throw new InvalidCartItemException('Cart item name is required');
         }
 
+        if (mb_strlen((string) $data['id']) > $limits->maxStringLength || mb_strlen((string) $data['name']) > $limits->maxStringLength) {
+            throw new InvalidCartItemException("Cart item ID and name cannot exceed {$limits->maxStringLength} characters");
+        }
+
         if (! is_numeric($data['price']) || $data['price'] < 0) {
             throw new InvalidCartItemException('Cart item price must be a positive number');
         }
 
         if (! is_int($data['quantity']) || $data['quantity'] < 1) {
             throw new InvalidCartItemException('Cart item quantity must be a positive integer');
+        }
+
+        if ($data['quantity'] > $limits->maxItemQuantity) {
+            throw new InvalidCartItemException("Cart item quantity cannot exceed {$limits->maxItemQuantity}");
         }
 
         // Validate associated model if provided
@@ -389,7 +407,7 @@ trait ManagesItems
                 throw new InvalidCartItemException('Cart item price must be a finite number');
             }
 
-            return (int) round($price * 100, 0, PHP_ROUND_HALF_UP);
+            return CartMoney::minorFromDecimal((string) $price);
         }
 
         $normalized = mb_trim($price);
@@ -399,13 +417,12 @@ trait ManagesItems
             return 0;
         }
 
-        $value = (float) $normalized;
-        if (! is_numeric($normalized) || ! is_finite($value)) {
+        if (! is_numeric($normalized) || ! is_finite((float) $normalized)) {
             throw new InvalidCartItemException('Cart item price must be a finite number');
         }
 
         return str_contains($normalized, '.')
-            ? (int) round($value * 100, 0, PHP_ROUND_HALF_UP)
+            ? CartMoney::minorFromDecimal($normalized)
             : (int) $normalized;
     }
 }

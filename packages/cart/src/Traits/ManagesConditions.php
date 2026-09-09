@@ -533,7 +533,7 @@ trait ManagesConditions
     private function normalizeConditionData(array $data): array
     {
         if (! isset($data['target_definition']) && isset($data['target'])) {
-            $data['target_definition'] = ConditionTarget::from($data['target'])->toArray();
+            $data['target_definition'] = ConditionTarget::from($data['target']);
         }
 
         return $data;

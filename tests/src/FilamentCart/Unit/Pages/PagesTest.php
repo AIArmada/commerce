@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\FilamentCart\Pages\CartDashboard;
 use AIArmada\FilamentCart\Pages\LiveDashboardPage;
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ViewCart;

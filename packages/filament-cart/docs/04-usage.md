@@ -27,9 +27,9 @@ Important fields:
 
 `owner_scope` may exist in the database for nullable-owner uniqueness, but it is an internal implementation detail.
 
-Snapshot money fields are integer minor units. Use the shared
-MoneyFormatter::formatMinor() helper for display instead of constructing
-currency-specific static Money factories.
+Snapshot money fields are integer minor units. Use
+`AIArmada\Cart\Support\CartMoney::formatMinor()` for display instead of
+constructing currency-specific static Money factories.
 
 ## CartItemResource
 

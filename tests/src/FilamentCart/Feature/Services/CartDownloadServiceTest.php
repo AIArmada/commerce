@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\FilamentCart\Services\CartDownloadService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpFoundation\StreamedResponse;

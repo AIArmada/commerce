@@ -88,16 +88,17 @@ it('rejects saving with an explicit owner that mismatches the current owner cont
         'password' => 'secret',
     ]);
 
-    expect(fn () => OwnerContext::withOwner($ownerA, static function () use ($ownerB): void {
-        CartModel::create([
-            'identifier' => 'mismatched-owner-cart',
-            'instance' => 'default',
-            'items' => [],
-            'conditions' => [],
-            'metadata' => [],
-            'version' => 1,
-            'owner_type' => $ownerB->getMorphClass(),
-            'owner_id' => (string) $ownerB->getKey(),
-        ]);
+    $cart = new CartModel([
+        'identifier' => 'mismatched-owner-cart',
+        'instance' => 'default',
+        'items' => [],
+        'conditions' => [],
+        'metadata' => [],
+        'version' => 1,
+    ]);
+    $cart->assignOwner($ownerB);
+
+    expect(fn () => OwnerContext::withOwner($ownerA, static function () use ($cart): void {
+        $cart->save();
     }))->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\\Cart\\Models\\CartModel.');
 });

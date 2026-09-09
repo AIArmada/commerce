@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\CartCondition as CoreCondition;
 use AIArmada\Cart\Facades\Cart as CartFacade;
-use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
-use AIArmada\FilamentCart\Models\CartCondition;
-use AIArmada\FilamentCart\Models\CartItem;
+use AIArmada\Cart\Snapshots\CartSnapshot as CartSnapshot;
+use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
+use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
 
 beforeEach(function (): void {
     CartFacade::clear();
@@ -22,7 +22,7 @@ describe('cart synchronization', function (): void {
         expect($snapshot->quantity)->toBe(2);
         expect($snapshot->subtotal)->toBe(3000);
         expect($snapshot->total)->toBe(3000);
-        expect($snapshot->currency)->toBe(mb_strtoupper(config('cart.money.default_currency', 'USD')));
+        expect($snapshot->currency)->toBe(mb_strtoupper(config('cart.money.default_currency', 'MYR')));
 
         $item = CartItem::first();
         expect($item)->not->toBeNull();

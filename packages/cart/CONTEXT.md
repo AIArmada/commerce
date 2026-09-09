@@ -17,7 +17,7 @@ keywords:
 
 ## Snapshot
 - Composer: `aiarmada/cart`
-- Role: Cart persistence: items, conditions, metadata, migration on login, owner-aware storage.
+- Role: Cart domain and persistence: items, conditions, metadata, snapshots, migration on login, owner-aware storage.
 - Triggers: cart, basket, cart-items, conditions, abandonment, migration
 - Search first: `src/Models, src/Services, src/Actions, config, docs`
 - Related: `filament-cart`, `checkout`, `signals`, `vouchers`
@@ -42,9 +42,9 @@ keywords:
 - Owner/security: Owner-aware (Condition, HasCartOwner); migrate guest carts on login.
 
 ## Key surfaces
-- Models: `CartItem`, `CartModel`, `Condition`
+- Models: `CartItem`, `CartModel`, `Condition`, `Snapshots/CartSnapshot`, `Snapshots/CartSnapshotItem`, `Snapshots/CartSnapshotCondition`
 - Actions/Services: `Actions/MigrateCartOnLoginAction`, `Actions/MigrateGuestCartToUserAction`, `Services/BuiltInRulesFactory`, `Services/CartConditionResolver`, `Services/CartFactory`, `Services/CartMergeStrategyRegistry`, `Services/CartMigrationService`, `Services/RulePresets`
-- Config `cart.php`: `database`, `json_column_type`, `table`, `conditions_table`, `ttl`, `lock_for_update`, `money`, `default_currency`, `rounding_mode`, `empty_cart_behavior`
+- Config `cart.php`: `database`, `money`, `dynamic_rules_factory`, `empty_cart_behavior`, `migration`, `conditions`, `snapshots`, `owner`, `limits`, `performance`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

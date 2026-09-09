@@ -7,6 +7,7 @@ namespace AIArmada\Cart\Services;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Support\CartMoney;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use InvalidArgumentException;
@@ -520,7 +521,7 @@ final class BuiltInRulesFactory implements RulesFactoryInterface
     private function currencyIsRule(string $currency): array
     {
         return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => mb_strtoupper(config('cart.money.default_currency', 'USD')) === mb_strtoupper($currency),
+            static fn (Cart $cart, ?CartItem $item = null): bool => CartMoney::currency() === CartMoney::currency($currency),
         ];
     }
 

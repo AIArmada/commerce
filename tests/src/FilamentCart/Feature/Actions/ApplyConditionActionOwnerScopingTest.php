@@ -17,8 +17,8 @@ uses(RefreshDatabase::class);
 it('scopes ApplyConditionAction condition options and lookups by resolved owner', function (): void {
     config()->set('cart.owner.enabled', true);
     config()->set('cart.owner.include_global', true);
-    config()->set('filament-cart.owner.enabled', true);
-    config()->set('filament-cart.owner.include_global', true);
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', true);
 
     $ownerA = User::query()->create([
         'name' => 'Owner A',
@@ -95,8 +95,8 @@ it('scopes ApplyConditionAction condition options and lookups by resolved owner'
 it('returns only item-level conditions for item actions', function (): void {
     config()->set('cart.owner.enabled', true);
     config()->set('cart.owner.include_global', true);
-    config()->set('filament-cart.owner.enabled', true);
-    config()->set('filament-cart.owner.include_global', true);
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', true);
 
     $owner = User::query()->create([
         'name' => 'Owner A',

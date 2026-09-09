@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\Cart\Models\Condition;
-use AIArmada\FilamentCart\Models\CartCondition as SnapshotCondition;
+use AIArmada\Cart\Snapshots\CartSnapshotCondition as SnapshotCondition;
+
+beforeEach(function (): void {
+    config()->set('cart.snapshots.synchronization.queue_sync', false);
+});
 
 it('applies active global conditions to new carts', function (): void {
     Condition::factory()->create([
@@ -79,7 +83,7 @@ it('re-evaluates rules whenever items are added', function (): void {
 });
 
 it('respects the enable_global_conditions flag', function (): void {
-    config(['filament-cart.features.global_conditions' => false]);
+    config(['cart.conditions.apply_global' => false]);
 
     Condition::factory()->create([
         'name' => 'disabled-tax',
@@ -95,7 +99,7 @@ it('respects the enable_global_conditions flag', function (): void {
 
     expect(CartFacade::getConditions()->has('disabled-tax'))->toBeFalse();
 
-    config(['filament-cart.features.global_conditions' => true]);
+    config(['cart.conditions.apply_global' => true]);
 });
 
 // Multiple Conditions Tests

@@ -7,6 +7,7 @@ namespace AIArmada\Cart\Conditions;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Support\CartMoney;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonException;
@@ -63,7 +64,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
      * Create condition from array
      *
      * @param  array<string, mixed>  $data
-     *                                      Requires `target_definition` (structured array).
+     *                                      Requires `target_definition` (structured array or value object).
      */
     public static function fromArray(array $data): static
     {
@@ -73,10 +74,12 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
             throw new InvalidCartConditionException('Condition target_definition is required.');
         }
 
+        $target = ConditionTarget::from($targetData);
+
         return new self(
             name: $data['name'] ?? throw new InvalidCartConditionException('Condition name is required'),
             type: $data['type'] ?? throw new InvalidCartConditionException('Condition type is required'),
-            target: $targetData,
+            target: $target,
             value: $data['value'] ?? throw new InvalidCartConditionException('Condition value is required'),
             attributes: $data['attributes'] ?? [],
             order: $data['order'] ?? 0,
@@ -398,7 +401,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
 
         if (is_float($value)) {
             // Float fixed values: convert to int cents
-            return (int) round($value * 100);
+            return CartMoney::minorFromDecimal((string) $value);
         }
 
         return $value;
@@ -483,7 +486,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
 
         // If the value contains a decimal point, treat it as dollars and convert to cents
         if (str_contains($numericPart, '.')) {
-            return (int) round($floatValue * 100);
+            return CartMoney::minorFromDecimal($numericPart);
         }
 
         return (int) $numericPart;

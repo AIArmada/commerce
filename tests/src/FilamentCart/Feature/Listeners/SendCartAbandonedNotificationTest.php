@@ -6,9 +6,9 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Pending;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Events\CartAbandoned;
+use AIArmada\Cart\Events\CartAbandoned;
 use AIArmada\FilamentCart\Listeners\SendCartAbandonedNotification;
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\FilamentCart\Notifications\CartAbandonedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
@@ -19,9 +19,9 @@ uses(RefreshDatabase::class);
 it('delivers abandoned cart notifications using the event owner context', function (): void {
     Notification::fake();
 
-    config()->set('filament-cart.owner.enabled', true);
-    config()->set('filament-cart.owner.include_global', false);
-    config()->set('filament-cart.owner.auto_assign_on_create', true);
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', false);
+    config()->set('cart.owner.auto_assign_on_create', true);
     config()->set('checkout.owner.enabled', true);
     config()->set('checkout.owner.include_global', false);
     config()->set('checkout.owner.auto_assign_on_create', true);

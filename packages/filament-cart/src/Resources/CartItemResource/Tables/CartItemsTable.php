@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartItemResource\Tables;
 
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Cart\Support\CartMoney;
 use AIArmada\FilamentCart\Actions\ApplyConditionAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\IconColumn;
@@ -160,18 +160,18 @@ final class CartItemsTable
 
     private static function resolveCurrency(): string
     {
-        return mb_strtoupper(config('cart.money.default_currency', 'USD'));
+        return CartMoney::currency();
     }
 
     private static function formatMoney(int $amount, ?string $currency = null): string
     {
         $resolvedCurrency = is_string($currency) && $currency !== '' ? $currency : self::resolveCurrency();
 
-        return MoneyFormatter::formatMinor($amount, $resolvedCurrency);
+        return CartMoney::formatMinor($amount, $resolvedCurrency);
     }
 
     private static function toMinorUnits(mixed $amount): int
     {
-        return (int) round(((float) $amount) * 100);
+        return CartMoney::minorFromDecimal((string) $amount);
     }
 }
