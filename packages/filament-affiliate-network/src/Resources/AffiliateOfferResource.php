@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Resources;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\CreateAffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\EditAffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\ListAffiliateOffers;
@@ -43,7 +44,7 @@ final class AffiliateOfferResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-affiliate-network.navigation.group', 'Affiliate Network');
+        return config('filament-affiliate-network.navigation.group');
     }
 
     public static function getNavigationSort(): ?int
@@ -79,7 +80,7 @@ final class AffiliateOfferResource extends Resource
                 'category' => fn ($builder) => $builder->withoutOwnerScope(),
             ]);
 
-        return $query->withoutGlobalScope('owner_via_site');
+        return $query->withoutGlobalScope(ScopesByBelongsToOwner::class);
     }
 
     public static function getPages(): array

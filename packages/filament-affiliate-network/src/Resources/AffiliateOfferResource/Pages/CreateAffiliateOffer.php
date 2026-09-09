@@ -45,7 +45,7 @@ final class CreateAffiliateOffer extends CreateRecord
     }
 
     /**
-     * Wrap model creation in explicit global owner context so the ScopesBySiteOwner
+     * Wrap model creation in explicit global owner context so the belongs-to owner
      * creating-hook does not throw when affiliate-network.owner.enabled=true.
      */
     protected function handleRecordCreation(array $data): Model

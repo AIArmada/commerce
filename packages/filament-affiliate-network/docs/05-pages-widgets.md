@@ -10,6 +10,11 @@ title: Pages & Widgets
 
 A discovery page where affiliates browse and apply for offers.
 
+This page is intentionally available to non-admin affiliates. Public offer
+reads use explicit global discovery context; apply and link actions resolve the
+affiliate and write only inside that affiliate's owner context. Local imported
+offers enroll through the core `affiliates` program service.
+
 **Features:**
 - Search offers by name/description
 - Filter by category
@@ -77,6 +82,10 @@ class AffiliateMarketplacePage extends BasePage
 
 Analytics dashboard for merchants.
 
+The dashboard is owner-scoped to the current merchant. It does not embed the
+network-wide widgets, so its counts and pending applications cannot mix
+merchants.
+
 **Features:**
 - Site overview
 - Offer performance
@@ -112,6 +121,9 @@ Overview statistics for the entire network.
 - Total Revenue (tracked revenue)
 
 **Sort Order:** 1 (appears first on dashboard)
+
+This is a network-wide admin report. It uses the explicit global context and a
+30-second owner-keyed cache.
 
 **Usage:**
 
@@ -164,6 +176,9 @@ class NetworkStatsWidget extends BaseWidget
 ### TopOffersWidget
 
 Display top performing offers.
+
+This is a network-wide admin leaderboard with the same explicit-global and
+30-second owner-keyed cache policy as `NetworkStatsWidget`.
 
 **Features:**
 - Top offers by clicks

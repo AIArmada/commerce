@@ -164,7 +164,7 @@ describe('AffiliateOfferApplication Model', function (): void {
                 ->forAffiliate($affiliate)
                 ->pending()
                 ->create());
-        })->throws(RuntimeException::class, 'Explicit global owner context is required for records linked to owned affiliates.');
+        })->throws(RuntimeException::class, 'inaccessible or missing owner relation');
 
         test('explicit global context only returns applications linked to global affiliates', function (): void {
             config([

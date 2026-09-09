@@ -18,7 +18,7 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | Package | Filament Adapter | Migration | Breaking Changes | Highest Severity | Audit File | Status |
 |---|---|---|---|---|---|
 | addressing | filament-addressing | Done | Yes | High | `addressing.md` | Done |
-| affiliate-network | filament-affiliate-network | No | Yes | High | `affiliate-network.md` | Open |
+| affiliate-network | filament-affiliate-network | No | Yes | High | `affiliate-network.md` | Done |
 | affiliates | filament-affiliates | No | Yes | High | `affiliates.md` | Open |
 | authz | filament-authz | No | Yes | Medium | `authz.md` | Done |
 | cart | filament-cart | No | Yes | High | `cart.md` | Open |

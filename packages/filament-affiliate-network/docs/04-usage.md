@@ -8,7 +8,24 @@ This guide covers the shipped marketplace resources and the admin flows around t
 
 The plugin provides four Filament resources.
 
-The site, offer, category, application, merchant dashboard, and network widget surfaces require the configured `affiliate-network.admin` ability. The marketplace page is the only intentionally non-admin surface.
+The site, offer, category, application, merchant dashboard, and network widget surfaces require the configured `affiliate-network.admin` ability. The marketplace page is intentionally public discovery and is not admin-gated; its write actions still validate the affiliate and owner context server-side.
+
+Merchant dashboard counts and lists are scoped to the current merchant owner. The
+network stats and top-offers widgets are separate, deliberate network-wide admin
+reporting surfaces and cache their global result for 30 seconds.
+
+The network owns discovery and link metrics. `affiliates` owns merchant-local
+program membership, attribution, commissions, and payouts. When an imported
+local offer has `external_program_id`, marketplace enrollment delegates to the
+existing core program; it never creates a duplicate core program or network
+application.
+
+If checkout observes both boundaries for one order, keep duplicate guards
+independent: reject a second network conversion when the order already carries
+the `network_attribution` marker, and pass a stable `external_reference` to the
+core conversion path so `affiliates` can apply its idempotency key. Network
+metrics are discovery reporting; core commission and payout records are the
+authoritative execution records.
 
 ## AffiliateSiteResource
 

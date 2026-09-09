@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Schemas;
 
+use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -23,7 +24,7 @@ final class AffiliateOfferApplicationForm
                         Select::make('offer_id')
                             ->label('Offer')
                             // Admin resource: cross-tenant — show all offers regardless of owner scope.
-                            ->relationship('offer', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->withoutGlobalScope('owner_via_site'))
+                            ->relationship('offer', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->withoutGlobalScope(ScopesByBelongsToOwner::class))
                             ->required()
                             ->disabled(),
 

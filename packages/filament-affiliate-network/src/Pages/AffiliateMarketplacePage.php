@@ -7,11 +7,12 @@ namespace AIArmada\FilamentAffiliateNetwork\Pages;
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
+use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -50,7 +51,7 @@ final class AffiliateMarketplacePage extends Page
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-affiliate-network.navigation.group', 'Affiliate Network');
+        return config('filament-affiliate-network.navigation.group');
     }
 
     public static function getNavigationSort(): int
@@ -87,7 +88,7 @@ final class AffiliateMarketplacePage extends Page
         return OwnerContext::withOwner(null, function (): Collection {
             $search = $this->search;
 
-            return AffiliateOffer::withoutGlobalScope('owner_via_site')
+            return AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)
                 ->where('status', OfferStatus::Published)
                 ->where('visibility', OfferVisibility::Public)
                 ->when(mb_strlen((string) $search) >= 3, fn (Builder $query) => $query->where(function (Builder $q) use ($search): void {
@@ -157,10 +158,8 @@ final class AffiliateMarketplacePage extends Page
             return false;
         }
 
-        return $this->withAffiliateOwnerContext($affiliate, fn (): bool => AffiliateOfferApplication::query()
-            ->where('offer_id', $offer->id)
-            ->where('affiliate_id', $affiliate->id)
-            ->exists());
+        return $this->withAffiliateOwnerContext($affiliate, fn (): bool => app(OfferManagementService::class)
+            ->hasAppliedForOffer($offer, $affiliate));
     }
 
     public function getApplicationStatus(AffiliateOffer $offer): ?string
@@ -171,29 +170,61 @@ final class AffiliateMarketplacePage extends Page
             return null;
         }
 
-        return $this->withAffiliateOwnerContext($affiliate, fn (): ?string => AffiliateOfferApplication::query()
-            ->where('offer_id', $offer->id)
-            ->where('affiliate_id', $affiliate->id)
-            ->value('status'));
+        return $this->withAffiliateOwnerContext($affiliate, fn (): ?string => app(OfferManagementService::class)
+            ->applicationStatusForOffer($offer, $affiliate));
     }
 
     public function applyForOffer(string $offerId, string $reason = ''): void
     {
-        $offer = app(OfferManagementService::class)->resolvePublicOfferOrFail($offerId);
+        $management = app(OfferManagementService::class);
+        $offer = $management->resolvePublicOfferOrFail($offerId);
 
-        if (! $offer->requires_approval) {
+        $affiliate = $this->getAffiliate();
+
+        if ($affiliate === null) {
+            if (! $offer->requires_approval) {
+                $this->generateLink($offerId);
+
+                return;
+            }
+
+            Notification::make()
+                ->title('You must be an affiliate to apply')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        if ($management->isLocalProgramOffer($offer)) {
+            $membership = $this->withAffiliateOwnerContext($affiliate, fn () => $management->enrollInLinkedProgram($offer, $affiliate));
+
+            if ($membership === null) {
+                Notification::make()
+                    ->title('Linked program unavailable')
+                    ->body('This offer is linked to a core program that is no longer available.')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
+
+            if ($membership->status !== MembershipStatus::Approved) {
+                Notification::make()
+                    ->title('Application submitted successfully')
+                    ->success()
+                    ->send();
+
+                return;
+            }
+
             $this->generateLink($offerId);
 
             return;
         }
 
-        $affiliate = $this->getAffiliate();
-
-        if ($affiliate === null) {
-            Notification::make()
-                ->title('You must be an affiliate to apply')
-                ->danger()
-                ->send();
+        if (! $offer->requires_approval) {
+            $this->generateLink($offerId);
 
             return;
         }
@@ -207,7 +238,7 @@ final class AffiliateMarketplacePage extends Page
             return;
         }
 
-        $this->withAffiliateOwnerContext($affiliate, fn (): AffiliateOfferApplication => app(OfferManagementService::class)
+        $this->withAffiliateOwnerContext($affiliate, fn () => $management
             ->applyForOffer($offer, $affiliate, $reason));
 
         Notification::make()

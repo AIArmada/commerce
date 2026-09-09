@@ -8,17 +8,31 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage;
 
 describe('MerchantDashboardPage', function (): void {
-    test('owner-enabled site counts include tenant-owned sites in network-wide admin view', function (): void {
+    test('owner-enabled site counts stay inside the current merchant owner', function (): void {
         config(['affiliate-network.owner.enabled' => true]);
 
-        $owner = User::factory()->create();
+        $ownerA = User::factory()->create();
+        $ownerB = User::factory()->create();
 
-        OwnerContext::withOwner($owner, fn () => AffiliateSite::factory()->verified()->forOwner($owner)->create());
+        OwnerContext::withOwner($ownerA, fn () => AffiliateSite::factory()->verified()->forOwner($ownerA)->create());
+        OwnerContext::withOwner($ownerB, fn () => AffiliateSite::factory()->verified()->forOwner($ownerB)->create());
         OwnerContext::withOwner(null, fn () => AffiliateSite::factory()->verified()->create());
 
         $page = app(MerchantDashboardPage::class);
 
-        expect($page->getSitesCount())->toBe(2)
-            ->and($page->getVerifiedSitesCount())->toBe(2);
+        $counts = OwnerContext::withOwner($ownerA, fn (): array => [
+            $page->getSitesCount(),
+            $page->getVerifiedSitesCount(),
+        ]);
+
+        expect($counts)->toBe([1, 1]);
+    });
+
+    test('merchant dashboard does not embed network-wide widgets', function (): void {
+        $page = app(MerchantDashboardPage::class);
+
+        $method = new ReflectionMethod($page, 'getHeaderWidgets');
+
+        expect($method->invoke($page))->toBe([]);
     });
 });

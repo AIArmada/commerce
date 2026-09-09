@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Tables;
 
+use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use Filament\Actions;
 use Filament\Forms\Components\Textarea;
@@ -67,7 +68,7 @@ final class AffiliateOfferApplicationsTable
                 // Admin filter: cross-tenant — show all offers regardless of owner scope.
                 SelectFilter::make('offer_id')
                     ->label('Offer')
-                    ->relationship('offer', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->withoutGlobalScope('owner_via_site')),
+                    ->relationship('offer', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->withoutGlobalScope(ScopesByBelongsToOwner::class)),
             ])
             ->actions([
                 Actions\Action::make('approve')

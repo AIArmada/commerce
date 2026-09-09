@@ -31,3 +31,19 @@ it('keeps non-success status handling explicit and falls back from https to http
     expect($fetcher->fetch('93.184.216.34', '/affiliate'))->toBe('<html>affiliate</html>');
     Http::assertSentCount(2);
 });
+
+it('rejects response bodies larger than the configured cap', function (): void {
+    config(['affiliate-network.http.max_response_bytes' => 8]);
+    Http::fake([
+        'https://93.184.216.34/*' => Http::response('123456789', 200),
+        'http://93.184.216.34/*' => Http::response('123456789', 200),
+    ]);
+
+    $fetcher = new SiteContentFetcher(
+        new PublicHttpUrlGuard,
+        new PinnedHttpClient,
+    );
+
+    expect($fetcher->fetch('93.184.216.34', '/affiliate'))->toBeNull();
+    Http::assertSentCount(2);
+});

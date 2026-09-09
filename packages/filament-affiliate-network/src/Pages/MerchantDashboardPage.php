@@ -9,10 +9,7 @@ use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
-use AIArmada\FilamentAffiliateNetwork\Widgets\NetworkStatsWidget;
-use AIArmada\FilamentAffiliateNetwork\Widgets\TopOffersWidget;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -49,7 +46,7 @@ final class MerchantDashboardPage extends Page
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-affiliate-network.navigation.group', 'Affiliate Network');
+        return config('filament-affiliate-network.navigation.group');
     }
 
     public static function getNavigationSort(): int
@@ -64,10 +61,7 @@ final class MerchantDashboardPage extends Page
 
     protected function getHeaderWidgets(): array
     {
-        return [
-            NetworkStatsWidget::class,
-            TopOffersWidget::class,
-        ];
+        return [];
     }
 
     /**
@@ -96,18 +90,12 @@ final class MerchantDashboardPage extends Page
      */
     public function getRecentApplications(): Collection
     {
-        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
-        return OwnerContext::withOwner(null, function (): Collection {
-            return AffiliateOfferApplication::withoutGlobalScope('owner_via_affiliate')
-                ->with([
-                    'offer' => fn ($query) => $query->withoutGlobalScope('owner_via_site'),
-                    'affiliate' => fn ($query) => $query->withoutOwnerScope(),
-                ])
-                ->where('status', ApplicationStatus::Pending)
-                ->latest('created_at')
-                ->limit(5)
-                ->get();
-        });
+        return AffiliateOfferApplication::query()
+            ->with(['offer', 'affiliate'])
+            ->where('status', ApplicationStatus::Pending)
+            ->latest('created_at')
+            ->limit(5)
+            ->get();
     }
 
     /**
@@ -115,47 +103,38 @@ final class MerchantDashboardPage extends Page
      */
     public function getTopOffers(): Collection
     {
-        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
-        return OwnerContext::withOwner(null, function (): Collection {
-            return AffiliateOffer::withoutGlobalScope('owner_via_site')
-                ->with([
-                    'site' => fn ($query) => $query->withoutOwnerScope(),
-                ])
-                ->where('status', OfferStatus::Published)
-                ->withCount('applications')
-                ->orderByDesc('applications_count')
-                ->limit(5)
-                ->get();
-        });
+        return AffiliateOffer::query()
+            ->with('site')
+            ->where('status', OfferStatus::Published)
+            ->withCount('applications')
+            ->orderByDesc('applications_count')
+            ->limit(5)
+            ->get();
     }
 
     public function getSitesCount(): int
     {
-        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
-        return OwnerContext::withOwner(null, fn (): int => AffiliateSite::query()->withoutOwnerScope()->count());
+        return AffiliateSite::query()->count();
     }
 
     public function getVerifiedSitesCount(): int
     {
-        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
-        return OwnerContext::withOwner(null, fn (): int => AffiliateSite::query()->withoutOwnerScope()
+        return AffiliateSite::query()
             ->where('status', AffiliateSite::STATUS_VERIFIED)
-            ->count());
+            ->count();
     }
 
     public function getActiveOffersCount(): int
     {
-        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
-        return OwnerContext::withOwner(null, fn (): int => AffiliateOffer::withoutGlobalScope('owner_via_site')
+        return AffiliateOffer::query()
             ->where('status', OfferStatus::Published)
-            ->count());
+            ->count();
     }
 
     public function getPendingApplicationsCount(): int
     {
-        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
-        return OwnerContext::withOwner(null, fn (): int => AffiliateOfferApplication::withoutGlobalScope('owner_via_affiliate')
+        return AffiliateOfferApplication::query()
             ->where('status', ApplicationStatus::Pending)
-            ->count());
+            ->count();
     }
 }

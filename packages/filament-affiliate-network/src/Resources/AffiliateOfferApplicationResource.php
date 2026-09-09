@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Resources;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Pages\ListAffiliateOfferApplications;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Pages\ViewAffiliateOfferApplication;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Schemas\AffiliateOfferApplicationForm;
@@ -43,7 +44,7 @@ final class AffiliateOfferApplicationResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-affiliate-network.navigation.group', 'Affiliate Network');
+        return config('filament-affiliate-network.navigation.group');
     }
 
     public static function getNavigationSort(): ?int
@@ -80,11 +81,11 @@ final class AffiliateOfferApplicationResource extends Resource
         /** @var Builder<AffiliateOfferApplication> $query */
         $query = parent::getEloquentQuery()
             ->with([
-                'offer' => fn ($builder) => $builder->withoutGlobalScope('owner_via_site'),
+                'offer' => fn ($builder) => $builder->withoutGlobalScope(ScopesByBelongsToOwner::class),
                 'affiliate' => fn ($builder) => $builder->withoutOwnerScope(),
             ]);
 
-        return $query->withoutGlobalScope('owner_via_affiliate');
+        return $query->withoutGlobalScope(ScopesByBelongsToOwner::class);
     }
 
     public static function getPages(): array

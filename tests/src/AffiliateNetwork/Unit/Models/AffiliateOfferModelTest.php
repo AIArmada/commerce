@@ -239,7 +239,7 @@ describe('AffiliateOffer Model', function (): void {
             $ownedSite = OwnerContext::withOwner($owner, fn () => AffiliateSite::factory()->verified()->forOwner($owner)->create());
 
             OwnerContext::withOwner(null, fn () => AffiliateOffer::factory()->forSite($ownedSite)->create());
-        })->throws(RuntimeException::class, 'Explicit global owner context is required for records linked to owned sites.');
+        })->throws(RuntimeException::class, 'inaccessible or missing owner relation');
 
         test('explicit global context only returns offers linked to global sites', function (): void {
             config(['affiliate-network.owner.enabled' => true]);

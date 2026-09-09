@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tab
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Filament\Actions;
@@ -102,8 +103,8 @@ final class AffiliateOffersTable
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status !== OfferStatus::Published)
                     ->action(function (AffiliateOffer $record): void {
-                        // Admin resource bypasses owner_via_site scope (network-wide admin view).
-                        $scopedRecord = OwnerContext::withOwner(null, fn (): AffiliateOffer => AffiliateOffer::withoutGlobalScope('owner_via_site')
+                        // Admin resource bypasses the belongs-to owner scope (network-wide admin view).
+                        $scopedRecord = OwnerContext::withOwner(null, fn (): AffiliateOffer => AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)
                             ->whereKey($record->getKey())
                             ->firstOrFail());
 
@@ -115,8 +116,8 @@ final class AffiliateOffersTable
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status === OfferStatus::Published)
                     ->action(function (AffiliateOffer $record): void {
-                        // Admin resource bypasses owner_via_site scope (network-wide admin view).
-                        $scopedRecord = OwnerContext::withOwner(null, fn (): AffiliateOffer => AffiliateOffer::withoutGlobalScope('owner_via_site')
+                        // Admin resource bypasses the belongs-to owner scope (network-wide admin view).
+                        $scopedRecord = OwnerContext::withOwner(null, fn (): AffiliateOffer => AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)
                             ->whereKey($record->getKey())
                             ->firstOrFail());
 

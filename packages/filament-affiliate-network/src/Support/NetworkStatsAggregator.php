@@ -10,6 +10,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
@@ -21,12 +22,12 @@ final class NetworkStatsAggregator
     public static function aggregate(): array
     {
         return OwnerContext::withOwner(null, function (): array {
-            $totalClicks = AffiliateOfferLink::withoutGlobalScope('owner_via_affiliate')->sum('clicks');
-            $totalConversions = AffiliateOfferLink::withoutGlobalScope('owner_via_affiliate')->sum('conversions');
-            $totalRevenue = AffiliateOfferLink::withoutGlobalScope('owner_via_affiliate')->sum('revenue');
+            $totalClicks = AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)->sum('clicks');
+            $totalConversions = AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)->sum('conversions');
+            $totalRevenue = AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)->sum('revenue');
             $activeSites = AffiliateSite::query()->withoutOwnerScope()->where('status', AffiliateSite::STATUS_VERIFIED)->count();
-            $activeOffers = AffiliateOffer::withoutGlobalScope('owner_via_site')->where('status', OfferStatus::Published)->count();
-            $pendingApplications = AffiliateOfferApplication::withoutGlobalScope('owner_via_affiliate')->where('status', ApplicationStatus::Pending)->count();
+            $activeOffers = AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)->where('status', OfferStatus::Published)->count();
+            $pendingApplications = AffiliateOfferApplication::withoutGlobalScope(ScopesByBelongsToOwner::class)->where('status', ApplicationStatus::Pending)->count();
 
             $conversionRate = $totalClicks > 0
                 ? round(($totalConversions / $totalClicks) * 100, 2)

@@ -10,6 +10,7 @@ title: Installation
 - Laravel 13+
 - Filament v5
 - `aiarmada/affiliate-network` package
+- `aiarmada/affiliates` package
 
 ## Install via Composer
 
@@ -17,7 +18,8 @@ title: Installation
 composer require aiarmada/filament-affiliate-network
 ```
 
-The core package `aiarmada/affiliate-network` is installed as a dependency.
+The core packages `aiarmada/affiliate-network` and `aiarmada/affiliates` are
+installed as dependencies. `aiarmada/filament-affiliates` remains optional.
 
 ## Publish Configuration
 

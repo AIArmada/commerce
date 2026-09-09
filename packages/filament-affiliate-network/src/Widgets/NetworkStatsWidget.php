@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Widgets;
 
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
 use Filament\Widgets\StatsOverviewWidget;
@@ -20,7 +21,13 @@ final class NetworkStatsWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $aggregated = NetworkStatsAggregator::aggregate();
+        /** @var array{activeSites: int, activeOffers: int, pendingApplications: int, totalClicks: int, totalConversions: int, totalRevenue: int, conversionRate: float, revenueFormatted: string} $aggregated */
+        $aggregated = OwnerCache::remember(
+            null,
+            'affiliate-network.network-stats',
+            now()->addSeconds(30),
+            fn (): array => NetworkStatsAggregator::aggregate(),
+        );
 
         return [
             Stat::make('Active Sites', number_format($aggregated['activeSites']))

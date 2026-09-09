@@ -582,6 +582,29 @@ reported and taken on trust; code correctness was verified directly.
   No migration. Out-of-set edits (4 ticketing files, 1 addressing
   guard) all verified necessary and listed in `events.md`.
 
+## Affiliate network marketplace (implemented)
+
+- **Trait unification:** `ScopesByBelongsToOwner` (relation path +
+  config key) replaces both ~100-line traits; old traits deleted;
+  3 model `use` lines + string-literal scope refs + filament call
+  sites updated same pass (internal-only verified by grep).
+- **Creative scoping:** `offer.site` chain; no migration needed per
+  verified shape.
+- **Boundary:** discovery vs execution documented; reader verified
+  read-only; enrollment delegates; conversion precedence with
+  duplicate guards; `orders` listener untouched.
+- **Redirect/security:** explicit-global lookup + owner re-entry;
+  signed + throttled route; random codes (64-bit — code comment
+  corrected during integration); 1MB cap.
+- **Catalog/perf/deps:** single `resolveField()`; owner-scoped
+  dashboard; 30s `OwnerCache` widgets; filament requires core
+  `affiliates`; navigation fallbacks removed.
+- Suites: AffiliateNetwork 214 passed (442 assertions),
+  FilamentAffiliateNetwork 53 passed (81 assertions); PHPStan
+  level 6 clean. No migration (composite index deferred).
+- Root `composer.lock` carries no path packages — dependency change
+  introduces no lock staleness.
+
 ## Fairness log
 
 - Orders checkout-context concern: not present, dropped correctly.

@@ -79,4 +79,12 @@ describe('RemoteCatalogClient', function (): void {
         expect(fn (): array => $this->client->snapshot($this->site, 'prog-1'))
             ->toThrow(OfferNotFoundException::class);
     });
+
+    test('rejects catalog responses larger than the configured cap', function (): void {
+        config(['affiliate-network.http.max_response_bytes' => 8]);
+        Http::fake(['*' => Http::response('123456789', 200)]);
+
+        expect(fn (): array => $this->client->snapshot($this->site, 'prog-1'))
+            ->toThrow(OfferNotFoundException::class, 'exceeded the configured size limit');
+    });
 });

@@ -37,6 +37,8 @@ The `aiarmada/filament-affiliate-network` package is the Filament admin and mark
 
 - The plugin should mirror the owner and relationship-scoping rules defined by `aiarmada/affiliate-network`
 - Marketplace and admin filters are not authorization; action handlers still need the backing domain package to validate application, offer, and site ownership before mutating records
+- The marketplace is intentionally public discovery. Its mutations resolve the affiliate and re-enter that affiliate's owner context; local imported offers enroll through `affiliates`' existing core program and never create a duplicate program or application
+- Merchant dashboard aggregates are current-owner scoped. Network stats and top offers are deliberate network-wide admin widgets with owner-keyed 30-second caches
 
 The `aiarmada/filament-affiliate-network` plugin provides a complete Filament v5 admin interface for managing the affiliate network marketplace.
 
@@ -62,7 +64,7 @@ The UI surfaces here manage network-specific entities such as:
 - offer applications
 - offer links and their aggregated metrics
 
-They do not directly depend on the newer core affiliates conversion/link field names (`external_reference`, `value_minor`, subject-aware tracking fields), so no code changes were required for the recent affiliates package update.
+They do not directly write core commission or payout records. Local program enrollment delegates to `affiliates`' `ProgramService`; network discovery metrics remain separate from core commission execution.
 
 ## Plugin Architecture
 
@@ -162,7 +164,8 @@ The marketplace page provides:
 - Laravel 13+
 - Filament v5
 - `aiarmada/affiliate-network` package
-- `aiarmada/filament-affiliates` package (recommended)
+- `aiarmada/affiliates` package
+- `aiarmada/filament-affiliates` package (optional complementary UI)
 
 ## Read next
 

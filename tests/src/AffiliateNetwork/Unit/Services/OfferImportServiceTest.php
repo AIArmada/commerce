@@ -276,4 +276,56 @@ describe('OfferImportService', function (): void {
         expect($offer->fresh()->rate_base_bp)->toBe(2500);
         expect($offer->fresh()->rate_source)->toBe('manual');
     });
+
+    test('resolveField applies local and remote precedence with null fallback', function (): void {
+        $method = new ReflectionMethod(OfferImportService::class, 'resolveField');
+
+        expect($method->invoke(null, 'local', 'local-value', 'remote-value'))->toBe('local-value')
+            ->and($method->invoke(null, 'remote', 'local-value', 'remote-value'))->toBe('remote-value')
+            ->and($method->invoke(null, 'local', null, 'remote-value'))->toBe('remote-value')
+            ->and($method->invoke(null, 'remote', 'local-value', null))->toBe('local-value');
+    });
+
+    test('remote source precedence is retained on imported offers', function (): void {
+        Http::fake([
+            '*' => Http::response([
+                'version' => 'v1',
+                'program_id' => 'remote-precedence',
+                'currency' => 'MYR',
+                'subjects' => [[
+                    'subject_type' => 'product',
+                    'subject_key' => 'REMOTE-PRECEDENCE',
+                    'title' => 'Remote precedence offer',
+                    'url' => 'https://merchant.test/remote-precedence',
+                    'currency' => 'USD',
+                    'effective' => ['commission_type' => 'percentage', 'rate_bp' => 1200],
+                ]],
+            ]),
+        ]);
+
+        $site = AffiliateSite::create([
+            'name' => 'Remote precedence site',
+            'domain' => 'remote-precedence-' . uniqid() . '.example.com',
+            'status' => AffiliateSite::STATUS_VERIFIED,
+            'verified_at' => now(),
+            'catalog_url' => 'https://merchant.test/api/affiliates',
+        ]);
+
+        $importer = new OfferImportService(
+            app(LocalProgramReader::class),
+            new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34'])),
+            app(CreateOffer::class),
+            app(UpdateOffer::class),
+        );
+
+        $importer->sync($site, 'remote-precedence');
+
+        $offer = AffiliateOffer::query()
+            ->where('site_id', $site->getKey())
+            ->where('subject_key', 'REMOTE-PRECEDENCE')
+            ->firstOrFail();
+
+        expect($offer->currency)->toBe('MYR')
+            ->and($offer->metadata['catalog_source'])->toBe('remote');
+    });
 });

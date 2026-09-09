@@ -46,7 +46,7 @@ final class EditAffiliateOffer extends EditRecord
     }
 
     /**
-     * Wrap model update in explicit global owner context so the ScopesBySiteOwner
+     * Wrap model update in explicit global owner context so the belongs-to owner
      * updating-hook does not throw when affiliate-network.owner.enabled=true.
      */
     protected function handleRecordUpdate(Model $record, array $data): Model
