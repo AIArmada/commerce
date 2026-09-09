@@ -66,8 +66,18 @@ final class PriceSimulator extends Page
         return OwnerContext::resolve();
     }
 
+    private function productsPackageAvailable(?string $productClass = null, ?string $variantClass = null): bool
+    {
+        return class_exists($productClass ?? Product::class)
+            && class_exists($variantClass ?? Variant::class);
+    }
+
     public function form(Schema $schema): Schema
     {
+        if (! $this->productsPackageAvailable()) {
+            return $this->productsUnavailableSchema($schema);
+        }
+
         return $schema
             ->schema([
                 Section::make('Input Parameters')
@@ -88,6 +98,10 @@ final class PriceSimulator extends Page
                             ->required()
                             ->visible(fn (Get $get) => $get('product_type') === 'product')
                             ->getSearchResultsUsing(function (string $search): array {
+                                if (! $this->productsPackageAvailable()) {
+                                    return [];
+                                }
+
                                 $owner = $this->resolveOwner();
 
                                 $query = OwnerQuery::applyToEloquentBuilder(
@@ -112,7 +126,7 @@ final class PriceSimulator extends Page
                                     ->toArray();
                             })
                             ->getOptionLabelUsing(function ($value): ?string {
-                                if ($value === null) {
+                                if ($value === null || ! $this->productsPackageAvailable()) {
                                     return null;
                                 }
 
@@ -145,6 +159,10 @@ final class PriceSimulator extends Page
                             ->required()
                             ->visible(fn (Get $get) => $get('product_type') === 'variant')
                             ->getSearchResultsUsing(function (string $search): array {
+                                if (! $this->productsPackageAvailable()) {
+                                    return [];
+                                }
+
                                 $owner = $this->resolveOwner();
 
                                 $includeGlobal = (bool) config('products.features.owner.include_global', false);
@@ -191,7 +209,7 @@ final class PriceSimulator extends Page
                                     ->toArray();
                             })
                             ->getOptionLabelUsing(function ($value): ?string {
-                                if ($value === null) {
+                                if ($value === null || ! $this->productsPackageAvailable()) {
                                     return null;
                                 }
 
@@ -317,6 +335,12 @@ final class PriceSimulator extends Page
         $data = $this->data ?? [];
 
         if ($data === []) {
+            $this->result = null;
+
+            return;
+        }
+
+        if (! $this->productsPackageAvailable()) {
             $this->result = null;
 
             return;
@@ -530,6 +554,21 @@ final class PriceSimulator extends Page
     private function customerIncludesGlobal(): bool
     {
         return (bool) config('customers.features.owner.include_global', false);
+    }
+
+    private function productsUnavailableSchema(Schema $schema): Schema
+    {
+        return $schema
+            ->schema([
+                Section::make('Price Simulator Unavailable')
+                    ->description('Install the Products package to enable product and variant price simulation.')
+                    ->schema([
+                        Forms\Components\Placeholder::make('products_package_unavailable')
+                            ->label('Products package required')
+                            ->content('The Price Simulator is disabled until aiarmada/products is installed.'),
+                    ]),
+            ])
+            ->statePath('data');
     }
 
     private function formatResultAmount(int $amountMinor): string

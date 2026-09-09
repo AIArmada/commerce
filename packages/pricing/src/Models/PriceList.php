@@ -15,9 +15,9 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
@@ -41,11 +41,13 @@ use Spatie\Activitylog\Support\LogOptions;
  */
 class PriceList extends Model implements Auditable
 {
+    private const CUSTOMER_MODEL = 'AIArmada\\Customers\\Models\\Customer';
+
+    private const SEGMENT_MODEL = 'AIArmada\\Customers\\Models\\Segment';
+
     use FormatsMoney;
     use HasCommerceAudit;
-    use HasOwner {
-        scopeForOwner as baseScopeForOwner;
-    }
+    use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
     use LogsCommerceActivity;
@@ -128,6 +130,7 @@ class PriceList extends Model implements Auditable
         $now = CarbonImmutable::now();
 
         return $query->where('is_active', true)
+            ->whereNull('deactivated_at')
             ->where(function ($q) use ($now): void {
                 $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
             })
@@ -145,41 +148,13 @@ class PriceList extends Model implements Auditable
         return $query->where('is_default', true);
     }
 
-    /**
-     * Scope query to the specified owner.
-     *
-     * @param  Builder<static>  $query
-     * @param  EloquentModel|null  $owner  The owner to scope to
-     * @param  bool  $includeGlobal  Whether to include global (ownerless) records
-     * @return Builder<static>
-     */
-    public function scopeForOwner(Builder $query, ?EloquentModel $owner = null, bool $includeGlobal = true): Builder
-    {
-        if (! config('pricing.features.owner.enabled', false)) {
-            return $query;
-        }
-
-        $includeGlobal = $includeGlobal && config('pricing.features.owner.include_global', false);
-
-        $ownerToScope = $owner;
-
-        if (func_num_args() < 2) {
-            $ownerToScope = OwnerContext::CURRENT;
-        }
-
-        /** @var Builder<static> $scoped */
-        $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobal);
-
-        return $scoped;
-    }
-
     // =========================================================================
     // HELPERS
     // =========================================================================
 
     public function isActive(): bool
     {
-        if (! $this->is_active) {
+        if (! $this->is_active || $this->deactivated_at !== null) {
             return false;
         }
 
@@ -203,7 +178,7 @@ class PriceList extends Model implements Auditable
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'priority', 'is_active', 'starts_at', 'ends_at'])
+            ->logOnly(['name', 'priority', 'is_active', 'deactivated_at', 'starts_at', 'ends_at'])
             ->logOnlyDirty()
             ->useLogName('pricing');
     }
@@ -223,6 +198,7 @@ class PriceList extends Model implements Auditable
             'priority',
             'is_default',
             'is_active',
+            'deactivated_at',
             'starts_at',
             'ends_at',
         ];
@@ -247,41 +223,45 @@ class PriceList extends Model implements Auditable
         });
 
         static::saving(function (PriceList $priceList): void {
-            if (! config('pricing.features.owner.enabled', false)) {
-                return;
-            }
+            $owner = null;
 
-            $hasOwnerType = $priceList->owner_type !== null;
-            $hasOwnerId = $priceList->owner_id !== null;
+            if (config('pricing.features.owner.enabled', false)) {
+                $hasOwnerType = $priceList->owner_type !== null;
+                $hasOwnerId = $priceList->owner_id !== null;
 
-            if ($hasOwnerType !== $hasOwnerId) {
-                throw new InvalidArgumentException('Invalid owner columns: owner_type and owner_id must be both set or both null.');
-            }
-
-            $owner = OwnerContext::resolve();
-
-            if ($owner === null) {
-                if ($priceList->owner_type !== null || $priceList->owner_id !== null) {
-                    throw new AuthorizationException('Cannot write owned price lists without an owner context.');
+                if ($hasOwnerType !== $hasOwnerId) {
+                    throw new InvalidArgumentException('Invalid owner columns: owner_type and owner_id must be both set or both null.');
                 }
 
-                return;
+                $owner = OwnerContext::resolve();
+
+                if ($owner === null) {
+                    if ($priceList->owner_type !== null || $priceList->owner_id !== null) {
+                        throw new AuthorizationException('Cannot write owned price lists without an owner context.');
+                    }
+                } else {
+                    if (
+                        ! $priceList->exists
+                        && $priceList->owner_type === null
+                        && $priceList->owner_id === null
+                        && (bool) config('pricing.features.owner.auto_assign_on_create', true)
+                    ) {
+                        $priceList->assignOwner($owner);
+                    }
+
+                    if (
+                        ($priceList->owner_type !== null || $priceList->owner_id !== null)
+                        && ! $priceList->belongsToOwner($owner)
+                    ) {
+                        throw new AuthorizationException('Cannot write price lists outside the current owner scope.');
+                    }
+                }
+
+                self::validateOwnerScopedReferences($priceList);
             }
 
-            if (
-                ! $priceList->exists
-                && $priceList->owner_type === null
-                && $priceList->owner_id === null
-                && (bool) config('pricing.features.owner.auto_assign_on_create', true)
-            ) {
-                $priceList->assignOwner($owner);
-            }
-
-            if (
-                ($priceList->owner_type !== null || $priceList->owner_id !== null)
-                && ! $priceList->belongsToOwner($owner)
-            ) {
-                throw new AuthorizationException('Cannot write price lists outside the current owner scope.');
+            if ($priceList->is_default) {
+                self::clearOtherDefaults($priceList, $owner);
             }
         });
 
@@ -298,8 +278,67 @@ class PriceList extends Model implements Auditable
                 }
             }
 
-            $priceList->prices()->delete();
-            $priceList->tiers()->delete();
+            DB::transaction(function () use ($priceList): void {
+                $priceList->prices()->delete();
+                $priceList->tiers()->delete();
+            });
         });
+    }
+
+    /**
+     * Keep default-list demotion and the model write in one transaction.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function save(array $options = []): bool
+    {
+        return DB::transaction(fn (): bool => parent::save($options));
+    }
+
+    private static function validateOwnerScopedReferences(self $priceList): void
+    {
+        self::validateOwnerScopedReference($priceList, 'customer_id', self::CUSTOMER_MODEL);
+        self::validateOwnerScopedReference($priceList, 'segment_id', self::SEGMENT_MODEL);
+    }
+
+    private static function validateOwnerScopedReference(self $priceList, string $attribute, string $modelClass): void
+    {
+        $value = $priceList->getAttribute($attribute);
+
+        if ($value === null) {
+            return;
+        }
+
+        if (! is_string($value) || $value === '') {
+            throw new AuthorizationException(sprintf('%s must reference an accessible owner-scoped record.', $attribute));
+        }
+
+        if (! class_exists($modelClass) || ! is_a($modelClass, Model::class, true)) {
+            return;
+        }
+
+        /** @var class-string<Model> $modelClass */
+        $exists = $modelClass::query()
+            ->whereKey($value)
+            ->exists();
+
+        if (! $exists) {
+            throw new AuthorizationException(sprintf('%s is not accessible in the current owner scope.', $attribute));
+        }
+    }
+
+    private static function clearOtherDefaults(self $priceList, ?Model $owner): void
+    {
+        $query = static::query();
+
+        if (config('pricing.features.owner.enabled', false)) {
+            $query = $query->forOwner($priceList->isGlobal() ? null : $owner, false);
+        }
+
+        if ($priceList->exists) {
+            $query->where($priceList->getKeyName(), '!=', $priceList->getKey());
+        }
+
+        $query->where('is_default', true)->update(['is_default' => false]);
     }
 }

@@ -5,8 +5,15 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Tests\Concerns\EnsuresPricingSchema;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
+
+uses(EnsuresPricingSchema::class);
+
+beforeEach(function (): void {
+    $this->ensurePricingSchema();
+});
 
 describe('Price Model - Extended Tests', function (): void {
     it('is auditable using commerce audit trait', function (): void {

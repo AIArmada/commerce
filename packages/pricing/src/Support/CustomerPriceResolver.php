@@ -7,13 +7,12 @@ namespace AIArmada\Pricing\Support;
 use AIArmada\Pricing\Contracts\CustomerPriceResolverInterface;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
-use Carbon\CarbonImmutable;
-use DateTimeInterface;
 use Illuminate\Support\Arr;
-use Throwable;
 
 final class CustomerPriceResolver implements CustomerPriceResolverInterface
 {
+    use ResolvesEffectiveAt;
+
     /**
      * @param  array<string, mixed>  $context
      */
@@ -30,6 +29,7 @@ final class CustomerPriceResolver implements CustomerPriceResolverInterface
         $price = Price::query()
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
+            ->whereNull('deactivated_at')
             ->forQuantity($quantity)
             ->where(function ($q) use ($effectiveAt): void {
                 $q->whereNull('starts_at')->orWhere('starts_at', '<=', $effectiveAt);
@@ -41,6 +41,7 @@ final class CustomerPriceResolver implements CustomerPriceResolverInterface
                 'price_list_id',
                 PriceList::query()
                     ->where('is_active', true)
+                    ->whereNull('deactivated_at')
                     ->where(function ($q) use ($effectiveAt): void {
                         $q->whereNull('starts_at')->orWhere('starts_at', '<=', $effectiveAt);
                     })
@@ -54,30 +55,5 @@ final class CustomerPriceResolver implements CustomerPriceResolverInterface
             ->first();
 
         return $price?->amount;
-    }
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    private function resolveEffectiveAt(array $context): CarbonImmutable
-    {
-        $effectiveAt = Arr::get($context, 'effective_at');
-
-        if ($effectiveAt instanceof DateTimeInterface) {
-            return CarbonImmutable::instance($effectiveAt);
-        }
-
-        if (is_int($effectiveAt)) {
-            return CarbonImmutable::createFromTimestamp($effectiveAt);
-        }
-
-        if (is_string($effectiveAt) && $effectiveAt !== '') {
-            try {
-                return CarbonImmutable::parse($effectiveAt);
-            } catch (Throwable) {
-            }
-        }
-
-        return CarbonImmutable::now();
     }
 }

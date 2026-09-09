@@ -7,6 +7,9 @@ use AIArmada\Commerce\Tests\TestCase;
 uses(TestCase::class);
 
 use AIArmada\FilamentPricing\Pages\PriceSimulator;
+use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 it('returns an empty result infolist when no result exists', function (): void {
@@ -51,4 +54,22 @@ it('uses the published customer owner include-global setting', function (): void
     $method = (new ReflectionClass(PriceSimulator::class))->getMethod('customerIncludesGlobal');
 
     expect($method->invoke($page))->toBeTrue();
+});
+
+it('shows a disabled state when the optional products package is unavailable', function (): void {
+    $page = app(PriceSimulator::class);
+    $availability = (new ReflectionClass($page))->getMethod('productsPackageAvailable');
+
+    expect($availability->invoke($page, 'Missing\\Products\\Product', 'Missing\\Products\\Variant'))->toBeFalse()
+        ->and($availability->invoke($page, Product::class, Variant::class))->toBeTrue();
+
+    $schema = (new ReflectionClass($page))
+        ->getMethod('productsUnavailableSchema')
+        ->invoke($page, Schema::make($page));
+
+    $section = collect($schema->getComponents(withActions: false, withHidden: true))
+        ->first(fn ($component): bool => $component instanceof Section);
+
+    expect($section)->toBeInstanceOf(Section::class)
+        ->and($section?->getHeading())->toBe('Price Simulator Unavailable');
 });

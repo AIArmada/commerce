@@ -7,9 +7,16 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
+use AIArmada\Pricing\Tests\Concerns\EnsuresPricingSchema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
+
+uses(EnsuresPricingSchema::class);
+
+beforeEach(function (): void {
+    $this->ensurePricingSchema();
+});
 
 describe('PriceList Model - Extended Tests', function (): void {
     it('is auditable using commerce audit trait', function (): void {

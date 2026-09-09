@@ -9,7 +9,6 @@ use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Pricing\Contracts\SegmentPriceResolverInterface;
 use AIArmada\Pricing\Contracts\TierResolverInterface;
 use AIArmada\Pricing\Support\CustomerPriceResolver;
-use AIArmada\Pricing\Support\PricingIntegrationRegistrar;
 use AIArmada\Pricing\Support\SegmentPriceResolver;
 use AIArmada\Pricing\Support\TierResolver;
 use Spatie\LaravelPackageTools\Package;
@@ -34,7 +33,6 @@ final class PricingServiceProvider extends PackageServiceProvider
         $this->app->singleton(SegmentPriceResolverInterface::class, SegmentPriceResolver::class);
         $this->app->singleton(Services\PriceCalculator::class);
         $this->app->alias(Services\PriceCalculator::class, PriceCalculatorInterface::class);
-        $this->app->singleton(PricingIntegrationRegistrar::class);
 
         $this->registerSettingsMigrationPath();
     }

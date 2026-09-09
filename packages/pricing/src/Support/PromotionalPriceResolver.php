@@ -19,14 +19,28 @@ final class PromotionalPriceResolver
     }
 
     /**
+     * @param  array<string, mixed>  $context
      * @return array{price: int, name: string}|null
      */
-    public function resolve(string $promotionableType, string $promotionableId, int $basePrice, int $quantity, CarbonImmutable $effectiveAt): ?array
-    {
+    public function resolve(
+        string $promotionableType,
+        string $promotionableId,
+        int $basePrice,
+        int $quantity,
+        CarbonImmutable $effectiveAt,
+        array $context = [],
+    ): ?array {
         if (! $this->isEnabled()) {
             return null;
         }
 
-        return $this->adjustment->apply($promotionableType, $promotionableId, $basePrice, $quantity, $effectiveAt);
+        return $this->adjustment->apply(
+            $promotionableType,
+            $promotionableId,
+            $basePrice,
+            $quantity,
+            $effectiveAt,
+            $context,
+        );
     }
 }

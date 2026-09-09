@@ -18,8 +18,18 @@ Settings > Pricing Settings
 
 ```php
 protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-currency-dollar';
-protected static string|UnitEnum|null $navigationGroup = 'Settings';
-protected static ?int $navigationSort = 10;
+
+public static function getNavigationGroup(): string|UnitEnum|null
+{
+    return config('filament-pricing.navigation.settings_group');
+}
+
+public static function getNavigationSort(): ?int
+{
+    $sort = config('filament-pricing.pages.navigation_sort.settings');
+
+    return is_numeric($sort) ? (int) $sort : null;
+}
 ```
 
 ### View
@@ -93,7 +103,7 @@ Interactive price calculation testing tool.
 
 ### Requirements
 
-- `aiarmada/products` package for Product/Variant models
+- `aiarmada/products` is optional. When it is unavailable, the page renders a disabled state instead of attempting product or variant queries.
 - Optional: `aiarmada/customers` for customer selection
 
 ### Location
@@ -106,9 +116,19 @@ Pricing > Price Simulator
 
 ```php
 protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-calculator';
-protected static string|UnitEnum|null $navigationGroup = 'Pricing';
-protected static ?int $navigationSort = 99;
 protected static ?string $title = 'Price Simulator';
+
+public static function getNavigationGroup(): string|UnitEnum|null
+{
+    return config('filament-pricing.navigation.group');
+}
+
+public static function getNavigationSort(): ?int
+{
+    $sort = config('filament-pricing.pages.navigation_sort.price_simulator');
+
+    return is_numeric($sort) ? (int) $sort : null;
+}
 ```
 
 ### Form Schema
@@ -232,10 +252,12 @@ protected ?string $pollingInterval = '30s';
 The widget displays owner-scoped statistics:
 
 ```php
+use AIArmada\CommerceSupport\Support\OwnerContext;
+
 protected function getStats(): array
 {
     // Active price lists
-    $activePriceLists = PriceList::forOwner($owner)->active()->count();
+    $activePriceLists = PriceList::query()->active()->count();
 
     $stats = [
         Stat::make('Active Price Lists', number_format($activePriceLists))
@@ -248,8 +270,11 @@ protected function getStats(): array
     if (class_exists(Promotion::class)) {
         $promotionQuery = Promotion::query();
 
-        if (config('promotions.features.owner.enabled', false)) {
-            $promotionQuery = $promotionQuery->forOwner($owner);
+        if ((bool) config('promotions.features.owner.enabled', false)) {
+            $promotionQuery = $promotionQuery->forOwner(
+                OwnerContext::resolve(),
+                (bool) config('promotions.features.owner.include_global', false),
+            );
         }
 
         $activePromotions = (clone $promotionQuery)->active()->count();

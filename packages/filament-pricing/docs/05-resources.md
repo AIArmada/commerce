@@ -18,9 +18,19 @@ protected static ?string $model = PriceList::class;
 
 ```php
 protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-currency-dollar';
-protected static string|UnitEnum|null $navigationGroup = 'Pricing';
-protected static ?int $navigationSort = 1;
 protected static ?string $recordTitleAttribute = 'name';
+
+public static function getNavigationGroup(): string|UnitEnum|null
+{
+    return config('filament-pricing.navigation.group');
+}
+
+public static function getNavigationSort(): ?int
+{
+    $sort = config('filament-pricing.resources.navigation_sort.price_lists');
+
+    return is_numeric($sort) ? (int) $sort : null;
+}
 ```
 
 ### Multitenancy

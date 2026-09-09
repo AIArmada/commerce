@@ -39,7 +39,7 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | orders | filament-orders | No | Yes | High | `orders.md` | Done |
 | organizations | filament-organizations | Done | Yes | High | `organizations.md` | Done |
 | persons | filament-persons | Done | Yes | High | `persons.md` | Done |
-| pricing | filament-pricing | Done | No | High | `pricing.md` | Open |
+| pricing | filament-pricing | Done | No | High | `pricing.md` | Done |
 | products | filament-products | No | Yes | High | `products.md` | Open |
 | promotions | filament-promotions | Done | Yes | High | `promotions.md` | Open |
 | seating | filament-seating | No | No | High | `seating.md` | Open |

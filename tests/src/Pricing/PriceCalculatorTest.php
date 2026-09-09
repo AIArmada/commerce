@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Targeting\TargetingContext;
+use AIArmada\CommerceSupport\Targeting\TargetingEngine;
 use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
 use AIArmada\Pricing\Contracts\Priceable;
 use AIArmada\Pricing\Data\PriceResultData;
@@ -13,10 +15,19 @@ use AIArmada\Pricing\Support\CustomerPriceResolver;
 use AIArmada\Pricing\Support\PromotionalPriceResolver;
 use AIArmada\Pricing\Support\SegmentPriceResolver;
 use AIArmada\Pricing\Support\TierResolver;
+use AIArmada\Pricing\Tests\Concerns\EnsuresPricingSchema;
+use AIArmada\Promotions\Contracts\PromotionServiceInterface;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
+use AIArmada\Promotions\Services\PromotionService;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
+
+uses(EnsuresPricingSchema::class);
+
+beforeEach(function (): void {
+    $this->ensurePricingSchema();
+});
 
 // Test implementation of Priceable interface
 class TestPriceableItem implements Priceable
@@ -350,9 +361,11 @@ describe('PriceCalculator Service', function (): void {
             if (! class_exists('AIArmada\Promotions\Models\Promotion')) {
                 $this->markTestSkipped('Promotions package is not installed.');
             }
+
+            app()->instance(PromotionServiceInterface::class, new PromotionService(new TargetingEngine));
         });
 
-        it('applies promotion when item is attached', function (): void {
+        it('matches the promotion service contract for a targeted item', function (): void {
             $itemId = 'promo-item-' . uniqid();
 
             $promotion = Promotion::create([
@@ -360,38 +373,68 @@ describe('PriceCalculator Service', function (): void {
                 'type' => PromotionType::Percentage,
                 'discount_value' => 20, // 20%
                 'is_active' => true,
-            ]);
-
-            DB::table(config('promotions.database.tables.promotionables', 'promotionables'))->insert([
-                'promotion_id' => $promotion->id,
-                'promotionable_type' => TestPriceableItem::class,
-                'promotionable_id' => $itemId,
+                'conditions' => [
+                    'mode' => 'all',
+                    'rules' => [
+                        ['type' => 'product_in_cart', 'operator' => 'in', 'values' => [$itemId]],
+                    ],
+                ],
             ]);
 
             $item = new TestPriceableItem($itemId, 10000);
+            $contractResult = app(PromotionServiceInterface::class)->calculateDiscounts(
+                new TargetingContext(
+                    cart: new class($itemId)
+                    {
+                        public function __construct(private readonly string $itemId) {}
+
+                        public function getSubtotal(): int
+                        {
+                            return 10000;
+                        }
+
+                        public function getItems(): Collection
+                        {
+                            return collect([
+                                new class($this->itemId)
+                                {
+                                    public function __construct(public string $id) {}
+
+                                    public function getAttribute(string $key): mixed
+                                    {
+                                        return null;
+                                    }
+                                },
+                            ]);
+                        }
+                    },
+                ),
+                10000,
+            );
             $result = $this->calculator->calculate($item);
 
-            expect($result->finalPrice)->toBe(8000)
+            expect($contractResult['discount'])->toBe($promotion->calculateDiscount(10000))
+                ->and($result->finalPrice)->toBe(max(0, 10000 - $contractResult['discount']))
+                ->and($result->finalPrice)->toBe(max(0, 10000 - $promotion->calculateDiscount(10000)))
                 ->and($result->discountSource)->toBe('Promotion')
                 ->and($result->promotionName)->toBe('Summer Sale')
                 ->and($result->breakdown[0]['type'])->toBe('promotion');
         });
 
-        it('skips attached promotion when minimum quantity not met', function (): void {
+        it('skips a promotion when its public quantity condition is not met', function (): void {
             $itemId = 'promo-min-qty-item-' . uniqid();
 
-            $promotion = Promotion::create([
+            Promotion::create([
                 'name' => 'Bulk Only',
                 'type' => PromotionType::Percentage,
                 'discount_value' => 20,
-                'min_quantity' => 3,
                 'is_active' => true,
-            ]);
-
-            DB::table(config('promotions.database.tables.promotionables', 'promotionables'))->insert([
-                'promotion_id' => $promotion->id,
-                'promotionable_type' => TestPriceableItem::class,
-                'promotionable_id' => $itemId,
+                'conditions' => [
+                    'mode' => 'all',
+                    'rules' => [
+                        ['type' => 'cart_quantity', 'operator' => '>=', 'value' => 3],
+                    ],
+                ],
             ]);
 
             $item = new TestPriceableItem($itemId, 10000);
@@ -401,21 +444,20 @@ describe('PriceCalculator Service', function (): void {
                 ->and($result->promotionName)->toBeNull();
         });
 
-        it('skips attached promotion when minimum purchase not met', function (): void {
+        it('skips a promotion when its public cart value condition is not met', function (): void {
             $itemId = 'promo-min-purchase-item-' . uniqid();
 
-            $promotion = Promotion::create([
+            Promotion::create([
                 'name' => 'Min Spend',
                 'type' => PromotionType::Percentage,
                 'discount_value' => 20,
-                'min_purchase_amount' => 25000, // RM250.00
                 'is_active' => true,
-            ]);
-
-            DB::table(config('promotions.database.tables.promotionables', 'promotionables'))->insert([
-                'promotion_id' => $promotion->id,
-                'promotionable_type' => TestPriceableItem::class,
-                'promotionable_id' => $itemId,
+                'conditions' => [
+                    'mode' => 'all',
+                    'rules' => [
+                        ['type' => 'cart_value', 'operator' => '>=', 'value' => 25000],
+                    ],
+                ],
             ]);
 
             $item = new TestPriceableItem($itemId, 10000);
@@ -428,18 +470,22 @@ describe('PriceCalculator Service', function (): void {
         it('does not apply promotion when item is not attached', function (): void {
             $itemId = 'no-promo-item-' . uniqid();
 
-            // Create promotion but don't attach any products
             Promotion::create([
                 'name' => 'Summer Sale',
                 'type' => PromotionType::Percentage,
                 'discount_value' => 20,
                 'is_active' => true,
+                'conditions' => [
+                    'mode' => 'all',
+                    'rules' => [
+                        ['type' => 'product_in_cart', 'operator' => 'in', 'values' => ['another-item']],
+                    ],
+                ],
             ]);
 
             $item = new TestPriceableItem($itemId, 10000);
             $result = $this->calculator->calculate($item);
 
-            // No promotion applied since item isn't attached
             expect($result->finalPrice)->toBe(10000)
                 ->and($result->promotionName)->toBeNull();
         });
@@ -447,17 +493,11 @@ describe('PriceCalculator Service', function (): void {
         it('does not apply inactive promotion', function (): void {
             $itemId = 'inactive-promo-item-' . uniqid();
 
-            $promotion = Promotion::create([
+            Promotion::create([
                 'name' => 'Inactive Sale',
                 'type' => PromotionType::Percentage,
                 'discount_value' => 50,
                 'is_active' => false,
-            ]);
-
-            DB::table(config('promotions.database.tables.promotionables', 'promotionables'))->insert([
-                'promotion_id' => $promotion->id,
-                'promotionable_type' => TestPriceableItem::class,
-                'promotionable_id' => $itemId,
             ]);
 
             $item = new TestPriceableItem($itemId, 10000);
@@ -470,18 +510,12 @@ describe('PriceCalculator Service', function (): void {
         it('does not apply expired promotion', function (): void {
             $itemId = 'expired-promo-item-' . uniqid();
 
-            $promotion = Promotion::create([
+            Promotion::create([
                 'name' => 'Expired Sale',
                 'type' => PromotionType::Percentage,
                 'discount_value' => 30,
                 'is_active' => true,
                 'ends_at' => now()->subDay(),
-            ]);
-
-            DB::table(config('promotions.database.tables.promotionables', 'promotionables'))->insert([
-                'promotion_id' => $promotion->id,
-                'promotionable_type' => TestPriceableItem::class,
-                'promotionable_id' => $itemId,
             ]);
 
             $item = new TestPriceableItem($itemId, 10000);
@@ -491,36 +525,35 @@ describe('PriceCalculator Service', function (): void {
                 ->and($result->promotionName)->toBeNull();
         });
 
-        it('respects effective_at for promotion scheduling', function (): void {
+        it('passes effective_at through the promotion contract context', function (): void {
             $itemId = 'scheduled-promo-item-' . uniqid();
 
-            $startsAt = CarbonImmutable::parse('2025-01-03 10:00:00');
-            $beforeStart = $startsAt->subMinute();
-            $afterStart = $startsAt->addMinute();
-
-            $promotion = Promotion::create([
-                'name' => 'Scheduled Sale',
-                'type' => PromotionType::Percentage,
-                'discount_value' => 50,
-                'is_active' => true,
-                'starts_at' => $startsAt,
-            ]);
-
-            DB::table(config('promotions.database.tables.promotionables', 'promotionables'))->insert([
-                'promotion_id' => $promotion->id,
-                'promotionable_type' => TestPriceableItem::class,
-                'promotionable_id' => $itemId,
-            ]);
-
             $item = new TestPriceableItem($itemId, 10000);
+            $effectiveAt = CarbonImmutable::parse('2025-01-03 10:00:00');
+            $promotionService = Mockery::mock(PromotionServiceInterface::class);
+            $promotionService
+                ->shouldReceive('calculateDiscounts')
+                ->once()
+                ->withArgs(function (TargetingContext $context, int $subtotal) use ($effectiveAt, $itemId): bool {
+                    $contextEffectiveAt = $context->getMetadata('effective_at');
 
-            $resultBefore = $this->calculator->calculate($item, 1, ['effective_at' => $beforeStart]);
-            expect($resultBefore->finalPrice)->toBe(10000)
-                ->and($resultBefore->promotionName)->toBeNull();
+                    return $subtotal === 10000
+                        && $contextEffectiveAt instanceof CarbonImmutable
+                        && $contextEffectiveAt->equalTo($effectiveAt)
+                        && $context->getProductIdentifiers() === [$itemId]
+                        && $context->getCartQuantity() === 1;
+                })
+                ->andReturn([
+                    'discount' => 5000,
+                    'applied' => collect([new Promotion(['name' => 'Scheduled Sale'])]),
+                ]);
 
-            $resultAfter = $this->calculator->calculate($item, 1, ['effective_at' => $afterStart]);
-            expect($resultAfter->finalPrice)->toBe(5000)
-                ->and($resultAfter->promotionName)->toBe('Scheduled Sale');
+            app()->instance(PromotionServiceInterface::class, $promotionService);
+
+            $result = $this->calculator->calculate($item, 1, ['effective_at' => $effectiveAt]);
+
+            expect($result->finalPrice)->toBe(5000)
+                ->and($result->promotionName)->toBe('Scheduled Sale');
         });
     });
 

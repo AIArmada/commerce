@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Widgets;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Promotions\Models\Promotion;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -29,8 +30,11 @@ final class PricingStatsWidget extends BaseWidget
         if (class_exists(Promotion::class)) {
             $promotionQuery = Promotion::query();
 
-            if (config('promotions.owner.enabled', true)) {
-                $promotionQuery = $promotionQuery->forOwner();
+            if ((bool) config('promotions.features.owner.enabled', false)) {
+                $promotionQuery = $promotionQuery->forOwner(
+                    OwnerContext::resolve(),
+                    (bool) config('promotions.features.owner.include_global', false),
+                );
             }
 
             $activePromotions = (clone $promotionQuery)->active()->count();

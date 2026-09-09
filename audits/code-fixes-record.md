@@ -605,6 +605,34 @@ reported and taken on trust; code correctness was verified directly.
 - Root `composer.lock` carries no path packages — dependency change
   introduces no lock staleness.
 
+## Pricing resolution (implemented)
+
+- **Tier engine:** canonical active-only `TierResolver`
+  (price-list fallback ordering); divergent duplicate deleted after
+  characterizing the divergence (old Action chose 800, Support chose
+  inactive 700); matrix-tested.
+- **Dead code:** `ResolveBasePrice`, `FormatPriceForDisplay`,
+  `ResolveTierPrice`, `PricingIntegrationRegistrar` deleted
+  (zero-callers verified); docs on direct primitives.
+- **Promotions bridge:** `calculateDiscounts()` on the public
+  contract; parity-tested; Checkout canary green with zero snapshot
+  drift. Wall-clock evaluation stays until promotions exposes
+  as-of behavior (their decision, logged).
+- **Lifecycle:** deactivation enforced at model + calculator;
+  owner-scoped transactional demotion with deterministic winner
+  ordering; shared `effective_at` parser in all resolvers.
+- **Validation:** tuple-scoped customer/segment checks with
+  rejection tests; redundant override deleted (parity-proved);
+  named currency exception; transactional deletes.
+- **Simulator/adapter:** optional-products guard (both branches
+  tested); promotions-owner widget default; docs match
+  implementation; thin adapter confirmed.
+- Suites: Pricing 145 passed (290 assertions), FilamentPricing 39
+  passed (116 assertions); PHPStan level 6 clean. No migration
+  (existing tier index covers).
+- Test-only schema helper used instead of touching shared root
+  `TestCase` — correct scoping.
+
 ## Fairness log
 
 - Orders checkout-context concern: not present, dropped correctly.

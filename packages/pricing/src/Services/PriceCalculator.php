@@ -15,43 +15,22 @@ use AIArmada\Pricing\Events\PriceCalculated;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Support\PromotionalPriceResolver;
+use AIArmada\Pricing\Support\ResolvesEffectiveAt;
 use Carbon\CarbonImmutable;
-use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
-use Throwable;
 
 final class PriceCalculator implements PriceCalculatorInterface
 {
+    use ResolvesEffectiveAt;
+
     public function __construct(
         private readonly TierResolverInterface $tierResolver,
         private readonly PromotionalPriceResolver $promotionalResolver,
         private readonly CustomerPriceResolverInterface $customerPriceResolver,
         private readonly SegmentPriceResolverInterface $segmentPriceResolver,
     ) {}
-
-    protected function resolveEffectiveAt(array $context): CarbonImmutable
-    {
-        $effectiveAt = Arr::get($context, 'effective_at');
-
-        if ($effectiveAt instanceof DateTimeInterface) {
-            return CarbonImmutable::instance($effectiveAt);
-        }
-
-        if (is_int($effectiveAt)) {
-            return CarbonImmutable::createFromTimestamp($effectiveAt);
-        }
-
-        if (is_string($effectiveAt) && $effectiveAt !== '') {
-            try {
-                return CarbonImmutable::parse($effectiveAt);
-            } catch (Throwable) {
-            }
-        }
-
-        return CarbonImmutable::now();
-    }
 
     /**
      * @template TModel of Model
@@ -62,6 +41,7 @@ final class PriceCalculator implements PriceCalculatorInterface
     protected function applyPriceListActiveAt(Builder $query, CarbonImmutable $at): Builder
     {
         return $query->where('is_active', true)
+            ->whereNull('deactivated_at')
             ->where(function ($q) use ($at): void {
                 $q->whereNull('starts_at')->orWhere('starts_at', '<=', $at);
             })
@@ -78,7 +58,7 @@ final class PriceCalculator implements PriceCalculatorInterface
      */
     protected function applyPriceActiveAt(Builder $query, CarbonImmutable $at): Builder
     {
-        return $query
+        return $query->whereNull('deactivated_at')
             ->where(function ($q) use ($at): void {
                 $q->whereNull('starts_at')->orWhere('starts_at', '<=', $at);
             })
@@ -140,7 +120,14 @@ final class PriceCalculator implements PriceCalculatorInterface
             return $result;
         }
 
-        $promotionResult = $this->promotionalResolver->resolve($priceableType, $priceableId, $basePrice, $quantity, $effectiveAt);
+        $promotionResult = $this->promotionalResolver->resolve(
+            $priceableType,
+            $priceableId,
+            $basePrice,
+            $quantity,
+            $effectiveAt,
+            $context,
+        );
         if ($promotionResult !== null) {
             $breakdown[] = ['type' => 'promotion', 'price' => $promotionResult['price'], 'promotion' => $promotionResult['name']];
 
@@ -199,7 +186,11 @@ final class PriceCalculator implements PriceCalculatorInterface
 
         $priceList = is_string($priceListId) && $priceListId !== ''
             ? $priceListQuery->whereKey($priceListId)->first()
-            : $priceListQuery->default()->orderByDesc('priority')->first();
+            : $priceListQuery->default()
+                ->orderByDesc('priority')
+                ->orderBy('created_at')
+                ->orderBy('id')
+                ->first();
 
         if (! $priceList) {
             return null;

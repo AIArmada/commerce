@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Data;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Pricing\Exceptions\InvalidCurrencyException;
+use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Spatie\LaravelData\Data;
 
@@ -46,22 +48,33 @@ final class PriceResultData extends Data
 
     public function getMoney(): Money
     {
-        $currency = $this->currency;
+        $currency = $this->validatedCurrency();
 
         return Money::{$currency}($this->finalPrice);
     }
 
     public function getSavingsMoney(): Money
     {
-        $currency = $this->currency;
+        $currency = $this->validatedCurrency();
 
         return Money::{$currency}($this->discountAmount);
     }
 
     public function getOriginalMoney(): Money
     {
-        $currency = $this->currency;
+        $currency = $this->validatedCurrency();
 
         return Money::{$currency}($this->originalPrice);
+    }
+
+    private function validatedCurrency(): string
+    {
+        $currency = mb_strtoupper(mb_trim($this->currency));
+
+        if ($currency === '' || ! array_key_exists($currency, Currency::getCurrencies())) {
+            throw new InvalidCurrencyException($this->currency);
+        }
+
+        return $currency;
     }
 }

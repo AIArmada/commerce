@@ -14,8 +14,15 @@ use AIArmada\Pricing\Support\CustomerPriceResolver;
 use AIArmada\Pricing\Support\PromotionalPriceResolver;
 use AIArmada\Pricing\Support\SegmentPriceResolver;
 use AIArmada\Pricing\Support\TierResolver;
+use AIArmada\Pricing\Tests\Concerns\EnsuresPricingSchema;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+
+uses(EnsuresPricingSchema::class);
+
+beforeEach(function (): void {
+    $this->ensurePricingSchema();
+});
 
 function bindPricingOwner(?Model $owner): void
 {

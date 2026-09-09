@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Pricing\Data\PriceResultData;
+use AIArmada\Pricing\Exceptions\InvalidCurrencyException;
 
 describe('PriceResultData', function (): void {
     describe('hasDiscount', function (): void {
@@ -125,5 +126,18 @@ describe('PriceResultData', function (): void {
                 ->and($result->promotionName)->toBeNull()
                 ->and($result->breakdown)->toBe([]);
         });
+    });
+
+    it('fails closed with a named exception for unsupported currency codes', function (): void {
+        $result = new PriceResultData(
+            originalPrice: 10000,
+            finalPrice: 8000,
+            discountAmount: 2000,
+            currency: 'not-a-currency',
+        );
+
+        foreach (['getMoney', 'getSavingsMoney', 'getOriginalMoney'] as $method) {
+            expect(fn () => $result->{$method}())->toThrow(InvalidCurrencyException::class);
+        }
     });
 });

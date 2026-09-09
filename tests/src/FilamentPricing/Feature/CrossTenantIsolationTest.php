@@ -11,9 +11,16 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentPricing\Widgets\PricingStatsWidget;
 use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Tests\Concerns\EnsuresPricingSchema;
 use AIArmada\Promotions\Models\Promotion;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
+
+uses(EnsuresPricingSchema::class);
+
+beforeEach(function (): void {
+    $this->ensurePricingSchema();
+});
 
 beforeEach(function (): void {
     if (! class_exists(Promotion::class)) {

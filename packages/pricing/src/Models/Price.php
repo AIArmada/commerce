@@ -204,6 +204,7 @@ class Price extends Model implements Auditable
         $now = CarbonImmutable::now();
 
         return $query
+            ->whereNull('deactivated_at')
             ->where(function ($q) use ($now): void {
                 $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
             })
@@ -227,6 +228,10 @@ class Price extends Model implements Auditable
 
     public function isActive(): bool
     {
+        if ($this->deactivated_at !== null) {
+            return false;
+        }
+
         $now = CarbonImmutable::now();
 
         if ($this->starts_at && $this->starts_at > $now) {

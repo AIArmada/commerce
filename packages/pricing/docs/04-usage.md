@@ -4,66 +4,26 @@ title: Usage
 
 # Usage
 
-## Actions
+## Resolution primitives
 
-The pricing package provides fine-grained Actions for isolated price-resolution steps. These are the recommended entry points for new code.
-
-### ResolveBasePrice
+The calculator is the supported entry point for complete price resolution. For isolated operations, use the item and shared support services directly:
 
 ```php
-use AIArmada\Pricing\Actions\ResolveBasePrice;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Pricing\Contracts\Priceable;
 
-// Get the raw base price (in cents) from a Priceable item
-$basePrice = ResolveBasePrice::resolve($item); // e.g. 5000
+// Read the raw base price (minor units) from a priceable item.
+$basePrice = $item->getBasePrice();
+
+// Format a minor-unit amount for display.
+$formatted = MoneyFormatter::formatMinor(1999, 'MYR'); // "RM19.99"
 ```
 
-### ResolveTierPrice
-
-```php
-use AIArmada\Pricing\Actions\ResolveTierPrice;
-
-// Resolve a quantity-based tier price
-$tier = ResolveTierPrice::resolve(
-    tierableType: $product::class,
-    tierableId: (string) $product->id,
-    quantity: 10,
-    context: ['price_list_id' => $wholesale->id],
-);
-// Returns ['price' => 4500, 'tier' => '10-49 units'] or null
-```
-
-### FormatPriceForDisplay
-
-```php
-use AIArmada\Pricing\Actions\FormatPriceForDisplay;
-
-// Format a minor-unit amount for display
-$formatted = FormatPriceForDisplay::format(1999, 'MYR'); // "RM 19.99"
-```
-
-### ApplyPromotionalAdjustment
-
-```php
-use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
-use Carbon\CarbonImmutable;
-
-// Apply an active promotion to a priceable item
-$adjustment = ApplyPromotionalAdjustment::apply(
-    promotionableType: $product::class,
-    promotionableId: (string) $product->id,
-    basePrice: 5000,
-    quantity: 1,
-    effectiveAt: CarbonImmutable::now(),
-);
-// Returns ['price' => 4250, 'name' => 'Summer Sale'] or null
-```
+Quantity tiers are resolved through the `TierResolverInterface` implementation used by the calculator. Promotional adjustments are delegated to the promotions package's `PromotionServiceInterface`; pricing does not query promotion tables directly.
 
 ---
 
 ## Price Calculator
-
-> **Deprecation note:** The `PriceCalculator` service and `PriceCalculatorInterface` continue to work, but new code is encouraged to use the individual Actions above for clarity and testability. The calculator internally delegates to these same Actions.
 
 The `PriceCalculator` service is the main entry point for calculating prices. It evaluates all pricing rules and returns the best applicable price.
 
@@ -229,6 +189,8 @@ $default = PriceList::default()->first();
 // Get price lists for owner (multitenancy)
 $ownerLists = PriceList::forOwner($owner)->get();
 ```
+
+Saving a list with `is_default = true` makes it the only default in its owner scope; the newly saved list wins. If legacy data contains duplicate defaults, resolution is deterministic: highest priority wins, then earliest creation time, then the record ID.
 
 ## Working with Price Tiers
 
