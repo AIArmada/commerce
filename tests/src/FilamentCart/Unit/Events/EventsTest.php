@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Events\CartAbandoned;
-use AIArmada\FilamentCart\Events\CartCheckoutStarted;
-use AIArmada\FilamentCart\Events\CartSnapshotSynced;
-use AIArmada\FilamentCart\Events\HighValueCartDetected;
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Events\CartAbandoned;
+use AIArmada\Cart\Events\CartCheckoutStarted;
+use AIArmada\Cart\Events\CartSnapshotSynced;
+use AIArmada\Cart\Events\HighValueCartDetected;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 
 it('creates scalar payloads for cart operational events', function (string $eventClass): void {
     $cart = Cart::query()->create([

@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Models\Traits;
 
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Exceptions\UnknownModelException;
+use AIArmada\Cart\Support\CartLimits;
 use JsonException;
 
 trait ValidationTrait
@@ -15,6 +16,8 @@ trait ValidationTrait
      */
     private function validateCartItem(): void
     {
+        $limits = CartLimits::fromConfig();
+
         if (empty(mb_trim($this->id))) {
             throw new InvalidCartItemException('Cart item ID cannot be empty');
         }
@@ -22,7 +25,7 @@ trait ValidationTrait
             throw new InvalidCartItemException('Cart item name cannot be empty');
         }
         // Check string length limits
-        $maxStringLength = config('cart.limits.max_string_length', 255);
+        $maxStringLength = $limits->maxStringLength;
         if (mb_strlen($this->id) > $maxStringLength) {
             throw new InvalidCartItemException("Cart item ID cannot exceed {$maxStringLength} characters");
         }
@@ -36,7 +39,7 @@ trait ValidationTrait
             throw new InvalidCartItemException('Cart item quantity must be at least 1');
         }
         // Check quantity limits
-        $maxQuantity = config('cart.limits.max_item_quantity', 10000);
+        $maxQuantity = $limits->maxItemQuantity;
         if ($this->quantity > $maxQuantity) {
             throw new InvalidCartItemException("Cart item quantity cannot exceed {$maxQuantity}");
         }
@@ -59,7 +62,7 @@ trait ValidationTrait
      */
     private function validateDataSize(array $data, string $type): void
     {
-        $maxDataSize = config('cart.limits.max_data_size_bytes', 1024 * 1024); // 1MB default
+        $maxDataSize = CartLimits::fromConfig()->maxDataSizeBytes;
 
         try {
             $jsonSize = mb_strlen(json_encode($data, JSON_THROW_ON_ERROR));

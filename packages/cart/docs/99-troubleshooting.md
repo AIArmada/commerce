@@ -35,7 +35,7 @@ php artisan cache:clear
 ```php
 // config/cart.php
 'money' => [
-    'default_currency' => 'USD', // Use valid ISO 4217 code
+    'default_currency' => 'MYR', // Use valid ISO 4217 code
 ],
 ```
 

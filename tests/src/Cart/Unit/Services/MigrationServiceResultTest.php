@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
+use AIArmada\Cart\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Services\CartMigrationService;
 use Illuminate\Support\Collection;
 use Tests\Support\Cart\InMemoryStorage;
 
 it('returns detailed result object when migrating for user succeeds', function (): void {
-    $user = new class
-    {
-        public int $id = 123;
-    };
+    config(['cart.events' => false]);
+
+    $user = 123;
 
     $storage = new InMemoryStorage;
     $storage->putItems('session-id', 'default', [
@@ -18,21 +19,13 @@ it('returns detailed result object when migrating for user succeeds', function (
         'item-2' => ['quantity' => 3],
     ]);
 
-    $service = new class([], $storage) extends CartMigrationService
-    {
-        public bool $called = false;
-
-        public function migrateGuestCartToUser(string | int $userId, string $instance, string $sessionId): bool
-        {
-            $this->called = true;
-
-            return true;
-        }
-    };
+    $registry = new CartMergeStrategyRegistry;
+    $registry->registerBuiltIns();
+    $action = new MigrateGuestCartToUserAction($registry, $storage);
+    $service = new CartMigrationService([], $storage, $action);
 
     $result = $service->migrateGuestCartForUser($user, 'default', 'session-id');
 
-    expect($service->called)->toBeTrue();
     expect($result->success)->toBeTrue();
     expect($result->itemsMerged)->toBe(5);
     expect($result->conflicts)->toBeInstanceOf(Collection::class);
@@ -40,26 +33,18 @@ it('returns detailed result object when migrating for user succeeds', function (
 });
 
 it('returns failure result object when no items to migrate', function (): void {
-    $user = new class
-    {
-        public int $id = 123;
-    };
+    config(['cart.events' => false]);
 
-    $service = new class extends CartMigrationService
-    {
-        public bool $called = false;
+    $user = 123;
 
-        public function migrateGuestCartToUser(string | int $userId, string $instance, string $sessionId): bool
-        {
-            $this->called = true;
-
-            return false;
-        }
-    };
+    $registry = new CartMergeStrategyRegistry;
+    $registry->registerBuiltIns();
+    $service = new CartMigrationService(
+        migrationAction: new MigrateGuestCartToUserAction($registry),
+    );
 
     $result = $service->migrateGuestCartForUser($user, 'default', 'session-id');
 
-    expect($service->called)->toBeTrue();
     expect($result->success)->toBeFalse();
     expect($result->itemsMerged)->toBe(0);
     expect($result->conflicts)->toBeInstanceOf(Collection::class);

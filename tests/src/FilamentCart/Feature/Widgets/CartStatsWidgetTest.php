@@ -6,15 +6,20 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
+use AIArmada\Cart\Snapshots\CartSnapshot as CartSnapshot;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use Akaunting\Money\Money;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 
 uses(RefreshDatabase::class);
 
 describe('CartStatsWidget', function (): void {
+    beforeEach(function (): void {
+        Cache::flush();
+    });
+
     it('can be instantiated', function (): void {
         $widget = new CartStatsWidget;
         expect($widget)->toBeInstanceOf(CartStatsWidget::class);
@@ -30,9 +35,7 @@ describe('CartStatsWidget', function (): void {
 
     it('is owner scoped when owner mode is enabled', function (): void {
         config()->set('cart.owner.enabled', true);
-        config()->set('filament-cart.owner.enabled', true);
         config()->set('cart.owner.include_global', false);
-        config()->set('filament-cart.owner.include_global', false);
         config()->set('cart.money.default_currency', 'USD');
 
         $ownerA = User::query()->create([
@@ -87,9 +90,7 @@ describe('CartStatsWidget', function (): void {
 
     it('includes global snapshots when include_global is enabled', function (): void {
         config()->set('cart.owner.enabled', true);
-        config()->set('filament-cart.owner.enabled', true);
         config()->set('cart.owner.include_global', true);
-        config()->set('filament-cart.owner.include_global', true);
         config()->set('cart.money.default_currency', 'USD');
 
         $owner = User::query()->create([

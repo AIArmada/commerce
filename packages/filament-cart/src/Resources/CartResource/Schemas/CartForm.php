@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartResource\Schemas;
 
+use AIArmada\Cart\Support\CartMoney;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -160,6 +161,6 @@ final class CartForm
 
     private static function resolveCurrencyPrefix(): string
     {
-        return mb_strtoupper(config('cart.money.default_currency', 'USD'));
+        return CartMoney::currency();
     }
 }

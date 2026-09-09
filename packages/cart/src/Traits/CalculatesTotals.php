@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Support\CartMoney;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 
@@ -158,7 +159,7 @@ trait CalculatesTotals
     {
         return new Money(
             $amount,
-            new Currency(mb_strtoupper((string) config('cart.money.default_currency', 'USD'))),
+            new Currency(CartMoney::currency()),
             false,
         );
     }

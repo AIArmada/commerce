@@ -6,15 +6,15 @@ title: Overview
 
 ## Purpose
 
-The `aiarmada/filament-cart` package is the Filament admin adapter for `aiarmada/cart`. It provides cart snapshots, item and condition resources, live monitoring, and operational cart UI surfaces.
+The `aiarmada/filament-cart` package is the Filament admin adapter for `aiarmada/cart`. It provides resources and widgets over the core cart snapshot projection, plus operational cart UI surfaces.
 
 ## What this package owns
 
-- Cart snapshot resources and read models
+- Cart snapshot resources and read models owned by `aiarmada/cart`
 - Cart item and cart condition resources
-- Stored condition management
+- Stored-condition UI actions that delegate to core cart actions
 - Live cart dashboard and recent activity widgets
-- Snapshot synchronization from core cart events
+- Snapshot synchronization configuration and display; synchronization itself is owned by `aiarmada/cart`
 
 ## What this package does not own
 
@@ -30,9 +30,9 @@ The `aiarmada/filament-cart` package is the Filament admin adapter for `aiarmada
 
 ## Main models services or surfaces
 
-- **Resources** — cart snapshots, cart items, cart conditions, and stored conditions
-- **Widgets and monitoring** — live cart dashboard, recent activity, synchronization, analytics handoff, and recovery surfaces documented in the deeper docs pages
-- **Events** — scalar operational events that Signals can consume when enabled
+- **Resources** — core cart snapshots, snapshot items, snapshot conditions, and stored conditions
+- **Widgets and monitoring** — live cart dashboard, recent activity, analytics handoff, and recovery surfaces documented in the deeper docs pages
+- **Events** — core cart operational events that Signals can consume when enabled
 
 ## Owner scoping and security notes
 

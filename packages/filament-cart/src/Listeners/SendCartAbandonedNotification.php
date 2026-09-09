@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Listeners;
 
+use AIArmada\Cart\Events\CartAbandoned;
+use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Events\CartAbandoned;
-use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Notifications\CartAbandonedNotification;
 use Illuminate\Support\Facades\Notification;
 
@@ -17,8 +17,8 @@ final class SendCartAbandonedNotification
     {
         $owner = OwnerContext::fromTypeAndId($event->ownerType, $event->ownerId);
 
-        $cart = OwnerContext::withOwner($owner, function () use ($event): ?Cart {
-            return Cart::query()->find($event->cartId);
+        $cart = OwnerContext::withOwner($owner, function () use ($event): ?CartSnapshot {
+            return CartSnapshot::query()->find($event->cartId);
         });
 
         if ($cart === null) {

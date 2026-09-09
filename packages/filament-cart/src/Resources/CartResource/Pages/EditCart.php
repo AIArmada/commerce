@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartResource\Pages;
 
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentCart\Resources\CartResource;
-use AIArmada\FilamentCart\Services\CartInstanceManager;
-use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
@@ -26,7 +26,7 @@ final class EditCart extends EditRecord
                 ->icon(Heroicon::OutlinedTrash)
                 ->using(function (Cart $record): void {
                     app(CartInstanceManager::class)
-                        ->resolveForSnapshot(OwnerActionGuard::authorizeCart($record))
+                        ->resolveForSnapshot($this->authorizeCart($record))
                         ->destroy();
                 }),
 
@@ -37,7 +37,7 @@ final class EditCart extends EditRecord
                 ->requiresConfirmation()
                 ->action(function (): void {
                     /** @var Cart $record */
-                    $record = OwnerActionGuard::resolveCartRecord($this->record);
+                    $record = $this->authorizeCart($this->record);
                     app(CartInstanceManager::class)
                         ->resolveForSnapshot($record)
                         ->clear();
@@ -61,5 +61,22 @@ final class EditCart extends EditRecord
         $data['metadata'] = $data['metadata'] ?? [];
 
         return $data;
+    }
+
+    private function authorizeCart(Cart $cart): Cart
+    {
+        if (! Cart::ownerScopingEnabled()) {
+            return $cart;
+        }
+
+        /** @var Cart $validated */
+        $validated = OwnerWriteGuard::findOrFailForOwner(
+            Cart::class,
+            (string) $cart->getKey(),
+            includeGlobal: false,
+            message: 'Cart is not accessible in the current owner scope.',
+        );
+
+        return $validated;
     }
 }

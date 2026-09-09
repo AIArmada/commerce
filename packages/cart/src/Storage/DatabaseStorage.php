@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Storage;
 
 use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Models\CartModel;
+use AIArmada\Cart\Support\CartLimits;
 use AIArmada\Cart\Support\CartOwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
@@ -506,8 +507,9 @@ final readonly class DatabaseStorage implements StorageInterface
     private function validateDataSize(array $data, string $type): void
     {
         // Get size limits from config or use defaults
-        $maxItems = config('cart.limits.max_items', 1000);
-        $maxDataSize = config('cart.limits.max_data_size_bytes', 1024 * 1024); // 1MB default
+        $limits = CartLimits::fromConfig();
+        $maxItems = $limits->maxItems;
+        $maxDataSize = $limits->maxDataSizeBytes;
 
         // Check item count limit
         if ($type === 'items' && count($data) > $maxItems) {

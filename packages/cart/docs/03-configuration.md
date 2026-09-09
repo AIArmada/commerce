@@ -28,7 +28,7 @@ The cart config is intentionally small. If a key is present, it is actively used
 
 Cart prices, condition values, and totals are integer minor units. Money objects
 use the configured ISO 4217 currency with conversion disabled; decimal strings
-are normalized before formatting. Use MoneyFormatter::formatMinor() for
+are normalized before formatting. Use `CartMoney::formatMinor()` for
 user-facing values.
 
 ## Behavior
@@ -58,9 +58,7 @@ When owner mode is enabled, cart reads and writes require a resolved owner conte
 
 Installing filament-cart does not enable or rewrite cart.owner.*. Enable
 cart.owner.enabled explicitly for core cart and condition storage. Filament Cart
-uses its own owner settings and falls back to the core values only when its
-corresponding setting is unset. Enable both owner flags for an owner-scoped
-Filament stored-condition resource.
+uses the same core owner boundary and has no independent owner switch.
 
 CartFactory is scoped to the application request/job lifecycle so its storage
 cannot retain an owner from a previous Octane request.

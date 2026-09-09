@@ -41,10 +41,10 @@ The plugin registers four Filament resources under the **E-Commerce** navigation
 
 | Resource | Model | Purpose |
 |----------|-------|---------|
-| Carts | `Cart` | View normalized cart snapshots |
-| Cart Items | `CartItem` | Browse individual line items |
-| Cart Conditions | `CartCondition` | View conditions applied to carts |
-| Conditions | `Condition` | Manage reusable condition templates |
+| Carts | `AIArmada\\Cart\\Snapshots\\CartSnapshot` | View normalized cart snapshots |
+| Cart Items | `AIArmada\\Cart\\Snapshots\\CartSnapshotItem` | Browse individual line items |
+| Cart Conditions | `AIArmada\\Cart\\Snapshots\\CartSnapshotCondition` | View conditions applied to carts |
+| Conditions | `AIArmada\\Cart\\Models\\Condition` | Manage reusable condition templates |
 
 ### Cart Resource
 
@@ -100,24 +100,39 @@ return [
         'group' => 'E-Commerce'
     ],
     'polling_interval' => 30,
-    'enable_global_conditions' => true,
+];
+```
+
+```php
+// config/cart.php
+
+return [
     'dynamic_rules_factory' => \AIArmada\Cart\Services\BuiltInRulesFactory::class,
-    
-    'synchronization' => [
-        'queue_sync' => false,
-        'queue_connection' => 'default',
-        'queue_name' => 'cart-sync',
+    'conditions' => [
+        'apply_global' => true,
+    ],
+    'snapshots' => [
+        'synchronization' => [
+            'queue_sync' => true,
+            'queue_connection' => null, // Uses queue.default when omitted
+            'queue_name' => 'cart-sync',
+        ],
     ],
 ];
 ```
 
+The adapter block belongs in `config/filament-cart.php`; the condition and
+snapshot settings belong in the core `config/cart.php` file.
+
 ## Event Synchronization
 
-The plugin automatically syncs cart state via event listeners:
+The core `aiarmada/cart` package owns snapshot projection and registers its
+event listeners. Filament Cart consumes the resulting read model and provides
+the UI adapter:
 
-- `SyncCartOnEvent` — Creates/updates normalized records
-- `ApplyGlobalConditions` — Auto-applies global conditions
-- `CleanupSnapshotOnCartMerged` — Handles cart merge cleanup
+- `AIArmada\\Cart\\Snapshots\\SyncCartOnEvent` — Creates/updates normalized records
+- `AIArmada\\Cart\\Listeners\\ApplyGlobalConditions` — Applies global conditions
+- `AIArmada\\Cart\\Snapshots\\CleanupSnapshotOnCartMerged` — Handles merge cleanup
 
 ## Dynamic Conditions
 

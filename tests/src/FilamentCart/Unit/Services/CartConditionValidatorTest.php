@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Actions\ValidateStoredCondition;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\Condition as ConditionModel;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
-use AIArmada\FilamentCart\Services\CartConditionValidator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-describe('CartConditionValidator', function (): void {
+describe('ValidateStoredCondition', function (): void {
     it('returns valid when no global conditions present', function (): void {
-        $validator = new CartConditionValidator;
+        $validator = new ValidateStoredCondition;
         $storage = new DatabaseStorage(
             database: DB::connection('testing'),
             table: 'carts',
@@ -31,7 +31,7 @@ describe('CartConditionValidator', function (): void {
 
         $cart->add('sku-1', 'Test Item', 10000, 1);
 
-        $result = $validator->validateAndClean($cart);
+        $result = $validator->handle($cart);
 
         expect($result['is_valid'])->toBeTrue();
         expect($result['removed_conditions'])->toBeEmpty();
@@ -39,7 +39,7 @@ describe('CartConditionValidator', function (): void {
     });
 
     it('removes deactivated global conditions', function (): void {
-        $validator = new CartConditionValidator;
+        $validator = new ValidateStoredCondition;
         $storage = new DatabaseStorage(
             database: DB::connection('testing'),
             table: 'carts',
@@ -68,7 +68,7 @@ describe('CartConditionValidator', function (): void {
             'attributes' => ['is_global' => true],
         ]);
 
-        $result = $validator->validateAndClean($cart);
+        $result = $validator->handle($cart);
 
         expect($result['is_valid'])->toBeFalse();
         expect($result['removed_conditions'])->toContain('Deactivated Promo');
@@ -77,7 +77,7 @@ describe('CartConditionValidator', function (): void {
     });
 
     it('keeps active global conditions', function (): void {
-        $validator = new CartConditionValidator;
+        $validator = new ValidateStoredCondition;
         $storage = new DatabaseStorage(
             database: DB::connection('testing'),
             table: 'carts',
@@ -120,7 +120,7 @@ describe('CartConditionValidator', function (): void {
             'attributes' => ['is_global' => true],
         ]);
 
-        $result = $validator->validateAndClean($cart);
+        $result = $validator->handle($cart);
 
         expect($result['is_valid'])->toBeTrue();
         expect($result['removed_conditions'])->toBeEmpty();
@@ -129,10 +129,9 @@ describe('CartConditionValidator', function (): void {
 
     it('requires an owner context when validating global conditions in owner mode', function (): void {
         config()->set('cart.owner.enabled', true);
-        config()->set('filament-cart.owner.enabled', true);
         app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
 
-        $validator = new CartConditionValidator;
+        $validator = new ValidateStoredCondition;
         $storage = new DatabaseStorage(
             database: DB::connection('testing'),
             table: 'carts',
@@ -162,7 +161,7 @@ describe('CartConditionValidator', function (): void {
         expect(ConditionModel::ownerScopingEnabled())->toBeTrue();
         expect($cart->getConditions()->first()?->getAttribute('is_global'))->toBeTrue();
 
-        expect(fn (): array => $validator->validateAndClean($cart))
+        expect(fn (): array => $validator->handle($cart))
             ->toThrow(RuntimeException::class, 'requires an owner context or explicit global context.');
     });
 });

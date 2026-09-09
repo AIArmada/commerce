@@ -7,6 +7,7 @@ namespace AIArmada\Cart\Models;
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
+use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -179,7 +180,7 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
                 throw new InvalidCartItemException('Cart item price must be a finite number');
             }
 
-            return (int) round($price * 100, 0, PHP_ROUND_HALF_UP);
+            return CartMoney::minorFromDecimal((string) $price);
         }
 
         $normalized = mb_trim($price);
@@ -189,13 +190,12 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
             return 0;
         }
 
-        $value = (float) $normalized;
-        if (! is_numeric($normalized) || ! is_finite($value)) {
+        if (! is_numeric($normalized) || ! is_finite((float) $normalized)) {
             throw new InvalidCartItemException('Cart item price must be a finite number');
         }
 
         return str_contains($normalized, '.')
-            ? (int) round($value * 100, 0, PHP_ROUND_HALF_UP)
+            ? CartMoney::minorFromDecimal($normalized)
             : (int) $normalized;
     }
 }

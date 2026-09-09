@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Storage\StorageInterface;
-use AIArmada\FilamentCart\Jobs\SyncNormalizedCartJob;
-use AIArmada\FilamentCart\Services\CartInstanceManager;
-use AIArmada\FilamentCart\Services\CartSyncManager;
-use AIArmada\FilamentCart\Services\NormalizedCartSynchronizer;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSyncManager;
+use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
+use AIArmada\Cart\Snapshots\SyncNormalizedCartJob;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 
@@ -20,7 +20,7 @@ describe('CartSyncManager', function (): void {
     });
 
     it('syncs cart synchronously by default', function (): void {
-        Config::set('filament-cart.synchronization.queue_sync', false);
+        Config::set('cart.snapshots.synchronization.queue_sync', false);
 
         $cart = new Cart(
             storage: Mockery::mock(StorageInterface::class),
@@ -38,7 +38,7 @@ describe('CartSyncManager', function (): void {
     });
 
     it('queues sync if configured', function (): void {
-        Config::set('filament-cart.synchronization.queue_sync', true);
+        Config::set('cart.snapshots.synchronization.queue_sync', true);
 
         $storage = Mockery::mock(StorageInterface::class);
         $storage->shouldReceive('getOwnerType')->andReturn(null);
@@ -68,7 +68,7 @@ describe('CartSyncManager', function (): void {
     });
 
     it('forces synchronous sync even if queued configured', function (): void {
-        Config::set('filament-cart.synchronization.queue_sync', true);
+        Config::set('cart.snapshots.synchronization.queue_sync', true);
 
         $cart = new Cart(
             storage: Mockery::mock(StorageInterface::class),

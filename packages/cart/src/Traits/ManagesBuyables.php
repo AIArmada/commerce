@@ -43,7 +43,7 @@ trait ManagesBuyables
         return $this->add(
             id: $buyable->getBuyableIdentifier(),
             name: $buyable->getBuyableName(),
-            price: $buyable->getBuyablePrice()->getAmount(),
+            price: $buyable->getBuyablePrice(),
             quantity: $quantity,
             attributes: $attributes,
             associatedModel: $buyable
@@ -184,7 +184,7 @@ trait ManagesBuyables
             }
 
             $oldPrice = (int) $item->price;
-            $newPrice = $fresh->getBuyablePrice()->getAmount();
+            $newPrice = $fresh->getBuyablePrice();
 
             if ($oldPrice !== $newPrice) {
                 $this->update($item->id, ['price' => $newPrice]);

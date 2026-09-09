@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Storage\StorageInterface;
-use AIArmada\FilamentCart\Jobs\SyncNormalizedCartJob;
-use AIArmada\FilamentCart\Services\CartInstanceManager;
-use AIArmada\FilamentCart\Services\CartSyncManager;
-use AIArmada\FilamentCart\Services\NormalizedCartSynchronizer;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSyncManager;
+use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
+use AIArmada\Cart\Snapshots\SyncNormalizedCartJob;
 use Illuminate\Support\Facades\Log;
 
 describe('SyncNormalizedCartJob', function (): void {
@@ -22,8 +22,8 @@ describe('SyncNormalizedCartJob', function (): void {
     });
 
     it('uses queue name from config', function (): void {
-        config(['filament-cart.synchronization.queue_name' => 'custom-queue']);
-        config(['filament-cart.synchronization.queue_connection' => 'redis']);
+        config(['cart.snapshots.synchronization.queue_name' => 'custom-queue']);
+        config(['cart.snapshots.synchronization.queue_connection' => 'redis']);
 
         $job = new SyncNormalizedCartJob(
             identifier: 'user-456',

@@ -47,13 +47,12 @@ describe('Buyable Trait', function (): void {
         expect($product->getBuyableName())->toBe('Unnamed Product');
     });
 
-    it('gets buyable price as Money object', function (): void {
+    it('gets buyable price in integer minor units', function (): void {
         $product = new TestBuyableProduct(['price' => 1500]);
 
         $price = $product->getBuyablePrice();
 
-        expect($price)->toBeInstanceOf(Money::class)
-            ->and((int) $price->getAmount())->toBe(1500);
+        expect($price)->toBe(1500);
     });
 
     it('returns zero price when not set', function (): void {
@@ -61,7 +60,16 @@ describe('Buyable Trait', function (): void {
 
         $price = $product->getBuyablePrice();
 
-        expect((int) $price->getAmount())->toBe(0);
+        expect($price)->toBe(0);
+    });
+
+    it('exposes a distinctly named Money accessor for adapters', function (): void {
+        $product = new TestBuyableProduct(['price' => 1500]);
+
+        $price = $product->getBuyableMoney();
+
+        expect($price)->toBeInstanceOf(Money::class)
+            ->and((int) $price->getAmount())->toBe(1500);
     });
 
     it('can be purchased when active', function (): void {

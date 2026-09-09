@@ -432,11 +432,9 @@ trait ManagesDynamicConditions
         // Smart rule evaluation (Filament-style)
         $evaluatedRules = $this->evaluateRules($rules, $ruleFactoryKey, $metadata);
 
-        if (! isset($data['target_definition']) && isset($data['target'])) {
-            $data['target_definition'] = ConditionTarget::from($data['target'])->toArray();
-        }
-
-        $target = $data['target_definition'] ?? null;
+        $target = isset($data['target_definition'])
+            ? ConditionTarget::from($data['target_definition'])
+            : (isset($data['target']) ? ConditionTarget::from($data['target']) : null);
 
         if ($target === null) {
             throw new InvalidArgumentException('Condition target_definition is required.');

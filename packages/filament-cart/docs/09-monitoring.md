@@ -20,9 +20,9 @@ The live monitor shows:
 ## Abandonment command
 
 ```bash
-php artisan cart:mark-abandoned
-php artisan cart:mark-abandoned --minutes=45
-php artisan cart:mark-abandoned --dry-run
+php artisan cart:clear-abandoned --mark-only
+php artisan cart:clear-abandoned --mark-only --minutes=45
+php artisan cart:clear-abandoned --mark-only --dry-run
 ```
 
 This command only updates `checkout_abandoned_at` and emits `CartAbandoned`.

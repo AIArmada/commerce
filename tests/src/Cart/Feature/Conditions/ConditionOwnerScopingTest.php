@@ -210,13 +210,15 @@ describe('Condition owner scoping', function (): void {
             'password' => 'secret',
         ]);
 
-        expect(fn () => OwnerContext::withOwner($ownerA, fn () => Condition::query()->create([
+        $condition = new Condition([
             'name' => 'mismatched-condition',
             'type' => 'discount',
             'target' => 'cart@cart_subtotal/aggregate',
             'value' => '-10%',
-            'owner_type' => $ownerB->getMorphClass(),
-            'owner_id' => (string) $ownerB->getKey(),
-        ])))->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\\Cart\\Models\\Condition.');
+        ]);
+        $condition->assignOwner($ownerB);
+
+        expect(fn () => OwnerContext::withOwner($ownerA, fn () => $condition->save()))
+            ->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\\Cart\\Models\\Condition.');
     });
 });

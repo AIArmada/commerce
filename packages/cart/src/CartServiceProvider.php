@@ -11,12 +11,31 @@ use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
 use AIArmada\Cart\Conditions\Handlers\ShippingConditionHandler;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
+use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
+use AIArmada\Cart\Contracts\RulesFactoryInterface;
+use AIArmada\Cart\Events\CartCleared;
+use AIArmada\Cart\Events\CartConditionAdded;
+use AIArmada\Cart\Events\CartConditionRemoved;
+use AIArmada\Cart\Events\CartCreated;
+use AIArmada\Cart\Events\CartDestroyed;
+use AIArmada\Cart\Events\CartMerged;
+use AIArmada\Cart\Events\ItemAdded;
+use AIArmada\Cart\Events\ItemConditionAdded;
+use AIArmada\Cart\Events\ItemConditionRemoved;
+use AIArmada\Cart\Events\ItemRemoved;
+use AIArmada\Cart\Events\ItemUpdated;
+use AIArmada\Cart\Listeners\ApplyGlobalConditions;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSyncManager;
+use AIArmada\Cart\Snapshots\CleanupSnapshotOnCartMerged;
+use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
+use AIArmada\Cart\Snapshots\SyncCartOnEvent;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
@@ -51,6 +70,7 @@ final class CartServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
+        $this->registerRulesFactory();
         $this->app->singleton(CartConditionResolver::class);
         $this->app->alias(CartConditionResolver::class, 'cart.condition_resolver');
 
@@ -63,6 +83,7 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->registerCartManager();
         $this->registerMigrationService();
         $this->registerActions();
+        $this->registerSnapshotServices();
     }
 
     public function bootingPackage(): void
@@ -95,6 +116,12 @@ final class CartServiceProvider extends PackageServiceProvider
             ConditionProviderRegistry::class,
             'cart.condition_providers',
             'cart.storage',
+            RulesFactoryInterface::class,
+            CartInstanceManager::class,
+            NormalizedCartSynchronizer::class,
+            CartSyncManager::class,
+            CartSnapshotSyncInterface::class,
+            'cart.snapshot-sync',
         ];
     }
 
@@ -113,6 +140,24 @@ final class CartServiceProvider extends PackageServiceProvider
                 'Bind ' . OwnerResolverInterface::class . ' (recommended via COMMERCE_OWNER_RESOLVER / commerce-support config).'
             );
         }
+    }
+
+    protected function registerRulesFactory(): void
+    {
+        $this->app->singleton(RulesFactoryInterface::class, function (Application $app): RulesFactoryInterface {
+            $factoryClass = config('cart.dynamic_rules_factory', Services\BuiltInRulesFactory::class);
+
+            return $app->make($factoryClass ?: Services\BuiltInRulesFactory::class);
+        });
+    }
+
+    protected function registerSnapshotServices(): void
+    {
+        $this->app->singleton(CartInstanceManager::class);
+        $this->app->singleton(NormalizedCartSynchronizer::class);
+        $this->app->singleton(CartSyncManager::class);
+        $this->app->alias(CartSyncManager::class, CartSnapshotSyncInterface::class);
+        $this->app->alias(CartSyncManager::class, 'cart.snapshot-sync');
     }
 
     protected function registerStorage(): void
@@ -188,8 +233,9 @@ final class CartServiceProvider extends PackageServiceProvider
 
     protected function registerMigrationService(): void
     {
-        $this->app->singleton(CartMigrationService::class, fn () => new CartMigrationService(
+        $this->app->singleton(CartMigrationService::class, fn (Application $app) => new CartMigrationService(
             config('cart.migration', []),
+            migrationAction: $app->make(MigrateGuestCartToUserAction::class),
         ));
 
         $this->app->singleton(CartMergeStrategyRegistry::class, function () {
@@ -217,13 +263,37 @@ final class CartServiceProvider extends PackageServiceProvider
 
     protected function registerEventListeners(): void
     {
-        if (! config('cart.migration.auto_migrate_on_login', true)) {
+        $dispatcher = $this->app->make(Dispatcher::class);
+
+        if (config('cart.migration.auto_migrate_on_login', true)) {
+            $dispatcher->listen(Attempting::class, HandleUserLoginAttempt::class);
+            $dispatcher->listen(Login::class, HandleUserLogin::class);
+        }
+
+        if (! config('cart.events', true)) {
             return;
         }
 
-        $dispatcher = $this->app->make(Dispatcher::class);
-        $dispatcher->listen(Attempting::class, HandleUserLoginAttempt::class);
-        $dispatcher->listen(Login::class, HandleUserLogin::class);
+        if (config('cart.conditions.apply_global', true)) {
+            $dispatcher->listen(CartCreated::class, [ApplyGlobalConditions::class, 'handleCartCreated']);
+            $dispatcher->listen(ItemAdded::class, [ApplyGlobalConditions::class, 'handleItemChanged']);
+            $dispatcher->listen(ItemUpdated::class, [ApplyGlobalConditions::class, 'handleItemChanged']);
+            $dispatcher->listen(ItemRemoved::class, [ApplyGlobalConditions::class, 'handleItemChanged']);
+        }
+
+        $dispatcher->listen([
+            CartCreated::class,
+            CartCleared::class,
+            CartDestroyed::class,
+            ItemAdded::class,
+            ItemUpdated::class,
+            ItemRemoved::class,
+            CartConditionAdded::class,
+            CartConditionRemoved::class,
+            ItemConditionAdded::class,
+            ItemConditionRemoved::class,
+        ], SyncCartOnEvent::class);
+        $dispatcher->listen(CartMerged::class, CleanupSnapshotOnCartMerged::class);
     }
 
     private function registerOctaneListeners(): void
@@ -233,6 +303,9 @@ final class CartServiceProvider extends PackageServiceProvider
         }
 
         $this->app['events']->listen(RequestReceived::class, static function (): void {
+            app()->forgetInstance('cart.storage');
+            app()->forgetInstance('cart');
+            app()->forgetInstance(CartFactory::class);
             ConditionPresets::restoreOctaneDefaults();
         });
     }

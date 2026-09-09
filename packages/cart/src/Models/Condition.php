@@ -8,9 +8,9 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Database\Factories\ConditionFactory;
+use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -92,8 +92,6 @@ class Condition extends Model implements Auditable
      * @var list<string>
      */
     protected $fillable = [
-        'owner_type',
-        'owner_id',
         'name',
         'display_name',
         'description',
@@ -388,7 +386,7 @@ class Condition extends Model implements Auditable
 
         $rawValue = $this->value;
         $normalized = mb_ltrim($rawValue, '+');
-        $formatted = MoneyFormatter::formatMinor(
+        $formatted = CartMoney::formatMinor(
             $this->fixedValueToMinor($normalized),
             $this->resolveCurrency(),
         );
@@ -409,7 +407,7 @@ class Condition extends Model implements Auditable
             return (int) $value;
         }
 
-        return (int) round((float) $value * 100, 0, PHP_ROUND_HALF_UP);
+        return CartMoney::minorFromDecimal($value, $this->resolveCurrency());
     }
 
     /**
@@ -419,14 +417,26 @@ class Condition extends Model implements Auditable
      */
     public function toConditionArray(?string $customName = null): array
     {
+        return $this->buildConditionArray(
+            $customName,
+            ConditionTarget::from($this->target),
+        );
+    }
+
+    /**
+     * Build the condition data from one normalized target value object.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildConditionArray(?string $customName, ConditionTarget $target): array
+    {
         $factoryKeys = $this->getRuleFactoryKeys();
-        $targetDefinition = ConditionTarget::from($this->target)->toArray();
 
         return [
             'name' => $customName ?? $this->display_name,
             'type' => $this->type,
             'target' => $this->target,
-            'target_definition' => $targetDefinition,
+            'target_definition' => $target->toArray(),
             'value' => $this->value,
             'order' => $this->order,
             'attributes' => array_merge($this->attributes ?? [], [
@@ -447,11 +457,10 @@ class Condition extends Model implements Auditable
      */
     public function createCondition(?string $customName = null): CartCondition
     {
-        $data = $this->toConditionArray($customName);
+        $target = ConditionTarget::from($this->target);
+        $data = $this->buildConditionArray($customName, $target);
 
         $rules = $this->buildRuleCallables();
-
-        $target = ConditionTarget::from($this->target);
 
         return new CartCondition(
             name: $data['name'],
@@ -704,7 +713,7 @@ class Condition extends Model implements Auditable
 
     protected function resolveCurrency(): string
     {
-        return mb_strtoupper(config('cart.money.default_currency', 'USD'));
+        return CartMoney::currency();
     }
 
     /**

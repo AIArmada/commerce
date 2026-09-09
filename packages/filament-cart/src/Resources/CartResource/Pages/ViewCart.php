@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartResource\Pages;
 
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\Services\CartDownloadService;
-use AIArmada\FilamentCart\Services\CartInstanceManager;
-use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
@@ -78,7 +78,7 @@ final class ViewCart extends ViewRecord
             ->modalDescription('Are you sure you want to clear all items from this cart? This action cannot be undone.')
             ->action(function (): void {
                 /** @var Cart $record */
-                $record = OwnerActionGuard::resolveCartRecord($this->record);
+                $record = $this->authorizeCart($this->record);
                 app(CartInstanceManager::class)
                     ->resolveForSnapshot($record)
                     ->clear();
@@ -92,7 +92,7 @@ final class ViewCart extends ViewRecord
             ->color('info')
             ->action(function () {
                 /** @var Cart $record */
-                $record = OwnerActionGuard::resolveCartRecord($this->record);
+                $record = $this->authorizeCart($this->record);
 
                 return app(CartDownloadService::class)->download($record);
             });
@@ -106,7 +106,7 @@ final class ViewCart extends ViewRecord
             ->modalDescription('This will delete the live cart and its synchronized snapshot.')
             ->action(function (): void {
                 /** @var Cart $record */
-                $record = OwnerActionGuard::resolveCartRecord($this->record);
+                $record = $this->authorizeCart($this->record);
                 app(CartInstanceManager::class)
                     ->resolveForSnapshot($record)
                     ->destroy();
@@ -142,5 +142,22 @@ final class ViewCart extends ViewRecord
         }
 
         return $widgets;
+    }
+
+    private function authorizeCart(Cart $cart): Cart
+    {
+        if (! Cart::ownerScopingEnabled()) {
+            return $cart;
+        }
+
+        /** @var Cart $validated */
+        $validated = OwnerWriteGuard::findOrFailForOwner(
+            Cart::class,
+            (string) $cart->getKey(),
+            includeGlobal: false,
+            message: 'Cart is not accessible in the current owner scope.',
+        );
+
+        return $validated;
     }
 }

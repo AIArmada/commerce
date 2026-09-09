@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Concerns;
 
 use AIArmada\Cart\Contracts\BuyableInterface;
+use AIArmada\Cart\Support\CartMoney;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 
@@ -18,9 +19,9 @@ use Akaunting\Money\Money;
  *     use Buyable;
  *
  *     // Override methods as needed:
- *     public function getBuyablePrice(): Money
+ *     public function getBuyablePrice(): int
  *     {
- *         return Money::MYR($this->sale_price ?? $this->price);
+ *         return (int) ($this->sale_price ?? $this->price);
  *     }
  * }
  * ```
@@ -55,15 +56,21 @@ trait Buyable
     }
 
     /**
-     * Get the price as a Money object.
+     * Get the unit price in integer minor units.
      */
-    public function getBuyablePrice(): Money
+    public function getBuyablePrice(): int
     {
-        $price = $this->price ?? 0;
+        return (int) ($this->price ?? 0);
+    }
 
+    /**
+     * Get the unit price as a Money object for display or gateway adapters.
+     */
+    public function getBuyableMoney(): Money
+    {
         return new Money(
-            (int) $price,
-            new Currency(mb_strtoupper((string) config('cart.money.default_currency', 'MYR'))),
+            $this->getBuyablePrice(),
+            new Currency(CartMoney::currency()),
             false,
         );
     }

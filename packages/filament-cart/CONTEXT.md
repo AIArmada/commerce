@@ -15,7 +15,7 @@ keywords:
 
 ## Snapshot
 - Composer: `aiarmada/filament-cart`
-- Role: Filament admin for carts: snapshots, conditions, live monitoring, abandonment.
+- Role: Filament v5 admin adapter for cart snapshots, conditions, live monitoring, and abandonment operations.
 - Triggers: filament, cart-admin, abandonment, monitoring
 - Search first: `src/Resources, src/Pages, src/Widgets, config, docs`
 - Related: `cart`, `signals`, `filament-signals`
@@ -41,10 +41,10 @@ keywords:
 - Owner/security: Read-model with owner trait (mirrors core).
 
 ## Key surfaces
-- Models: `Cart`, `CartCondition`, `CartItem`, `Condition`
-- Actions/Services: `Actions/ApplyConditionAction`, `Actions/ApplyConditionToCartAction`, `Actions/RemoveConditionAction`, `Actions/RemoveConditionFromCartAction`, `Services/CartConditionBatchRemoval`, `Services/CartConditionValidator`, `Services/CartDownloadService`, `Services/CartInstanceManager`
+- Models: none; resources consume `AIArmada\\Cart\\Snapshots\\CartSnapshot`, `CartSnapshotItem`, and `CartSnapshotCondition`
+- Actions/Services: `Actions/ApplyConditionAction`, `Actions/RemoveConditionAction`, `Services/CartDownloadService`
 - Resources: `CartItemResource`, `CartResource`, `ConditionResource`
-- Config `filament-cart.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `snapshots`, `snapshot_items`, `snapshot_conditions`, `dynamic_rules_factory`, `navigation`, `group`
+- Config `filament-cart.php`: `navigation`, `resources`, `pages`, `polling_interval`, `features`, `widgets`, `notifications`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

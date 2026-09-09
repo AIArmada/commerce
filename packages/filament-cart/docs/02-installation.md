@@ -14,7 +14,8 @@ Publish and run migrations according to your application workflow.
 
 ## Tables
 
-Filament Cart creates normalized read models for carts:
+The core Cart package owns the normalized read models. Install and publish the
+core migrations before using these Filament resources:
 
 | Table | Purpose |
 | --- | --- |
@@ -60,13 +61,16 @@ Enable integrations explicitly in `config/signals.php`:
 
 ## Commands
 
-Filament Cart ships one operational command:
+The core Cart package ships the operational command:
 
 ```bash
-php artisan cart:mark-abandoned
-php artisan cart:mark-abandoned --minutes=45
-php artisan cart:mark-abandoned --dry-run
+php artisan cart:clear-abandoned --mark-only
+php artisan cart:clear-abandoned --mark-only --minutes=45
+php artisan cart:clear-abandoned --mark-only --dry-run
 ```
+
+Use `--all-owners --confirm-all-owners` only for an intentional multi-owner
+mutation; run a dry-run first.
 
 Schedule Signals commands separately when Signals is installed:
 

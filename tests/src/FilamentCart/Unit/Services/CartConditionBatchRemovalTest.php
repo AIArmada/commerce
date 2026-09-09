@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSnapshot as CartModel;
+use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartConditionModel;
+use AIArmada\Cart\Snapshots\CartSyncManager;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Models\Cart as CartModel;
-use AIArmada\FilamentCart\Models\CartCondition as CartConditionModel;
-use AIArmada\FilamentCart\Services\CartConditionBatchRemoval;
-use AIArmada\FilamentCart\Services\CartInstanceManager;
-use AIArmada\FilamentCart\Services\CartSyncManager;
 
-describe('CartConditionBatchRemoval service', function (): void {
+describe('RemoveStoredConditions action', function (): void {
     it('removes condition from affected carts using stored condition identity', function (): void {
         $storedCondition = Condition::factory()->create([
             'name' => 'bad-condition-rule',
@@ -79,11 +79,11 @@ describe('CartConditionBatchRemoval service', function (): void {
             ->andReturn($realCart);
 
         $syncManager = Mockery::mock(CartSyncManager::class);
-        $syncManager->shouldReceive('sync')->with($realCart)->once();
+        $syncManager->shouldReceive('sync')->with($realCart, true)->once();
 
-        $service = new CartConditionBatchRemoval($cartManager, $syncManager);
+        $service = new RemoveStoredConditions($cartManager, $syncManager);
 
-        $result = $service->removeConditionFromAllCarts($storedCondition);
+        $result = $service->handle($storedCondition);
 
         expect($result['success'])->toBeTrue();
         expect($result['carts_processed'])->toBe(1);
@@ -128,9 +128,9 @@ describe('CartConditionBatchRemoval service', function (): void {
 
         $syncManager = Mockery::mock(CartSyncManager::class);
 
-        $service = new CartConditionBatchRemoval($cartManager, $syncManager);
+        $service = new RemoveStoredConditions($cartManager, $syncManager);
 
-        $result = $service->removeConditionFromAllCarts($storedCondition);
+        $result = $service->handle($storedCondition);
 
         expect($result['success'])->toBeTrue();
         expect($result['carts_processed'])->toBe(1);
@@ -200,13 +200,13 @@ describe('CartConditionBatchRemoval service', function (): void {
 
         $syncManager = Mockery::mock(CartSyncManager::class);
         $syncManager->shouldReceive('sync')
-            ->with($realCart)
+            ->with($realCart, true)
             ->once()
             ->andThrow(new Exception('sync failed'));
 
-        $service = new CartConditionBatchRemoval($cartManager, $syncManager);
+        $service = new RemoveStoredConditions($cartManager, $syncManager);
 
-        $result = $service->removeConditionFromAllCarts($storedCondition);
+        $result = $service->handle($storedCondition);
 
         expect($result['success'])->toBeTrue();
         expect($result['carts_processed'])->toBe(1);
@@ -250,16 +250,16 @@ describe('CartConditionBatchRemoval service', function (): void {
         $cartManager = Mockery::mock(CartInstanceManager::class);
         $syncManager = Mockery::mock(CartSyncManager::class);
 
-        $service = new CartConditionBatchRemoval($cartManager, $syncManager);
+        $service = new RemoveStoredConditions($cartManager, $syncManager);
 
-        $result = $service->removeConditionFromAllCarts($storedCondition);
+        $result = $service->handle($storedCondition);
 
         expect($result['carts_processed'])->toBe(0);
     });
 
     it('removes shared global conditions across owner snapshots when owner mode is enabled', function (): void {
         config()->set('cart.owner.enabled', true);
-        config()->set('filament-cart.owner.enabled', true);
+        config()->set('cart.owner.enabled', true);
 
         $ownerA = User::query()->create([
             'name' => 'Owner A',
@@ -371,17 +371,17 @@ describe('CartConditionBatchRemoval service', function (): void {
             ->andReturn($cartB);
 
         $syncManager = Mockery::mock(CartSyncManager::class);
-        $syncManager->shouldReceive('sync')->with($cartA)->once();
-        $syncManager->shouldReceive('sync')->with($cartB)->once();
+        $syncManager->shouldReceive('sync')->with($cartA, true)->once();
+        $syncManager->shouldReceive('sync')->with($cartB, true)->once();
 
-        $service = new CartConditionBatchRemoval($cartManager, $syncManager);
+        $service = new RemoveStoredConditions($cartManager, $syncManager);
 
-        $tenantResult = OwnerContext::withOwner($ownerA, fn () => $service->removeConditionFromAllCarts($storedCondition));
+        $tenantResult = OwnerContext::withOwner($ownerA, fn () => $service->handle($storedCondition));
 
         expect($tenantResult['success'])->toBeFalse();
         expect($tenantResult['errors'][0])->toContain('explicit global owner context');
 
-        $result = OwnerContext::withOwner(null, fn () => $service->removeConditionFromAllCarts($storedCondition));
+        $result = OwnerContext::withOwner(null, fn () => $service->handle($storedCondition));
 
         expect($result['success'])->toBeTrue();
         expect($result['carts_processed'])->toBe(2);

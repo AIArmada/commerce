@@ -9,6 +9,7 @@ use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Conditions\Enums\ConditionApplication;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
+use AIArmada\Cart\Support\CartMoney;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Illuminate\Support\Collection;
@@ -171,7 +172,7 @@ final class CartConditionCollection extends Collection
         // Return as Laravel Money object (default currency from config)
         return new Money(
             $result,
-            new Currency(mb_strtoupper((string) config('cart.money.default_currency', 'MYR'))),
+            new Currency(CartMoney::currency()),
             false,
         );
     }

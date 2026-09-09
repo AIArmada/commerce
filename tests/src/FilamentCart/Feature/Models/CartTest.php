@@ -6,10 +6,10 @@ use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User as TestUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Models\CartCondition;
-use AIArmada\FilamentCart\Models\CartItem;
-use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
+use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -190,8 +190,8 @@ describe('Cart Model', function (): void {
 
     it('resolves current owner context', function (): void {
         config([
-            'filament-cart.owner.enabled' => true,
-            'filament-cart.owner.include_global' => false,
+            'cart.owner.enabled' => true,
+            'cart.owner.include_global' => false,
         ]);
 
         $user = TestUser::create([
@@ -229,8 +229,8 @@ describe('Cart Model', function (): void {
     });
 
     it('auto-assigns the resolved owner when direct snapshot writes occur in owner mode', function (): void {
-        config()->set('filament-cart.owner.enabled', true);
-        config()->set('filament-cart.owner.include_global', false);
+        config()->set('cart.owner.enabled', true);
+        config()->set('cart.owner.include_global', false);
 
         $owner = TestUser::create([
             'name' => 'Snapshot Owner',
@@ -259,8 +259,8 @@ describe('Cart Model', function (): void {
     });
 
     it('allows explicit global snapshot writes in owner mode', function (): void {
-        config()->set('filament-cart.owner.enabled', true);
-        config()->set('filament-cart.owner.include_global', false);
+        config()->set('cart.owner.enabled', true);
+        config()->set('cart.owner.include_global', false);
 
         $cart = OwnerContext::withOwner(null, fn () => Cart::create([
             'instance' => 'default',
@@ -273,8 +273,8 @@ describe('Cart Model', function (): void {
     });
 
     it('rejects snapshot writes with an explicit owner that mismatches the current owner context', function (): void {
-        config()->set('filament-cart.owner.enabled', true);
-        config()->set('filament-cart.owner.include_global', false);
+        config()->set('cart.owner.enabled', true);
+        config()->set('cart.owner.include_global', false);
 
         $ownerA = TestUser::create([
             'name' => 'Snapshot Owner A',
@@ -298,12 +298,14 @@ describe('Cart Model', function (): void {
             }
         });
 
-        expect(fn () => Cart::create([
+        $cart = new Cart([
             'instance' => 'default',
             'identifier' => 'mismatched-snapshot-owner',
-            'owner_type' => $ownerB->getMorphClass(),
-            'owner_id' => (string) $ownerB->getKey(),
-        ]))->toThrow(AuthorizationException::class);
+        ]);
+        $cart->assignOwner($ownerB);
+
+        expect(fn () => OwnerContext::withOwner($ownerA, fn () => $cart->save()))
+            ->toThrow(AuthorizationException::class);
     });
 
     it('scopes query properly', function (): void {

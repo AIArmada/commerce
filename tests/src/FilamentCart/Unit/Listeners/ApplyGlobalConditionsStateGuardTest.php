@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 it('uses request-scoped Context guard instead of static mutable listener state', function (): void {
     $repoRoot = dirname(__DIR__, 5);
-    $path = $repoRoot . '/packages/filament-cart/src/Listeners/ApplyGlobalConditions.php';
+    $path = $repoRoot . '/packages/cart/src/Listeners/ApplyGlobalConditions.php';
 
     expect($path)->toBeFile();
 

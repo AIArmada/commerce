@@ -115,13 +115,15 @@ if (Cart::isEmpty()) {
 ### Getting Totals
 
 ```php
+use AIArmada\Cart\Support\CartMoney;
+
 // Get subtotal (with item conditions applied)
 $subtotal = Cart::subtotal(); // Returns Money object
-echo MoneyFormatter::formatMinor($subtotal->getAmount(), config('cart.money.default_currency')); // "$99.99"
+echo CartMoney::formatMinor($subtotal->getAmount()); // "$99.99"
 
 // Get total (all conditions applied)
 $total = Cart::total();
-echo MoneyFormatter::formatMinor($total->getAmount(), config('cart.money.default_currency')); // "$89.99"
+echo CartMoney::formatMinor($total->getAmount()); // "$89.99"
 
 // Get raw values in cents
 $subtotalCents = Cart::getRawSubtotal(); // 9999
@@ -132,7 +134,7 @@ $rawSubtotal = Cart::subtotalWithoutConditions();
 
 // Get savings (discount amount)
 $savings = Cart::savings();
-echo MoneyFormatter::formatMinor($savings->getAmount(), config('cart.money.default_currency')); // "$10.00"
+echo CartMoney::formatMinor($savings->getAmount()); // "$10.00"
 ```
 
 ### Quantities
@@ -148,9 +150,9 @@ $itemCount = Cart::countItems(); // e.g., 5
 $count = Cart::count();
 ```
 
-Import AIArmada\CommerceSupport\Support\MoneyFormatter before using the
-formatter. Money objects remain useful for arithmetic and return minor-unit
-amounts; display formatting uses the shared formatter.
+`CartMoney` reads the configured currency and delegates formatting to the
+shared money primitive. Money objects remain useful for arithmetic and return
+minor-unit amounts.
 
 ## Working with Conditions
 

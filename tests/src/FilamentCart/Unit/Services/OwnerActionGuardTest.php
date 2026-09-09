@@ -3,19 +3,19 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
     config()->set('cart.owner.enabled', true);
     config()->set('cart.owner.include_global', false);
-    config()->set('filament-cart.owner.enabled', true);
-    config()->set('filament-cart.owner.include_global', false);
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', false);
 });
 
 it('rejects submitted condition ids from another owner', function (): void {
@@ -41,7 +41,12 @@ it('rejects submitted condition ids from another owner', function (): void {
         'is_active' => true,
     ]));
 
-    expect(fn () => OwnerActionGuard::findStoredCondition($conditionB->id, forItems: false))
+    expect(fn () => OwnerWriteGuard::findOrFailForOwner(
+        Condition::class,
+        $conditionB->id,
+        includeGlobal: false,
+        message: 'Condition is not accessible in the current owner scope.',
+    ))
         ->toThrow(AuthorizationException::class, 'Condition is not accessible in the current owner scope.');
 });
 
@@ -60,16 +65,20 @@ it('rejects cart action records from another owner', function (): void {
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
-    $cartB = OwnerContext::withOwner($ownerB, fn (): Cart => Cart::query()->create([
+    $cartB = OwnerContext::withOwner($ownerB, fn (): CartSnapshot => CartSnapshot::query()->create([
         'identifier' => 'owner-b-cart',
         'instance' => 'default',
-        'currency' => 'USD',
         'items_count' => 1,
         'quantity' => 1,
         'subtotal' => 1000,
         'total' => 1000,
     ]));
 
-    expect(fn () => OwnerActionGuard::authorizeCart($cartB))
+    expect(fn () => OwnerWriteGuard::findOrFailForOwner(
+        CartSnapshot::class,
+        $cartB->id,
+        includeGlobal: false,
+        message: 'Cart is not accessible in the current owner scope.',
+    ))
         ->toThrow(AuthorizationException::class, 'Cart is not accessible in the current owner scope.');
 });

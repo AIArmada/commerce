@@ -4,7 +4,7 @@ title: Synchronization
 
 # Event Synchronization
 
-The package maintains normalized cart records in the database by listening to events from the `aiarmada/cart` package. This enables efficient querying, analytics, and reporting without impacting cart performance.
+The core `aiarmada/cart` package maintains normalized cart records in the database by listening to its own cart events. Filament Cart consumes that read projection for efficient querying, analytics, and reporting without impacting cart performance.
 
 ## Architecture
 
@@ -48,9 +48,11 @@ The primary synchronization listener that updates normalized models when cart st
 - For all other events: Synchronizes current cart state to database
 
 ```php
+use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
+
 final class SyncCartOnEvent
 {
-    public function __construct(private CartSyncManager $syncManager) {}
+    public function __construct(private CartSnapshotSyncInterface $syncManager) {}
 
     public function handle($event): void
     {
@@ -101,7 +103,7 @@ Handles cleanup when guest carts merge with authenticated user carts.
 Core service that transforms cart state into normalized database records.
 
 ```php
-use AIArmada\FilamentCart\Services\NormalizedCartSynchronizer;
+use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
 
 $synchronizer = app(NormalizedCartSynchronizer::class);
 
@@ -114,7 +116,7 @@ $synchronizer->deleteNormalizedCart($identifier, $instance, $ownerType, $ownerId
 
 **Synchronization Process:**
 
-1. **Cart Snapshot** — Creates/updates `Cart` model with:
+1. **Cart Snapshot** — Creates/updates `CartSnapshot` model with:
    - Identifier and instance
    - Items count and total quantity
    - Subtotal, total, and savings
@@ -122,23 +124,23 @@ $synchronizer->deleteNormalizedCart($identifier, $instance, $ownerType, $ownerId
    - Full items and conditions as JSON
    - Metadata
 
-2. **Cart Items** — Syncs `CartItem` models:
+2. **Cart Items** — Syncs `CartSnapshotItem` models:
    - Creates/updates items matching cart state
    - Deletes items no longer in cart
    - Stores price, quantity, attributes, conditions
 
-3. **Cart Conditions** — Syncs `CartCondition` models:
+3. **Cart Conditions** — Syncs `CartSnapshotCondition` models:
    - Creates/updates cart-level conditions
    - Creates/updates item-level conditions
    - Deletes conditions no longer applied
-   - Links item conditions to their CartItem record
+   - Links item conditions to their CartSnapshotItem record
 
 ### CartSyncManager
 
 High-level manager that coordinates synchronization.
 
 ```php
-use AIArmada\FilamentCart\Services\CartSyncManager;
+use AIArmada\Cart\Snapshots\CartSyncManager;
 
 $manager = app(CartSyncManager::class);
 
@@ -154,7 +156,7 @@ $manager->deleteByIdentity($instance, $identifier, $ownerType, $ownerId);
 Resolves live cart instances from stored identifiers.
 
 ```php
-use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
 
 $manager = app(CartInstanceManager::class);
 
@@ -165,7 +167,9 @@ $cart = $manager->resolve($instance, $identifier);
 This is useful when you need to perform operations on the actual cart from a snapshot record:
 
 ```php
-$cartModel = Cart::find($id);
+use AIArmada\Cart\Snapshots\CartSnapshot;
+
+$cartModel = CartSnapshot::find($id);
 $liveCart = $cartModel->getCartInstance();
 
 if ($liveCart) {
@@ -178,11 +182,13 @@ if ($liveCart) {
 For high-traffic applications, enable queued synchronization to prevent blocking:
 
 ```php
-// config/filament-cart.php
-'synchronization' => [
-    'queue_sync' => true,
-    'queue_connection' => 'redis',
-    'queue_name' => 'cart-sync',
+// config/cart.php
+'snapshots' => [
+    'synchronization' => [
+        'queue_sync' => true,
+        'queue_connection' => 'redis',
+        'queue_name' => 'cart-sync',
+    ],
 ],
 ```
 
@@ -203,7 +209,7 @@ Force-sync carts when needed (e.g., after data repairs):
 
 ```php
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\FilamentCart\Services\CartSyncManager;
+use AIArmada\Cart\Snapshots\CartSyncManager;
 
 // Get the cart
 $cart = Cart::instance('default');
@@ -236,12 +242,14 @@ app(CartSyncManager::class)->sync(Cart::instance());
 
 ## Data Model
 
-### Cart (Snapshot)
+### CartSnapshot
 
-The `Cart` model stores a complete snapshot of cart state:
+The `CartSnapshot` model stores a complete read projection of cart state:
 
 ```php
-$cart = Cart::find($id);
+use AIArmada\Cart\Snapshots\CartSnapshot;
+
+$cart = CartSnapshot::find($id);
 
 $cart->identifier;      // Session/user identifier
 $cart->instance;        // Cart instance name
@@ -256,19 +264,19 @@ $cart->conditions;      // JSON array of conditions
 $cart->metadata;        // Additional metadata
 
 // Relationships
-$cart->cartItems;       // HasMany CartItem
-$cart->cartConditions;  // HasMany CartCondition
+$cart->cartItems;       // HasMany CartSnapshotItem
+$cart->cartConditions;  // HasMany CartSnapshotCondition
 
 // Access live cart
 $liveCart = $cart->getCartInstance();
 ```
 
-### CartItem (Snapshot Item)
+### CartSnapshotItem (Snapshot Item)
 
 Individual line items:
 
 ```php
-$item = CartItem::find($id);
+$item = CartSnapshotItem::find($id);
 
 $item->cart_id;         // Parent cart ID
 $item->item_id;         // Original cart item ID
@@ -281,18 +289,18 @@ $item->conditions;      // JSON item-level conditions
 $item->associated_model; // Linked model class
 
 // Relationship
-$item->cart;            // BelongsTo Cart
+$item->cart;            // BelongsTo CartSnapshot
 ```
 
-### CartCondition (Snapshot Condition)
+### CartSnapshotCondition (Snapshot Condition)
 
 Applied conditions:
 
 ```php
-$condition = CartCondition::find($id);
+$condition = CartSnapshotCondition::find($id);
 
 $condition->cart_id;        // Parent cart ID
-$condition->cart_item_id;   // CartItem ID (if item-level)
+$condition->cart_item_id;   // CartSnapshotItem ID (if item-level)
 $condition->item_id;        // Original item ID (if item-level)
 $condition->name;           // Condition name
 $condition->type;           // discount, tax, fee, shipping
@@ -306,8 +314,8 @@ $condition->is_global;      // Boolean
 $condition->is_dynamic;     // Boolean
 
 // Relationships
-$condition->cart;           // BelongsTo Cart
-$condition->cartItem;       // BelongsTo CartItem (nullable)
+$condition->cart;           // BelongsTo CartSnapshot
+$condition->cartItem;       // BelongsTo CartSnapshotItem (nullable)
 
 // Helper methods
 $condition->isCartLevel();  // bool
@@ -347,13 +355,13 @@ Syncs are idempotent — running the same sync multiple times produces the same 
 
 ```php
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\FilamentCart\Models\Cart as CartModel;
+use AIArmada\Cart\Snapshots\CartSnapshot;
 
 $cart = Cart::instance('default');
 $identifier = $cart->getIdentifier();
 
 // Check if normalized record exists
-$snapshot = CartModel::query()
+$snapshot = CartSnapshot::query()
     ->where('identifier', $identifier)
     ->where('instance', 'default')
     ->first();
@@ -376,7 +384,7 @@ app(CartSyncManager::class)->sync(Cart::instance());
 
 ```php
 $cart = Cart::instance();
-$snapshot = CartModel::where('identifier', $cart->getIdentifier())->first();
+$snapshot = CartSnapshot::where('identifier', $cart->getIdentifier())->first();
 
 // Compare
 $liveTotal = (int) $cart->total()->getAmount();

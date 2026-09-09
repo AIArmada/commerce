@@ -62,7 +62,7 @@ Edit `config/cart.php`:
 
 ```php
 'money' => [
-    'default_currency' => 'USD', // or your currency
+    'default_currency' => 'MYR', // or your currency
     'rounding_mode' => 'half_up',
 ],
 ```

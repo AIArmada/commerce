@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources;
 
-use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ListCarts;
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ViewCart;
 use AIArmada\FilamentCart\Resources\CartResource\RelationManagers\ConditionsRelationManager;

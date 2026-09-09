@@ -58,8 +58,6 @@ class CartModel extends Model implements Auditable
     protected $fillable = [
         'identifier',
         'instance',
-        'owner_type',
-        'owner_id',
         'items',
         'conditions',
         'metadata',

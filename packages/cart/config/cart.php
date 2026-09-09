@@ -12,6 +12,11 @@ return [
         'json_column_type' => env('CART_JSON_COLUMN_TYPE', 'jsonb'),
         'table' => env('CART_DB_TABLE', 'carts'),
         'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
+        'tables' => [
+            'snapshots' => env('CART_SNAPSHOTS_TABLE', 'cart_snapshots'),
+            'snapshot_items' => env('CART_SNAPSHOT_ITEMS_TABLE', 'cart_snapshot_items'),
+            'snapshot_conditions' => env('CART_SNAPSHOT_CONDITIONS_TABLE', 'cart_snapshot_conditions'),
+        ],
         'ttl' => env('CART_DB_TTL', 60 * 60 * 24 * 30), // 30 days, null to disable
         'lock_for_update' => env('CART_DB_LOCK_FOR_UPDATE', false),
     ],
@@ -39,6 +44,25 @@ return [
     ],
 
     'events' => env('CART_EVENTS_ENABLED', true),
+
+    'dynamic_rules_factory' => null,
+
+    'conditions' => [
+        'apply_global' => env('CART_APPLY_GLOBAL_CONDITIONS', true),
+    ],
+
+    'snapshots' => [
+        'analytics' => [
+            'high_value_threshold_minor' => env('CART_HIGH_VALUE_THRESHOLD_MINOR', 10000),
+        ],
+        'abandonment_tracking' => env('CART_ABANDONMENT_TRACKING', true),
+        'abandonment_detection_minutes' => env('CART_ABANDONMENT_DETECTION_MINUTES', 30),
+        'synchronization' => [
+            'queue_sync' => env('CART_QUEUE_SNAPSHOT_SYNC', true),
+            'queue_connection' => env('CART_SNAPSHOT_QUEUE_CONNECTION'),
+            'queue_name' => env('CART_SNAPSHOT_QUEUE_NAME', 'cart-sync'),
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------

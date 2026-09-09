@@ -14,7 +14,7 @@ Filament Cart tracks operational abandonment state only:
 - `checkout_abandoned_at`
 - `last_activity_at`
 
-The `cart:mark-abandoned` command marks inactive checkout carts as abandoned and emits `CartAbandoned`.
+The `cart:clear-abandoned --mark-only` command marks inactive checkout carts as abandoned and emits `CartAbandoned`.
 
 ## Optional notifications
 
