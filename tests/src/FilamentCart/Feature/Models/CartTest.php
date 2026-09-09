@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
+use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User as TestUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
-use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
-use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;

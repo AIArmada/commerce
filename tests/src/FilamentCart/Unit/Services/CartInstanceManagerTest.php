@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Facades\Cart as CartFacade;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Cart\Snapshots\CartSnapshot as CartSnapshot;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
 
 describe('CartInstanceManager', function (): void {
     it('resolves cart instance with rules factory', function (): void {

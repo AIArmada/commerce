@@ -11,7 +11,7 @@ it('returns current cart instance when no name is given', function (): void {
 
     $cart = Cart::getCurrentCart();
 
-    expect($cart)->toBeInstanceOf(\AIArmada\Cart\Cart::class);
+    expect($cart)->toBeInstanceOf(AIArmada\Cart\Cart::class);
 
     Cart::clear();
     Cart::add('helper-item', 'Helper Item', 10.00, 1);
@@ -22,7 +22,7 @@ it('returns current cart instance when no name is given', function (): void {
 it('returns named instance when name is given', function (): void {
     $wishlist = Cart::getCartInstance('wishlist');
 
-    expect($wishlist)->toBeInstanceOf(\AIArmada\Cart\Cart::class);
+    expect($wishlist)->toBeInstanceOf(AIArmada\Cart\Cart::class);
     expect($wishlist->instance())->toBe('wishlist');
 
     $wishlist->add('wishlist-item', 'Wishlist Item', 5.00, 2);

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Cart\Snapshots\CartSnapshot as CartSnapshot;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use Akaunting\Money\Money;
 use Filament\Widgets\StatsOverviewWidget\Stat;
