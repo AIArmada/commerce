@@ -21,7 +21,7 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | affiliate-network | filament-affiliate-network | No | Yes | High | `affiliate-network.md` | Done |
 | affiliates | filament-affiliates | No | Yes | High | `affiliates.md` | Open |
 | authz | filament-authz | No | Yes | Medium | `authz.md` | Done |
-| cart | filament-cart | No | Yes | High | `cart.md` | Open |
+| cart | filament-cart | No | Yes | High | `cart.md` | Done |
 | cashier | filament-cashier | No | Yes | Critical | `cashier.md` | Done |
 | cashier-chip | filament-cashier-chip | No | Yes | High | `cashier-chip.md` | Done |
 | chip | filament-chip | No | Yes | High | `chip.md` | Done |
@@ -75,7 +75,7 @@ Dominant remaining risk themes: checkout-track leftovers (status-mapper copies, 
 2. **Identity concept split (done 2026-09-08).** Topology decided and implemented: `Person` shared root, `Customer` owner-scoped + `person_id`, `Organization` tenant, `EventOrganizer` event-scoped. Native contact layer removed (Contacting-only). See `persons.md`, `customers.md`.
 3. **Address lineage (done 2026-09-08 except pilots).** `addressing` canonical with resolver everywhere; `customers` pilot live (legacy frozen); `events` pivot via resolver with the remaining non-owner venue models explicitly deferred. Remaining: orders pilot; see `addressing.md`, `events.md`.
 4. **Payments modeled three times (done 2026-09-08).** `cashier` thin multiplexer, `cashier-chip` canonical billing, `chip` HTTP/API owner, durable idempotency ledger — collapse complete; see `cashier.md`, `cashier-chip.md`, `chip.md`. Remaining: `checkout` status-mapper copies + token TTL. See `checkout.md`.
-5. **Pricing/promotions/vouchers (residual).** Dead promotion strategies deleted, BOGO promotion type removed (voucher-side BOGO mechanic untouched and live), voucher provenance canonicalized, broken cross-package class references fixed. Remaining: `pricing.ApplyPromotionalAdjustment` still bypasses the promotions domain; voucher validator hardening. See `pricing.md`, `vouchers.md`.
+5. **Pricing/promotions/vouchers (residual).** Dead promotion strategies deleted, BOGO promotion type removed (voucher-side BOGO mechanic untouched and live), voucher provenance canonicalized, broken cross-package class references fixed, pricing bridged through promotions' public contract. Remaining: voucher validator hardening. See `pricing.md`, `vouchers.md`.
 6. **Events ↔ ticketing ↔ seating boundary.** Event-side ticketing DTO/action forks are removed. Remaining work is ticketing’s registry placement, per-pass issuance loop, and seating’s set-based allocation path. See `events.md`, `ticketing.md`, `seating.md`.
 7. **Foundation residue.** Models moved, money strict, navigation canonical, Octane flush wired, helpers grouped, stubs unified (see `code-fixes-record.md`; dependency-direction guard in place). Remaining: Octane exercised under real Octane, `ManageCommerceNavigation` feature test, `products` `store_money_in_cents` toggle, `jnt` float money math. See `commerce-support.md`, `authz.md`, `products.md`, `jnt.md`.
 8. **Filament adapters duplicating domain.** Snapshot dual-write (`filament-cart`), condition-application duplication, `CreateCustomer`/`UpdateCustomerProfile` parsing duplication, customer merge split across core/Filament, `GrowthStatsAggregator` N+1. See `cart.md`, `customers.md`, `growth.md`.

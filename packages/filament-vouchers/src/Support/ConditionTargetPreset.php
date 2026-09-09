@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Support;
 
 use AIArmada\Cart\Conditions\ConditionTarget;
-use AIArmada\Cart\Conditions\TargetPresets;
+use AIArmada\Cart\Conditions\Enums\ConditionPhase;
+use AIArmada\Cart\Conditions\Target;
 use Throwable;
 
 /**
@@ -91,11 +92,11 @@ enum ConditionTargetPreset: string
     public function target(): ?ConditionTarget
     {
         return match ($this) {
-            self::CartSubtotal => TargetPresets::cartSubtotal(),
-            self::GrandTotal => TargetPresets::cartGrandTotal(),
-            self::Shipments => TargetPresets::cartShipping(),
-            self::Taxable => TargetPresets::cartTaxable(),
-            self::Items => TargetPresets::itemsPerItem(),
+            self::CartSubtotal => Target::cart()->build(),
+            self::GrandTotal => Target::cart()->phase(ConditionPhase::GRAND_TOTAL)->build(),
+            self::Shipments => Target::cart()->phase(ConditionPhase::SHIPPING)->applyPerGroup()->build(),
+            self::Taxable => Target::cart()->phase(ConditionPhase::TAXABLE)->build(),
+            self::Items => Target::items()->build(),
             self::Custom => null,
         };
     }

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\Vouchers\Models\Voucher;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;

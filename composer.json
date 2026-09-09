@@ -159,8 +159,6 @@
             "AIArmada\\FilamentEngagement\\": "packages/filament-engagement/src",
             "AIArmada\\FilamentEngagement\\Tests\\": "tests/src/FilamentEngagement/",
             "AIArmada\\FilamentFeedback\\": "packages/filament-feedback/src",
-            "AIArmada\\FilamentCart\\Database\\Factories\\": "packages/filament-cart/database/factories/",
-            "AIArmada\\FilamentCart\\Database\\Seeders\\": "packages/filament-cart/database/seeders/",
             "AIArmada\\FilamentCart\\Tests\\": "tests/src/FilamentCart/",
             "AIArmada\\FilamentChip\\": "packages/filament-chip/src",
             "AIArmada\\FilamentChip\\Tests\\": "tests/src/FilamentChip/",

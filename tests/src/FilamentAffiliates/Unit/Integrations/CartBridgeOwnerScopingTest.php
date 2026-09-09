@@ -8,9 +8,9 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Models\Cart;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {

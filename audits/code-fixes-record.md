@@ -633,6 +633,35 @@ reported and taken on trust; code correctness was verified directly.
 - Test-only schema helper used instead of touching shared root
   `TestCase` — correct scoping.
 
+## Cart multiplexer collapse (implemented + caller migration)
+
+- **Snapshot collapse:** `Cart\Snapshots\*` owned by core (model,
+  items, conditions, sync manager, event wiring); filament
+  adapter-only; snapshot migrations moved core-side (recorded in
+  `migration-record.md`); filament imports re-aliased.
+- **Conditions/abandonment:** stored-condition core actions +
+  thin shells; single hardened clear-abandoned command (owner
+  confirmation + threshold guards).
+- **Contracts:** `CartStorageInterface` deleted;
+  `Target`/`ConditionPresets` builders replace `TargetPresets`;
+  global `cart()` helper deleted (docs on facade/interface).
+- **Money/identity:** minor-int prices with distinct money
+  accessor; owner keys out of `$fillable`; canonical currency
+  presenter; Octane flushing; centralized limits; env branding.
+- **Caller migration (integration):** snapshot/manager/preset
+  references rewired in vouchers (7 files), affiliates bridge
+  availability gate, signals event strings, demo app/tests, root
+  composer mappings, vouchers + events docs examples. Filament
+  scoping test updated to canonical `cart.owner` key + context
+  assignment.
+- **Falsified:** `InMemoryStorage`, `ExampleRulesFactory`,
+  "zero tests" — all live, retained.
+- Suites: Cart 1052+2skipped/2731, FilamentCart 177/604; PHPStan
+  L6 (123+33 files). Canaries: Orders 323, Checkout 266, Cashier
+  256, Signals 98, Vouchers 889 green except 3 pre-existing
+  remove/clear/replace failures proven unrelated via stash test
+  (cart/voucher storage seam, logged for that track).
+
 ## Fairness log
 
 - Orders checkout-context concern: not present, dropped correctly.

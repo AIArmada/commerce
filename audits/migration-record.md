@@ -138,6 +138,16 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
   Suites green against the new files (Feedback 50/138,
   FilamentFeedback 8/31).
 
+## Post-track: cart snapshot migration move — implemented (dev-only)
+
+- Snapshot migrations (`000003`–`000005` tables) moved from
+  `filament-cart/database/migrations/` to `cart/database/migrations/`
+  alongside the snapshot models; resolved/configured table names with
+  plain indexes retained. Filament-side copies deleted, no dual-run.
+- Authorized under the dev-only rule (delegation-playbook §5):
+  delete-and-rerun applies; no backfill. Caller namespaces updated
+  in the same program (see `code-fixes-record.md` cart section).
+
 ## Deployment gates
 
 1. **Addressing cutover** — the migration fails closed on ownerless rows by design; on a fresh/dev DB just remove the rows and rerun. Never backfill.

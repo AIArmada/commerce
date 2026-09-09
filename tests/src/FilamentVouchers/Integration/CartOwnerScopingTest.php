@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Filament\Integrations\FilamentCartBridge;
 use Illuminate\Database\Eloquent\Model;
@@ -28,8 +29,10 @@ it('does not resolve cart urls across tenants when vouchers owner scoping is ena
     config()->set('vouchers.owner.include_global', false);
 
     // Deliberately leave filament-cart owner scoping disabled to ensure
-    // filament-vouchers enforces scoping via owner columns.
+    // filament-vouchers enforces scoping via owner columns. Cart core
+    // scoping stays enabled so snapshot rows carry real owners.
     config()->set('filament-cart.owner.enabled', false);
+    config()->set('cart.owner.enabled', true);
 
     $ownerA = User::query()->create([
         'name' => 'Owner A',
@@ -46,29 +49,24 @@ it('does not resolve cart urls across tenants when vouchers owner scoping is ena
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new TestOwnerResolverForFilamentCartBridge($ownerA));
 
     // Same identifier is allowed across owners because cart snapshots are unique on owner_key+identifier+instance.
-    Cart::query()->create([
+    // Owner is assigned from context (owner columns are not mass-assignable by design).
+    OwnerContext::withOwner($ownerA, fn (): mixed => Cart::query()->create([
         'identifier' => 'shared-identifier',
         'instance' => 'default',
         'currency' => 'USD',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => (string) $ownerA->getKey(),
-    ]);
+    ]));
 
-    Cart::query()->create([
+    OwnerContext::withOwner($ownerB, fn (): mixed => Cart::query()->create([
         'identifier' => 'shared-identifier',
         'instance' => 'default',
         'currency' => 'USD',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
-    ]);
+    ]));
 
-    Cart::query()->create([
+    OwnerContext::withOwner($ownerB, fn (): mixed => Cart::query()->create([
         'identifier' => 'owner-b-only',
         'instance' => 'default',
         'currency' => 'USD',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
-    ]);
+    ]));
 
     $bridge = new FilamentCartBridge;
 
@@ -85,6 +83,7 @@ it('blocks bridge cart operations across tenants even when a cart model is passe
     config()->set('vouchers.owner.enabled', true);
     config()->set('vouchers.owner.include_global', false);
     config()->set('filament-cart.owner.enabled', false);
+    config()->set('cart.owner.enabled', true);
 
     $ownerA = User::query()->create([
         'name' => 'Owner A',
@@ -100,13 +99,11 @@ it('blocks bridge cart operations across tenants even when a cart model is passe
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new TestOwnerResolverForFilamentCartBridge($ownerA));
 
-    $cartOwnedByB = Cart::query()->create([
+    $cartOwnedByB = OwnerContext::withOwner($ownerB, fn (): mixed => Cart::query()->create([
         'identifier' => 'owner-b-direct-cart',
         'instance' => 'default',
         'currency' => 'USD',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
-    ]);
+    ]));
 
     $bridge = new FilamentCartBridge;
 

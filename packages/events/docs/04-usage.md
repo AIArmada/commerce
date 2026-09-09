@@ -554,7 +554,7 @@ use AIArmada\Ticketing\Models\TicketType;
 $ticketType = TicketType::find('...');
 
 AddEventTicketTypeToCartAction::make()->handle(
-    cart: cart(),
+    cart: app(AIArmada\Cart\Contracts\CartManagerInterface::class)->getCartInstance('default'),
     ticketType: $ticketType,
     quantity: 2,
     participants: [

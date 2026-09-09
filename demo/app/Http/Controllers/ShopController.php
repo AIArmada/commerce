@@ -6,13 +6,13 @@ namespace App\Http\Controllers;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Checkout\Facades\Checkout;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;

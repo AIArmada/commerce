@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Services\CartInstanceManager;
 use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
