@@ -84,8 +84,9 @@ final class DocApproval extends Model implements Auditable
                 return;
             }
 
-            $approval->owner_type = $doc->owner_type;
-            $approval->owner_id = $doc->owner_id;
+            if ($doc->owner instanceof Model) {
+                $approval->assignOwner($doc->owner);
+            }
         });
     }
 

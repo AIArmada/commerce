@@ -40,7 +40,7 @@ keywords:
 ## Key surfaces
 - Models: `Block`, `ModerationAction`
 - Actions/Services: `Actions/BlockEntityAction`, `Actions/RecordModerationAction`
-- Config `moderation.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `blocks`, `moderation_actions`, `features`, `owner`, `enabled`, `defaults`
+- Config `moderation.php`: `database`, `owner`, and `defaults`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

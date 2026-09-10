@@ -37,12 +37,12 @@ The package uses a dedicated `docs_` prefix by default. Table names can still be
 ```php
 'defaults' => [
     'currency' => env('DOCS_CURRENCY', 'MYR'),
-    'tax_rate_basis_points' => env('DOCS_TAX_RATE_BASIS_POINTS', 0),
+    'tax_rate' => env('DOCS_TAX_RATE', 0),
     'due_days' => env('DOCS_DUE_DAYS', 30),
 ],
 ```
 
-These values seed new documents when the caller does not pass explicit currency, tax, or due-date settings.
+`tax_rate` is a decimal rate (`0.06` means 6%) and is converted to integer basis points for calculations. An explicit `tax_rate_basis_points` value on `DocData` takes precedence. These values seed new documents when the caller does not pass explicit currency, tax, or due-date settings.
 
 ## Payment Methods
 
@@ -70,6 +70,8 @@ This list is the default label map used in document payment-related UI and stora
 ```
 
 When owner mode is on, document reads and writes should follow the same owner-boundary rules as the rest of Commerce.
+
+Bind `OwnerResolverInterface` in the host application and use `OwnerContext::withOwner()` for explicit scoped work. Global rows are included only when `include_global` is true or an explicit global context is used.
 
 ## Email
 
@@ -128,6 +130,8 @@ Each type configures numbering only. Default templates are now resolved from `Do
 
 Use this block when you need to align document numbers with external finance or ERP expectations.
 
+`DocumentNumberRegistry` reads `docs.types.{type}.numbering.strategy` when a strategy is first resolved, not in its constructor. The service container binds it as a scoped service, so runtime configuration changes are observed before resolution without leaking strategies across long-lived requests.
+
 ## Storage
 
 ```php
@@ -150,6 +154,8 @@ Global storage defaults can be overridden again per document type. Rich-content 
 ```
 
 Share links are persisted in `doc_share_links` and default to a 30-day expiry unless you pass a different `expiresAt` value to `DocRenderService::createShareLink()`.
+
+The plain token is returned only from the creation call. The database stores its SHA-256 hash, and share responses use private no-store and no-referrer headers.
 
 ## PDF
 

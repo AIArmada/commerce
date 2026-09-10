@@ -29,7 +29,7 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | communications | filament-communications | No | Yes | High | `communications.md` | Done |
 | contacting | filament-contacting | No | Yes | High | `contacting.md` | Done |
 | customers | filament-customers | No | Yes | High | `customers.md` | Done |
-| docs | filament-docs | Done | Yes | High | `docs.md` | Open |
+| docs | filament-docs | Done | Yes | High | `docs.md` | Done |
 | engagement | filament-engagement | No | Yes | High | `engagement.md` | Done |
 | events | filament-events | No | Yes | High | `events.md` | Done |
 | feedback | filament-feedback | No | Yes | High | `feedback.md` | Done |
@@ -54,10 +54,10 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | Package | Migration | Breaking Changes | Highest Severity | Audit File | Status |
 |---|---|---|---|---|
 | checkout | No | Yes | High | `checkout.md` | Done |
-| csuite | No | No | Medium | `csuite.md` | Open |
+| csuite | No | No | Medium | `csuite.md` | Done |
 | membership | No | Yes | Medium | `membership.md` | Open |
-| moderation | No | Yes | High | `moderation.md` | Open |
-| references | No | No | High | `references.md` | Open |
+| moderation | No | Yes | High | `moderation.md` | Done |
+| references | No | No | High | `references.md` | Done |
 
 ## Open Migrations (0)
 
@@ -99,5 +99,5 @@ Dominant remaining risk themes: checkout-track leftovers (status-mapper copies, 
 6. **Foundation residue:** ManageNav feature test, real-Octane exercise, `products` toggle, `jnt` math.
 7. **Pricing/vouchers residual + shipping/tax:** route pricing through promotions domain, voucher validator hardening.
 8. **Events/ticketing/seating + affiliate-network:** events/ticketing/seating cleared 2026-09-11; remaining work is the programs-vs-offers boundary and other open package audits.
-9. **Remainder:** `cart` snapshot consolidation, `products` config/policy fixes, `feedback`, `docs`, `jnt`, standalones (`moderation` expiry sweep, `references` tenancy, `membership`, `csuite` bundle requires).
+9. **Remainder:** `products`, `jnt`, standalones (`membership`).
 10. **Tests throughout:** add the listed first tests per package before touching risky code; keep `--parallel` per repo test guidelines.

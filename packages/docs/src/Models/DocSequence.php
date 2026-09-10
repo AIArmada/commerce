@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Enums\DocType;
@@ -86,33 +87,30 @@ final class DocSequence extends Model implements Auditable
      */
     public function generateNumber(): string
     {
-        $periodKey = $this->getCurrentPeriodKey();
+        return OwnerContext::withOwner($this->owner, function (): string {
+            $periodKey = $this->getCurrentPeriodKey();
 
-        // Get or create sequence number record for this period
-        $sequenceNumber = $this->numbers()
-            ->where('period_key', $periodKey)
-            ->lockForUpdate()
-            ->first();
+            // Get or create sequence number record for this period
+            $sequenceNumber = $this->numbers()
+                ->where('period_key', $periodKey)
+                ->lockForUpdate()
+                ->first();
 
-        if (! $sequenceNumber) {
-            $sequenceNumber = $this->numbers()->make([
-                'period_key' => $periodKey,
-                'last_number' => $this->start_number - $this->increment,
-            ]);
+            if (! $sequenceNumber) {
+                $sequenceNumber = $this->numbers()->make([
+                    'period_key' => $periodKey,
+                    'last_number' => $this->start_number - $this->increment,
+                ]);
 
-            if (config('docs.owner.enabled', false)) {
-                $sequenceNumber->owner_type = $this->owner_type;
-                $sequenceNumber->owner_id = $this->owner_id;
+                $sequenceNumber->save();
             }
 
-            $sequenceNumber->save();
-        }
+            // Increment and save
+            $nextNumber = $sequenceNumber->last_number + $this->increment;
+            $sequenceNumber->update(['last_number' => $nextNumber]);
 
-        // Increment and save
-        $nextNumber = $sequenceNumber->last_number + $this->increment;
-        $sequenceNumber->update(['last_number' => $nextNumber]);
-
-        return $this->formatNumber($nextNumber);
+            return $this->formatNumber($nextNumber);
+        });
     }
 
     /**

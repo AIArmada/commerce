@@ -30,8 +30,8 @@ keywords:
 6. `docs/02-installation.md` when setup or publishing changes are involved
 
 ## Guardrails
-- Owns models, actions, services, events, calculations, and persistence rules.
-- Update `docs/*.md` in the same pass when public behavior or config changes.
+- Owns nothing at runtime. Never add `src/`, `config/`, `routes/`, or migrations here; change the underlying package and update its docs in the same pass.
+- Keep the Composer require list and bundle policy documentation aligned.
 
 ## Decide fast
 - Use when: Installing the preselected suite in one step.

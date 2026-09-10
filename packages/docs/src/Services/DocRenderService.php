@@ -98,21 +98,20 @@ final class DocRenderService
     {
         $plainToken = Str::random(48);
 
-        $shareLink = new DocShareLink([
-            'doc_id' => $doc->getKey(),
-            'token_hash' => hash('sha256', $plainToken),
-            'allowed_actions' => $data->allowedActionValues(),
-            'expires_at' => $data->expiresAt ?? CarbonImmutable::now()->addDays((int) config('docs.sharing.default_expiry_days', 30)),
-        ]);
+        $shareLink = OwnerContext::withOwner($doc->owner, function () use ($data, $doc, $plainToken): DocShareLink {
+            $shareLink = new DocShareLink([
+                'doc_id' => $doc->getKey(),
+                'token_hash' => hash('sha256', $plainToken),
+                'allowed_actions' => $data->allowedActionValues(),
+                'expires_at' => $data->expiresAt ?? CarbonImmutable::now()->addDays((int) config('docs.sharing.default_expiry_days', 30)),
+            ]);
 
-        if (config('docs.owner.enabled', false)) {
-            $shareLink->owner_type = $doc->owner_type;
-            $shareLink->owner_id = $doc->owner_id;
-        }
+            $shareLink->save();
+            $shareLink->setRelation('doc', $doc);
+            $shareLink->setPlainToken($plainToken);
 
-        $shareLink->save();
-        $shareLink->setRelation('doc', $doc);
-        $shareLink->setPlainToken($plainToken);
+            return $shareLink;
+        });
 
         return $shareLink;
     }
@@ -238,8 +237,7 @@ final class DocRenderService
     {
         $label = e((string) ($data['label'] ?? Str::headline((string) $doc->doc_type)));
         $docNumber = e((string) $doc->doc_number);
-        $currency = e((string) $doc->currency);
-        $total = $this->money($doc->total_minor, $doc->currency);
+        $total = e(MoneyFormatter::formatMinor($doc->total_minor, $doc->currency));
 
         return <<<HTML
         <section class="doc-block doc-header">
@@ -247,7 +245,7 @@ final class DocRenderService
                 <h1>{$label}</h1>
                 <p>{$docNumber}</p>
             </div>
-            <strong>{$currency} {$total}</strong>
+            <strong>{$total}</strong>
         </section>
         HTML;
     }
@@ -329,7 +327,6 @@ final class DocRenderService
     private function renderItems(Doc $doc, array $data): string
     {
         $items = $doc->items ?? [];
-        $currency = e((string) $doc->currency);
 
         if ($items === []) {
             return '';
@@ -337,11 +334,13 @@ final class DocRenderService
 
         $title = e((string) ($data['label'] ?? 'Items'));
         $rows = collect($items)
-            ->map(function (array $item) use ($currency, $doc): string {
+            ->map(function (array $item) use ($doc): string {
                 $quantity = (int) ($item['quantity'] ?? 1);
                 $unitPriceMinor = (int) ($item['unit_price_minor'] ?? 0);
                 $lineTotalMinor = $quantity * $unitPriceMinor;
                 $name = e((string) ($item['name'] ?? $item['description'] ?? 'Item'));
+                $unitPrice = e(MoneyFormatter::formatMinor($unitPriceMinor, (string) $doc->currency));
+                $lineTotal = e(MoneyFormatter::formatMinor($lineTotalMinor, (string) $doc->currency));
                 $description = filled($item['description'] ?? null) && isset($item['name'])
                     ? '<small>' . e((string) $item['description']) . '</small>'
                     : '';
@@ -350,8 +349,8 @@ final class DocRenderService
                 <tr>
                     <td><strong>{$name}</strong>{$description}</td>
                     <td class="doc-number">{$quantity}</td>
-                    <td class="doc-number">{$currency} {$this->money($unitPriceMinor, (string) $doc->currency)}</td>
-                    <td class="doc-number">{$currency} {$this->money($lineTotalMinor, (string) $doc->currency)}</td>
+                    <td class="doc-number">{$unitPrice}</td>
+                    <td class="doc-number">{$lineTotal}</td>
                 </tr>
                 HTML;
             })
@@ -378,16 +377,19 @@ final class DocRenderService
     private function renderTotals(Doc $doc, array $data): string
     {
         $title = e((string) ($data['label'] ?? 'Totals'));
-        $currency = e((string) $doc->currency);
+        $subtotal = e(MoneyFormatter::formatMinor($doc->subtotal_minor, $doc->currency));
+        $tax = e(MoneyFormatter::formatMinor($doc->tax_amount_minor, $doc->currency));
+        $discount = e(MoneyFormatter::formatMinor($doc->discount_amount_minor, $doc->currency));
+        $total = e(MoneyFormatter::formatMinor($doc->total_minor, $doc->currency));
 
         return <<<HTML
         <section class="doc-block doc-totals">
             <h2>{$title}</h2>
             <dl>
-                <div><dt>Subtotal</dt><dd>{$currency} {$this->money($doc->subtotal_minor, $doc->currency)}</dd></div>
-                <div><dt>Tax</dt><dd>{$currency} {$this->money($doc->tax_amount_minor, $doc->currency)}</dd></div>
-                <div><dt>Discount</dt><dd>{$currency} {$this->money($doc->discount_amount_minor, $doc->currency)}</dd></div>
-                <div class="doc-grand-total"><dt>Total</dt><dd>{$currency} {$this->money($doc->total_minor, $doc->currency)}</dd></div>
+                <div><dt>Subtotal</dt><dd>{$subtotal}</dd></div>
+                <div><dt>Tax</dt><dd>{$tax}</dd></div>
+                <div><dt>Discount</dt><dd>{$discount}</dd></div>
+                <div class="doc-grand-total"><dt>Total</dt><dd>{$total}</dd></div>
             </dl>
         </section>
         HTML;
@@ -433,41 +435,21 @@ final class DocRenderService
         }
 
         if ($doc->doc_template_id !== null) {
-            return $doc->template()->first();
+            return $this->templateQueryForDoc($doc)->whereKey($doc->doc_template_id)->first();
         }
 
-        $query = DocTemplate::query();
-
-        if (config('docs.owner.enabled', false)) {
-            $query = $this->scopeTemplateQueryToDoc($query, $doc);
-        }
-
-        return $query
+        return $this->templateQueryForDoc($doc)
             ->where('is_default', true)
             ->where('doc_type', $doc->doc_type)
             ->first();
     }
 
     /**
-     * @param  Builder<DocTemplate>  $query
      * @return Builder<DocTemplate>
      */
-    private function scopeTemplateQueryToDoc(Builder $query, Doc $doc): Builder
+    private function templateQueryForDoc(Doc $doc): Builder
     {
-        $includeGlobal = (bool) config('docs.owner.include_global', false);
-
-        if ($doc->owner_type !== null && $doc->owner_id !== null) {
-            return $query->where(function (Builder $builder) use ($doc, $includeGlobal): void {
-                $builder->where('owner_type', $doc->owner_type)
-                    ->where('owner_id', $doc->owner_id);
-
-                if ($includeGlobal) {
-                    $builder->orWhere(fn (Builder $inner): Builder => $inner->whereNull('owner_type')->whereNull('owner_id'));
-                }
-            });
-        }
-
-        return $query->whereNull('owner_type')->whereNull('owner_id');
+        return DocTemplate::query()->forOwner($doc->owner, (bool) config('docs.owner.include_global', false));
     }
 
     private function resolveStorageDisk(string $docType): string
@@ -509,10 +491,5 @@ final class DocRenderService
         }
 
         return Str::limit($sanitized, 120, '') . '.pdf';
-    }
-
-    private function money(int $amountMinor, string $currency): string
-    {
-        return MoneyFormatter::decimalFromMinor($amountMinor, $currency);
     }
 }

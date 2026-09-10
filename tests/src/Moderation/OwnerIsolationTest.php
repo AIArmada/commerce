@@ -12,7 +12,7 @@ use AIArmada\Moderation\Models\Block;
 use AIArmada\Moderation\Models\ModerationAction;
 
 it('isolates blocks and moderation actions by owner', function (): void {
-    config()->set('moderation.features.owner.enabled', true);
+    config()->set('moderation.owner.enabled', true);
 
     $ownerA = User::query()->create([
         'name' => 'Moderation Owner A',

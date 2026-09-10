@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Numbering\NumberStrategyRegistry;
+use AIArmada\Docs\Numbering\DocumentNumberRegistry;
+use AIArmada\Docs\Services\DocPaymentRecorder;
 use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Services\DocTotals;
 use AIArmada\Docs\Services\SequenceManager;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Sent;
@@ -17,9 +19,14 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     config()->set('docs.storage.disk', 'docs');
-    $this->numberRegistry = new NumberStrategyRegistry;
+    $this->numberRegistry = new DocumentNumberRegistry;
     $this->sequenceManager = new SequenceManager;
-    $this->service = new DocService($this->numberRegistry, $this->sequenceManager);
+    $this->service = new DocService(
+        $this->numberRegistry,
+        $this->sequenceManager,
+        new DocTotals,
+        new DocPaymentRecorder,
+    );
 });
 
 test('generatePdf creates and stores pdf', function (): void {

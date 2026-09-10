@@ -30,13 +30,14 @@ The `aiarmada/docs` package owns business-document generation, numbering, PDF ou
 ## Main models services or surfaces
 
 - **Models** — docs, templates, status history, payments, emails, sequences, versions, approvals, workflows, and e-invoice submissions
-- **Services** — document creation, email delivery, and sequence management
+- **Services** — document creation, totals and payments, email delivery, reminders, rendering, and sequence management
 - **Outputs** — PDF generation, numbering, reminders, and document lifecycle transitions
 
 ## Owner scoping and security notes
 
 - Documents are owner-aware and should follow the `commerce-support` owner-boundary rules
-- PDF downloads, email actions, and approval flows should resolve target documents inside the current owner scope before mutating state or exposing files
+- PDF downloads, email actions, and approval flows resolve target documents inside the current owner scope before mutating state or exposing files
+- Share links are hashed capability tokens; their expiry, revocation, allowed action, and owner context are checked before rendering
 
 ## Read next
 

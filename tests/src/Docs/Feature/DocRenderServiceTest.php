@@ -10,6 +10,7 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
+use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -121,4 +122,17 @@ it('rejects unsupported share link actions', function (): void {
     expect(fn (): mixed => app(DocRenderService::class)->createShareLink($doc, new ShareLinkData(
         allowedActions: ['view', 'delete'],
     )))->toThrow(InvalidArgumentException::class);
+});
+
+it('rejects expired share links', function (): void {
+    $doc = Doc::factory()->create();
+    $shareLink = app(DocRenderService::class)->createShareLink($doc, new ShareLinkData(
+        allowedActions: [ShareLinkAction::View],
+        expiresAt: CarbonImmutable::now()->subMinute(),
+    ));
+
+    expect(fn (): mixed => app(DocRenderService::class)->resolveShareLink(
+        $shareLink->plainToken(),
+        ShareLinkAction::View,
+    ))->toThrow(NotFoundHttpException::class);
 });

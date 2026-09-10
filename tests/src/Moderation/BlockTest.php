@@ -118,6 +118,19 @@ test('scopeExpired returns only expired blocks', function (): void {
     expect($expiredBlocks->first()->id)->toBe($expired->id);
 });
 
+test('centralized transitions manage block status timestamps', function (): void {
+    $liftedAt = CarbonImmutable::parse('2026-09-11 12:00:00');
+
+    $this->block->transitionTo(BlockStatus::Lifted, $liftedAt)->save();
+
+    expect($this->block->fresh()->status)->toBe(BlockStatus::Lifted)
+        ->and($this->block->fresh()->lifted_at?->toDateTimeString())->toBe($liftedAt->toDateTimeString());
+
+    $this->block->transitionTo(BlockStatus::Expired)->save();
+
+    expect($this->block->fresh()->status)->toBe(BlockStatus::Expired);
+});
+
 test('uses config-driven table name', function (): void {
     $originalPrefix = config('moderation.database.table_prefix');
 

@@ -134,6 +134,8 @@ abstract class DocStatus extends State
             ->default(Draft::class)
             ->allowTransition(Draft::class, Pending::class)
             ->allowTransition(Draft::class, Sent::class)
+            ->allowTransition(Draft::class, Paid::class)
+            ->allowTransition(Draft::class, Overdue::class)
             ->allowTransition(Draft::class, Cancelled::class)
             ->allowTransition(Pending::class, Sent::class)
             ->allowTransition(Pending::class, PartiallyPaid::class)

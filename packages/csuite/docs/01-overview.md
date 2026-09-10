@@ -8,6 +8,19 @@ title: Overview
 
 The `aiarmada/commerce` metapackage bundles a curated set of Commerce packages so an application can install a pre-selected suite with one Composer dependency.
 
+## Bundle policy
+
+This bundle is the curated checkout-and-fulfillment foundation, with authorization included for the corresponding admin surfaces. It includes the current cart, inventory, voucher, payment, document, shipping, and selected Filament adapter packages listed in [`composer.json`](../composer.json), plus `aiarmada/authz` for the bundled `filament-authz` adapter.
+
+The bundle deliberately does not include every Commerce package. Install these separately when their domain is part of the application:
+
+- `signals` and `growth` — analytics, tracking, and growth workflows
+- `membership` — customer membership and entitlements
+- `moderation` — block and moderation workflows
+- `references` — reference-number and reference-part management
+
+This policy keeps the metapackage predictable and avoids pulling unrelated domain features into every checkout installation.
+
 ## What this package owns
 
 - Composer-level dependency composition for the package set listed in its manifest

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Models\DocSequence;
@@ -26,14 +27,16 @@ final class SequenceManager
     {
         $type = $docType instanceof DocType ? $docType->value : $docType;
 
-        return DB::transaction(function () use ($type, $owner): string {
-            $sequence = $this->getActiveSequence($type, $owner);
+        return OwnerContext::withOwner($owner, function () use ($type, $owner): string {
+            return DB::transaction(function () use ($type, $owner): string {
+                $sequence = $this->getActiveSequence($type, $owner);
 
-            if (! $sequence) {
-                $sequence = $this->createDefaultSequence($type, $owner);
-            }
+                if (! $sequence) {
+                    $sequence = $this->createDefaultSequence($type, $owner);
+                }
 
-            return $sequence->generateNumber();
+                return $sequence->generateNumber();
+            });
         });
     }
 
@@ -42,22 +45,14 @@ final class SequenceManager
      */
     public function getActiveSequence(string $docType, ?Model $owner = null): ?DocSequence
     {
-        // Bypass the global OwnerScope so that explicit owner/null handling below
-        // is not ANDed with the ambient tenant filter — which would produce a
-        // contradictory WHERE clause when looking up global (owner = null) sequences
-        // from within a tenant request context.
-        $query = DocSequence::withoutOwnerScope()
+        $query = DocSequence::query()
             ->where('doc_type', $docType)
             ->where('is_active', true);
 
-        if ($owner) {
-            $query->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
-        } else {
-            $query->whereNull('owner_type')->whereNull('owner_id');
-        }
-
-        return $query->first();
+        return $query
+            ->forOwner($owner, (bool) config('docs.owner.include_global', false))
+            ->lockForUpdate()
+            ->first();
     }
 
     /**
@@ -84,12 +79,17 @@ final class SequenceManager
             'is_active' => true,
         ];
 
-        if ($owner) {
-            $data['owner_type'] = $owner->getMorphClass();
-            $data['owner_id'] = $owner->getKey();
-        }
+        return OwnerContext::withOwner($owner, function () use ($data, $owner): DocSequence {
+            $sequence = new DocSequence($data);
 
-        return DocSequence::create($data);
+            if ($owner !== null) {
+                $sequence->assignOwner($owner);
+            }
+
+            $sequence->save();
+
+            return $sequence;
+        });
     }
 
     /**
@@ -119,35 +119,37 @@ final class SequenceManager
     {
         $type = $docType instanceof DocType ? $docType->value : $docType;
 
-        return DB::transaction(function () use ($type, $number, $owner): bool {
-            $sequence = $this->getActiveSequence($type, $owner);
+        return OwnerContext::withOwner($owner, function () use ($type, $number, $owner): bool {
+            return DB::transaction(function () use ($type, $number, $owner): bool {
+                $sequence = $this->getActiveSequence($type, $owner);
 
-            if (! $sequence) {
-                $sequence = $this->createDefaultSequence($type, $owner);
-            }
+                if (! $sequence) {
+                    $sequence = $this->createDefaultSequence($type, $owner);
+                }
 
-            $periodKey = $sequence->getCurrentPeriodKey();
+                $periodKey = $sequence->getCurrentPeriodKey();
 
-            $sequenceNumber = $sequence->numbers()
-                ->where('period_key', $periodKey)
-                ->lockForUpdate()
-                ->first();
+                $sequenceNumber = $sequence->numbers()
+                    ->where('period_key', $periodKey)
+                    ->lockForUpdate()
+                    ->first();
 
-            if (! $sequenceNumber) {
-                $sequence->numbers()->create([
-                    'period_key' => $periodKey,
-                    'last_number' => $number,
-                ]);
+                if (! $sequenceNumber) {
+                    $sequence->numbers()->create([
+                        'period_key' => $periodKey,
+                        'last_number' => $number,
+                    ]);
+
+                    return true;
+                }
+
+                // Only update if the reserved number is higher
+                if ($number > $sequenceNumber->last_number) {
+                    $sequenceNumber->update(['last_number' => $number]);
+                }
 
                 return true;
-            }
-
-            // Only update if the reserved number is higher
-            if ($number > $sequenceNumber->last_number) {
-                $sequenceNumber->update(['last_number' => $number]);
-            }
-
-            return true;
+            });
         });
     }
 

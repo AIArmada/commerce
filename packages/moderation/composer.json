@@ -11,10 +11,7 @@
     "autoload": {
         "psr-4": {
             "AIArmada\\Moderation\\": "src/"
-        },
-        "files": [
-            "src/helpers.php"
-        ]
+        }
     },
     "extra": {
         "laravel": {

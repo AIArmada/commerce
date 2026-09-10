@@ -17,11 +17,11 @@ return [
         ],
     ],
 
-    /* Features / Behavior */
-    'features' => [
-        'owner' => [
-            'enabled' => env('MODERATION_OWNER_ENABLED', true),
-        ],
+    /* Ownership */
+    'owner' => [
+        'enabled' => (bool) env('MODERATION_OWNER_ENABLED', true),
+        'include_global' => (bool) env('MODERATION_OWNER_INCLUDE_GLOBAL', false),
+        'auto_assign_on_create' => (bool) env('MODERATION_OWNER_AUTO_ASSIGN_ON_CREATE', true),
     ],
 
     /* Defaults */

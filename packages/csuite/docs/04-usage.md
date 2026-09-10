@@ -8,7 +8,7 @@ Use this page to understand what the metapackage installs and which package comb
 
 ## Included packages
 
-Overview of all packages in the AIArmada Commerce suite.
+Overview of the packages installed by the curated checkout-and-fulfillment bundle.
 
 ## Core Packages
 

@@ -21,7 +21,7 @@ test('config publishes and reads correctly', function (): void {
     expect(config('moderation.database.table_prefix'))->toBeString()->toBe('moderation_');
     expect(config('moderation.database.tables.blocks'))->toBe('moderation_blocks');
     expect(config('moderation.database.tables.moderation_actions'))->toBe('moderation_actions');
-    expect(config('moderation.features.owner.enabled'))->toBeTrue();
+    expect(config('moderation.owner.enabled'))->toBeTrue();
     expect(config('moderation.defaults.block_duration_days'))->toBe(30);
 });
 
@@ -30,6 +30,12 @@ test('both tables exist after migration', function (): void {
     expect(Schema::hasTable('moderation_actions'))->toBeTrue('Expected moderation_actions table to exist');
     expect(Schema::hasColumns('moderation_blocks', ['owner_type', 'owner_id']))->toBeTrue();
     expect(Schema::hasColumns('moderation_actions', ['owner_type', 'owner_id']))->toBeTrue();
+
+    $indexes = collect(Schema::getIndexes('moderation_blocks'))
+        ->map(static fn (array $index): array => $index['columns'])
+        ->all();
+
+    expect($indexes)->toContain(['blockable_type', 'blockable_id', 'status']);
 });
 
 test('model classes instantiate with correct table names', function (): void {

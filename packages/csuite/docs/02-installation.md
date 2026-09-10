@@ -25,7 +25,7 @@ Install all Commerce packages at once:
 composer require aiarmada/commerce
 ```
 
-This includes all core packages, payment integrations, and Filament admin panels.
+This includes the packages listed in the metapackage manifest: the checkout-and-fulfillment foundation, its payment and shipping integrations, and the bundled Filament admin panels.
 
 ## Individual Package Installation
 
@@ -113,7 +113,7 @@ use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentChip\FilamentChipPlugin;
 use AIArmada\FilamentInventory\FilamentInventoryPlugin;
-use AIArmada\FilamentPermissions\FilamentPermissionsPlugin;
+use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 
 public function panel(Panel $panel): Panel
 {
@@ -128,7 +128,7 @@ public function panel(Panel $panel): Panel
             FilamentDocsPlugin::make(),
             FilamentChipPlugin::make(),
             FilamentInventoryPlugin::make(),
-            FilamentPermissionsPlugin::make(),
+            FilamentAuthzPlugin::make(),
         ]);
 }
 ```

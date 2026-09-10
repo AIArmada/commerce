@@ -68,8 +68,9 @@ final class SequenceNumber extends Model implements Auditable
                 return;
             }
 
-            $sequenceNumber->owner_type = $sequence->owner_type;
-            $sequenceNumber->owner_id = $sequence->owner_id;
+            if ($sequence->owner instanceof Model) {
+                $sequenceNumber->assignOwner($sequence->owner);
+            }
         });
     }
 

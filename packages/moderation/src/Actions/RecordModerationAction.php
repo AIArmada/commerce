@@ -42,15 +42,15 @@ final class RecordModerationAction implements RecordsModerationAction
 
     private function validateOwnerScopedModel(Model $model): void
     {
-        if (! config('moderation.features.owner.enabled', true)) {
-            return;
-        }
-
-        if (! $model instanceof OwnerScopeConfigurable && ! method_exists($model::class, 'scopeForOwner')) {
+        if (! config('moderation.owner.enabled', true)) {
             return;
         }
 
         if ($model instanceof OwnerScopeConfigurable && ! $model::ownerScopeConfig()->enabled) {
+            return;
+        }
+
+        if (! $model instanceof OwnerScopeConfigurable && ! method_exists($model::class, 'ownerScopeConfig')) {
             return;
         }
 

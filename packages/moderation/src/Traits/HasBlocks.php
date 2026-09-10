@@ -17,6 +17,18 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 /** @mixin Model */
 trait HasBlocks
 {
+    public static function bootHasBlocks(): void
+    {
+        static::deleting(function (Model $model): void {
+            $model->blocks()
+                ->where('status', BlockStatus::Active)
+                ->get()
+                ->each(function (Block $block): void {
+                    $block->expire()->save();
+                });
+        });
+    }
+
     /**
      * @return MorphMany<Block, $this>
      */
@@ -30,7 +42,7 @@ trait HasBlocks
      */
     public function activeBlocks(): MorphMany
     {
-        return $this->blocks()->where('status', BlockStatus::Active);
+        return $this->blocks()->active();
     }
 
     public function isBlocked(): bool
@@ -45,7 +57,7 @@ trait HasBlocks
     public function scopeWhereNotBlocked(Builder $query): Builder
     {
         return $query->whereDoesntHave('blocks', function (Builder $q): void {
-            $q->where('status', BlockStatus::Active);
+            $q->active();
         });
     }
 

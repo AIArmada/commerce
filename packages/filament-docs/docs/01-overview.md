@@ -37,6 +37,7 @@ The `aiarmada/filament-docs` package is the Filament admin adapter for `aiarmada
 
 - The plugin should mirror the owner-scoping behavior defined by `aiarmada/docs`
 - Resource filtering is not authorization; secure downloads and admin actions still rely on the core docs package to enforce owner-safe reads and writes
+- `RecordPaymentAction` delegates payment validation and status transitions to `DocPaymentRecorder`; `SendEmailAction` delegates template resolution and delivery to `DocEmailService`
 
 ## Read next
 

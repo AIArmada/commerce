@@ -13,6 +13,7 @@ use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Refunded;
 use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Illuminate\Validation\ValidationException;
@@ -101,6 +102,22 @@ test('it calculates totals correctly', function (): void {
         ->and($doc->total_minor)->toBe(191);
 });
 
+test('it applies the configured decimal tax rate', function (): void {
+    $originalTaxRate = config('docs.defaults.tax_rate');
+    config()->set('docs.defaults.tax_rate', 0.06);
+
+    try {
+        $doc = app(DocService::class)->create(DocData::from([
+            'items' => [['name' => 'Taxable item', 'quantity' => 1, 'unit_price_minor' => 100]],
+        ]));
+
+        expect($doc->tax_amount_minor)->toBe(6)
+            ->and($doc->total_minor)->toBe(106);
+    } finally {
+        config()->set('docs.defaults.tax_rate', $originalTaxRate);
+    }
+});
+
 test('it can update doc status', function (): void {
     $service = app(DocService::class);
 
@@ -138,6 +155,18 @@ test('it can mark doc as paid', function (): void {
     expect($doc->isPaid())->toBeTrue()
         ->and($doc->status->equals(Paid::class))->toBeTrue()
         ->and($doc->paid_at)->not->toBeNull();
+});
+
+test('it records the refunded timestamp through the canonical status transition', function (): void {
+    $doc = app(DocService::class)->create(DocData::from([
+        'status' => Paid::class,
+        'items' => [['name' => 'Refundable item', 'quantity' => 1, 'unit_price_minor' => 100]],
+    ]));
+
+    app(DocService::class)->updateStatus($doc, Refunded::class);
+
+    expect($doc->fresh()->status->equals(Refunded::class))->toBeTrue()
+        ->and($doc->fresh()->refunded_at)->not->toBeNull();
 });
 
 test('it can check if doc is overdue', function (): void {
@@ -227,6 +256,21 @@ test('it can check payable status', function (): void {
         ->and(DocStatus::fromString(Sent::class)->isPayable())->toBeTrue()
         ->and(DocStatus::fromString(Paid::class)->isPayable())->toBeFalse()
         ->and(DocStatus::fromString(Draft::class)->isPayable())->toBeFalse();
+});
+
+test('it rejects payments above the outstanding balance', function (): void {
+    $doc = Doc::factory()->create([
+        'status' => Sent::class,
+        'total_minor' => 100,
+    ]);
+
+    expect(fn (): mixed => app(DocService::class)->recordPayment($doc, [
+        'amount_minor' => 101,
+        'payment_method' => 'bank_transfer',
+    ]))->toThrow(InvalidArgumentException::class);
+
+    expect($doc->fresh()->status->equals(Sent::class))->toBeTrue()
+        ->and($doc->payments()->count())->toBe(0);
 });
 
 test('it honors owner auto-assign on create config', function (): void {

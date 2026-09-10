@@ -41,7 +41,7 @@ afterEach(function (): void {
 });
 
 test('records a moderation action for a global model when owner scoping is enabled', function (): void {
-    config()->set('moderation.features.owner.enabled', true);
+    config()->set('moderation.owner.enabled', true);
 
     $action = $this->model->recordModerationAction(
         ModerationActionType::Warn,
@@ -54,7 +54,7 @@ test('records a moderation action for a global model when owner scoping is enabl
 });
 
 test('rejects a cross-owner actionedBy model', function (): void {
-    config()->set('moderation.features.owner.enabled', true);
+    config()->set('moderation.owner.enabled', true);
 
     $otherOwner = User::create([
         'name' => 'Other Owner',

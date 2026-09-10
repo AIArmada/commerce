@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Enums\DocType;
@@ -12,12 +13,11 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Models\DocVersion;
-use AIArmada\Docs\Numbering\NumberStrategyRegistry;
+use AIArmada\Docs\Numbering\DocumentNumberRegistry;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
-use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,8 +35,10 @@ use InvalidArgumentException;
 final class DocService implements DocServiceInterface
 {
     public function __construct(
-        protected NumberStrategyRegistry $numberRegistry,
+        protected DocumentNumberRegistry $numberRegistry,
         protected SequenceManager $sequenceManager,
+        protected DocTotals $totals,
+        protected DocPaymentRecorder $paymentRecorder,
     ) {}
 
     /**
@@ -65,9 +67,6 @@ final class DocService implements DocServiceInterface
         // Generate doc number if not provided
         $docNumber = $data->docNumber ?? $this->generateNumber($docType);
 
-        // Resolve current owner
-        $owner = $this->resolveOwner();
-
         $template = $this->resolveTemplateSelection($docType, $data->docTemplateId, $data->templateSlug);
 
         if ($template instanceof DocTemplate) {
@@ -77,7 +76,7 @@ final class DocService implements DocServiceInterface
         $currency = mb_strtoupper($data->currency ?? (string) $this->resolveDefault($docType, 'currency', 'MYR'));
         $calculatedSubtotalMinor = $this->calculateSubtotalMinor($data->items, $currency);
         $subtotalMinor = $data->subtotalMinor ?? $calculatedSubtotalMinor;
-        $taxRateBasisPoints = $data->taxRateBasisPoints ?? (int) config('docs.defaults.tax_rate_basis_points', 0);
+        $taxRateBasisPoints = $data->taxRateBasisPoints ?? $this->resolveConfiguredTaxRateBasisPoints();
         $this->assertBasisPoints($taxRateBasisPoints);
         $taxAmountMinor = $data->taxAmountMinor ?? $this->applyBasisPoints($subtotalMinor, $taxRateBasisPoints);
         $discountAmountMinor = $data->discountAmountMinor ?? 0;
@@ -106,7 +105,6 @@ final class DocService implements DocServiceInterface
             $dueDate = CarbonImmutable::now()->addDays($dueDays);
         }
 
-        // Build doc data with owner columns if enabled
         $docData = [
             'doc_number' => $docNumber,
             'doc_type' => $docType,
@@ -133,11 +131,6 @@ final class DocService implements DocServiceInterface
         // Create doc
         $doc = new Doc($docData);
 
-        if ($owner !== null && (bool) config('docs.owner.auto_assign_on_create', true)) {
-            $doc->owner_type = $owner->getMorphClass();
-            $doc->owner_id = (string) $owner->getKey();
-        }
-
         $doc->save();
 
         // Load relationships
@@ -158,55 +151,52 @@ final class DocService implements DocServiceInterface
      */
     public function createFromType(DocType $type, array $data, ?Model $owner = null): Doc
     {
-        return DB::transaction(function () use ($type, $data, $owner): Doc {
-            // Generate document number
-            $docNumber = $this->sequenceManager->generate($type, $owner);
+        return OwnerContext::withOwner($owner, function () use ($type, $data, $owner): Doc {
+            return DB::transaction(function () use ($type, $data, $owner): Doc {
+                // Generate document number
+                $docNumber = $this->sequenceManager->generate($type, $owner);
 
-            $docData = array_merge($data, [
-                'doc_number' => $docNumber,
-                'doc_type' => $type->value,
-                'status' => Draft::class,
-                'issue_date' => $data['issue_date'] ?? CarbonImmutable::now(),
-            ]);
+                $docData = array_merge($data, [
+                    'doc_number' => $docNumber,
+                    'doc_type' => $type->value,
+                    'status' => Draft::class,
+                    'issue_date' => $data['issue_date'] ?? CarbonImmutable::now(),
+                ]);
 
-            // Calculate totals if items provided
-            if (isset($data['items'])) {
-                $totals = $this->calculateTotals(
-                    $data['items'],
-                    (int) ($data['discount_amount_minor'] ?? 0),
-                    isset($data['currency']) ? (string) $data['currency'] : null
+                // Calculate totals if items provided
+                if (isset($data['items'])) {
+                    $totals = $this->calculateTotals(
+                        $data['items'],
+                        (int) ($data['discount_amount_minor'] ?? 0),
+                        isset($data['currency']) ? (string) $data['currency'] : null
+                    );
+                    $docData = array_merge($docData, $totals);
+                }
+
+                $template = $this->resolveTemplateSelection(
+                    $type->value,
+                    isset($docData['doc_template_id']) ? (string) $docData['doc_template_id'] : null,
+                    isset($docData['template_slug']) ? (string) $docData['template_slug'] : null,
                 );
-                $docData = array_merge($docData, $totals);
-            }
 
-            $template = $this->resolveTemplateSelection(
-                $type->value,
-                isset($docData['doc_template_id']) ? (string) $docData['doc_template_id'] : null,
-                isset($docData['template_slug']) ? (string) $docData['template_slug'] : null,
-            );
+                if ($template instanceof DocTemplate) {
+                    $docData['doc_template_id'] = $template->id;
+                    app(DocRenderService::class)->validateDocPayload(
+                        $template,
+                        isset($docData['body']) && is_array($docData['body']) ? $docData['body'] : null,
+                        isset($docData['items']) && is_array($docData['items']) ? $docData['items'] : [],
+                    );
+                }
 
-            if ($template instanceof DocTemplate) {
-                $docData['doc_template_id'] = $template->id;
-                app(DocRenderService::class)->validateDocPayload(
-                    $template,
-                    isset($docData['body']) && is_array($docData['body']) ? $docData['body'] : null,
-                    isset($docData['items']) && is_array($docData['items']) ? $docData['items'] : [],
-                );
-            }
+                $doc = new Doc($docData);
 
-            $doc = new Doc($docData);
+                $doc->save();
 
-            if ($owner !== null) {
-                $doc->owner_type = $owner->getMorphClass();
-                $doc->owner_id = (string) $owner->getKey();
-            }
+                // Create initial version
+                $this->createVersion($doc, 'Initial creation');
 
-            $doc->save();
-
-            // Create initial version
-            $this->createVersion($doc, 'Initial creation');
-
-            return $doc;
+                return $doc;
+            });
         });
     }
 
@@ -302,66 +292,7 @@ final class DocService implements DocServiceInterface
      */
     public function recordPayment(Doc $doc, array $paymentData): DocPayment
     {
-        return DB::transaction(function () use ($doc, $paymentData): DocPayment {
-            $lockedDoc = Doc::query()
-                ->withoutOwnerScope()
-                ->whereKey($doc->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $paymentCurrency = mb_strtoupper((string) ($paymentData['currency'] ?? $lockedDoc->currency));
-
-            if ($paymentCurrency !== mb_strtoupper($lockedDoc->currency)) {
-                throw new InvalidArgumentException('Payment currency must match the document currency.');
-            }
-
-            if (! isset($paymentData['amount_minor']) || ! is_int($paymentData['amount_minor']) || $paymentData['amount_minor'] <= 0) {
-                throw new InvalidArgumentException('Payment amount_minor must be a positive integer.');
-            }
-
-            $totalPaidBefore = (int) $lockedDoc->payments()->sum('amount_minor');
-            $remainingMinor = $lockedDoc->total_minor - $totalPaidBefore;
-
-            if ($paymentData['amount_minor'] > $remainingMinor) {
-                throw new InvalidArgumentException('Payment amount_minor cannot exceed the outstanding document balance.');
-            }
-
-            $payment = $lockedDoc->payments()->make(array_merge($paymentData, [
-                'paid_at' => $paymentData['paid_at'] ?? CarbonImmutable::now(),
-                'currency' => $paymentCurrency,
-            ]));
-
-            if (config('docs.owner.enabled', false)) {
-                $payment->owner_type = $lockedDoc->owner_type;
-                $payment->owner_id = $lockedDoc->owner_id;
-            }
-
-            $payment->save();
-
-            // Update document status based on payments
-            $totalPaid = $totalPaidBefore + $payment->amount_minor;
-            $docTotal = $lockedDoc->total_minor;
-
-            if ($totalPaid === $docTotal) {
-                $lockedDoc->markAsPaid("Payment recorded: {$payment->amount_minor} {$payment->currency} minor units");
-            } elseif ($totalPaid > 0) {
-                $lockedDoc->update(['status' => PartiallyPaid::class]);
-                $statusHistory = $lockedDoc->statusHistories()->make([
-                    'status' => PartiallyPaid::class,
-                    'notes' => "Partial payment recorded: {$payment->amount_minor} {$payment->currency} minor units",
-                    'created_at' => CarbonImmutable::now(),
-                ]);
-
-                if (config('docs.owner.enabled', false)) {
-                    $statusHistory->owner_type = $lockedDoc->owner_type;
-                    $statusHistory->owner_id = $lockedDoc->owner_id;
-                }
-
-                $statusHistory->save();
-            }
-
-            return $payment;
-        });
+        return $this->paymentRecorder->record($doc, $paymentData);
     }
 
     /**
@@ -395,24 +326,21 @@ final class DocService implements DocServiceInterface
      */
     public function createVersion(Doc $doc, ?string $summary = null): DocVersion
     {
-        $nextVersion = $doc->versions()->max('version_number') + 1;
+        return OwnerContext::withOwner($doc->owner, function () use ($doc, $summary): DocVersion {
+            $nextVersion = $doc->versions()->max('version_number') + 1;
 
-        $version = $doc->versions()->make([
-            'version_number' => $nextVersion,
-            'snapshot' => $doc->toArray(),
-            'change_summary' => $summary,
-            'changed_by' => auth()->id(),
-            'created_at' => CarbonImmutable::now(),
-        ]);
+            $version = $doc->versions()->make([
+                'version_number' => $nextVersion,
+                'snapshot' => $doc->toArray(),
+                'change_summary' => $summary,
+                'changed_by' => auth()->id(),
+                'created_at' => CarbonImmutable::now(),
+            ]);
 
-        if (config('docs.owner.enabled', false)) {
-            $version->owner_type = $doc->owner_type;
-            $version->owner_id = $doc->owner_id;
-        }
+            $version->save();
 
-        $version->save();
-
-        return $version;
+            return $version;
+        });
     }
 
     /**
@@ -458,24 +386,7 @@ final class DocService implements DocServiceInterface
      */
     public function updateStatus(Doc $doc, DocStatus | string $status, ?string $notes = null): void
     {
-        $oldStatus = $doc->status;
-        $statusClass = DocStatus::resolveStateClassFor($status, $doc);
-
-        $doc->update(['status' => $statusClass]);
-
-        // Record status change
-        $statusHistory = $doc->statusHistories()->make([
-            'status' => $statusClass,
-            'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor($statusClass, $doc),
-            'created_at' => CarbonImmutable::now(),
-        ]);
-
-        if (config('docs.owner.enabled', false)) {
-            $statusHistory->owner_type = $doc->owner_type;
-            $statusHistory->owner_id = $doc->owner_id;
-        }
-
-        $statusHistory->save();
+        $doc->transitionStatusTo($status, $notes);
     }
 
     /**
@@ -489,73 +400,29 @@ final class DocService implements DocServiceInterface
      */
     public function calculateTotals(array $items, int $discountAmountMinor = 0, ?string $currency = null): array
     {
-        if ($discountAmountMinor < 0) {
-            throw new InvalidArgumentException('discount_amount_minor must not be negative.');
-        }
-
-        $currency = $currency !== null ? mb_strtoupper($currency) : null;
-        $subtotalMinor = 0;
-        $taxAmountMinor = 0;
-
-        foreach ($items as $index => $item) {
-            $this->assertMinorUnitItem($item, $index, $currency);
-
-            $quantity = (int) ($item['quantity'] ?? 1);
-            $unitPriceMinor = (int) $item['unit_price_minor'];
-            $itemTaxMinor = (int) ($item['tax_amount_minor'] ?? 0);
-
-            $subtotalMinor += $quantity * $unitPriceMinor;
-            $taxAmountMinor += $itemTaxMinor;
-        }
-
-        return [
-            'subtotal_minor' => $subtotalMinor,
-            'tax_amount_minor' => $taxAmountMinor,
-            'total_minor' => max(0, $subtotalMinor + $taxAmountMinor - $discountAmountMinor),
-        ];
+        return $this->totals->calculate($items, $discountAmountMinor, $currency);
     }
 
     /** @param array<int, array<string, mixed>> $items */
     protected function calculateSubtotalMinor(array $items, string $currency): int
     {
-        return $this->calculateTotals($items, 0, $currency)['subtotal_minor'];
-    }
-
-    /** @param array<string, mixed> $item */
-    private function assertMinorUnitItem(array $item, int $index, ?string $currency): void
-    {
-        foreach (['price', 'unit_price', 'tax_amount'] as $unsupportedKey) {
-            if (array_key_exists($unsupportedKey, $item)) {
-                throw new InvalidArgumentException(sprintf(
-                    'Document item %d uses removed major-unit field `%s`; use the corresponding `*_minor` integer field.',
-                    $index,
-                    $unsupportedKey,
-                ));
-            }
-        }
-
-        $quantity = $item['quantity'] ?? 1;
-
-        if (! is_int($quantity) || $quantity <= 0) {
-            throw new InvalidArgumentException(sprintf('Document item %d quantity must be a positive integer.', $index));
-        }
-
-        if (! array_key_exists('unit_price_minor', $item) || ! is_int($item['unit_price_minor']) || $item['unit_price_minor'] < 0) {
-            throw new InvalidArgumentException(sprintf('Document item %d unit_price_minor must be a non-negative integer.', $index));
-        }
-
-        if (isset($item['tax_amount_minor']) && (! is_int($item['tax_amount_minor']) || $item['tax_amount_minor'] < 0)) {
-            throw new InvalidArgumentException(sprintf('Document item %d tax_amount_minor must be a non-negative integer.', $index));
-        }
-
-        if (isset($item['currency']) && $currency !== null && mb_strtoupper((string) $item['currency']) !== $currency) {
-            throw new InvalidArgumentException(sprintf('Document item %d currency does not match document currency.', $index));
-        }
+        return $this->totals->subtotal($items, $currency);
     }
 
     private function applyBasisPoints(int $amountMinor, int $basisPoints): int
     {
         return intdiv(($amountMinor * $basisPoints) + 5_000, 10_000);
+    }
+
+    private function resolveConfiguredTaxRateBasisPoints(): int
+    {
+        $taxRate = config('docs.defaults.tax_rate', 0);
+
+        if (! is_numeric($taxRate)) {
+            throw new InvalidArgumentException('docs.defaults.tax_rate must be a numeric decimal rate.');
+        }
+
+        return (int) round(((float) $taxRate) * 10_000);
     }
 
     private function assertBasisPoints(int $basisPoints): void
@@ -590,9 +457,17 @@ final class DocService implements DocServiceInterface
         $query = $this->getTemplateQuery()->where('doc_type', $docType);
 
         if ($templateId !== null && $templateId !== '') {
-            $template = $query->find($templateId);
+            $template = config('docs.owner.enabled', false)
+                ? OwnerWriteGuard::findOrFailForOwner(
+                    DocTemplate::class,
+                    $templateId,
+                    owner: $this->resolveOwner(),
+                    includeGlobal: (bool) config('docs.owner.include_global', false),
+                    message: 'Document template is not available in the current owner scope.',
+                )
+                : $query->find($templateId);
 
-            if (! $template instanceof DocTemplate) {
+            if (! $template instanceof DocTemplate || $template->doc_type !== $docType) {
                 throw ValidationException::withMessages([
                     'doc_template_id' => __('Invalid template selection for this document type.'),
                 ]);

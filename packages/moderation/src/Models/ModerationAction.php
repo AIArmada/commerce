@@ -42,7 +42,7 @@ class ModerationAction extends Model
         'type', 'reason', 'notes', 'metadata',
     ];
 
-    protected static string $ownerScopeConfigKey = 'moderation.features.owner';
+    protected static string $ownerScopeConfigKey = 'moderation.owner';
 
     public function getTable(): string
     {

@@ -6,6 +6,7 @@ namespace AIArmada\Moderation;
 
 use AIArmada\Moderation\Actions\BlockEntityAction;
 use AIArmada\Moderation\Actions\RecordModerationAction;
+use AIArmada\Moderation\Console\Commands\ExpireBlocksCommand;
 use AIArmada\Moderation\Contracts\BlocksEntity;
 use AIArmada\Moderation\Contracts\RecordsModerationAction;
 use Spatie\LaravelPackageTools\Package;
@@ -33,6 +34,8 @@ final class ModerationServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
-        //
+        $this->commands([
+            ExpireBlocksCommand::class,
+        ]);
     }
 }

@@ -9,7 +9,7 @@ use AIArmada\Moderation\Enums\BlockStatus;
 use AIArmada\Moderation\Models\Block;
 
 beforeEach(function (): void {
-    config()->set('moderation.features.owner.enabled', false);
+    config()->set('moderation.owner.enabled', false);
 
     $this->blockable = User::create([
         'name' => 'Blockable User',

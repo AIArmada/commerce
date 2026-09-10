@@ -36,31 +36,35 @@ final class BlockEntityAction implements BlocksEntity
         }
 
         return DB::transaction(function () use ($blockable, $blockedBy, $reason, $notes, $expiresAt, $metadata): Block {
-            return Block::create([
+            $block = new Block([
                 'blockable_type' => $blockable->getMorphClass(),
                 'blockable_id' => $blockable->getKey(),
                 'blocked_by_type' => $blockedBy?->getMorphClass(),
                 'blocked_by_id' => $blockedBy?->getKey(),
                 'reason' => $reason,
-                'status' => BlockStatus::Active,
                 'notes' => $notes,
                 'expires_at' => $expiresAt,
                 'metadata' => $metadata,
             ]);
+
+            $block->transitionTo(BlockStatus::Active);
+            $block->save();
+
+            return $block;
         });
     }
 
     private function validateOwnerScopedModel(Model $model): void
     {
-        if (! config('moderation.features.owner.enabled', true)) {
-            return;
-        }
-
-        if (! $model instanceof OwnerScopeConfigurable && ! method_exists($model::class, 'scopeForOwner')) {
+        if (! config('moderation.owner.enabled', true)) {
             return;
         }
 
         if ($model instanceof OwnerScopeConfigurable && ! $model::ownerScopeConfig()->enabled) {
+            return;
+        }
+
+        if (! $model instanceof OwnerScopeConfigurable && ! method_exists($model::class, 'ownerScopeConfig')) {
             return;
         }
 

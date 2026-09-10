@@ -15,7 +15,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 use Throwable;
 
 final class SendEmailAction
@@ -84,19 +83,10 @@ final class SendEmailAction
         try {
             $emailService = app(DocEmailService::class);
 
-            $template = null;
-            if (! empty($data['template_id'])) {
-                $template = OwnerUiScope::apply(DocEmailTemplate::query(), includeGlobal: false)
-                    ->where('is_active', true)
-                    ->where('doc_type', $record->doc_type)
-                    ->find($data['template_id']);
-
-                if ($template === null) {
-                    throw ValidationException::withMessages([
-                        'template_id' => __('Invalid email template selection.'),
-                    ]);
-                }
-            }
+            $template = $emailService->resolveTemplate(
+                $record,
+                isset($data['template_id']) ? (string) $data['template_id'] : null,
+            );
 
             $emailService->send(
                 doc: $record,

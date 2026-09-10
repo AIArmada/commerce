@@ -6,7 +6,7 @@ namespace AIArmada\FilamentDocs\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Services\DocPaymentRecorder;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
@@ -20,7 +20,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Component;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Action to record a payment against a document.
@@ -104,28 +103,9 @@ final class RecordPaymentAction
      */
     private static function recordPayment(Doc $record, array $data): void
     {
-        $amountMinor = $data['amount_minor'];
-        $remainingMinor = $record->total_minor - self::getTotalPaid($record);
+        $amountMinor = (int) $data['amount_minor'];
 
-        if (! is_int($amountMinor)) {
-            throw ValidationException::withMessages([
-                'amount_minor' => __('Payment amount must be an integer number of minor units.'),
-            ]);
-        }
-
-        if ($amountMinor <= 0) {
-            throw ValidationException::withMessages([
-                'amount_minor' => __('Payment amount must be greater than 0.'),
-            ]);
-        }
-
-        if ($amountMinor > $remainingMinor) {
-            throw ValidationException::withMessages([
-                'amount_minor' => __('Payment amount cannot exceed the outstanding balance.'),
-            ]);
-        }
-
-        app(DocService::class)->recordPayment($record, [
+        app(DocPaymentRecorder::class)->record($record, [
             'amount_minor' => $amountMinor,
             'currency' => $record->currency,
             'payment_method' => $data['payment_method'],

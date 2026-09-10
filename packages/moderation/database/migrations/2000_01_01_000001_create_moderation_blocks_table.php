@@ -27,6 +27,7 @@ return new class extends Migration
 
             $table->index('status');
             $table->index('expires_at');
+            $table->index(['blockable_type', 'blockable_id', 'status']);
         });
     }
 };

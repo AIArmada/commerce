@@ -747,6 +747,30 @@ reported and taken on trust; code correctness was verified directly.
   FilamentCommunications 41/67; canaries Events 244/1105, Orders
   323/725 green; PHPStan L6 clean. No migration required.
 
+## Small-fry combo: csuite, references, moderation, docs (implemented)
+
+- **csuite:** bundle policy documented (checkout-and-fulfillment +
+  authorization); `aiarmada/authz` added to require; false guardrail
+  rewritten as routing context; provider/plugin smoke test (1/83).
+- **references:** standalone dependency declared; shared owner
+  scoping adopted (deliberate direction change from global-by-design,
+  recorded here — owner-scoped siblings make global rows the
+  anomaly); transactional subtree deletion with explicit media
+  cleanup + batched rows; canonical `reference_parts` JSON; loud
+  slug-config failures.
+- **moderation:** active/expired scopes + centralized transitions;
+  owner-aware chunked expiry sweep + command; standard owner-config
+  path; legacy validators + dead helpers deleted (zero callers).
+  Root `TestCase.php` stale key intentionally left (shared infra).
+- **docs:** typed `DocStatus` (persisted values contract-tested);
+  `transitionStatusTo()` central (`transitionTo(Audit, bool)`
+  collision documented); `OwnerWriteGuard` payment writes; lazy
+  scoped numbering; row-locked sequences; shared money formatter;
+  hardened tracking; delegating Filament actions.
+- Suites: References 37/185, Moderation 61/256, Docs 176/469,
+  FilamentDocs 63/247, smoke 1/83; PHPStan L6 clean. No migration
+  required.
+
 ## Fairness log
 
 - Orders checkout-context concern: not present, dropped correctly.

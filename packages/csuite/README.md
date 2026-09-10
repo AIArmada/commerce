@@ -3,11 +3,11 @@
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/aiarmada/commerce.svg?style=flat-square)](https://packagist.org/packages/aiarmada/commerce)
 [![Total Downloads](https://img.shields.io/packagist/dt/aiarmada/commerce.svg?style=flat-square)](https://packagist.org/packages/aiarmada/commerce)
 
-A powerful collection of commerce components for Laravel - build and ship e-commerce features fast.
+A curated checkout-and-fulfillment bundle for Laravel commerce applications.
 
 ## Overview
 
-AIArmada Commerce is a modular e-commerce toolkit for Laravel applications. Install the complete suite or pick individual packages based on your needs.
+AIArmada Commerce is a modular e-commerce toolkit for Laravel applications. The metapackage installs the checkout-and-fulfillment foundation plus authorization; install other domains separately when they are part of the application.
 
 ## Requirements
 
@@ -19,7 +19,7 @@ AIArmada Commerce is a modular e-commerce toolkit for Laravel applications. Inst
 
 ## Installation
 
-Install the complete commerce suite:
+Install the curated commerce bundle:
 
 ```bash
 composer require aiarmada/commerce
@@ -38,6 +38,7 @@ Or install individual packages as needed (see below).
 | [inventory](../inventory) | Inventory and stock management |
 | [vouchers](../vouchers) | Discount codes and promotional vouchers |
 | [docs](../docs) | Invoice and receipt generation with PDF |
+| [authz](../authz) | Authorization contracts and role/permission support |
 
 ### Payment & Shipping
 
@@ -60,9 +61,13 @@ Or install individual packages as needed (see below).
 | [filament-jnt](../filament-jnt) | J&T Express admin panel |
 | [filament-authz](../filament-authz) | Role & permission management |
 
+### Installed separately
+
+The bundle intentionally excludes `signals` and `growth` (analytics), `membership` (entitlements), `moderation` (content blocks), and `references` (bibliographic data). Install those packages separately when your application needs those domains.
+
 ## Quick Start
 
-### 1. Install the Suite
+### 1. Install the Bundle
 
 ```bash
 composer require aiarmada/commerce
@@ -90,6 +95,7 @@ use AIArmada\CommerceSupport\Support\Filament\CommerceNavigationPlugin;
 use AIArmada\FilamentCart\FilamentCartPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
+use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 
 public function panel(Panel $panel): Panel
 {
@@ -99,6 +105,7 @@ public function panel(Panel $panel): Panel
             FilamentCartPlugin::make(),
             FilamentVouchersPlugin::make(),
             FilamentDocsPlugin::make(),
+            FilamentAuthzPlugin::make(),
             // ... other plugins
         ]);
 }

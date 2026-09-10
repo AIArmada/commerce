@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Jobs;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\Docs\Services\DueDocReminders;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
@@ -16,12 +15,9 @@ use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -44,25 +40,27 @@ final class SendDocReminderJob implements ShouldQueue
         public string | int | null $ownerId = null,
     ) {}
 
-    public function handle(DocEmailService $emailService): void
+    public function handle(DocEmailService $emailService, ?DueDocReminders $dueDocReminders = null): void
     {
+        $dueDocReminders ??= app(DueDocReminders::class);
+
         if ($this->shouldFanOutByOwner()) {
-            $this->dispatchPerOwner();
+            $this->dispatchPerOwner($dueDocReminders);
 
             return;
         }
 
         $owner = OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId);
 
-        OwnerContext::withOwner($owner, function () use ($emailService): void {
+        OwnerContext::withOwner($owner, function () use ($dueDocReminders, $emailService): void {
             if ($this->docId !== null) {
-                $this->sendReminderForDoc($emailService, $this->docId);
+                $this->sendReminderForDoc($emailService, $dueDocReminders, $this->docId);
 
                 return;
             }
 
-            $this->sendRemindersForUpcomingDue($emailService);
-            $this->sendRemindersForOverdue($emailService);
+            $this->sendRemindersForUpcomingDue($emailService, $dueDocReminders);
+            $this->sendRemindersForOverdue($emailService, $dueDocReminders);
         });
     }
 
@@ -78,9 +76,9 @@ final class SendDocReminderJob implements ShouldQueue
         ];
     }
 
-    protected function sendReminderForDoc(DocEmailService $emailService, string $docId): void
+    protected function sendReminderForDoc(DocEmailService $emailService, DueDocReminders $dueDocReminders, string $docId): void
     {
-        $doc = $this->getScopedDocsQuery()->find($docId);
+        $doc = $dueDocReminders->forCurrentOwner()->find($docId);
         $recipientEmail = $this->getRecipientEmail($doc);
 
         if (! $doc || ! $recipientEmail) {
@@ -112,9 +110,9 @@ final class SendDocReminderJob implements ShouldQueue
         }
     }
 
-    protected function sendRemindersForUpcomingDue(DocEmailService $emailService): void
+    protected function sendRemindersForUpcomingDue(DocEmailService $emailService, DueDocReminders $dueDocReminders): void
     {
-        $docs = $this->getDocsDueSoon();
+        $docs = $dueDocReminders->dueSoon($this->daysBeforeDue);
 
         foreach ($docs as $doc) {
             $recipientEmail = $this->getRecipientEmail($doc);
@@ -150,9 +148,9 @@ final class SendDocReminderJob implements ShouldQueue
         }
     }
 
-    protected function sendRemindersForOverdue(DocEmailService $emailService): void
+    protected function sendRemindersForOverdue(DocEmailService $emailService, DueDocReminders $dueDocReminders): void
     {
-        $docs = $this->getOverdueDocs();
+        $docs = $dueDocReminders->overdue($this->daysAfterOverdue);
 
         foreach ($docs as $doc) {
             $recipientEmail = $this->getRecipientEmail($doc);
@@ -178,60 +176,6 @@ final class SendDocReminderJob implements ShouldQueue
         }
     }
 
-    /**
-     * @return Collection<int, Doc>
-     */
-    protected function getDocsDueSoon(): Collection
-    {
-        $dueDate = CarbonImmutable::now()->addDays($this->daysBeforeDue);
-
-        return $this->getScopedDocsQuery()
-            ->whereIn('status', [Sent::value(), Pending::value()])
-            ->whereNotNull('due_date')
-            ->whereDate('due_date', '<=', $dueDate->toDateString())
-            ->whereDoesntHave('emails', function (Builder $query): void {
-                $query->where('metadata->reminder_type', 'due_soon');
-            })
-            ->whereJsonContainsKey('customer_data->email')
-            ->get();
-    }
-
-    /**
-     * @return Collection<int, Doc>
-     */
-    protected function getOverdueDocs(): Collection
-    {
-        $overdueDate = CarbonImmutable::now()->subDays($this->daysAfterOverdue);
-
-        return $this->getScopedDocsQuery()
-            ->where('status', Overdue::value())
-            ->whereNotNull('due_date')
-            ->whereDate('due_date', '<=', $overdueDate->toDateString())
-            ->whereDoesntHave('emails', function (Builder $query): void {
-                $query->where('metadata->reminder_type', 'overdue');
-            })
-            ->whereJsonContainsKey('customer_data->email')
-            ->get();
-    }
-
-    /**
-     * @return Builder<Doc>
-     */
-    protected function getScopedDocsQuery(): Builder
-    {
-        $query = Doc::query();
-
-        if (! config('docs.owner.enabled', false)) {
-            return $query;
-        }
-
-        /** @var Model|null $owner */
-        $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('docs.owner.include_global', false);
-
-        return $query->forOwner($owner, $includeGlobal);
-    }
-
     private function shouldFanOutByOwner(): bool
     {
         if ($this->docId !== null) {
@@ -245,17 +189,9 @@ final class SendDocReminderJob implements ShouldQueue
         return $this->ownerType === null && $this->ownerId === null;
     }
 
-    private function dispatchPerOwner(): void
+    private function dispatchPerOwner(DueDocReminders $dueDocReminders): void
     {
-        $ownerTupleColumns = OwnerTupleColumns::forModelClass(Doc::class);
-
-        // Intentional global enumeration for per-owner fan-out dispatch.
-        // Each dispatched job re-enters a strict owner context via OwnerContext::withOwner().
-        $owners = Doc::query()
-            ->withoutOwnerScope()
-            ->select([$ownerTupleColumns->ownerTypeColumn, $ownerTupleColumns->ownerIdColumn])
-            ->distinct()
-            ->get();
+        $owners = $dueDocReminders->ownerTuples();
 
         if ($owners->isEmpty()) {
             return;
@@ -263,8 +199,7 @@ final class SendDocReminderJob implements ShouldQueue
 
         $dispatched = [];
 
-        foreach ($owners as $row) {
-            $ownerTuple = OwnerTupleParser::fromRow($row, $ownerTupleColumns);
+        foreach ($owners as $ownerTuple) {
             $ownerType = $ownerTuple->owner_type;
             $ownerId = $ownerTuple->owner_id;
             $key = ($ownerType ?? 'global') . '|' . ($ownerId ?? 'global');

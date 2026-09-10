@@ -85,8 +85,9 @@ final class DocPayment extends Model implements Auditable
                 return;
             }
 
-            $payment->owner_type = $doc->owner_type;
-            $payment->owner_id = $doc->owner_id;
+            if ($doc->owner instanceof Model) {
+                $payment->assignOwner($doc->owner);
+            }
         });
     }
 

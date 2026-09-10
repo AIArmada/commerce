@@ -6,6 +6,12 @@ title: Document Status
 
 This page covers state transitions and history once a document already exists.
 
+## One canonical status system
+
+`Doc::status` is cast to the typed `AIArmada\Docs\States\DocStatus` state machine. The persisted values are stable: `draft`, `pending`, `sent`, `paid`, `partially_paid`, `overdue`, `cancelled`, and `refunded`. Use the state classes for comparisons and `DocStatus::options()` / `DocStatus::labelFor()` for UI labels; do not introduce a second document-status enum.
+
+`DocPaymentStatus` and `DocApprovalStatus` remain separate enums because they describe payment and approval sub-lifecycles, not the document lifecycle.
+
 ## Common model helpers
 
 ```php
@@ -34,10 +40,13 @@ app(DocService::class)->updateStatus(
 );
 ```
 
+All model helpers and service payment transitions delegate to the same state machine and status-history path.
+
 ## Checking Status
 
 ```php
 use AIArmada\Docs\States\Cancelled;
+use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Paid;
 
 // Check current status
@@ -82,8 +91,9 @@ foreach ($history as $entry) {
 $document->updateStatus();
 
 // Query overdue documents
-$overdue = Doc::where('due_date', '<', now())
-    ->whereNotIn('status', [Paid::class, Cancelled::class])
+$overdue = Doc::query()
+    ->where('due_date', '<', now())
+    ->whereNotIn('status', [DocStatus::normalize(Paid::class), DocStatus::normalize(Cancelled::class)])
     ->get();
 
 foreach ($overdue as $doc) {

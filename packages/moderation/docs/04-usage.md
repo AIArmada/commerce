@@ -71,6 +71,25 @@ $activeBlocks = Block::query()->active()->get();
 $expiredBlocks = Block::query()->expired()->get();
 ```
 
+Expired blocks are excluded from `active()` queries as soon as `expires_at` passes. Run the sweep command from a scheduler when you need persisted `expired` status and lifecycle timestamps updated:
+
+```bash
+php artisan moderation:expire-blocks
+```
+
+The package does not register a scheduler entry automatically. If the application wants a periodic sweep, schedule the command in its application scheduler:
+
+```php
+use Illuminate\Console\Scheduling\Schedule;
+
+protected function schedule(Schedule $schedule): void
+{
+    $schedule->command('moderation:expire-blocks')->daily();
+}
+```
+
+The command processes each owner scope explicitly; it does not rely on ambient web authentication.
+
 ```php
 use Illuminate\Database\Eloquent\Model;
 

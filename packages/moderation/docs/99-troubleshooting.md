@@ -10,6 +10,10 @@ title: Troubleshooting
 2. Confirm the model is saved before calling `block()`
 3. Check the moderation tables exist and the service provider is registered
 
+## Expired Blocks Still Look Active
+
+Read paths use the `active()` scope, which excludes rows whose `expires_at` is in the past. Run `php artisan moderation:expire-blocks` to persist the `expired` status and lifecycle transition for reporting or downstream jobs.
+
 ## Owner validation fails
 
 If the target model is tenant-owned, `block()` and `recordModerationAction()` expect a valid owner context.

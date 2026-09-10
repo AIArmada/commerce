@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Services;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
@@ -14,6 +15,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
@@ -50,16 +52,8 @@ final class DocEmailService
             ?? $template?->renderBody($templateVars)
             ?? $this->getDefaultBody($doc);
 
-        $ownerAttributes = [];
-        if (config('docs.owner.enabled', false)) {
-            $ownerAttributes = [
-                'owner_type' => $doc->owner_type,
-                'owner_id' => $doc->owner_id,
-            ];
-        }
-
         // Create email record
-        $email = $doc->emails()->create(array_merge([
+        $email = OwnerContext::withOwner($doc->owner, fn (): DocEmail => $doc->emails()->create([
             'doc_email_template_id' => $template?->id,
             'recipient_email' => $recipientEmail,
             'recipient_name' => $recipientName,
@@ -67,7 +61,7 @@ final class DocEmailService
             'body' => $body,
             'status' => EmailStatus::Queued,
             'metadata' => $metadata,
-        ], $ownerAttributes));
+        ]));
 
         // Queue the email
         $this->queueEmail($email, $doc);
@@ -105,6 +99,27 @@ final class DocEmailService
             ->first();
     }
 
+    public function resolveTemplate(Doc $doc, ?string $templateId = null, string $trigger = 'send'): ?DocEmailTemplate
+    {
+        if ($templateId === null || $templateId === '') {
+            return $this->findTemplate($doc, $trigger);
+        }
+
+        $template = $this->getTemplateQueryForDoc($doc)
+            ->where('doc_type', $doc->doc_type)
+            ->where('trigger', $trigger)
+            ->where('is_active', true)
+            ->find($templateId);
+
+        if (! $template instanceof DocEmailTemplate) {
+            throw ValidationException::withMessages([
+                'template_id' => __('Invalid email template selection.'),
+            ]);
+        }
+
+        return $template;
+    }
+
     /**
      * @return Builder<DocEmailTemplate>
      */
@@ -116,22 +131,7 @@ final class DocEmailService
             return $query;
         }
 
-        $includeGlobal = (bool) config('docs.owner.include_global', false);
-
-        if ($doc->owner_type !== null && $doc->owner_id !== null) {
-            return $query->where(function (Builder $builder) use ($doc, $includeGlobal): void {
-                $builder->where('owner_type', $doc->owner_type)
-                    ->where('owner_id', $doc->owner_id);
-
-                if ($includeGlobal) {
-                    $builder->orWhere(function (Builder $inner): void {
-                        $inner->whereNull('owner_type')->whereNull('owner_id');
-                    });
-                }
-            });
-        }
-
-        return $query->whereNull('owner_type')->whereNull('owner_id');
+        return $query->forOwner($doc->owner, (bool) config('docs.owner.include_global', false));
     }
 
     /**
@@ -171,7 +171,12 @@ final class DocEmailService
                 fn (Builder $query): Builder => $query->withoutOwnerScope(),
             )
             ->find($data['email_id']);
-        $email?->markAsOpened();
+
+        if ($email instanceof DocEmail) {
+            OwnerContext::withOwner($email->owner, static function () use ($email): void {
+                $email->markAsOpened();
+            });
+        }
 
         return $email !== null;
     }
@@ -193,7 +198,12 @@ final class DocEmailService
                 fn (Builder $query): Builder => $query->withoutOwnerScope(),
             )
             ->find($data['email_id']);
-        $email?->markAsClicked();
+
+        if ($email instanceof DocEmail) {
+            OwnerContext::withOwner($email->owner, static function () use ($email): void {
+                $email->markAsClicked();
+            });
+        }
 
         return $data['url'] ?? null;
     }

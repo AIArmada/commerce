@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * @property string $id
@@ -52,7 +53,7 @@ final class Block extends Model
         'metadata',
     ];
 
-    protected static string $ownerScopeConfigKey = 'moderation.features.owner';
+    protected static string $ownerScopeConfigKey = 'moderation.owner';
 
     public function getTable(): string
     {
@@ -100,7 +101,12 @@ final class Block extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', BlockStatus::Active);
+        return $query
+            ->where('status', BlockStatus::Active)
+            ->where(function (Builder $query): void {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', CarbonImmutable::now());
+            });
     }
 
     /**
@@ -110,5 +116,33 @@ final class Block extends Model
     public function scopeExpired(Builder $query): Builder
     {
         return $query->where('status', BlockStatus::Expired);
+    }
+
+    public function transitionTo(BlockStatus $status, ?CarbonImmutable $at = null): static
+    {
+        if ($this->exists && $this->status instanceof BlockStatus && $this->status === BlockStatus::Expired && $status !== BlockStatus::Expired) {
+            throw new LogicException('An expired moderation block cannot transition to another status.');
+        }
+
+        $at ??= CarbonImmutable::now();
+
+        $attributes = ['status' => $status];
+
+        if ($status === BlockStatus::Lifted) {
+            $attributes['lifted_at'] = $this->lifted_at ?? $at;
+        }
+
+        if ($status === BlockStatus::Active) {
+            $attributes['lifted_at'] = null;
+        }
+
+        $this->fill($attributes);
+
+        return $this;
+    }
+
+    public function expire(?CarbonImmutable $at = null): static
+    {
+        return $this->transitionTo(BlockStatus::Expired, $at);
     }
 }

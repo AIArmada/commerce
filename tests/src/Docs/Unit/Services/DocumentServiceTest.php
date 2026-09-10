@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Numbering\NumberStrategyRegistry;
+use AIArmada\Docs\Numbering\DocumentNumberRegistry;
+use AIArmada\Docs\Services\DocPaymentRecorder;
 use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Services\DocTotals;
 use AIArmada\Docs\Services\SequenceManager;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
@@ -17,8 +19,13 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->sequenceManager = new SequenceManager;
-    $this->numberRegistry = new NumberStrategyRegistry;
-    $this->service = new DocService($this->numberRegistry, $this->sequenceManager);
+    $this->numberRegistry = new DocumentNumberRegistry;
+    $this->service = new DocService(
+        $this->numberRegistry,
+        $this->sequenceManager,
+        new DocTotals,
+        new DocPaymentRecorder,
+    );
 });
 
 test('can create a document from type', function (): void {

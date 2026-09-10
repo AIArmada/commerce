@@ -28,8 +28,7 @@ final class DocsServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        // Numbering registry
-        $this->app->singleton(Numbering\NumberStrategyRegistry::class, Numbering\ConfiguredNumberStrategyRegistry::class);
+        $this->app->scoped(Numbering\DocumentNumberRegistry::class);
 
         // Sequence manager
         $this->app->singleton(SequenceManager::class);
@@ -37,11 +36,13 @@ final class DocsServiceProvider extends PackageServiceProvider
         $this->app->singleton(RichContentRendererInterface::class, TiptapJsonRenderer::class);
         $this->app->singleton(DocRenderService::class);
 
-        // Register Doc Service (with both dependencies)
-        $this->app->singleton(DocService::class, function ($app) {
+        // Register Doc Service
+        $this->app->scoped(DocService::class, function ($app) {
             return new DocService(
-                $app->make(Numbering\NumberStrategyRegistry::class),
+                $app->make(Numbering\DocumentNumberRegistry::class),
                 $app->make(SequenceManager::class),
+                $app->make(Services\DocTotals::class),
+                $app->make(Services\DocPaymentRecorder::class),
             );
         });
 
@@ -61,8 +62,10 @@ final class DocsServiceProvider extends PackageServiceProvider
             DocRenderService::class,
             RichContentRendererInterface::class,
             SequenceManager::class,
+            Services\DocTotals::class,
+            Services\DocPaymentRecorder::class,
             'doc',
-            Numbering\NumberStrategyRegistry::class,
+            Numbering\DocumentNumberRegistry::class,
         ];
     }
 }

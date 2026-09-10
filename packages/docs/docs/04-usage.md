@@ -11,6 +11,7 @@ Use the `DocService` to create documents:
 ```php
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
 $docService = app(DocService::class);
 
@@ -146,6 +147,8 @@ $docs = Doc::with(['template', 'statusHistories', 'docable'])
 
 When owner mode is enabled, the package models use `HasOwner` and follow the configured owner-scoping rules from `commerce-support`.
 
+Use `OwnerContext::withOwner($owner, ...)` around background or explicit tenant work. Do not assign `owner_type` or `owner_id` yourself; new rows inherit the current owner and inbound document/template IDs are checked against the same owner scope.
+
 ## Recording Payments
 
 Use `DocService::recordPayment()` for document payments. Payment statuses are backed by `DocPaymentStatus`; supported values are `paid`, `refunded`, `failed`, and `voided`.
@@ -163,6 +166,8 @@ $payment = app(DocService::class)->recordPayment($document, [
     'paid_at' => now(),
 ]);
 ```
+
+Payment recording is transactional, locks the document inside its owner scope, rejects non-positive amounts and overpayments, and transitions the document to `partially_paid` or `paid` through the canonical document state machine.
 
 ## Rendering and Share Links
 
@@ -187,3 +192,5 @@ $plainToken = $shareLink->plainToken();
 ```
 
 Share links resolve the document back inside its owner or explicit-global context, then serve either the HTML customer view or inline PDF with hardened response headers.
+
+Email open and click tracking are approximate engagement signals: they are GET endpoints and may be triggered by mail clients, prefetchers, or crawlers. Tracking destinations are encrypted in the token and redirects accept only relative paths or `http`/`https` URLs.

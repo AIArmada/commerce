@@ -22,17 +22,19 @@ title: Configuration
 - `database.tables.blocks` and `database.tables.moderation_actions` can be overridden individually
 - JSON column type is controlled by `commerce_json_column_type('moderation', 'jsonb')`
 
-## Features
+## Owner scoping
 
 ```php
-'features' => [
-    'owner' => [
-        'enabled' => env('MODERATION_OWNER_ENABLED', true),
-    ],
+'owner' => [
+    'enabled' => env('MODERATION_OWNER_ENABLED', true),
+    'include_global' => env('MODERATION_OWNER_INCLUDE_GLOBAL', false),
+    'auto_assign_on_create' => env('MODERATION_OWNER_AUTO_ASSIGN_ON_CREATE', true),
 ],
 ```
 
-- `features.owner.enabled` turns owner-aware validation on or off for tenant-owned models
+- `owner.enabled` turns owner-aware validation and scoping on or off
+- `owner.include_global` explicitly includes global moderation rows in owner queries
+- `owner.auto_assign_on_create` controls inheritance of the current owner on new rows
 - When enabled, blocks and moderation actions inherit the current owner and are isolated by the global owner scope
 
 ## Defaults

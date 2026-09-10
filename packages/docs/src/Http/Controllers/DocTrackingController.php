@@ -41,7 +41,11 @@ final class DocTrackingController extends Controller
     {
         $url = $this->sanitizeRedirectUrl($this->emailService->trackClick($token));
 
-        return redirect()->to($url);
+        return redirect()->to($url)->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Referrer-Policy' => 'no-referrer',
+        ]);
     }
 
     private function sanitizeRedirectUrl(?string $url): string

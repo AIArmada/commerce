@@ -2,11 +2,22 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\References\Enums\ReferenceStatus;
 use AIArmada\References\Enums\ReferenceType;
 use AIArmada\References\Models\Reference;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\MediaLibrary\MediaCollections\Models\Observers\MediaObserver;
+use Spatie\MediaLibrary\Support\FileNamer\DefaultFileNamer;
+use Spatie\MediaLibrary\Support\FileRemover\DefaultFileRemover;
+use Spatie\MediaLibrary\Support\PathGenerator\DefaultPathGenerator;
 
 beforeEach(function (): void {
+    config()->set('references.owner.enabled', true);
+
     $this->reference = Reference::create([
         'type' => ReferenceType::Book,
         'status' => ReferenceStatus::Draft,
@@ -100,3 +111,109 @@ test('has config-driven table name', function (): void {
     config()->set('references.database.tables.references', 'custom_references');
     expect((new Reference)->getTable())->toBe('custom_references');
 });
+
+test('owner scoping follows the commerce support contract', function (): void {
+    config()->set('references.owner.enabled', true);
+
+    $ownerA = User::query()->create([
+        'name' => 'References Owner A',
+        'email' => 'references-owner-a-' . uniqid() . '@example.test',
+        'password' => 'secret',
+    ]);
+    $ownerB = User::query()->create([
+        'name' => 'References Owner B',
+        'email' => 'references-owner-b-' . uniqid() . '@example.test',
+        'password' => 'secret',
+    ]);
+
+    $referenceA = OwnerContext::withOwner($ownerA, fn (): Reference => Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Draft,
+        'title' => 'Owner A Reference',
+    ]));
+    $referenceB = OwnerContext::withOwner($ownerB, fn (): Reference => Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Draft,
+        'title' => 'Owner B Reference',
+    ]));
+
+    expect($referenceA->owner_type)->toBe($ownerA->getMorphClass())
+        ->and($referenceA->owner_id)->toBe($ownerA->getKey())
+        ->and(OwnerContext::withOwner($ownerA, fn (): int => Reference::query()->count()))->toBe(1)
+        ->and(OwnerContext::withOwner($ownerB, fn (): int => Reference::query()->count()))->toBe(1)
+        ->and($referenceB->owner_id)->not->toBe($referenceA->owner_id);
+});
+
+test('deleting a reference removes its complete subtree and media', function (): void {
+    config()->set('media-library.file_namer', DefaultFileNamer::class);
+    config()->set('media-library.file_remover_class', DefaultFileRemover::class);
+    config()->set('media-library.path_generator', DefaultPathGenerator::class);
+    config()->set('media-library.max_file_size', 1024 * 1024);
+    Storage::fake('public');
+    Media::observe(MediaObserver::class);
+
+    $root = Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Draft,
+        'title' => 'Root Reference',
+    ]);
+    $child = Reference::create([
+        'type' => ReferenceType::Article,
+        'status' => ReferenceStatus::Draft,
+        'title' => 'Child Reference',
+        'parent_id' => $root->getKey(),
+    ]);
+    $grandchild = Reference::create([
+        'type' => ReferenceType::Article,
+        'status' => ReferenceStatus::Draft,
+        'title' => 'Grandchild Reference',
+        'parent_id' => $child->getKey(),
+    ]);
+
+    $addMedia = static function (Reference $reference, string $name): void {
+        $media = Media::create([
+            'model_type' => $reference->getMorphClass(),
+            'model_id' => $reference->getKey(),
+            'uuid' => (string) Str::uuid(),
+            'collection_name' => 'gallery',
+            'name' => $name,
+            'file_name' => $name . '.txt',
+            'mime_type' => 'text/plain',
+            'disk' => 'public',
+            'conversions_disk' => 'public',
+            'size' => 4,
+            'manipulations' => [],
+            'custom_properties' => [],
+            'generated_conversions' => [],
+            'responsive_images' => [],
+            'order_column' => 1,
+        ]);
+
+        Storage::disk('public')->put($media->getKey() . '/' . $media->file_name, 'data');
+    };
+
+    $addMedia($root, 'root');
+    $addMedia($child, 'child');
+    $addMedia($grandchild, 'grandchild');
+
+    $root->delete();
+
+    expect(Reference::query()->whereKey($this->reference->getKey())->exists())->toBeTrue()
+        ->and(Reference::query()->whereKey([$root->getKey(), $child->getKey(), $grandchild->getKey()])->count())->toBe(0)
+        ->and(Media::query()->where('model_type', $root->getMorphClass())->count())->toBe(0)
+        ->and(Storage::disk('public')->allFiles())->toBe([]);
+});
+
+test('slug configuration fails loudly when invalid', function (mixed $source, mixed $maxLength): void {
+    config()->set('references.slug.source', $source);
+    config()->set('references.slug.max_length', $maxLength);
+
+    expect(fn (): mixed => (new Reference)->getSlugOptions())
+        ->toThrow(InvalidArgumentException::class);
+})->with([
+    [null, 200],
+    ['unknown_attribute', 200],
+    ['year', 200],
+    ['title', 0],
+    ['title', 'invalid'],
+]);

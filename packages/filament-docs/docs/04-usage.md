@@ -70,6 +70,8 @@ The form is template-aware:
 - Cancel
 - Delete
 
+The Filament actions keep form presentation and notifications in the adapter. Payment balance checks, owner validation, locking, and document status transitions live in `aiarmada/docs`; email template selection and delivery likewise stay in `DocEmailService`.
+
 ### Relation Managers
 
 - `StatusHistoriesRelationManager`

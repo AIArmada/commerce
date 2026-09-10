@@ -35,7 +35,7 @@ beforeEach(function (): void {
         $table->timestamps();
     });
 
-    config()->set('moderation.features.owner.enabled', false);
+    config()->set('moderation.owner.enabled', false);
 
     $this->entity = BlockableTestModel::create(['name' => 'Test Entity']);
 
@@ -136,9 +136,17 @@ describe('scopeWhereNotBlocked', function (): void {
     });
 });
 
+test('deleting a blockable expires active blocks and retains their audit row', function (): void {
+    $blockId = $this->blockedEntity->blocks()->firstOrFail()->getKey();
+
+    $this->blockedEntity->delete();
+
+    expect(Block::find($blockId)?->status)->toBe(BlockStatus::Expired);
+});
+
 describe('block helper', function (): void {
     it('creates a block for a global model when owner scoping is enabled', function (): void {
-        config()->set('moderation.features.owner.enabled', true);
+        config()->set('moderation.owner.enabled', true);
 
         $block = $this->entity->block(
             reason: BlockReason::Spam->value,
@@ -152,7 +160,7 @@ describe('block helper', function (): void {
     });
 
     it('rejects a cross-owner blockedBy model', function (): void {
-        config()->set('moderation.features.owner.enabled', true);
+        config()->set('moderation.owner.enabled', true);
 
         $otherOwner = User::create([
             'name' => 'Other Owner',
