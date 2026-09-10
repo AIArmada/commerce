@@ -41,9 +41,9 @@ final class InventoryLevelResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = InventoryLevel::query()->with('location');
-
-        return InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
+        return InventoryOwnerScope::applyToLocationQuery(
+            parent::getEloquentQuery()->with('location')
+        );
     }
 
     public static function form(Schema $schema): Schema

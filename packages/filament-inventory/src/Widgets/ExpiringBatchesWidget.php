@@ -27,14 +27,14 @@ final class ExpiringBatchesWidget extends TableWidget
 
     public function table(Table $table): Table
     {
-        $query = InventoryBatch::query()
-            ->allocatable()
-            ->expiringSoon(config('filament-inventory.tables.expiry_warning_days', 30))
-            ->with(['location'])
-            ->orderBy('expires_at')
-            ->limit(10);
-
-        InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
+        $query = InventoryOwnerScope::applyToLocationQuery(
+            InventoryBatch::query()
+                ->allocatable()
+                ->expiringSoon(config('filament-inventory.tables.expiry_warning_days', 30))
+                ->with(['location'])
+                ->orderBy('expires_at')
+                ->limit(10)
+        );
 
         return $table
             ->query($query)

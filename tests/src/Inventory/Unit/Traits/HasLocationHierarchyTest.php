@@ -297,13 +297,13 @@ describe('HasLocationHierarchy', function (): void {
         });
     });
 
-    describe('moveTo', function (): void {
+    describe('LocationTreeService moves', function (): void {
         it('moves location to new parent', function (): void {
             $root1 = InventoryLocation::factory()->create(['name' => 'Root 1']);
             $root2 = InventoryLocation::factory()->create(['name' => 'Root 2']);
             $child = InventoryLocation::factory()->create(['name' => 'Child', 'parent_id' => $root1->id]);
 
-            $child->moveTo($root2);
+            app(LocationTreeService::class)->moveLocation($child, $root2);
 
             expect($child->fresh()->parent_id)->toBe($root2->id);
         });
@@ -312,7 +312,7 @@ describe('HasLocationHierarchy', function (): void {
             $root = InventoryLocation::factory()->create(['name' => 'Root']);
             $child = InventoryLocation::factory()->create(['name' => 'Child', 'parent_id' => $root->id]);
 
-            $child->moveTo(null);
+            app(LocationTreeService::class)->moveLocation($child, null);
 
             expect($child->fresh()->parent_id)->toBeNull();
             expect($child->fresh()->isRoot())->toBeTrue();
@@ -323,7 +323,8 @@ describe('HasLocationHierarchy', function (): void {
             $child = InventoryLocation::factory()->create(['name' => 'Child', 'parent_id' => $root->id]);
             $grandchild = InventoryLocation::factory()->create(['name' => 'Grandchild', 'parent_id' => $child->id]);
 
-            expect(fn () => $root->moveTo($grandchild))->toThrow(InvalidArgumentException::class);
+            expect(fn () => app(LocationTreeService::class)->moveLocation($root, $grandchild))
+                ->toThrow(InvalidArgumentException::class);
         });
     });
 

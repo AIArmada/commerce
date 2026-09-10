@@ -42,7 +42,7 @@ final class InventoryLocationResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
+        return InventoryOwnerScope::applyToLocationQuery(parent::getEloquentQuery());
     }
 
     public static function form(Schema $schema): Schema

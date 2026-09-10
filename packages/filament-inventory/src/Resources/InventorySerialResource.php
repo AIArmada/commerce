@@ -20,7 +20,6 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use UnitEnum;
 
 final class InventorySerialResource extends Resource
@@ -44,14 +43,12 @@ final class InventorySerialResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = InventorySerial::query()->with([
-            'location',
-            'batch' => static function (Relation $relation): void {
-                InventoryOwnerScope::applyToQueryByLocationRelation($relation->getQuery(), 'location');
-            },
-        ]);
-
-        return InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
+        return InventoryOwnerScope::applyToLocationQuery(
+            parent::getEloquentQuery()->with([
+                'location',
+                'batch',
+            ])
+        );
     }
 
     public static function form(Schema $schema): Schema

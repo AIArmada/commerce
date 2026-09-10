@@ -287,6 +287,22 @@ describe('NearestLocationStrategy', function (): void {
         expect($locations->first()->id)->toBe($near->id);
     });
 
+    it('sorts locations without horizontal coordinates last', function (): void {
+        $withCoordinates = InventoryLocation::factory()->create([
+            'coordinate_x' => 1,
+            'coordinate_y' => 1,
+        ]);
+        $withoutCoordinates = InventoryLocation::factory()->create([
+            'coordinate_x' => null,
+            'coordinate_y' => null,
+        ]);
+
+        $locations = $this->strategy->getLocationsByDistance(0, 0);
+
+        expect($locations->last()->id)->toBe($withoutCoordinates->id)
+            ->and($locations->first()->id)->toBe($withCoordinates->id);
+    });
+
     it('calculates distance correctly with z coordinate', function (): void {
         $location1 = InventoryLocation::factory()->create([
             'coordinate_x' => 3,

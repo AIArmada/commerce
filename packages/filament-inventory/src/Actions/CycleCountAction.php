@@ -54,10 +54,7 @@ final class CycleCountAction
                                     return;
                                 }
 
-                                $stockLevel = InventoryOwnerScope::applyToQueryByLocationRelation(
-                                    InventoryLevel::query(),
-                                    'location'
-                                )
+                                $stockLevel = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
                                     ->where('inventoryable_type', $record->getMorphClass())
                                     ->where('inventoryable_id', $record->getKey())
                                     ->where('location_id', $state)

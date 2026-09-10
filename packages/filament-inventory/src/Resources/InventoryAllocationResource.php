@@ -38,9 +38,9 @@ final class InventoryAllocationResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = InventoryAllocation::query()->with(['location', 'level']);
-
-        return InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
+        return InventoryOwnerScope::applyToLocationQuery(
+            parent::getEloquentQuery()->with(['location', 'level'])
+        );
     }
 
     public static function canCreate(): bool

@@ -2,7 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Inventory\Models\InventoryOperation;
 use Illuminate\Support\Facades\Schema;
+
+it('includes the operations table in the configurable table map', function (): void {
+    expect(config('inventory.database.tables.operations'))->toBe('inventory_operations')
+        ->and((new InventoryOperation)->getTable())->toBe('inventory_operations');
+});
 
 it('keeps the reservation group schema change in its dedicated migration', function (): void {
     $repoRoot = dirname(__DIR__, 4);

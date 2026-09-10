@@ -39,7 +39,7 @@ final class InventoryMovementResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = InventoryMovement::query()->with(['fromLocation', 'toLocation']);
+        $query = parent::getEloquentQuery()->with(['fromLocation', 'toLocation']);
 
         return InventoryOwnerScope::applyToMovementQuery($query);
     }

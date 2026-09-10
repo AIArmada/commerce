@@ -42,9 +42,9 @@ final class InventoryBatchResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = InventoryBatch::query()->with('location');
-
-        return InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
+        return InventoryOwnerScope::applyToLocationQuery(
+            parent::getEloquentQuery()->with('location')
+        );
     }
 
     public static function form(Schema $schema): Schema

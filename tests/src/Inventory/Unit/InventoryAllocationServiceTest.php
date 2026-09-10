@@ -226,12 +226,13 @@ describe('InventoryAllocationService', function (): void {
         expect($result['issues'][0]['available'])->toBe(16);
     });
 
-    it('get strategy returns default from config', function (): void {
-        config()->set('inventory.allocation_strategy', 'fifo');
+    it('resolves every configured allocation strategy', function (): void {
+        foreach (AllocationStrategy::cases() as $configuredStrategy) {
+            config()->set('inventory.allocation_strategy', $configuredStrategy->value);
 
-        $strategy = $this->allocationService->getStrategy($this->item);
-
-        expect($strategy)->toBe(AllocationStrategy::FIFO);
+            expect($this->allocationService->getStrategy($this->item))
+                ->toBe($configuredStrategy);
+        }
     });
 
     it('release allocation releases single allocation', function (): void {

@@ -10,7 +10,6 @@ use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Route;
 
 final class BackordersWidget extends TableWidget
@@ -28,22 +27,20 @@ final class BackordersWidget extends TableWidget
 
     public function table(Table $table): Table
     {
-        $query = InventoryBackorder::query()
-            ->whereIn('status', InventoryBackorder::openStatuses())
-            ->byPriority()
-            ->with(['location'])
-            ->limit(10);
+        $query = InventoryOwnerScope::applyToLocationQuery(
+            InventoryBackorder::query()
+                ->whereIn('status', InventoryBackorder::openStatuses())
+                ->byPriority()
+                ->with(['location'])
+                ->limit(10)
+        );
 
         if (InventoryOwnerScope::isEnabled()) {
             $includeNullLocation = InventoryOwnerScope::includeGlobal() || InventoryOwnerScope::resolveOwner() === null;
 
-            $query->where(function (Builder $builder) use ($includeNullLocation): void {
-                $builder->whereHas('location', fn (Builder $locationQuery): Builder => InventoryOwnerScope::applyToLocationQuery($locationQuery));
-
-                if ($includeNullLocation) {
-                    $builder->orWhereNull('location_id');
-                }
-            });
+            if (! $includeNullLocation) {
+                $query->whereNotNull('location_id');
+            }
         }
 
         return $table

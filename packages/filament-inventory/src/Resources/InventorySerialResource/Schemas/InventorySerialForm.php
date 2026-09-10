@@ -47,7 +47,7 @@ final class InventorySerialForm
                                 ->relationship(
                                     name: 'batch',
                                     titleAttribute: 'batch_number',
-                                    modifyQueryUsing: fn (Builder $query): Builder => InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location'),
+                                    modifyQueryUsing: fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query),
                                 )
                                 ->searchable()
                                 ->preload(),

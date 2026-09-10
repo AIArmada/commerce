@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Services;
 
-use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Reports\MovementAnalysisReport;
+use AIArmada\Inventory\Reports\StockLevelReport;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
-use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 final class InventoryStatsAggregator
 {
@@ -21,105 +18,39 @@ final class InventoryStatsAggregator
 
     private const CACHE_PREFIX = 'inventory_stats_';
 
+    public function __construct(
+        private readonly StockLevelReport $stockLevelReport,
+        private readonly MovementAnalysisReport $movementAnalysisReport,
+    ) {}
+
     /**
-     * Get overview statistics.
+     * Get overview statistics from the domain reporting service.
      *
      * @return array{total_locations: int, active_locations: int, total_skus: int, total_on_hand: int, total_reserved: int, active_allocations: int}
      */
     public function overview(): array
     {
-        $locationQuery = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
-
-        $levelQuery = InventoryOwnerScope::applyToQueryByLocationRelation(
-            InventoryLevel::query(),
-            'location'
-        );
-
-        $allocationQuery = InventoryOwnerScope::applyToQueryByLocationRelation(
-            InventoryAllocation::query(),
-            'location'
-        );
-
-        $locationTotals = (clone $locationQuery)
-            ->selectRaw('COUNT(*) as total_locations')
-            ->selectRaw('SUM(CASE WHEN is_active = ? THEN 1 ELSE 0 END) as active_locations', [true])
-            ->toBase()
-            ->first();
-        $levelTotals = (clone $levelQuery)
-            ->selectRaw('COALESCE(SUM(quantity_on_hand), 0) as total_on_hand')
-            ->selectRaw('COALESCE(SUM(quantity_reserved), 0) as total_reserved')
-            ->toBase()
-            ->first();
-
-        return [
-            'total_locations' => (int) ($locationTotals->total_locations ?? 0),
-            'active_locations' => (int) ($locationTotals->active_locations ?? 0),
-            'total_skus' => $this->countDistinctSkus(),
-            'total_on_hand' => (int) ($levelTotals->total_on_hand ?? 0),
-            'total_reserved' => (int) ($levelTotals->total_reserved ?? 0),
-            'active_allocations' => (clone $allocationQuery)->active()->count(),
-        ];
+        return $this->stockLevelReport->getOverview();
     }
 
     /**
-     * Get movement statistics for a period.
+     * Get movement statistics from the domain reporting service.
      *
      * @return array{receipts: int, shipments: int, transfers: int, adjustments: int, total: int}
      */
     public function movementStats(int $days = 30): array
     {
-        $since = CarbonImmutable::now()->subDays($days);
-
-        $movementQuery = InventoryOwnerScope::applyToMovementQuery(InventoryMovement::query());
-
-        $movements = (clone $movementQuery)
-            ->where('occurred_at', '>=', $since)
-            ->selectRaw('type, SUM(quantity) as total')
-            ->groupBy('type')
-            ->pluck('total', 'type')
-            ->toArray();
-
-        return [
-            'receipts' => (int) ($movements['receipt'] ?? 0),
-            'shipments' => (int) ($movements['shipment'] ?? 0),
-            'transfers' => (int) ($movements['transfer'] ?? 0),
-            'adjustments' => (int) ($movements['adjustment'] ?? 0),
-            'total' => $movementQuery->where('occurred_at', '>=', $since)->count(),
-        ];
+        return $this->movementAnalysisReport->getStats($days);
     }
 
-    /**
-     * Get low inventory items count.
-     */
     public function lowInventoryCount(?int $threshold = null): int
     {
-        $threshold ??= config('inventory.default_reorder_point', 10);
-
-        $query = InventoryOwnerScope::applyToQueryByLocationRelation(
-            InventoryLevel::query(),
-            'location'
-        );
-
-        return $query
-            ->whereRaw('(quantity_on_hand - quantity_reserved) <= ?', [$threshold])
-            ->whereHas('location', fn (Builder $q): Builder => $q->where('is_active', true))
-            ->count();
+        return $this->stockLevelReport->getLowInventoryCount($threshold);
     }
 
-    /**
-     * Get out of stock items count.
-     */
     public function outOfStockCount(): int
     {
-        $query = InventoryOwnerScope::applyToQueryByLocationRelation(
-            InventoryLevel::query(),
-            'location'
-        );
-
-        return $query
-            ->whereRaw('(quantity_on_hand - quantity_reserved) <= 0')
-            ->whereHas('location', fn (Builder $q): Builder => $q->where('is_active', true))
-            ->count();
+        return $this->stockLevelReport->getOutOfStockCount();
     }
 
     /**
@@ -130,43 +61,22 @@ final class InventoryStatsAggregator
     public function getOverviewStats(): array
     {
         return $this->cached('overview_stats', function (): array {
-            $levelQuery = InventoryOwnerScope::applyToQueryByLocationRelation(
-                InventoryLevel::query(),
-                'location'
-            );
-
-            $locationQuery = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
-
-            $totalOnHand = (int) $levelQuery->sum('quantity_on_hand');
-            $totalReserved = (int) $levelQuery->sum('quantity_reserved');
+            $overview = $this->stockLevelReport->getOverview();
 
             return [
-                'active_locations' => $locationQuery->active()->count(),
-                'total_skus' => $this->countDistinctSkus(),
-                'total_on_hand' => $totalOnHand,
-                'total_reserved' => $totalReserved,
-                'total_available' => $totalOnHand - $totalReserved,
-                'low_stock_count' => $this->lowStockCount(),
+                'active_locations' => $overview['active_locations'],
+                'total_skus' => $overview['total_skus'],
+                'total_on_hand' => $overview['total_on_hand'],
+                'total_reserved' => $overview['total_reserved'],
+                'total_available' => $overview['total_on_hand'] - $overview['total_reserved'],
+                'low_stock_count' => $this->stockLevelReport->getLowStockCount(),
             ];
         });
     }
 
-    /**
-     * Get low stock count based on reorder points.
-     */
     public function lowStockCount(): int
     {
-        return $this->cached('low_stock_count', function (): int {
-            $query = InventoryOwnerScope::applyToQueryByLocationRelation(
-                InventoryLevel::query(),
-                'location'
-            );
-
-            return $query
-                ->whereRaw('quantity_on_hand - quantity_reserved <= reorder_point')
-                ->where('reorder_point', '>', 0)
-                ->count();
-        });
+        return $this->cached('low_stock_count', fn (): int => $this->stockLevelReport->getLowStockCount());
     }
 
     /**
@@ -176,23 +86,9 @@ final class InventoryStatsAggregator
      */
     public function getLowStockQuery(): Builder
     {
-        $query = InventoryOwnerScope::applyToQueryByLocationRelation(
-            InventoryLevel::query(),
-            'location'
-        );
-
-        return $query
-            ->with('location')
-            ->whereHas('location', fn (Builder $q): Builder => $q->where('is_active', true))
-            ->whereRaw('quantity_on_hand - quantity_reserved <= reorder_point')
-            ->where('reorder_point', '>', 0)
-            ->addSelect(DB::raw('(reorder_point - (quantity_on_hand - quantity_reserved)) AS deficit'))
-            ->orderByRaw('reorder_point - (quantity_on_hand - quantity_reserved) DESC');
+        return $this->stockLevelReport->getLowStockQuery();
     }
 
-    /**
-     * Clear all cached inventory stats.
-     */
     public function clearCache(): void
     {
         $suffix = InventoryOwnerScope::cacheKeySuffix();
@@ -202,27 +98,6 @@ final class InventoryStatsAggregator
     }
 
     /**
-     * Count distinct SKUs (unique inventoryable_type + inventoryable_id combinations).
-     * Uses a subquery approach for SQLite compatibility.
-     */
-    private function countDistinctSkus(): int
-    {
-        $scopedDistinctSkuQuery = InventoryOwnerScope::applyToQueryByLocationRelation(
-            InventoryLevel::query(),
-            'location'
-        )
-            ->select('inventoryable_type', 'inventoryable_id')
-            ->distinct();
-
-        return (int) InventoryLevel::query()
-            ->getQuery()
-            ->fromSub($scopedDistinctSkuQuery->toBase(), 'distinct_skus')
-            ->count();
-    }
-
-    /**
-     * Cache helper for stats queries.
-     *
      * @template T
      *
      * @param  Closure(): T  $callback
@@ -240,7 +115,7 @@ final class InventoryStatsAggregator
         $cached = Cache::remember(
             self::CACHE_PREFIX . $key . '|' . InventoryOwnerScope::cacheKeySuffix(),
             $ttl,
-            $callback
+            $callback,
         );
 
         return $cached;

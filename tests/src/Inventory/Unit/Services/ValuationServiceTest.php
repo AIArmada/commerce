@@ -8,22 +8,12 @@ use AIArmada\Inventory\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryValuationSnapshot;
-use AIArmada\Inventory\Services\Costing\FifoCostService;
-use AIArmada\Inventory\Services\Costing\StandardCostService;
 use AIArmada\Inventory\Services\Costing\ValuationService;
-use AIArmada\Inventory\Services\Costing\WeightedAverageCostService;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     $this->product = InventoryItem::create(['name' => 'Test Product']);
-    $this->fifoCostService = new FifoCostService;
-    $this->weightedAverageCostService = new WeightedAverageCostService;
-    $this->standardCostService = new StandardCostService;
-    $this->service = new ValuationService(
-        $this->fifoCostService,
-        $this->weightedAverageCostService,
-        $this->standardCostService
-    );
+    $this->service = app(ValuationService::class);
 });
 
 describe('calculateValuation', function (): void {

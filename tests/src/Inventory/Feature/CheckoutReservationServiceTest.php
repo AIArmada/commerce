@@ -12,6 +12,7 @@ use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryReservation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use Carbon\CarbonImmutable;
 
 describe('CheckoutReservationService', function (): void {
     beforeEach(function (): void {
@@ -84,6 +85,21 @@ describe('CheckoutReservationService', function (): void {
         expect($group?->status)->toBe('released');
 
         // ponytail: not asserting allocations are deleted since releaseAllForCart may handle them differently
+    });
+
+    it('cleans expired reservation bookkeeping and releases reserved stock', function (): void {
+        $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 5)];
+        $this->reservationService->reserve('ref-cleanup', $lines, 900);
+
+        $group = InventoryReservation::query()->where('reference', 'ref-cleanup')->firstOrFail();
+        $group->update(['expires_at' => CarbonImmutable::now()->subSecond()]);
+
+        $deleted = $this->reservationService->cleanupExpiredReservations();
+
+        expect($deleted)->toBe(1)
+            ->and(InventoryReservation::query()->whereKey($group->id)->exists())->toBeFalse()
+            ->and(InventoryAllocation::query()->where('reservation_group_id', $group->id)->exists())->toBeFalse()
+            ->and($this->inventoryService->getLevel($this->item, $this->location->id)?->fresh()?->quantity_reserved)->toBe(0);
     });
 
     it('extends ttl', function (): void {

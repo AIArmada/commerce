@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
@@ -79,25 +78,6 @@ describe('HasInventory trait', function (): void {
         });
     });
 
-    describe('inventoryAllocations relationship', function (): void {
-        it('returns morph many relationship', function (): void {
-            expect($this->item->inventoryAllocations())->toBeInstanceOf(MorphMany::class);
-        });
-
-        it('returns allocations for the model', function (): void {
-            $allocation = InventoryAllocation::factory()->create([
-                'inventoryable_type' => $this->item->getMorphClass(),
-                'inventoryable_id' => $this->item->getKey(),
-                'location_id' => $this->location->id,
-            ]);
-
-            $allocations = $this->item->inventoryAllocations;
-
-            expect($allocations)->toHaveCount(1);
-            expect($allocations->first()->id)->toBe($allocation->id);
-        });
-    });
-
     describe('getTotalOnHand', function (): void {
         it('returns total quantity on hand', function (): void {
             expect($this->item->getTotalOnHand())->toBe(100);
@@ -164,117 +144,19 @@ describe('HasInventory trait', function (): void {
         });
     });
 
-    describe('receive', function (): void {
-        it('creates a movement for receiving inventory', function (): void {
-            $movement = $this->item->receive(
-                $this->location->id,
-                25,
-                'purchase',
-                'Restocking',
-                'user-123'
-            );
-
-            expect($movement)->toBeInstanceOf(InventoryMovement::class);
-            expect($movement->quantity)->toBe(25);
-        });
-    });
-
-    describe('ship', function (): void {
-        it('creates a movement for shipping inventory', function (): void {
-            $movement = $this->item->ship(
-                $this->location->id,
-                10,
-                'sale',
-                'order-123',
-                'Shipping to customer',
-                'user-123'
-            );
-
-            expect($movement)->toBeInstanceOf(InventoryMovement::class);
-            expect(abs($movement->quantity))->toBe(10);
-        });
-    });
-
-    describe('transfer', function (): void {
-        it('creates transfer movement', function (): void {
-            $location2 = InventoryLocation::factory()->create();
-            InventoryLevel::factory()->create([
-                'inventoryable_type' => $this->item->getMorphClass(),
-                'inventoryable_id' => $this->item->getKey(),
-                'location_id' => $location2->id,
-                'quantity_on_hand' => 0,
-            ]);
-
-            $movement = $this->item->transfer(
-                $this->location->id,
-                $location2->id,
-                20,
-                'Moving to new warehouse',
-                'user-123'
-            );
-
-            expect($movement)->toBeInstanceOf(InventoryMovement::class);
-        });
-    });
-
-    describe('adjustInventory', function (): void {
-        it('creates adjustment movement', function (): void {
-            $movement = $this->item->adjustInventory(
-                $this->location->id,
-                95,
-                'count',
-                'Physical count adjustment',
-                'user-123'
-            );
-
-            expect($movement)->toBeInstanceOf(InventoryMovement::class);
-        });
-    });
-
-    describe('allocate', function (): void {
-        it('creates allocations for cart', function (): void {
-            $allocations = $this->item->allocate(10, 'cart-123', 30);
-
-            expect($allocations)->toBeInstanceOf(Collection::class);
-            expect($allocations->sum('quantity'))->toBe(10);
-        });
-    });
-
-    describe('release', function (): void {
-        it('releases allocations for cart', function (): void {
-            $this->item->allocate(10, 'cart-123', 30);
-
-            $released = $this->item->release('cart-123');
-
-            expect($released)->toBe(10);
-        });
-
-        it('returns 0 when no allocations', function (): void {
-            expect($this->item->release('nonexistent-cart'))->toBe(0);
-        });
-    });
-
-    describe('getAllocations', function (): void {
-        it('returns allocations for cart', function (): void {
-            $this->item->allocate(10, 'cart-456', 30);
-
-            $allocations = $this->item->getAllocations('cart-456');
-
-            expect($allocations)->toBeInstanceOf(Collection::class);
-            expect($allocations->sum('quantity'))->toBe(10);
-        });
-
-        it('returns empty collection when no allocations', function (): void {
-            $allocations = $this->item->getAllocations('no-cart');
-
-            expect($allocations)->toBeEmpty();
-        });
+    it('keeps stock mutation and cart allocation APIs on services', function (): void {
+        expect(method_exists($this->item, 'receive'))->toBeFalse()
+            ->and(method_exists($this->item, 'allocate'))->toBeFalse()
+            ->and(method_exists($this->item, 'release'))->toBeFalse();
     });
 
     describe('getInventoryHistory', function (): void {
         it('returns movement history', function (): void {
-            $this->item->receive($this->location->id, 10, 'test');
-            $this->item->ship($this->location->id, 5, 'test');
+            InventoryMovement::factory()->count(2)->create([
+                'inventoryable_type' => $this->item->getMorphClass(),
+                'inventoryable_id' => $this->item->getKey(),
+                'to_location_id' => $this->location->id,
+            ]);
 
             $history = $this->item->getInventoryHistory();
 
@@ -284,7 +166,11 @@ describe('HasInventory trait', function (): void {
 
         it('respects limit parameter', function (): void {
             for ($i = 0; $i < 5; $i++) {
-                $this->item->receive($this->location->id, 1, 'test');
+                InventoryMovement::factory()->create([
+                    'inventoryable_type' => $this->item->getMorphClass(),
+                    'inventoryable_id' => $this->item->getKey(),
+                    'to_location_id' => $this->location->id,
+                ]);
             }
 
             $history = $this->item->getInventoryHistory(2);
@@ -311,50 +197,4 @@ describe('HasInventory trait', function (): void {
         });
     });
 
-    describe('receiveAtDefault', function (): void {
-        it('creates a movement for receiving inventory at default location', function (): void {
-            $defaultLocation = InventoryLocation::getOrCreateDefault();
-            InventoryLevel::factory()->create([
-                'inventoryable_type' => $this->item->getMorphClass(),
-                'inventoryable_id' => $this->item->getKey(),
-                'location_id' => $defaultLocation->id,
-                'quantity_on_hand' => 0,
-            ]);
-
-            $movement = $this->item->receiveAtDefault(
-                50,
-                'restocking',
-                'Initial stock',
-                'user-123'
-            );
-
-            expect($movement)->toBeInstanceOf(InventoryMovement::class);
-            expect($movement->quantity)->toBe(50);
-            expect($movement->to_location_id)->toBe($defaultLocation->id);
-        });
-    });
-
-    describe('shipFromDefault', function (): void {
-        it('creates a movement for shipping from default location', function (): void {
-            $defaultLocation = InventoryLocation::getOrCreateDefault();
-            InventoryLevel::factory()->create([
-                'inventoryable_type' => $this->item->getMorphClass(),
-                'inventoryable_id' => $this->item->getKey(),
-                'location_id' => $defaultLocation->id,
-                'quantity_on_hand' => 100,
-            ]);
-
-            $movement = $this->item->shipFromDefault(
-                25,
-                'sale',
-                'ORDER-123',
-                'Shipped to customer',
-                'user-123'
-            );
-
-            expect($movement)->toBeInstanceOf(InventoryMovement::class);
-            expect(abs($movement->quantity))->toBe(25);
-            expect($movement->from_location_id)->toBe($defaultLocation->id);
-        });
-    });
 });
