@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Models\CommunicationEvent;
 use AIArmada\Communications\Models\CommunicationTrackingToken;
@@ -12,6 +13,10 @@ use Illuminate\Support\Facades\DB;
 
 final class RecordTrackingInteractionAction
 {
+    public function __construct(
+        private readonly PayloadRedactor $redactor,
+    ) {}
+
     public function handle(
         string $tokenId,
         string $interactionType,
@@ -37,7 +42,7 @@ final class RecordTrackingInteractionAction
             $event->source = CommunicationEventSource::Tracking;
             $event->occurred_at = CarbonImmutable::now();
             $event->received_at = CarbonImmutable::now();
-            $event->metadata = $metadata;
+            $event->metadata = $metadata !== null ? $this->redactor->redact($metadata) : null;
             $event->save();
 
             return $event;

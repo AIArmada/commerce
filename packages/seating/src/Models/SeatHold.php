@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -23,6 +24,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property CarbonImmutable|null $expires_at
  * @property CarbonImmutable|null $converted_at
  * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class SeatHold extends Model
 {

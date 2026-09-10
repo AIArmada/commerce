@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Models\CommunicationBatch;
 use Carbon\CarbonImmutable;
 
 final class CreateCommunicationBatchAction
 {
+    public function __construct(
+        private readonly PayloadRedactor $redactor,
+    ) {}
+
     public function handle(
         string $category,
         ?string $name = null,
@@ -26,7 +31,7 @@ final class CreateCommunicationBatchAction
         $batch->idempotency_key = $idempotencyKey;
         $batch->scheduled_at = $scheduledAt !== null ? CarbonImmutable::parse($scheduledAt) : null;
         $batch->expires_at = $expiresAt !== null ? CarbonImmutable::parse($expiresAt) : null;
-        $batch->metadata = $metadata;
+        $batch->metadata = $metadata !== null ? $this->redactor->redact($metadata) : null;
         $batch->save();
 
         return $batch;

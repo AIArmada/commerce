@@ -22,6 +22,8 @@ return [
         'currency' => env('TICKETING_CURRENCY', env('COMMERCE_CURRENCY', 'MYR')),
         'pass_no_prefix' => env('TICKETING_PASS_NO_PREFIX', 'PASS-'),
     ],
+    'ticketable_types' => [],
+    'allowed_ticketable_types' => [],
     'transfers' => [
         'bulk_max_size' => env('TICKETING_BULK_TRANSFER_MAX', 100),
         'expiry_grace_period' => env('TICKETING_TRANSFER_EXPIRY_GRACE', 0),
@@ -35,11 +37,11 @@ return [
     ],
     'features' => [
         'auto_issue_passes' => env('TICKETING_AUTO_ISSUE_PASSES', true),
-        'owner' => [
-            'enabled' => env('TICKETING_OWNER_ENABLED', true),
-            'include_global' => false,
-            'auto_assign_on_create' => env('TICKETING_OWNER_AUTO_ASSIGN', true),
-        ],
+    ],
+    'owner' => [
+        'enabled' => env('TICKETING_OWNER_ENABLED', true),
+        'include_global' => false,
+        'auto_assign_on_create' => env('TICKETING_OWNER_AUTO_ASSIGN', true),
     ],
     'events' => [
         'pricing_consistency_check' => env('TICKETING_PRICING_CONSISTENCY_CHECK', true),

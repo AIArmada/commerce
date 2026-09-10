@@ -6,10 +6,15 @@ namespace AIArmada\Communications\Actions;
 
 use AIArmada\Communications\Models\Communication;
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class PruneCommunicationDataAction
 {
+    public function __construct(
+        private readonly DeleteCommunicationAggregateAction $deleteCommunication,
+    ) {}
+
     public function handle(DateTimeInterface $before): int
     {
         $pruned = 0;
@@ -24,8 +29,10 @@ final class PruneCommunicationDataAction
                 });
 
             $count = $query->count();
-            $query->each(function (Communication $communication): void {
-                $communication->delete();
+            $query->chunkById(100, function (Collection $communications): void {
+                $communications->each(function (Communication $communication): void {
+                    $this->deleteCommunication->handle((string) $communication->getKey());
+                });
             });
 
             return $count;

@@ -41,6 +41,15 @@ class Workshop extends Model implements TicketableInterface
 }
 ```
 
+Configure the core registry when consumers need to resolve ticketables:
+
+```php
+use AIArmada\Ticketing\Support\TicketableTypeRegistry;
+
+config()->set('ticketing.ticketable_types', [Workshop::class]);
+app(TicketableTypeRegistry::class)->register(Workshop::class);
+```
+
 The `TicketableInterface` requires four methods:
 
 | Method | Returns | Description |

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Communications\Actions\AddCommunicationRecipientAction;
 use AIArmada\Communications\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Actions\CompleteDeliveryAttemptAction;
 use AIArmada\Communications\Actions\CreateCommunicationAction;
 use AIArmada\Communications\Actions\CreateSuppressionAction;
 use AIArmada\Communications\Actions\LiftSuppressionAction;
@@ -12,6 +13,7 @@ use AIArmada\Communications\Actions\RecordNotificationSendingAction;
 use AIArmada\Communications\Actions\RecordProviderEventAction;
 use AIArmada\Communications\Actions\RedactCommunicationPayloadAction;
 use AIArmada\Communications\Actions\RenderCommunicationContentAction;
+use AIArmada\Communications\Actions\StartDeliveryAttemptAction;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Data\PlannedDeliveryData;
@@ -135,6 +137,49 @@ test('RedactCommunicationPayloadAction redacts content payload', function (): vo
     $fresh = CommunicationContent::find($content->id);
     expect($fresh->payload['password'])->toBe('**[REDACTED]**');
     expect($fresh->payload['email'])->toBe('test@example.com');
+});
+
+test('delivery attempt payloads are redacted before persistence', function (): void {
+    $communication = Communication::create([
+        'direction' => CommunicationDirection::Outbound,
+        'category' => CommunicationCategory::Transactional,
+        'priority' => CommunicationPriority::Normal,
+        'purpose' => 'attempt-redaction-test',
+        'status' => CommunicationStatus::Draft,
+    ]);
+
+    $recipient = CommunicationRecipient::create([
+        'communication_id' => $communication->id,
+        'role' => RecipientRole::To,
+    ]);
+
+    $delivery = CommunicationDelivery::create([
+        'communication_id' => $communication->id,
+        'recipient_id' => $recipient->id,
+        'channel' => 'mail',
+        'provider' => 'array',
+        'status' => DeliveryStatus::Pending,
+        'attempt_count' => 0,
+        'max_attempts' => 3,
+    ]);
+
+    $attempt = app(StartDeliveryAttemptAction::class)->handle(
+        deliveryId: $delivery->id,
+        requestPayload: ['token' => 'request-secret', 'message' => 'safe'],
+    );
+
+    $attempt = app(CompleteDeliveryAttemptAction::class)->handle(
+        attemptId: $attempt->id,
+        responsePayload: ['authorization' => 'response-secret', 'status' => 'ok'],
+    );
+
+    expect($attempt->fresh()->request_payload)->toBe([
+        'token' => '**[REDACTED]**',
+        'message' => 'safe',
+    ])->and($attempt->fresh()->response_payload)->toBe([
+        'authorization' => '**[REDACTED]**',
+        'status' => 'ok',
+    ]);
 });
 
 test('CommunicationRecorderService marks sending and sent', function (): void {

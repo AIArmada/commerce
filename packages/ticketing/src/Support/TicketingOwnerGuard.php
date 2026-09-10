@@ -20,7 +20,7 @@ final class TicketingOwnerGuard
      */
     public static function assertRelations(Model $model, array $relations): void
     {
-        if (! config('ticketing.features.owner.enabled', true)) {
+        if (! config('ticketing.owner.enabled', true)) {
             return;
         }
 

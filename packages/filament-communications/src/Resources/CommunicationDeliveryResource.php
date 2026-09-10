@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Filament\Communications\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Communications\Actions\RetryCommunicationDeliveryAction;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Filament\Communications\Resources\CommunicationDeliveryResource\Pages;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -84,6 +88,26 @@ final class CommunicationDeliveryResource extends Resource
                     ]),
             ])
             ->actions([
+                Action::make('retry')
+                    ->label('Retry')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->visible(fn (CommunicationDelivery $record): bool => $record->status === DeliveryStatus::Failed)
+                    ->action(function (CommunicationDelivery $record): void {
+                        $delivery = OwnerWriteGuard::findOrFailForOwner(
+                            CommunicationDelivery::class,
+                            $record->getKey(),
+                            includeGlobal: false,
+                        );
+
+                        app(RetryCommunicationDeliveryAction::class)->handle((string) $delivery->getKey());
+
+                        Notification::make()
+                            ->success()
+                            ->title('Delivery retry started')
+                            ->send();
+                    }),
                 ViewAction::make(),
             ])
             ->bulkActions([]);

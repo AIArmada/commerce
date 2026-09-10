@@ -8,7 +8,7 @@ use AIArmada\Communications\Data\ConsentDecisionData;
 
 interface ConsentResolver
 {
-    public function resolve(
+    public function resolveConsent(
         ?string $recipientType,
         ?string $recipientId,
         string $channel,

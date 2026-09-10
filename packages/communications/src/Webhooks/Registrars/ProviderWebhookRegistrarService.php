@@ -8,8 +8,17 @@ use AIArmada\Communications\Webhooks\Contracts\ProviderWebhookRegistrar;
 
 final class ProviderWebhookRegistrarService implements ProviderWebhookRegistrar
 {
+    public function supports(string $provider): bool
+    {
+        $provider = $this->normalizeProvider($provider);
+        $config = config("communications.webhooks.providers.{$provider}");
+
+        return is_array($config) && ($config['enabled'] ?? true) !== false;
+    }
+
     public function resolveProvider(string $provider): ?string
     {
+        $provider = $this->normalizeProvider($provider);
         $config = config("communications.webhooks.providers.{$provider}");
 
         if (! is_array($config)) {
@@ -23,6 +32,7 @@ final class ProviderWebhookRegistrarService implements ProviderWebhookRegistrar
 
     public function getSecret(string $provider): ?string
     {
+        $provider = $this->normalizeProvider($provider);
         $config = config("communications.webhooks.providers.{$provider}");
 
         if (is_array($config) && is_string($config['secret'] ?? null) && $config['secret'] !== '') {

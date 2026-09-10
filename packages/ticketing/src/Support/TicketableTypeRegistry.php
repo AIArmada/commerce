@@ -2,25 +2,24 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentTicketing\Support;
+namespace AIArmada\Ticketing\Support;
 
+use AIArmada\Ticketing\Contracts\TicketableInterface;
 use InvalidArgumentException;
 
 final class TicketableTypeRegistry
 {
-    public const TICKETABLE_INTERFACE = 'AIArmada\Ticketing\Contracts\TicketableInterface';
-
     /** @var array<int, class-string> */
     private array $types = [];
 
     /** @param class-string $class */
     public function register(string $class): void
     {
-        if (! is_subclass_of($class, self::TICKETABLE_INTERFACE)) {
+        if (! is_subclass_of($class, TicketableInterface::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must implement %s',
                 $class,
-                self::TICKETABLE_INTERFACE,
+                TicketableInterface::class,
             ));
         }
 
@@ -34,7 +33,7 @@ final class TicketableTypeRegistry
     /** @return array<int, class-string> */
     public function all(): array
     {
-        foreach (config('filament-ticketing.ticketable_types', []) as $class) {
+        foreach (config('ticketing.ticketable_types', []) as $class) {
             if (! is_string($class)) {
                 continue;
             }
@@ -42,11 +41,11 @@ final class TicketableTypeRegistry
             $this->register($class);
         }
 
-        $override = config('filament-ticketing.allowed_ticketable_types', []);
+        $allowedTypes = config('ticketing.allowed_ticketable_types', []);
         $types = array_values($this->types);
 
-        return $override !== []
-            ? array_values(array_intersect($types, $override))
+        return $allowedTypes !== []
+            ? array_values(array_intersect($types, $allowedTypes))
             : $types;
     }
 }

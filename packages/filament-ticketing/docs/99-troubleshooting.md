@@ -13,7 +13,7 @@ title: Troubleshooting
 **Solution**: Register the ticketable model class. Either via service provider:
 
 ```php
-use AIArmada\FilamentTicketing\Support\TicketableTypeRegistry;
+use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 
 public function boot(): void
 {
@@ -24,7 +24,7 @@ public function boot(): void
 Or via config:
 
 ```php
-// config/filament-ticketing.php
+// config/ticketing.php
 'ticketable_types' => [
     \App\Models\Workshop::class,
 ],

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
+use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatHold;
@@ -43,11 +44,24 @@ it('allocates requested quantity of seats', function (): void {
 });
 
 it('throws when insufficient seats', function (): void {
-    app(SeatAllocatorInterface::class)->allocate(
+    expect(fn (): mixed => app(SeatAllocatorInterface::class)->allocate(
         map: $this->map,
         quantity: 20,
+    ))->toThrow(InsufficientSeatsException::class);
+
+    expect(SeatHold::count())->toBe(0);
+});
+
+it('does not create holds for general admission mode', function (): void {
+    $results = app(SeatAllocatorInterface::class)->allocate(
+        map: $this->map,
+        quantity: 3,
+        mode: SeatingMode::GeneralAdmission,
     );
-})->throws(InsufficientSeatsException::class);
+
+    expect($results)->toHaveCount(0)
+        ->and(SeatHold::count())->toBe(0);
+});
 
 it('creates holds for allocated seats', function (): void {
     app(SeatAllocatorInterface::class)->allocate(

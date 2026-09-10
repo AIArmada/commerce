@@ -6,6 +6,7 @@ namespace AIArmada\Communications\Actions;
 
 use AIArmada\Communications\Contracts\ContentRenderer;
 use AIArmada\Communications\Contracts\DestinationResolver;
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Enums\CommunicationStatus;
@@ -29,6 +30,7 @@ final class DispatchManagedNotificationAction
         private readonly DestinationResolver $destinationResolver,
         private readonly ContentRenderer $contentRenderer,
         private readonly ResolveCommunicationEligibilityAction $eligibility,
+        private readonly PayloadRedactor $redactor,
     ) {}
 
     public function handle(
@@ -50,7 +52,7 @@ final class DispatchManagedNotificationAction
             $expiresAt = $context->expiresAt;
             $communication->scheduled_at = is_string($scheduledAt) ? CarbonImmutable::parse($scheduledAt) : null;
             $communication->expires_at = is_string($expiresAt) ? CarbonImmutable::parse($expiresAt) : null;
-            $communication->metadata = $context->metadata;
+            $communication->metadata = $this->redactor->redact($context->metadata);
             $communication->subject_type = $context->subjectType;
             $communication->subject_id = $context->subjectId;
             $communication->sender_type = $context->senderType;
@@ -78,7 +80,7 @@ final class DispatchManagedNotificationAction
             $recipient->display_name = $snapshot->displayName;
             $recipient->locale = $snapshot->locale;
             $recipient->timezone = $snapshot->timezone;
-            $recipient->snapshot = $snapshot->extra;
+            $recipient->snapshot = $this->redactor->redact($snapshot->extra);
             $recipient->save();
 
             $channels = method_exists($notification, 'via')
@@ -111,7 +113,7 @@ final class DispatchManagedNotificationAction
                 $content->subject = $rendered->subject;
                 $content->content_text = $rendered->contentText;
                 $content->content_html = $rendered->contentHtml;
-                $content->payload = $rendered->payload;
+                $content->payload = $this->redactor->redact($rendered->payload);
                 $content->checksum = $rendered->checksum;
                 $content->rendered_at = CarbonImmutable::now();
                 $content->save();

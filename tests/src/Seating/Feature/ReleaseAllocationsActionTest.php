@@ -34,6 +34,22 @@ it('releases active allocations', function (): void {
     expect($allocation->released_at)->not->toBeNull();
 });
 
+it('releases every active allocation in a batch', function (): void {
+    SeatAllocation::factory()->count(2)->create([
+        'allocated_to_type' => $this->allocToType,
+        'allocated_to_id' => $this->allocToId,
+    ]);
+
+    $count = app(ReleaseAllocationsAction::class)->handle(
+        allocToType: $this->allocToType,
+        allocToId: $this->allocToId,
+    );
+
+    expect($count)->toBe(3)
+        ->and(SeatAllocation::query()->where('status', 'active')->count())->toBe(0)
+        ->and(SeatAllocation::query()->where('status', 'released')->count())->toBe(3);
+});
+
 it('returns zero when no active allocations', function (): void {
     SeatAllocation::query()->update(['status' => 'released', 'released_at' => now()]);
 

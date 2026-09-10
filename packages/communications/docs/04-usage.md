@@ -10,6 +10,32 @@ title: Usage
 
 The package automatically observes `NotificationSending` and `NotificationSent` events when `native_capture` is enabled. No code changes needed.
 
+When `auto_capture` is enabled, unknown notification classes are rejected by
+default. Opt a notification in by extending `BaseCommunicationNotification`
+and returning both existing enum values:
+
+```php
+use AIArmada\Communications\Enums\NotificationFamily;
+use AIArmada\Communications\Enums\NotificationTrigger;
+use AIArmada\Communications\Notifications\BaseCommunicationNotification;
+
+final class InvoicePaid extends BaseCommunicationNotification
+{
+    public function notificationFamily(): ?NotificationFamily
+    {
+        return NotificationFamily::PaymentReceived;
+    }
+
+    public function notificationTrigger(): ?NotificationTrigger
+    {
+        return NotificationTrigger::PaymentCompleted;
+    }
+}
+```
+
+Alternatively, add the notification class to
+`communications.features.auto_capture_allowlist`. The denylist always wins.
+
 ### Managed notification
 
 ```php
@@ -114,6 +140,11 @@ Resolution order for the default `CommunicationDestinationResolver`:
 2. Notifiable routing via `routeNotificationFor($channel)` or `routeNotificationFor{Driver}()`
 
 Resolved values are still encrypted, hashed, and hinted for delivery storage through the destination protector.
+
+The source CommunicationDestination address is currently a configured scalar
+value. Encrypting that source column is intentionally deferred until a
+schema/length migration and key-rotation/backfill policy are approved;
+delivery persistence does not store the source value in the clear.
 
 ## Preferences
 

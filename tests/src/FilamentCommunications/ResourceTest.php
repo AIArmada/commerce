@@ -11,6 +11,8 @@ use AIArmada\Filament\Communications\Resources\CommunicationSuppressionResource;
 use AIArmada\Filament\Communications\Resources\CommunicationTemplateResource;
 use AIArmada\Filament\Communications\Resources\CommunicationThreadResource;
 use AIArmada\Filament\Communications\Widgets\DeliveryStatusOverviewWidget;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 
 $resources = [
     CommunicationResource::class,
@@ -89,4 +91,14 @@ test('DeliveryStatusOverviewWidget can be instantiated', function (): void {
 
     expect($widget)->toBeInstanceOf(DeliveryStatusOverviewWidget::class);
     expect(method_exists($widget, 'getStats'))->toBeTrue();
+});
+
+test('delivery resource exposes a retry action', function (): void {
+    $table = CommunicationDeliveryResource::table(Table::make(Mockery::mock(HasTable::class)));
+    $actions = array_map(
+        static fn ($action): string => $action->getName(),
+        $table->getActions(),
+    );
+
+    expect($actions)->toContain('retry', 'view');
 });

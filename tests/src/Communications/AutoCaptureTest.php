@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Communications\Enums\NotificationFamily;
+use AIArmada\Communications\Enums\NotificationTrigger;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationContent;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationRecipient;
+use AIArmada\Communications\Notifications\BaseCommunicationNotification;
 use AIArmada\Communications\Traits\HasCommunicationContext;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Notifications\Events\NotificationSent;
@@ -33,8 +36,18 @@ test('auto-capture creates communication records on NotificationSending', functi
         }
     };
 
-    $notification = new class extends Notification
+    $notification = new class extends BaseCommunicationNotification
     {
+        public function notificationFamily(): ?NotificationFamily
+        {
+            return NotificationFamily::PaymentReceived;
+        }
+
+        public function notificationTrigger(): ?NotificationTrigger
+        {
+            return NotificationTrigger::PaymentCompleted;
+        }
+
         public function via(object $notifiable): array
         {
             return ['mail'];
@@ -90,8 +103,18 @@ test('auto-capture handles multiple channels for same notification', function ()
         }
     };
 
-    $notification = new class extends Notification
+    $notification = new class extends BaseCommunicationNotification
     {
+        public function notificationFamily(): ?NotificationFamily
+        {
+            return NotificationFamily::EventUpdate;
+        }
+
+        public function notificationTrigger(): ?NotificationTrigger
+        {
+            return NotificationTrigger::EventUpdated;
+        }
+
         public function via(object $notifiable): array
         {
             return ['mail', 'sms'];
@@ -126,8 +149,18 @@ test('auto-capture marks delivery as sent on NotificationSent', function (): voi
         }
     };
 
-    $notification = new class extends Notification
+    $notification = new class extends BaseCommunicationNotification
     {
+        public function notificationFamily(): ?NotificationFamily
+        {
+            return NotificationFamily::PaymentReceived;
+        }
+
+        public function notificationTrigger(): ?NotificationTrigger
+        {
+            return NotificationTrigger::PaymentCompleted;
+        }
+
         public function via(object $notifiable): array
         {
             return ['mail'];
@@ -176,6 +209,66 @@ test('auto-capture does nothing when feature is disabled', function (): void {
 
     expect(Communication::query()->count())->toBe(0);
     expect(CommunicationDelivery::query()->count())->toBe(0);
+});
+
+test('auto-capture rejects unknown notification families by default', function (): void {
+    $notifiable = new class
+    {
+        use Notifiable;
+
+        public function routeNotificationForMail(): string
+        {
+            return 'unknown@example.com';
+        }
+
+        public function getKey(): string
+        {
+            return 'notifiable-unknown';
+        }
+    };
+
+    $notification = new class extends Notification
+    {
+        public function via(object $notifiable): array
+        {
+            return ['mail'];
+        }
+    };
+
+    event(new NotificationSending($notifiable, $notification, 'mail'));
+
+    expect(Communication::query()->count())->toBe(0);
+});
+
+test('auto-capture permits an explicitly allowlisted class without enum metadata', function (): void {
+    $notifiable = new class
+    {
+        use Notifiable;
+
+        public function routeNotificationForMail(): string
+        {
+            return 'allowlisted@example.com';
+        }
+
+        public function getKey(): string
+        {
+            return 'notifiable-allowlisted';
+        }
+    };
+
+    $notification = new class extends Notification
+    {
+        public function via(object $notifiable): array
+        {
+            return ['mail'];
+        }
+    };
+
+    config()->set('communications.features.auto_capture_allowlist', [$notification::class]);
+
+    event(new NotificationSending($notifiable, $notification, 'mail'));
+
+    expect(Communication::query()->count())->toBe(1);
 });
 
 test('auto-capture skips notifications with existing communication id', function (): void {

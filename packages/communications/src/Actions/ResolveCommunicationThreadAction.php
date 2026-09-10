@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\ThreadStatus;
 use AIArmada\Communications\Models\CommunicationThread;
 use Carbon\CarbonImmutable;
 
 final class ResolveCommunicationThreadAction
 {
+    public function __construct(
+        private readonly PayloadRedactor $redactor,
+    ) {}
+
     public function handle(
         string $channel,
         ?string $externalThreadId = null,
@@ -60,7 +65,7 @@ final class ResolveCommunicationThreadAction
         $thread->status = ThreadStatus::Open;
         $thread->opened_at = CarbonImmutable::now();
         $thread->last_communication_at = CarbonImmutable::now();
-        $thread->metadata = $metadata;
+        $thread->metadata = $metadata !== null ? $this->redactor->redact($metadata) : null;
         $thread->save();
 
         return $thread;

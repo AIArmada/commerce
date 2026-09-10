@@ -7,9 +7,12 @@ namespace AIArmada\Communications\Listeners;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Contracts\ContentRenderer;
 use AIArmada\Communications\Contracts\DestinationResolver;
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Enums\DeliveryStatus;
+use AIArmada\Communications\Enums\NotificationFamily;
+use AIArmada\Communications\Enums\NotificationTrigger;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Models\CommunicationContent;
 use AIArmada\Communications\Models\CommunicationDelivery;
@@ -27,6 +30,7 @@ final class AutoCaptureNotificationListener
         private readonly RecipientSnapshotResolver $recipientResolver,
         private readonly ContentRenderer $contentRenderer,
         private readonly AutoCaptureState $state,
+        private readonly PayloadRedactor $redactor,
     ) {}
 
     public function handleSending(NotificationSending $event): void
@@ -125,11 +129,51 @@ final class AutoCaptureNotificationListener
             return false;
         }
 
-        if ($allowlist !== [] && ! in_array($class, $allowlist, true)) {
+        if (in_array($class, $allowlist, true)) {
+            return true;
+        }
+
+        $family = method_exists($notification, 'notificationFamily')
+            ? $notification->notificationFamily()
+            : null;
+        $trigger = method_exists($notification, 'notificationTrigger')
+            ? $notification->notificationTrigger()
+            : null;
+
+        if (! $family instanceof NotificationFamily || ! $trigger instanceof NotificationTrigger) {
             return false;
         }
 
-        return true;
+        return $this->isAllowedEnum(
+            $family->value,
+            config('communications.features.auto_capture_families', []),
+        ) && $this->isAllowedEnum(
+            $trigger->value,
+            config('communications.features.auto_capture_triggers', []),
+        );
+    }
+
+    private function isAllowedEnum(string $value, mixed $allowlist): bool
+    {
+        if (! is_array($allowlist) || $allowlist === []) {
+            return true;
+        }
+
+        foreach ($allowlist as $allowed) {
+            if ($allowed instanceof NotificationFamily || $allowed instanceof NotificationTrigger) {
+                if ($allowed->value === $value) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (is_string($allowed) && $allowed === $value) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function captureFirstChannel(
@@ -156,7 +200,7 @@ final class AutoCaptureNotificationListener
         $recipient->display_name = $snapshot->displayName;
         $recipient->locale = $snapshot->locale;
         $recipient->timezone = $snapshot->timezone;
-        $recipient->snapshot = $snapshot->extra;
+        $recipient->snapshot = $this->redactor->redact($snapshot->extra);
         $recipient->save();
 
         $content = $this->createContent($communication->id, $recipient->id, $notifiable, $notification, $channel);
@@ -205,7 +249,7 @@ final class AutoCaptureNotificationListener
         $content->subject = $rendered->subject;
         $content->content_text = $rendered->contentText;
         $content->content_html = $rendered->contentHtml;
-        $content->payload = $rendered->payload;
+        $content->payload = $this->redactor->redact($rendered->payload);
         $content->checksum = $rendered->checksum;
         $content->rendered_at = CarbonImmutable::now();
         $content->save();

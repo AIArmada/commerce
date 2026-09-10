@@ -8,7 +8,7 @@ use AIArmada\Communications\Data\SuppressionDecisionData;
 
 interface SuppressionResolver
 {
-    public function resolve(
+    public function resolveSuppression(
         ?string $recipientType,
         ?string $recipientId,
         ?string $destinationHash,

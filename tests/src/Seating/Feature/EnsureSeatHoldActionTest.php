@@ -50,13 +50,26 @@ it('returns empty for None mode', function (): void {
     expect(SeatHold::count())->toBe(0);
 });
 
+it('returns empty for General Admission mode', function (): void {
+    $holds = app(EnsureSeatHoldAction::class)->handle(
+        map: $this->map,
+        quantity: 3,
+        mode: SeatingMode::GeneralAdmission,
+    );
+
+    expect($holds)->toHaveCount(0);
+    expect(SeatHold::count())->toBe(0);
+});
+
 it('throws when insufficient seats', function (): void {
-    app(EnsureSeatHoldAction::class)->handle(
+    expect(fn (): mixed => app(EnsureSeatHoldAction::class)->handle(
         map: $this->map,
         quantity: 10,
         mode: SeatingMode::Assigned,
-    );
-})->throws(InsufficientSeatsException::class);
+    ))->toThrow(InsufficientSeatsException::class);
+
+    expect(SeatHold::count())->toBe(0);
+});
 
 it('returns empty for zero quantity', function (): void {
     $holds = app(EnsureSeatHoldAction::class)->handle(

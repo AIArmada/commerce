@@ -39,6 +39,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 
+            $table->index(['status', 'scheduled_at']);
             $table->index(['owner_type', 'owner_id', 'status', 'created_at']);
             $table->index(['owner_type', 'owner_id', 'category', 'created_at']);
             $table->index(['subject_type', 'subject_id']);

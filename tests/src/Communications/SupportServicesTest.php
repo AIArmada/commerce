@@ -108,21 +108,21 @@ test('null content renderer renderFromNotification works with notifiable object'
 
 test('null consent resolver returns consented for non-marketing', function (): void {
     $resolver = app(ConsentResolver::class);
-    $result = $resolver->resolve(null, null, 'mail', 'transactional');
+    $result = $resolver->resolveConsent(null, null, 'mail', 'transactional');
 
     expect($result->consented)->toBeTrue();
 });
 
 test('null consent resolver denies marketing', function (): void {
     $resolver = app(ConsentResolver::class);
-    $result = $resolver->resolve(null, null, 'mail', 'marketing');
+    $result = $resolver->resolveConsent(null, null, 'mail', 'marketing');
 
     expect($result->consented)->toBeFalse();
 });
 
 test('null suppression resolver returns not suppressed', function (): void {
     $resolver = app(SuppressionResolver::class);
-    $result = $resolver->resolve(null, null, null, 'mail', 'transactional');
+    $result = $resolver->resolveSuppression(null, null, null, 'mail', 'transactional');
 
     expect($result->suppressed)->toBeFalse();
 });

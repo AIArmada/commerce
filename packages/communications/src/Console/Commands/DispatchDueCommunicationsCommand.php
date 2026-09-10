@@ -9,6 +9,7 @@ use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -79,7 +80,7 @@ final class DispatchDueCommunicationsCommand extends Command
         $bar = $this->output->createProgressBar($count);
         $bar->start();
 
-        $query->chunk((int) $this->option('batch'), function ($communications) use ($bar): void {
+        $query->chunkById((int) $this->option('batch'), function (Collection $communications) use ($bar): void {
             foreach ($communications as $communication) {
                 $communication->status = CommunicationStatus::Queued;
                 $communication->queued_at = CarbonImmutable::now();

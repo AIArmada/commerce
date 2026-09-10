@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
@@ -21,6 +22,10 @@ use InvalidArgumentException;
 
 final class NotificationInboxService
 {
+    public function __construct(
+        private readonly PayloadRedactor $redactor,
+    ) {}
+
     public function create(
         MorphMany | Model $recipient,
         Communication $communication,
@@ -177,7 +182,7 @@ final class NotificationInboxService
         $inbox->trigger = $trigger;
         $inbox->title = $title;
         $inbox->body = $body;
-        $inbox->data = $data;
+        $inbox->data = $data !== null ? $this->redactor->redact($data) : null;
         $inbox->scheduled_at = $scheduledAt !== null ? CarbonImmutable::instance($scheduledAt) : null;
         $inbox->save();
 

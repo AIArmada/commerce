@@ -148,6 +148,21 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
   delete-and-rerun applies; no backfill. Caller namespaces updated
   in the same program (see `code-fixes-record.md` cart section).
 
+## Post-track: ticketing/seating/communications hardening — implemented
+
+- Ticketing and seating required no schema changes. Their registry,
+  ownership, transactional batch issuance/allocation, and enum changes are
+  code-only.
+- Communications added the verified hot-path indexes directly to the shipped
+  dev migrations 000003, 000007, 000008, and 000015. This is an explicit
+  shipped-migration deviation under the dev-only rule: delete and rerun
+  local/dev databases; no production backfill is required. No foreign keys
+  or cascades were added.
+- Communications provider registration had stale references to migrations
+  000017 and 000018; those files do not exist, so the references were removed
+  rather than creating empty migrations. Webhook replay protection reuses the
+  existing event uniqueness boundary and payload hash.
+
 ## Deployment gates
 
 1. **Addressing cutover** — the migration fails closed on ownerless rows by design; on a fresh/dev DB just remove the rows and rerun. Never backfill.

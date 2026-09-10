@@ -21,7 +21,7 @@ use AIArmada\Communications\Contracts\IdempotencyLock;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Contracts\PreferenceResolver;
 use AIArmada\Communications\Contracts\QuietHoursResolver;
-use AIArmada\Communications\Contracts\RateLimiter;
+use AIArmada\Communications\Contracts\RateLimiter as RateLimiterContract;
 use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Contracts\SuppressionResolver;
 use AIArmada\Communications\Contracts\WebhookOwnerResolver;
@@ -34,25 +34,24 @@ use AIArmada\Communications\Services\CommunicationDestinationResolver;
 use AIArmada\Communications\Services\CommunicationManagerService;
 use AIArmada\Communications\Services\CommunicationRecorderService;
 use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
-use AIArmada\Communications\Services\NullConsentResolver;
 use AIArmada\Communications\Services\NullContentRenderer;
-use AIArmada\Communications\Services\NullPreferenceResolver;
-use AIArmada\Communications\Services\NullQuietHoursResolver;
-use AIArmada\Communications\Services\NullRateLimiter;
 use AIArmada\Communications\Services\NullRecipientSnapshotResolver;
-use AIArmada\Communications\Services\NullSuppressionResolver;
+use AIArmada\Communications\Services\PermissiveEligibilityResolver;
 use AIArmada\Communications\Support\AutoCaptureState;
 use AIArmada\Communications\Support\DestinationProtectorService;
 use AIArmada\Communications\Support\IdempotencyLockService;
 use AIArmada\Communications\Support\PayloadRedactorService;
+use AIArmada\Communications\Webhooks\ConfigWebhookOwnerResolver;
 use AIArmada\Communications\Webhooks\Contracts\ProviderEventNormalizer;
 use AIArmada\Communications\Webhooks\Contracts\ProviderWebhookRegistrar;
 use AIArmada\Communications\Webhooks\Normalizers\NullProviderEventNormalizer;
 use AIArmada\Communications\Webhooks\Registrars\ProviderWebhookRegistrarService;
-use AIArmada\Communications\Webhooks\WebhookOwnerResolver as DefaultWebhookOwnerResolver;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Support\Facades\RateLimiter as RateLimiterFacade;
 use Livewire\Livewire;
 use Spatie\Activitylog\ActivitylogServiceProvider;
 use Spatie\LaravelPackageTools\Package;
@@ -93,8 +92,6 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
                 '2000_01_01_000015_create_communication_tracking_tokens_table',
                 '2000_01_01_000016_create_notification_inboxes_table',
                 '2000_01_01_000019_create_communication_destinations_table',
-                '2000_01_01_000017_reconcile_configured_communication_table_names',
-                '2000_01_01_000018_add_suppressed_at_to_communication_deliveries',
             ]);
     }
 
@@ -111,14 +108,14 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
         $this->app->bind(RecipientSnapshotResolver::class, NullRecipientSnapshotResolver::class);
         $this->app->bind(DestinationResolver::class, CommunicationDestinationResolver::class);
         $this->app->bind(ContentRenderer::class, NullContentRenderer::class);
-        $this->app->bind(ConsentResolver::class, NullConsentResolver::class);
-        $this->app->bind(SuppressionResolver::class, NullSuppressionResolver::class);
-        $this->app->bind(PreferenceResolver::class, NullPreferenceResolver::class);
-        $this->app->bind(QuietHoursResolver::class, NullQuietHoursResolver::class);
-        $this->app->bind(RateLimiter::class, NullRateLimiter::class);
+        $this->app->bind(ConsentResolver::class, PermissiveEligibilityResolver::class);
+        $this->app->bind(SuppressionResolver::class, PermissiveEligibilityResolver::class);
+        $this->app->bind(PreferenceResolver::class, PermissiveEligibilityResolver::class);
+        $this->app->bind(QuietHoursResolver::class, PermissiveEligibilityResolver::class);
+        $this->app->bind(RateLimiterContract::class, PermissiveEligibilityResolver::class);
         $this->app->bind(ProviderEventNormalizer::class, NullProviderEventNormalizer::class);
         $this->app->bind(ProviderWebhookRegistrar::class, ProviderWebhookRegistrarService::class);
-        $this->app->bind(WebhookOwnerResolver::class, DefaultWebhookOwnerResolver::class);
+        $this->app->bind(WebhookOwnerResolver::class, ConfigWebhookOwnerResolver::class);
 
         if (
             (bool) config('communications.integrations.activitylog.enabled', false)
@@ -133,6 +130,15 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        RateLimiterFacade::for('communications-webhooks', function (Request $request): Limit {
+            $provider = (string) ($request->route('provider') ?? 'unknown');
+            $key = ($request->ip() ?? 'unknown') . '|' . $provider;
+
+            return Limit::perMinute(
+                max(1, (int) config('communications.webhooks.rate_limit.max_attempts', 60)),
+            )->by($key);
+        });
+
         if (class_exists(Livewire::class)) {
             Livewire::component('communications.inbox-index', InboxIndex::class);
         }

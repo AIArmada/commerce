@@ -20,11 +20,4 @@ return [
             'pass_transfer' => 4,
         ],
     ],
-    'ticketable_types' => [
-        // App-specific ticketable classes, e.g.:
-        // \AIArmada\Events\Models\Event::class,
-    ],
-    'allowed_ticketable_types' => [
-        // Restrict to specific ticketable types (whitelist). Empty = all registered allowed.
-    ],
 ];

@@ -27,7 +27,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['delivery_id', 'kind']);
-            $table->index(['token_hash']);
+            $table->unique(['token_hash']);
         });
     }
 };

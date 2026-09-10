@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Services;
 
 use AIArmada\Communications\Contracts\CommunicationRecorder;
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
@@ -14,6 +15,10 @@ use Carbon\CarbonImmutable;
 
 class CommunicationRecorderService implements CommunicationRecorder
 {
+    public function __construct(
+        private readonly PayloadRedactor $redactor,
+    ) {}
+
     public function createCommunication(CommunicationContextData $context): Communication
     {
         $communication = new Communication;
@@ -27,7 +32,7 @@ class CommunicationRecorderService implements CommunicationRecorder
         $communication->timezone = $context->timezone;
         $communication->scheduled_at = $context->scheduledAt !== null ? CarbonImmutable::parse($context->scheduledAt) : null;
         $communication->expires_at = $context->expiresAt !== null ? CarbonImmutable::parse($context->expiresAt) : null;
-        $communication->metadata = $context->metadata;
+        $communication->metadata = $this->redactor->redact($context->metadata);
         $communication->subject_type = $context->subjectType;
         $communication->subject_id = $context->subjectId;
         $communication->sender_type = $context->senderType;

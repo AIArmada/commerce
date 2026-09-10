@@ -36,7 +36,7 @@ final class PassHolderResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false)
             ->whereHas('pass', fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
             ->with(['pass', 'pass.ticketType']);
     }

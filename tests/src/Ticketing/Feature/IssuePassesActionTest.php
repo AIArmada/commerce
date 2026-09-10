@@ -6,11 +6,13 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Actions\IssuePassesAction;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
+use AIArmada\Ticketing\Events\PassIssued;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\Ticketing\Services\DefaultPassIssuer;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
 function createTicketTypeForTest(): TicketType
@@ -104,6 +106,23 @@ it('commits all passes on successful issuance', function (): void {
 
     expect($result)->toHaveCount(3);
     expect(Pass::count())->toBe($countBefore + 3);
+});
+
+it('inserts a pass batch and dispatches one event per pass after commit', function (): void {
+    $ticketType = createTicketTypeForTest();
+
+    Event::fake([PassIssued::class]);
+
+    $passes = app(DefaultPassIssuer::class)->issuePassesFor(new PassIssuanceContext(
+        ticketType: $ticketType,
+        quantity: 3,
+    ));
+
+    expect($passes)->toHaveCount(3)
+        ->and($passes->pluck('pass_no')->unique())->toHaveCount(3)
+        ->and(Pass::query()->whereIn('id', $passes->modelKeys())->count())->toBe(3);
+
+    Event::assertDispatched(PassIssued::class, 3);
 });
 
 it('generates pass numbers that are unique across owners', function (): void {

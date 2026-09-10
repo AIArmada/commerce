@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\SuppressionReason;
 use AIArmada\Communications\Events\SuppressionCreated;
 use AIArmada\Communications\Models\CommunicationSuppression;
@@ -12,6 +13,10 @@ use Illuminate\Support\Facades\Event;
 
 final class CreateSuppressionAction
 {
+    public function __construct(
+        private readonly PayloadRedactor $redactor,
+    ) {}
+
     public function handle(
         string $destinationHash,
         string $channel,
@@ -38,7 +43,7 @@ final class CreateSuppressionAction
         $suppression->expires_at = $expiresAt !== null ? CarbonImmutable::parse($expiresAt) : null;
         $suppression->created_by_type = $createdByType;
         $suppression->created_by_id = $createdById;
-        $suppression->metadata = $metadata;
+        $suppression->metadata = $metadata !== null ? $this->redactor->redact($metadata) : null;
         $suppression->save();
 
         Event::dispatch(new SuppressionCreated(

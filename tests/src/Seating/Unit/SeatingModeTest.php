@@ -15,6 +15,13 @@ it('requires allocation for non-None modes', function (): void {
     expect(SeatingMode::Hybrid->requiresAllocation())->toBeTrue();
 });
 
+it('distinguishes map allocation from individual seat allocation', function (): void {
+    expect(SeatingMode::None->requiresSeatAllocation())->toBeFalse()
+        ->and(SeatingMode::GeneralAdmission->requiresSeatAllocation())->toBeFalse()
+        ->and(SeatingMode::Assigned->requiresSeatAllocation())->toBeTrue()
+        ->and(SeatingMode::Hybrid->requiresSeatAllocation())->toBeTrue();
+});
+
 it('returns correct labels', function (): void {
     expect(SeatingMode::None->label())->toBe('None');
     expect(SeatingMode::GeneralAdmission->label())->toBe('General Admission');

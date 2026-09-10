@@ -31,6 +31,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['delivery_id', 'attempt_number']);
+            $table->index(['delivery_id', 'created_at']);
             $table->index(['provider', 'provider_message_id']);
         });
     }

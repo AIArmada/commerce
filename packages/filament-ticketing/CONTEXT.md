@@ -14,7 +14,7 @@ keywords:
 
 ## Snapshot
 - Composer: `aiarmada/filament-ticketing`
-- Role: Filament ticketing admin: types/passes/holders/transfers + ticketable registry.
+- Role: Filament ticketing admin: types/passes/holders/transfers; core owns ticketable registry.
 - Triggers: filament, tickets-ui, passes
 - Search first: `src/Resources, config, docs`
 - Related: `ticketing`, `commerce-support`
@@ -41,8 +41,8 @@ keywords:
 
 ## Key surfaces
 - Resources: `PassHolderResource`, `PassResource`, `PassTransferResource`, `TicketTypeResource`
-- Actions/Services: `Support/TicketableTypeRegistry`
-- Config `filament-ticketing.php`: `navigation`, `group`, `resources`, `enabled`, `ticket_type`, `pass`, `pass_holder`, `pass_transfer`, `navigation_sort`, `ticket_type`
+- Actions/Services: `AIArmada\Ticketing\Support\TicketableTypeRegistry` (registry owned by core)
+- Config `filament-ticketing.php`: `navigation`, `resources`, and `navigation_sort`; ticketable types belong to core `ticketing.php`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

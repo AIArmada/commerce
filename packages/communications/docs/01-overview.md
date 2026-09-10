@@ -32,7 +32,7 @@ The package complements Laravel Notifications in two modes:
 
 ## Scale
 
-The domain ships 17 models, 31 actions, and 14 services (see `src/Actions/`, `src/Services/`). Channel integrations resolve through null-driver defaults (`NullRenderer`, `NullRateLimiter`, `NullSuppression`, `NullPreference`, `NullConsent`, `NullQuietHours`, `NullDestination`, `NullAudit`, `NullSnapshot`) — override only what the host app needs.
+The domain ships 17 models, 31 actions, and 14 services (see `src/Actions/`, `src/Services/`). Channel integrations resolve through null-driver defaults (`NullContentRenderer`, `NullDestinationResolver`, `NullCommunicationAuditRecorder`, `NullRecipientSnapshotResolver`) and the shared `PermissiveEligibilityResolver` — override only what the host app needs.
 
 ## Related packages
 

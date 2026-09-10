@@ -19,5 +19,6 @@ final readonly class ProviderEventData
         public array $payload = [],
         public ?string $failureCode = null,
         public ?string $failureMessage = null,
+        public ?CarbonImmutable $signatureValidatedAt = null,
     ) {}
 }

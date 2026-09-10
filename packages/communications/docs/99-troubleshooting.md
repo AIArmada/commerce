@@ -24,6 +24,7 @@ php artisan vendor:publish --provider="AIArmada\Communications\CommunicationsSer
 1. Verify `communications.features.native_capture` is `true`
 2. Check that `RecordNativeNotificationSending` and `RecordNativeNotificationSent` listeners are registered
 3. Confirm the notification is sent through Laravel's `Notification::send()` or `$notifiable->notify()`
+4. When `auto_capture` is enabled, confirm the notification either appears in `auto_capture_allowlist` or extends `BaseCommunicationNotification` with both `notificationFamily()` and `notificationTrigger()` returning enum values
 
 ## Destination resolves to the wrong address
 

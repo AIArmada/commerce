@@ -17,10 +17,12 @@ use AIArmada\Communications\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Communications\Jobs\ProcessWebhookEventJob;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Models\CommunicationEvent;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
 use AIArmada\Communications\Webhooks\Normalizers\NullProviderEventNormalizer;
 use AIArmada\Communications\Webhooks\Registrars\ProviderWebhookRegistrarService;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -78,13 +80,14 @@ test('job is dispatched on valid webhook request', function (): void {
 
     Queue::assertPushed(ProcessWebhookEventJob::class, function (ProcessWebhookEventJob $job): bool {
         return $job->provider === 'sendgrid'
-            && $job->payload['event'] === 'delivery.delivered';
+            && $job->payload['event'] === 'delivery.delivered'
+            && $job->signatureValidatedAt !== null;
     });
 });
 
 test('route uses configurable middleware', function (): void {
     $middleware = config('communications.webhooks.middleware');
-    expect($middleware)->toContain('api', VerifyWebhookSignature::class);
+    expect($middleware)->toContain('api', 'throttle:communications-webhooks', VerifyWebhookSignature::class);
 });
 
 test('provider webhook registrar reads the configured provider secret', function (): void {
@@ -92,7 +95,29 @@ test('provider webhook registrar reads the configured provider secret', function
 
     $registrar = new ProviderWebhookRegistrarService;
 
-    expect($registrar->getSecret('sendgrid'))->toBe('test-secret');
+    expect($registrar->supports('sendgrid'))->toBeTrue()
+        ->and($registrar->supports('unknown'))->toBeFalse()
+        ->and($registrar->getSecret('sendgrid'))->toBe('test-secret');
+});
+
+test('signature middleware rejects providers outside the configured allowlist', function (): void {
+    $response = postSignedCommunicationsWebhook(
+        $this,
+        ['event' => 'delivery.delivered'],
+        provider: 'unknown',
+    );
+
+    $response->assertStatus(404);
+});
+
+test('signature middleware rejects stale webhook timestamps', function (): void {
+    $response = postSignedCommunicationsWebhook(
+        $this,
+        ['event' => 'delivery.delivered'],
+        timestamp: CarbonImmutable::now()->subSeconds(301)->timestamp,
+    );
+
+    $response->assertStatus(401);
 });
 
 test('signature middleware aborts on missing signature when secret is set', function (): void {
@@ -104,7 +129,10 @@ test('signature middleware aborts on missing signature when secret is set', func
         [],
         [],
         [],
-        ['CONTENT_TYPE' => 'application/json'],
+        [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X_WEBHOOK_TIMESTAMP' => (string) CarbonImmutable::now()->timestamp,
+        ],
         json_encode(['event' => 'delivery.delivered'])
     );
 
@@ -165,6 +193,7 @@ test('signature middleware accepts valid signature', function (): void {
         [
             'CONTENT_TYPE' => 'application/json',
             'HTTP_X_Webhook_Signature' => $signature,
+            'HTTP_X_Webhook_Timestamp' => (string) CarbonImmutable::now()->timestamp,
         ],
         $body
     );
@@ -298,6 +327,7 @@ test('process webhook job restores owner context before applying the event', fun
         ],
         ownerId: (string) $owner->getKey(),
         ownerType: WebhookTestOwner::class,
+        signatureValidatedAt: CarbonImmutable::now()->toIso8601String(),
     );
     $lock = new TrackingWebhookLock;
 
@@ -311,6 +341,10 @@ test('process webhook job restores owner context before applying the event', fun
         ->and($lock->acquireCalls)->toBe(1)
         ->and($lock->lastTtlSeconds)->toBe(3600)
         ->and($lock->releaseCalls)->toBe(0);
+
+    $event = OwnerContext::withOwner($owner, static fn (): CommunicationEvent => CommunicationEvent::query()->sole());
+
+    expect($event->signature_validated_at)->not->toBeNull();
 });
 
 test('process webhook job stops when it cannot acquire the idempotency lock', function (): void {
@@ -350,20 +384,26 @@ test('process webhook job releases its idempotency lock after failure', function
 /**
  * @param  array<string, mixed>  $payload
  */
-function postSignedCommunicationsWebhook(object $testCase, array $payload)
-{
+function postSignedCommunicationsWebhook(
+    object $testCase,
+    array $payload,
+    ?int $timestamp = null,
+    string $provider = 'sendgrid',
+) {
+    $timestamp ??= CarbonImmutable::now()->timestamp;
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
     $signature = hash_hmac('sha256', $body, 'test-secret');
 
     return $testCase->call(
         'POST',
-        'communications/webhooks/sendgrid',
+        'communications/webhooks/' . $provider,
         [],
         [],
         [],
         [
             'CONTENT_TYPE' => 'application/json',
             'HTTP_X_WEBHOOK_SIGNATURE' => $signature,
+            'HTTP_X_WEBHOOK_TIMESTAMP' => (string) $timestamp,
         ],
         $body,
     );

@@ -151,7 +151,7 @@ public function panel(Panel $panel): Panel
 ## Registering Ticketable Types
 
 ```php
-use AIArmada\FilamentTicketing\Support\TicketableTypeRegistry;
+use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 use App\Models\CourseSession;
 
 // In a service provider
@@ -164,7 +164,7 @@ public function boot(): void
 Or via config:
 
 ```php
-// config/filament-ticketing.php
+// config/ticketing.php
 'ticketable_types' => [
     \App\Models\CourseSession::class,
 ],

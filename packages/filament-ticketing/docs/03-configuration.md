@@ -4,7 +4,7 @@ title: Configuration
 
 # Configuration
 
-`filament-ticketing` publishes `config/filament-ticketing.php` for navigation, resource toggles, and ticketable type registration.
+`filament-ticketing` publishes `config/filament-ticketing.php` for navigation and resource toggles. Ticketable type registration belongs to the core `ticketing` package.
 
 ## Package Config
 
@@ -26,12 +26,6 @@ return [
             'pass_holder' => 3,
             'pass_transfer' => 4,
         ],
-    ],
-    'ticketable_types' => [
-        // \App\Models\Workshop::class,
-    ],
-    'allowed_ticketable_types' => [
-        // Restrict to specific ticketable types (whitelist). Empty = all registered allowed.
     ],
 ];
 ```
@@ -96,6 +90,7 @@ Lower numbers appear first in the navigation group.
 ### Registration
 
 ```php
+// config/ticketing.php
 'ticketable_types' => [
     \App\Models\Workshop::class,
     \App\Models\Event::class,
@@ -108,7 +103,7 @@ Each class must implement `AIArmada\Ticketing\Contracts\TicketableInterface`.
 You can also register types programmatically:
 
 ```php
-use AIArmada\FilamentTicketing\Support\TicketableTypeRegistry;
+use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 
 app(TicketableTypeRegistry::class)->register(Workshop::class);
 ```
@@ -116,6 +111,7 @@ app(TicketableTypeRegistry::class)->register(Workshop::class);
 ### Allowed Types (Whitelist)
 
 ```php
+// config/ticketing.php
 'allowed_ticketable_types' => [
     // \App\Models\Workshop::class,
 ],
@@ -127,7 +123,8 @@ app(TicketableTypeRegistry::class)->register(Workshop::class);
 
 ## Where Configuration Happens
 
-This package is configured through these surfaces:
+The adapter is configured through these surfaces, while ticketable types belong
+to the core package's `config/ticketing.php` file:
 
 ### Panel Plugin Registration
 
@@ -146,12 +143,13 @@ public function panel(Panel $panel): Panel
 
 ### Core Package Configuration
 
-Owner context comes from `commerce-support`; ticketable UI registration lives in this package's config. Ticketing-domain behavior is configured by `config/ticketing.php`.
+Owner context comes from `commerce-support`; ticketable type registration and ticketing-domain behavior are configured by `config/ticketing.php`.
 
 Important keys to understand before using the Filament plugin:
 
 - `ticketing.database.*` — Table names
 - `ticketing.features.auto_issue_passes` — Auto-issue behavior
+- `ticketing.ticketable_types` / `ticketing.allowed_ticketable_types` — Core registry configuration
 - `ticketing.transfers.*` — Transfer limits
 
 When owner mode is enabled, the Filament resources inherit those scoping rules.
@@ -177,7 +175,7 @@ This means:
 
 ## Publishing Config
 
-Publish the package config when you need to customize navigation, resource availability, or ticketable types:
+Publish the package config when you need to customize navigation or resource availability. Configure ticketable types in the core package config:
 
 ```bash
 php artisan vendor:publish --tag=filament-ticketing-config

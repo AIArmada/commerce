@@ -17,7 +17,6 @@ Use this package when you need panel resources for ticket type management, pass 
 - `PassResource` — View and state transition actions for passes
 - `PassHolderResource` — Read-only pass holder lookup
 - `PassTransferResource` — Transfer audit log
-- `TicketableTypeRegistry` — Registration of ticketable models for resource dropdowns
 - Owner-safe query wiring for all resources
 
 ## What this package does not own
@@ -40,7 +39,6 @@ Use this package when you need panel resources for ticket type management, pass 
 - `PassResource`
 - `PassHolderResource`
 - `PassTransferResource`
-- `TicketableTypeRegistry`
 
 ## Features
 
@@ -66,11 +64,6 @@ Use this package when you need panel resources for ticket type management, pass 
 - **Audit Log**: Complete history of pass transfers
 - **Transfer Details**: See old/new holders, reason, authorizer
 - **Search**: Filter transfers by pass, holder, or date range
-
-### Ticketable Type Registry
-- **Polymorphic Support**: Register any model as a ticketable type
-- **Dropdown Integration**: Automatically populate ticketable type selects in admin forms
-- **Type Filtering**: Optionally restrict to specific allowed types
 
 ## Owner scoping and security notes
 

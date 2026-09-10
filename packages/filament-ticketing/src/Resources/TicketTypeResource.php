@@ -7,9 +7,12 @@ namespace AIArmada\FilamentTicketing\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource\RelationManagers\TicketTypeComponentsRelationManager;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource\RelationManagers\TicketTypeProductsRelationManager;
-use AIArmada\FilamentTicketing\Support\TicketableTypeRegistry;
+use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Ticketing\Enums\TicketAccessType;
+use AIArmada\Ticketing\Enums\TicketTypeStatus;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;
 use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
@@ -47,12 +50,13 @@ final class TicketTypeResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $ticketableTypes = app(TicketableTypeRegistry::class)->all();
+        $query = OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
 
         if ($ticketableTypes === []) {
-            return parent::getEloquentQuery()->whereRaw('1 = 0');
+            return $query;
         }
 
-        return parent::getEloquentQuery()
+        return $query
             ->whereHasMorph(
                 'ticketable',
                 $ticketableTypes,
@@ -86,19 +90,10 @@ final class TicketTypeResource extends Resource
                             ->maxLength(65535)
                             ->columnSpanFull(),
                         Select::make('access_type')
-                            ->options([
-                                'general_admission' => 'General Admission',
-                                'reserved_seating' => 'Reserved Seating',
-                                'vip' => 'VIP',
-                                'complimentary' => 'Complimentary',
-                            ])
+                            ->options(TicketAccessType::options())
                             ->required(),
                         Select::make('seating_mode')
-                            ->options([
-                                'open' => 'Open',
-                                'assigned' => 'Assigned',
-                                'unassigned' => 'Unassigned',
-                            ])
+                            ->options(SeatingMode::options())
                             ->nullable(),
                         TextInput::make('price')
                             ->numeric()
@@ -120,14 +115,7 @@ final class TicketTypeResource extends Resource
                 Section::make('Sales & Visibility')
                     ->schema([
                         Select::make('status')
-                            ->options([
-                                'draft' => 'Draft',
-                                'active' => 'Active',
-                                'paused' => 'Paused',
-                                'sold_out' => 'Sold Out',
-                                'ended' => 'Ended',
-                                'cancelled' => 'Cancelled',
-                            ])
+                            ->options(TicketTypeStatus::options())
                             ->required(),
                         Select::make('visibility')
                             ->options(TicketTypeVisibility::options())
@@ -154,26 +142,12 @@ final class TicketTypeResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('access_type')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'general_admission' => 'gray',
-                        'reserved_seating' => 'info',
-                        'vip' => 'warning',
-                        'complimentary' => 'success',
-                        default => 'gray',
-                    }),
+                    ->color(fn (string $state): string => TicketAccessType::tryFrom($state)?->color() ?? 'gray'),
                 Tables\Columns\TextColumn::make('price')
                     ->money(fn (TicketType $record): string => $record->currency ?? 'USD'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'draft' => 'gray',
-                        'active' => 'success',
-                        'paused' => 'warning',
-                        'sold_out' => 'danger',
-                        'ended' => 'info',
-                        'cancelled' => 'danger',
-                        default => 'gray',
-                    }),
+                    ->color(fn (string $state): string => TicketTypeStatus::tryFrom($state)?->color() ?? 'gray'),
                 Tables\Columns\TextColumn::make('visibility')
                     ->badge()
                     ->color(fn (TicketTypeVisibility | string $state): string => match ($state instanceof TicketTypeVisibility ? $state->value : $state) {
@@ -195,21 +169,9 @@ final class TicketTypeResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'draft' => 'Draft',
-                        'active' => 'Active',
-                        'paused' => 'Paused',
-                        'sold_out' => 'Sold Out',
-                        'ended' => 'Ended',
-                        'cancelled' => 'Cancelled',
-                    ]),
+                    ->options(TicketTypeStatus::options()),
                 Tables\Filters\SelectFilter::make('access_type')
-                    ->options([
-                        'general_admission' => 'General Admission',
-                        'reserved_seating' => 'Reserved Seating',
-                        'vip' => 'VIP',
-                        'complimentary' => 'Complimentary',
-                    ]),
+                    ->options(TicketAccessType::options()),
                 Tables\Filters\SelectFilter::make('visibility')
                     ->options(TicketTypeVisibility::options()),
             ])

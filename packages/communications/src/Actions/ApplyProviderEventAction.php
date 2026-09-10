@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Data\ProviderEventData;
 use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Enums\DeliveryStatus;
@@ -16,6 +17,10 @@ use RuntimeException;
 
 final class ApplyProviderEventAction
 {
+    public function __construct(
+        private readonly PayloadRedactor $redactor,
+    ) {}
+
     public const EVENT_STATUS_MAP = [
         'bounce' => DeliveryStatus::Bounced,
         'complaint' => DeliveryStatus::Complained,
@@ -97,15 +102,14 @@ final class ApplyProviderEventAction
         ProviderEventData $data,
         CommunicationDelivery $delivery,
     ): CommunicationEvent {
-        if ($data->providerEventId !== null) {
-            $exists = CommunicationEvent::query()
-                ->where('provider', $data->provider)
-                ->where('provider_event_id', $data->providerEventId)
-                ->exists();
+        $providerEventId = $data->providerEventId ?? $this->payloadEventId($data);
+        $exists = CommunicationEvent::query()
+            ->where('provider', $data->provider)
+            ->where('provider_event_id', $providerEventId)
+            ->exists();
 
-            if ($exists) {
-                throw new RuntimeException("Duplicate provider event {$data->provider}/{$data->providerEventId}.");
-            }
+        if ($exists) {
+            throw new RuntimeException("Duplicate provider event {$data->provider}/{$providerEventId}.");
         }
 
         $event = new CommunicationEvent;
@@ -114,14 +118,45 @@ final class ApplyProviderEventAction
         $event->event = $data->eventType;
         $event->source = CommunicationEventSource::Provider;
         $event->provider = $data->provider;
-        $event->provider_event_id = $data->providerEventId;
+        $event->provider_event_id = $providerEventId;
         $event->provider_message_id = $data->providerMessageId;
         $event->occurred_at = $data->occurredAt;
         $event->received_at = CarbonImmutable::now();
-        $event->payload = $data->payload;
+        $event->signature_validated_at = $data->signatureValidatedAt;
+        $event->payload = $this->redactor->redact($data->payload);
         $event->failure_message = $data->failureMessage;
         $event->save();
 
         return $event;
+    }
+
+    private function payloadEventId(ProviderEventData $data): string
+    {
+        $payload = $this->canonicalize($data->payload);
+
+        return 'payload:' . hash('sha256', json_encode([
+            'provider' => $data->provider,
+            'event' => $data->eventType,
+            'payload' => $payload,
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+    }
+
+    private function canonicalize(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (array_is_list($value)) {
+            return array_map(fn (mixed $item): mixed => $this->canonicalize($item), $value);
+        }
+
+        ksort($value);
+
+        foreach ($value as $key => $item) {
+            $value[$key] = $this->canonicalize($item);
+        }
+
+        return $value;
     }
 }

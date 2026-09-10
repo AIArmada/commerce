@@ -50,6 +50,8 @@ return [
         'auto_capture' => (bool) env('COMMUNICATIONS_AUTO_CAPTURE', false),
         'auto_capture_allowlist' => [],
         'auto_capture_denylist' => [],
+        'auto_capture_families' => [],
+        'auto_capture_triggers' => [],
         'auto_capture_ignored_channels' => [],
     ],
 
@@ -70,8 +72,13 @@ return [
 
     /* Webhooks */
     'webhooks' => [
-        'middleware' => ['api', VerifyWebhookSignature::class],
+        'middleware' => ['api', 'throttle:communications-webhooks', VerifyWebhookSignature::class],
         'providers' => [],
+        'timestamp_header' => env('COMMUNICATIONS_WEBHOOK_TIMESTAMP_HEADER', 'X-Webhook-Timestamp'),
+        'timestamp_tolerance_seconds' => (int) env('COMMUNICATIONS_WEBHOOK_TIMESTAMP_TOLERANCE', 300),
+        'rate_limit' => [
+            'max_attempts' => (int) env('COMMUNICATIONS_WEBHOOK_RATE_LIMIT', 60),
+        ],
         'route_name_prefix' => env('COMMUNICATIONS_WEBHOOKS_ROUTE_NAME_PREFIX', 'communications.webhooks.'),
     ],
 

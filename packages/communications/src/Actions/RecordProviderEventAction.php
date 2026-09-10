@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationAttempt;
@@ -15,6 +16,10 @@ use RuntimeException;
 
 final class RecordProviderEventAction
 {
+    public function __construct(
+        private readonly PayloadRedactor $redactor,
+    ) {}
+
     public function handle(
         string $provider,
         string $providerEventId,
@@ -93,7 +98,7 @@ final class RecordProviderEventAction
             $eventRecord->provider_message_id = $providerMessageId;
             $eventRecord->occurred_at = $occurredAt !== null ? CarbonImmutable::parse($occurredAt) : CarbonImmutable::now();
             $eventRecord->received_at = CarbonImmutable::now();
-            $eventRecord->payload = $payload;
+            $eventRecord->payload = $this->redactor->redact($payload);
             $eventRecord->failure_message = $failureMessage;
             $eventRecord->save();
 

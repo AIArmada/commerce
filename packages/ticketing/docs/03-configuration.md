@@ -54,6 +54,22 @@ Use the `commerce_json_column_type('ticketing', 'jsonb')` helper in migrations.
 | `currency` | Default currency code for pricing (ISO 4217) |
 | `pass_no_prefix` | Prefix for auto-generated pass numbers |
 
+## Ticketable Types
+
+The polymorphic ticketable registry is owned by the core package so it is
+available to API, console, queue, and Filament consumers alike:
+
+```php
+'ticketable_types' => [
+    App\\Models\\Workshop::class,
+],
+'allowed_ticketable_types' => [],
+```
+
+Register only classes implementing `TicketableInterface`. The optional
+`allowed_ticketable_types` list narrows the configured and programmatic
+registrations.
+
 ## Transfer Settings
 
 ```php
@@ -91,11 +107,11 @@ Use the `commerce_json_column_type('ticketing', 'jsonb')` helper in migrations.
 ```php
 'features' => [
     'auto_issue_passes' => env('TICKETING_AUTO_ISSUE_PASSES', true),
-    'owner' => [
-        'enabled' => env('TICKETING_OWNER_ENABLED', true),
-        'include_global' => false,
-        'auto_assign_on_create' => env('TICKETING_OWNER_AUTO_ASSIGN', true),
-    ],
+],
+'owner' => [
+    'enabled' => env('TICKETING_OWNER_ENABLED', true),
+    'include_global' => false,
+    'auto_assign_on_create' => env('TICKETING_OWNER_AUTO_ASSIGN', true),
 ],
 ```
 

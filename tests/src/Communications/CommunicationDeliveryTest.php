@@ -195,3 +195,28 @@ test('provider events derive their communication from the delivery', function ()
     expect($event->communication_id)->toBe($this->communication->id)
         ->and($event->delivery_id)->toBe($this->delivery->id);
 });
+
+test('provider events without IDs use a payload hash and are replay-safe', function (): void {
+    $eventData = new ProviderEventData(
+        provider: 'test',
+        providerEventId: null,
+        providerMessageId: null,
+        eventType: 'delivery',
+        occurredAt: CarbonImmutable::now(),
+        deliveryId: $this->delivery->id,
+        payload: [
+            'delivery_id' => $this->delivery->id,
+            'secret' => 'do-not-store',
+        ],
+    );
+
+    app(ApplyProviderEventAction::class)->handle($eventData);
+
+    $event = CommunicationEvent::query()->sole();
+
+    expect($event->provider_event_id)->toStartWith('payload:')
+        ->and($event->payload['secret'])->toBe('**[REDACTED]**');
+
+    expect(fn () => app(ApplyProviderEventAction::class)->handle($eventData))
+        ->toThrow(RuntimeException::class, 'Duplicate provider event');
+});

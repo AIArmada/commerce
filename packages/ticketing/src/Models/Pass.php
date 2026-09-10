@@ -75,7 +75,7 @@ class Pass extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected static string $ownerScopeConfigKey = 'ticketing.features.owner';
+    protected static string $ownerScopeConfigKey = 'ticketing.owner';
 
     protected static function newFactory(): PassFactory
     {

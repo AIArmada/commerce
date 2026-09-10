@@ -8,12 +8,12 @@ use AIArmada\FilamentTicketing\Resources\PassHolderResource;
 use AIArmada\FilamentTicketing\Resources\PassResource;
 use AIArmada\FilamentTicketing\Resources\PassTransferResource;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
-use AIArmada\FilamentTicketing\Support\TicketableTypeRegistry;
 use AIArmada\FilamentTicketing\Tests\Fixtures\OwnedTicketable;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 use AIArmada\Ticketing\Models\PassTransfer;
 use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -29,7 +29,7 @@ beforeEach(function (): void {
 });
 
 it('keeps programmatic and configured ticketable type registrations', function (): void {
-    config()->set('filament-ticketing.ticketable_types', [OwnedTicketable::class]);
+    config()->set('ticketing.ticketable_types', [OwnedTicketable::class]);
 
     $registry = app(TicketableTypeRegistry::class);
 

@@ -32,7 +32,7 @@ final class ResolveCommunicationEligibilityAction
         string $channel,
         string $category,
     ): array {
-        $suppression = $this->suppressionResolver->resolve(
+        $suppression = $this->suppressionResolver->resolveSuppression(
             recipientType: $recipientType,
             recipientId: $recipientId,
             destinationHash: $destinationHash,
@@ -40,7 +40,7 @@ final class ResolveCommunicationEligibilityAction
             category: $category,
         );
 
-        $consent = $this->consentResolver->resolve(
+        $consent = $this->consentResolver->resolveConsent(
             recipientType: $recipientType,
             recipientId: $recipientId,
             channel: $channel,

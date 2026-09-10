@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
@@ -21,6 +22,7 @@ final class ReceiveInboundCommunicationAction
 {
     public function __construct(
         private readonly ResolveCommunicationThreadAction $threadResolver,
+        private readonly PayloadRedactor $redactor,
     ) {}
 
     public function handle(
@@ -71,7 +73,7 @@ final class ReceiveInboundCommunicationAction
             $communication->sender_type = $senderType;
             $communication->sender_id = $senderId;
             $communication->completed_at = CarbonImmutable::now();
-            $communication->metadata = $metadata;
+            $communication->metadata = $metadata !== null ? $this->redactor->redact($metadata) : null;
             $communication->save();
 
             $recipient = new CommunicationRecipient;

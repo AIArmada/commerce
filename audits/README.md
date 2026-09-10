@@ -26,7 +26,7 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | cashier-chip | filament-cashier-chip | No | Yes | High | `cashier-chip.md` | Done |
 | chip | filament-chip | No | Yes | High | `chip.md` | Done |
 | commerce-support | filament-commerce-support | No | No | Low | `commerce-support.md` | Done |
-| communications | filament-communications | No | Yes | High | `communications.md` | Open |
+| communications | filament-communications | No | Yes | High | `communications.md` | Done |
 | contacting | filament-contacting | No | Yes | High | `contacting.md` | Done |
 | customers | filament-customers | No | Yes | High | `customers.md` | Done |
 | docs | filament-docs | Done | Yes | High | `docs.md` | Open |
@@ -42,11 +42,11 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | pricing | filament-pricing | Done | No | High | `pricing.md` | Done |
 | products | filament-products | No | Yes | High | `products.md` | Open |
 | promotions | filament-promotions | Done | Yes | High | `promotions.md` | Open |
-| seating | filament-seating | No | No | High | `seating.md` | Open |
+| seating | filament-seating | No | No | High | `seating.md` | Done |
 | shipping | filament-shipping | Done | Yes | High | `shipping.md` | Open |
 | signals | filament-signals | Done | Yes | High | `signals.md` | Done |
 | tax | filament-tax | No | Yes | High | `tax.md` | Open |
-| ticketing | filament-ticketing | No | Yes | High | `ticketing.md` | Open |
+| ticketing | filament-ticketing | No | Yes | High | `ticketing.md` | Done |
 | vouchers | filament-vouchers | Done | Yes | High | `vouchers.md` | Open |
 
 ### Standalones
@@ -76,7 +76,7 @@ Dominant remaining risk themes: checkout-track leftovers (status-mapper copies, 
 3. **Address lineage (done 2026-09-08 except pilots).** `addressing` canonical with resolver everywhere; `customers` pilot live (legacy frozen); `events` pivot via resolver with the remaining non-owner venue models explicitly deferred. Remaining: orders pilot; see `addressing.md`, `events.md`.
 4. **Payments modeled three times (done 2026-09-08).** `cashier` thin multiplexer, `cashier-chip` canonical billing, `chip` HTTP/API owner, durable idempotency ledger — collapse complete; see `cashier.md`, `cashier-chip.md`, `chip.md`. Remaining: `checkout` status-mapper copies + token TTL. See `checkout.md`.
 5. **Pricing/promotions/vouchers (residual).** Dead promotion strategies deleted, BOGO promotion type removed (voucher-side BOGO mechanic untouched and live), voucher provenance canonicalized, broken cross-package class references fixed, pricing bridged through promotions' public contract. Remaining: voucher validator hardening. See `pricing.md`, `vouchers.md`.
-6. **Events ↔ ticketing ↔ seating boundary.** Event-side ticketing DTO/action forks are removed. Remaining work is ticketing’s registry placement, per-pass issuance loop, and seating’s set-based allocation path. See `events.md`, `ticketing.md`, `seating.md`.
+6. **Events ↔ ticketing ↔ seating boundary (cleared 2026-09-11).** Event-side ticketing DTO/action forks remain removed; ticketing’s registry placement and transactional batch issuance, seating’s set-based allocation, explicit GA mode handling, and Filament enum alignment are settled. Read-only event dependencies and deferrals are recorded in `ticketing.md` and `seating.md`.
 7. **Foundation residue.** Models moved, money strict, navigation canonical, Octane flush wired, helpers grouped, stubs unified (see `code-fixes-record.md`; dependency-direction guard in place). Remaining: Octane exercised under real Octane, `ManageCommerceNavigation` feature test, `products` `store_money_in_cents` toggle, `jnt` float money math. See `commerce-support.md`, `authz.md`, `products.md`, `jnt.md`.
 8. **Filament adapters duplicating domain.** Snapshot dual-write (`filament-cart`), condition-application duplication, `CreateCustomer`/`UpdateCustomerProfile` parsing duplication, customer merge split across core/Filament, `GrowthStatsAggregator` N+1. See `cart.md`, `customers.md`, `growth.md`.
 9. **Zero tests in nearly all packages.** Repo-root `tests/src/<Area>/` has partial coverage only. Test-absence findings are uniformly Medium per the rubric. Every audit lists highest-value first tests.
@@ -98,6 +98,6 @@ Dominant remaining risk themes: checkout-track leftovers (status-mapper copies, 
 5. **Identity/address consolidation (done 2026-09-08):** topology live, customers pilot + native-layer removal done, resolver shipped; remaining: orders pilot, physical index batches.
 6. **Foundation residue:** ManageNav feature test, real-Octane exercise, `products` toggle, `jnt` math.
 7. **Pricing/vouchers residual + shipping/tax:** route pricing through promotions domain, voucher validator hardening.
-8. **Events/ticketing/seating + affiliates/affiliate-network:** events forks removed; remaining work is registry placement, set-based issuance, and the programs-vs-offers boundary.
-9. **Remainder:** `cart` snapshot consolidation, `products` config/policy fixes, `communications`, `engagement`, `feedback`, `docs`, `jnt`, standalones (`moderation` expiry sweep, `references` tenancy, `membership`, `csuite` bundle requires).
+8. **Events/ticketing/seating + affiliates/affiliate-network:** events/ticketing/seating cleared 2026-09-11; remaining work is the programs-vs-offers boundary and other open package audits.
+9. **Remainder:** `cart` snapshot consolidation, `products` config/policy fixes, `engagement`, `feedback`, `docs`, `jnt`, standalones (`moderation` expiry sweep, `references` tenancy, `membership`, `csuite` bundle requires).
 10. **Tests throughout:** add the listed first tests per package before touching risky code; keep `--parallel` per repo test guidelines.

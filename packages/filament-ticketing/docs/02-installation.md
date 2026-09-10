@@ -44,7 +44,7 @@ Ticketable models must be registered so the admin UI can populate ticketable typ
 ### Via Service Provider
 
 ```php
-use AIArmada\FilamentTicketing\Support\TicketableTypeRegistry;
+use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 use App\Models\Workshop;
 
 public function boot(): void
@@ -58,7 +58,7 @@ public function boot(): void
 Add classes to the published config:
 
 ```php
-// config/filament-ticketing.php
+// config/ticketing.php
 'ticketable_types' => [
     \App\Models\Workshop::class,
     \App\Models\Event::class,
@@ -80,7 +80,8 @@ Or restrict to specific types:
 php artisan vendor:publish --provider="AIArmada\FilamentTicketing\FilamentTicketingServiceProvider" --tag="filament-ticketing-config"
 ```
 
-This creates `config/filament-ticketing.php`.
+This creates the Filament adapter configuration. Ticketable types are configured
+in the core package's `config/ticketing.php` file.
 
 ## Verification
 
@@ -106,6 +107,11 @@ Then check that the Ticketing navigation group appears in your Filament panel wi
         'pass_transfer' => true,
     ],
 ],
+```
+
+Configure ticketable types separately in `config/ticketing.php`:
+
+```php
 'ticketable_types' => [
     \App\Models\Workshop::class,
     \App\Models\Event::class,

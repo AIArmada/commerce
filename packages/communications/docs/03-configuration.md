@@ -46,6 +46,8 @@ title: Configuration
     'auto_capture' => false,
     'auto_capture_allowlist' => [],
     'auto_capture_denylist' => [],
+    'auto_capture_families' => [],
+    'auto_capture_triggers' => [],
     'auto_capture_ignored_channels' => [],
 ],
 ```
@@ -55,9 +57,16 @@ title: Configuration
 - `owner.auto_assign_on_create` - auto-fill the current owner on create
 - `native_capture` - observe Laravel Notification events
 - `auto_capture` - infer communications from native notifications
-- `auto_capture_allowlist` - restrict auto capture to matching classes
+- `auto_capture_allowlist` - explicitly allow matching notification classes
 - `auto_capture_denylist` - exclude matching classes from auto capture
+- `auto_capture_families` - optionally restrict opted-in notifications to `NotificationFamily` values
+- `auto_capture_triggers` - optionally restrict opted-in notifications to `NotificationTrigger` values
 - `auto_capture_ignored_channels` - skip selected notification channels
+
+The standalone package binds consent, preference, quiet-hours, rate-limit, and
+suppression contracts to `PermissiveEligibilityResolver`. Custom bindings must
+implement the renamed `resolveConsent()` and `resolveSuppression()` methods;
+the old method names are not retained.
 
 ## Destinations
 
@@ -128,18 +137,26 @@ Optional integrations can be enabled explicitly when the package is installed:
 use AIArmada\Communications\Http\Middleware\VerifyWebhookSignature;
 
 'webhooks' => [
-    'middleware' => ['api', VerifyWebhookSignature::class],
+    'middleware' => ['api', 'throttle:communications-webhooks', VerifyWebhookSignature::class],
     'providers' => [
         'provider-name' => [
+            'enabled' => true,
             'secret' => env('PROVIDER_WEBHOOK_SECRET'),
         ],
+    ],
+    'timestamp_header' => 'X-Webhook-Timestamp',
+    'timestamp_tolerance_seconds' => 300,
+    'rate_limit' => [
+        'max_attempts' => 60,
     ],
     'route_name_prefix' => 'communications.webhooks.',
 ],
 ```
 
-The default middleware fails closed unless the provider has a secret and sends
-`X-Webhook-Signature` as the SHA-256 HMAC of the raw request body.
+The default middleware fails closed unless the provider is configured and sends
+`X-Webhook-Signature` as the SHA-256 HMAC of the raw request body plus a recent
+numeric `X-Webhook-Timestamp`. Replayed timestamps outside the configured
+tolerance are rejected before dispatch.
 
 ## Cache
 

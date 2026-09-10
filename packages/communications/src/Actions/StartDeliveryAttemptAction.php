@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Models\CommunicationAttempt;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 
 final class StartDeliveryAttemptAction
 {
+    public function __construct(
+        private readonly PayloadRedactor $redactor,
+    ) {}
+
     public function handle(string $deliveryId, array $requestPayload = []): CommunicationAttempt
     {
         $delivery = CommunicationDelivery::query()->findOrFail($deliveryId);
@@ -20,7 +25,7 @@ final class StartDeliveryAttemptAction
         $attempt->delivery_id = $delivery->id;
         $attempt->attempt_number = $attemptNumber;
         $attempt->provider = $delivery->provider;
-        $attempt->request_payload = $requestPayload;
+        $attempt->request_payload = $this->redactor->redactRequest($requestPayload);
         $attempt->started_at = CarbonImmutable::now();
         $attempt->save();
 

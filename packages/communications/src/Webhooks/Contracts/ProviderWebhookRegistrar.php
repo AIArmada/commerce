@@ -6,6 +6,8 @@ namespace AIArmada\Communications\Webhooks\Contracts;
 
 interface ProviderWebhookRegistrar
 {
+    public function supports(string $provider): bool;
+
     public function resolveProvider(string $provider): ?string;
 
     public function getSecret(string $provider): ?string;

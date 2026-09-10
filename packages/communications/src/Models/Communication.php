@@ -221,12 +221,21 @@ final class Communication extends Model
     protected static function booted(): void
     {
         static::deleting(function (Communication $communication): void {
-            $communication->recipients()->each(fn (CommunicationRecipient $r) => $r->delete());
-            $communication->contents()->each(fn (CommunicationContent $c) => $c->delete());
-            $communication->deliveries()->each(fn (CommunicationDelivery $d) => $d->delete());
-            $communication->events()->each(fn (CommunicationEvent $e) => $e->delete());
-            $communication->references()->each(fn (CommunicationReference $r) => $r->delete());
-            $communication->attachments()->each(fn (CommunicationAttachment $a) => $a->delete());
+            self::deleteRelatedModels($communication->recipients());
+            self::deleteRelatedModels($communication->contents());
+            self::deleteRelatedModels($communication->deliveries());
+            self::deleteRelatedModels($communication->events());
+            self::deleteRelatedModels($communication->references());
+            self::deleteRelatedModels($communication->attachments());
+        });
+    }
+
+    private static function deleteRelatedModels(HasMany $relation): void
+    {
+        $relation->chunkById(100, static function (Collection $models): void {
+            $models->each(static function (Model $model): void {
+                $model->delete();
+            });
         });
     }
 }

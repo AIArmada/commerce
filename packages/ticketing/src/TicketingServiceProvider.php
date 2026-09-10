@@ -26,6 +26,7 @@ use AIArmada\Ticketing\Services\DefaultPassIssuer;
 use AIArmada\Ticketing\Services\DefaultPassTransferService;
 use AIArmada\Ticketing\Services\NullPassDeliveryService;
 use AIArmada\Ticketing\Support\Integration\TicketingIntegration;
+use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -48,6 +49,7 @@ final class TicketingServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->app->singleton(TicketableTypeRegistry::class);
         $this->app->bind(PassIssuerInterface::class, DefaultPassIssuer::class);
         $this->app->singleton(PassDeliveryServiceInterface::class, function ($app) {
             return config('ticketing.notifications.ticket.enabled', true)
@@ -108,6 +110,7 @@ final class TicketingServiceProvider extends PackageServiceProvider
             PassIssuerInterface::class,
             PassDeliveryServiceInterface::class,
             PassTransferServiceInterface::class,
+            TicketableTypeRegistry::class,
         ];
     }
 }

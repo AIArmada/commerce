@@ -7,7 +7,9 @@ namespace AIArmada\Communications\Jobs;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Contracts\IdempotencyLock;
+use AIArmada\Communications\Data\ProviderEventData;
 use AIArmada\Communications\Webhooks\Contracts\ProviderEventNormalizer;
+use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -26,6 +28,7 @@ final class ProcessWebhookEventJob implements ShouldBeUnique, ShouldQueue
         public readonly array $payload,
         public readonly ?string $ownerId = null,
         public readonly ?string $ownerType = null,
+        public readonly ?string $signatureValidatedAt = null,
     ) {}
 
     public function uniqueId(): string
@@ -54,6 +57,23 @@ final class ProcessWebhookEventJob implements ShouldBeUnique, ShouldQueue
                 OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId),
                 function () use ($normalizer, $applyAction): void {
                     $eventData = $normalizer->normalize($this->provider, $this->payload);
+
+                    if ($this->signatureValidatedAt !== null) {
+                        $eventData = new ProviderEventData(
+                            provider: $eventData->provider,
+                            providerEventId: $eventData->providerEventId,
+                            providerMessageId: $eventData->providerMessageId,
+                            eventType: $eventData->eventType,
+                            occurredAt: $eventData->occurredAt,
+                            communicationId: $eventData->communicationId,
+                            deliveryId: $eventData->deliveryId,
+                            payload: $eventData->payload,
+                            failureCode: $eventData->failureCode,
+                            failureMessage: $eventData->failureMessage,
+                            signatureValidatedAt: CarbonImmutable::parse($this->signatureValidatedAt),
+                        );
+                    }
+
                     $applyAction->handle($eventData);
                 },
             );
