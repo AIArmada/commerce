@@ -12,17 +12,10 @@ use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
-
-// CartIntegrationRegistrar Tests
-test('CartIntegrationRegistrar can be instantiated', function (): void {
-    $registrar = app(CartIntegrationRegistrar::class);
-    expect($registrar)->toBeInstanceOf(CartIntegrationRegistrar::class);
-});
 
 // VoucherIntegrationRegistrar Tests
 test('VoucherIntegrationRegistrar can be instantiated', function (): void {

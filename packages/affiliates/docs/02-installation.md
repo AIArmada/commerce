@@ -57,14 +57,24 @@ public function panel(Panel $panel): Panel
 
 ## Optional: Cart Integration
 
-If using `aiarmada/cart`, the integration is automatic. The package registers a manager proxy that adds fluent methods to the Cart facade:
+If using `aiarmada/cart`, attach attribution through the current cart action. The affiliates package does not decorate the cart manager:
 
 ```php
-Cart::attachAffiliate('CODE123');
-Cart::hasAffiliate();
-Cart::getAffiliate();
-Cart::recordAffiliateConversion([...]);
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Cart\Contracts\CartManagerInterface;
+
+$cart = app(CartManagerInterface::class)->getCurrentCart();
+$affiliate = app(AffiliateLookup::class)->findByCode('CODE123');
+
+if ($affiliate !== null) {
+    AttachAffiliateToCart::run($affiliate, $cart);
+}
 ```
+
+When a cookie-backed attribution should be applied, call
+`app(\AIArmada\Affiliates\Support\Integrations\CartBridge::class)` and its
+`hydrateAffiliateFromCookie($cart)` method from the cart integration boundary.
 
 ## Optional: Voucher Integration
 

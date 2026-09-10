@@ -526,6 +526,65 @@ reported and taken on trust; code correctness was verified directly.
   FilamentEngagement 5 passed (30 assertions); PHPStan level 6
   clean. No migration required.
 
+## Affiliates (implemented)
+
+- **State authority:** Spatie conversion/payout states expose `toEnum()`
+  (`packages/affiliates/src/States/ConversionStatus.php:25-28`,
+  `packages/affiliates/src/States/PayoutStatus.php:25-28`); unknown conversion,
+  payout, and affiliate values throw (`packages/affiliates/src/States/ConversionStatus.php:105-125`,
+  `packages/affiliates/src/States/PayoutStatus.php:105-125`,
+  `packages/affiliates/src/States/AffiliateStatus.php:131-151`). Filament
+  renders status through `fromString()` (`packages/filament-affiliates/src/Resources/AffiliateConversionResource/Tables/AffiliateConversionsTable.php:51-55,122-129`);
+  the vouchers resolver has no lifecycle-status read (`packages/vouchers/src/Support/AffiliateReportingContextResolver.php:250-299`).
+- **Cart layers:** `CartBridge` retains cookie hydration
+  (`packages/affiliates/src/Support/Integrations/CartBridge.php:14-46`), and
+  the provider binds it plus the live condition provider
+  (`packages/affiliates/src/AffiliatesServiceProvider.php:105,118,124-143`).
+  The four old affiliate decorator/trait/registrar paths are absent; scoped
+  source/test grep found no remaining caller.
+- **Voucher direction:** affiliates owns lookup and the voucher-applied
+  listener (`packages/affiliates/src/AffiliatesServiceProvider.php:105,124-135`,
+  `packages/affiliates/src/Support/Integrations/VoucherIntegrationRegistrar.php:11-28`).
+  Vouchers' registrar remains for affiliate-created/activated vouchers
+  (`packages/vouchers/src/Support/AffiliateIntegrationRegistrar.php:21-38,50-75`),
+  with its ownership guard (`packages/vouchers/src/Support/VoucherAffiliateOwnershipGuard.php:16-27,72-89`).
+- **Commission rules — explicit deferral:** commission matching remains in
+  `CommissionRuleEngine`/`CommissionRuleType` (`packages/affiliates/src/Services/Commissions/CommissionRuleEngine.php:16-50`,
+  `packages/affiliates/src/Enums/CommissionRuleType.php:7-17`); performance and
+  fraud retain distinct contracts (`packages/affiliates/src/Contracts/PerformanceBonusRule.php:9-16`,
+  `packages/affiliates/src/Contracts/FraudRule.php:12-18`). Future unification is
+  an open breaking-design question; no generic rules framework was added.
+- **Facade:** created for the lookup binding (`packages/affiliates/src/Facades/Affiliate.php:15-20`),
+  matching the alias and docs (`packages/affiliates/composer.json:30-32`,
+  `packages/affiliates/docs/04-usage.md:380-387`).
+- **Owner dialects:** analytics now call `OwnerQuery::applyToQueryBuilder`
+  (`packages/affiliates/src/Services/CohortAnalyzer.php:305-315,367-373,427-433`,
+  `packages/affiliates/src/Services/PerformanceBonusService.php:156-178`); the
+  three `ScopesBy*` concerns remain relational guards (`packages/affiliates/src/Models/Concerns/ScopesByAffiliateOwner.php:11-35`,
+  `ScopesByProgramOwner.php:17-42`, `ScopesByTicketAffiliateOwner.php:11-36`).
+- **Security/performance:** active, owner-scoped cookie lookup and forged/inactive
+  rejection are verified (`packages/affiliates/src/Resolvers/DatabaseAffiliateLookup.php:58-75,95-133`,
+  `packages/affiliates/src/Actions/Affiliates/AttachAffiliateFromCookie.php:21-40`,
+  `tests/src/Affiliates/Unit/CartBridgeTest.php:52-90`). Payout logs contain
+  identifiers/classes, not secrets (`packages/affiliates/src/Services/Payouts/StripeConnectProcessor.php:79-83,128-132,163-167`,
+  `packages/affiliates/src/Services/Payouts/PayPalProcessor.php:100-104,140-144,199-200`).
+  Aggregation is chunked and existing indexes were verified (`packages/affiliates/src/Services/DailyAggregationService.php:17-27`,
+  `packages/affiliates/database/migrations/2000_01_01_000002_create_affiliate_attributions_table.php:57-63`,
+  `packages/affiliates/database/migrations/2000_01_01_000003_create_affiliate_conversions_table.php:53-59`,
+  `packages/affiliates/database/migrations/2000_01_01_000004_create_affiliate_payouts_table.php:34-36`). No speculative index migration was added; lazy widgets and the catalog seam remain (`vendor/filament/support/src/Concerns/CanBeLazy.php:7-16`,
+  `packages/affiliates/src/Support/Catalog/PromotableRegistry.php:17-25`).
+- **Canaries clarified:** searching `tests/src/Cart/**` and `tests/src/Events/**`
+  confirmed the reported lines as `tests/src/Cart/Feature/Conditions/ConditionProviderRegistryTest.php:13-56`
+  and `tests/src/Events/EventLifecycleWorkflowTest.php:13-45`. Exact reruns:
+  `Tests:    1 passed (2 assertions)` / `Duration: 1.54s` /
+  `Parallel: 8 processes`; and `Tests:    4 passed (4 assertions)` /
+  `Duration: 3.73s` / `Parallel: 8 processes`. `BuyableTest` and
+  `CrossTenantIsolationTest` were separate candidates.
+- **Coverage record:** the DONE audit records Affiliates 1,139 passed, 5
+  skipped, 2,611 assertions and FilamentAffiliates 317 passed (879 assertions)
+  (`audits/affiliates.md:81-96`). This bookkeeping pass ran only the two
+  canaries; no full suite or migration was run/required.
+
 ## Orders bridge + enforcement (implemented)
 
 - **Typed cart bridge:** `CreateOrderFromCart::execute(Cart |
@@ -661,6 +720,32 @@ reported and taken on trust; code correctness was verified directly.
   256, Signals 98, Vouchers 889 green except 3 pre-existing
   remove/clear/replace failures proven unrelated via stash test
   (cart/voucher storage seam, logged for that track).
+
+## Ticketing / seating / communications cluster (implemented)
+
+- **Ticketing:** registry moved to core with all imports rewired;
+  transactional batch issuance (`whereIn` collision retry,
+  after-commit events); owner/config fixes; enum-aligned options;
+  guarded Filament queries. Fork deletion required 4 ticketing
+  files against a 1-file exception — expanded retroactively, all
+  four verified necessary (quota constructor, PassData shape,
+  owner-sniff retarget); reverting any of them re-breaks the High.
+- **Seating:** set-based allocation (`limit()` fetch, batch holds,
+  transaction kept); explicit GA handling; renderer verified
+  single-shape; bulk-release regression.
+- **Communications:** allowlist-gated auto-capture; five Nulls
+  collapsed with bindings rewired; event-reference normalizer
+  (multi-shape) closing the events-bridge dependency; webhook
+  hardening; chunked deletes/prunes; payload redaction; fake
+  coverage.
+- **Hygiene note:** docs/index/evidence touch-ups shipped alongside
+  the streams were accurate but outside every grant — accepted, not
+  repeated. Next prompts should include hygiene explicitly or forbid
+  it (playbook §4 gap).
+- Suites: Ticketing 43/79, FilamentTicketing 8/20, Seating 62/116,
+  FilamentSeating 8/9, Communications 265/1202,
+  FilamentCommunications 41/67; canaries Events 244/1105, Orders
+  323/725 green; PHPStan L6 clean. No migration required.
 
 ## Fairness log
 

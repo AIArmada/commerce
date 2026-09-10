@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support\Integrations;
 
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateFromCookie;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 final class CartBridge
@@ -17,6 +21,25 @@ final class CartBridge
     }
 
     public function warm(): void {}
+
+    public function hydrateAffiliateFromCookie(Cart $cart): ?AffiliateAttributionData
+    {
+        if (! config('affiliates.cookies.enabled', true) || ! app()->bound('request')) {
+            return null;
+        }
+
+        if (app(AffiliateLookup::class)->findAttachedAttribution($cart) !== null) {
+            return null;
+        }
+
+        $cookieValue = request()->cookie(config('affiliates.cookies.name', 'affiliate_session'));
+
+        if (! is_string($cookieValue) || $cookieValue === '') {
+            return null;
+        }
+
+        return app(AttachAffiliateFromCookie::class)->handle($cart, $cookieValue);
+    }
 
     public function isAvailable(): bool
     {

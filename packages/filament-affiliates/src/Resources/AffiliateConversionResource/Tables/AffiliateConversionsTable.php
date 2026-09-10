@@ -121,12 +121,12 @@ final class AffiliateConversionsTable
 
     public static function statusColor(ConversionStatus | string $state): string
     {
-        return ConversionStatus::colorFor($state);
+        return ConversionStatus::fromString($state)->color();
     }
 
     public static function statusLabel(ConversionStatus | string $state): string
     {
-        return ConversionStatus::labelFor($state);
+        return ConversionStatus::fromString($state)->label();
     }
 
     public static function updateStatus(AffiliateConversion $record, ConversionStatus | string $status): bool

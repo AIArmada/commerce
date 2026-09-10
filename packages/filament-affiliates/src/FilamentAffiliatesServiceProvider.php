@@ -53,7 +53,6 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(FilamentAffiliatesPlugin::class);
         $this->app->singleton(AffiliateStatsAggregator::class);
-        $this->app->singleton(CartBridge::class);
         $this->app->singleton(VoucherBridge::class);
         $this->app->singleton(PayoutExportService::class);
     }

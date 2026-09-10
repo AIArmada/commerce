@@ -121,9 +121,9 @@ class PortalConversions extends PortalPage implements HasTable
                 TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
-                    ->color(fn (string | BackedEnum $state): string => ConversionStatus::colorFor(
-                        $state instanceof BackedEnum ? $state->value : $state
-                    )),
+                    ->color(fn (string | BackedEnum $state): string => ConversionStatus::fromString(
+                        $state instanceof BackedEnum ? (string) $state->value : $state
+                    )->color()),
             ])
             ->defaultSort('occurred_at', 'desc')
             ->paginated([10, 25, 50]);

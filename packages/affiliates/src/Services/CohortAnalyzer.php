@@ -12,7 +12,6 @@ use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -303,9 +302,18 @@ final class CohortAnalyzer
             ->whereBetween('a.created_at', [$from, $to])
             ->groupBy('source');
 
-        $this->applyOwnerScopeToQuery($query, 'a.owner_type', 'a.owner_id');
-        $this->applyOwnerScopeToQuery($query, 'c.owner_type', 'c.owner_id');
-        $this->applyOwnerScopeToQuery($query, 'aa.owner_type', 'aa.owner_id');
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                'Cohort queries require an owner context or explicit global context.',
+            );
+            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+
+            OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, 'a.owner_type', 'a.owner_id');
+            OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, 'c.owner_type', 'c.owner_id');
+            OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, 'aa.owner_type', 'aa.owner_id');
+        }
 
         /** @var array<int, object{source: string, total_affiliates: int|string, total_conversions: int|string, with_conversions: int|string, total_revenue: int|string}> $rows */
         $rows = $query->get()->all();
@@ -349,7 +357,21 @@ final class CohortAnalyzer
             ->select('id', DB::raw("$dateFormat as cohort_month"))
             ->whereBetween('created_at', [$from, $to]);
 
-        $this->applyOwnerScopeToQuery($cohortQuery, "{$affiliatesTable}.owner_type", "{$affiliatesTable}.owner_id");
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                'Cohort queries require an owner context or explicit global context.',
+            );
+
+            OwnerQuery::applyToQueryBuilder(
+                $cohortQuery,
+                $owner,
+                (bool) config('affiliates.owner.include_global', false),
+                "{$affiliatesTable}.owner_type",
+                "{$affiliatesTable}.owner_id",
+            );
+        }
 
         $cohorts = $cohortQuery->get()
             ->filter(fn (object $row): bool => isset($row->cohort_month) && is_string($row->cohort_month))
@@ -395,7 +417,21 @@ final class CohortAnalyzer
                 ->whereBetween('occurred_at', [$periodStart, $periodEnd])
                 ->selectRaw('COUNT(*) as count, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as revenue, COALESCE(SUM(commission_minor), 0) as commissions');
 
-            $this->applyOwnerScopeToQuery($conversionsQuery, "{$conversionsTable}.owner_type", "{$conversionsTable}.owner_id");
+            if ((bool) config('affiliates.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
+                OwnerContext::assertResolvedOrExplicitGlobal(
+                    $owner,
+                    'Cohort queries require an owner context or explicit global context.',
+                );
+
+                OwnerQuery::applyToQueryBuilder(
+                    $conversionsQuery,
+                    $owner,
+                    (bool) config('affiliates.owner.include_global', false),
+                    "{$conversionsTable}.owner_type",
+                    "{$conversionsTable}.owner_id",
+                );
+            }
 
             $conversions = $conversionsQuery->first();
 
@@ -409,17 +445,5 @@ final class CohortAnalyzer
         }
 
         return $breakdown;
-    }
-
-    private function applyOwnerScopeToQuery(Builder $query, string $ownerTypeColumn, string $ownerIdColumn): void
-    {
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return;
-        }
-
-        $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-
-        OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, $ownerTypeColumn, $ownerIdColumn);
     }
 }

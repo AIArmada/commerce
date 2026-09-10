@@ -102,13 +102,12 @@ return [
     | Cart Integration
     |--------------------------------------------------------------------------
     |
-    | Configure whether the package should decorate the cart manager
-    | automatically. Affiliate attribution is stored in normalized tables.
+    | Affiliate attribution is stored in normalized tables. Cart attribution
+    | hydration is exposed through the CartBridge integration.
     |
     */
 
     'cart' => [
-        'register_manager_proxy' => env('AFFILIATES_CART_PROXY', true),
         // Enable affiliate customer discounts as cart conditions
         'customer_discounts_enabled' => env('AFFILIATES_CUSTOMER_DISCOUNTS_ENABLED', false),
     ],

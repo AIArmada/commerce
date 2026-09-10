@@ -66,9 +66,9 @@ class PortalPayouts extends PortalPage implements HasTable
                 TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
-                    ->color(fn (string | BackedEnum $state): string => PayoutStatus::colorFor(
-                        $state instanceof BackedEnum ? $state->value : $state
-                    )),
+                    ->color(fn (string | BackedEnum $state): string => PayoutStatus::fromString(
+                        $state instanceof BackedEnum ? (string) $state->value : $state
+                    )->color()),
 
                 TextColumn::make('paid_at')
                     ->label(__('Paid At'))

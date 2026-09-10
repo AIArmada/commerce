@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\States;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;
 
@@ -147,7 +148,7 @@ abstract class AffiliateStatus extends State
             }
         }
 
-        return Draft::class;
+        throw new InvalidArgumentException(sprintf('Unknown affiliate status [%s].', $status));
     }
 
     final public static function config(): StateConfig

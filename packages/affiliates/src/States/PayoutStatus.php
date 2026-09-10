@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\States;
 
+use AIArmada\Affiliates\Enums\PayoutStatus as PayoutStatusEnum;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;
 
@@ -19,6 +21,11 @@ abstract class PayoutStatus extends State
     abstract public function label(): string;
 
     abstract public function color(): string;
+
+    public function toEnum(): PayoutStatusEnum
+    {
+        return PayoutStatusEnum::from($this->getValue());
+    }
 
     public static function value(): string
     {
@@ -115,7 +122,7 @@ abstract class PayoutStatus extends State
             }
         }
 
-        return PendingPayout::class;
+        throw new InvalidArgumentException(sprintf('Unknown payout status [%s].', $status));
     }
 
     final public static function config(): StateConfig

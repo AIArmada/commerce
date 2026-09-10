@@ -61,7 +61,7 @@ use AIArmada\Affiliates\Services\UplineService;
 use AIArmada\Affiliates\Strategies\FirstTouchAttribution;
 use AIArmada\Affiliates\Strategies\LastTouchAttribution;
 use AIArmada\Affiliates\Strategies\LinearAttribution;
-use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
+use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\CaptureAffiliateReferralFromPath;
 use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
@@ -115,15 +115,14 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(Support\Catalog\PromotableRegistry::class);
         $this->app->singleton(ProgramCatalogService::class);
         $this->app->singleton(PayoutReconciliationService::class);
+        $this->app->singleton(CartBridge::class);
 
         $this->registerAttributionStrategies();
         $this->registerFraudRules();
         $this->registerPerformanceBonusRules();
 
-        $this->app->singleton(CartIntegrationRegistrar::class);
         $this->app->singleton(VoucherIntegrationRegistrar::class);
         $this->app->singleton(AffiliateDiscountConditionProvider::class);
-
     }
 
     public function packageBooted(): void
@@ -131,13 +130,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->registerMorphMap();
 
         Blade::anonymousComponentNamespace('affiliates::components', 'affiliates');
-
-        if (
-            config('affiliates.features.cart_integration.enabled', true)
-            && config('affiliates.cart.register_manager_proxy', true)
-        ) {
-            app(CartIntegrationRegistrar::class)->register();
-        }
 
         if (config('affiliates.features.voucher_integration.enabled', true)) {
             app(VoucherIntegrationRegistrar::class)->register();

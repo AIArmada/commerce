@@ -8,24 +8,25 @@ This guide covers common workflows for tracking affiliates, recording conversion
 
 ## Attaching Affiliates to Carts
 
-### Using the Cart Facade (with aiarmada/cart)
+### Using the Current Cart (with aiarmada/cart)
 
 ```php
-use AIArmada\Cart\Facades\Cart;
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Cart\Contracts\CartManagerInterface;
 
-// Attach affiliate by code
-Cart::attachAffiliate('PARTNER42', [
+$cart = app(CartManagerInterface::class)->getCurrentCart();
+$affiliate = app(AffiliateLookup::class)->findByCode('PARTNER42');
+
+if ($affiliate !== null) {
+    AttachAffiliateToCart::run($affiliate, $cart, [
     'utm_source' => 'newsletter',
     'landing_url' => url()->current(),
     'subject_type' => 'product',
     'subject_key' => 'SKU-1001',
     'subject_instance' => 'web',
     'subject_title_snapshot' => 'Pro Plan',
-]);
-
-// Check if cart has affiliate
-if (Cart::hasAffiliate()) {
-    $affiliate = Cart::getAffiliate();
+    ]);
 }
 ```
 
@@ -378,11 +379,10 @@ protected $listen = [
 
 ## Facades
 
-Use the `Affiliates` facade for quick access:
+Use the `Affiliate` facade for lookup access:
 
 ```php
-use AIArmada\Affiliates\Facades\Affiliates;
+use AIArmada\Affiliates\Facades\Affiliate;
 
-$affiliate = Affiliates::findByCode('PARTNER42');
-$attribution = Affiliates::attachToCartByCode('PARTNER42', $cart);
+$affiliate = Affiliate::findByCode('PARTNER42');
 ```

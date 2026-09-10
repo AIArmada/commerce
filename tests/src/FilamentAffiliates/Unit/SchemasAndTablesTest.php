@@ -155,11 +155,11 @@ it('affiliate portal views and schemas use state helpers instead of enum value p
         ->toContain('{{ $conversion->status->label() }}')
         ->not->toContain('status->value')
         ->and($infolistSource)
-        ->toContain('ConversionStatus::colorFor($state)')
-        ->toContain('ConversionStatus::labelFor($state)')
+        ->toContain('ConversionStatus::fromString($state)->color()')
+        ->toContain('ConversionStatus::fromString($state)->label()')
         ->not->toContain('$state?->value ?? $state')
         ->and($tableSource)
-        ->toContain('AffiliateStatus::colorFor($state)');
+        ->toContain('AffiliateStatus::fromString($state)->color()');
 });
 
 it('affiliate portal ships package-owned styling hooks instead of relying on app themes', function (): void {

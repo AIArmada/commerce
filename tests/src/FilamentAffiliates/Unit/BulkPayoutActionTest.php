@@ -128,7 +128,7 @@ it('processes a pending payout successfully', function (): void {
         ->and($payout->paid_at)->not->toBeNull()
         ->and($payout->external_reference)->toBe('EXT-123');
 
-    $event = $payout->events()->first();
+    $event = $payout->events()->where('notes', 'Provider outcome: completed')->first();
     expect($event)->not->toBeNull()
         ->and($event->from_status)->toBe(ProcessingPayout::value())
         ->and($event->to_status)->toBe(CompletedPayout::value())
@@ -175,7 +175,7 @@ it('marks a pending payout as failed when no default payout method exists', func
 
     expect($payout->status)->toBeInstanceOf(FailedPayout::class);
 
-    $event = $payout->events()->first();
+    $event = $payout->events()->where('notes', 'No default payout method is configured.')->first();
     expect($event)->not->toBeNull()
         ->and($event->to_status)->toBe(FailedPayout::value())
         ->and($event->notes)->toBe('No default payout method is configured.');
@@ -233,7 +233,7 @@ it('marks a pending payout as failed when the processor fails', function (): voi
 
     expect($payout->status)->toBeInstanceOf(FailedPayout::class);
 
-    $event = $payout->events()->first();
+    $event = $payout->events()->where('notes', 'Provider outcome: failed')->first();
     expect($event)->not->toBeNull()
         ->and($event->to_status)->toBe(FailedPayout::value())
         ->and($event->notes)->toBe('Provider outcome: failed');
@@ -294,7 +294,7 @@ it('leaves a payout processing when the processor throws', function (): void {
         ->and($payout->operation?->status)->toBe('unknown')
         ->and($payout->operation?->last_error_code)->toBe('PAYOUT_PROCESSING_EXCEPTION');
 
-    $event = $payout->events()->first();
+    $event = $payout->events()->where('notes', 'Provider outcome: unknown (PAYOUT_PROCESSING_EXCEPTION)')->first();
     expect($event)->not->toBeNull()
         ->and($event->from_status)->toBe(ProcessingPayout::value())
         ->and($event->to_status)->toBe(ProcessingPayout::value())

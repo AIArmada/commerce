@@ -36,8 +36,8 @@ final class AffiliatePayoutsTable
                     ->searchable(),
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (PayoutStatus | string $state): string => PayoutStatus::colorFor($state))
-                    ->formatStateUsing(fn (PayoutStatus | string $state): string => PayoutStatus::labelFor($state))
+                    ->color(fn (PayoutStatus | string $state): string => PayoutStatus::fromString($state)->color())
+                    ->formatStateUsing(fn (PayoutStatus | string $state): string => PayoutStatus::fromString($state)->label())
                     ->sortable(),
                 TextColumn::make('total_minor')
                     ->label('Total')
@@ -73,8 +73,8 @@ final class AffiliatePayoutsTable
                         Gate::authorize('update', $record);
 
                         $payout = (bool) config('affiliates.owner.enabled', false)
-            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
-            : AffiliatePayout::findOrFail($record->getKey());
+                            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+                            : AffiliatePayout::findOrFail($record->getKey());
 
                         app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
                     }),
@@ -89,8 +89,8 @@ final class AffiliatePayoutsTable
                         Gate::authorize('update', $record);
 
                         $payout = (bool) config('affiliates.owner.enabled', false)
-            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
-            : AffiliatePayout::findOrFail($record->getKey());
+                            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+                            : AffiliatePayout::findOrFail($record->getKey());
 
                         app(UpdatePayoutStatus::class)->handle($payout, ProcessingPayout::value());
                     }),
@@ -105,8 +105,8 @@ final class AffiliatePayoutsTable
                         Gate::authorize('update', $record);
 
                         $payout = (bool) config('affiliates.owner.enabled', false)
-            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
-            : AffiliatePayout::findOrFail($record->getKey());
+                            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+                            : AffiliatePayout::findOrFail($record->getKey());
 
                         app(UpdatePayoutStatus::class)->handle($payout, FailedPayout::value());
                     }),

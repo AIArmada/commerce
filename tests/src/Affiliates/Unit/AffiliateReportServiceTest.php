@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
 use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
@@ -10,7 +11,6 @@ use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Cart\Facades\Cart;
 
 beforeEach(function (): void {
     $this->affiliate = Affiliate::create([
@@ -22,14 +22,15 @@ beforeEach(function (): void {
         'currency' => 'USD',
     ]);
 
-    Cart::attachAffiliate($this->affiliate->code);
+    $this->cart = app('cart')->getCurrentCart();
+    app(AttachAffiliateToCart::class)->handle($this->affiliate, $this->cart);
 });
 
 test('affiliate report service summarizes totals and utm', function (): void {
     $recordAffiliateConversion = app(RecordAffiliateConversion::class);
 
-    $cart = app('cart')->getCurrentCart();
-    Cart::attachAffiliate($this->affiliate->code, [
+    $cart = $this->cart;
+    app(AttachAffiliateToCart::class)->handle($this->affiliate, $cart, [
         'source' => 'newsletter',
         'campaign' => 'spring',
     ]);

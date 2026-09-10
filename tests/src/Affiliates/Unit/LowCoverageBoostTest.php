@@ -16,7 +16,6 @@ use AIArmada\Affiliates\Services\UplineService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
-use AIArmada\Affiliates\Traits\HasAffiliates;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
 
@@ -412,9 +411,4 @@ test('AffiliateLinkGenerator generates links correctly', function (): void {
 
     expect($link)->toBeString();
     expect($link)->toContain($affiliate->code);
-});
-
-// HasAffiliates Trait Tests
-test('HasAffiliates trait exists', function (): void {
-    expect(trait_exists(HasAffiliates::class))->toBeTrue();
 });

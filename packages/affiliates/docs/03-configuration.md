@@ -78,14 +78,12 @@ The package is configured via `config/affiliates.php`. This document reflects th
 
 ```php
 'cart' => [
-    'register_manager_proxy' => env('AFFILIATES_CART_PROXY', true),
     'customer_discounts_enabled' => env('AFFILIATES_CUSTOMER_DISCOUNTS_ENABLED', false),
 ],
 ```
 
 | Key | Description |
 |-----|-------------|
-| `register_manager_proxy` | Register fluent Cart facade helpers |
 | `customer_discounts_enabled` | Enable affiliate-based customer discounts |
 
 ## Cookie Tracking

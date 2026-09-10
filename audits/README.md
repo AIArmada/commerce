@@ -19,7 +19,7 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 |---|---|---|---|---|---|
 | addressing | filament-addressing | Done | Yes | High | `addressing.md` | Done |
 | affiliate-network | filament-affiliate-network | No | Yes | High | `affiliate-network.md` | Done |
-| affiliates | filament-affiliates | No | Yes | High | `affiliates.md` | Open |
+| affiliates | filament-affiliates | No | Yes | High | `affiliates.md` | Done |
 | authz | filament-authz | No | Yes | Medium | `authz.md` | Done |
 | cart | filament-cart | No | Yes | High | `cart.md` | Done |
 | cashier | filament-cashier | No | Yes | Critical | `cashier.md` | Done |
@@ -98,6 +98,6 @@ Dominant remaining risk themes: checkout-track leftovers (status-mapper copies, 
 5. **Identity/address consolidation (done 2026-09-08):** topology live, customers pilot + native-layer removal done, resolver shipped; remaining: orders pilot, physical index batches.
 6. **Foundation residue:** ManageNav feature test, real-Octane exercise, `products` toggle, `jnt` math.
 7. **Pricing/vouchers residual + shipping/tax:** route pricing through promotions domain, voucher validator hardening.
-8. **Events/ticketing/seating + affiliates/affiliate-network:** events/ticketing/seating cleared 2026-09-11; remaining work is the programs-vs-offers boundary and other open package audits.
-9. **Remainder:** `cart` snapshot consolidation, `products` config/policy fixes, `engagement`, `feedback`, `docs`, `jnt`, standalones (`moderation` expiry sweep, `references` tenancy, `membership`, `csuite` bundle requires).
+8. **Events/ticketing/seating + affiliate-network:** events/ticketing/seating cleared 2026-09-11; remaining work is the programs-vs-offers boundary and other open package audits.
+9. **Remainder:** `cart` snapshot consolidation, `products` config/policy fixes, `feedback`, `docs`, `jnt`, standalones (`moderation` expiry sweep, `references` tenancy, `membership`, `csuite` bundle requires).
 10. **Tests throughout:** add the listed first tests per package before touching risky code; keep `--parallel` per repo test guidelines.

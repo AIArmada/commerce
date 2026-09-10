@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Actions;
 
+use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -14,6 +15,7 @@ use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -23,13 +25,24 @@ final class ProcessAffiliatePayout
     public function __construct(
         private readonly PayoutProcessorFactory $factory,
         private readonly PayoutReconciliationService $reconciliation,
+        private readonly UpdatePayoutStatus $updatePayoutStatus,
     ) {}
 
     public function handle(AffiliatePayout $payout): PayoutResult
     {
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $payout->getKey());
+        }
+
         try {
             $claim = DB::transaction(function () use ($payout): array {
-                $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->find($payout->id);
+                $lockedQuery = AffiliatePayout::query()->with('operation');
+
+                if ((bool) config('affiliates.owner.enabled', false)) {
+                    $lockedQuery->forOwner();
+                }
+
+                $locked = $lockedQuery->lockForUpdate()->find($payout->getKey());
 
                 if (! $locked instanceof AffiliatePayout) {
                     return ['error' => PayoutResult::failure('The payout operation is missing.', 'MISSING_PAYOUT_OPERATION')];
@@ -56,13 +69,13 @@ final class ProcessAffiliatePayout
                 $method = $affiliate->payoutMethods()->where('is_default', true)->first();
 
                 if ($method === null) {
-                    $locked->forceFill(['status' => FailedPayout::class, 'failed_at' => CarbonImmutable::now()])->save();
+                    $locked = $this->updatePayoutStatus->handle(
+                        $locked,
+                        FailedPayout::value(),
+                        'No default payout method is configured.',
+                    );
+                    $locked->load('operation');
                     $locked->operation->forceFill(['status' => 'failed', 'last_error_code' => 'NO_DEFAULT_PAYOUT_METHOD'])->save();
-                    $locked->events()->create([
-                        'from_status' => PendingPayout::value(),
-                        'to_status' => FailedPayout::value(),
-                        'notes' => 'No default payout method is configured.',
-                    ]);
 
                     return ['error' => PayoutResult::failure('No default payout method is configured.', 'NO_DEFAULT_PAYOUT_METHOD'), 'release' => true];
                 }
@@ -74,7 +87,12 @@ final class ProcessAffiliatePayout
                     return ['error' => PayoutResult::failure('The payout is not processable.', 'PAYOUT_NOT_PROCESSABLE')];
                 }
 
-                $locked->forceFill(['status' => ProcessingPayout::class])->save();
+                $locked = $this->updatePayoutStatus->handle(
+                    $locked,
+                    ProcessingPayout::value(),
+                    'Payout claimed for processing.',
+                );
+                $locked->load('operation');
                 $locked->operation->forceFill([
                     'status' => $needsReconciliation ? $locked->operation->status : 'submitting',
                     'lease_expires_at' => CarbonImmutable::now()->addMinutes(5),
@@ -126,7 +144,13 @@ final class ProcessAffiliatePayout
     private function recordResult(AffiliatePayout $payout, PayoutResult $result): PayoutResult
     {
         DB::transaction(function () use ($payout, $result): void {
-            $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->find($payout->id);
+            $lockedQuery = AffiliatePayout::query()->with('operation');
+
+            if ((bool) config('affiliates.owner.enabled', false)) {
+                $lockedQuery->forOwner();
+            }
+
+            $locked = $lockedQuery->lockForUpdate()->find($payout->getKey());
 
             if (! $locked instanceof AffiliatePayout || ! $locked->operation instanceof AffiliatePayoutOperation) {
                 return;
@@ -139,11 +163,18 @@ final class ProcessAffiliatePayout
                 'provider_status' => $result->getStatus(),
             ], static fn (mixed $value): bool => $value !== null && $value !== '');
 
+            $eventRecorded = false;
+
             if ($result->getStatus() === 'completed') {
+                $locked = $this->updatePayoutStatus->handle(
+                    $locked,
+                    CompletedPayout::value(),
+                    'Provider outcome: completed',
+                    $metadata,
+                );
+                $locked->load('operation');
                 $locked->forceFill([
-                    'status' => CompletedPayout::class,
                     'external_reference' => $reference,
-                    'paid_at' => CarbonImmutable::now(),
                     'metadata' => array_merge($locked->metadata ?? [], $metadata),
                 ])->save();
                 $locked->operation->forceFill([
@@ -153,6 +184,7 @@ final class ProcessAffiliatePayout
                     'completed_at' => CarbonImmutable::now(),
                     'lease_expires_at' => null,
                 ])->save();
+                $eventRecorded = true;
             } elseif ($result->isPending()) {
                 $locked->forceFill([
                     'status' => ProcessingPayout::class,
@@ -178,21 +210,30 @@ final class ProcessAffiliatePayout
                     'lease_expires_at' => null,
                 ])->save();
             } else {
-                $locked->forceFill(['status' => FailedPayout::class, 'failed_at' => CarbonImmutable::now()])->save();
+                $locked = $this->updatePayoutStatus->handle(
+                    $locked,
+                    FailedPayout::value(),
+                    'Provider outcome: failed' . ($result->failureCode !== null ? ' (' . $result->failureCode . ')' : ''),
+                    $metadata,
+                );
+                $locked->load('operation');
                 $locked->operation->forceFill([
                     'status' => 'failed',
                     'last_error_code' => $result->failureCode,
                     'lease_expires_at' => null,
                     'completed_at' => CarbonImmutable::now(),
                 ])->save();
+                $eventRecorded = true;
             }
 
-            $toStatus = $locked->fresh()->status->getValue();
-            $locked->events()->create([
-                'from_status' => $fromStatus,
-                'to_status' => $toStatus,
-                'notes' => 'Provider outcome: ' . $result->getStatus() . ($result->failureCode !== null ? ' (' . $result->failureCode . ')' : ''),
-            ]);
+            if (! $eventRecorded) {
+                $toStatus = $locked->fresh()->status->getValue();
+                $locked->events()->create([
+                    'from_status' => $fromStatus,
+                    'to_status' => $toStatus,
+                    'notes' => 'Provider outcome: ' . $result->getStatus() . ($result->failureCode !== null ? ' (' . $result->failureCode . ')' : ''),
+                ]);
+            }
         }, attempts: 3);
 
         if ($result->getStatus() === 'failed') {

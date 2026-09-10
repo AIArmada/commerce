@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
-use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
@@ -15,24 +14,11 @@ afterEach(function (): void {
     Mockery::close();
 });
 
-it('registers cart and voucher integrations when their features are enabled', function (): void {
+it('registers voucher and cart-condition integrations when their features are enabled', function (): void {
     config()->set('affiliates.features.cart_integration.enabled', true);
     config()->set('affiliates.features.voucher_integration.enabled', true);
     config()->set('affiliates.features.commission_tracking.enabled', false);
     config()->set('affiliates.cookies.enabled', false);
-    config()->set('affiliates.cart.register_manager_proxy', true);
-
-    $cartRegistrar = new class
-    {
-        public int $calls = 0;
-
-        public function register(): void
-        {
-            $this->calls++;
-        }
-    };
-    app()->instance(CartIntegrationRegistrar::class, $cartRegistrar);
-
     $voucherRegistrar = new class
     {
         public int $calls = 0;
@@ -58,8 +44,7 @@ it('registers cart and voucher integrations when their features are enabled', fu
     $provider = new AffiliatesServiceProvider(app());
     $provider->packageBooted();
 
-    expect($cartRegistrar->calls)->toBe(1)
-        ->and($voucherRegistrar->calls)->toBe(1)
+    expect($voucherRegistrar->calls)->toBe(1)
         ->and($registry->calls)->toBe(1);
 });
 
@@ -68,19 +53,6 @@ it('skips cart and voucher integrations when their features are disabled', funct
     config()->set('affiliates.features.voucher_integration.enabled', false);
     config()->set('affiliates.features.commission_tracking.enabled', false);
     config()->set('affiliates.cookies.enabled', false);
-    config()->set('affiliates.cart.register_manager_proxy', true);
-
-    $cartRegistrar = new class
-    {
-        public int $calls = 0;
-
-        public function register(): void
-        {
-            $this->calls++;
-        }
-    };
-    app()->instance(CartIntegrationRegistrar::class, $cartRegistrar);
-
     $voucherRegistrar = new class
     {
         public int $calls = 0;
@@ -106,8 +78,7 @@ it('skips cart and voucher integrations when their features are disabled', funct
     $provider = new AffiliatesServiceProvider(app());
     $provider->packageBooted();
 
-    expect($cartRegistrar->calls)->toBe(0)
-        ->and($voucherRegistrar->calls)->toBe(0)
+    expect($voucherRegistrar->calls)->toBe(0)
         ->and($registry->calls)->toBe(0);
 });
 

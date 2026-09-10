@@ -102,6 +102,14 @@ These models:
 - `AffiliateCommissionRule`
 - `AffiliateVolumeTier`
 
+Direct affiliate, attribution, conversion, payout, program, rank, template,
+training-module, daily-stat, touchpoint, and upline roots use `HasOwner` and
+the shared `OwnerScope`. Derived rows without owner columns use a relational
+`ScopesBy*` concern: affiliate-owned rows join through `affiliate_id`,
+program-owned rows through `program_id`, and support messages through their
+ticket. These concerns are relationship-boundary guards, not alternate
+implementations of `HasOwner`.
+
 ## Querying with Owner Scope
 
 ```php

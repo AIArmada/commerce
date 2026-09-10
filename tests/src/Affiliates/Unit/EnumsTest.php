@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Enums\ConversionStatus as ConversionStatusEnum;
+use AIArmada\Affiliates\Enums\PayoutStatus as PayoutStatusEnum;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -11,8 +13,10 @@ use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\Paused;
+use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\Pending;
 use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\Affiliates\States\QualifiedConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 
@@ -53,4 +57,18 @@ test('ConversionStatus states have correct values and labels', function (): void
 
     expect(PaidConversion::value())->toBe('paid');
     expect(ConversionStatus::labelFor(PaidConversion::class))->toBe('Paid Out');
+});
+
+test('state classes expose view enums and reject unknown values', function (): void {
+    expect(ConversionStatus::fromString('approved')->toEnum())->toBe(ConversionStatusEnum::Approved)
+        ->and(PayoutStatus::fromString('processing')->toEnum())->toBe(PayoutStatusEnum::Processing);
+
+    expect(fn (): ConversionStatus => ConversionStatus::fromString('corrupt'))
+        ->toThrow(InvalidArgumentException::class);
+    expect(fn (): PayoutStatus => PayoutStatus::fromString('corrupt'))
+        ->toThrow(InvalidArgumentException::class);
+    expect(fn (): AffiliateStatus => AffiliateStatus::fromString('corrupt'))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(ProcessingPayout::value())->toBe('processing');
 });

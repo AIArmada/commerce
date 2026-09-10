@@ -1,111 +1,122 @@
-# Affiliates Audit
+# Affiliates Audit — DONE (2026-09-11)
 
-## Packages Reviewed (bullets)
-- `packages/affiliates` (`aiarmada/affiliates`) — core domain: attribution, programs/tiers, commissions, payouts, fraud, ranks/upline, support/training, tax, webhooks
-- `packages/filament-affiliates` (`aiarmada/filament-affiliates`) — Filament v5 admin + affiliate portal (resources, pages, widgets, policies, portal views)
+## Verdict
 
-## Overall Assessment (quality, health, risks, refactor size)
-- Quality: moderate-high. Consistent `declare(strict_types=1)`, UUID PKs, `getTable()` from config, `commerce_json_column_type()` usage, `CarbonImmutable` in commands/services sampled. Spatie ModelStates + native enums used deliberately.
-- Health: largest domain in this audit set (~30 models, 29 migrations, 23 actions, 15+ services, 10 fraud rules, 4 payout processors, full Filament admin + 12-page portal). No tests in either package. Dual status systems (enum + state machine) and dual cart-bridge layers are the main drag.
-- Risks: (1) `Enums/ConversionStatus.php` vs `States/ConversionStatus.php` (+ `PayoutStatus`, `AffiliateStatus`) dual sources of truth for lifecycle; (2) only 12/30 models use `HasOwner` — the rest rely on ad-hoc `applyOwnerScopeToQuery()` on raw `DB::table()` queries; (3) `src/Facades/` is an empty directory while `composer.json` registers an `Affiliate` alias to a non-existent facade class; (4) portal auth (`InteractsWithAffiliate`) mixes owner-mode and user-as-owner lookups — must stay server-enforced.
-- Refactor size: M (2–4 days). Mostly deletions + rewiring (facade, one status system, cart-bridge consolidation, owner-scope hardening), no schema redesign.
+The affiliates pair (`affiliates` + `filament-affiliates`) is
+disposition-complete. Every rated state, cart, voucher, rule, facade,
+ownership, security, performance, Filament, and testing finding is
+implemented, verified, or explicitly deferred below. No rated findings remain
+open.
 
-## Migration Impact
-**Migration Required: NO**
-- Tables/columns: no renames, drops, or type changes recommended. All 29 migrations use `uuid('id')->primary()`; sampled tables (`affiliate_affiliates`) have sensible indexes (`code` unique, `status`/`commission_type`/`currency` indexed, `affiliates_active_idx`, `affiliates_external_ref_unique_idx`).
-- Indexes/constraints: no FK constraints or cascades found in migrations (verified via repo-wide grep; only docs mention them) — compliant, nothing to add or remove.
-- Data migration: none. Status-enum/state-machine consolidation is code-only (both map to the same stored string values: `pending/qualified/approved/rejected/paid`).
+## What was done
 
-## Package Responsibilities
-- Core owns: affiliate lifecycle (`Actions/Affiliates/*`), attribution strategies (`Strategies/FirstTouchAttribution.php`, `LastTouchAttribution.php`, `LinearAttribution.php`), commission engine (`Services/Commissions/CommissionRuleEngine.php`, `Services/CommissionCalculator.php`), maturity/accounting (`Actions/Conversions/*`), payouts (`Actions/Payouts/*`, `Services/Payouts/*` processors), fraud (`Rules/*`, `Services/FraudDetectionService.php`), ranks/upline (`Services/RankQualificationService.php`, `Services/UplineService.php`), programs/catalog (`Services/ProgramService.php`, `Services/ProgramCatalogService.php`, `Support/Catalog/PromotableRegistry.php`), reporting (`Services/AffiliateReportService.php`, `Services/CohortAnalyzer.php`, `Services/DailyAggregationService.php`), webhooks (`Support/Webhooks/WebhookDispatcher.php`, `Jobs/DispatchAffiliateWebhook.php`), vouchers/cart bridges (`Support/Integrations/*`).
-- Filament adapter owns: admin resources (Affiliate, Conversion, Payout, Program, Rank, FraudSignal, Touchpoint, Upline, SupportTicket, TaxDocument, CommissionTemplate, Creative, Link), portal pages (`Pages/Portal/*` × 12), ops pages (`FraudReviewPage`, `PayoutBatchPage`, `ReportsPage`, `ManageAffiliateCommissionSettings`), widgets, policies, `AffiliatePanelProvider`, `FilamentAffiliatesPlugin`.
+- **State/enum duality — IMPLEMENTED.** Spatie states remain the transition
+  authority. Conversion and payout states expose `toEnum()`
+  (`packages/affiliates/src/States/ConversionStatus.php:25-28`,
+  `packages/affiliates/src/States/PayoutStatus.php:25-28`), and unknown state
+  strings now throw instead of silently becoming pending
+  (`packages/affiliates/src/States/ConversionStatus.php:115-125`,
+  `packages/affiliates/src/States/PayoutStatus.php:115-125`,
+  `packages/affiliates/src/States/AffiliateStatus.php:131-151`). Filament tables, portals, and infolists route
+  labels and colors through `fromString()` (for example,
+  `packages/filament-affiliates/src/Resources/AffiliateConversionResource/Tables/AffiliateConversionsTable.php:51-55,122-129`).
+  The vouchers reporting resolver was inspected and has no lifecycle-status
+  read to migrate.
+- **Cart integration layers — IMPLEMENTED.** The obsolete decorator pair,
+  `CartWithAffiliates` and `CartManagerWithAffiliates`, the old registrar, and
+  the unused `HasAffiliates` trait were removed. `CartBridge` is now the
+  single integration point and hydrates cookie attribution
+  (`packages/affiliates/src/Support/Integrations/CartBridge.php:25-46`),
+  while the affiliates condition provider remains only as the live condition
+  provider. The core provider binds the bridge and no longer registers the
+  deleted decorator registrar (`packages/affiliates/src/AffiliatesServiceProvider.php:105-143`).
+  `tests/src/Affiliates/Unit/CartBridgeTest.php` covers the current cart shape.
+- **Voucher wiring — IMPLEMENTED / DEPENDENCY RECORDED.** Affiliates owns
+  `AffiliateLookup` and `VoucherBridge`; the affiliate-side voucher listener
+  remains registered in the affiliates provider. The vouchers-side
+  `AffiliateIntegrationRegistrar` is not a duplicate: it creates voucher
+  records for affiliate lifecycle events (`packages/vouchers/src/Support/AffiliateIntegrationRegistrar.php:21-68`),
+  while `VoucherAffiliateOwnershipGuard` remains on the vouchers side. No
+  out-of-scope vouchers file was changed.
+- **Commission rules — EXPLICIT DEFERRAL.** Commission match rules remain in
+  `CommissionRuleEngine`/`CommissionRuleType`, performance awards retain the
+  `PerformanceBonusRule` contract, and fraud remains a separate lifecycle
+  under `FraudRule`. These are intentionally not collapsed without changing
+  public extension contracts and award semantics; no generic framework was
+  introduced. Evidence: `packages/affiliates/src/Services/Commissions/CommissionRuleEngine.php`,
+  `Contracts/PerformanceBonusRule.php:9-16`, and `Contracts/FraudRule.php:12-18`.
+- **Facade alias — IMPLEMENTED.** The missing facade now resolves the existing
+  lookup binding (`packages/affiliates/src/Facades/Affiliate.php:15-20`),
+  matching the Composer alias and documented `Affiliate::` usage
+  (`packages/affiliates/docs/04-usage.md:382-387`).
+- **Owner dialects — IMPLEMENTED / VERIFIED.** Raw analytics queries now use
+  `OwnerQuery::applyToQueryBuilder` in `CohortAnalyzer` and
+  `PerformanceBonusService` (for example,
+  `packages/affiliates/src/Services/CohortAnalyzer.php:305-315,360-373,420-433`).
+  The three `ScopesBy*` concerns were retained because they guard relational
+  ownership through parent relations rather than duplicate `HasOwner`; the
+  ownership split is documented in `packages/affiliates/docs/10-multi-tenancy.md:105-111`.
+- **Filament payout boundary — IMPLEMENTED.** `ProcessAffiliatePayout`
+  revalidates the payout for the current owner and delegates lifecycle
+  transitions to core `UpdatePayoutStatus`
+  (`packages/filament-affiliates/src/Actions/ProcessAffiliatePayout.php:31-45,72-99,144-174,213-237`).
+  Other payout actions and resources retain owner-safe re-resolution.
+- **Security/performance/small items — VERIFIED.** Cookie attribution checks
+  active, owner-scoped records in
+  `packages/affiliates/src/Resolvers/DatabaseAffiliateLookup.php:58-75,95-133`,
+  and forged/inactive cookie regression coverage is in
+  `tests/src/Affiliates/Unit/CartBridgeTest.php:52-90`. Stripe/PayPal error
+  paths log operation metadata rather than payout secrets
+  (`packages/affiliates/src/Services/Payouts/PayPalProcessor.php:200`). Existing
+  attribution, conversion, and payout indexes were verified in their
+  migrations (`packages/affiliates/database/migrations/2000_01_01_000002_create_affiliate_attributions_table.php:57-63`,
+  `000003_create_affiliate_conversions_table.php:53-59`,
+  `000004_create_affiliate_payouts_table.php:34-36`). Aggregation is chunked,
+  widgets inherit Filament's lazy default, and the catalog registry remains a
+  justified extension seam (`PromotableRegistry.php:17`).
+- **Testing finding — IMPLEMENTED.** Core and Filament coverage now includes
+  commission, conversion maturity, payout transitions, fraud, cart/cookie
+  security, and owner isolation; the Area results are recorded below.
 
-## Architecture Findings (each: Severity Critical/High/Medium/Low, Location files, Problem, Why It Matters, Recommended Fix concrete, Breaking Change YES/NO, Affected Packages list, Required Dependent Changes, Migration Required YES/NO)
-1. Severity: High. Location: `packages/affiliates/src/Enums/ConversionStatus.php` vs `packages/affiliates/src/States/ConversionStatus.php` (+ `PendingConversion/QualifiedConversion/ApprovedConversion/RejectedConversion/PaidConversion.php`); same split for `Enums/PayoutStatus.php` vs `States/PayoutStatus.php` (+ `PendingPayout/ProcessingPayout/CompletedPayout/FailedPayout/CancelledPayout.php`) and `States/AffiliateStatus.php` (`Active/Paused/Disabled/Pending/Draft.php`) with no matching enum. Problem: two parallel lifecycle vocabularies; `States/ConversionStatus.php:98-119 resolveStateClassFor()` silently falls back to `PendingConversion::class` for unknown strings. Why It Matters: callers can check the enum while the model transitions via states (or vice versa); silent fallback hides data corruption. Recommended Fix: keep Spatie states as the single transition authority and make each state class expose `toEnum(): Enums\ConversionStatus`; delete the standalone enum-transition helpers and route all reads through `ConversionStatus::fromString()` without fallback (throw on unknown). Breaking Change: YES (method signatures on state helpers). Affected Packages: `filament-affiliates` (tables/infolists call `label()`/`color()`), `vouchers` (reporting context resolver). Required Dependent Changes: update Filament `formatStateUsing`/`color()` closures to `State::fromString($state)->label()`; update `AffiliateReportingContextResolver`. Migration Required: NO.
-2. Severity: Medium. Location: `packages/affiliates/src/Support/CartWithAffiliates.php`, `packages/affiliates/src/Support/CartManagerWithAffiliates.php`, `packages/affiliates/src/Cart/AffiliateDiscountConditionProvider.php` vs `packages/affiliates/src/Support/Integrations/CartBridge.php`, `packages/affiliates/src/Support/Integrations/CartIntegrationRegistrar.php` (same for `VoucherBridge.php`/`VoucherIntegrationRegistrar.php`). Problem: two cart-integration layers (`__call` proxy decorators + registrar/bridge warmers) doing one job. Why It Matters: double indirection for every cart call; bug fixes must land in two places. Re-check 2026-09-07: repo-wide grep shows only internal consumers (`Support/Integrations/CartIntegrationRegistrar.php`, `Traits/HasAffiliates.php`, self) — no `cart`-package references; demoted High→Medium (internal-only duplication, maintainability, not a significant architectural defect). Recommended Fix: delete `Support/CartWithAffiliates.php` + `Support/CartManagerWithAffiliates.php`; keep `Support/Integrations/CartBridge.php` as the single integration point and move the cookie-hydration logic (`hydrateAffiliateFromCookie`) into it. Breaking Change: YES (public `Support/*` classes removed). Affected Packages: `cart` (if it references the decorators), `filament-affiliates` (`PortalVouchers`, `PortalLinks`). Required Dependent Changes: replace `CartManagerWithAffiliates::fromCartManager()` call sites with `CartBridge`; grep showed only internal usage (`HasAffiliates` trait + `CartManagerWithAffiliates` itself), so blast radius is internal. Migration Required: NO.
-3. Severity: Medium. Location: `packages/affiliates/src/Support/Integrations/VoucherBridge.php`, `packages/affiliates/src/Listeners/AttachAffiliateFromVoucher.php`, `packages/vouchers/src/Support/VoucherAffiliateOwnershipGuard.php`, `packages/vouchers/src/Support/AffiliateIntegrationRegistrar.php`. Problem: affiliate↔voucher wiring lives in both packages with no documented direction. Why It Matters: circular-integration risk; ownership guard split across two packages can disagree. Recommended Fix: declare affiliates the owner of the affiliate-side contract (`Contracts/AffiliateLookup.php` + `VoucherBridge`) and keep in vouchers only the `VoucherAffiliateOwnershipGuard`; delete `AffiliateIntegrationRegistrar` from whichever package duplicates registration (keep the one in vouchers, since it guards voucher writes). Breaking Change: NO (internal wiring). Affected Packages: `vouchers`. Required Dependent Changes: single registration call in `AffiliatesServiceProvider`/`VoucherServiceProvider` — keep one. Migration Required: NO.
-4. Severity: Medium. Location: `packages/affiliates/src/Services/Commissions/CommissionRuleEngine.php`, `packages/affiliates/src/Services/CommissionCalculator.php`, `packages/affiliates/src/Services/PerformanceBonusService.php`, `packages/affiliates/src/Rules/*` (10 fraud/bonus rules). Problem: commission calculation, bonus rules, and fraud rules are three parallel rule styles (`Contracts/FraudRule.php`, `Contracts/PerformanceBonusRule.php`, `CommissionRuleType` enum) with overlapping concerns (velocity checks exist in both fraud and bonus rules). Why It Matters: new commission behavior requires touching 3+ extension points. Recommended Fix: keep the engine but collapse bonus rules into commission-rule types; keep fraud rules separate (different lifecycle). Do not introduce a generic rules framework. Breaking Change: NO (keep interfaces, rewire internals). Affected Packages: none external. Required Dependent Changes: none. Migration Required: NO.
+## Verification
 
-## Code Quality Findings (same finding format)
-1. Severity: Medium. Location: `packages/affiliates/src/Facades/` (empty directory — verified zero files) + `packages/affiliates/composer.json` (`"aliases": {"Affiliate": "AIArmada\\Affiliates\\Facades\\Affiliate"}` — verified target class missing). Problem: composer advertises a facade class that does not exist; any `use Affiliate;` or `app('affiliate')` resolution fails at runtime. Why It Matters: broken public API surface; container alias points at nothing. Re-check 2026-09-07: confirmed empty dir + dangling alias; demoted High→Medium (single-file additive fix, not a significant architectural defect). Recommended Fix: create `src/Facades/Affiliate.php` extending `Illuminate\Support\Facades\Facade` returning the existing manager/binding, or delete the alias from `composer.json` and the empty directory. Prefer creating the 10-line facade since docs may reference `Affiliate::`. Breaking Change: NO (adds missing class). Affected Packages: any app using the alias. Required Dependent Changes: none. Migration Required: NO.
-2. Severity: Medium. Location: `packages/affiliates/src/Models/Concerns/ScopesByAffiliateOwner.php`, `ScopesByProgramOwner.php`, `ScopesByTicketAffiliateOwner.php` + `packages/affiliates/src/Services/PerformanceBonusService.php:176-183 applyOwnerScopeToQuery()`, `packages/affiliates/src/Services/CohortAnalyzer.php:414+ applyOwnerScopeToQuery()`. Problem: package-local owner-scope reimplementations alongside `HasOwner`; raw `DB::table()` analytics hand-roll owner predicates instead of `OwnerQuery::applyToQueryBuilder()`. Why It Matters: two scoping dialects; hand-rolled predicates can drift from `OwnerScope` semantics (include-global handling). Recommended Fix: replace both private `applyOwnerScopeToQuery()` helpers with `OwnerQuery::applyToQueryBuilder($query, ...)` from commerce-support; audit the three `ScopesBy*` concerns and delete any that duplicate `HasOwner` + relation-based scoping. Breaking Change: NO. Affected Packages: none external. Required Dependent Changes: none. Migration Required: NO.
-3. Severity: Low. Location: `packages/affiliates/src/Support/Catalog/PromotableRegistry.php`, `packages/affiliates/src/Contracts/PromotableProviderInterface.php`. Problem: registry pattern with zero in-repo providers found (re-check 2026-09-07: repo-wide grep shows only the contract, the registry, the singleton binding in `AffiliatesServiceProvider.php:115`, and `ProgramCatalogService` as consumer) — speculative extensibility. Why It Matters: indirection without a second implementation. Recommended Fix: keep (extension seam is justified for cross-package products integration) but do not expand; delete only if grep confirms zero external providers after the refactor — verified current internal usage (`ProgramCatalogService`, provider). Breaking Change: NO. Affected Packages: none. Required Dependent Changes: none. Migration Required: NO.
+- Affiliates Area: `./vendor/bin/pest --parallel tests/src/Affiliates` — **1,139 passed, 5 skipped, 2,611 assertions**.
+- FilamentAffiliates Area: `./vendor/bin/pest --parallel tests/src/FilamentAffiliates` — **317 passed, 879 assertions**.
+- The Area suites were escalated after targeted checks because the state API
+  changes, deleted cart layers, provider rewiring, and payout-boundary change
+  cross the core/Filament surfaces.
+- Targeted affiliates checks, each with `--parallel`: `CartBridgeTest.php` —
+  **2 passed, 4 assertions**; the payout-batch, bulk-payout, and queue test
+  files — **6/25**, **7/29**, and **2/9** passed/assertions respectively.
+- Targeted provider check: `FilamentAffiliatesServiceProviderTest.php` —
+  **7 passed, 7 assertions**.
+- PHPStan: `./vendor/bin/phpstan analyse packages/affiliates/src packages/filament-affiliates/src --level=6` — **clean**.
+- Pint: `./vendor/bin/pint --test packages/affiliates/src packages/filament-affiliates/src tests/src/Affiliates tests/src/FilamentAffiliates` — **passed**.
+- Events canary: `./vendor/bin/pest --parallel tests/src/Events/EventLifecycleWorkflowTest.php` — **4 passed, 4 assertions**.
+- Cart canary: `./vendor/bin/pest --parallel tests/src/Cart/Feature/Conditions/ConditionProviderRegistryTest.php` — **1 passed, 2 assertions**.
 
-## Laravel-Specific Findings
-- PHP 8.4: `declare(strict_types=1)` throughout; constructor promotion and enums used. PASS.
-- UUID PKs: `uuid('id')->primary()` in all migrations sampled; models use `HasUuids`. PASS.
-- No DB FK constraints/cascades: none found in migrations. PASS. App-level cascades should be verified in `booted()` of `Affiliate`/`AffiliateProgram` (not fully audited here — confirm delete paths for programs→tiers/rules/memberships before shipping a delete feature).
-- `getTable()` from config: verified (`Affiliate::getTable()` reads `affiliates.database.tables.affiliates`). PASS.
-- `json_column_type`: `affiliates.database.json_column_type` defined and used via `commerce_json_column_type('affiliates', 'jsonb')`. PASS.
-- Carbon: `CarbonImmutable` in commands/services sampled. PASS.
-- Money: amounts stored as integer minor units per config comment; display formatting path (`InteractsWithAffiliate::formatAmount()`) should use shared `FormatsMoney`/akaunting helper — verify during refactor.
-- Queues: `Jobs/DispatchAffiliateWebhook.php` exists; confirm it uses `OwnerContextJob`/`OwnerScopedJob` like ticketing does (not verified — flagged as check, not violation).
+## Audit deviations
 
-## Filament Adapter Findings (thin-adapter check, domain leak, duplication, dependency direction)
-- Thin-adapter: mostly PASS. Domain calculations stay in core (`PayoutExportService`, `AffiliateStatsAggregator` in filament package are read-model aggregators using `->forOwner($owner)` — acceptable but borderline; consider moving `AffiliateStatsAggregator` to core `Services/AffiliateReportService.php` since it duplicates query shapes).
-- Domain leak (1, Medium): `packages/filament-affiliates/src/Actions/ProcessAffiliatePayout.php` constructs `PayoutProcessorFactory` directly. Acceptable for an admin action, but status transitions must go through core `Actions/Payouts/UpdatePayoutStatus.php` — verified the action exists in core; confirm the Filament action delegates to it rather than mutating status itself.
-- Duplication: portal `formatAmount()` in `InteractsWithAffiliate.php:255` is UI formatting — correctly in adapter. PASS.
-- Dependency direction: CORRECT (`filament-affiliates` requires `aiarmada/affiliates`; core has no Filament dependency). `AffiliatePanelProvider` + `FilamentAffiliatesPlugin` are adapter-local. PASS.
-- Navigation: PASS. No `static $navigationGroup`; all resources/pages use `getNavigationGroup()` reading `config('filament-affiliates.navigation.group')`; config uses nested `navigation.group` (`'group' => 'E-commerce'`). Note: `navigation_sort` keys are flat per-resource (`navigation_sort` array in config) — matches repo convention for sort; group key is correctly nested.
-- Owner scoping in admin: GOOD. `AffiliateResource::getEloquentQuery()`, `AffiliatePayoutResource::getEloquentQuery()` scope via `forOwner()`; write paths use `OwnerWriteGuard::findOrFailForOwner()` (`PayoutBatchPage`, `BulkPayoutAction`, `ValidateAffiliateParentAssignment`, `PayoutQueueWidget`). Portal `InteractsWithAffiliate` resolves owner via `OwnerUiScope::resolveOwner()` — correct pattern.
+- The prescribed `.ai/rules/index.md` is absent in this checkout; no matching
+  path rules could be loaded.
+- Commission-rule consolidation is an explicit deferral: the current rule
+  contracts have distinct calculation, award, and fraud lifecycles, so merging
+  them would be a public behavioral redesign rather than a safe cleanup.
+- No new `(owner_type, owner_id, created_at)` migration was added. Existing
+  hot-path indexes were verified; adding a speculative index without measured
+  workload evidence was deferred. The optional `body_json` normalization was
+  likewise not a rated required change.
+- The cart rewrite changed the old decorator/test shapes; the owned tests were
+  migrated to `CartBridge` and the old integration files were deleted.
+- The vouchers registrar and reporting resolver are outside the affiliates
+  write set and were inspected but left untouched. The current generic cookie
+  attribution has no mandatory program-membership invariant; active-record and
+  owner validation remain enforced.
+- Stale generated evidence references outside the write set were not edited.
+  No full repository test suite was run.
 
-## Database Findings
-- 29 migrations, UUID PKs, no FK constraints — compliant by design (app-level integrity).
-- Indexes look deliberate on hot paths (`code` unique, status/currency indexes, external-ref unique). Full index audit of all 29 tables was not performed — recommend a single pass checking `affiliate_conversions(affiliate_id,status)`, `affiliate_attributions(code)`, `affiliate_payouts(status)` composite coverage before high-volume use.
-- `body_json` in `affiliate_webhook_deliveries` is `text` while other JSON uses configurable `jsonb` — normalize to `commerce_json_column_type()` for consistency (requires migration if changed; listed as optional cleanup, NOT required — hence Migration Required stays NO since this audit recommends fixing in code for new installs only if pursued; if pursued, it becomes a type-change migration).
-- No soft deletes. PASS.
+## Residual notes
 
-## Model / Domain Findings
-- 12/30 models carry `HasOwner` (`Affiliate`, `AffiliateAttribution`, `AffiliateConversion`, `AffiliatePayout`, `AffiliatePayoutOperation`, `AffiliateProgram`, `AffiliateTouchpoint`, `AffiliateUpline`, `AffiliateCommissionTemplate`, `AffiliateRank`, `AffiliateDailyStat`, `AffiliateTrainingModule`). The remaining 18 (payout methods/holds/events, balances, links, tiers/memberships/creatives, rules/promotions/templates, fraud signals, support/training progress, tax docs) inherit scope via parent relations using the three `ScopesBy*` concerns. This is a defensible design but the split (HasOwner vs ScopesBy*) is undocumented — add a one-paragraph ownership map to `docs/10-multi-tenancy.md`.
-- `AffiliatePayoutMethod::$casts['details'] = 'encrypted:array'` — correct for payout secrets.
-- Lifecycle columns: `status` string columns with defaults; terminal-transition timestamps should follow the `*_at` convention audit — spot-check `AffiliateConversion`/`AffiliatePayout` casts and transition methods during refactor.
-
-## Security Findings
-1. Severity: Medium. Location: `packages/affiliates/src/Support/Middleware/TrackAffiliateCookie.php`, `CaptureAffiliateReferralFromPath.php`, `Actions/Affiliates/AttachAffiliateFromCookie.php`, `TouchAffiliateAttribution.php`. Problem: cookie-supplied affiliate codes drive attribution writes. Why It Matters: forged cookies could misattribute conversions. Recommended Fix: verify `AttachAffiliateFromCookie`/`DatabaseAffiliateLookup` validates code existence + active status + program membership server-side and that `EnsureApiAuthorized` + `NeedsOwner` guard the API routes (routes verified: `routes/api.php` applies both when enabled). No code change if validation confirmed — treat as verification step, not defect. Breaking Change: NO. Affected Packages: none. Required Dependent Changes: none. Migration Required: NO.
-2. Severity: Low. Location: `packages/affiliates/src/Services/Payouts/StripeConnectProcessor.php:28`, `PayPalProcessor.php:34`. Problem: none found — secrets read from config (correct). Remaining verification: confirm no logging of `client_secret`/transfer payloads in `PayPalProcessor` request error paths. Why It Matters: payout-secret leakage via logs. Recommended Fix: verification only, no code change expected. Breaking Change: NO. Affected Packages: none. Required Dependent Changes: none. Migration Required: NO.
-3. Portal: `InteractsWithAffiliate` user→affiliate resolution queries by `owner_type/owner_id = user morph` — server-side, correct. `PortalRegistration` creates affiliates via core `CreateAffiliate` action — correct delegation. No IDOR found at audit depth, but every portal table query must keep the `->forOwner($owner)` scope (spot-checked `PerformanceOverviewWidget`, `UplineVisualizationWidget`, `RealTimeActivityWidget` — all scoped).
-
-## Performance Findings
-1. Severity: Medium. Location: `packages/affiliates/src/Services/CohortAnalyzer.php:295,348,393`, `PerformanceBonusService.php:139`, `Rules/TopPerformerBonusRule.php:75` (raw `DB::table()` analytics). Problem: analytics over conversions/attributions without verified composite indexes; `DailyAggregationService` + `AggregateDailyStatsCommand` full-scan windows. Why It Matters: affiliate reporting is the hottest read path. Recommended Fix: add/verify composite indexes on `(owner_type, owner_id, created_at)` + `(affiliate_id, status)` for conversions/attributions; keep aggregation chunked (verify `chunkById` usage in `DailyAggregationService`). Breaking Change: NO. Affected Packages: none external. Required Dependent Changes: none. Migration Required: NO (only if indexes missing — many already exist; confirm per-table. For this audit: NO migration required).
-2. Severity: Low. Location: `packages/filament-affiliates/src/Widgets/*` (6+ widgets each issuing `forOwner` aggregates on dashboard load). Problem: N aggregate queries per dashboard load. Why It Matters: admin dashboard latency. Recommended Fix: lazy/async widget loading for the admin dashboard. Breaking Change: NO. Affected Packages: none. Required Dependent Changes: none. Migration Required: NO.
-
-## Testing Findings
-- Severity: High. Location: `packages/affiliates/` and `packages/filament-affiliates/` — zero test files (re-check 2026-09-07: no `tests/` dir in either package). Problem: commission math, maturity, payout state transitions, fraud rules, and owner scoping ship without regression coverage. Why It Matters: money-movement correctness without a safety net — major maintainability risk, kept at High per rubric. Recommended Fix: add Pest coverage minimum: commission engine matrix, `RecordAffiliateConversion` → `MatureConversion` flow, payout `CreatePayout` → `ClaimScheduledPayout` → `UpdatePayoutStatus` transitions, one cross-tenant isolation test per `HasOwner` model family (reuse `OwnerScopingContractTests` from commerce-support), fraud rule unit tests. Breaking Change: NO. Affected Packages: none. Required Dependent Changes: none. Migration Required: NO.
-
-## Cross-Package Dependency Impact (table: Dependent Package | Dependency | Impact | Required Change)
-| Dependent Package | Dependency | Impact | Required Change |
-|---|---|---|---|
-| `affiliate-network` | `Affiliate`, `AffiliateLookup` (`Contracts/AffiliateLookup.php`, `Resolvers/DatabaseAffiliateLookup.php`), attribution actions | High — network links/applications resolve affiliates via `DatabaseAffiliateLookup`; status-enum changes affect `OfferLinkService` | Update to single status API; keep `AffiliateLookup` contract stable. Boundary agrees with affiliate-network audit A2: affiliates = merchant-local execution (attribution, commissions, payouts), network = discovery/marketplace (reader read-only) |
-| `vouchers` | `Affiliate`, `VoucherBridge`, reporting resolver | Medium — voucher↔affiliate attach + reporting | Keep `VoucherBridge` + `AffiliateLookup`; remove duplicate registrar |
-| `cart` (optional) | cart decorators/bridges | Medium — attribution on cart | Point at single `CartBridge` after consolidation |
-| `orders` (optional listener) | `RecordCommissionForOrder` | Low — conversion recording | No change unless status API changes |
-| `filament-affiliates` | all core models/actions | High — admin + portal | Update label/color helpers + payout action delegation |
-
-## Recommended Refactor Plan (ordered steps)
-1. Create `src/Facades/Affiliate.php` (or remove alias) — unbreak public API.
-2. Unify conversion/payout/affiliate status: states authoritative, enums as views; remove silent `PendingConversion` fallback (throw on unknown).
-3. Delete `Support/CartWithAffiliates.php` + `Support/CartManagerWithAffiliates.php`; consolidate on `Support/Integrations/CartBridge.php`.
-4. Replace hand-rolled `applyOwnerScopeToQuery()` in `PerformanceBonusService`/`CohortAnalyzer`/`TopPerformerBonusRule` with `OwnerQuery::applyToQueryBuilder()`; document ownership map in `docs/10-multi-tenancy.md`.
-5. Settle voucher-bridge ownership with `vouchers` (single registrar).
-6. Filament: route `ProcessAffiliatePayout` through core `UpdatePayoutStatus`; consider moving `AffiliateStatsAggregator` to core.
-7. Add Pest suite (commission matrix, maturity, payout transitions, cross-tenant isolation, fraud rules) with `--parallel`.
-8. Verify composite indexes on analytics hot paths.
-
-## Files Likely to Change
-- `packages/affiliates/src/Facades/Affiliate.php` (new) or `composer.json` (remove alias)
-- `packages/affiliates/src/States/ConversionStatus.php` (remove fallback), `States/PayoutStatus.php`, `States/AffiliateStatus.php`, `Enums/*`
-- `packages/affiliates/src/Support/Integrations/CartBridge.php`, `AffiliatesServiceProvider.php`
-- `packages/affiliates/src/Services/PerformanceBonusService.php`, `Services/CohortAnalyzer.php`, `Rules/TopPerformerBonusRule.php`
-- `packages/affiliates/docs/10-multi-tenancy.md`
-- `packages/filament-affiliates/src/Actions/ProcessAffiliatePayout.php`, widgets/tables calling label/color helpers
-
-## Files / Code That Should Be Removed (explicit list, no legacy preservation)
-- `packages/affiliates/src/Facades/` empty directory (if alias removed instead of facade created — one of the two must go; prefer creating the facade, deleting nothing)
-- `packages/affiliates/src/Support/CartWithAffiliates.php` — verified superseded by `Support/Integrations/CartBridge.php` (only internal references via `HasAffiliates` trait wiring)
-- `packages/affiliates/src/Support/CartManagerWithAffiliates.php` — same reason
-- `packages/affiliates/src/Cart/AffiliateDiscountConditionProvider.php` — verify consumers via grep; if only referenced by deleted decorators, delete with them (flagged for grep-confirmation during refactor)
-- Duplicate status vocabulary: delete `Enums/ConversionStatus.php` + `Enums/PayoutStatus.php` as transition authorities (keep only if repurposed as pure view DTOs returned by state classes — otherwise delete)
-
-## Final Recommended Architecture
-- Core `aiarmada/affiliates`: single status authority (Spatie states), single cart bridge, single voucher bridge, `OwnerQuery`-based analytics, documented HasOwner-vs-ScopesBy map. Public API: `AffiliateLookup` contract, `Affiliate` facade, actions, events.
-- `filament-affiliates`: pure admin + portal adapter; all writes through core actions with `OwnerWriteGuard`; read-model aggregators clearly marked or moved to core.
+No unrecorded rated finding remains. Re-open the audit if commission-rule
+lifecycles are intentionally unified or if measured analytics workload shows a
+missing composite index.

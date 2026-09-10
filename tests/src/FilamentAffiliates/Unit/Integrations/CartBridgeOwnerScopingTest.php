@@ -17,8 +17,8 @@ beforeEach(function (): void {
     config()->set('affiliates.owner.enabled', true);
     config()->set('affiliates.owner.include_global', false);
 
-    config()->set('filament-cart.owner.enabled', true);
-    config()->set('filament-cart.owner.include_global', false);
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', false);
 
     AffiliateConversion::query()->delete();
     Affiliate::query()->delete();

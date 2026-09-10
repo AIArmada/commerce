@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\States;
 
+use AIArmada\Affiliates\Enums\ConversionStatus as ConversionStatusEnum;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;
 
@@ -19,6 +21,11 @@ abstract class ConversionStatus extends State
     abstract public function label(): string;
 
     abstract public function color(): string;
+
+    public function toEnum(): ConversionStatusEnum
+    {
+        return ConversionStatusEnum::from($this->getValue());
+    }
 
     public static function value(): string
     {
@@ -115,7 +122,7 @@ abstract class ConversionStatus extends State
             }
         }
 
-        return PendingConversion::class;
+        throw new InvalidArgumentException(sprintf('Unknown conversion status [%s].', $status));
     }
 
     final public static function config(): StateConfig

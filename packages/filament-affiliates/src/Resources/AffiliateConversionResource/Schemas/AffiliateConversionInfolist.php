@@ -96,8 +96,8 @@ final class AffiliateConversionInfolist
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge()
-                            ->color(fn ($state): string => $state === null ? 'gray' : ConversionStatus::colorFor($state))
-                            ->formatStateUsing(fn ($state): string => $state === null ? '—' : ConversionStatus::labelFor($state)),
+                            ->color(fn ($state): string => $state === null ? 'gray' : ConversionStatus::fromString($state)->color())
+                            ->formatStateUsing(fn ($state): string => $state === null ? '—' : ConversionStatus::fromString($state)->label()),
 
                         TextEntry::make('occurred_at')
                             ->label('Occurred At')

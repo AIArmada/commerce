@@ -39,7 +39,7 @@ final class AffiliatesTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (AffiliateStatus | string $state): string => AffiliateStatus::colorFor($state))
+                    ->color(fn (AffiliateStatus | string $state): string => AffiliateStatus::fromString($state)->color())
                     ->formatStateUsing(fn (AffiliateStatus | string $state): string => AffiliateStatus::fromString($state)->label())
                     ->sortable(),
 

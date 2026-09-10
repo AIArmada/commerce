@@ -15,7 +15,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\Tag;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -154,8 +153,30 @@ final class PerformanceBonusService
             ->orderByDesc('total_revenue')
             ->limit($limit);
 
-        $this->applyOwnerScopeToQuery($query, "{$conversionsTable}.owner_type", "{$conversionsTable}.owner_id");
-        $this->applyOwnerScopeToQuery($query, "{$affiliatesTable}.owner_type", "{$affiliatesTable}.owner_id");
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                'Performance bonus queries require an owner context or explicit global context.',
+            );
+
+            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+
+            OwnerQuery::applyToQueryBuilder(
+                $query,
+                $owner,
+                $includeGlobal,
+                "{$conversionsTable}.owner_type",
+                "{$conversionsTable}.owner_id",
+            );
+            OwnerQuery::applyToQueryBuilder(
+                $query,
+                $owner,
+                $includeGlobal,
+                "{$affiliatesTable}.owner_type",
+                "{$affiliatesTable}.owner_id",
+            );
+        }
 
         return $query
             ->get()
@@ -171,22 +192,5 @@ final class PerformanceBonusService
                     'avg_order_value' => round((float) $row->avg_order_value, 2),
                 ];
             });
-    }
-
-    private function applyOwnerScopeToQuery(Builder $query, string $ownerTypeColumn, string $ownerIdColumn): void
-    {
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return;
-        }
-
-        $owner = OwnerContext::resolve();
-        OwnerContext::assertResolvedOrExplicitGlobal(
-            $owner,
-            'Performance bonus queries require an owner context or explicit global context.',
-        );
-
-        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-
-        OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, $ownerTypeColumn, $ownerIdColumn);
     }
 }

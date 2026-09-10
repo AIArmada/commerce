@@ -18,7 +18,6 @@ use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
-use AIArmada\Affiliates\Traits\HasAffiliates;
 
 // CommissionCalculator Tests
 test('CommissionCalculator can be instantiated', function (): void {
@@ -133,13 +132,6 @@ test('AffiliateConversionData can be created with constructor', function (): voi
 
     expect($data)->toBeInstanceOf(AffiliateConversionData::class);
     expect($data->externalReference)->toBe('ORD-12345');
-});
-
-// HasAffiliates Trait Tests - basic tests
-test('HasAffiliates trait provides affiliate relationship', function (): void {
-    // This tests that the trait can be used on a model
-    // We can't directly test the trait, but we can verify its presence
-    expect(trait_exists(HasAffiliates::class))->toBeTrue();
 });
 
 // Affiliate status enum edge cases
