@@ -14,7 +14,6 @@ return [
     ],
     'invitations' => [
         'token_length' => 64,
-        'hash_tokens' => true,
         'default_expiry_days' => 14,
     ],
     'pivot' => [
@@ -32,15 +31,15 @@ return [
         'editor' => ['update'],
         'viewer' => ['view'],
     ],
+    'owner' => [
+        'enabled' => true,
+        'include_global' => false,
+        'auto_assign_on_create' => true,
+        'owner_type_column' => 'owner_type',
+        'owner_id_column' => 'owner_id',
+    ],
     'features' => [
         'team_scoped_roles' => true,
-        'owner' => [
-            'enabled' => true,
-            'include_global' => false,
-            'auto_assign_on_create' => true,
-            'owner_type_column' => 'owner_type',
-            'owner_id_column' => 'owner_id',
-        ],
     ],
 ];
 ```
@@ -56,9 +55,11 @@ return [
 - `owner => ['*']` expands to every permission registered for the default guard
 - Non-wildcard entries are prefixed with the subject class basename in snake case (for example `Team` → `team.update`) when a subject is available
 - Apps should override `role_permissions` rather than hard-coding host permission names in the package
+- Role reconciliation is additive by default. Use `membership:sync-roles --prune` when unconfigured permissions should be removed from mapped membership roles.
 
 ## Notes
 
-- Keep `hash_tokens` enabled in production. The plaintext token is available only on `MembershipInvitationSent`.
+- Invitation tokens are always hashed with SHA-256 before persistence. The plaintext token is available only on `MembershipInvitationSent`.
+- Configure owner scoping under `membership.owner`; the legacy nested key is not read.
 - When owner scoping is enabled, resolve the current owner before reading or mutating applications and invitations.
 - `Organization::membersTable()` is the source of truth for organization memberships and reads `organizations.database.tables.members`. The generic `membership.pivot.table_suffix` setting applies to other `HasMembers` subjects only.

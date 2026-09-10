@@ -2,13 +2,19 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Models\Permission;
 use AIArmada\Authz\Models\Role;
-use AIArmada\Membership\Console\Commands\MakePivotCommand;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\Membership\MembershipServiceProvider;
 use AIArmada\Membership\Services\MembershipRoleSyncService;
 use AIArmada\Membership\Tests\MembershipTestCase;
+use Illuminate\Support\Facades\Artisan;
 
 uses(MembershipTestCase::class);
+
+beforeEach(function (): void {
+    app()->register(MembershipServiceProvider::class);
+});
 
 it('syncs all membership roles via service', function (): void {
     $service = app(MembershipRoleSyncService::class);
@@ -26,9 +32,24 @@ it('syncs all membership roles via service', function (): void {
     }
 });
 
-it('uses the membership namespace for the pivot command', function (): void {
-    $command = app(MakePivotCommand::class);
-    $signature = new ReflectionProperty($command, 'signature');
+it('reconciles permissions additively unless pruning is requested', function (): void {
+    $service = app(MembershipRoleSyncService::class);
+    $role = $service->ensureExists(MemberRole::Admin);
+    $externalPermission = Permission::findOrCreate('membership.external', 'web');
 
-    expect($signature->getValue($command))->toContain('membership:make-pivot');
+    $role->givePermissionTo($externalPermission);
+
+    Artisan::call('membership:sync-roles');
+
+    expect($role->fresh()->permissions->pluck('name')->all())
+        ->toContain('membership.external');
+
+    Artisan::call('membership:sync-roles', ['--prune' => true]);
+
+    expect($role->fresh()->permissions->pluck('name')->all())
+        ->not->toContain('membership.external');
+});
+
+it('does not register a host application pivot generator', function (): void {
+    expect(Artisan::all())->not->toHaveKey('membership:make-pivot');
 });

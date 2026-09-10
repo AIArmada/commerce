@@ -39,9 +39,9 @@ keywords:
 - Owner/security: Owner-scoped (both models).
 
 ## Key surfaces
-- Models: `MembershipApplication`, `MembershipInvitation`
+- Models: `MembershipApplication`, `MembershipInvitation`, `MembershipPivot`
 - Actions/Services: `Actions/AcceptInvitationAction`, `Actions/AddMemberAction`, `Actions/ApplyForMembershipAction`, `Actions/ApproveMembershipApplicationAction`, `Actions/CancelMembershipApplicationAction`, `Actions/ChangeMemberRoleAction`, `Actions/InviteMemberAction`, `Actions/RejectMembershipApplicationAction`
-- Config `membership.php`: `database`, `json_column_type`, `tables`, `applications`, `invitations`, `invitations`, `token_length`, `hash_tokens`, `default_expiry_days`, `pivot`
+- Config `membership.php`: `database`, `json_column_type`, `tables`, `applications`, `invitations`, `token_length`, `default_expiry_days`, `pivot`, `owner`, `features`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

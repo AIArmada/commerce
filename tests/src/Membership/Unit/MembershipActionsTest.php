@@ -63,7 +63,8 @@ it('sets the role on the pivot', function (): void {
 
     $pivot = $this->subject->members()->first()?->pivot;
     expect($pivot)->not->toBeNull()
-        ->role->toBe(MemberRole::Editor->spatieRoleName());
+        ->role->toBe(MemberRole::Editor->spatieRoleName())
+        ->joined_at->not->toBeNull();
 });
 
 it('removes a member from the subject', function (): void {
@@ -118,6 +119,48 @@ it('changes the role of a member', function (): void {
     $this->user->unsetRelation('roles');
     expect($this->user->hasRole(MemberRole::Viewer->spatieRoleName()))->toBeFalse()
         ->and($this->user->hasRole(MemberRole::Admin->spatieRoleName()))->toBeTrue();
+    setPermissionsTeamId(null);
+});
+
+it('preserves unrelated roles and memberships in other subjects', function (): void {
+    $subject2 = TestSubject::query()->create(['name' => 'Test Subject 2']);
+
+    setPermissionsTeamId($this->subject->getKey());
+    $externalRole = Role::findOrCreate('external-auditor', 'web');
+    $this->user->assignRole($externalRole);
+    setPermissionsTeamId(null);
+
+    AddMemberAction::make()->handle(
+        subject: $this->subject,
+        user: $this->user,
+        role: MemberRole::Viewer,
+    );
+    AddMemberAction::make()->handle(
+        subject: $subject2,
+        user: $this->user,
+        role: MemberRole::Viewer,
+    );
+
+    ChangeMemberRoleAction::make()->handle(
+        subject: $this->subject,
+        user: $this->user,
+        role: MemberRole::Admin,
+    );
+    RemoveMemberAction::make()->handle(
+        subject: $this->subject,
+        user: $this->user,
+    );
+
+    setPermissionsTeamId($this->subject->getKey());
+    $this->user->unsetRelation('roles');
+    expect($this->user->hasRole('external-auditor'))->toBeTrue()
+        ->and($this->user->hasRole(MemberRole::Admin->spatieRoleName()))->toBeFalse()
+        ->and($this->user->hasRole(MemberRole::Viewer->spatieRoleName()))->toBeFalse();
+
+    setPermissionsTeamId($subject2->getKey());
+    $this->user->unsetRelation('roles');
+    expect($this->user->hasRole(MemberRole::Viewer->spatieRoleName()))->toBeTrue();
+
     setPermissionsTeamId(null);
 });
 

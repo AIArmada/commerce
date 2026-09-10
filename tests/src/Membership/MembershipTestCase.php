@@ -70,7 +70,7 @@ abstract class MembershipTestCase extends BaseTestCase
     {
         parent::defineEnvironment($app);
 
-        $app['config']->set('membership.features.owner', [
+        $app['config']->set('membership.owner', [
             'enabled' => true,
             'include_global' => false,
             'auto_assign_on_create' => true,

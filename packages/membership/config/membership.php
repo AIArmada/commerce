@@ -13,7 +13,6 @@ return [
 
     'invitations' => [
         'token_length' => 64,
-        'hash_tokens' => true,
         'default_expiry_days' => 14,
     ],
 
@@ -35,14 +34,15 @@ return [
         'viewer' => ['view'],
     ],
 
+    'owner' => [
+        'enabled' => true,
+        'include_global' => false,
+        'auto_assign_on_create' => true,
+        'owner_type_column' => 'owner_type',
+        'owner_id_column' => 'owner_id',
+    ],
+
     'features' => [
         'team_scoped_roles' => env('MEMBERSHIP_TEAM_SCOPED', true),
-        'owner' => [
-            'enabled' => true,
-            'include_global' => false,
-            'auto_assign_on_create' => true,
-            'owner_type_column' => 'owner_type',
-            'owner_id_column' => 'owner_id',
-        ],
     ],
 ];

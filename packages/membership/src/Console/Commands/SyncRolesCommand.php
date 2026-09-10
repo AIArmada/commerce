@@ -11,13 +11,16 @@ use Spatie\Permission\PermissionRegistrar;
 final class SyncRolesCommand extends Command
 {
     protected $signature = 'membership:sync-roles
-        {--flush-cache : Flush permission cache after sync}';
+        {--flush-cache : Flush permission cache after sync}
+        {--prune : Remove permissions not configured for membership roles}';
 
-    protected $description = 'Sync membership roles into Spatie permission roles.';
+    protected $description = 'Reconcile membership roles into Spatie permission roles.';
 
     public function handle(MembershipRoleSyncService $syncService): int
     {
-        $count = $syncService->syncAll();
+        $count = $syncService->syncAll(
+            prune: (bool) $this->option('prune'),
+        );
 
         if ($this->option('flush-cache')) {
             app(PermissionRegistrar::class)->forgetCachedPermissions();

@@ -54,7 +54,7 @@ class MembershipInvitation extends Model
         'token',
     ];
 
-    protected static string $ownerScopeConfigKey = 'membership.features.owner';
+    protected static string $ownerScopeConfigKey = 'membership.owner';
 
     protected static bool $ownerScopeEnabledByDefault = true;
 

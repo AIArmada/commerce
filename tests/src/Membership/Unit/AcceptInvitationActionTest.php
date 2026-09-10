@@ -64,6 +64,20 @@ it('accepts a valid invitation', function (): void {
         ->accepted_by->toBe($this->acceptor->getKey());
 });
 
+it('rejects replaying an accepted invitation', function (): void {
+    AcceptInvitationAction::make()->handle(
+        invitation: $this->invitation,
+        user: $this->acceptor,
+    );
+
+    expect(fn () => AcceptInvitationAction::make()->handle(
+        invitation: $this->invitation,
+        user: $this->acceptor,
+    ))->toThrow(RuntimeException::class, 'Invitation is no longer valid.');
+
+    expect($this->subject->members()->count())->toBe(1);
+});
+
 it('adds user as member on acceptance', function (): void {
     AcceptInvitationAction::make()->handle(
         invitation: $this->invitation,

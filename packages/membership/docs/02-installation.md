@@ -7,12 +7,16 @@ title: Membership Installation
 ```bash
 composer require aiarmada/membership
 php artisan vendor:publish --tag=membership-config
-php artisan migrate
 ```
 
-Add `HasMembers` to each membership subject and generate its pivot migration:
+Add `HasMembers` to each membership subject and create its pivot migration in
+the host application. Membership does not generate host application files.
+The migration must use the subject key and the configured suffix (the default
+for `Team` is `team_members`):
 
 ```bash
-php artisan membership:make-pivot "App\Models\Team"
 php artisan migrate
 ```
+
+See [Usage: Pivot migration](04-usage.md#pivot-migration) for the complete
+copy-paste migration.

@@ -82,6 +82,14 @@ it('restores the previous team after revocation fails', function (): void {
     expect(getPermissionsTeamId())->toBe('original-team');
 });
 
+it('requires a non-empty scalar subject key for team-scoped roles', function (): void {
+    expect(fn () => $this->service->assignToUser(
+        new TestSubject,
+        $this->user,
+        MemberRole::Admin,
+    ))->toThrow(LogicException::class, 'non-empty scalar key');
+});
+
 it('ensures global roles when Spatie teams are disabled', function (): void {
     app(PermissionRegistrar::class)->teams = false;
     config()->set('permission.teams', false);

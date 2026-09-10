@@ -5,7 +5,9 @@ declare(strict_types=1);
 use AIArmada\Membership\MembershipServiceProvider;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Models\MembershipInvitation;
+use AIArmada\Membership\Models\MembershipPivot;
 use AIArmada\Membership\Tests\MembershipTestCase;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
 uses(MembershipTestCase::class);
 
@@ -35,4 +37,14 @@ it('has membership application model', function (): void {
 
 it('has membership invitation model', function (): void {
     expect(class_exists(MembershipInvitation::class))->toBeTrue();
+});
+
+it('reads owner scoping from the top-level membership owner configuration', function (): void {
+    expect(config('membership.owner.enabled'))->toBeTrue()
+        ->and(MembershipApplication::ownerScopeConfig()->enabled)->toBeTrue()
+        ->and(MembershipInvitation::ownerScopeConfig()->enabled)->toBeTrue();
+});
+
+it('provides a host-extensible membership pivot base', function (): void {
+    expect(is_subclass_of(MembershipPivot::class, Pivot::class))->toBeTrue();
 });
