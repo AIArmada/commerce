@@ -40,9 +40,10 @@ falsification-recorded earlier; re-verified standing.)
 ## Residual notes
 
 - Movement composite index implemented (`2026_09_11_000004`,
-  guarded/idempotent); concurrency stress tests and filament
-  policy expansion deferred with named mitigations (level uniqueness
-  constraint, active guards).
+  guarded/idempotent); concurrency proven by parallel tests against
+  the atomic reservation path; `OwnerUiScope` guards wired on all
+  four resources with denial tests. Gate-level policy classes remain
+  a possible fourth layer, not a gap.
 - No migration packages remain open anywhere in the program.
 
 If any residual grows teeth, re-open it as a finding. Full finding history

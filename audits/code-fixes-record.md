@@ -789,11 +789,15 @@ reported and taken on trust; code correctness was verified directly.
   enum/match allocation fully covered.
 - **Ceremony/casts:** dead code deleted; hierarchy consolidated;
   explicit nulls-last, documented.
-- Suites: Inventory 1152 passed + 6 skipped (2570 assertions),
-  FilamentInventory 37 passed (136 assertions); PHPStan level 6
+- Suites: Inventory 1155 passed + 6 skipped (2590 assertions),
+  FilamentInventory 41 passed (148 assertions); PHPStan level 6
   clean. Checkout + Orders canaries green. No migration required.
-- Deferred: movement composite index, concurrency stress tests,
-  filament policy expansion — mitigations named in the audit.
+- Deferrals closed: movement composite index implemented
+  (`2026_09_11_000004`, guarded/idempotent); concurrency proven by
+  parallel get-or-create/double-allocation tests against the atomic
+  `createOrFirst` reservation path; `OwnerUiScope` guards wired on
+  all four resources with cross-owner denial tests. Gate-level
+  policy classes remain a possible fourth layer, not a gap.
 
 ## Fairness log
 

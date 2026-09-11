@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentInventory\Resources\InventoryMovementResource\Pages\ListInventoryMovements;
 use AIArmada\FilamentInventory\Resources\InventoryMovementResource\Pages\ViewInventoryMovement;
 use AIArmada\FilamentInventory\Resources\InventoryMovementResource\Schemas\InventoryMovementInfolist;
@@ -16,6 +17,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class InventoryMovementResource extends Resource
@@ -44,9 +46,35 @@ final class InventoryMovementResource extends Resource
         return InventoryOwnerScope::applyToMovementQuery($query);
     }
 
+    public static function canViewAny(): bool
+    {
+        return parent::canViewAny() && OwnerUiScope::canCreate(static::getModel());
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return $record instanceof InventoryMovement
+            && parent::canView($record)
+            && OwnerUiScope::canAccessRecord($record);
+    }
+
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return $record instanceof InventoryMovement
+            && parent::canEdit($record)
+            && OwnerUiScope::canMutateRecord($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return $record instanceof InventoryMovement
+            && parent::canDelete($record)
+            && OwnerUiScope::canMutateRecord($record);
     }
 
     public static function infolist(Schema $schema): Schema

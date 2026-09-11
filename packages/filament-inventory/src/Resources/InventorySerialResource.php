@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource\Pages\CreateInventorySerial;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource\Pages\EditInventorySerial;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource\Pages\ListInventorySerials;
@@ -20,6 +21,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class InventorySerialResource extends Resource
@@ -49,6 +51,42 @@ final class InventorySerialResource extends Resource
                 'batch',
             ])
         );
+    }
+
+    public static function canViewAny(): bool
+    {
+        return parent::canViewAny() && OwnerUiScope::canCreate(static::getModel());
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return $record instanceof InventorySerial
+            && parent::canView($record)
+            && OwnerUiScope::canAccessRecord($record);
+    }
+
+    public static function canCreate(): bool
+    {
+        return parent::canCreate() && OwnerUiScope::canCreate(static::getModel());
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return $record instanceof InventorySerial
+            && parent::canEdit($record)
+            && OwnerUiScope::canMutateRecord($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return $record instanceof InventorySerial
+            && parent::canDelete($record)
+            && OwnerUiScope::canMutateRecord($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return parent::canDeleteAny() && OwnerUiScope::canCreate(static::getModel());
     }
 
     public static function form(Schema $schema): Schema

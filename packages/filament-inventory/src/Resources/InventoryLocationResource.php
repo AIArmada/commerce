@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages\CreateInventoryLocation;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages\EditInventoryLocation;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages\ListInventoryLocations;
@@ -19,6 +20,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class InventoryLocationResource extends Resource
@@ -43,6 +45,42 @@ final class InventoryLocationResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return InventoryOwnerScope::applyToLocationQuery(parent::getEloquentQuery());
+    }
+
+    public static function canViewAny(): bool
+    {
+        return parent::canViewAny() && OwnerUiScope::canCreate(static::getModel());
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return $record instanceof InventoryLocation
+            && parent::canView($record)
+            && OwnerUiScope::canAccessRecord($record);
+    }
+
+    public static function canCreate(): bool
+    {
+        return parent::canCreate() && OwnerUiScope::canCreate(static::getModel());
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return $record instanceof InventoryLocation
+            && parent::canEdit($record)
+            && OwnerUiScope::canMutateRecord($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return $record instanceof InventoryLocation
+            && parent::canDelete($record)
+            && OwnerUiScope::canMutateRecord($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return parent::canDeleteAny() && OwnerUiScope::canCreate(static::getModel());
     }
 
     public static function form(Schema $schema): Schema

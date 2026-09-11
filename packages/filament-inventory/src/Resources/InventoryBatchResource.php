@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\CreateInventoryBatch;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\EditInventoryBatch;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\ListInventoryBatches;
@@ -19,6 +20,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class InventoryBatchResource extends Resource
@@ -45,6 +47,42 @@ final class InventoryBatchResource extends Resource
         return InventoryOwnerScope::applyToLocationQuery(
             parent::getEloquentQuery()->with('location')
         );
+    }
+
+    public static function canViewAny(): bool
+    {
+        return parent::canViewAny() && OwnerUiScope::canCreate(static::getModel());
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return $record instanceof InventoryBatch
+            && parent::canView($record)
+            && OwnerUiScope::canAccessRecord($record);
+    }
+
+    public static function canCreate(): bool
+    {
+        return parent::canCreate() && OwnerUiScope::canCreate(static::getModel());
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return $record instanceof InventoryBatch
+            && parent::canEdit($record)
+            && OwnerUiScope::canMutateRecord($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return $record instanceof InventoryBatch
+            && parent::canDelete($record)
+            && OwnerUiScope::canMutateRecord($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return parent::canDeleteAny() && OwnerUiScope::canCreate(static::getModel());
     }
 
     public static function form(Schema $schema): Schema
