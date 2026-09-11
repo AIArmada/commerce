@@ -35,7 +35,7 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | feedback | filament-feedback | No | Yes | High | `feedback.md` | Done |
 | growth | filament-growth | Done | No | Medium | `growth.md` | Done |
 | inventory | filament-inventory | Done | Yes | Medium | `inventory.md` | Done |
-| jnt | filament-jnt | No | Yes | High | `jnt.md` | Open |
+| jnt | filament-jnt | No | Yes | High | `jnt.md` | Done |
 | orders | filament-orders | No | Yes | High | `orders.md` | Done |
 | organizations | filament-organizations | Done | Yes | High | `organizations.md` | Done |
 | persons | filament-persons | Done | Yes | High | `persons.md` | Done |
@@ -43,9 +43,9 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | products | filament-products | No | Yes | High | `products.md` | Done |
 | promotions | filament-promotions | Done | Yes | High | `promotions.md` | Done |
 | seating | filament-seating | No | No | High | `seating.md` | Done |
-| shipping | filament-shipping | Done | Yes | High | `shipping.md` | Open |
+| shipping | filament-shipping | Done | Yes | High | `shipping.md` | Done |
 | signals | filament-signals | Done | Yes | High | `signals.md` | Done |
-| tax | filament-tax | No | Yes | High | `tax.md` | Open |
+| tax | filament-tax | No | Yes | High | `tax.md` | Done |
 | ticketing | filament-ticketing | No | Yes | High | `ticketing.md` | Done |
 | vouchers | filament-vouchers | Done | Yes | High | `vouchers.md` | Done |
 

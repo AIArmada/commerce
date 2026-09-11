@@ -844,5 +844,61 @@ reported and taken on trust; code correctness was verified directly.
 - No migration required. Full package-specific deviations and residuals are
   in `products.md`, `promotions.md`, and `vouchers.md`.
 
+## Shipping / tax / J&T (implemented)
+
+- **Shipping:** the Spatie shipment state machine is canonical; owner scope,
+  request-scoped driver caching, one-driver-at-a-time rate shopping, runtime
+  default-driver overrides, and chunked transactional child deletion are
+  implemented (`packages/shipping/src/States/ShipmentStatus.php:16,68-96`,
+  `packages/shipping/src/Services/RateShoppingEngine.php:173-232`,
+  `packages/shipping/src/Models/Shipment.php:249-264`).
+- **Tax:** calculator reads and writes carry the resolved owner through the
+  shared owner-scope semantics; unknown exemption values are explicit, zone
+  deletion is guarded at the application boundary, and the rate-rounding
+  setting/formula are named and documented (`packages/tax/src/Services/TaxCalculator.php:105-159`,
+  `packages/tax/src/Services/TaxOwnerScope.php:21-62`,
+  `packages/tax/src/Models/TaxZone.php:253-325`).
+- **J&T:** the canonical tracking-event vocabulary, integer minor-unit money
+  path, single cart calculator, J&T-only webhook scope, queued retry/backoff,
+  and policy-backed Filament authorization are implemented
+  (`packages/jnt/src/Shipping/JntShippingDriver.php:366-398`,
+  `packages/jnt/src/Webhooks/ProcessJntWebhook.php:27-40,229-235`,
+  `packages/jnt/src/Models/JntWebhookLog.php:50-97`).
+- **Recorded residuals and deferrals:** Shipping's P-2 cache-stampede proof
+  and S-1 label token entropy/TTL and cache-eviction hardening; Tax L-2
+  migration-convention, P-1 scale-dependent index, and P-2 event cardinality;
+  J&T's stale demo key at `demo/config/jnt.php:81`, polling debounce, and
+  EXPLAIN-gated tracking index question remain exactly as recorded in
+  `shipping.md`, `tax.md`, and `jnt.md`.
+- **Verification:** Shipping **530 passed, 1 skipped (1,328 assertions)**
+  and FilamentShipping **103 passed (231 assertions)**; Tax **194 passed
+  (442 assertions)** and FilamentTax **27 passed (71 assertions)**; Jnt
+  **568 passed (1,729 assertions)** and FilamentJnt **34 passed (124
+  assertions)** after the stale-test fix. The focused
+  `SyncTrackingActionTest.php` run was **5 passed (9 assertions)**. The
+  prior review record's Checkout and Orders canaries were green; no full
+  suite was run in this closure.
+- **Carried forward unchanged:** CommunicationDestination.address is
+  intentionally still a scalar address column, not an encrypted:json cast.
+  Source verification found that the resolver protects values before
+  delivery persistence (`packages/communications/src/Services/CommunicationDestinationResolver.php:76-84`),
+  while encrypting the source-of-truth address would require a type/length
+  migration, key/backfill policy, and deployment gate. This remains an
+  explicit follow-up decision, not an unverified claim of table-level
+  encryption. Queued per-batch provider dispatch is explicitly deferred: the
+  current command has no provider-send worker/action and its verified side
+  effect is only scheduled-to-queued transition at
+  `packages/communications/src/Console/Commands/DispatchDueCommunicationsCommand.php:83-91`.
+  The hot-path composite index and chunking are implemented.
+- **Shipped-migration position:** Communications added the verified hot-path
+  indexes directly to the shipped dev migrations 000003, 000007, 000008, and
+  000015. This remains an explicit shipped-migration deviation under the
+  dev-only rule: delete and rerun local/dev databases; no production backfill
+  is required. No foreign keys or cascades were added.
+- No migration or compatibility shim is required for this cluster. The
+  package-specific audit deviations and residual notes are in
+  `shipping.md`, `tax.md`, and `jnt.md`; the demo configuration file and all
+  read-only dependencies were left untouched.
+
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.

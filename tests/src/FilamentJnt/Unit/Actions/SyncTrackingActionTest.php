@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\SyncTrackingAction;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntTrackingService;
+use Illuminate\Support\Facades\Gate;
 
 uses(FilamentJntTestCase::class);
 
@@ -30,6 +31,10 @@ it('is only visible when the order has a tracking number', function (): void {
 
     $order->update(['tracking_number' => 'TRK-10']);
     $order->refresh();
+
+    expect(SyncTrackingAction::make()->record($order)->isVisible())->toBeFalse();
+
+    Gate::before(fn (mixed $authenticatedUser, string $ability): ?bool => $ability === 'update' ? true : null);
 
     expect(SyncTrackingAction::make()->record($order)->isVisible())->toBeTrue();
 });
