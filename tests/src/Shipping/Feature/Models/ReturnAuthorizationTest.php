@@ -290,6 +290,31 @@ describe('ReturnAuthorization Model', function (): void {
         expect($rma->returnShipment->id)->toBe($returnShipment->id);
     });
 
+    it('does not delete an authorization while its return shipment exists', function (): void {
+        $rma = ReturnAuthorization::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'type' => 'refund',
+            'reason' => 'defective',
+        ]);
+
+        $returnShipment = Shipment::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'reference' => 'RETURN-DELETE-GUARD',
+            'carrier_code' => 'fedex',
+            'shippable_type' => ReturnAuthorization::class,
+            'shippable_id' => $rma->id,
+            'origin_address' => ['name' => 'Customer'],
+            'destination_address' => ['name' => 'Warehouse'],
+        ]);
+
+        expect(fn (): ?bool => $rma->delete())
+            ->toThrow(DomainException::class);
+        expect(Shipment::query()->whereKey($returnShipment->getKey())->exists())->toBeTrue();
+        expect(ReturnAuthorization::query()->whereKey($rma->getKey())->exists())->toBeTrue();
+    });
+
     it('returns null when no return shipment exists', function (): void {
         $rma = ReturnAuthorization::create([
             'owner_type' => 'TestOwner',

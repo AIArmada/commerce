@@ -10,6 +10,7 @@ use AIArmada\Tax\Models\TaxZone;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 $bindTaxOwnerForScoping = function (?Model $owner): void {
     app()->bind(OwnerResolverInterface::class, fn () => new class($owner) implements OwnerResolverInterface
@@ -43,12 +44,16 @@ describe('TaxZone', function () use ($bindTaxOwnerForScoping): void {
         $this->assertTrue($zone->is_active);
     });
 
-    it('zero rate static method', function (): void {
-        $zone = TaxZone::zeroRate();
+    it('rejects duplicate tax zone codes for the same owner', function (): void {
+        TaxZone::create([
+            'name' => 'Malaysia',
+            'code' => 'MY',
+        ]);
 
-        $this->assertEquals('Zero Rate Zone', $zone->name);
-        $this->assertEquals('ZERO', $zone->code);
-        $this->assertTrue($zone->is_active);
+        expect(fn () => TaxZone::create([
+            'name' => 'Another Malaysia',
+            'code' => 'MY',
+        ]))->toThrow(ValidationException::class);
     });
 
     it('active scope', function (): void {

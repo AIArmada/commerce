@@ -21,6 +21,7 @@ beforeEach(function (): void {
     config([
         'shipping.default' => 'manual',
         'shipping.drivers' => [
+            'default' => 'manual',
             'null' => ['driver' => 'null'],
             'manual' => ['driver' => 'manual'],
             'flat_rate' => ['driver' => 'flat_rate'],
@@ -82,6 +83,7 @@ it('provides list of available drivers', function (): void {
     expect($drivers)->toContain('null');
     expect($drivers)->toContain('manual');
     expect($drivers)->toContain('flat_rate');
+    expect($drivers)->not->toContain('default');
 });
 
 it('checks if driver is available', function (): void {
@@ -104,6 +106,11 @@ it('can set default driver', function (): void {
     $this->manager->setDefaultDriver('null');
 
     expect($this->manager->getDefaultDriver())->toBe('null');
+    expect(config('shipping.default'))->toBe('manual');
+
+    $anotherManager = new ShippingManager(app());
+
+    expect($anotherManager->getDefaultDriver())->toBe('manual');
 });
 
 it('can register and retrieve status mapper', function (): void {

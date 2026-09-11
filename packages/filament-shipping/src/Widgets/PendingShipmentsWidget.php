@@ -7,8 +7,9 @@ namespace AIArmada\FilamentShipping\Widgets;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\Pending;
+use AIArmada\Shipping\States\ShipmentStatus;
 use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -43,7 +44,7 @@ class PendingShipmentsWidget extends BaseWidget
         return $table
             ->query(
                 $query
-                    ->where('status', ShipmentStatus::Pending)
+                    ->where('status', ShipmentStatus::normalize(Pending::class))
                     ->latest()
                     ->limit(10)
             )
@@ -57,7 +58,7 @@ class PendingShipmentsWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (ShipmentStatus $state) => $state->getColor()),
+                    ->color(fn (ShipmentStatus $state): string => $state->color()),
 
                 Tables\Columns\TextColumn::make('total_weight')
                     ->label('Weight')

@@ -6,8 +6,8 @@ namespace AIArmada\FilamentShipping\Resources\ShipmentResource\Tables;
 
 use AIArmada\FilamentShipping\Actions;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\ShipmentStatus;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -40,8 +40,8 @@ final class ShipmentsTable
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (ShipmentStatus $state) => $state->getColor())
-                    ->icon(fn (ShipmentStatus $state) => $state->getIcon()),
+                    ->color(fn (ShipmentStatus $state): string => $state->color())
+                    ->icon(fn (ShipmentStatus $state): string => $state->icon()),
 
                 TextColumn::make('total_weight')
                     ->label('Weight')
@@ -68,8 +68,7 @@ final class ShipmentsTable
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options(collect(ShipmentStatus::cases())
-                        ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])),
+                    ->options(ShipmentStatus::options()),
 
                 SelectFilter::make('carrier_code')
                     ->label('Carrier')

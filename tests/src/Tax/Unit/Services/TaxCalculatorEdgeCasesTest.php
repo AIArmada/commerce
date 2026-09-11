@@ -140,7 +140,7 @@ describe('TaxCalculatorEdgeCases', function (): void {
         $result = $this->calculator->calculateTax(10000, 'standard');
 
         $this->assertEquals(0, $result->taxAmount);
-        $this->assertEquals('Zero Rate Zone', $result->zoneName);
+        $this->assertEquals('Unknown Zone', $result->zoneName);
     });
 
     it('unknown zone behavior default branch', function (): void {
@@ -149,7 +149,7 @@ describe('TaxCalculatorEdgeCases', function (): void {
         $result = $this->calculator->calculateTax(10000, 'standard');
 
         $this->assertEquals(0, $result->taxAmount);
-        $this->assertEquals('Zero Rate Zone', $result->zoneName);
+        $this->assertEquals('Unknown Zone', $result->zoneName);
     });
 
     it('create exempt result with zone id', function (): void {
@@ -178,7 +178,10 @@ describe('TaxCalculatorEdgeCases', function (): void {
             10000,
             'standard',
             $zone->id,
-            ['customer_id' => 'customer-exempt-test']
+            [
+                'customer_id' => 'customer-exempt-test',
+                'customer_type' => 'App\\Models\\Customer',
+            ]
         );
 
         $this->assertEquals(0, $result->taxAmount);
@@ -199,11 +202,14 @@ describe('TaxCalculatorEdgeCases', function (): void {
             10000,
             'standard',
             null,
-            ['customer_id' => 'customer-no-zone']
+            [
+                'customer_id' => 'customer-no-zone',
+                'customer_type' => 'App\\Models\\Customer',
+            ]
         );
 
         $this->assertEquals(0, $result->taxAmount);
-        $this->assertEquals('Zero Rate Zone', $result->zoneName);
+        $this->assertEquals('Unknown Zone', $result->zoneName);
         $this->assertEquals('Test exemption no zone', $result->exemptionReason);
     });
 
@@ -229,7 +235,7 @@ describe('TaxCalculatorEdgeCases', function (): void {
         $result = $this->calculator->calculateTax(10000, 'standard', 'invalid-uuid');
 
         $this->assertEquals(0, $result->taxAmount);
-        $this->assertEquals('Zero Rate Zone', $result->zoneName);
+        $this->assertEquals('Unknown Zone', $result->zoneName);
     });
 
     it('settings fallback when settings throw', function (): void {

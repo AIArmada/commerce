@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
 use AIArmada\Tax\States\TaxExemptionState\RejectedState;
@@ -121,7 +122,7 @@ final class TaxExemptionForm
                                     ->relationship(
                                         'taxZone',
                                         'name',
-                                        modifyQueryUsing: fn (Builder $query): Builder => $query,
+                                        modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false),
                                     )
                                     ->searchable()
                                     ->preload()
@@ -243,11 +244,6 @@ final class TaxExemptionForm
 
         if (class_exists('AIArmada\\Customers\\Models\\CustomerGroup')) {
             $types['AIArmada\\Customers\\Models\\CustomerGroup'] = 'Customer Group';
-        }
-
-        // Fallback if customers package not installed
-        if (empty($types)) {
-            $types['App\\Models\\User'] = 'User';
         }
 
         return $types;

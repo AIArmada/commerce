@@ -72,6 +72,33 @@ it('rejects an incorrect signature', function (): void {
     expect($validator->isValid($request, $config))->toBeFalse();
 });
 
+it('rejects a valid-looking signature when no signing secret is configured', function (): void {
+    config()->set('jnt.webhooks.verify_signature', true);
+    config()->set('jnt.private_key', '');
+
+    $validator = new JntSpatieSignatureValidator;
+    $bizContent = json_encode(['event' => 'shipment.delivered', 'awb' => 'JNT123456789']);
+
+    expect($bizContent)->not->toBeFalse();
+
+    $request = Request::create('/webhook/jnt', 'POST', ['bizContent' => $bizContent]);
+    $request->headers->set('digest', base64_encode(md5($bizContent, true)));
+
+    $config = new WebhookConfig([
+        'name' => 'jnt.webhooks.status',
+        'signing_secret' => '',
+        'signature_header_name' => 'digest',
+        'signature_validator' => JntSpatieSignatureValidator::class,
+        'webhook_profile' => JntWebhookProfile::class,
+        'webhook_response' => JntWebhookResponse::class,
+        'webhook_model' => WebhookCall::class,
+        'store_headers' => ['digest'],
+        'process_webhook_job' => ProcessJntWebhook::class,
+    ]);
+
+    expect($validator->isValid($request, $config))->toBeFalse();
+});
+
 it('rejects request without signature header', function (): void {
     config()->set('jnt.webhooks.verify_signature', true);
     config()->set('jnt.private_key', 'jnt-test-secret');

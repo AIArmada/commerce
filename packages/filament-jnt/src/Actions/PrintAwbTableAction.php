@@ -14,6 +14,7 @@ use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use Throwable;
 
@@ -29,7 +30,7 @@ final class PrintAwbTableAction extends Action
             ->icon(Heroicon::OutlinedPrinter)
             ->color('gray')
             ->requiresConfirmation()
-            ->authorize(fn (): bool => Filament::auth()?->check() ?? false)
+            ->authorize(fn (JntOrder $record): bool => Gate::allows('view', $record))
             ->modalHeading('Print Air Waybill')
             ->modalDescription('Generate and print the shipping label for this order.')
             ->modalSubmitActionLabel('Print')

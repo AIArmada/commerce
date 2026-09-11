@@ -98,7 +98,9 @@ describe('TaxCalculator', function (): void {
         $result = $this->calculator->calculateTax(10000, 'standard');
 
         $this->assertEquals(0, $result->taxAmount);
-        $this->assertEquals('Zero Rate Zone', $result->zoneName);
+        $this->assertEquals('Unknown Zone', $result->zoneName);
+        $this->assertNull($result->zoneId);
+        $this->assertNull($result->rateId);
     });
 
     it('calculate tax with tax inclusive pricing', function (): void {
@@ -127,7 +129,7 @@ describe('TaxCalculator', function (): void {
     });
 
     it('calculate tax with rounding', function (): void {
-        config(['tax.defaults.round_at_subtotal' => true]);
+        config(['tax.defaults.round_per_rate' => true]);
 
         $zone = TaxZone::create([
             'name' => 'Rounding Zone',
@@ -173,7 +175,10 @@ describe('TaxCalculator', function (): void {
             'status' => 'approved',
         ]);
 
-        $context = ['customer_id' => $customerId];
+        $context = [
+            'customer_id' => $customerId,
+            'customer_type' => 'App\\Models\\Customer',
+        ];
 
         // Debug: check what exemptions exist
         $exemptions = TaxExemption::all();
@@ -202,6 +207,12 @@ describe('TaxCalculator', function (): void {
         $this->assertEquals('Non-profit', $result->exemptionReason);
         $this->assertTrue($result->isExempt());
     });
+
+    it('rejects an exemption lookup without an explicit customer type', function (): void {
+        $this->calculator->calculateTax(10000, 'standard', null, [
+            'customer_id' => 'customer-without-type',
+        ]);
+    })->throws(InvalidArgumentException::class);
 
     it('calculate tax with zone specific exemption', function (): void {
         $zone1 = TaxZone::create(['name' => 'Zone 1', 'code' => 'Z1', 'is_active' => true]);
@@ -232,7 +243,10 @@ describe('TaxCalculator', function (): void {
             'status' => 'approved',
         ]);
 
-        $context = ['customer_id' => 'customer-123'];
+        $context = [
+            'customer_id' => 'customer-123',
+            'customer_type' => 'App\\Models\\Customer',
+        ];
 
         // Should be exempt in zone 1
         $result1 = $this->calculator->calculateTax(10000, 'standard', $zone1->id, $context);
@@ -358,7 +372,7 @@ describe('TaxCalculator', function (): void {
         $result = $this->calculator->calculateTax(10000, 'standard');
 
         $this->assertEquals(0, $result->taxAmount);
-        $this->assertEquals('Zero Rate Zone', $result->zoneName);
+        $this->assertEquals('Unknown Zone', $result->zoneName);
     });
 
     it('calculate tax with unknown zone zero behavior', function (): void {
@@ -367,7 +381,7 @@ describe('TaxCalculator', function (): void {
         $result = $this->calculator->calculateTax(10000, 'standard');
 
         $this->assertEquals(0, $result->taxAmount);
-        $this->assertEquals('Zero Rate Zone', $result->zoneName);
+        $this->assertEquals('Unknown Zone', $result->zoneName);
     });
 
     it('calculate tax with address priority', function (): void {
@@ -423,7 +437,10 @@ describe('TaxCalculator', function (): void {
             'status' => 'approved',
         ]);
 
-        $context = ['customer_id' => 'customer-123'];
+        $context = [
+            'customer_id' => 'customer-123',
+            'customer_type' => 'App\\Models\\Customer',
+        ];
         $result = $this->calculator->calculateTax(10000, 'standard', $zone->id, $context);
 
         // Exemption should be ignored, tax should be calculated

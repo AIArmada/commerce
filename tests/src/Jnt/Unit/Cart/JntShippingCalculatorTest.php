@@ -6,7 +6,6 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Jnt\Cart\JntShippingCalculator;
 use AIArmada\Jnt\Data\AddressData;
-use AIArmada\Jnt\Services\JntExpressService;
 use Illuminate\Support\Facades\DB;
 
 function createJntTestCart(string $identifier = 'test-user'): Cart
@@ -18,20 +17,6 @@ function createJntTestCart(string $identifier = 'test-user'): Cart
         identifier: $identifier,
         events: null,
         instanceName: 'default'
-    );
-}
-
-function createTestJntExpressService(): JntExpressService
-{
-    return new JntExpressService(
-        customerCode: 'TEST123',
-        password: 'password',
-        config: [
-            'environment' => 'testing',
-            'base_urls' => ['testing' => 'https://demo.api.test'],
-            'api_account' => '640826271705595946',
-            'private_key' => '8e88c8477d4e4939859c560192fcafbc',
-        ]
     );
 }
 
@@ -52,9 +37,9 @@ describe('JntShippingCalculator', function (): void {
                 'country_code' => 'MYS',
                 'state' => 'Kuala Lumpur',
             ],
-            'jnt.shipping.region_multipliers' => [
-                'sabah' => 1.5,
-                'sarawak' => 1.5,
+            'jnt.shipping.region_multipliers_bp' => [
+                'sabah' => 15000,
+                'sarawak' => 15000,
             ],
         ]);
     });
@@ -79,7 +64,7 @@ describe('JntShippingCalculator', function (): void {
             'attributes' => ['weight' => 1000],
         ]);
 
-        $calculator = new JntShippingCalculator(createTestJntExpressService());
+        $calculator = new JntShippingCalculator;
         $weight = $calculator->getCartWeight($cart);
 
         expect($weight)->toBe(2000); // (2 * 500) + (1 * 1000)
@@ -88,7 +73,7 @@ describe('JntShippingCalculator', function (): void {
     it('returns zero weight for empty cart', function (): void {
         $cart = createJntTestCart('empty-weight');
 
-        $calculator = new JntShippingCalculator(createTestJntExpressService());
+        $calculator = new JntShippingCalculator;
         $weight = $calculator->getCartWeight($cart);
 
         expect($weight)->toBe(0);
@@ -103,7 +88,7 @@ describe('JntShippingCalculator', function (): void {
             'quantity' => 2,
         ]);
 
-        $calculator = new JntShippingCalculator(createTestJntExpressService());
+        $calculator = new JntShippingCalculator;
         $weight = $calculator->getCartWeight($cart);
 
         expect($weight)->toBe(0);
@@ -127,7 +112,7 @@ describe('JntShippingCalculator', function (): void {
             state: 'Kuala Lumpur',
         );
 
-        $calculator = new JntShippingCalculator(createTestJntExpressService());
+        $calculator = new JntShippingCalculator;
         $quote = $calculator->calculateShipping($cart, $destination);
 
         expect($quote)->not->toBeNull();
@@ -164,7 +149,7 @@ describe('JntShippingCalculator', function (): void {
             state: 'Sabah',
         );
 
-        $calculator = new JntShippingCalculator(createTestJntExpressService());
+        $calculator = new JntShippingCalculator;
 
         $peninsularQuote = $calculator->calculateShipping($cart, $peninsularDest);
         $sabahQuote = $calculator->calculateShipping($cart, $sabahDest);
@@ -183,7 +168,7 @@ describe('JntShippingCalculator', function (): void {
             postCode: '50000',
         );
 
-        $calculator = new JntShippingCalculator(createTestJntExpressService());
+        $calculator = new JntShippingCalculator;
         $quote = $calculator->calculateShipping($cart, $destination);
 
         expect($quote)->toBeNull();
@@ -208,7 +193,7 @@ describe('JntShippingCalculator', function (): void {
             postCode: '50000',
         );
 
-        $calculator = new JntShippingCalculator(createTestJntExpressService());
+        $calculator = new JntShippingCalculator;
         $quote = $calculator->calculateShipping($cart, $destination);
 
         expect($quote)->toBeNull();
@@ -231,7 +216,7 @@ describe('JntShippingCalculator', function (): void {
             postCode: '50000',
         );
 
-        $calculator = new JntShippingCalculator(createTestJntExpressService());
+        $calculator = new JntShippingCalculator;
         $quote = $calculator->calculateShipping($cart, $destination);
 
         expect($quote)->toHaveKey('quote_id');
@@ -273,7 +258,7 @@ describe('JntShippingCalculator Weight-Based Pricing', function (): void {
             postCode: '50000',
         );
 
-        $calculator = new JntShippingCalculator(createTestJntExpressService());
+        $calculator = new JntShippingCalculator;
         $quote = $calculator->calculateShipping($cart, $destination);
 
         expect($quote['amount'])->toBe(800);
@@ -296,7 +281,7 @@ describe('JntShippingCalculator Weight-Based Pricing', function (): void {
             postCode: '50000',
         );
 
-        $calculator = new JntShippingCalculator(createTestJntExpressService());
+        $calculator = new JntShippingCalculator;
         $quote = $calculator->calculateShipping($cart, $destination);
 
         // 2.5kg rounds up to 3kg: base(800) + 2*perKg(200) = 1200
@@ -325,9 +310,71 @@ describe('JntShippingCalculator Weight-Based Pricing', function (): void {
             postCode: '50000',
         );
 
-        $calculator = new JntShippingCalculator(createTestJntExpressService());
+        $calculator = new JntShippingCalculator;
         $quote = $calculator->calculateShipping($cart, $destination);
 
         expect($quote['amount'])->toBe(800);
+    });
+
+    it('rounds a half-minor-unit regional multiplier upward', function (): void {
+        config([
+            'jnt.shipping.base_rate' => 1,
+            'jnt.shipping.per_kg_rate' => 0,
+            'jnt.shipping.min_charge' => 0,
+            'jnt.shipping.region_multipliers_bp' => ['sabah' => 15000],
+        ]);
+
+        $cart = createJntTestCart('half-sen-round-up');
+        $cart->add([
+            'id' => 'half-sen-item',
+            'name' => 'Half Sen Item',
+            'price' => 100,
+            'quantity' => 1,
+            'attributes' => ['weight' => 1000],
+        ]);
+
+        $destination = new AddressData(
+            name: 'Test',
+            phone: '0123456789',
+            address: 'Test',
+            postCode: '88000',
+            state: 'Sabah',
+        );
+
+        $quote = (new JntShippingCalculator)->calculateShipping($cart, $destination);
+
+        expect($quote)->not->toBeNull()
+            ->and($quote['amount'])->toBe(2);
+    });
+
+    it('rounds just below a half-minor-unit multiplier downward', function (): void {
+        config([
+            'jnt.shipping.base_rate' => 1,
+            'jnt.shipping.per_kg_rate' => 0,
+            'jnt.shipping.min_charge' => 0,
+            'jnt.shipping.region_multipliers_bp' => ['sabah' => 14999],
+        ]);
+
+        $cart = createJntTestCart('half-sen-round-down');
+        $cart->add([
+            'id' => 'just-under-half-sen-item',
+            'name' => 'Just Under Half Sen Item',
+            'price' => 100,
+            'quantity' => 1,
+            'attributes' => ['weight' => 1000],
+        ]);
+
+        $destination = new AddressData(
+            name: 'Test',
+            phone: '0123456789',
+            address: 'Test',
+            postCode: '88000',
+            state: 'Sabah',
+        );
+
+        $quote = (new JntShippingCalculator)->calculateShipping($cart, $destination);
+
+        expect($quote)->not->toBeNull()
+            ->and($quote['amount'])->toBe(1);
     });
 });

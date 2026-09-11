@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxRateResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Tax\Models\TaxClass;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -31,7 +32,7 @@ final class TaxRateForm
                                     ->relationship(
                                         'zone',
                                         'name',
-                                        modifyQueryUsing: fn (Builder $query): Builder => $query,
+                                        modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false),
                                     )
                                     ->required()
                                     ->searchable()
@@ -51,13 +52,9 @@ final class TaxRateForm
                                 Select::make('tax_class')
                                     ->label('Tax Class')
                                     ->options(
-                                        fn (): array => TaxClass::query()
-                                            ->when(
-                                                config('tax.features.owner.enabled', false),
-                                                fn ($q) => $q
-                                            )
-                                            ->active()
-                                            ->ordered()
+                                        fn (): array => OwnerUiScope::apply(TaxClass::query(), includeGlobal: false)
+                                            ->where('is_active', true)
+                                            ->orderBy('position')
                                             ->pluck('name', 'slug')
                                             ->toArray() ?: ['standard' => 'Standard', 'reduced' => 'Reduced', 'zero' => 'Zero Rate', 'exempt' => 'Exempt']
                                     )

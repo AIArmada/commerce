@@ -26,7 +26,7 @@ abstract class TaxTestCase extends BaseTestCase
         // Configure tax settings for testing
         $app['config']->set('tax.features.enabled', true);
         $app['config']->set('tax.defaults.prices_include_tax', false);
-        $app['config']->set('tax.defaults.round_at_subtotal', true);
+        $app['config']->set('tax.defaults.round_per_rate', true);
         $app['config']->set('tax.defaults.calculate_tax_on_shipping', true);
         $app['config']->set('tax.features.zone_resolution.use_customer_address', true);
         $app['config']->set('tax.features.zone_resolution.address_priority', 'shipping');

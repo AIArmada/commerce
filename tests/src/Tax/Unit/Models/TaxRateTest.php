@@ -30,22 +30,6 @@ describe('TaxRate', function (): void {
         $this->assertTrue($rate->is_active);
     });
 
-    it('zero rate static method', function (): void {
-        $zone = TaxZone::create([
-            'name' => 'Test Zone',
-            'code' => 'TEST',
-            'is_active' => true,
-        ]);
-
-        $rate = TaxRate::zeroRate('standard', $zone);
-
-        $this->assertEquals('Zero Rate', $rate->name);
-        $this->assertEquals(0, $rate->rate);
-        $this->assertEquals('standard', $rate->tax_class);
-        $this->assertEquals($zone->id, $rate->zone_id);
-        $this->assertTrue($rate->is_active);
-    });
-
     it('active scope', function (): void {
         $zone = TaxZone::create(['name' => 'Zone', 'code' => 'Z', 'is_active' => true]);
 

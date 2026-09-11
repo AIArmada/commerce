@@ -11,6 +11,7 @@ use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Gate;
 use Throwable;
 
 final class SyncTrackingAction
@@ -22,7 +23,7 @@ final class SyncTrackingAction
             ->icon(Heroicon::ArrowPath)
             ->color('info')
             ->requiresConfirmation()
-            ->authorize(fn (): bool => Filament::auth()?->check() ?? false)
+            ->authorize(fn (JntOrder $record): bool => Gate::allows('update', $record))
             ->modalHeading('Sync Tracking Information')
             ->modalDescription('This will fetch the latest tracking information from J&T Express. Continue?')
             ->modalSubmitActionLabel('Sync Now')
