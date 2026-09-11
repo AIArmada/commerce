@@ -45,6 +45,10 @@ final class RulePresets
 {
     private static ?BuiltInRulesFactory $factory = null;
 
+    private static bool $hasRememberedOctaneDefaults = false;
+
+    private static ?BuiltInRulesFactory $octaneFactory = null;
+
     private static function factory(): BuiltInRulesFactory
     {
         if (self::$factory === null) {
@@ -57,6 +61,27 @@ final class RulePresets
     public static function setFactory(?BuiltInRulesFactory $factory): void
     {
         self::$factory = $factory;
+    }
+
+    /**
+     * Snapshot boot-time defaults so Octane can restore them on each request.
+     */
+    public static function rememberOctaneDefaults(): void
+    {
+        self::$hasRememberedOctaneDefaults = true;
+        self::$octaneFactory = self::$factory;
+    }
+
+    /**
+     * Restore boot-time defaults before handling the next Octane request.
+     */
+    public static function restoreOctaneDefaults(): void
+    {
+        if (! self::$hasRememberedOctaneDefaults) {
+            return;
+        }
+
+        self::$factory = self::$octaneFactory;
     }
 
     // =========================================================================

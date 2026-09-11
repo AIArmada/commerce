@@ -31,6 +31,7 @@ use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Services\RulePresets;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSyncManager;
 use AIArmada\Cart\Snapshots\CleanupSnapshotOnCartMerged;
@@ -98,6 +99,7 @@ final class CartServiceProvider extends PackageServiceProvider
 
         $this->app->booted(static function (): void {
             ConditionPresets::rememberOctaneDefaults();
+            RulePresets::rememberOctaneDefaults();
         });
     }
 
@@ -307,6 +309,7 @@ final class CartServiceProvider extends PackageServiceProvider
             app()->forgetInstance('cart');
             app()->forgetInstance(CartFactory::class);
             ConditionPresets::restoreOctaneDefaults();
+            RulePresets::restoreOctaneDefaults();
         });
     }
 }

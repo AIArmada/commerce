@@ -15,9 +15,9 @@ class NavigationConfigurator
      * so getTrueDefaultGroups() / getTrueDefaultOverrides() can read the
      * genuine file-based defaults without settings taint.
      */
-    public static array $originalGroupConfig = [];
+    private static array $originalGroupConfig = [];
 
-    public static array $originalItemsConfig = [];
+    private static array $originalItemsConfig = [];
 
     private static bool $captured = false;
 
@@ -73,6 +73,35 @@ class NavigationConfigurator
                 $overrides,
             ));
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getOriginalGroupConfig(): array
+    {
+        return self::$originalGroupConfig;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function getOriginalItemsConfig(): array
+    {
+        return self::$originalItemsConfig;
+    }
+
+    /**
+     * Restore the genuine file-based config before applying newly saved settings.
+     */
+    public static function restoreGenuineDefaults(): void
+    {
+        if (! self::$captured) {
+            return;
+        }
+
+        config()->set('commerce-support.filament.navigation.groups', self::$originalGroupConfig);
+        config()->set('commerce-support.filament.navigation.items', self::$originalItemsConfig);
     }
 
     private static function resolveSettings(): ?CommerceNavigationSettings
