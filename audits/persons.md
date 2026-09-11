@@ -36,8 +36,9 @@ a different project, not a leftover.
   slug/primary uniques + covering indexes); app-level mitigations
   (collision-budget slug loop, `lockForUpdate` demotion) remain as
   defense in depth.
-- `EventOrganizer`/venue identity migration belongs to the events
-  track; `events.md` stays Open.
+- `EventOrganizer`/venue identity settled in the events track
+  (`EventOrganizer` documented as event-scoped role; see `events.md`,
+  now DONE).
 
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.

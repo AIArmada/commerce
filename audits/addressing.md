@@ -32,8 +32,9 @@ zero rated findings remaining.
 
 - Timestamp/index micro-improvements deferred — the dev-only rule
   permits a batch as a follow-up.
-- Orders pilot + events full-trait adoption remain open follow-ups
-  (orders/events tracks, not this package).
+- Orders pilot implemented end-to-end (write path, consumers,
+  invoice reads, composer contract); events full-trait adoption
+  remains deferred (events track, not this package).
 
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.

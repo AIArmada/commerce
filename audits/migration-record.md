@@ -106,8 +106,9 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
   nullable uuid `person_id` + index, both guarded, no FK, no backfill, no
   `down()`. Carries the `Person`↔`Customer` topology link (nullable =
   unlinked; no auto-merge). The single pre-declared migration exception
-  for the identity track; physical persons/org index work stays deferred
-  under the same rule.
+  for the identity track; physical persons/org index work has since been
+  implemented (guarded `2026_09_11_000001` and `2026_09_07_074034`
+  migrations — see "Deferral clearing pass" below).
 
 ## Post-track: addressing table-name resolver — implemented
 
