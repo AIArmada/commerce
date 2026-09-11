@@ -88,32 +88,6 @@ describe('StackingDecision', function (): void {
 });
 
 describe('StackingPolicy', function (): void {
-    it('can create a default policy', function (): void {
-        $policy = StackingPolicy::default();
-
-        expect($policy->getMode())->toBe(StackingMode::Sequential);
-        expect($policy->getRules())->toBeArray();
-        expect($policy->getRules())->not->toBeEmpty();
-        expect($policy->isAutoReplaceEnabled())->toBeTrue();
-        expect($policy->isAutoOptimizeEnabled())->toBeFalse();
-    });
-
-    it('can create a single voucher policy', function (): void {
-        $policy = StackingPolicy::singleVoucher();
-
-        expect($policy->getMode())->toBe(StackingMode::None);
-        expect($policy->isAutoReplaceEnabled())->toBeTrue();
-    });
-
-    it('can create an unlimited policy', function (): void {
-        $policy = StackingPolicy::unlimited();
-
-        expect($policy->getMode())->toBe(StackingMode::Sequential);
-        expect($policy->getRules())->toBeEmpty();
-        expect($policy->isAutoOptimizeEnabled())->toBeTrue();
-        expect($policy->isAutoReplaceEnabled())->toBeFalse();
-    });
-
     it('can be created from config', function (): void {
         $config = [
             'mode' => 'parallel',

@@ -15,3 +15,11 @@ it('boots the filament products service provider', function (): void {
 
     expect(true)->toBeTrue();
 });
+
+it('loads the published filament products configuration', function (): void {
+    app()->register(FilamentProductsServiceProvider::class);
+
+    expect(config('filament-products.navigation.group'))->toBe('Catalog')
+        ->and(config('filament-products.navigation.resources.products'))->toBe(1)
+        ->and(config('filament-products.features.collections'))->toBeTrue();
+});

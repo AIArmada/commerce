@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\States\VoucherStatus;
 use Carbon\CarbonImmutable;
@@ -30,7 +29,7 @@ final class VoucherStatsAggregator
     {
         return [
             'total' => $this->vouchers()->count(),
-            'active' => $this->vouchers()->where('status', VoucherStatus::normalize(Active::class))->count(),
+            'active' => $this->vouchers()->live()->count(),
             'upcoming' => $this->vouchers()
                 ->where('starts_at', '>', CarbonImmutable::now())
                 ->count(),
@@ -87,5 +86,16 @@ final class VoucherStatsAggregator
         $sum = $this->usages()->sum('discount_amount');
 
         return (int) $sum;
+    }
+
+    /**
+     * Delegate per-voucher reporting to the domain model so applied,
+     * redeemed, abandoned, and conversion definitions cannot drift.
+     *
+     * @return array<string, mixed>
+     */
+    public function statistics(Voucher $voucher): array
+    {
+        return $voucher->getStatistics();
     }
 }

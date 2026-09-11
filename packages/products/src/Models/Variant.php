@@ -12,10 +12,12 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
+use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Contracts\Inventoryable;
 use AIArmada\Products\Contracts\Priceable;
+use AIArmada\Products\Support\ProductMedia;
+use AIArmada\Products\Support\ProductPricing;
 use AIArmada\Products\Traits\HasAttributes;
-use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -60,6 +62,7 @@ use Throwable;
  */
 class Variant extends Model implements Auditable, HasMedia, Inventoryable, Priceable, PricingPriceable
 {
+    use EnforcesOwnerUniqueIdentity;
     use HasAttributes;
     use HasCommerceAudit;
     use HasFactory;
@@ -73,6 +76,14 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
+
+    /**
+     * @return list<string>
+     */
+    protected function uniqueIdentityColumns(): array
+    {
+        return ['sku'];
+    }
 
     protected $fillable = [
         'owner_type',
@@ -214,12 +225,8 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
 
     public function getFeaturedImageUrl(string $conversion = 'card'): ?string
     {
-        $variantImage = $this->getFirstMedia('variant_images');
-        if ($variantImage) {
-            return $variantImage->getUrl($conversion);
-        }
-
-        return $this->product->getFeaturedImageUrl($conversion);
+        return ProductMedia::firstAvailableUrl($this, ['variant_images'], $conversion)
+            ?? $this->product->getFeaturedImageUrl($conversion);
     }
 
     // =========================================================================
@@ -240,9 +247,8 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
     public function getFormattedPrice(): string
     {
         $currency = mb_strtoupper($this->product?->currency ?: config('products.defaults.currency', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
-        return Money::$currency($this->getEffectivePrice(), $asMajorUnits)->format();
+        return ProductPricing::formatMinorAmount($this->getEffectivePrice(), $currency);
     }
 
     /**
@@ -297,7 +303,7 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
             return null;
         }
 
-        return (1 - ($this->getBasePrice() / $comparePrice)) * 100;
+        return ProductPricing::discountPercentage($this->getBasePrice(), $comparePrice);
     }
 
     /**
@@ -312,9 +318,8 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
         }
 
         $currency = mb_strtoupper($this->product?->currency ?: config('products.defaults.currency', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
-        return Money::$currency($comparePrice, $asMajorUnits)->format();
+        return ProductPricing::formatMinorAmount($comparePrice, $currency);
     }
 
     // =========================================================================

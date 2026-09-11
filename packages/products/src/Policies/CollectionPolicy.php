@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Policies;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Policies\Concerns\HandlesOwnerScoping;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -16,23 +15,7 @@ final class CollectionPolicy
 
     private function canAccessCollection(Collection $collection): bool
     {
-        if (! (bool) config('products.features.owner.enabled', true)) {
-            return true;
-        }
-
-        $owner = OwnerContext::resolve();
-
-        if ($owner === null) {
-            return $this->isGlobalModel($collection);
-        }
-
-        if ($this->belongsToOwner($collection, $owner)) {
-            return true;
-        }
-
-        $includeGlobal = (bool) config('products.features.owner.include_global', false);
-
-        return $includeGlobal && $this->isGlobalModel($collection);
+        return $this->canAccess($collection);
     }
 
     public function viewAny(mixed $user): bool

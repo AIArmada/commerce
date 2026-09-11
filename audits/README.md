@@ -34,20 +34,20 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 | events | filament-events | No | Yes | High | `events.md` | Done |
 | feedback | filament-feedback | No | Yes | High | `feedback.md` | Done |
 | growth | filament-growth | Done | No | Medium | `growth.md` | Done |
-| inventory | filament-inventory | Done | Yes | Medium | `inventory.md` | Open |
+| inventory | filament-inventory | Done | Yes | Medium | `inventory.md` | Done |
 | jnt | filament-jnt | No | Yes | High | `jnt.md` | Open |
 | orders | filament-orders | No | Yes | High | `orders.md` | Done |
 | organizations | filament-organizations | Done | Yes | High | `organizations.md` | Done |
 | persons | filament-persons | Done | Yes | High | `persons.md` | Done |
 | pricing | filament-pricing | Done | No | High | `pricing.md` | Done |
-| products | filament-products | No | Yes | High | `products.md` | Open |
-| promotions | filament-promotions | Done | Yes | High | `promotions.md` | Open |
+| products | filament-products | No | Yes | High | `products.md` | Done |
+| promotions | filament-promotions | Done | Yes | High | `promotions.md` | Done |
 | seating | filament-seating | No | No | High | `seating.md` | Done |
 | shipping | filament-shipping | Done | Yes | High | `shipping.md` | Open |
 | signals | filament-signals | Done | Yes | High | `signals.md` | Done |
 | tax | filament-tax | No | Yes | High | `tax.md` | Open |
 | ticketing | filament-ticketing | No | Yes | High | `ticketing.md` | Done |
-| vouchers | filament-vouchers | Done | Yes | High | `vouchers.md` | Open |
+| vouchers | filament-vouchers | Done | Yes | High | `vouchers.md` | Done |
 
 ### Standalones
 
@@ -61,11 +61,13 @@ Migration column: `Done` = implemented/dropped/corrected during the track (see r
 
 ## Open Migrations (0)
 
-All 11 migration packages are closed — 7 implemented, 4 dropped/corrected with evidence. See [`migration-record.md`](migration-record.md). `inventory.md` still rates Critical, but that is the open A1 serial-vocabulary *code* fix, not schema work.
+All 11 migration packages are closed — 7 implemented, 4 dropped/corrected with evidence. See [`migration-record.md`](migration-record.md).
 
-## Highest-Risk Packages (Critical severity, 1)
+## Highest-Risk Packages (Critical severity, 0)
 
-`inventory` — the remaining Critical holder (open A1 serial-vocabulary *code* fix, not schema work; see line 62). `cashier` cleared 2026-09-08 and rates Critical only as history.
+## Highest-Risk Packages (Critical severity, 0)
+
+No Critical holders remain. `cashier` cleared 2026-09-08 and `inventory` A1 was falsified to Medium and cleared with this track; both rate Critical only as history.
 
 Dominant remaining risk themes: checkout-track leftovers (status-mapper copies, token TTL), and the remaining open package audits.
 
@@ -84,7 +86,7 @@ Dominant remaining risk themes: checkout-track leftovers (status-mapper copies, 
 
 ## Second pass (hardening) + migration track
 
-- **Severity normalized, no inflation.** Critical is used only for breach-class security holes, corruption/data-loss risks, and broken integrity behavior (1 file — `inventory`, the A1 code fix; `cashier` cleared 2026-09-08: migration resolutions, four code-only Critical fixes, chip idempotency rewrite to its wiring gap, inventory A1 falsification; full trail in `migration-record.md` + `code-fixes-record.md`).
+- **Severity normalized, no inflation.** Critical is used only for breach-class security holes, corruption/data-loss risks, and broken integrity behavior (0 files currently hold Critical: `cashier` cleared 2026-09-08, inventory A1 falsified and cleared; full trail in `migration-record.md` + `code-fixes-record.md`).
 - **False claims removed or corrected** (see hardening notes in prior revision; full list in `migration-record.md` deviations).
 - **Migration track completed 2026-09-07.** 10 of 11 migration packages settled: 6 implemented (`pricing`, `organizations`, `addressing`, `vouchers`, `promotions`, + `growth` parity assertion), 4 dropped/corrected with evidence (`signals`, `shipping`, `persons`, `docs`). `inventory` untouched. Details, evidence, commit list (24 commits after base), and deployment gates in [`migration-record.md`](migration-record.md).
 - **Reviewer spot-checks (all held).** Unscoped `findExistingIntake`, zero `HasOwner` in persons, wrong voucher import fixed to the real class, serial enum-vs-morph mismatch, empty-`getPages()` phantom chip resources, enum-removal consistency (zero `PromotionType::BuyXGetY` references repo-wide), guarded checkout-listener registration, boot-time owner-parity assertion.

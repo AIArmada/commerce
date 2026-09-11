@@ -7,7 +7,9 @@ namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Pages;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
+use AIArmada\Promotions\Actions\DeactivatePromotion;
 use AIArmada\Promotions\Models\Promotion;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
@@ -55,6 +57,12 @@ final class EditPromotion extends EditRecord
         }
 
         $actions[] = ViewAction::make();
+        $actions[] = Action::make('deactivate')
+            ->label('Deactivate')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->visible(fn (Promotion $record): bool => $record->is_active)
+            ->action(fn (Promotion $record): Promotion => app(DeactivatePromotion::class)->handle($record));
         $actions[] = DeleteAction::make();
 
         return $actions;

@@ -6,7 +6,6 @@ namespace AIArmada\FilamentProducts\Resources\AttributeGroupResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\Products\Enums\Visibility;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -51,8 +50,8 @@ class AttributeGroupForm
 
                         Select::make('visibility')
                             ->label(__('filament-products::resources.attribute_groups.fields.visibility'))
-                            ->options(Visibility::class)
-                            ->default(Visibility::Visible->value),
+                            ->options(['visible' => 'Visible', 'hidden' => 'Hidden'])
+                            ->default('visible'),
                     ])
                     ->columns(2),
 

@@ -282,6 +282,17 @@ describe('TieredVoucherCondition', function (): void {
             expect($condition->calculateDiscount($cart))->toBe(9000);
         });
 
+        it('calculates decimal percentage discounts in minor units', function (): void {
+            $voucher = createTieredVoucherDataFor(tiers: [
+                ['min_value' => 10000, 'discount' => '12.50%', 'label' => 'Decimal'],
+            ]);
+            $condition = new TieredVoucherCondition($voucher, $voucher->valueConfig);
+
+            $cart = createTieredTestCart(10001);
+
+            expect($condition->calculateDiscount($cart))->toBe(1250);
+        });
+
         it('calculates fixed discount tiers', function (): void {
             $voucher = createTieredVoucherDataFor(tiers: [
                 ['min_value' => 10000, 'discount' => '-500', 'label' => 'Small'],

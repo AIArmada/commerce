@@ -32,17 +32,18 @@ return [
 
     'defaults' => [
         'currency' => 'MYR',
-        'store_money_in_cents' => true,
     ],
 
     'features' => [
         'owner' => [
-            'enabled' => false,
+            'enabled' => env('PRODUCTS_OWNER_ENABLED', true),
             'include_global' => false,
             'auto_assign_on_create' => true,
         ],
         'variants' => [
             'sku_pattern' => '{parent_sku}-{option_codes}',
+            'max_generated' => 200,
+            'queue_threshold' => 50,
         ],
     ],
 
@@ -78,21 +79,24 @@ return [
 - `database.table_prefix` is the fallback prefix used by model `getTable()` methods.
 - `database.tables.*` lets you override specific table names.
 - `database.json_column_type` is used for JSON-capable migrations and supports older database engines via `text`.
+- Migrations use the explicit `database.tables.*` names. The prefix remains a runtime fallback for installations that remap or omit a table entry.
 
 ### Defaults
 
 - `defaults.currency` is the fallback currency used by money helpers.
-- `defaults.store_money_in_cents` controls whether raw stored values are minor units.
+- Product, variant, compare, and cost prices are always stored and exchanged as integer minor units. Environments that previously set `store_money_in_cents=false` must backfill their stored major-unit values once (multiply by 100) before enabling this version.
 
 ### Owner behavior
 
-- `features.owner.enabled` toggles owner enforcement for package models.
+- `features.owner.enabled` toggles owner enforcement for package models and defaults to secure `true` (override with `PRODUCTS_OWNER_ENABLED=false` only for an explicitly global installation).
 - `features.owner.include_global` controls whether owner-scoped reads may include global rows.
 - `features.owner.auto_assign_on_create` controls whether owned rows inherit the current owner automatically.
 
 ### Variant behavior
 
 - `features.variants.sku_pattern` is used by `Variant::generateSku()`.
+- `features.variants.max_generated` caps one matrix generation request at 200 variants.
+- `features.variants.queue_threshold` queues generation above 50 combinations. Generation is chunked and repeated SKUs are returned without inserting duplicates.
 
 ### Variant generation
 
@@ -116,6 +120,7 @@ The package reads collection limits and mime rules from `media.collections.*`, a
 ### SEO
 
 - `seo.slug_max_length` is used by product and category slug generation.
+- Product slug identity is enforced globally in application code so public checkout/product URLs cannot resolve ambiguously. SKU identity remains enforced per owner tuple. Database `owner_scope` uniqueness is retained as a legacy hint; partial tuple indexes are intentionally deferred.
 
 ## Environment variables
 

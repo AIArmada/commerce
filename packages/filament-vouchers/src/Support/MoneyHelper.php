@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Support;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 
 /**
  * Helper class for money and percentage conversions in Filament forms.
@@ -31,7 +30,7 @@ final class MoneyHelper
             return null;
         }
 
-        return number_format(MoneyNormalizer::toDollars($cents), 2, '.', '');
+        return self::integerToDecimal($cents);
     }
 
     /**
@@ -45,7 +44,7 @@ final class MoneyHelper
             return null;
         }
 
-        return (int) round((float) $display * 100);
+        return self::decimalToInteger($display);
     }
 
     /**
@@ -59,7 +58,7 @@ final class MoneyHelper
             return null;
         }
 
-        return number_format($basisPoints / 100, 2, '.', '');
+        return self::integerToDecimal($basisPoints);
     }
 
     /**
@@ -73,7 +72,7 @@ final class MoneyHelper
             return null;
         }
 
-        return (int) round((float) $display * 100);
+        return self::decimalToInteger($display);
     }
 
     /**
@@ -104,5 +103,41 @@ final class MoneyHelper
     public static function defaultCurrency(): string
     {
         return mb_strtoupper((string) config('filament-vouchers.default_currency', 'MYR'));
+    }
+
+    private static function integerToDecimal(int $value): string
+    {
+        $sign = $value < 0 ? '-' : '';
+        $absolute = abs($value);
+
+        return $sign . intdiv($absolute, 100) . '.' . mb_str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
+    }
+
+    private static function decimalToInteger(string $value): int
+    {
+        $value = mb_trim($value);
+
+        /** @var non-empty-string $pattern */
+        $pattern = '/^([+-]?)(\d+)(?:\.(\d+))?$/';
+
+        if (! preg_match($pattern, $value, $matches)) {
+            return 0;
+        }
+
+        $sign = ($matches[1] ?? '') === '-' ? -1 : 1;
+        $whole = (int) $matches[2];
+        $fraction = $matches[3] ?? '';
+        $minor = (int) mb_str_pad(mb_substr($fraction, 0, 2), 2, '0');
+
+        if (mb_strlen($fraction) > 2 && (int) mb_substr($fraction, 2, 1) >= 5) {
+            $minor++;
+        }
+
+        if ($minor >= 100) {
+            $whole++;
+            $minor -= 100;
+        }
+
+        return $sign * (($whole * 100) + $minor);
     }
 }

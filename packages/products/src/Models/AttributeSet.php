@@ -10,7 +10,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
-use AIArmada\Products\Concerns\IsAttributeEntity;
+use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
+use AIArmada\Products\Concerns\IsCatalogEntity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,6 +39,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  */
 class AttributeSet extends Model implements Auditable
 {
+    use EnforcesOwnerUniqueIdentity;
     use HasCommerceAudit;
     use HasFactory;
     use HasOwner {
@@ -46,10 +48,18 @@ class AttributeSet extends Model implements Auditable
     use HasOwnerScopeConfig;
     use HasOwnerScopeKey;
     use HasUuids;
-    use IsAttributeEntity;
+    use IsCatalogEntity;
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
+
+    /**
+     * @return list<string>
+     */
+    protected function uniqueIdentityColumns(): array
+    {
+        return ['code'];
+    }
 
     protected $fillable = [
         'owner_type',

@@ -30,19 +30,20 @@ return [
     /* Defaults */
     'defaults' => [
         'currency' => 'MYR',
-        'store_money_in_cents' => true,
     ],
 
     /* Features / Behavior */
     'features' => [
         'owner' => [
-            'enabled' => false,
+            'enabled' => env('PRODUCTS_OWNER_ENABLED', true),
             'include_global' => false,
             'auto_assign_on_create' => true,
         ],
 
         'variants' => [
             'sku_pattern' => '{parent_sku}-{option_codes}',
+            'max_generated' => 200,
+            'queue_threshold' => 50,
         ],
     ],
 

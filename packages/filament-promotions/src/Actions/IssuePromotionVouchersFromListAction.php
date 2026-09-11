@@ -110,7 +110,7 @@ final class IssuePromotionVouchersFromListAction extends Action
 
     private function resolvePromotion(string $promotionId): Promotion
     {
-        if (! config('promotions.owner.enabled', true)) {
+        if (! config('promotions.features.owner.enabled', false)) {
             $promotion = Promotion::query()->find($promotionId);
 
             if (! $promotion instanceof Promotion) {

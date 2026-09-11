@@ -70,9 +70,21 @@ it('aggregates voucher overview metrics', function (): void {
     $stats = OwnerContext::withOwner(null, static fn () => $aggregator->overview());
 
     expect($stats['total'])->toBe(3);
-    expect($stats['active'])->toBe(2);
+    expect($stats['active'])->toBe(1);
     expect($stats['upcoming'])->toBe(1);
     expect($stats['expired'])->toBe(1);
     expect($stats['manual_redemptions'])->toBe(1);
     expect($stats['total_discount_minor'])->toBe(3000);
+});
+
+it('delegates per-voucher statistics to the domain model', function (): void {
+    $aggregator = app(VoucherStatsAggregator::class);
+
+    $voucher = OwnerContext::withOwner(null, static fn (): Voucher => Voucher::query()
+        ->where('code', 'ACTIVE-10')
+        ->firstOrFail());
+
+    $aggregated = OwnerContext::withOwner(null, static fn () => $aggregator->statistics($voucher));
+
+    expect($aggregated)->toBe($voucher->getStatistics());
 });

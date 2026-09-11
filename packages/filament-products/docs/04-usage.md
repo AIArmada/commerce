@@ -71,6 +71,13 @@ Forms\Components\TextInput::make('price')
     ->dehydrateStateUsing(fn ($state) => $state ? (int) round($state * 100) : null);
 ```
 
+### Optional customer selector
+
+When `aiarmada/customers` is installed, the product form exposes its optional
+customer selector. The field is guarded with `class_exists`, so the catalog
+resource remains usable in installations that do not install the Customers
+package.
+
 ### Variant Management
 
 For any **variant-capable** product, use the Variants relation manager.

@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Concerns;
 
-use AIArmada\Products\Enums\Visibility;
 use Illuminate\Database\Eloquent\Builder;
 
-trait IsAttributeEntity
+trait IsCatalogEntity
 {
     public function scopeOrdered(Builder $query): Builder
     {
@@ -16,7 +15,7 @@ trait IsAttributeEntity
 
     public function scopeVisible(Builder $query): Builder
     {
-        return $query->where('visibility', Visibility::Visible);
+        return $query->where('visibility', 'visible');
     }
 
     protected function resolveProductTable(string $key, string $default): string

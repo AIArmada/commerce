@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Paused;
-use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -34,10 +33,8 @@ final class PauseVoucherAction extends Action
                 $record = OwnerWriteGuard::findOrFailForOwner(Voucher::class, $record->getKey());
             }
 
-            $record->update([
-                'status' => Paused::class,
-                'paused_at' => CarbonImmutable::now(),
-            ]);
+            $record->status->transitionTo(Paused::class);
+            $record->save();
 
             Notification::make()
                 ->title('Voucher paused')

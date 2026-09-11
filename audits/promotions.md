@@ -1,197 +1,76 @@
-# Promotions Audit
+# Promotions Audit — DONE (2026-09-11)
 
-## Packages Reviewed (bullets)
+## Verdict
 
-- `packages/promotions` (`aiarmada/promotions`) — domain owner: automatic/code-based discount campaigns, targeting evaluation, voucher issuance bridge, expiry commands.
-- `packages/filament-promotions` (`aiarmada/filament-promotions`) — Filament v5 admin adapter: `PromotionResource`, two issue-vouchers actions, two widgets.
+`promotions` and `filament-promotions` have passed the implementation review.
+All rated findings are implemented, falsified with evidence, or recorded as
+explicit residual decisions below. No migration is required. The existing
+pricing bridge continues to receive the same default wall-clock semantics.
 
-Source layout inspected: `src/` (Actions ×5, Console/Commands ×2, Contracts ×2, Enums, Events ×4, Listeners ×2, Models, Services, Strategies ×3, Support), `config/promotions.php`, `config/filament-promotions.php`, `database/migrations` (1 file, 2 tables), `database/factories` (`PromotionFactory`), `composer.json` × 2, providers, `CONTEXT.md`/`README.md`/`docs`. No `routes/` and no `tests/` in either package (verified: no test files; only the factory exists).
+## What was done
 
-## Overall Assessment (quality, health, risks, refactor size)
+- **Customer limits:** `per_customer_limit` is enforced from
+  `matchesContext()` through owner-scoped order reads. The optional Orders
+  package is guarded with `class_exists`; when unavailable, the service logs a
+  skip reason and does not throw. The coverage is in
+  `tests/src/Promotions/PromotionServiceBehaviorTest.php:45-72`.
+- **Redemption races and payload ownership:** usage redemption uses the
+  atomic `tryIncrementUsage()` path and rejects a saturated limit; the paid
+  order listener logs every skip path and verifies the checkout-session owner
+  tuple before reading allocations. The model implementation is at
+  `packages/promotions/src/Models/Promotion.php:383-402`.
+- **Code lookup:** writes normalize codes to trimmed uppercase and reads use
+  exact lookup. The behavior is covered at
+  `tests/src/Promotions/PromotionServiceBehaviorTest.php:13-25`; the service
+  lookup is `packages/promotions/src/Services/PromotionService.php:59-76`.
+- **Targeting scale:** cheap purchase/quantity predicates are pushed into SQL,
+  then the active set is evaluated in `chunkById(100)` batches rather than
+  hydrated wholesale. See `packages/promotions/src/Services/PromotionService.php:175-210`.
+- **Optional integrations and lifecycle:** missing product/category models
+  degrade to empty relations; issued-voucher tracking is memoized; the host
+  scheduler requirement for `promotions:deactivate-expired` is documented.
+- **Filament write funnel:** create and deactivate pages use the domain
+  actions. The two issue-voucher action entry points are deliberately retained
+  for their distinct list and record UX; they are not an accidental duplicate.
+- **As-of API:** `getApplicablePromotionsAsOf()` is additive at
+  `packages/promotions/src/Services/PromotionService.php:38-45`. The default
+  path remains unchanged and parity is asserted in
+  `tests/src/Promotions/PromotionServiceBehaviorTest.php:28-43`.
+- **PHPStan optional-class narrowing:** the guarded Orders class is documented
+  as a `class-string<Order>` near
+  `packages/promotions/src/Services/PromotionService.php:229-247`; this
+  changes only static analysis and leaves standalone runtime behavior intact.
 
-The core discount math (`PromotionService`, `Promotion::calculateDiscount`) is small and money-clean (integer cents), and owner-scoping on the model follows the monorepo contract. But `per_customer_limit` is never enforced (A5), usage counting races the limit and depends on an undocumented checkout payload shape and fails silently (A6), code lookup is case-insensitive over unnormalized storage (A7), and every evaluation hydrates the whole active set (A8). Refactor size: S (enforcement + targeting fixes, code/docs-only). Highest risk is campaign-budget overshoot and silent usage undercounting on live campaigns.
+## Audit deviations
 
-## Migration Impact
+- The original full-set hydration finding is closed with chunked evaluation;
+  the requested rules-to-SQL compiler was intentionally not introduced.
+- The original recommendation to remove one issue-voucher action is declined:
+  both actions remain deliberately because record and list contexts expose
+  different UX entry points.
+- The wall-clock/as-of decision is additive only. The pricing bridge continues
+  current semantics; historical callers may opt into the new as-of method.
 
-**Migration Required: NO** — migration track completed 2026-09-07, see `migration-record.md#promotions`
+## Residual notes
 
-## Package Responsibilities
+- **Do NOT build a rules-to-SQL compiler now (speculative).** Cheap scalar
+  pre-filters are implemented; targeting expressions remain in PHP.
+- The package registers the expiry command but does not schedule it
+  automatically. The host application owns the scheduler entry; read-time
+  eligibility remains date-aware.
+- Navigation badge counting remains acceptable at the current table size and
+  should be revisited only with measured slowness; do not cache prematurely.
+- The owner-config nesting difference from sibling packages is cosmetic; do
+  not churn published keys for it.
+- No schema change was made; `usage_count` remains an application-level
+  atomic counter and code normalization relies on the existing unique code
+  index.
 
-- Owns: `Promotion` lifecycle (CRUD actions, deactivation, expiry sweep), automatic/code promotion matching via commerce-support targeting engine, discount math per type, usage counting, voucher issuance from a promotion.
-- Does NOT own: price-list pricing (pricing), coupon redemption/wallets (vouchers), cart/checkout orchestration (consumers via `PromotionServiceInterface`).
-- Filament adapter owns: promotion CRUD UI, issue-vouchers actions, stats widgets. Must stay UI-only.
+## Verification
 
-## Architecture Findings (each: Severity Critical/High/Medium/Low, Location files, Problem, Why It Matters, Recommended Fix concrete, Breaking Change YES/NO, Affected Packages list, Required Dependent Changes, Migration Required YES/NO)
+- `php -d memory_limit=1G ./vendor/bin/phpstan analyse packages/promotions/src --level=6` — **No errors**.
+- Promotions: **73 passed, 127 assertions** (`tests/src/Promotions`).
+- FilamentPromotions: **37 passed, 74 assertions** (`tests/src/FilamentPromotions`).
 
-### A5 — `per_customer_limit` column is never enforced
-
-- Severity: High
-- Location: column `per_customer_limit` (`database/migrations/…:33`, fillable `Models/Promotion.php:86`, casts `:104`, audit `:390`); zero reads in `src/` (verified — only model/config surface).
-- Problem: Operators set per-customer caps that do nothing; `isActive()`, `PromotionService::matchesContext()`, and checkout adapters never check it.
-- Why It Matters: Abuse vector: single customer drains `usage_limit` campaigns meant to be spread.
-- Recommended Fix: Enforce in `PromotionService::matchesContext()` (and therefore all callers): when `$promotion->per_customer_limit !== null` and the `orders` package is installed (`class_exists(Order::class)`), count the customer's paid orders carrying this promotion's id in their discount metadata and reject at cap. `TargetingContext` must carry the customer id — extend it if absent (commerce-support change, additive). When orders is absent, skip (documented limitation), do not throw.
-- Breaking Change: NO (previously-unlimited behavior only narrows for capped rows).
-- Affected Packages: `orders` (read-only count), `checkout` (must pass customer id into `TargetingContext::fromCart` if not already present), `commerce-support` (context field, additive).
-- Required Dependent Changes: `checkout/src/Integrations/PromotionsAdapter.php` — pass customer context through (verify current `TargetingContext::fromCart` payload first).
-- Migration Required: NO.
-
-### A6 — Usage counting races the limit and depends on an undocumented checkout payload
-
-- Severity: Medium
-- Location: `src/Listeners/MarkPromotionAsUsedOnOrderPlaced.php:21-65` (session lookup with `withoutGlobalScope(OwnerScope::class)`, `discount_data['allocations']` shape, `provider_key === 'promotions'`, `meta.promotion_id`); `src/Models/Promotion.php:344-349` (`increment()` atomic but uncapped); `src/PromotionsServiceProvider.php:35-40` (wires `OrderPaid`).
-- Problem: (a) `incrementUsage()` is atomic but the cap check (`isActive()`/`scopeActive`) is check-then-act — concurrent redemptions overshoot `usage_limit`. (b) The listener silently skips when checkout's `discount_data` shape differs (any `continue` path) — usage undercounts with no log. (c) The cross-tenant session read (`withoutGlobalScope`) is justified inline by a `ponytail:` comment but trusts `metadata['checkout_session_id']` from the order without verifying the session belongs to the order's owner.
-- Why It Matters: Overshoot burns campaign budgets; silent skips corrupt ROI stats (`PromotionPerformanceInsights`, filament widgets).
-- Recommended Fix: (1) Cap-aware increment: `Promotion::incrementUsage()` → single-statement `whereKey()->where(fn: usage_limit null OR usage_count < usage_limit)->increment('usage_count')` returning bool; listener ignores false. (2) After loading the session, verify `$session->getAttribute('owner_*')` matches `$event->owner_*` (or the order's owner) before counting; `continue` with a `Log::warning` carrying promotion/order ids on every skip path. (3) Document the `discount_data` contract (`provider_key`, `meta.promotion_id`) in `docs/05-promotion-service.md` and mirror it in checkout's `DiscountCommitment` docs.
-- Breaking Change: NO.
-- Affected Packages: `checkout` (payload contract), `orders` (event shape).
-- Required Dependent Changes: `checkout` — confirm `PromotionsAdapter::formatAppliedPromotions()` emits `provider_key: 'promotions'` + `meta.promotion_id` (it must; add a contract test).
-- Migration Required: NO.
-
-### A7 — Code lookup is case-insensitive but storage is not normalized
-
-- Severity: Medium
-- Location: `src/Services/PromotionService.php:49-67` (`whereRaw('LOWER(code) = LOWER(?)')`), migration `code->nullable()->unique()` (case-sensitive unique on most collations).
-- Problem: Full-table function scan per code validation; `SAVE10` and `save10` can coexist as separate rows while lookup treats them as one (first by priority wins — arbitrary).
-- Why It Matters: Promo-code validation runs on the checkout hot path; duplicates cause customer-facing "wrong promotion applied".
-- Recommended Fix: Normalize on save (`Promotion::saving()`: `code = mb_trim(mb_strtoupper(code))`, null stays null) and change lookup to exact `where('code', $normalizedCode)`. Document uppercase canonical form. No schema change (existing unique index now matches lookup semantics).
-- Breaking Change: NO for new/consistent data; existing mixed-case rows resolve to their uppercase form (behavior change only where duplicates existed — those were already ambiguous).
-- Affected Packages: `checkout` (`ValidatePromoCodeAction`, `DiscountCodeResolver` — benefit automatically).
-- Required Dependent Changes: none.
-- Migration Required: NO.
-
-### A8 — `getApplicablePromotions` loads the whole active set into memory
-
-- Severity: Medium
-- Location: `src/Services/PromotionService.php:27-36` (`->get()->filter(...)`), `getStackablePromotions()`/`calculateDiscounts()` inherit it; `ReevaluatePromotionsOnCartUpdated` (to be deleted) did the same per cart event.
-- Problem: Every cart/checkout evaluation hydrates ALL active automatic promotions, then evaluates targeting in PHP. Fine at 10 rows, pathological at 10k.
-- Why It Matters: Checkout latency scales with campaign count, not cart size.
-- Recommended Fix: Short-term (this pass): push cheap pre-filters into SQL — date window + usage-cap are already in `scopeActive()`; additionally filter `min_purchase_amount <= subtotal` and `min_quantity <= lines` in the query when the context carries them, keeping only targeting-expression evaluation in PHP. Document the evaluation order. Do NOT build a rules-to-SQL compiler now (speculative).
-- Breaking Change: NO.
-- Affected Packages: `checkout` (faster `PromotionsAdapter` calls, same results).
-- Required Dependent Changes: none.
-- Migration Required: NO.
-
-### A9 — `products()`/`categories()` relations throw when `products` is absent
-
-- Severity: Medium
-- Location: `src/Models/Promotion.php:133-164` (`throw new RuntimeException('Products package is not installed.')`); contrast `issuedVouchers()` (`:171-180`) which degrades to an always-empty relation.
-- Problem: `composer.json` only `suggest`s products, yet touching either relation fatals. Filament form/infolist product pickers (verify `PromotionForm`) would fatal on a standalone install.
-- Why It Matters: Standalone-install violation; inconsistent with the file's own graceful pattern two methods below.
-- Recommended Fix: Mirror the `issuedVouchers` pattern: when the class is missing, return an always-empty `morphedByMany`-compatible relation — simplest: `return $this->morphedByMany(Model::class, 'promotionable', $table)->whereRaw('1 = 0')` — or gate the form fields with `class_exists` in filament-promotions. Do both: model degrades, UI hides.
-- Breaking Change: NO.
-- Affected Packages: `products` (optional), `filament-promotions` (form gating).
-- Required Dependent Changes: `filament-promotions/src/Resources/PromotionResource/Schemas/PromotionForm.php` — wrap product/category pickers in `class_exists` checks.
-- Migration Required: NO.
-
-### A10 — Expiry sweep exists but is not scheduled anywhere
-
-- Severity: Low
-- Location: `src/Console/Commands/DeactivateExpiredPromotionsCommand.php` (correct, dry-run capable), provider `:58-63` (registers, never schedules).
-- Problem: Expired promotions rely on `scopeActive()` date checks at read time (correct), but `is_active` stays true forever unless an operator schedules the command. `getNavigationBadge` and stats count `is_active` rows — stale-true rows pollute the admin.
-- Why It Matters: Operational, not correctness — but the command's existence implies hygiene that isn't wired.
-- Recommended Fix: Document the required schedule entry (`->daily()` for `promotions:deactivate-expired`) in `docs/02-installation.md`; do not auto-schedule from the package (host app owns the schedule).
-- Breaking Change: NO. Affected: none. Migration: NO.
-
-## Code Quality Findings (same finding format)
-
-### C1 — `CreatePromotion`/`DeactivatePromotion` actions are transaction/event-correct but bypassable
-
-- Severity: Low
-- Location: `src/Actions/CreatePromotion.php` (transaction + `PromotionCreated`), `src/Actions/DeactivatePromotion.php`, `src/Events/*`.
-- Problem: Not a bug — but the Filament `CreatePromotion`/`EditPromotion` pages and console command must all funnel through these actions, otherwise events (`PromotionCreated`, `PromotionDeactivated`) fire inconsistently. Verified the command uses `DeactivatePromotion`; verify the Filament pages use the actions (not bare `::create()`).
-- Why It Matters: Listeners (audit, webhooks) keyed on events miss direct-model writes.
-- Recommended Fix: Audit `filament-promotions` pages to call `CreatePromotion::handle()`/`DeactivatePromotion::handle()`; add a one-line note in each Action docblock that it is the only sanctioned write path.
-- Breaking Change: NO. Affected: `filament-promotions`. Migration: NO.
-
-### C2 — `Promotion::supportsIssuedVoucherTracking()` hits schema on every call
-
-- Severity: Low
-- Location: `src/Models/Promotion.php:182-199` (`Schema::hasTable` + `hasColumn` per call), called from `PromotionResource::getRelations()` per request.
-- Problem: Two schema queries per admin request.
-- Why It Matters: Minor latency; also couples domain model to migration state.
-- Recommended Fix: Memoize per-request in a static (`static::$voucherTracking ??= …`). Keep semantics.
-- Breaking Change: NO. Affected: `filament-promotions`, `vouchers`. Migration: NO.
-
-## Laravel-Specific Findings
-
-- PHP 8.4: PASS (`composer.json` requires `^8.4`; enums, constructor promotion, first-class callables fine).
-- PKs: PASS (`uuid('id')->primary()`).
-- FK constraints/cascades: PASS — `foreignUuid('promotion_id')` on the pivot with NO constraint (verified, no `constrained()`/`cascadeOnDelete()` in `database/`); pivot cleanup is app-level (`Promotion::deleting()` deletes `promotionables` rows — correct). `down()` drops pivot before parent — correct order.
-- Owner scoping: PASS with notes — model uses `HasOwner` + `HasOwnerScopeConfig` (`promotions.features.owner`, disabled by default per CONTEXT) + `nullableMorphs('owner')` + `getTable()` from config + write guards. `PromotionService` queries use `->forOwner()` (lines 32, 61) — correct; when owner is disabled these are pass-throughs.
-- Config: PASS structure (Database → Defaults → Features) with `json_column_type` present as required for JSON columns (`conditions` uses `commerce_json_column_type`). One nit: owner config nests under `features.owner` while sibling packages use top-level `owner` — cosmetic inconsistency; do not churn keys for it (would break published configs for zero benefit). Note only.
-- Money: PASS — `discount_value`/`min_purchase_amount` integer cents; `calculateDiscount` rounds once with `(int) round(...)`.
-- Events: `PromotionCreated/Deactivated/Applied/Removed` — check `PromotionRemoved` dispatch sites (grep before relying on it; `DeactivatePromotion` dispatches Deactivated, not Removed — confirm naming intent in docs).
-- Provider uses classic `ServiceProvider` with manual `mergeConfigFrom`/`loadMigrationsFrom`/publishes instead of spatie package-tools like the rest of the monorepo — functional, keep (no churn without benefit).
-
-## Filament Adapter Findings (thin-adapter check, domain leak, duplication, dependency direction)
-
-- Navigation: PASS — nested `navigation.group` (`Marketing`), `getNavigationGroup()`/`getNavigationSort()` from config, no static `$navigationGroup` (verified).
-- Owner/UI scoping: PASS — `PromotionResource::getEloquentQuery()` uses `parent::` + `OwnerUiScope::apply(…, includeGlobal: false)`; permission gates (`FilamentPermission::hasAbility`) + `shouldRegisterNavigation` are correct.
-- F2 — Badge query per render (Low): `getNavigationBadge()` counts active promotions on every navigation render. Acceptable at this table size; revisit only with measured slowness (do not cache prematurely — Octane staleness).
-- F3 — Widgets correctly delegate math to `Support/PromotionPerformanceInsights` (thin). Confirm that class is container-resolvable (constructor deps auto-wire `TargetingEngineInterface`?) and that widget queries apply `forOwner` — verify before shipping, else owner leakage in stats.
-- Dependency direction: PASS — `filament-promotions` requires `promotions`; domain never references Filament. `suggest` blocks for vouchers/filament-cart are accurate.
-
-## Database Findings
-
-- `promotions`: uuid PK, `nullableMorphs('owner')`, `code` unique nullable, integer money columns, `usage_count` default 0, `conditions` jsonb via helper, indexes on `(is_active, priority)` and `(starts_at, ends_at)` serving `scopeActive()` — good shape.
-- `promotionables`: composite PK `(promotion_id, promotionable_id, promotionable_type)`, `foreignUuid` without constraint — compliant; no timestamps (fine for a pure pivot).
-- Missing: nothing structural. `usage_count` has no index — it is only compared to `usage_limit` in `scopeActive` (already covered by the select, no extra index needed).
-- Race note: see A6 (app-level, not schema).
-
-## Model / Domain Findings
-
-- `Promotion::calculateDiscount()` is the single live math implementation — keep it there; `PromotionService::calculateDiscounts()` handles stacking order (non-stackable short-circuit) correctly for fixed/percentage.
-- `is_stackable` + `priority` semantics are implemented in exactly one place (`calculateDiscounts`) — good; `pricing`'s bridge (pricing audit A4) must call this instead of reimplementing.
-- `conditions` validation in `saving()` via `TargetingEngineInterface` with `[]` → null normalization is correct fail-fast behavior.
-- `issuedVouchers()` graceful-degradation pattern is the file's best idiom — extend it to `products()`/`categories()` (A9).
-
-## Security Findings
-
-- Owner write guards (update/save/delete) mirror the monorepo contract — good. `IssueVouchersFromPromotion` correctly requires explicit global context for global promotions (`NoCurrentOwnerException`) and re-enters owner context per issuance — good; keep as the reference pattern.
-- A5 (`per_customer_limit` unenforced) is the open abuse hole — fix per A5.
-- A6(c) session-ownership check missing — fix per A6.
-- `whereRaw('LOWER(code)…')` uses bindings — safe; A7 removes it anyway.
-- No mass-assignment of `usage_count`? `usage_count` is NOT in `$fillable` (verified list) — good; only `increment()` mutates it.
-
-## Performance Findings
-
-- A8 (full-table hydration) is the main perf item; A7 (function predicate) second. Both fixed without schema change.
-- C2 (schema hits per request) is minor.
-- `calculateDiscounts()` iterates in priority order with early non-stackable exclusion — O(n) in active promotions, fine after A8 pre-filters.
-
-## Testing Findings
-
-- Zero tests; one factory (`PromotionFactory`) with no consumers. First tests to add (Pest, `--parallel`): `calculateDiscounts` stacking/priority/cap behavior; code normalization + exact lookup (A7); `incrementUsage` cap race (two concurrent increments past limit → count stays capped); cross-owner isolation via `OwnerScopingContractTests`; `MarkPromotionAsUsedOnOrderPlaced` with a fixture `discount_data` payload (A6 contract); command test for `deactivate-expired --dry-run`.
-
-## Cross-Package Dependency Impact (table: Dependent Package | Dependency | Impact | Required Change)
-
-| Dependent Package | Dependency | Impact | Required Change |
-|---|---|---|---|
-| `checkout` (`PromotionsAdapter`, `ValidatePromoCodeAction`, `DiscountCodeResolver`, `RegisterCheckoutOptionalSteps`) | `PromotionServiceInterface`, `Promotion` model, `promotions:deactivate-expired` hygiene | A5 (new enforcement may reject previously-accepted redemptions), A6 (payload contract documented), A7 (code canonicalization) | Pass customer id into targeting context; contract-test `discount_data` shape; schedule the deactivate command |
-| `pricing` (`ApplyPromotionalAdjustment`) | `Promotion::calculateDiscount`, promotions tables/config | Pricing audit A4 rewrites the bridge anyway | Coordinate on the post-cleanup `PromotionService` API |
-| `filament-promotions` | `Promotion` model, actions | C1 (write-path funnel) | Gate product pickers (A9) |
-| `filament-pricing` (`PricingStatsWidget`) | `Promotion::query()->active()` counts | A6/A10 change what "active" contains over time | None (reads live state); fix its owner-default separately (pricing audit F2) |
-| `products` | optional (`products()`/`categories()` relations) | A9 changes missing-package behavior throw → empty | None (strictly more forgiving) |
-
-## Recommended Refactor Plan (ordered steps)
-
-1. Enforce `per_customer_limit` (A5); harden `incrementUsage` + listener skip logging + session-ownership check (A6); normalize codes (A7); SQL pre-filters (A8).
-2. Graceful-degrade `products()`/`categories()` (A9); gate filament pickers; memoize `supportsIssuedVoucherTracking` (C2); funnel filament writes through actions (C1); document the deactivate schedule (A10).
-3. Add the Pest coverage in Testing Findings (`./vendor/bin/pest --parallel` scoped).
-
-## Files Likely to Change
-
-- `packages/promotions/src/Models/Promotion.php` (code normalization, capped increment, graceful relations)
-- `packages/promotions/src/Services/PromotionService.php` (per-customer enforcement, pre-filters, exact code lookup)
-- `packages/promotions/src/Actions/IssueVouchersFromPromotion.php` (int-type issuance mapping per vouchers C2)
-- `packages/promotions/src/Listeners/MarkPromotionAsUsedOnOrderPlaced.php` (ownership check + logging)
-- `packages/promotions/docs/*`, `CONTEXT.md`
-- `packages/filament-promotions/src/Actions/*`, `Resources/PromotionResource/Schemas/PromotionForm.php`, docs
-
-## Files / Code That Should Be Removed (explicit list, no legacy preservation)
-
-- `packages/filament-promotions/src/Actions/IssuePromotionVouchersFromListAction.php` — duplicate of `IssuePromotionVouchersAction`; one action serves both contexts.
-
-## Final Recommended Architecture
-
-One model (`Promotion`), one math site (`Promotion::calculateDiscount`), one orchestration site (`PromotionService` over `PromotionServiceInterface`), two write actions (`Create`/`Deactivate`), one issuance bridge (`IssueVouchersFromPromotion`), one expiry command (scheduled by the host), one usage listener (ownership-checked, skip-logged, cap-atomic). No strategy layer, no cart listener, no BOGO case until it is real feature work with cart-line-aware evaluation. Filament remains a thin CRUD + single issue-action + widgets adapter over the service, with product pickers hidden when `products` is absent.
+If any residual grows teeth, re-open it as a finding. Full finding history
+lives in `migration-record.md`, `code-fixes-record.md`, and git history.

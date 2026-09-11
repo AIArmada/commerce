@@ -29,7 +29,7 @@ OwnerContext::withOwner(null, function () use ($category): void {
 
 The package defaults to minor units.
 
-- `2999` means RM 29.99 when `defaults.store_money_in_cents` is `true`
+- `2999` means RM 29.99 because product prices are always integer minor units. If an older environment stored major units, backfill those values once by multiplying by 100 before using the package.
 - use `getFormattedPrice()` and related helpers for display
 
 ## Variant SKU output is unexpected

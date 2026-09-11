@@ -6,6 +6,8 @@ namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Pages;
 
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
+use AIArmada\Promotions\Actions\CreatePromotion as CreatePromotionAction;
+use AIArmada\Promotions\Models\Promotion;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Validation\ValidationException;
 
@@ -45,5 +47,10 @@ final class CreatePromotion extends CreateRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
+    }
+
+    protected function handleRecordCreation(array $data): Promotion
+    {
+        return app(CreatePromotionAction::class)->handle($data);
     }
 }

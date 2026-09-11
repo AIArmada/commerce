@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Products\Concerns\IsAttributeEntity;
+use AIArmada\Products\Concerns\IsCatalogEntity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -46,7 +46,7 @@ class AttributeValue extends Model implements Auditable
     }
     use HasOwnerScopeConfig;
     use HasUuids;
-    use IsAttributeEntity;
+    use IsCatalogEntity;
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';

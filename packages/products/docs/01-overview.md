@@ -19,7 +19,7 @@ Use this package when you need the source-of-truth catalog domain: products, var
 - Config-driven table names and catalog feature flags
 - Action classes for product lifecycle (`CreateProduct`, `UpdateProduct`, `UpdateProductStatus`, `ApplyAttributeChanges`, `GenerateVariants`)
 - A `VariantGeneratorInterface` contract and its `MatrixVariantGenerator` strategy
-- `IsAttributeEntity` and `IsOptionEntity` concerns for attribute/option model reuse
+- `IsCatalogEntity` concern for shared catalog taxonomy model behavior
 
 ## What this package does not own
 
@@ -62,8 +62,7 @@ Use this package when you need the source-of-truth catalog domain: products, var
 
 ## Concerns
 
-- `IsAttributeEntity` — provides `scopeOrdered()`, `scopeVisible()`, and table-name resolution for attribute models
-- `IsOptionEntity` — provides `scopeOrdered()`, `scopeVisible()`, and table-name resolution for option models
+- `IsCatalogEntity` — provides `scopeOrdered()`, `scopeVisible()`, and table-name resolution for catalog taxonomy models
 
 ## Highlights
 

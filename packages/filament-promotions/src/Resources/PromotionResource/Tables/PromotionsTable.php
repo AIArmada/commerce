@@ -123,7 +123,7 @@ final class PromotionsTable
                 EditAction::make(),
                 DeleteAction::make()
                     ->before(function (Promotion $record): void {
-                        if (! config('promotions.owner.enabled', true)) {
+                        if (! config('promotions.features.owner.enabled', false)) {
                             return;
                         }
 
@@ -140,7 +140,7 @@ final class PromotionsTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
                         ->before(function (Collection $records): void {
-                            if (! config('promotions.owner.enabled', true)) {
+                            if (! config('promotions.features.owner.enabled', false)) {
                                 return;
                             }
 

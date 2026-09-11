@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Products\Actions\GenerateVariants;
+use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -15,6 +18,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -23,6 +27,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 
 final class VariantsRelationManager extends RelationManager
 {
@@ -141,6 +146,34 @@ final class VariantsRelationManager extends RelationManager
                     ->label('Enabled'),
             ])
             ->headerActions([
+                Action::make('generate_variants')
+                    ->label('Generate variants')
+                    ->requiresConfirmation()
+                    ->action(function (): void {
+                        $ownerRecord = $this->getOwnerRecord();
+
+                        if (! $ownerRecord instanceof Product) {
+                            return;
+                        }
+
+                        Gate::authorize('update', $ownerRecord);
+
+                        try {
+                            app(GenerateVariants::class)->execute($ownerRecord);
+
+                            Notification::make()
+                                ->success()
+                                ->title('Variant generation started')
+                                ->body('Existing SKUs are skipped and larger matrices are queued.')
+                                ->send();
+                        } catch (VariantGenerationLimitExceeded $exception) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Variant limit exceeded')
+                                ->body($exception->getMessage())
+                                ->send();
+                        }
+                    }),
                 CreateAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
                         // Convert prices to cents

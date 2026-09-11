@@ -7,6 +7,7 @@ namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
+use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\States\Active;
@@ -89,20 +90,18 @@ final class VoucherForm
                                 ->helperText('Percentage for percentage vouchers, fixed amount for other types')
                                 ->suffix(fn (Get $get): string => $get('type') === VoucherType::Percentage->value ? '%' : $get('currency') ?? $defaultCurrency)
                                 ->live()
-                                // Convert from cents/basis points to decimal for display
                                 ->formatStateUsing(
                                     fn (?int $state, Get $get): ?string => $state !== null
-                                    ? (
-                                        $get('type') === VoucherType::Percentage->value
-                                        ? number_format($state / 100, 2, '.', '') // Basis points to percentage (1000 -> 10.00)
-                                        : number_format($state / 100, 2, '.', '') // Cents to currency
-                                    )
+                                    ? $get('type') === VoucherType::Percentage->value
+                                        ? MoneyHelper::basisPointsToDisplay($state)
+                                        : MoneyHelper::centsToDisplay($state)
                                     : null
                                 )
-                                // Convert from decimal input to cents/basis points for storage
                                 ->dehydrateStateUsing(
                                     fn (?string $state, Get $get): ?int => $state !== null && $state !== ''
-                                    ? (int) round((float) $state * 100) // Multiply by 100 to store as basis points or cents
+                                    ? $get('type') === VoucherType::Percentage->value
+                                        ? MoneyHelper::displayToBasisPoints($state)
+                                        : MoneyHelper::displayToCents($state)
                                     : null
                                 ),
 
@@ -170,16 +169,12 @@ final class VoucherForm
                                 ->numeric()
                                 ->helperText('Optional minimum subtotal required to redeem')
                                 ->suffix($defaultCurrency)
-                                // Convert from cents to decimal for display
                                 ->formatStateUsing(
-                                    fn (?int $state): ?string => $state !== null
-                                    ? number_format($state / 100, 2, '.', '')
-                                    : null
+                                    fn (?int $state): ?string => MoneyHelper::centsToDisplay($state)
                                 )
-                                // Convert from decimal input to cents for storage
                                 ->dehydrateStateUsing(
                                     fn (?string $state): ?int => $state !== null && $state !== ''
-                                    ? (int) round((float) $state * 100)
+                                    ? MoneyHelper::displayToCents($state)
                                     : null
                                 ),
 
@@ -188,16 +183,12 @@ final class VoucherForm
                                 ->numeric()
                                 ->helperText('Cap the total discount for percentage vouchers')
                                 ->suffix(fn (Get $get): string => $get('currency') ?? $defaultCurrency)
-                                // Convert from cents to decimal for display
                                 ->formatStateUsing(
-                                    fn (?int $state): ?string => $state !== null
-                                    ? number_format($state / 100, 2, '.', '')
-                                    : null
+                                    fn (?int $state): ?string => MoneyHelper::centsToDisplay($state)
                                 )
-                                // Convert from decimal input to cents for storage
                                 ->dehydrateStateUsing(
                                     fn (?string $state): ?int => $state !== null && $state !== ''
-                                    ? (int) round((float) $state * 100)
+                                    ? MoneyHelper::displayToCents($state)
                                     : null
                                 ),
 
@@ -299,12 +290,16 @@ final class VoucherForm
                                 ->live()
                                 ->formatStateUsing(
                                     fn (?int $state, Get $get): ?string => $state !== null
-                                    ? number_format($state / 100, 2, '.', '')
+                                    ? $get('affiliate_commission_type') === 'percentage'
+                                        ? MoneyHelper::basisPointsToDisplay($state)
+                                        : MoneyHelper::centsToDisplay($state)
                                     : null
                                 )
                                 ->dehydrateStateUsing(
                                     fn (?string $state, Get $get): ?int => $state !== null && $state !== ''
-                                    ? (int) round((float) $state * 100)
+                                    ? $get('affiliate_commission_type') === 'percentage'
+                                        ? MoneyHelper::displayToBasisPoints($state)
+                                        : MoneyHelper::displayToCents($state)
                                     : null
                                 ),
 
@@ -363,7 +358,7 @@ final class VoucherForm
                                     }
 
                                     if ($get('type') === 'fixed') {
-                                        return number_format((int) $state / 100, 2, '.', '');
+                                        return MoneyHelper::centsToDisplay((int) $state);
                                     }
 
                                     return $state;
@@ -374,10 +369,10 @@ final class VoucherForm
                                     }
 
                                     if ($get('type') === 'fixed') {
-                                        return (int) round((float) $state * 100);
+                                        return MoneyHelper::displayToCents((string) $state);
                                     }
 
-                                    return (float) $state;
+                                    return is_int($state) ? $state : (int) $state;
                                 })
                                 ->helperText(fn (Get $get): string => $get('type') === 'fixed'
                                     ? 'Amount in dollars (e.g., 50.00 for $50)'

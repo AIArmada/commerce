@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\AttributeGroupResource\Tables;
 
-use AIArmada\Products\Enums\Visibility;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -38,8 +37,8 @@ class AttributeGroupsTable
                 Tables\Columns\TextColumn::make('visibility')
                     ->label(__('filament-products::resources.attribute_groups.fields.visibility'))
                     ->badge()
-                    ->color(fn (string $state): string => Visibility::tryFrom($state)?->color() ?? 'gray')
-                    ->formatStateUsing(fn (string $state): string => Visibility::tryFrom($state)?->label() ?? $state)
+                    ->color(fn (string $state): string => $state === 'hidden' ? 'gray' : 'success')
+                    ->formatStateUsing(fn (string $state): string => ucfirst($state))
                     ->alignCenter(),
 
                 Tables\Columns\TextColumn::make('position')
@@ -57,7 +56,7 @@ class AttributeGroupsTable
             ->filters([
                 Tables\Filters\SelectFilter::make('visibility')
                     ->label(__('filament-products::resources.attribute_groups.fields.visibility'))
-                    ->options(Visibility::class),
+                    ->options(['visible' => 'Visible', 'hidden' => 'Hidden']),
             ])
             ->actions([
                 EditAction::make(),

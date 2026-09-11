@@ -9,8 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Products\Concerns\IsOptionEntity;
-use AIArmada\Products\Enums\Visibility;
+use AIArmada\Products\Concerns\IsCatalogEntity;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -47,7 +46,7 @@ class Option extends Model implements Auditable
     }
     use HasOwnerScopeConfig;
     use HasUuids;
-    use IsOptionEntity;
+    use IsCatalogEntity;
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
@@ -142,7 +141,7 @@ class Option extends Model implements Auditable
 
     public function scopeVisible(Builder $query): Builder
     {
-        return $query->where('visibility', Visibility::Visible);
+        return $query->where('visibility', 'visible');
     }
 
     public function scopeOrdered(Builder $query): Builder
@@ -212,7 +211,7 @@ class Option extends Model implements Auditable
 
         static::saving(function (Option $option): void {
             if ($option->isDirty('visibility')) {
-                $option->hidden_at = $option->visibility === Visibility::Hidden->value ? CarbonImmutable::now() : null;
+                $option->hidden_at = $option->visibility === 'hidden' ? CarbonImmutable::now() : null;
             }
         });
 

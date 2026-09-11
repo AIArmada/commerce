@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Policies;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Policies\Concerns\HandlesOwnerScoping;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -16,23 +15,7 @@ final class ProductPolicy
 
     private function canAccessProduct(Product $product): bool
     {
-        if (! (bool) config('products.features.owner.enabled', true)) {
-            return true;
-        }
-
-        $owner = OwnerContext::resolve();
-
-        if ($owner === null) {
-            return $this->isGlobalModel($product);
-        }
-
-        if ($this->belongsToOwner($product, $owner)) {
-            return true;
-        }
-
-        $includeGlobal = (bool) config('products.features.owner.include_global', false);
-
-        return $includeGlobal && $this->isGlobalModel($product);
+        return $this->canAccess($product);
     }
 
     /**

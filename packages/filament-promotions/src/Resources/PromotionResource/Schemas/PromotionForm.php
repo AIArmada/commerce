@@ -120,6 +120,7 @@ final class PromotionForm
                             ->schema([
                                 Toggle::make('is_active')
                                     ->label('Active')
+                                    ->disabledOn('edit')
                                     ->default(true),
 
                                 Toggle::make('is_stackable')

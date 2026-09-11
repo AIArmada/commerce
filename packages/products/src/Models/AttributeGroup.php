@@ -10,8 +10,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
-use AIArmada\Products\Concerns\IsAttributeEntity;
-use AIArmada\Products\Enums\Visibility;
+use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
+use AIArmada\Products\Concerns\IsCatalogEntity;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -40,6 +40,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  */
 class AttributeGroup extends Model implements Auditable
 {
+    use EnforcesOwnerUniqueIdentity;
     use HasCommerceAudit;
     use HasFactory;
     use HasOwner {
@@ -48,10 +49,18 @@ class AttributeGroup extends Model implements Auditable
     use HasOwnerScopeConfig;
     use HasOwnerScopeKey;
     use HasUuids;
-    use IsAttributeEntity;
+    use IsCatalogEntity;
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
+
+    /**
+     * @return list<string>
+     */
+    protected function uniqueIdentityColumns(): array
+    {
+        return ['code'];
+    }
 
     protected $fillable = [
         'owner_type',
@@ -151,7 +160,7 @@ class AttributeGroup extends Model implements Auditable
      */
     public function scopeVisible(Builder $query): Builder
     {
-        return $query->where('visibility', Visibility::Visible);
+        return $query->where('visibility', 'visible');
     }
 
     protected static function booted(): void
@@ -191,7 +200,7 @@ class AttributeGroup extends Model implements Auditable
 
         static::saving(function (AttributeGroup $group): void {
             if ($group->isDirty('visibility')) {
-                $group->hidden_at = $group->visibility === Visibility::Hidden->value ? CarbonImmutable::now() : null;
+                $group->hidden_at = $group->visibility === 'hidden' ? CarbonImmutable::now() : null;
             }
         });
 

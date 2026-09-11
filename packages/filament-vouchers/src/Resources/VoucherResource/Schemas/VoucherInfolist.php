@@ -292,7 +292,7 @@ final class VoucherInfolist
     }
 
     /**
-     * @param  array{level?: int, type?: string, value?: int|float}  $level
+     * @param  array{level?: int, type?: string, value?: int}  $level
      */
     private static function formatUplineLevel(array $level, string $currency = 'MYR'): string
     {

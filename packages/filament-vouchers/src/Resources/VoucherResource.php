@@ -154,6 +154,6 @@ final class VoucherResource extends Resource
 
     public static function getNavigationSort(): ?int
     {
-        return config('filament-vouchers.resources.navigation_sort.vouchers', 40);
+        return config('filament-vouchers.resources.navigation_sort.vouchers', 10);
     }
 }

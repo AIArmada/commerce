@@ -7,9 +7,11 @@ namespace AIArmada\Products\Models;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
+use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Enums\CatalogStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,6 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Collection extends Model implements Auditable, HasMedia
 {
+    use EnforcesOwnerUniqueIdentity;
     use HasCommerceAudit;
     use HasFactory;
     use HasOwner {
@@ -64,6 +67,14 @@ class Collection extends Model implements Auditable, HasMedia
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
+
+    /**
+     * @return list<string>
+     */
+    protected function uniqueIdentityColumns(): array
+    {
+        return ['slug'];
+    }
 
     protected $fillable = [
         'owner_type',
@@ -442,26 +453,10 @@ class Collection extends Model implements Auditable, HasMedia
         }
 
         $query->withoutOwnerScope();
-
-        if ($this->owner_type === null || $this->owner_id === null) {
-            $query->whereNull('owner_type')->whereNull('owner_id');
-
-            return;
-        }
-
-        $ownerType = $this->owner_type;
-        $ownerId = $this->owner_id;
         $includeGlobal = (bool) config('products.features.owner.include_global', false);
 
-        $query->where(function (Builder $builder) use ($ownerType, $ownerId, $includeGlobal): void {
-            $builder->where('owner_type', $ownerType)
-                ->where('owner_id', $ownerId);
+        $owner = $this->getKey() === null ? OwnerContext::resolve() : $this->owner;
 
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
     }
 }

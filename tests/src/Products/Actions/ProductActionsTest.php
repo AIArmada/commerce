@@ -12,12 +12,15 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Events\ProductCreated;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\VariantsGenerated;
+use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
+use AIArmada\Products\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
 
 describe('CreateProduct Action', function (): void {
     it('creates a product with given attributes', function (): void {
@@ -175,6 +178,71 @@ describe('GenerateVariants Action', function (): void {
         $variants = $action($product);
 
         expect($variants)->toHaveCount(1);
+    });
+
+    it('rejects matrices above the configured generation cap', function (): void {
+        config()->set('products.features.variants.max_generated', 3);
+
+        $product = Product::create([
+            'name' => 'Capped Variant Product',
+            'price' => 5000,
+            'type' => ProductType::Configurable,
+            'supports_variants' => true,
+        ]);
+
+        $color = Option::create(['product_id' => $product->id, 'name' => 'Color', 'position' => 1]);
+        $size = Option::create(['product_id' => $product->id, 'name' => 'Size', 'position' => 2]);
+
+        foreach (['Red', 'Blue'] as $position => $name) {
+            OptionValue::create(['option_id' => $color->id, 'name' => $name, 'position' => $position + 1]);
+        }
+
+        foreach (['Small', 'Large'] as $position => $name) {
+            OptionValue::create(['option_id' => $size->id, 'name' => $name, 'position' => $position + 1]);
+        }
+
+        expect(fn () => app(GenerateVariants::class)->execute($product))
+            ->toThrow(VariantGenerationLimitExceeded::class);
+    });
+
+    it('queues matrices above the synchronous threshold', function (): void {
+        Queue::fake();
+        config()->set('products.features.variants.queue_threshold', 1);
+
+        $product = Product::create([
+            'name' => 'Queued Variant Product',
+            'price' => 5000,
+            'type' => ProductType::Configurable,
+            'supports_variants' => true,
+        ]);
+
+        $option = Option::create(['product_id' => $product->id, 'name' => 'Color', 'position' => 1]);
+        OptionValue::create(['option_id' => $option->id, 'name' => 'Red', 'position' => 1]);
+        OptionValue::create(['option_id' => $option->id, 'name' => 'Blue', 'position' => 2]);
+
+        expect(app(GenerateVariants::class)->execute($product))->toBeEmpty();
+        Queue::assertPushed(GenerateVariantsJob::class);
+    });
+
+    it('skips existing generated skus on repeated generation', function (): void {
+        $product = Product::create([
+            'name' => 'Idempotent Variant Product',
+            'price' => 5000,
+            'type' => ProductType::Configurable,
+            'supports_variants' => true,
+        ]);
+
+        $option = Option::create(['product_id' => $product->id, 'name' => 'Color', 'position' => 1]);
+        OptionValue::create(['option_id' => $option->id, 'name' => 'Red', 'position' => 1]);
+        OptionValue::create(['option_id' => $option->id, 'name' => 'Blue', 'position' => 2]);
+
+        $action = app(GenerateVariants::class);
+        $first = $action->execute($product);
+        $second = $action->execute($product->fresh());
+
+        expect($first)->toHaveCount(2)
+            ->and($second)->toHaveCount(2)
+            ->and(Variant::query()->where('product_id', $product->id)->count())->toBe(2);
     });
 });
 

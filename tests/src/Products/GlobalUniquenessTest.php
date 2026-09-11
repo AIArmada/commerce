@@ -24,20 +24,50 @@ it('rejects duplicate global product slugs and skus', function (): void {
     });
 });
 
-it('allows the same product business keys for different owners', function (): void {
+it('resolves same-owner slug retries through createOrFirst', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Idempotent Owner',
+        'email' => 'idempotent-owner-products@example.com',
+        'password' => 'secret',
+    ]);
+
+    $first = OwnerContext::withOwner($owner, fn (): Product => Product::query()->createOrFirst(
+        ['slug' => 'idempotent-owner-slug'],
+        ['name' => 'First Product'],
+    ));
+    $second = OwnerContext::withOwner($owner, fn (): Product => Product::query()->createOrFirst(
+        ['slug' => 'idempotent-owner-slug'],
+        ['name' => 'Retry Product'],
+    ));
+
+    $count = OwnerContext::withOwner($owner, static fn (): int => Product::query()
+        ->where('slug', 'idempotent-owner-slug')
+        ->count());
+
+    expect($second->is($first))->toBeTrue()
+        ->and($count)->toBe(1);
+});
+
+it('rejects duplicate product slugs across owners while scoping skus per owner', function (): void {
     $ownerA = User::query()->create(['name' => 'Owner A', 'email' => 'owner-a-products@example.com', 'password' => 'secret']);
     $ownerB = User::query()->create(['name' => 'Owner B', 'email' => 'owner-b-products@example.com', 'password' => 'secret']);
 
     $productA = OwnerContext::withOwner($ownerA, fn (): Product => Product::query()->create([
         'name' => 'Owned A', 'slug' => 'shared-owned', 'sku' => 'SHARED-SKU',
     ]));
+
+    expect(fn () => OwnerContext::withOwner($ownerB, fn (): Product => Product::query()->create([
+        'name' => 'Owned B', 'slug' => 'shared-owned', 'sku' => 'SHARED-SKU-B',
+    ])))->toThrow(InvalidArgumentException::class);
+
     $productB = OwnerContext::withOwner($ownerB, fn (): Product => Product::query()->create([
-        'name' => 'Owned B', 'slug' => 'shared-owned', 'sku' => 'SHARED-SKU',
+        'name' => 'Owned B', 'slug' => 'different-owned-slug', 'sku' => 'SHARED-SKU',
     ]));
 
     expect($productA->owner_scope)->toBe(OwnerScopeKey::forOwner($ownerA))
         ->and($productB->owner_scope)->toBe(OwnerScopeKey::forOwner($ownerB))
-        ->and($productA->owner_scope)->not->toBe($productB->owner_scope);
+        ->and($productA->owner_scope)->not->toBe($productB->owner_scope)
+        ->and($productB->sku)->toBe('SHARED-SKU');
 });
 
 it('recomputes the scope key from an unsaved owner tuple and does not expose it to mass assignment', function (): void {

@@ -84,7 +84,7 @@ final class IssuePromotionVouchersAction extends Action
 
     private function resolvePromotion(Promotion $record): Promotion
     {
-        if (! config('promotions.owner.enabled', true)) {
+        if (! config('promotions.features.owner.enabled', false)) {
             return $record;
         }
 

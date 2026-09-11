@@ -47,6 +47,8 @@ function orderWithPromotion(User $owner, Promotion $promotion): Order
     $session = new CheckoutSession;
     $session->forceFill([
         'id' => (string) Str::uuid(),
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => (string) $owner->getKey(),
         'cart_id' => (string) Str::uuid(),
         'status' => 'completed',
         'currency' => 'MYR',

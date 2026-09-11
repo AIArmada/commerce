@@ -8,6 +8,8 @@ title: Models Reference
 
 The main catalog model. `Product` is owner-aware, media-aware, slugged, and implements the package buyable, inventory, and pricing contracts.
 
+Prices are integer minor units end to end. `getBuyablePrice()` and `getCalculatedPrice()` both return the canonical minor-unit integer consumed by downstream cart, pricing, inventory, and checkout integrations.
+
 ### Common relationships
 
 - `variants()`
@@ -101,21 +103,15 @@ The attribute system is split across:
 
 These models are owner-aware and use config-driven table resolution like the rest of the package.
 
-## `IsAttributeEntity` concern
+## `IsCatalogEntity` concern
 
-`AIArmada\Products\Concerns\IsAttributeEntity` is used by attribute models (`Attribute`, `AttributeGroup`, `AttributeSet`) to provide:
-
-- `scopeOrdered()` — orders by `position`
-- `scopeVisible()` — filters by `visibility = Visible`
-- `resolveProductTable()` — resolves the table name from package config
-
-## `IsOptionEntity` concern
-
-`AIArmada\Products\Concerns\IsOptionEntity` is used by option models (`Option`, `OptionValue`) to provide:
+`AIArmada\Products\Concerns\IsCatalogEntity` is shared by catalog taxonomy models to provide:
 
 - `scopeOrdered()` — orders by `position`
-- `scopeVisible()` — filters by `visibility = Visible`
+- `scopeVisible()` — filters by the catalog entity's `visible` value
 - `resolveProductTable()` — resolves the table name from package config
+
+`ProductVisibility`, `CatalogStatus`, and `AttributeType` remain the canonical typed taxonomy enums. The former generic `Visibility` enum and the duplicate `IsAttributeEntity`/`IsOptionEntity` concerns were removed.
 
 ## `HasAttributes` trait
 
@@ -133,3 +129,7 @@ Models using `AIArmada\Products\Traits\HasAttributes` get these helpers:
 - `getComparableCustomAttributes()`
 - `whereCustomAttribute()`
 - `whereCustomAttributes()`
+
+Custom-attribute predicates use the EAV `attribute_values` relation and are intended for admin/catalog management queries. Keep storefront listing/search paths on materialized product fields or dedicated read models rather than filtering large catalogs through EAV joins.
+
+Category identity is scoped by `(owner_type, owner_id, parent_id, slug)`. The legacy `parent_scope` column is retained for existing rows but is not a source of truth for new identity checks. Existing pivot primary-key styles are also retained; new migrations should follow the package migration policy rather than rewriting them in place.

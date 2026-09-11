@@ -12,12 +12,10 @@ use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\VoucherStatus;
-use Carbon\CarbonImmutable;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -77,23 +75,10 @@ final class VoucherSuggestionsWidget extends Widget
                 );
             }
 
+            /** @var Builder<Voucher> $voucherQuery */
             $vouchers = $voucherQuery
                 ->withCount('usages')
-                ->where('status', VoucherStatus::normalize(Active::class))
-                ->where(function ($query): void {
-                    $query->whereNull('starts_at')
-                        ->orWhere('starts_at', '<=', CarbonImmutable::now());
-                })
-                ->where(function ($query): void {
-                    $query->whereNull('expires_at')
-                        ->orWhere('expires_at', '>=', CarbonImmutable::now());
-                })
-                ->where(function ($query): void {
-                    // Unlimited usage, or still has remaining uses.
-                    // We avoid raw SQL here because table names are configurable.
-                    $query->whereNull('usage_limit')
-                        ->orWhereColumn('usages_count', '<', 'usage_limit');
-                })
+                ->live()
                 ->where('currency', $cartCurrency)
                 ->get();
 
@@ -238,7 +223,7 @@ final class VoucherSuggestionsWidget extends Widget
     protected function calculatePotentialSavings(Voucher $voucher, int $cartTotal): int
     {
         $savings = match ($voucher->type) {
-            VoucherType::Percentage => (int) round(($cartTotal * $voucher->value) / 10000), // value is in basis points (1000 = 10%)
+            VoucherType::Percentage => intdiv(($cartTotal * $voucher->value) + 5000, 10000), // value is in basis points (1000 = 10%)
             VoucherType::Fixed => $voucher->value, // value is in cents
             VoucherType::FreeShipping => 0, // Can't calculate shipping savings
             VoucherType::Bundle,

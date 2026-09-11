@@ -6,6 +6,7 @@ use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Paused;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -34,6 +35,36 @@ describe('Voucher Model Scopes', function (): void {
 
         expect($affiliateVouchers)->toHaveCount(2);
         $affiliateVouchers->each(fn ($v) => expect($v->affiliate_id)->toBe('affiliate-123'));
+    });
+
+    it('filters live vouchers by state, wall-clock window, and usage limit', function (): void {
+        $live = createVoucherForScopesTest([
+            'starts_at' => Carbon::now()->subHour(),
+            'expires_at' => Carbon::now()->addHour(),
+            'usage_limit' => 2,
+        ]);
+        $upcoming = createVoucherForScopesTest(['starts_at' => Carbon::now()->addHour()]);
+        $expired = createVoucherForScopesTest(['expires_at' => Carbon::now()->subHour()]);
+        $paused = createVoucherForScopesTest(['status' => Paused::class]);
+        $depleted = createVoucherForScopesTest(['status' => Depleted::class]);
+        $limitReached = createVoucherForScopesTest(['usage_limit' => 1]);
+
+        VoucherUsage::create([
+            'voucher_id' => $limitReached->id,
+            'discount_amount' => 100,
+            'currency' => 'MYR',
+            'channel' => 'web',
+            'used_at' => now(),
+        ]);
+
+        $liveIds = Voucher::query()->live()->pluck('id')->all();
+
+        expect($liveIds)->toContain($live->id)
+            ->not->toContain($upcoming->id)
+            ->not->toContain($expired->id)
+            ->not->toContain($paused->id)
+            ->not->toContain($depleted->id)
+            ->not->toContain($limitReached->id);
     });
 });
 
@@ -72,6 +103,22 @@ describe('Voucher Model Methods', function (): void {
 
         expect($unlimited->hasUsageLimitRemaining())->toBeTrue()
             ->and($limited->hasUsageLimitRemaining())->toBeTrue();
+    });
+
+    it('transitions to depleted through the state machine after usage reaches the limit', function (): void {
+        $voucher = createVoucherForScopesTest(['usage_limit' => 1]);
+
+        VoucherUsage::create([
+            'voucher_id' => $voucher->id,
+            'discount_amount' => 100,
+            'currency' => 'MYR',
+            'channel' => 'web',
+            'used_at' => now(),
+        ]);
+
+        $voucher->checkIfDepleted();
+
+        expect($voucher->fresh()?->status)->toBeInstanceOf(Depleted::class);
     });
 
     it('calculates remaining uses', function (): void {

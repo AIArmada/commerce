@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
-use AIArmada\Products\Enums\Visibility;
 use AIArmada\Products\Models\Product;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -22,6 +21,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 
 final class OptionsRelationManager extends RelationManager
 {
@@ -57,8 +57,8 @@ final class OptionsRelationManager extends RelationManager
 
                 Select::make('visibility')
                     ->label('Visibility')
-                    ->options(Visibility::class)
-                    ->default(Visibility::Visible->value),
+                    ->options(['visible' => 'Visible', 'hidden' => 'Hidden'])
+                    ->default('visible'),
             ]);
     }
 
@@ -85,8 +85,8 @@ final class OptionsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('visibility')
                     ->label('Visibility')
                     ->badge()
-                    ->color(fn (string $state): string => Visibility::tryFrom($state)?->color() ?? 'gray')
-                    ->formatStateUsing(fn (string $state): string => Visibility::tryFrom($state)?->label() ?? $state),
+                    ->color(fn (string $state): string => $state === 'hidden' ? 'gray' : 'success')
+                    ->formatStateUsing(fn (string $state): string => ucfirst($state)),
 
                 Tables\Columns\TextColumn::make('position')
                     ->label('Position')
@@ -137,6 +137,14 @@ final class OptionsRelationManager extends RelationManager
                         ])->toArray(),
                     ])
                     ->action(function ($record, array $data): void {
+                        if (isset($this->ownerRecord)) {
+                            $ownerRecord = $this->getOwnerRecord();
+
+                            if ($ownerRecord instanceof Product) {
+                                Gate::authorize('update', $ownerRecord);
+                            }
+                        }
+
                         // Get existing value IDs
                         $existingIds = $record->values->pluck('id')->toArray();
                         $newIds = [];

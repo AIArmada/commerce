@@ -771,6 +771,27 @@ reported and taken on trust; code correctness was verified directly.
   FilamentDocs 63/247, smoke 1/83; PHPStan L6 clean. No migration
   required.
 
+## Inventory stock (implemented)
+
+- **Operations key:** wired where model + migration read it.
+- **Single scoping:** direct predicates replace the redundant pair
+  (relation kept for cross-location reads); equality + one-query
+  proof (`InventoryOwnerScopeTest`).
+- **Filament queries:** all six resources via parent; aggregator
+  delegates to domain reports.
+- **Catalog trait:** read-oriented; mutations through domain
+  services.
+- **Reconciliation:** durable report + reservation cleanup.
+- **Costing:** named adapters injected; dead registries removed;
+  enum/match allocation fully covered.
+- **Ceremony/casts:** dead code deleted; hierarchy consolidated;
+  explicit nulls-last, documented.
+- Suites: Inventory 1152 passed + 6 skipped (2570 assertions),
+  FilamentInventory 37 passed (136 assertions); PHPStan level 6
+  clean. Checkout + Orders canaries green. No migration required.
+- Deferred: movement composite index, concurrency stress tests,
+  filament policy expansion — mitigations named in the audit.
+
 ## Fairness log
 
 - Orders checkout-context concern: not present, dropped correctly.
@@ -787,3 +808,41 @@ reported and taken on trust; code correctness was verified directly.
   accessor mismatch (`Payment::checkoutUrl()` / `Payment::id()` versus the
   nested purchase object); it was corrected because the new billable-path
   regression test exercised the real return path.
+
+## Products / promotions / vouchers (implemented)
+
+- **Products:** minor-unit money is canonical; the old money toggle and
+  duplicate taxonomy were removed. Secure owner defaults, tuple-scoped
+  identity, owner-safe queries/policies, capped and queued variant generation,
+  extracted pricing/media helpers, live Filament config, and owner-aware stats
+  are implemented. Slugs remain global while SKU identity is owner-scoped;
+  identical retries resolve through `createOrFirst`, while genuine conflicts
+  still reject.
+- **Promotions:** per-customer limits, owner-checked order allocation reads,
+  atomic usage increments, normalized exact code lookup, SQL prefilters, and
+  chunked evaluation are implemented. The additive as-of API is parity-tested;
+  default wall-clock pricing semantics remain unchanged. Duplicate issue-voucher
+  actions are retained deliberately for their distinct list and record UX.
+- **Vouchers:** the pre-existing remove/clear/replace cart failures were fixed
+  in the owned voucher storage seam; domain money stays integer-only, float DTO
+  inputs are rejected rather than coerced, lifecycle writes use transitions,
+  deletion is transactional, `scopeLive` is canonical for redeemable rows,
+  and `voucher_usage`/`times_used` plus `applied_count` are explicitly
+  non-competitive reporting counters. The Filament stats aggregator delegates
+  to domain definitions.
+- **Recorded deferrals:** tuple-keyed partial uniques and related data cleanup
+  remain deferred with no migration; the promotions wall-clock decision remains
+  default-only for current callers; vouchers F1 Filament relocation remains
+  deferred because its `filament-cart` consumer is read-only for this stream.
+- Suites: Products **589 passed (1064 assertions)**, FilamentProducts **25
+  passed (98 assertions)**; Promotions **73 passed (127 assertions)**,
+  FilamentPromotions **37 passed (74 assertions)**; Vouchers **892 passed + 7
+  skipped (1717 assertions)**, FilamentVouchers **42 passed (275 assertions)**.
+- PHPStan level 6 is clean on all six PPV source trees after annotation-only
+  fixes at `packages/filament-vouchers/src/Support/MoneyHelper.php:120-123`
+  and `packages/filament-vouchers/src/Widgets/VoucherSuggestionsWidget.php:78-81`.
+- No migration required. Full package-specific deviations and residuals are
+  in `products.md`, `promotions.md`, and `vouchers.md`.
+
+If any residual grows teeth, re-open it as a finding. Full finding history
+lives in `migration-record.md`, `code-fixes-record.md`, and git history.

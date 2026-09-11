@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\States\Active;
@@ -98,7 +99,9 @@ final class BulkGenerateVouchersAction extends Action
                     'code' => $code,
                     'name' => $data['name'] . ' #' . ($i + 1),
                     'type' => VoucherType::from($data['type']),
-                    'value' => (int) round((float) $data['value'] * 100),
+                    'value' => VoucherType::from($data['type']) === VoucherType::Percentage
+                        ? MoneyHelper::displayToBasisPoints((string) $data['value'])
+                        : MoneyHelper::displayToCents((string) $data['value']),
                     'currency' => $data['currency'],
                     'status' => Active::class,
                     'usage_limit' => $data['usage_limit'] ? (int) $data['usage_limit'] : null,

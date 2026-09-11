@@ -69,9 +69,13 @@ describe('AttributeSet Model', function (): void {
 
         OwnerContext::withOwner($ownerA, fn () => $ownerASet2->setAsDefault());
 
-        expect($ownerASet1->refresh()->is_default)->toBeFalse()
-            ->and($ownerASet2->refresh()->is_default)->toBeTrue()
-            ->and($ownerBSet->refresh()->is_default)->toBeTrue();
+        $ownerASet1 = OwnerContext::withOwner($ownerA, fn (): ?AttributeSet => $ownerASet1->refresh());
+        $ownerASet2 = OwnerContext::withOwner($ownerA, fn (): ?AttributeSet => $ownerASet2->refresh());
+        $ownerBSet = OwnerContext::withOwner($ownerB, fn (): ?AttributeSet => $ownerBSet->refresh());
+
+        expect($ownerASet1?->is_default)->toBeFalse()
+            ->and($ownerASet2?->is_default)->toBeTrue()
+            ->and($ownerBSet?->is_default)->toBeTrue();
     });
 
     it('scopes setAsDefault() updates to global sets when owner is null', function (): void {
@@ -105,8 +109,12 @@ describe('AttributeSet Model', function (): void {
 
         OwnerContext::withOwner(null, fn () => $globalSet2->setAsDefault());
 
-        expect($globalSet1->refresh()->is_default)->toBeFalse()
-            ->and($globalSet2->refresh()->is_default)->toBeTrue()
-            ->and($ownedSet->refresh()->is_default)->toBeTrue();
+        $globalSet1 = OwnerContext::withOwner(null, fn (): ?AttributeSet => $globalSet1->refresh());
+        $globalSet2 = OwnerContext::withOwner(null, fn (): ?AttributeSet => $globalSet2->refresh());
+        $ownedSet = OwnerContext::withOwner($owner, fn (): ?AttributeSet => $ownedSet->refresh());
+
+        expect($globalSet1?->is_default)->toBeFalse()
+            ->and($globalSet2?->is_default)->toBeTrue()
+            ->and($ownedSet?->is_default)->toBeTrue();
     });
 });

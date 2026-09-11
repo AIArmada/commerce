@@ -7,3 +7,8 @@ it('declares single-file limits for single-image media collections', function ()
         ->and(config('products.media.collections.icon.limit'))->toBe(1)
         ->and(config('products.media.collections.banner.limit'))->toBe(1);
 });
+
+it('uses secure owner scoping and minor-unit money by default', function (): void {
+    expect(config('products.features.owner.enabled'))->toBeTrue()
+        ->and(config('products.defaults'))->not->toHaveKey('store_money_in_cents');
+});

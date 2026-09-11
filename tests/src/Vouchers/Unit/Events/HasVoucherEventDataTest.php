@@ -7,6 +7,7 @@ namespace Tests\Vouchers\Unit\Events;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\Concerns\HasVoucherEventData;
 use DateTimeImmutable;
 use Mockery;
@@ -42,13 +43,13 @@ class TestVoucherEvent
 /**
  * Create a test voucher for event testing.
  */
-function createEventTestVoucher(string $code = 'TEST10', float $value = 1000): VoucherData
+function createEventTestVoucher(string $code = 'TEST10', int $value = 1000, VoucherType $type = VoucherType::Percentage): VoucherData
 {
     return VoucherData::fromArray([
         'id' => 'voucher-' . $code,
         'code' => $code,
         'name' => 'Test Voucher ' . $code,
-        'type' => 'percentage',
+        'type' => $type,
         'value' => $value,
         'status' => 'active',
     ]);
@@ -155,12 +156,20 @@ describe('HasVoucherEventData', function (): void {
     });
 
     describe('getDiscountAmountCents', function (): void {
-        it('returns value multiplied by 100', function (): void {
-            $voucher = createEventTestVoucher('TEST', 500); // 5.00 or 500 basis points
+        it('returns fixed voucher value in minor units', function (): void {
+            $voucher = createEventTestVoucher('TEST', 500, VoucherType::Fixed);
             $cart = createEventTestCart();
             $event = new TestVoucherEvent($voucher, $cart);
 
-            expect($event->getDiscountAmountCents())->toBe(50000);
+            expect($event->getDiscountAmountCents())->toBe(500);
+        });
+
+        it('does not treat percentage basis points as a discount amount', function (): void {
+            $voucher = createEventTestVoucher('TEST', 500);
+            $cart = createEventTestCart();
+            $event = new TestVoucherEvent($voucher, $cart);
+
+            expect($event->getDiscountAmountCents())->toBeNull();
         });
     });
 
@@ -202,7 +211,7 @@ describe('HasVoucherEventData', function (): void {
 
     describe('toEventPayload', function (): void {
         it('returns complete payload array', function (): void {
-            $voucher = createEventTestVoucher('SAVE20', 2000);
+            $voucher = createEventTestVoucher('SAVE20', 2000, VoucherType::Fixed);
             $cart = createEventTestCart('cart-123');
             $event = new TestVoucherEvent($voucher, $cart);
 
@@ -215,7 +224,7 @@ describe('HasVoucherEventData', function (): void {
             expect($payload)->toHaveKey('voucher_id', 'voucher-SAVE20');
             expect($payload)->toHaveKey('cart_identifier', 'cart-123');
             expect($payload)->toHaveKey('cart_instance', 'default');
-            expect($payload)->toHaveKey('discount_cents', 200000);
+            expect($payload)->toHaveKey('discount_cents', 2000);
         });
 
         it('formats occurred_at as ISO 8601', function (): void {

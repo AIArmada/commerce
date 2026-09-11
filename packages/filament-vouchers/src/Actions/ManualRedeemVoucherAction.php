@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
@@ -57,7 +58,7 @@ final class ManualRedeemVoucherAction extends Action
             /** @var VoucherService $service */
             $service = app(VoucherService::class);
 
-            $discountCents = (int) round((float) $data['discount_amount'] * 100);
+            $discountCents = MoneyHelper::displayToCents((string) $data['discount_amount']) ?? 0;
             $discount = Money::{$record->currency}($discountCents);
 
             $user = Auth::user();

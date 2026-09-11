@@ -13,6 +13,7 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
 use AIArmada\Pricing\Models\Price;
+use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Contracts\Buyable;
 use AIArmada\Products\Contracts\Inventoryable;
 use AIArmada\Products\Contracts\Priceable;
@@ -24,6 +25,8 @@ use AIArmada\Products\Events\ProductCreated;
 use AIArmada\Products\Events\ProductDeleted;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\ProductUpdated;
+use AIArmada\Products\Support\ProductMedia;
+use AIArmada\Products\Support\ProductPricing;
 use AIArmada\Products\Traits\HasAttributes;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
@@ -90,6 +93,7 @@ use Throwable;
  */
 class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryable, Priceable, PricingPriceable
 {
+    use EnforcesOwnerUniqueIdentity;
     use HasAttributes;
     use HasCommerceAudit;
     use HasFactory;
@@ -105,6 +109,14 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
+
+    /**
+     * @return list<string>
+     */
+    protected function uniqueIdentityColumns(): array
+    {
+        return ['slug', 'sku'];
+    }
 
     protected $fillable = [
         'owner_type',
@@ -188,8 +200,9 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     public function getTable(): string
     {
         $tables = config('products.database.tables', []);
+        $prefix = config('products.database.table_prefix', 'product_');
 
-        return $tables['products'] ?? 'products';
+        return $tables['products'] ?? $prefix . 'products';
     }
 
     /**
@@ -394,9 +407,8 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     public function getFormattedPrice(): string
     {
         $currency = mb_strtoupper($this->currency ?: config('products.defaults.currency', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
-        return Money::$currency($this->price, $asMajorUnits)->format();
+        return ProductPricing::formatMinorAmount($this->price, $currency);
     }
 
     public function getFormattedComparePrice(): ?string
@@ -406,9 +418,8 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         }
 
         $currency = mb_strtoupper($this->currency ?: config('products.defaults.currency', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
-        return Money::$currency($this->compare_price, $asMajorUnits)->format();
+        return ProductPricing::formatMinorAmount($this->compare_price, $currency);
     }
 
     public function getFormattedCost(): ?string
@@ -418,17 +429,15 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         }
 
         $currency = mb_strtoupper($this->currency ?: config('products.defaults.currency', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
-        return Money::$currency($this->cost, $asMajorUnits)->format();
+        return ProductPricing::formatMinorAmount($this->cost, $currency);
     }
 
     public function getPriceAsMoney(): Money
     {
         $currency = mb_strtoupper($this->currency ?: config('products.defaults.currency', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
-        return Money::$currency($this->price, $asMajorUnits);
+        return Money::$currency($this->price, false);
     }
 
     // =========================================================================
@@ -529,11 +538,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     public function getDiscountPercentage(): ?float
     {
-        if (! $this->hasDiscount()) {
-            return null;
-        }
-
-        return round((($this->compare_price - $this->price) / $this->compare_price) * 100, 1);
+        return ProductPricing::discountPercentage($this->price, $this->compare_price);
     }
 
     public function getProfitMargin(): ?float
@@ -555,17 +560,8 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     public function getFeaturedImageUrl(string $conversion = 'card'): ?string
     {
-        $hero = $this->getFirstMedia('hero');
-        if ($hero) {
-            return $hero->getUrl($conversion);
-        }
-
-        $gallery = $this->getFirstMedia('gallery');
-        if ($gallery) {
-            return $gallery->getUrl($conversion);
-        }
-
-        return $this->getFallbackMediaUrl('gallery');
+        return ProductMedia::firstAvailableUrl($this, ['hero', 'gallery'], $conversion)
+            ?? $this->getFallbackMediaUrl('gallery');
     }
 
     // =========================================================================

@@ -51,32 +51,7 @@ function createPolicyVoucherCondition(string $code, VoucherType $type = VoucherT
 }
 
 describe('StackingPolicy', function (): void {
-    describe('static factories', function (): void {
-        it('creates default policy', function (): void {
-            $policy = StackingPolicy::default();
-
-            expect($policy->getMode())->toBe(StackingMode::Sequential);
-            expect($policy->getRules())->not->toBeEmpty();
-            expect($policy->isAutoOptimizeEnabled())->toBeFalse();
-            expect($policy->isAutoReplaceEnabled())->toBeTrue();
-        });
-
-        it('creates single voucher policy', function (): void {
-            $policy = StackingPolicy::singleVoucher();
-
-            expect($policy->getMode())->toBe(StackingMode::None);
-            expect($policy->isAutoReplaceEnabled())->toBeTrue();
-        });
-
-        it('creates unlimited policy', function (): void {
-            $policy = StackingPolicy::unlimited();
-
-            expect($policy->getMode())->toBe(StackingMode::Sequential);
-            expect($policy->getRules())->toBe([]);
-            expect($policy->isAutoOptimizeEnabled())->toBeTrue();
-            expect($policy->isAutoReplaceEnabled())->toBeFalse();
-        });
-
+    describe('configuration factory', function (): void {
         it('creates from config array', function (): void {
             $config = [
                 'mode' => 'parallel',
@@ -173,7 +148,9 @@ describe('StackingPolicy', function (): void {
 
     describe('canAdd', function (): void {
         it('denies when mode is None and vouchers exist', function (): void {
-            $policy = StackingPolicy::singleVoucher();
+            $policy = new StackingPolicy(mode: StackingMode::None, rules: [
+                ['type' => StackingRuleType::MaxVouchers->value, 'value' => 1],
+            ]);
             $cart = createPolicyTestCart();
             $newVoucher = createPolicyVoucherCondition('NEW10');
             $existingVouchers = collect([createPolicyVoucherCondition('EXISTING')]);
@@ -185,7 +162,9 @@ describe('StackingPolicy', function (): void {
         });
 
         it('allows when mode is None and no vouchers exist', function (): void {
-            $policy = StackingPolicy::singleVoucher();
+            $policy = new StackingPolicy(mode: StackingMode::None, rules: [
+                ['type' => StackingRuleType::MaxVouchers->value, 'value' => 1],
+            ]);
             $cart = createPolicyTestCart();
             $newVoucher = createPolicyVoucherCondition('NEW10');
             $existingVouchers = collect([]);
@@ -226,7 +205,7 @@ describe('StackingPolicy', function (): void {
 
     describe('resolveConflict', function (): void {
         it('returns empty collection when no vouchers', function (): void {
-            $policy = StackingPolicy::default();
+            $policy = new StackingPolicy;
             $cart = createPolicyTestCart();
 
             $result = $policy->resolveConflict(collect([]), $cart);
@@ -268,7 +247,7 @@ describe('StackingPolicy', function (): void {
 
     describe('getApplicationOrder', function (): void {
         it('returns single voucher unchanged', function (): void {
-            $policy = StackingPolicy::default();
+            $policy = new StackingPolicy;
             $cart = createPolicyTestCart();
             $voucher = createPolicyVoucherCondition('SINGLE');
             $vouchers = collect([$voucher]);
@@ -280,7 +259,7 @@ describe('StackingPolicy', function (): void {
         });
 
         it('returns empty collection unchanged', function (): void {
-            $policy = StackingPolicy::default();
+            $policy = new StackingPolicy;
             $cart = createPolicyTestCart();
 
             $result = $policy->getApplicationOrder(collect([]), $cart);
@@ -289,7 +268,7 @@ describe('StackingPolicy', function (): void {
         });
 
         it('sorts by stacking priority metadata', function (): void {
-            $policy = StackingPolicy::default();
+            $policy = new StackingPolicy;
             $cart = createPolicyTestCart();
 
             $lowPriority = createPolicyVoucherCondition('LOW', VoucherType::Fixed, 100, ['stacking_priority' => 200]);
@@ -303,7 +282,7 @@ describe('StackingPolicy', function (): void {
         });
 
         it('uses default priority 100 when not set', function (): void {
-            $policy = StackingPolicy::default();
+            $policy = new StackingPolicy;
             $cart = createPolicyTestCart();
 
             $noPriority = createPolicyVoucherCondition('DEFAULT', VoucherType::Fixed, 100);
