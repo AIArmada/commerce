@@ -78,10 +78,10 @@ return [
         'default_service_name' => env('JNT_SERVICE_NAME', 'J&T Express'),
         'default_service_type' => env('JNT_SERVICE_TYPE', 'EZ'),
 
-        'region_multipliers' => [
-            'sabah' => 1.5,
-            'sarawak' => 1.5,
-            'labuan' => 1.5,
+        'region_multipliers_bp' => [
+            'sabah' => 15000,
+            'sarawak' => 15000,
+            'labuan' => 15000,
         ],
     ],
 

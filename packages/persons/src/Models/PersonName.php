@@ -41,20 +41,21 @@ class PersonName extends Model
     protected static function booted(): void
     {
         static::saving(function (PersonName $name): void {
-            $name->full_name = mb_trim($name->full_name);
-            $name->language_code = mb_strtolower(mb_trim($name->language_code));
+            $name->normalizeForSave();
         });
     }
 
     /**
      * Save a primary name while serializing primary replacement per person.
-     * The parent lock is the application-level race backstop while the
-     * partial unique index remains pending the next permitted index migration.
+     * The parent and sibling locks are the application-level race backstop;
+     * the partial unique index is the database-level invariant.
      *
      * @param  array<string, mixed>  $options
      */
     public function save(array $options = []): bool
     {
+        $this->normalizeForSave();
+
         $needsPrimarySync = $this->is_primary
             && (! $this->exists
                 || $this->isDirty('is_primary')
@@ -69,21 +70,26 @@ class PersonName extends Model
         return DB::transaction(function () use ($options): bool {
             $this->person()->lockForUpdate()->firstOrFail();
 
-            $saved = parent::save($options);
+            static::query()
+                ->where('person_id', $this->person_id)
+                ->where('name_type', $this->name_type instanceof PersonNameType
+                    ? $this->name_type->value
+                    : (string) $this->getAttribute('name_type'))
+                ->where('language_code', $this->language_code)
+                ->whereKeyNot($this->getKey())
+                ->lockForUpdate()
+                ->update(['is_primary' => false]);
 
-            if ($saved) {
-                static::query()
-                    ->where('person_id', $this->person_id)
-                    ->where('name_type', $this->name_type instanceof PersonNameType
-                        ? $this->name_type->value
-                        : (string) $this->getAttribute('name_type'))
-                    ->where('language_code', $this->language_code)
-                    ->whereKeyNot($this->getKey())
-                    ->update(['is_primary' => false]);
-            }
+            $saved = parent::save($options);
 
             return $saved;
         });
+    }
+
+    private function normalizeForSave(): void
+    {
+        $this->full_name = mb_trim($this->full_name);
+        $this->language_code = mb_strtolower(mb_trim($this->language_code));
     }
 
     public function getTable(): string

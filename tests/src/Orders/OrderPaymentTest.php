@@ -52,6 +52,63 @@ describe('OrderPayment Model', function (): void {
 
             expect($payment->order->id)->toBe($order->id);
         });
+
+        it('rejects a duplicate non-null transaction identity at the application boundary', function (): void {
+            $order = Order::create([
+                'order_number' => 'ORD-PAY-DUP-' . uniqid(),
+                'status' => Created::class,
+                'currency' => 'MYR',
+                'subtotal' => 5000,
+                'grand_total' => 5000,
+            ]);
+
+            OrderPayment::create([
+                'order_id' => $order->id,
+                'gateway' => 'stripe',
+                'transaction_id' => 'txn_duplicate_guard',
+                'amount' => 5000,
+                'currency' => 'MYR',
+                'status' => PaymentStatus::Completed,
+            ]);
+
+            expect(fn () => OrderPayment::create([
+                'order_id' => $order->id,
+                'gateway' => 'stripe',
+                'transaction_id' => 'txn_duplicate_guard',
+                'amount' => 5000,
+                'currency' => 'MYR',
+                'status' => PaymentStatus::Completed,
+            ]))->toThrow(InvalidArgumentException::class);
+        });
+
+        it('allows multiple payments while transaction identity is null', function (): void {
+            $order = Order::create([
+                'order_number' => 'ORD-PAY-NULL-' . uniqid(),
+                'status' => Created::class,
+                'currency' => 'MYR',
+                'subtotal' => 5000,
+                'grand_total' => 5000,
+            ]);
+
+            $first = OrderPayment::create([
+                'order_id' => $order->id,
+                'gateway' => 'manual',
+                'transaction_id' => null,
+                'amount' => 2500,
+                'currency' => 'MYR',
+                'status' => PaymentStatus::Pending,
+            ]);
+            $second = OrderPayment::create([
+                'order_id' => $order->id,
+                'gateway' => 'manual',
+                'transaction_id' => null,
+                'amount' => 2500,
+                'currency' => 'MYR',
+                'status' => PaymentStatus::Pending,
+            ]);
+
+            expect($first->id)->not->toBe($second->id);
+        });
     });
 
     describe('OrderPayment Status Helpers', function (): void {

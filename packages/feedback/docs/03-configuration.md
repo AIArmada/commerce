@@ -19,6 +19,7 @@ title: Configuration
         'invitations' => 'feedback_invitations',
         'templates' => 'feedback_templates',
         'testimonials' => 'feedback_testimonials',
+        'form_analytics' => 'feedback_form_analytics',
     ],
 ],
 ```
@@ -71,6 +72,10 @@ hashed token.
     'dashboard_cache_ttl' => 30,
 ],
 ```
+
+Per-form analytics are recalculated by a queued, owner-scoped job after response
+lifecycle events. Until a form has its first successful recalculation, reads use
+the live response queries; the aggregate table is not backfilled by the migration.
 
 ## HTTP routes
 

@@ -48,32 +48,56 @@ class Affiliation extends Model
     protected static function booted(): void
     {
         static::saving(function (Affiliation $affiliation): void {
-            app(PersonsModelReferenceGuard::class)->resolve(
-                ModelResolver::institutionClass(),
-                $affiliation->getAttribute('institution_id'),
-                'affiliation institution',
-            );
+            $affiliation->guardReferences();
         });
 
         static::deleting(function (Affiliation $affiliation): void {
             $affiliation->roles()->get()->each->delete();
         });
 
-        static::saved(function (Affiliation $affiliation): void {
-            if (! $affiliation->is_primary) {
-                return;
-            }
+    }
 
-            DB::transaction(function () use ($affiliation): void {
-                $affiliation->affiliatable()->lockForUpdate()->firstOrFail();
+    /**
+     * Save a primary affiliation while serializing primary replacement per
+     * affiliatable model. The database partial unique is the final backstop.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function save(array $options = []): bool
+    {
+        $this->guardReferences();
 
-                static::query()
-                    ->where('affiliatable_type', $affiliation->affiliatable_type)
-                    ->where('affiliatable_id', $affiliation->affiliatable_id)
-                    ->whereKeyNot($affiliation->getKey())
-                    ->update(['is_primary' => false]);
-            });
+        $needsPrimarySync = $this->is_primary
+            && (! $this->exists
+                || $this->isDirty('is_primary')
+                || $this->isDirty('affiliatable_type')
+                || $this->isDirty('affiliatable_id'));
+
+        if (! $needsPrimarySync) {
+            return parent::save($options);
+        }
+
+        return DB::transaction(function () use ($options): bool {
+            $this->affiliatable()->lockForUpdate()->firstOrFail();
+
+            static::query()
+                ->where('affiliatable_type', $this->affiliatable_type)
+                ->where('affiliatable_id', $this->affiliatable_id)
+                ->whereKeyNot($this->getKey())
+                ->lockForUpdate()
+                ->update(['is_primary' => false]);
+
+            return parent::save($options);
         });
+    }
+
+    private function guardReferences(): void
+    {
+        app(PersonsModelReferenceGuard::class)->resolve(
+            ModelResolver::institutionClass(),
+            $this->getAttribute('institution_id'),
+            'affiliation institution',
+        );
     }
 
     public function getTable(): string

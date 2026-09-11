@@ -399,7 +399,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('affiliate-network.owner.auto_assign_on_create', true);
         $app['config']->set('affiliate-network.database.table_prefix', 'affiliate_network_');
         // Configure moderation settings for testing
-        $app['config']->set('moderation.features.owner.enabled', true);
+        $app['config']->set('moderation.owner.enabled', true);
 
         // Configure references settings for testing
         // Configure seating owner scoping for testing

@@ -51,8 +51,6 @@ use InvalidArgumentException;
  */
 final class SocialProfile extends Model
 {
-    private bool $shouldSyncPrimary = false;
-
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
@@ -181,12 +179,39 @@ final class SocialProfile extends Model
             $profile->normalizeForSave();
             $profile->guardAllowedPlatform();
             $profile->guardSocialableOwner();
-            $profile->shouldSyncPrimary = $profile->isDirty('is_primary')
-                && $profile->is_primary;
         });
+    }
 
-        static::saved(function (SocialProfile $profile): void {
-            $profile->syncSiblingPrimaryFlags();
+    /**
+     * Save a primary social profile while serializing primary replacement per
+     * socialable scope. The partial unique is the database-level backstop.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function save(array $options = []): bool
+    {
+        $needsPrimarySync = $this->is_primary
+            && (! $this->exists
+                || $this->isDirty('is_primary')
+                || $this->isDirty('socialable_type')
+                || $this->isDirty('socialable_id')
+                || $this->isDirty('platform')
+                || $this->isDirty('purpose')
+                || $this->isDirty('owner_type')
+                || $this->isDirty('owner_id'));
+
+        if (! $needsPrimarySync) {
+            return parent::save($options);
+        }
+
+        $this->guardAllowedPlatform();
+        $this->guardSocialableOwner();
+        $this->prepareOwnerForPrimarySync();
+
+        return DB::transaction(function () use ($options): bool {
+            $this->syncSiblingPrimaryFlags();
+
+            return parent::save($options);
         });
     }
 
@@ -238,37 +263,49 @@ final class SocialProfile extends Model
 
     private function syncSiblingPrimaryFlags(): void
     {
-        if (! $this->shouldSyncPrimary) {
+        if (! $this->is_primary) {
             return;
         }
 
-        DB::transaction(function (): void {
-            if ($this->socialable_type === null || $this->socialable_id === null) {
-                return;
-            }
+        if ($this->socialable_type === null || $this->socialable_id === null) {
+            return;
+        }
 
-            $this->socialable()->lockForUpdate()->firstOrFail();
+        $this->socialable()->lockForUpdate()->firstOrFail();
 
-            // saving() validates the socialable and owner before this demotion query runs.
-            SocialProfile::query()
-                ->where('socialable_type', $this->socialable_type)
-                ->where('socialable_id', $this->socialable_id)
-                ->where('platform', $this->platform)
-                ->where('purpose', $this->purpose)
-                ->whereKeyNot($this->getKey())
-                ->where(function (Builder $query): void {
-                    if ($this->owner_type === null) {
-                        $query->whereNull('owner_type')->whereNull('owner_id');
+        // The surrounding save transaction rolls this demotion back if a
+        // later model guard or the database constraint rejects the write.
+        SocialProfile::query()
+            ->where('socialable_type', $this->socialable_type)
+            ->where('socialable_id', $this->socialable_id)
+            ->where('platform', $this->platform)
+            ->where('purpose', $this->purpose)
+            ->whereKeyNot($this->getKey())
+            ->where(function (Builder $query): void {
+                if ($this->owner_type === null) {
+                    $query->whereNull('owner_type')->whereNull('owner_id');
 
-                        return;
-                    }
+                    return;
+                }
 
-                    $query->where('owner_type', $this->owner_type)
-                        ->where('owner_id', $this->owner_id);
-                })
-                ->lockForUpdate()
-                ->update(['is_primary' => false]);
-        });
+                $query->where('owner_type', $this->owner_type)
+                    ->where('owner_id', $this->owner_id);
+            })
+            ->lockForUpdate()
+            ->update(['is_primary' => false]);
+    }
+
+    private function prepareOwnerForPrimarySync(): void
+    {
+        if ($this->exists) {
+            return;
+        }
+
+        $config = static::resolveOwnerScopeConfig();
+
+        if ($config->enabled) {
+            static::assignOwnerOnCreate($this, $config);
+        }
     }
 
     private function guardSocialableOwner(): void

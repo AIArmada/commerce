@@ -16,6 +16,6 @@ final class CalculateFeedbackFormAnalyticsAction
 
     public function execute(FeedbackForm $form): FeedbackAnalyticsData
     {
-        return $this->analytics->summaryForForm($form);
+        return $this->analytics->calculateLive($form);
     }
 }

@@ -6,11 +6,16 @@ namespace AIArmada\Checkout\Support;
 
 use AIArmada\Checkout\Data\PaymentRequest;
 use AIArmada\Checkout\Models\CheckoutSession;
+use Illuminate\Support\Facades\Log;
 
 final readonly class ChipPurchasePayloadBuilder
 {
     public function idempotencyKey(CheckoutSession $session): string
     {
+        Log::warning('Checkout derived an idempotency key from the session.', [
+            'checkout_session_id' => (string) $session->getKey(),
+        ]);
+
         return (string) $session->getKey();
     }
 

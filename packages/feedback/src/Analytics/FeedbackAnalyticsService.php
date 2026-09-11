@@ -10,6 +10,7 @@ use AIArmada\Feedback\Contracts\FeedbackAnalyticsCalculator;
 use AIArmada\Feedback\Data\FeedbackAnalyticsData;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Models\FeedbackFormAnalytics;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Models\FeedbackTestimonial;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,6 +26,19 @@ final class FeedbackAnalyticsService implements FeedbackAnalyticsCalculator
     ) {}
 
     public function summaryForForm(FeedbackForm $form): FeedbackAnalyticsData
+    {
+        $aggregate = FeedbackFormAnalytics::query()
+            ->where('feedback_form_id', $form->id)
+            ->first();
+
+        if ($aggregate instanceof FeedbackFormAnalytics) {
+            return $aggregate->toData();
+        }
+
+        return $this->calculateLive($form);
+    }
+
+    public function calculateLive(FeedbackForm $form): FeedbackAnalyticsData
     {
         $total = $this->responseQuery($form)->count();
         $completed = $this->responseQuery($form)->where('status', 'submitted')->count();

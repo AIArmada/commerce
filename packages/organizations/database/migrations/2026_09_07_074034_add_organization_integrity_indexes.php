@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -14,9 +16,40 @@ return new class extends Migration
         $membersTable = (string) config('organizations.database.tables.members', 'organization_members');
 
         $organizationsSlugUnique = 'organizations_slug_unique';
+        $hasOrganizations = Schema::hasTable($organizationsTable);
+        $hasMembers = Schema::hasTable($membersTable);
 
-        if (Schema::hasTable($organizationsTable)) {
-            if (! Schema::hasIndex($organizationsTable, ['slug'], 'unique')) {
+        if ($hasOrganizations) {
+            $this->assertRequiredColumns($organizationsTable, ['slug']);
+        }
+
+        if ($hasMembers) {
+            $this->assertRequiredColumns($membersTable, ['organization_id', 'user_id', 'role']);
+        }
+
+        if ($hasOrganizations) {
+            $this->assertNoDuplicateGroups(
+                $organizationsTable,
+                'organization slugs',
+                ['slug'],
+                static function (Builder $query): void {
+                    $query->whereNotNull('slug');
+                },
+            );
+        }
+
+        if ($hasMembers) {
+            $this->assertNoDuplicateGroups(
+                $membersTable,
+                'organization memberships',
+                ['organization_id', 'user_id'],
+                static function (Builder $query): void {},
+            );
+        }
+
+        if ($hasOrganizations) {
+            if (! Schema::hasIndex($organizationsTable, $organizationsSlugUnique)
+                && ! Schema::hasIndex($organizationsTable, ['slug'], 'unique')) {
                 Schema::table($organizationsTable, function (Blueprint $table) use ($organizationsSlugUnique): void {
                     $table->unique('slug', $organizationsSlugUnique);
                 });
@@ -28,11 +61,12 @@ return new class extends Migration
         $membersLookupUnique = 'organization_members_organization_user_unique';
         $membersRoleIndex = 'organization_members_organization_role_index';
 
-        if (! Schema::hasTable($membersTable)) {
+        if (! $hasMembers) {
             return;
         }
 
-        if (! Schema::hasIndex($membersTable, ['organization_id', 'user_id'], 'unique')) {
+        if (! Schema::hasIndex($membersTable, $membersLookupUnique)
+            && ! Schema::hasIndex($membersTable, ['organization_id', 'user_id'], 'unique')) {
             Schema::table($membersTable, function (Blueprint $table) use ($membersLookupUnique): void {
                 $table->unique(['organization_id', 'user_id'], $membersLookupUnique);
             });
@@ -54,7 +88,7 @@ return new class extends Migration
 
         $organizationsSlugUnique = 'organizations_slug_unique';
 
-        if (Schema::hasTable($organizationsTable)) {
+        if (Schema::hasTable($organizationsTable) && Schema::hasColumn($organizationsTable, 'slug')) {
             if (Schema::hasIndex($organizationsTable, $organizationsSlugUnique)) {
                 Schema::table($organizationsTable, function (Blueprint $table) use ($organizationsSlugUnique): void {
                     $table->dropUnique($organizationsSlugUnique);
@@ -68,7 +102,10 @@ return new class extends Migration
             }
         }
 
-        if (! Schema::hasTable($membersTable)) {
+        if (! Schema::hasTable($membersTable)
+            || ! Schema::hasColumn($membersTable, 'organization_id')
+            || ! Schema::hasColumn($membersTable, 'user_id')
+            || ! Schema::hasColumn($membersTable, 'role')) {
             return;
         }
 
@@ -116,5 +153,69 @@ return new class extends Migration
                 $table->dropIndex($indexName);
             });
         }
+    }
+
+    /**
+     * @param  list<string>  $columns
+     */
+    private function assertRequiredColumns(string $tableName, array $columns): void
+    {
+        foreach ($columns as $columnName) {
+            if (Schema::hasColumn($tableName, $columnName)) {
+                continue;
+            }
+
+            throw new RuntimeException(sprintf(
+                'Organization integrity index migration cannot run because [%s] is missing column [%s].',
+                $tableName,
+                $columnName,
+            ));
+        }
+    }
+
+    /**
+     * @param  list<string>  $columns
+     * @param  callable(Builder): void  $filter
+     */
+    private function assertNoDuplicateGroups(
+        string $tableName,
+        string $description,
+        array $columns,
+        callable $filter,
+    ): void {
+        $query = DB::table($tableName);
+        $filter($query);
+
+        $groups = $query
+            ->select($columns)
+            ->selectRaw('COUNT(*) AS duplicate_count')
+            ->groupBy($columns)
+            ->havingRaw('COUNT(*) > 1')
+            ->get();
+
+        if ($groups->isEmpty()) {
+            return;
+        }
+
+        $samples = $groups->take(10)->map(function (object $group) use ($columns): array {
+            $sample = [];
+
+            foreach ($columns as $column) {
+                $sample[$column] = $group->{$column};
+            }
+
+            $sample['count'] = (int) $group->duplicate_count;
+
+            return $sample;
+        })->values()->all();
+
+        throw new RuntimeException(sprintf(
+            'Organization integrity index dry-run preflight blocked [%s]: %d duplicate %s groups. '
+            . 'Samples: %s. No rows were deleted; resolve the conflicts and rerun the migration.',
+            $tableName,
+            $groups->count(),
+            $description,
+            json_encode($samples, JSON_THROW_ON_ERROR),
+        ));
     }
 };

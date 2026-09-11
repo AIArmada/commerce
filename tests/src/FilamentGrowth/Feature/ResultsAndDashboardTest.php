@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentGrowth\Pages\ExperimentResultsPage;
 use AIArmada\FilamentGrowth\Pages\GrowthDashboard;
+use AIArmada\FilamentGrowth\Support\GrowthStatsAggregator;
 use AIArmada\FilamentGrowth\Widgets\ExperimentWinnersWidget;
 use AIArmada\FilamentGrowth\Widgets\GrowthStatsWidget;
 use AIArmada\Growth\Actions\AggregateExperimentMetrics;
@@ -18,6 +19,7 @@ use AIArmada\Signals\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 function filamentGrowthOwner(): User
@@ -401,6 +403,41 @@ it('limits dashboard experiment aggregation using filament-growth table config',
 
         expect($stats[3]->getValue())->not->toBe('Mixed');
     });
+});
+
+it('batches ten dashboard experiments in at most three queries', function (): void {
+    config()->set('filament-growth.tables.stats_experiment_limit', 10);
+
+    $owner = filamentGrowthOwner();
+
+    [$excludedExperiment] = filamentGrowthExperiment($owner);
+    OwnerContext::withOwner($owner, function () use ($excludedExperiment): void {
+        $excludedExperiment->forceFill([
+            'status' => 'concluded',
+            'created_at' => CarbonImmutable::now()->subDay(),
+            'updated_at' => CarbonImmutable::now()->subDay(),
+        ])->saveQuietly();
+    });
+
+    for ($index = 0; $index < 10; $index++) {
+        filamentGrowthExperiment($owner);
+    }
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $aggregated = OwnerContext::withOwner($owner, fn (): array => GrowthStatsAggregator::aggregate());
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    expect($queries)->toHaveCount(3)
+        ->and($aggregated['activeExperiments'])->toBe(10)
+        ->and($aggregated['winnersDescription'])->toContain('Based on latest 10 of 11 experiments')
+        ->and($aggregated['variantCount'])->toBe(22)
+        ->and($aggregated['assignmentCount'])->toBe(22);
 });
 
 it('keeps exact active experiment counts while clearly sampling dashboard revenue metrics', function (): void {

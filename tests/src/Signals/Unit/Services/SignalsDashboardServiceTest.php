@@ -16,6 +16,7 @@ use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Services\SignalsDashboardService;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 uses(SignalsTestCase::class);
 
@@ -312,4 +313,70 @@ it('falls back to explicit global context when no owner can be resolved', functi
         ->and($trend[0]['events'])->toBe(14)
         ->and($trend[0]['conversions'])->toBe(2)
         ->and($trend[0]['revenue_minor'])->toBe(2500);
+});
+
+it('reads dashboard totals and trends from daily rollups', function (): void {
+    /** @var User $owner */
+    $owner = User::query()->firstOrFail();
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Rollup Property',
+        'slug' => 'rollup-property',
+        'write_key' => 'rollup-key',
+        'domain' => 'rollup.test',
+    ]);
+
+    SignalDailyMetric::query()->create([
+        'tracked_property_id' => $property->id,
+        'date' => '2026-03-10',
+        'unique_identities' => 3,
+        'sessions' => 5,
+        'bounced_sessions' => 1,
+        'page_views' => 12,
+        'events' => 14,
+        'conversions' => 2,
+        'revenue_minor' => 2500,
+    ]);
+
+    SignalEvent::query()->create([
+        'tracked_property_id' => $property->id,
+        'occurred_at' => CarbonImmutable::parse('2026-03-10 12:00:00'),
+        'event_name' => 'raw_event_that_must_not_be_read',
+        'event_category' => 'conversion',
+        'revenue_minor' => 999999,
+    ]);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $service = app(SignalsDashboardService::class);
+        $summary = $service->summary(
+            null,
+            CarbonImmutable::parse('2026-03-10 00:00:00'),
+            CarbonImmutable::parse('2026-03-10 23:59:59'),
+        );
+        $trend = $service->trend(
+            null,
+            CarbonImmutable::parse('2026-03-10 00:00:00'),
+            CarbonImmutable::parse('2026-03-10 23:59:59'),
+        );
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $sql = collect($queries)
+        ->pluck('query')
+        ->map(static fn (string $query): string => mb_strtolower($query))
+        ->implode("\n");
+
+    expect($summary['events'])->toBe(14)
+        ->and($summary['conversions'])->toBe(2)
+        ->and($summary['revenue_minor'])->toBe(2500)
+        ->and($trend)->toHaveCount(1)
+        ->and($trend[0]['events'])->toBe(14)
+        ->and($sql)->toContain('signal_daily_metrics')
+        ->and($sql)->not->toContain('signal_events');
 });

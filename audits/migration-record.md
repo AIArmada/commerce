@@ -175,3 +175,72 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
 ## Commit list (after base `32f10440b`)
 
 `a654bde4e`, `36e26266a`, `41870ef74`, `048a8d686`, `963e00bc3`, `ce5550f98`, `a0d804fd0`, `7732638a7`, `4c6b2c732`, `d3638e5fa`, `fcc9dfa0c`, `b611dc155`, `0c8521a41`, `0d29e2da6`, `e6de8d5d6`, `af24a2edb`, `ad36b8059`, `ea7471b1c`, `3acbfca73`, `2001bd53d`, `83a3c331e`, `28ce28c2b`, `6c452d751`, `7645f4a38`, `569d4042b` (addressing cutover). Inventory code changes were uncommitted at review time.
+
+## Deferral clearing pass — 2026-09-11
+
+The following schema work was re-derived from the current migrations and
+schema fixtures, then added only where the physical boundary was still
+missing. Every new migration is guarded and rerunnable. Duplicate checks are
+dry-run preflights that report counts/samples and throw; they do not delete or
+backfill rows. No foreign-key constraints or cascades were added. Local/dev
+databases must be deleted and rerun when applying these newly introduced
+migrations; no production backfill is authorized.
+
+### Index and integrity migrations
+
+- `packages/persons/database/migrations/2026_09_11_000001_add_identity_indexes_to_persons_tables.php`
+  adds person slug, primary person-name, primary affiliation, and assignment
+  target/status indexes. It guards tables/columns/indexes and preflights slug,
+  primary-name, and primary-affiliation duplicate groups. Evidence:
+  `tests/src/Persons/Database/MigrationIndexesTest.php:13-107`.
+- `packages/customers/database/migrations/2026_09_11_000002_add_customer_first_pivot_indexes.php`
+  adds customer-first indexes to both customer pivots with table/column/index
+  guards. Evidence: `tests/src/Customers/Database/MigrationIndexesTest.php:7-23`.
+- `packages/contacting/database/migrations/2026_09_11_000003_add_primary_and_validity_indexes.php`
+  adds partial/conditional primary uniqueness and primary/validity-window
+  indexes for contact methods and social profiles. Its dry-run checks precede
+  the indexes; the current timestamp-like fields are `valid_from` and
+  `valid_until`. Evidence:
+  `tests/src/Contacting/Database/MigrationIndexesTest.php:16-129`.
+- `packages/inventory/database/migrations/2026_09_11_000004_add_movement_location_history_index.php`
+  adds `(from_location_id, to_location_id, occurred_at)` after guarded table
+  and column checks. `occurred_at` is the current movement chronology field,
+  not `created_at`. Evidence:
+  `tests/src/Inventory/Feature/InventoryMigrationsTest.php:61-79`.
+- `packages/organizations/database/migrations/2026_09_07_074034_add_organization_integrity_indexes.php`
+  was strengthened in place because it already owned this migration slot. It
+  now preflights duplicate slugs and member pairs before adding the slug and
+  member-pair uniques plus the member-role lookup index. Evidence:
+  `tests/src/Organizations/Database/MigrationIndexesTest.php:19-115`.
+- `packages/orders/database/migrations/2026_09_11_000002_harden_order_identity_indexes.php`
+  preflights partial owner tuples and non-null duplicate intake/payment
+  identities, then replaces nullable-unsafe uniques with partial uniques on
+  PostgreSQL/SQLite. MySQL keeps its native nullable-unique behavior and the
+  application guard. Evidence:
+  `tests/src/Orders/PaymentIdentityMigrationTest.php:19-31` and
+  `tests/src/Orders/OrderPaymentTest.php:56-91`.
+
+### Aggregate table migration
+
+- `packages/feedback/database/migrations/2026_09_11_000001_create_feedback_form_analytics_table.php`
+  creates the minimal owner-scoped `feedback_form_analytics` table only when
+  absent, with a unique form identity and no database FK/cascade. It has no
+  backfill; the owner-scoped worker populates rows as responses change.
+  Evidence: `tests/src/Feedback/FeedbackQueuedAnalyticsTest.php:123-146`.
+
+### Migration audit deviations and deployment evidence
+
+- The Persons title-uniqueness premise was stale: current schema already has
+  the relevant uniqueness, so only the missing lookup index was added.
+- Contacting and Inventory use `valid_from`/`valid_until` and `occurred_at`,
+  respectively, after re-derivation rather than blindly copying the deferred
+  audit’s timestamp names.
+- PostgreSQL/SQLite use true partial indexes; MySQL uses the available
+  conditional functional/CASE form where a partial index is unavailable.
+- The migration tests exercise idempotent second runs and dirty-data
+  preflight behavior. No preflight path performs deletion. The forbidden
+  migration scan for `constrained(` and `cascadeOnDelete(` is empty across
+  all seven touched migration locations.
+- The existing Organizations migration retains its historical `down()`;
+  none of the new migrations adds a rollback path. The documented operational
+  path for this dev-only repository remains delete-and-rerun.

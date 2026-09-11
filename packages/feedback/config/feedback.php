@@ -16,6 +16,7 @@ return [
             'invitations' => 'feedback_invitations',
             'templates' => 'feedback_templates',
             'testimonials' => 'feedback_testimonials',
+            'form_analytics' => 'feedback_form_analytics',
         ],
     ],
 

@@ -57,3 +57,23 @@ it('drops unused decimal quantity columns while keeping unit conversion', functi
 
     expect(Schema::getColumnListing($levelsTable))->toEqual($columnsBeforeRerun);
 });
+
+it('adds the movement location history index idempotently', function (): void {
+    $movementTable = config('inventory.database.tables.movements', 'inventory_movements');
+    $indexName = 'inventory_movements_location_history_index';
+    $columns = ['from_location_id', 'to_location_id', 'occurred_at'];
+
+    expect(Schema::hasIndex($movementTable, $indexName))->toBeTrue()
+        ->and(Schema::hasIndex($movementTable, $columns))->toBeTrue();
+
+    $repoRoot = dirname(__DIR__, 4);
+    $migrationPath = $repoRoot
+        . '/packages/inventory/database/migrations/2026_09_11_000004_add_movement_location_history_index.php';
+    $migration = require $migrationPath;
+
+    $migration->up();
+    $migration->up();
+
+    expect(Schema::hasIndex($movementTable, $indexName))->toBeTrue()
+        ->and(Schema::hasIndex($movementTable, $columns))->toBeTrue();
+});

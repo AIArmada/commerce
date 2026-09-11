@@ -9,9 +9,12 @@ use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherService;
+use AIArmada\Vouchers\Support\VoucherLookupCache;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 
 test('voucher service can find voucher', function (): void {
     $voucher = Voucher::create([
@@ -37,6 +40,183 @@ test('voucher service find returns null for non-existent', function (): void {
     $found = $service->find('nonexistent');
 
     expect($found)->toBeNull();
+});
+
+test('voucher lookup can be refreshed after an out-of-band provider update', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'CACHEME',
+        'name' => 'Before update',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+
+    expect($service->find('cacheme')?->name)->toBe('Before update');
+
+    DB::table($voucher->getTable())
+        ->where('id', $voucher->getKey())
+        ->update(['name' => 'After update']);
+
+    expect($service->find('cacheme')?->name)->toBe('Before update');
+
+    $service->invalidate('cacheme');
+
+    expect($service->find('cacheme')?->name)->toBe('After update');
+});
+
+test('voucher lookup cache keeps owner and global scopes separate', function (): void {
+    $cache = app(VoucherLookupCache::class);
+    $ownerA = new class extends Model
+    {
+        public function getMorphClass(): string
+        {
+            return 'test-owner';
+        }
+
+        public function getKey(): string
+        {
+            return 'owner-a';
+        }
+    };
+    $ownerB = new class extends Model
+    {
+        public function getMorphClass(): string
+        {
+            return 'test-owner';
+        }
+
+        public function getKey(): string
+        {
+            return 'owner-b';
+        }
+    };
+    $ownerVoucher = VoucherData::fromArray([
+        'id' => 'owner-a-voucher',
+        'code' => 'SHARED-CODE',
+        'name' => 'Owner A',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+    $otherOwnerVoucher = VoucherData::fromArray([
+        'id' => 'owner-b-voucher',
+        'code' => 'SHARED-CODE',
+        'name' => 'Owner B',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+    $globalVoucher = VoucherData::fromArray([
+        'id' => 'global-voucher',
+        'code' => 'SHARED-CODE',
+        'name' => 'Global',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    expect($cache->remember('SHARED-CODE', $ownerA, false, fn (): VoucherData => $ownerVoucher)?->name)
+        ->toBe('Owner A')
+        ->and($cache->remember('SHARED-CODE', $ownerB, false, fn (): VoucherData => $otherOwnerVoucher)?->name)
+        ->toBe('Owner B')
+        ->and($cache->remember('SHARED-CODE', $ownerA, false, fn (): VoucherData => $otherOwnerVoucher)?->name)
+        ->toBe('Owner A')
+        ->and($cache->remember('SHARED-CODE', null, false, fn (): VoucherData => $globalVoucher)?->name)
+        ->toBe('Global');
+});
+
+test('voucher model writes invalidate cached lookups automatically', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'AUTOCLEAR',
+        'name' => 'Before model update',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+
+    expect($service->find('autoclear')?->name)->toBe('Before model update');
+
+    $voucher->update(['name' => 'After model update']);
+
+    expect($service->find('autoclear')?->name)->toBe('After model update');
+});
+
+test('voucher code changes invalidate both old and new lookup keys', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'OLDCODE',
+        'name' => 'Code Change',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+
+    expect($service->find('oldcode')?->name)->toBe('Code Change');
+
+    $voucher->update(['code' => 'NEWCODE']);
+
+    expect($service->find('oldcode'))->toBeNull()
+        ->and($service->find('newcode')?->name)->toBe('Code Change');
+});
+
+test('voucher deletes invalidate cached lookups', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'DELETECACHE',
+        'name' => 'Delete Cache',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+
+    expect($service->find('deletecache'))->not->toBeNull();
+
+    $voucher->delete();
+
+    expect($service->find('deletecache'))->toBeNull();
+});
+
+test('voucher creates invalidate a stale key left by an out-of-band delete', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'RECREATECACHE',
+        'name' => 'Before recreate',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+
+    expect($service->find('recreatecache')?->name)->toBe('Before recreate');
+
+    DB::table($voucher->getTable())
+        ->where('id', $voucher->getKey())
+        ->delete();
+
+    Voucher::create([
+        'code' => 'RECREATECACHE',
+        'name' => 'After recreate',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    expect($service->find('recreatecache')?->name)->toBe('After recreate');
 });
 
 test('voucher service find or fail throws for non-existent', function (): void {

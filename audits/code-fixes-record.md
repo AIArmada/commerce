@@ -902,3 +902,211 @@ reported and taken on trust; code correctness was verified directly.
 
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.
+
+## Deferral clearing pass — 2026-09-11 (three parallel streams)
+
+This pass re-read the deferred entries and the residual notes on the 36 DONE
+audits before changing code. The entries below are the disposition of every
+item in the three delegated sets. Historical entries above remain in place;
+none was silently dropped. All implementation work was authorized for the
+owned sets under delegation-playbook §7.
+
+### Stream A — physical index batches
+
+- **Persons — implemented.** The guarded identity migration adds the
+  re-derived slug, primary-name, primary-affiliation, and assignment lookup
+  indexes at `packages/persons/database/migrations/2026_09_11_000001_add_identity_indexes_to_persons_tables.php:14-127`.
+  Its dry-run duplicate preflight is `:267-307`; it reports samples and
+  throws without deleting rows. The application sibling-demotion locks remain
+  in `packages/persons/src/Models/PersonName.php:55-80` and
+  `packages/persons/src/Models/Affiliation.php:66-91`.
+- **Organizations — implemented.** The existing migration was strengthened
+  in place, rather than creating a second migration:
+  `packages/organizations/database/migrations/2026_09_07_074034_add_organization_integrity_indexes.php:13-81,180-218`.
+  Slug and member-pair duplicate preflights now precede the unique indexes;
+  the application retry/lock guards remain.
+- **Customers — implemented.** Customer-first indexes for both pivots are
+  guarded and idempotent at
+  `packages/customers/database/migrations/2026_09_11_000002_add_customer_first_pivot_indexes.php:11-43`.
+- **Contacting — implemented.** Partial/conditional primary uniqueness and
+  primary/validity-window covering indexes are in
+  `packages/contacting/database/migrations/2026_09_11_000003_add_primary_and_validity_indexes.php:14-134,246-303`.
+  The existing transactional sibling guards remain in
+  `packages/contacting/src/Models/ContactMethod.php:176-200,264-295` and
+  `packages/contacting/src/Models/SocialProfile.php:191-215,274-305`.
+- **Inventory — implemented.** The movement history index is
+  `(from_location_id, to_location_id, occurred_at)` at
+  `packages/inventory/database/migrations/2026_09_11_000004_add_movement_location_history_index.php:11-41`.
+- **Migration safety — implemented.** New migrations guard table, required
+  columns, and existing indexes; duplicate checks are dry-run preflights only.
+  No backfill, delete, foreign key, or cascade was introduced. They are
+  intended for local/dev delete-and-rerun. The application guards and database
+  indexes were tested together, so neither layer was removed in favor of the
+  other.
+- **Verification.** Targeted migration tests passed: Persons 3/21,
+  Organizations 6/12, Customers 1/4, Contacting 3/17, Inventory 4/18.
+  Escalated owned areas also passed: Persons 31/119, FilamentPersons 3/7,
+  Organizations 15/38, FilamentOrganizations 4/7, Customers 245/431,
+  FilamentCustomers 28/63, Contacting 355/510, FilamentContacting 10 passed
+  and 4 skipped/38, Inventory 1,153 passed and 6 skipped/2,574,
+  FilamentInventory 37/136. The stream’s verdict is **closed**.
+
+### Stream B — vouchers, promotions, cashier
+
+- **Voucher cache invalidation — implemented.** The contract is documented
+  at `packages/vouchers/src/Support/VoucherLookupCache.php:16-21`: owner-scoped
+  positive lookups are cached, negative lookups are not, global-inclusive
+  lookups bypass this cache, and out-of-band writers must explicitly invalidate.
+  Lookup/invalidation wiring is at
+  `packages/vouchers/src/Services/VoucherService.php:39-70`, with model
+  save/code-change/delete hooks at `packages/vouchers/src/Models/Voucher.php:598-637`.
+  The stale-then-invalidate proof is
+  `tests/src/Vouchers/Unit/VoucherServiceTest.php:45-68`; owner separation and
+  model-write invalidation are covered at `:70-212`.
+- **Wall-clock promotions — implemented additively.** The optional as-of path
+  is `packages/promotions/src/Services/PromotionService.php:33-46`; existing
+  callers still use the unchanged wall-clock method. The parity test is
+  `tests/src/Promotions/PromotionServiceBehaviorTest.php:28-42`.
+- **Cashier single-gateway split — re-deferred with new boundary evidence.**
+  The owned Cashier surface already resolves one configured gateway through
+  `packages/cashier/src/GatewayManager.php:27-48`, and the seam is tested by
+  `tests/src/FilamentCashier/Unit/GatewayBackedListDelegationTest.php:28-59`.
+  The remaining multi-provider dispatch is in the read-only Checkout file
+  `packages/checkout/src/Integrations/Payment/CashierProcessor.php:24-60`.
+  Moving that seam would violate the disjoint ownership/frozen-contract rule,
+  so this is a new, exact re-deferral rather than a claim that the split is
+  complete.
+- **Derived idempotency-key warning — implemented in Stream C’s authorized
+  Checkout warning slice.** `packages/checkout/src/Support/ChipPurchasePayloadBuilder.php:13-20`
+  logs the warning only on derivation and returns the same session key; the
+  no-behavior-change proof is `tests/src/Orders/CheckoutDerivedKeyWarningTest.php:10-55`.
+- **Verification.** Vouchers passed 898 with 7 skipped/1,733 assertions;
+  FilamentVouchers 42/275; Promotions 73/127; FilamentPromotions 37/74;
+  FilamentCashier 133/423. The ten untouched adversaries run individually
+  were `tests/src/Cashier/AdversaryChipGatewayRetrievePaymentTest.php`,
+  `tests/src/CashierChip/AdversaryChargeDropsIdempotencyKey.php`,
+  `tests/src/CashierChip/AdversaryFindBillableOwnerBlind.php`,
+  `tests/src/CashierChip/AdversaryFindInvoiceCrossTenant.php`,
+  `tests/src/CashierChip/AdversaryRecurringTokenDoubleCharge.php`,
+  `tests/src/Checkout/AdversaryCashierCallbackAmount.php`,
+  `tests/src/Checkout/AdversaryFailureThenPaidDropped.php`,
+  `tests/src/Chip/AdversaryCrashRecoveryDoublePost.php`,
+  `tests/src/Chip/AdversaryKeylessCheckoutPurchase.php`, and
+  `tests/src/Chip/AdversaryRecurringChargeIdempotency.php`; each passed.
+  The B canaries passed: Cashier 256/524, Checkout 266/977, Pricing 145/290,
+  Chip 1,052 with 4 skipped/2,730, and Cart 1,052 with 2 skipped/2,731.
+  Stream B’s implemented items are closed; the Cashier split remains the
+  explicitly re-deferred item above.
+
+### Stream C — residual sweep
+
+- **Growth batching — implemented.** The batch action and typed row boundary
+  are at `packages/growth/src/Actions/AggregateExperimentMetrics.php:89-229`
+  and `packages/growth/src/Support/ExperimentMetricBatchRow.php:1-28`;
+  dashboard aggregation consumes it at
+  `packages/filament-growth/src/Support/GrowthStatsAggregator.php:17-70`.
+  `tests/src/FilamentGrowth/Feature/ResultsAndDashboardTest.php:408-440`
+  proves ten experiments in exactly three queries, with the expected counts.
+- **Signals rollup reads — implemented; production EXPLAIN remains
+  re-deferred with new measurements.** Dashboard summary/trend reads the
+  daily rollup at `packages/signals/src/Services/SignalsDashboardService.php:30-53,71-100`.
+  The regression fixture has 14 events, 2,500 minor-unit rollup revenue, and
+  a raw 999,999-minor-unit event; it proves the raw event is not read at
+  `tests/src/Signals/Unit/Services/SignalsDashboardServiceTest.php:318-382`.
+  A production-scale EXPLAIN of the correlated acquisition subquery at
+  `packages/signals/src/Reports/AcquisitionReportService.php:156-176` could
+  not be responsibly produced: the playbook environment has local SQLite,
+  no production-like cardinality, and no live database. This is a measured
+  environment/data blocker, not “still deferred” without reasoning.
+- **Feedback queued recalculation — implemented.** The minimal guarded
+  aggregate table is created at
+  `packages/feedback/database/migrations/2026_09_11_000001_create_feedback_form_analytics_table.php:11-35`;
+  the owner-scoped action/job and after-commit listener are wired at
+  `packages/feedback/src/Actions/RecalculateFeedbackFormAnalyticsAction.php:19-74`,
+  `packages/feedback/src/Jobs/RecalculateFeedbackFormAnalyticsJob.php:18-69`,
+  and `packages/feedback/src/FeedbackServiceProvider.php:57-68`.
+  Reads prefer the aggregate with a live fallback at
+  `packages/feedback/src/Analytics/FeedbackAnalyticsService.php:28-38`.
+  `tests/src/Feedback/FeedbackQueuedAnalyticsTest.php:20-146` covers stale
+  recalculation, owner isolation, queue payload, immutability, and guarded
+  rerun behavior.
+- **Orders NULL-unsafe identities — implemented.** Guarded partial uniques
+  and duplicate/partial-owner preflights are at
+  `packages/orders/database/migrations/2026_09_11_000002_harden_order_identity_indexes.php:14-49,70-195`.
+  The application payment check remains at
+  `packages/orders/src/Models/OrderPayment.php:222-242`, while intake checks
+  remain in the existing create action. Tests cover both layers at
+  `tests/src/Orders/PaymentIdentityMigrationTest.php:19-31` and
+  `tests/src/Orders/OrderPaymentTest.php:56-91`.
+- **Carrier discovery — interface implemented; positive queue branch
+  re-deferred with exact evidence.** The contract adds
+  `availableCarriers()` at `packages/orders/src/Contracts/FulfillmentHandler.php:22-29`
+  and Shipping implements it at
+  `packages/shipping/src/Integrations/OrderFulfillmentHandler.php:31-61`.
+  The fallback branch is tested at
+  `tests/src/Orders/FulfillmentHandlerTest.php:12-36`.
+  The positive Filament queue branch cannot execute because the read-only
+  `packages/filament-shipping/src/Pages/FulfillmentQueue.php:318-327`
+  checks an interface with `class_exists()` and returns before resolving the
+  bound handler. That precise cross-set defect prevents the requested
+  positive-branch proof without modifying an unowned file; the fallback
+  guard remains covered.
+- **Canonical test config — implemented.** `tests/src/TestCase.php:402`
+  now uses `moderation.owner.enabled`.
+- **J&T demo key — implemented.** `demo/config/jnt.php:81` now uses
+  `region_multipliers_bp`, matching the guidance at
+  `packages/jnt/docs/03-configuration.md:202-205`.
+- **Events’ 11 exceptions — re-deferred with new scope evidence.** The
+  machine-checkable marker/test cannot be added inside Stream C’s named write
+  set: the events package and `tests/src/Events/**` are explicitly read-only.
+  The current authoritative list is still exactly the 11 intentional
+  catalog/pivot/submission files recorded at `audits/events.md:183-186`:
+  `EventRole.php:27`, `EventSeriesItemPivot.php:17`,
+  `EventSubmission.php:39`, `EventTaxonomy.php:25`, `EventTerm.php:31`,
+  `EventTermPolicy.php:25`, `FacilityType.php:26`, `Venue.php:63`,
+  `VenueFacility.php:37`, `VenueSpace.php:42`, and `VenueSpaceType.php:29`.
+  This is re-deferred for an ownership-safe follow-up that can add either the
+  Kennedy list test or the intentional-marker grep test.
+- **Downstream nullable contact reads — re-deferred with new static/data
+  evidence.** Checkout already uses the canonical Contacting resolver at
+  `packages/checkout/src/Steps/ProcessPaymentStep.php:391-423`. Other owning
+  reads remain outside this slice, including Stripe customer email at
+  `packages/cashier/src/Gateways/Stripe/StripeCustomer.php:43-46` and event
+  recipient resolution at
+  `packages/events/src/Resolvers/DefaultEventOrderItemFulfillmentResolver.php:47-123`.
+  No production-like database or sample population is available in the
+  playbook environment, so an actual null rate cannot be measured honestly;
+  no sweeping compatibility change was made. The follow-up must run the
+  three owning reads against representative data before choosing adoption.
+- **Pending-ledger exercise — implemented.** The end-to-end reserve → crash
+  observation → reconciliation-required failure → record/resolve → successful
+  find sequence is at `tests/src/Orders/PendingLedgerExerciseTest.php:10-55`.
+- **Verification.** Growth 144/452 and FilamentGrowth 60/209; Signals 99/755
+  and FilamentSignals 26/80; Feedback 54/152 and FilamentFeedback 8/31;
+  Orders 330/743; Shipping (read-only area check) 530 with 1 skipped/1,328.
+  The focused Growth query proof was rerun after the typed-row correction and
+  passed 22/67. Stream C is closed except for the explicitly re-deferred
+  Signals EXPLAIN, positive carrier-queue branch, Events markers, and
+  downstream-null-rate items above.
+
+### Audit deviations
+
+- Organizations reused and hardened its existing shipped migration; no
+  duplicate migration was created.
+- The Persons audit’s proposed title uniqueness was re-derived as stale:
+  the existing title uniqueness premise is already present, so the new batch
+  adds the target/status lookup index instead of duplicating that constraint.
+- Contacting’s live validity fields are `valid_from`/`valid_until`, not
+  `created_at`; Inventory’s movement chronology is `occurred_at`, not
+  `created_at`. The indexes follow the current schemas.
+- PostgreSQL/SQLite use true partial indexes. MySQL uses the supported
+  conditional functional/CASE form (and its native nullable-unique behavior
+  where applicable). All new migrations are guarded and rerunnable, with
+  no backfills, deletes, foreign keys, or cascades; local/dev delete-and-rerun
+  is the migration procedure.
+- The first FilamentPromotions parallel run lost a worker result under
+  resource pressure; the bounded four-process retry passed 37/74. No test
+  assertion failed.
+- No full repository suite was run. The exact targeted files, owned-area
+  escalations, untouched adversary proofs, and main Chip/Cashier/Checkout
+  canaries are the verification boundary for this pass.
