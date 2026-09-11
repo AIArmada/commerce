@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
+use AIArmada\Addressing\Traits\HasAddresses;
 use AIArmada\Events\Database\Factories\EventLocationFactory;
-use AIArmada\Events\Models\Concerns\Addressable;
+use AIArmada\Events\Models\Concerns\ReadsLegacyAddressColumns;
 use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -67,9 +68,10 @@ use Illuminate\Support\Carbon;
  */
 final class EventLocation extends Model
 {
-    use Addressable;
+    use HasAddresses;
     use HasFactory;
     use HasUuids;
+    use ReadsLegacyAddressColumns;
     use ScopesByEventOwner;
 
     protected $fillable = [
@@ -78,13 +80,7 @@ final class EventLocation extends Model
         'locationable_type', 'locationable_id',
         'venue_id', 'venue_space_id', 'venue_space_type_id', 'space_name_snapshot',
         'label',
-        'line1', 'line2',
-        'city', 'state', 'postcode', 'country_code', 'country',
         'level', 'unit_no',
-        'latitude', 'longitude',
-        'google_place_id', 'google_maps_url', 'waze_url', 'map_url', 'directions',
-        'address_snapshot',
-        'geocoded_at', 'geocoding_source',
         'visibility', 'status', 'sort_order',
         'metadata',
     ];

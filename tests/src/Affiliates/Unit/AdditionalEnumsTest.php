@@ -15,7 +15,7 @@ use AIArmada\Affiliates\States\Pending;
 
 // CommissionRuleType Tests
 test('CommissionRuleType enum has all expected cases', function (): void {
-    expect(CommissionRuleType::cases())->toHaveCount(8);
+    expect(CommissionRuleType::cases())->toHaveCount(12);
 
     expect(CommissionRuleType::Product->value)->toBe('product');
     expect(CommissionRuleType::Category->value)->toBe('category');
@@ -25,6 +25,10 @@ test('CommissionRuleType enum has all expected cases', function (): void {
     expect(CommissionRuleType::Promotion->value)->toBe('promotion');
     expect(CommissionRuleType::FirstPurchase->value)->toBe('first_purchase');
     expect(CommissionRuleType::Recurring->value)->toBe('recurring');
+    expect(CommissionRuleType::TopPerformer->value)->toBe('top_performer');
+    expect(CommissionRuleType::Recruitment->value)->toBe('recruitment');
+    expect(CommissionRuleType::Consistency->value)->toBe('consistency');
+    expect(CommissionRuleType::Growth->value)->toBe('growth');
 });
 
 test('CommissionRuleType label returns correct labels', function (): void {
@@ -36,6 +40,10 @@ test('CommissionRuleType label returns correct labels', function (): void {
     expect(CommissionRuleType::Promotion->label())->toBe('Promotional');
     expect(CommissionRuleType::FirstPurchase->label())->toBe('First Purchase Bonus');
     expect(CommissionRuleType::Recurring->label())->toBe('Recurring Commission');
+    expect(CommissionRuleType::TopPerformer->label())->toBe('Top Performer Bonus');
+    expect(CommissionRuleType::Recruitment->label())->toBe('Recruitment Bonus');
+    expect(CommissionRuleType::Consistency->label())->toBe('Consistency Bonus');
+    expect(CommissionRuleType::Growth->label())->toBe('Growth Bonus');
 });
 
 test('CommissionRuleType priority returns correct priority values', function (): void {
@@ -47,6 +55,17 @@ test('CommissionRuleType priority returns correct priority values', function ():
     expect(CommissionRuleType::FirstPurchase->priority())->toBe(50);
     expect(CommissionRuleType::Recurring->priority())->toBe(40);
     expect(CommissionRuleType::Program->priority())->toBe(10);
+});
+
+test('CommissionRuleType identifies the four performance bonus types', function (): void {
+    expect(CommissionRuleType::performanceBonusCases())->toBe([
+        CommissionRuleType::TopPerformer,
+        CommissionRuleType::Recruitment,
+        CommissionRuleType::Consistency,
+        CommissionRuleType::Growth,
+    ])
+        ->and(CommissionRuleType::TopPerformer->isPerformanceBonus())->toBeTrue()
+        ->and(CommissionRuleType::Product->isPerformanceBonus())->toBeFalse();
 });
 
 // FraudSignalStatus Tests

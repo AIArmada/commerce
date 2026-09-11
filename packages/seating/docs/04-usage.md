@@ -8,6 +8,7 @@ title: Seating Usage
 use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Seating\Models\SeatSection;
 use AIArmada\Seating\Models\Seat;
+use AIArmada\Seating\Enums\SeatStatus;
 
 $map = SeatMap::query()->create([
     'name' => 'Main Hall',
@@ -28,7 +29,7 @@ Seat::query()->create([
     'row_number' => 1,
     'column_number' => 1,
     'seat_label' => '1',
-    'status' => 'available',
+    'status' => SeatStatus::Available,
     'category' => 'standard',
 ]);
 ```

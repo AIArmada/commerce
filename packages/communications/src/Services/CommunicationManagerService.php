@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Services;
 
 use AIArmada\Communications\Actions\AttachCommunicationReferenceAction;
+use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Contracts\CommunicationManager;
-use AIArmada\Communications\Contracts\CommunicationRecorder;
-use AIArmada\Communications\Contracts\ContentRenderer;
 use AIArmada\Communications\Contracts\IdempotencyLock;
-use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
@@ -20,9 +18,7 @@ use RuntimeException;
 class CommunicationManagerService implements CommunicationManager
 {
     public function __construct(
-        private readonly CommunicationRecorder $recorder,
-        private readonly RecipientSnapshotResolver $recipientResolver,
-        private readonly ContentRenderer $contentRenderer,
+        private readonly DispatchManagedNotificationAction $dispatcher,
         private readonly IdempotencyLock $idempotencyLock,
         private readonly AttachCommunicationReferenceAction $referenceAttacher,
         private readonly EventReferenceNormalizer $referenceNormalizer,
@@ -46,7 +42,7 @@ class CommunicationManagerService implements CommunicationManager
             );
         }
 
-        $communication = $this->recorder->createCommunication($context);
+        $communication = $this->dispatcher->handle($notifiable, $notification, $context);
 
         if ($eventReference !== null) {
             $this->referenceAttacher->handle(
@@ -56,18 +52,6 @@ class CommunicationManagerService implements CommunicationManager
                 role: 'event',
             );
         }
-
-        $recipient = $this->recipientResolver->resolve($notifiable);
-
-        $channels = method_exists($notification, 'via')
-            ? $notification->via($notifiable)
-            : ['mail'];
-
-        foreach ($channels as $channel) {
-            $content = $this->contentRenderer->renderFromNotification($notifiable, $notification, $channel);
-        }
-
-        $notifiable->notify($notification);
 
         return $communication;
     }

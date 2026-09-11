@@ -57,11 +57,13 @@ describe('Attribute Model', function (): void {
                 'attributable_type' => Product::class,
                 'attributable_id' => $product->id,
                 'value' => 'Small',
+                'locale' => 'en',
             ]);
             $attribute->values()->create([
                 'attributable_type' => Product::class,
                 'attributable_id' => $product->id,
                 'value' => 'Medium',
+                'locale' => 'ms',
             ]);
 
             $attribute->refresh();

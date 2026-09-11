@@ -5,32 +5,25 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
-use Illuminate\Container\Attributes\Tag;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class PerformanceBonusService
 {
-    private array $bonusRules;
-
     public function __construct(
-        #[Tag('affiliates.performance_bonus_rule')]
-        iterable $bonusRules = [],
-    ) {
-        $this->bonusRules = [];
-        foreach ($bonusRules as $rule) {
-            $this->bonusRules[$rule->bonusType()] = $rule;
-        }
-    }
+        private readonly CommissionRuleEngine $commissionRules,
+    ) {}
 
     public function calculateBonuses(
         ?CarbonImmutable $from = null,
@@ -41,15 +34,8 @@ final class PerformanceBonusService
 
         $bonuses = [];
 
-        foreach ($this->bonusRules as $rule) {
-            if (! $rule->isEnabled()) {
-                continue;
-            }
-
-            $ruleBonuses = $rule->calculate(
-                $from,
-                $to,
-            );
+        foreach (CommissionRuleType::performanceBonusCases() as $type) {
+            $ruleBonuses = $this->commissionRules->calculatePerformanceBonuses($type, $from, $to);
 
             foreach ($ruleBonuses as $bonus) {
                 $bonuses[$bonus['affiliate_id'] . '_' . $bonus['bonus_type']] = $bonus;

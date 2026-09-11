@@ -10,7 +10,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Enums\CatalogStatus;
 use Carbon\CarbonImmutable;
@@ -35,7 +34,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property string|null $parent_id
- * @property string $parent_scope
  * @property string $name
  * @property string $slug
  * @property string|null $description
@@ -63,7 +61,6 @@ class Category extends Model implements Auditable, HasMedia
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
-    use HasOwnerScopeKey;
     use HasSlug;
     use HasUuids;
     use InteractsWithMedia;
@@ -77,6 +74,17 @@ class Category extends Model implements Auditable, HasMedia
     protected function uniqueIdentityColumns(): array
     {
         return ['slug'];
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    protected function modifyUniqueIdentityQuery(Builder $query): Builder
+    {
+        return $this->parent_id === null
+            ? $query->whereNull('parent_id')
+            : $query->where('parent_id', $this->parent_id);
     }
 
     protected $fillable = [
@@ -426,10 +434,6 @@ class Category extends Model implements Auditable, HasMedia
 
     protected static function booted(): void
     {
-        static::saving(function (Category $category): void {
-            $category->setAttribute('parent_scope', $category->parent_id ?? 'root');
-        });
-
         static::creating(function (Category $category): void {
             if (! (bool) config('products.features.owner.enabled', true)) {
                 return;
@@ -465,7 +469,7 @@ class Category extends Model implements Auditable, HasMedia
 
         static::deleting(function (Category $category): void {
             // Nullify parent_id for children
-            $category->children()->update(['parent_id' => null, 'parent_scope' => 'root']);
+            $category->children()->update(['parent_id' => null]);
             // Detach from products pivot
             $category->products()->detach();
         });

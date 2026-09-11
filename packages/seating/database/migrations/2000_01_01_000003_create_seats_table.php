@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Seating\Enums\SeatStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -22,7 +23,7 @@ return new class extends Migration
             $table->integer('column_number');
             $table->string('category')->nullable()->index();
             $table->bigInteger('price_modifier')->nullable();
-            $table->string('status')->default('available')->index();
+            $table->string('status')->default(SeatStatus::Available->value)->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 

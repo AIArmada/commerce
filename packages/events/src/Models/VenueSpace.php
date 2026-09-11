@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
+use AIArmada\Addressing\Traits\HasAddresses;
 use AIArmada\Events\Database\Factories\VenueSpaceFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -41,6 +42,7 @@ use Illuminate\Support\Carbon;
  */
 class VenueSpace extends Model
 {
+    use HasAddresses;
     use HasFactory;
     use HasUuids;
 
@@ -49,8 +51,6 @@ class VenueSpace extends Model
         'name', 'slug', 'code', 'space_type',
         'level', 'unit_no', 'block', 'wing',
         'capacity',
-        'latitude', 'longitude',
-        'google_maps_url', 'waze_url', 'map_url', 'directions',
         'status', 'visibility',
         'metadata',
     ];

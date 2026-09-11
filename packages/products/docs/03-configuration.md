@@ -120,7 +120,8 @@ The package reads collection limits and mime rules from `media.collections.*`, a
 ### SEO
 
 - `seo.slug_max_length` is used by product and category slug generation.
-- Product slug identity is enforced globally in application code so public checkout/product URLs cannot resolve ambiguously. SKU identity remains enforced per owner tuple. Database `owner_scope` uniqueness is retained as a legacy hint; partial tuple indexes are intentionally deferred.
+- Product slug and SKU identity are enforced by the `(owner_type, owner_id, identity)` tuple. Development/test migrations install separate partial unique indexes for owner-scoped and global rows; no derived scope column participates in identity.
+- This identity cutover is development-only and assumes reset development databases; no deduplication or cleanup machinery is included.
 
 ## Environment variables
 

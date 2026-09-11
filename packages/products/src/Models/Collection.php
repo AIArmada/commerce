@@ -10,7 +10,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Enums\CatalogStatus;
 use Carbon\CarbonImmutable;
@@ -60,7 +59,6 @@ class Collection extends Model implements Auditable, HasMedia
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
-    use HasOwnerScopeKey;
     use HasSlug;
     use HasUuids;
     use InteractsWithMedia;

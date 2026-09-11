@@ -11,40 +11,43 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
 
+final class StreamAManagerNotifiable
+{
+    use Notifiable;
+
+    public function routeNotificationForMail(): string
+    {
+        return 'test@example.com';
+    }
+
+    public function getKey(): string
+    {
+        return 'notifiable-manager-1';
+    }
+}
+
+final class StreamAManagerNotification extends Notification
+{
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject('Test')
+            ->line('Hello!');
+    }
+}
+
 test('facade resolves manager service', function (): void {
     expect(Communications::getFacadeRoot())->toBeInstanceOf(CommunicationManagerService::class);
 });
 
 test('manager notify creates communication record', function (): void {
-    $notifiable = new class
-    {
-        use Notifiable;
-
-        public function routeNotificationForMail(): string
-        {
-            return 'test@example.com';
-        }
-
-        public function getKey(): string
-        {
-            return 'notifiable-1';
-        }
-    };
-
-    $notification = new class extends Notification
-    {
-        public function via(object $notifiable): array
-        {
-            return ['mail'];
-        }
-
-        public function toMail(object $notifiable): mixed
-        {
-            return (new MailMessage)
-                ->subject('Test')
-                ->line('Hello!');
-        }
-    };
+    $notifiable = new StreamAManagerNotifiable;
+    $notification = new StreamAManagerNotification;
 
     $context = CommunicationContextData::from([
         'direction' => 'outbound',

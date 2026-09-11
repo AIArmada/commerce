@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Rules\GrowthBonusRule;
+use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\PerformanceBonusService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -475,9 +476,11 @@ describe('PerformanceBonusService', function (): void {
                 'occurred_at' => now()->startOfMonth()->addDay(),
             ]);
 
-            $rule = app(GrowthBonusRule::class);
-
-            $bonuses = $rule->calculate(now()->startOfMonth()->toImmutable(), now()->endOfMonth()->toImmutable());
+            $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
+                CommissionRuleType::Growth,
+                now()->startOfMonth()->toImmutable(),
+                now()->endOfMonth()->toImmutable(),
+            );
 
             expect($bonuses)->toBeArray()
                 ->toHaveCount(0);

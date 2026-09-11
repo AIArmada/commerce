@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Livewire;
 
+use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use AIArmada\Seating\Services\SeatLayoutRenderer;
@@ -61,7 +62,7 @@ class SeatMap extends Component
             ->whereHas('section', fn (Builder $query): Builder => $query->where('seat_map_id', $map->id))
             ->first();
 
-        if ($seat === null || $seat->status !== 'available') {
+        if ($seat === null || $seat->status !== SeatStatus::Available) {
             return;
         }
 
@@ -124,27 +125,29 @@ class SeatMap extends Component
         $now = CarbonImmutable::now();
 
         foreach ($seats as $seat) {
-            if ($seat->status === 'blocked') {
-                $status[$seat->id] = 'blocked';
+            if ($seat->status === SeatStatus::Blocked) {
+                $status[$seat->id] = SeatStatus::Blocked->value;
 
                 continue;
             }
 
             $activeHold = $seat->holds->first(fn ($hold) => $hold->expires_at?->greaterThan($now));
             if ($activeHold !== null) {
-                $status[$seat->id] = 'held';
+                $status[$seat->id] = SeatStatus::Held->value;
 
                 continue;
             }
 
             $activeAlloc = $seat->allocations->first(fn ($alloc) => $alloc->status === 'active');
             if ($activeAlloc !== null) {
-                $status[$seat->id] = 'sold';
+                $status[$seat->id] = SeatStatus::Sold->value;
 
                 continue;
             }
 
-            $status[$seat->id] = in_array($seat->id, $this->picked, true) ? 'picked' : 'available';
+            $status[$seat->id] = in_array($seat->id, $this->picked, true)
+                ? SeatStatus::Picked->value
+                : SeatStatus::Available->value;
         }
 
         return $status;

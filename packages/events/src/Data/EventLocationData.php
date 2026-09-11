@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Data;
 
+use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Events\Models\EventLocation;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Optional;
@@ -29,21 +30,30 @@ final class EventLocationData extends Data
 
     public static function fromEventLocation(EventLocation $location): self
     {
+        $address = $location->getPrimaryAddressData();
+
         return new self(
             id: $location->id,
             location_role: $location->location_role,
             space_name_snapshot: $location->space_name_snapshot,
             label: $location->label,
-            line1: $location->line1,
-            city: $location->city,
-            state: $location->state,
-            country_code: $location->country_code,
-            latitude: $location->latitude,
-            longitude: $location->longitude,
-            google_maps_url: $location->google_maps_url,
-            waze_url: $location->waze_url,
-            directions: $location->directions,
+            line1: $address?->line1,
+            city: $address?->city,
+            state: $address?->state,
+            country_code: $address?->countryCode,
+            latitude: $address?->latitude,
+            longitude: $address?->longitude,
+            google_maps_url: $address?->googleMapsUrl,
+            waze_url: $address?->wazeUrl,
+            directions: self::directionsFrom($address),
             venue: $location->relationLoaded('venue') ? VenueData::fromVenue($location->venue) : null,
         );
+    }
+
+    private static function directionsFrom(?AddressData $address): ?string
+    {
+        $directions = $address?->metadata['directions'] ?? null;
+
+        return is_string($directions) ? $directions : null;
     }
 }

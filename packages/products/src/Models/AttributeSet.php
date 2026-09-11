@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Concerns\IsCatalogEntity;
 use Illuminate\Database\Eloquent\Builder;
@@ -46,7 +45,6 @@ class AttributeSet extends Model implements Auditable
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
-    use HasOwnerScopeKey;
     use HasUuids;
     use IsCatalogEntity;
     use LogsCommerceActivity;

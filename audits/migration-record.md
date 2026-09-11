@@ -246,6 +246,33 @@ migrations; no production backfill is authorized.
   none of the new migrations adds a rollback path. The documented operational
   path for this dev-only repository remains delete-and-rerun.
 
+## Deferred remainder migrations — 2026-09-12
+
+- Tax ordering index: packages/tax/database/migrations/2026_09_12_000001_add_tax_rate_ordering_index.php:11-29
+  adds the guarded composite index on zone_id, tax_class, is_active,
+  is_compound, and priority. Its guarded down path at :32-43 preserves the
+  tax package's existing convention. TaxRateOrderingIndexTest passed 1/2
+  with a repeated-up and down proof.
+- Communication destination encryption:
+  packages/communications/database/migrations/2026_09_12_000001_encrypt_communication_destination_address.php:11-25
+  safely changes the address column to nullable text, and the encrypted model
+  cast is at packages/communications/src/Models/CommunicationDestination.php:73-81.
+  DestinationEncryptionTest passed 1/4 and verified the raw stored value is
+  ciphertext while the model returns plaintext.
+- Product identity cutover:
+  packages/products/database/migrations/2026_09_12_000001_replace_legacy_identity_indexes.php:12-71
+  is limited to local/development/testing, removes the superseded derived
+  owner_scope/parent_scope shapes, and installs tuple-keyed owner/global
+  partial uniques. Category parent/root indexes are defined at :159-199 and
+  attribute-value locale/default-locale indexes at :201-223. Development
+  databases reset between runs; no deduplication, backfill, or cleanup
+  machinery was added. GlobalUniquenessTest, IdentityIndexTest, and the
+  Products Area canary passed after the stale no-locale fixture expectation
+  was migrated to distinct locales.
+- The new migration paths contain no constrained() or cascadeOnDelete()
+  calls. The two-line reset/no-cleanup release note is recorded at
+  packages/products/docs/03-configuration.md:123-124.
+
 ## Event notification table retirement — implemented — 2026-09-12
 
 - Drop migration added:

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Events\Models\Venue;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use InvalidArgumentException;
+use LogicException;
 
 final class VenueImporter extends Importer
 {
@@ -24,14 +27,26 @@ final class VenueImporter extends Importer
             ImportColumn::make('venue_type')
                 ->requiredMapping()
                 ->label('Venue Type'),
-            ImportColumn::make('line1')
-                ->label('Address Line 1'),
-            ImportColumn::make('city')
-                ->label('City'),
-            ImportColumn::make('state')
-                ->label('State'),
-            ImportColumn::make('country')
-                ->label('Country'),
+            ImportColumn::make('address_id')
+                ->label('Primary Address ID')
+                ->rules(['uuid'])
+                ->ignoreBlankState()
+                ->fillRecordUsing(static function (): void {})
+                ->saveRelationshipsUsing(function (ImportColumn $column, mixed $state): void {
+                    if (! is_string($state) || $state === '') {
+                        throw new InvalidArgumentException('A valid primary address ID is required when address_id is mapped.');
+                    }
+
+                    $record = $column->getRecord();
+
+                    if (! $record instanceof Venue) {
+                        throw new LogicException('Venue importer did not resolve a Venue record.');
+                    }
+
+                    $address = Address::query()->findOrFail($state);
+
+                    $record->attachAddress($address, type: 'primary', isPrimary: true);
+                }),
             ImportColumn::make('status')
                 ->requiredMapping()
                 ->label('Status'),

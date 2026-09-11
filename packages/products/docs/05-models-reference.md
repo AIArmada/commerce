@@ -132,4 +132,4 @@ Models using `AIArmada\Products\Traits\HasAttributes` get these helpers:
 
 Custom-attribute predicates use the EAV `attribute_values` relation and are intended for admin/catalog management queries. Keep storefront listing/search paths on materialized product fields or dedicated read models rather than filtering large catalogs through EAV joins.
 
-Category identity is scoped by `(owner_type, owner_id, parent_id, slug)`. The legacy `parent_scope` column is retained for existing rows but is not a source of truth for new identity checks. Existing pivot primary-key styles are also retained; new migrations should follow the package migration policy rather than rewriting them in place.
+Category identity is scoped by `(owner_type, owner_id, parent_id, slug)`. Root and child categories use separate partial unique indexes so `parent_id = null` remains a first-class identity value. The derived `parent_scope` column is removed by the development/test cutover migration; existing pivot primary-key styles are unchanged.

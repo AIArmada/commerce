@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Contacting\Data\ContactMethodData;
+use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
 use AIArmada\Customers\Enums\AddressType;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Address;
@@ -132,7 +133,7 @@ describe('Address Model', function (): void {
                 'country' => 'MY',
             ]);
 
-            $address2->setAsDefaultBilling();
+            app(SetDefaultCustomerAddress::class)->execute($address2, 'billing');
 
             expect($address2->fresh()->is_default_billing)->toBeTrue()
                 ->and($address1->fresh()->is_default_billing)->toBeFalse();
@@ -156,7 +157,7 @@ describe('Address Model', function (): void {
                 'country' => 'MY',
             ]);
 
-            $address2->setAsDefaultShipping();
+            app(SetDefaultCustomerAddress::class)->execute($address2, 'shipping');
 
             expect($address2->fresh()->is_default_shipping)->toBeTrue()
                 ->and($address1->fresh()->is_default_shipping)->toBeFalse();

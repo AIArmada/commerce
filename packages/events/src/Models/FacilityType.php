@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
+use AIArmada\Addressing\Traits\HasAddresses;
 use AIArmada\Events\Database\Factories\FacilityTypeFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,6 +26,7 @@ use Illuminate\Support\Carbon;
  */
 final class FacilityType extends Model
 {
+    use HasAddresses;
     use HasFactory;
     use HasUuids;
 

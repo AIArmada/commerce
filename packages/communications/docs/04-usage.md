@@ -139,12 +139,11 @@ Resolution order for the default `CommunicationDestinationResolver`:
 1. Active `CommunicationDestination` for the recipient morph + channel, ordered by `is_primary` then `verified_at`
 2. Notifiable routing via `routeNotificationFor($channel)` or `routeNotificationFor{Driver}()`
 
-Resolved values are still encrypted, hashed, and hinted for delivery storage through the destination protector.
-
-The source CommunicationDestination address is currently a configured scalar
-value. Encrypting that source column is intentionally deferred until a
-schema/length migration and key-rotation/backfill policy are approved;
-delivery persistence does not store the source value in the clear.
+Resolved values are encrypted, hashed, and hinted for delivery storage through
+the destination protector. The source `CommunicationDestination.address` value
+is encrypted at rest through the model cast and is stored in a text column.
+Existing development databases are reset rather than backfilled when this
+breaking storage change is applied.
 
 ## Preferences
 

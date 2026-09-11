@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Products\Concerns;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use InvalidArgumentException;
 use RuntimeException;
@@ -34,9 +34,7 @@ trait EnforcesOwnerUniqueIdentity
                     ));
                 }
 
-                $owner = ! $model->exists && (bool) config('products.features.owner.auto_assign_on_create', true)
-                    ? OwnerContext::resolve()
-                    : ($model->isGlobal() ? null : ($model->owner ?? OwnerContext::resolve()));
+                $owner = $model->isGlobal() ? null : OwnerContext::resolve();
 
                 foreach ($model->uniqueIdentityColumns() as $column) {
                     $value = $model->getAttribute($column);
@@ -48,8 +46,16 @@ trait EnforcesOwnerUniqueIdentity
                     $query = $model->newQueryWithoutScopes()
                         ->where($column, $value);
 
-                    if ($column !== 'slug') {
-                        $query->forOwner($owner, false);
+                    if (method_exists($model, 'modifyUniqueIdentityQuery')) {
+                        /** @var Builder<self> $query */
+                        $query = $model->modifyUniqueIdentityQuery($query);
+                    }
+
+                    if ($owner === null) {
+                        $query->whereNull('owner_type')->whereNull('owner_id');
+                    } else {
+                        $query->where('owner_type', $owner->getMorphClass())
+                            ->where('owner_id', $owner->getKey());
                     }
 
                     if ($model->exists) {
@@ -59,14 +65,6 @@ trait EnforcesOwnerUniqueIdentity
                     $existing = $query->first();
 
                     if ($existing !== null) {
-                        if ($column === 'slug' && ! self::sameOwner($existing, $owner)) {
-                            throw new InvalidArgumentException(sprintf(
-                                'The %s "%s" is already used by another owner.',
-                                $column,
-                                $value,
-                            ));
-                        }
-
                         if (! $model->exists) {
                             $exception = new UniqueConstraintViolationException(
                                 $model->getConnectionName(),
@@ -92,11 +90,5 @@ trait EnforcesOwnerUniqueIdentity
                 }
             }
         );
-    }
-
-    private static function sameOwner(Model $model, ?Model $owner): bool
-    {
-        return $model->getAttribute('owner_type') === $owner?->getMorphClass()
-            && (string) $model->getAttribute('owner_id') === (string) $owner?->getKey();
     }
 }

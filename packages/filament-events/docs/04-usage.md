@@ -56,11 +56,13 @@ title: Usage
 
 ### Venues
 
-`VenueResource` manages physical venue/contact details.
+`VenueResource` manages physical venue/contact details. Address fields are
+resolved from the venue's canonical primary `HasAddresses` attachment, with
+the frozen flat columns used only when no canonical address exists.
 
 **Table columns:** name (searchable), venue_type (badge), city, state, country, status (badge), created_at.
 
-**Filters:** venue_type, status, country.
+**Filters:** venue_type, status.
 
 ### Registrations
 

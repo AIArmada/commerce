@@ -14,6 +14,7 @@ use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Events\CommunicationCreated;
 use AIArmada\Communications\Events\CommunicationQueued;
+use AIArmada\Communications\Jobs\DispatchManagedNotificationJob;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationContent;
 use AIArmada\Communications\Models\CommunicationDelivery;
@@ -38,7 +39,7 @@ final class DispatchManagedNotificationAction
         Notification $notification,
         CommunicationContextData $context,
     ): Communication {
-        return DB::transaction(function () use ($notifiable, $notification, $context) {
+        [$communication, $deliveryIdsByChannel] = DB::transaction(function () use ($notifiable, $notification, $context): array {
             $communication = new Communication;
             $communication->direction = $context->direction;
             $communication->category = $context->category;
@@ -86,6 +87,7 @@ final class DispatchManagedNotificationAction
             $channels = method_exists($notification, 'via')
                 ? $notification->via($notifiable)
                 : ['mail'];
+            $deliveryIdsByChannel = [];
 
             foreach ($channels as $channel) {
                 $destination = $this->destinationResolver->resolve($notifiable, $channel);
@@ -133,16 +135,37 @@ final class DispatchManagedNotificationAction
                     $delivery->max_attempts = 3;
                     $delivery->queued_at = CarbonImmutable::now();
                     $delivery->save();
+                    $deliveryIdsByChannel[$channel] = $delivery->id;
                 }
             }
-
-            $notifiable->notify($notification);
 
             Event::dispatch(new CommunicationQueued(
                 communicationId: $communication->id,
             ));
 
-            return $communication;
+            return [$communication, $deliveryIdsByChannel];
         });
+
+        if (method_exists($notification, 'withCommunicationContext')) {
+            $notification->withCommunicationContext(
+                communicationId: $communication->id,
+                deliveryIdsByChannel: $deliveryIdsByChannel,
+                ownerType: $communication->owner_type,
+                ownerId: $communication->owner_id,
+            );
+        }
+
+        if ($deliveryIdsByChannel !== []) {
+            DispatchManagedNotificationJob::dispatch(
+                notifiable: $notifiable,
+                notification: $notification,
+                channels: array_keys($deliveryIdsByChannel),
+                ownerType: $communication->owner_type,
+                ownerId: $communication->owner_id,
+                ownerIsGlobal: $communication->owner_type === null && $communication->owner_id === null,
+            )->afterCommit();
+        }
+
+        return $communication;
     }
 }

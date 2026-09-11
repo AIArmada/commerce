@@ -7,6 +7,7 @@ namespace AIArmada\Seating\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Database\Factories\SeatFactory;
+use AIArmada\Seating\Enums\SeatStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $column_number
  * @property string|null $category
  * @property int|null $price_modifier
- * @property string $status
+ * @property SeatStatus $status
  * @property array|null $metadata
  */
 class Seat extends Model
@@ -54,7 +55,7 @@ class Seat extends Model
     protected $keyType = 'string';
 
     protected $attributes = [
-        'status' => 'available',
+        'status' => SeatStatus::Available,
     ];
 
     protected $fillable = [
@@ -80,6 +81,7 @@ class Seat extends Model
             'row_number' => 'integer',
             'column_number' => 'integer',
             'price_modifier' => 'integer',
+            'status' => SeatStatus::class,
             'metadata' => 'array',
         ];
     }
@@ -117,13 +119,13 @@ class Seat extends Model
     /** @param Builder<Seat> $query */
     public function scopeAvailable(Builder $query): Builder
     {
-        return $query->where('status', 'available');
+        return $query->where('status', SeatStatus::Available);
     }
 
     /** @param Builder<Seat> $query */
     public function scopeBlocked(Builder $query): Builder
     {
-        return $query->where('status', 'blocked');
+        return $query->where('status', SeatStatus::Blocked);
     }
 
     /** @param Builder<Seat> $query */

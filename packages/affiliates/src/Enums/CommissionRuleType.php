@@ -14,6 +14,10 @@ enum CommissionRuleType: string
     case Promotion = 'promotion';
     case FirstPurchase = 'first_purchase';
     case Recurring = 'recurring';
+    case TopPerformer = 'top_performer';
+    case Recruitment = 'recruitment';
+    case Consistency = 'consistency';
+    case Growth = 'growth';
 
     public function label(): string
     {
@@ -26,6 +30,10 @@ enum CommissionRuleType: string
             self::Promotion => 'Promotional',
             self::FirstPurchase => 'First Purchase Bonus',
             self::Recurring => 'Recurring Commission',
+            self::TopPerformer => 'Top Performer Bonus',
+            self::Recruitment => 'Recruitment Bonus',
+            self::Consistency => 'Consistency Bonus',
+            self::Growth => 'Growth Bonus',
         };
     }
 
@@ -39,7 +47,35 @@ enum CommissionRuleType: string
             self::Affiliate => 60,
             self::FirstPurchase => 50,
             self::Recurring => 40,
+            self::TopPerformer => 30,
+            self::Recruitment => 20,
+            self::Consistency => 15,
+            self::Growth => 5,
             self::Program => 10,
         };
+    }
+
+    public function isPerformanceBonus(): bool
+    {
+        return match ($this) {
+            self::TopPerformer,
+            self::Recruitment,
+            self::Consistency,
+            self::Growth => true,
+            default => false,
+        };
+    }
+
+    /**
+     * @return list<self>
+     */
+    public static function performanceBonusCases(): array
+    {
+        return [
+            self::TopPerformer,
+            self::Recruitment,
+            self::Consistency,
+            self::Growth,
+        ];
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Actions\Exporter;
 
+use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Events\Models\Venue;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
@@ -18,10 +19,15 @@ final class VenueExporter extends Exporter
         return [
             ExportColumn::make('name'),
             ExportColumn::make('venue_type'),
-            ExportColumn::make('line1'),
-            ExportColumn::make('city'),
-            ExportColumn::make('state'),
-            ExportColumn::make('country'),
+            ExportColumn::make('line1')
+                ->state(static fn (Venue $record): ?string => static::address($record)?->line1),
+            ExportColumn::make('city')
+                ->state(static fn (Venue $record): ?string => static::address($record)?->city),
+            ExportColumn::make('state')
+                ->state(static fn (Venue $record): ?string => static::address($record)?->state),
+            ExportColumn::make('country_code')
+                ->label('Country')
+                ->state(static fn (Venue $record): ?string => static::address($record)?->countryCode),
             ExportColumn::make('status'),
             ExportColumn::make('phone'),
             ExportColumn::make('email'),
@@ -38,5 +44,10 @@ final class VenueExporter extends Exporter
         }
 
         return $body;
+    }
+
+    private static function address(Venue $venue): ?AddressData
+    {
+        return $venue->getPrimaryAddressData();
     }
 }

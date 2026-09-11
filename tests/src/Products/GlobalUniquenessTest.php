@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\Products\Models\Product;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Schema;
 
 it('rejects duplicate global product slugs and skus', function (): void {
     OwnerContext::withOwner(null, function (): void {
@@ -48,7 +48,7 @@ it('resolves same-owner slug retries through createOrFirst', function (): void {
         ->and($count)->toBe(1);
 });
 
-it('rejects duplicate product slugs across owners while scoping skus per owner', function (): void {
+it('scopes product slugs and skus by the owner tuple', function (): void {
     $ownerA = User::query()->create(['name' => 'Owner A', 'email' => 'owner-a-products@example.com', 'password' => 'secret']);
     $ownerB = User::query()->create(['name' => 'Owner B', 'email' => 'owner-b-products@example.com', 'password' => 'secret']);
 
@@ -56,27 +56,27 @@ it('rejects duplicate product slugs across owners while scoping skus per owner',
         'name' => 'Owned A', 'slug' => 'shared-owned', 'sku' => 'SHARED-SKU',
     ]));
 
-    expect(fn () => OwnerContext::withOwner($ownerB, fn (): Product => Product::query()->create([
-        'name' => 'Owned B', 'slug' => 'shared-owned', 'sku' => 'SHARED-SKU-B',
-    ])))->toThrow(InvalidArgumentException::class);
-
     $productB = OwnerContext::withOwner($ownerB, fn (): Product => Product::query()->create([
-        'name' => 'Owned B', 'slug' => 'different-owned-slug', 'sku' => 'SHARED-SKU',
+        'name' => 'Owned B', 'slug' => 'shared-owned', 'sku' => 'SHARED-SKU',
     ]));
 
-    expect($productA->owner_scope)->toBe(OwnerScopeKey::forOwner($ownerA))
-        ->and($productB->owner_scope)->toBe(OwnerScopeKey::forOwner($ownerB))
-        ->and($productA->owner_scope)->not->toBe($productB->owner_scope)
+    expect($productA->owner_type)->toBe($ownerA->getMorphClass())
+        ->and($productA->owner_id)->toBe($ownerA->getKey())
+        ->and($productB->owner_type)->toBe($ownerB->getMorphClass())
+        ->and($productB->owner_id)->toBe($ownerB->getKey())
+        ->and($productA->slug)->toBe($productB->slug)
         ->and($productB->sku)->toBe('SHARED-SKU');
 });
 
-it('recomputes the scope key from an unsaved owner tuple and does not expose it to mass assignment', function (): void {
-    $owner = User::query()->create(['name' => 'Owner C', 'email' => 'owner-c-products@example.com', 'password' => 'secret']);
-    $product = new Product(['name' => 'Draft', 'slug' => 'draft-owner-scope', 'sku' => 'DRAFT-SCOPE']);
+it('removes the superseded identity columns and installs tuple indexes', function (): void {
+    foreach (['products', 'product_variants', 'product_collections', 'product_attribute_groups', 'product_attributes', 'product_attribute_sets'] as $tableName) {
+        expect(Schema::hasColumn($tableName, 'owner_scope'))->toBeFalse();
+    }
 
-    $product->forceFill(['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey(), 'owner_scope' => 'forged']);
-    OwnerContext::withOwner($owner, fn () => $product->save());
-
-    expect($product->owner_scope)->toBe(OwnerScopeKey::forOwner($owner))
-        ->and($product->getFillable())->not->toContain('owner_scope');
+    expect(Schema::hasColumn('product_categories', 'owner_scope'))->toBeFalse()
+        ->and(Schema::hasColumn('product_categories', 'parent_scope'))->toBeFalse()
+        ->and(Schema::hasIndex('products', 'products_slug_owner_unique'))->toBeTrue()
+        ->and(Schema::hasIndex('products', 'products_slug_global_unique'))->toBeTrue()
+        ->and(Schema::hasIndex('products', 'products_sku_owner_unique'))->toBeTrue()
+        ->and(Schema::hasIndex('products', 'products_sku_global_unique'))->toBeTrue();
 });

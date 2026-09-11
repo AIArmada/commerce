@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Livewire\SeatMap;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
@@ -84,7 +85,7 @@ it('does not allow picking held seats', function (): void {
 
 it('does not allow picking blocked seats', function (): void {
     $seat = Seat::first();
-    $seat->update(['status' => 'blocked']);
+    $seat->update(['status' => SeatStatus::Blocked]);
     $seatId = $seat->id;
 
     $component = new SeatMap;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventResource\RelationManagers;
 
+use AIArmada\Events\Models\EventLocation;
 use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -23,9 +24,13 @@ final class LocationsRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('location_role')->badge(),
                 Tables\Columns\TextColumn::make('label')->searchable(),
-                Tables\Columns\TextColumn::make('city'),
-                Tables\Columns\TextColumn::make('state'),
-                Tables\Columns\TextColumn::make('country'),
+                Tables\Columns\TextColumn::make('city')
+                    ->state(fn (EventLocation $record): ?string => $record->getPrimaryAddressData()?->city),
+                Tables\Columns\TextColumn::make('state')
+                    ->state(fn (EventLocation $record): ?string => $record->getPrimaryAddressData()?->state),
+                Tables\Columns\TextColumn::make('country_code')
+                    ->label('Country')
+                    ->state(fn (EventLocation $record): ?string => $record->getPrimaryAddressData()?->countryCode),
                 Tables\Columns\TextColumn::make('status')->badge(),
             ])
             ->filters([])

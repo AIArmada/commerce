@@ -21,6 +21,7 @@
   "require": {
     "php": "^8.4",
     "aiarmada/commerce-support": "self.version",
+    "aiarmada/addressing": "self.version",
     "aiarmada/communications": "self.version",
     "aiarmada/contacting": "self.version",
     "aiarmada/inventory": "self.version",
@@ -32,7 +33,6 @@
     "spatie/laravel-package-tools": "^1.93.1"
   },
   "suggest": {
-    "aiarmada/addressing": "Optional integration",
     "aiarmada/authz": "Optional integration for scoped management assignments",
     "aiarmada/cart": "Optional integration",
     "aiarmada/checkout": "Enables cart and checkout orchestration for ticket purchasing.",

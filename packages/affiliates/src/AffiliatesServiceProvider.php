@@ -38,15 +38,11 @@ use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Resolvers\DatabaseAffiliateLookup;
 use AIArmada\Affiliates\Rules\ClickVelocityRule;
-use AIArmada\Affiliates\Rules\ConsistencyBonusRule;
 use AIArmada\Affiliates\Rules\ConversionVelocityRule;
 use AIArmada\Affiliates\Rules\FastConversionRule;
 use AIArmada\Affiliates\Rules\FingerprintRepeatRule;
 use AIArmada\Affiliates\Rules\GeoAnomalyRule;
-use AIArmada\Affiliates\Rules\GrowthBonusRule;
-use AIArmada\Affiliates\Rules\RecruitmentBonusRule;
 use AIArmada\Affiliates\Rules\SelfReferralRule;
-use AIArmada\Affiliates\Rules\TopPerformerBonusRule;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
@@ -119,7 +115,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
         $this->registerAttributionStrategies();
         $this->registerFraudRules();
-        $this->registerPerformanceBonusRules();
 
         $this->app->singleton(VoucherIntegrationRegistrar::class);
         $this->app->singleton(AffiliateDiscountConditionProvider::class);
@@ -271,15 +266,5 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             ConversionVelocityRule::class,
             FastConversionRule::class,
         ], 'affiliates.fraud_rule');
-    }
-
-    private function registerPerformanceBonusRules(): void
-    {
-        $this->app->tag([
-            TopPerformerBonusRule::class,
-            RecruitmentBonusRule::class,
-            ConsistencyBonusRule::class,
-            GrowthBonusRule::class,
-        ], 'affiliates.performance_bonus_rule');
     }
 }

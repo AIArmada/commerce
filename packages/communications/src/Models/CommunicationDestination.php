@@ -74,6 +74,7 @@ final class CommunicationDestination extends Model
     {
         return [
             'is_primary' => 'boolean',
+            'address' => 'encrypted',
             'verified_at' => 'immutable_datetime',
             'metadata' => 'array',
             'last_seen_at' => 'immutable_datetime',

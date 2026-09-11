@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
 use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatHold;
@@ -107,9 +108,9 @@ it('skips held seats', function (): void {
 });
 
 it('skips blocked seats', function (): void {
-    Seat::query()->update(['status' => 'available']);
+    Seat::query()->update(['status' => SeatStatus::Available]);
     $seat = Seat::firstOrFail();
-    $seat->update(['status' => 'blocked']);
+    $seat->update(['status' => SeatStatus::Blocked]);
 
     $results = app(SeatAllocatorInterface::class)->allocate(
         map: $this->map,

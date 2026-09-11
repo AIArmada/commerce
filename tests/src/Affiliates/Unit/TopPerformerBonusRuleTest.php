@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Rules\TopPerformerBonusRule;
+use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -58,7 +59,8 @@ it('keeps top performer bonuses inside the current owner scope', function (): vo
         });
     }
 
-    $bonuses = OwnerContext::withOwner($ownerA, fn (): array => (new TopPerformerBonusRule)->calculate(
+    $bonuses = OwnerContext::withOwner($ownerA, fn (): array => app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
+        CommissionRuleType::TopPerformer,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     ));
@@ -117,12 +119,22 @@ it('honors the caller include global flag instead of overriding it from config',
         'occurred_at' => now(),
     ]));
 
-    $rule = new TopPerformerBonusRule;
+    $engine = app(CommissionRuleEngine::class);
     $from = CarbonImmutable::now()->startOfMonth();
     $to = CarbonImmutable::now()->endOfMonth();
 
-    $scoped = OwnerContext::withOwner($owner, fn (): array => $rule->calculate($from, $to, false));
-    $withGlobal = OwnerContext::withOwner($owner, fn (): array => $rule->calculate($from, $to, true));
+    $scoped = OwnerContext::withOwner($owner, fn (): array => $engine->calculatePerformanceBonuses(
+        CommissionRuleType::TopPerformer,
+        $from,
+        $to,
+        false,
+    ));
+    $withGlobal = OwnerContext::withOwner($owner, fn (): array => $engine->calculatePerformanceBonuses(
+        CommissionRuleType::TopPerformer,
+        $from,
+        $to,
+        true,
+    ));
 
     expect($scoped)->toHaveCount(1)
         ->and($scoped[0]['affiliate_id'])->toBe($scopedAffiliate->id)
@@ -141,7 +153,8 @@ it('fails closed without an owner context when owner mode is enabled', function 
         }
     });
 
-    expect(fn () => (new TopPerformerBonusRule)->calculate(
+    expect(fn () => app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
+        CommissionRuleType::TopPerformer,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     ))->toThrow(RuntimeException::class, 'owner context or explicit global context');

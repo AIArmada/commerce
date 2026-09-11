@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
+use AIArmada\Addressing\Traits\HasAddresses;
 use AIArmada\Events\Database\Factories\EventFacilityFactory;
 use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -39,6 +40,7 @@ use Illuminate\Support\Carbon;
  */
 final class EventFacility extends Model
 {
+    use HasAddresses;
     use HasFactory;
     use HasUuids;
     use ScopesByEventOwner;

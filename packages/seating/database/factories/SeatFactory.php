@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Database\Factories;
 
+use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatSection;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -20,18 +21,18 @@ final class SeatFactory extends Factory
             'row_number' => $this->faker->numberBetween(1, 30),
             'column_number' => $this->faker->numberBetween(1, 50),
             'seat_label' => (string) $this->faker->numberBetween(1, 50),
-            'status' => 'available',
+            'status' => SeatStatus::Available,
             'category' => ['standard', 'vip', 'accessible'][array_rand(['standard', 'vip', 'accessible'])],
         ];
     }
 
     public function available(): self
     {
-        return $this->state(fn () => ['status' => 'available']);
+        return $this->state(fn () => ['status' => SeatStatus::Available]);
     }
 
     public function blocked(): self
     {
-        return $this->state(fn () => ['status' => 'blocked']);
+        return $this->state(fn () => ['status' => SeatStatus::Blocked]);
     }
 }

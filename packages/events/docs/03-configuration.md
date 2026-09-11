@@ -219,13 +219,16 @@ Each resolver can be bound to a custom class for domain-specific behavior.
     'product_model' => class_exists(...) ? Product::class : null,
     'customer_model' => class_exists(...) ? Customer::class : null,
     'order_model' => class_exists(...) ? Order::class : null,
-    'addressing_enabled' => env('EVENTS_ADDRESSING_ENABLED', false),
     'checkout_intent_resolver' => null,
     'order_item_fulfillment_resolver' => null,
 ]
 ```
 
-Auto-detects commerce packages. When related packages are installed, integration features are automatically enabled. Set `addressing_enabled` to `true` only when the `aiarmada/addressing` package is installed and its migrations have been run. Custom resolvers can override default behavior.
+The events package requires `aiarmada/addressing`. Venue, space, facility, and
+event-location models use `HasAddresses` for canonical address attachments.
+`Venue` and `EventLocation` keep their pre-existing flat columns readable only
+when no canonical primary address is attached; new writes must use
+`attachAddress()`. Custom resolvers can override the other integration points.
 
 ### Notifications
 

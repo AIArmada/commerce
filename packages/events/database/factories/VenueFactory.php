@@ -23,9 +23,6 @@ class VenueFactory extends Factory
         return [
             'name' => $this->faker->company . ' Venue',
             'slug' => Str::slug($this->faker->unique()->company()),
-            'city' => $this->faker->city(),
-            'state' => $this->faker->state(),
-            'country_code' => $this->faker->countryCode(),
             'status' => 'active',
             'visibility' => 'public',
         ];

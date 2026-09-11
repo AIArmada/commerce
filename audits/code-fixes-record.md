@@ -1244,3 +1244,174 @@ dual-read/write path, or compatibility shim was added.
   1,107 assertions; Cashier — 256 passed, 524 assertions; Checkout — 266
   passed, 977 assertions. The ten adversary proofs passed individually (10
   tests, 23 assertions). No full repository suite was run.
+
+## Deferred remainder clearance — 2026-09-12
+
+All three streams were dispatched concurrently in one message with
+implementation-authorized marking for their owned paths. This pass follows
+the no-backward-compatibility directive: superseded shapes were removed,
+readers were migrated in the same pass, and no aliases, deprecated forwards,
+or new dual-write paths were added. The explicitly required frozen legacy
+read paths remain only where the stream specifications require them.
+
+### Stream A — small-fry batch — IMPLEMENTED/CLOSED
+
+- Seating enum — CLOSED. SeatStatus is the formal vocabulary at
+  packages/seating/src/Enums/SeatStatus.php:9-27; the model cast, default, and
+  enum scopes are at packages/seating/src/Models/Seat.php:55-85,119-130.
+  Livewire and Filament readers use the enum at
+  packages/seating/src/Livewire/SeatMap.php:64-150 and
+  packages/filament-seating/src/Widgets/SeatMapOverview.php:19. A repo-wide
+  owned-scope search found no missed raw seat-status reader.
+  Targeted runs: SeatStatusTest 2 passed/4 assertions; SeatAllocatorTest
+  9/17; SeatMapLivewireTest 10/10.
+- Tax index — CLOSED. The guarded composite index is defined at
+  packages/tax/database/migrations/2026_09_12_000001_add_tax_rate_ordering_index.php:11-29
+  over zone_id, tax_class, is_active, is_compound, and priority. Its
+  convention-preserving guarded down path is at :32-43. TaxRateOrderingIndexTest
+  passed 1/2, including the idempotent up/down proof.
+- Communications dispatch and encryption — CLOSED. afterCommit dispatch is
+  at packages/communications/src/Actions/DispatchManagedNotificationAction.php:123-166;
+  ordered queued processing is at
+  packages/communications/src/Jobs/DispatchManagedNotificationJob.php:18-52
+  and packages/communications/src/Console/Commands/DispatchDueCommunicationsCommand.php:86-119.
+  The encrypted cast is at
+  packages/communications/src/Models/CommunicationDestination.php:73-81,
+  with the text migration at
+  packages/communications/database/migrations/2026_09_12_000001_encrypt_communication_destination_address.php:11-25
+  and provider registration at
+  packages/communications/src/CommunicationsServiceProvider.php:94-96.
+  Targeted runs: DestinationEncryptionTest 1/4, QueuedDispatchTest 4/13,
+  and CommunicationsManagerTest 4/5. The queue test asserts preserved order;
+  the encryption test reads the raw address column and proves ciphertext at
+  rest.
+- Customers decomposition — CLOSED. Responsibilities are split into traits
+  from packages/customers/src/Models/Customer.php:72-86; resolver extraction
+  is at packages/customers/src/Services/CustomerResolver.php:19-28; the
+  default-address unit is
+  packages/customers/src/Actions/SetDefaultCustomerAddress.php:13-45 and
+  its Filament caller is at
+  packages/filament-customers/src/Resources/CustomerResource/RelationManagers/AddressesRelationManager.php:144-173.
+  CustomerDecompositionTest proves identical shared-fixture output at
+  tests/src/Customers/CustomerDecompositionTest.php:42-112. Targeted runs:
+  CustomerDecompositionTest 1/5; SetDefaultCustomerAddressTest 2/6;
+  CustomerExtendedTest 17/23; CustomerResolverTest 10/38; AddressModelTest
+  18/38; CustomerModelTest 9/14; AddressAndGroupsTest 9/18; and
+  HasCustomerProfileTest 9/13.
+- Area escalation for A was run because the enum, migration, queue, and
+  customer/Filament changes cross package seams. Final runs: Seating
+  270/1,219; FilamentSeating 8/9; Tax 195/444; FilamentTax 27/71;
+  Communications 270/1,219; FilamentCommunications 41/67; Customers
+  248/442; FilamentCustomers 28/63.
+
+### Stream B — structural trio — IMPLEMENTED/CLOSED
+
+- Affiliates collapse — CLOSED. The four bonus types are first-class
+  CommissionRuleType cases at packages/affiliates/src/Enums/CommissionRuleType.php:17-20,58-78;
+  dispatch is centralized at
+  packages/affiliates/src/Services/Commissions/CommissionRuleEngine.php:125-142,
+  and the service consumes the canonical types at
+  packages/affiliates/src/Services/PerformanceBonusService.php:37-42.
+  Fraud lifecycle code remains separate. The moved-rule output proofs are
+  tests/src/Affiliates/Unit/CommissionRulePerformanceBonusTest.php:20,64,107,150.
+  Targeted runs: TopPerformerBonusRuleTest 3/9; PerformanceBonusServiceTest
+  24/54; AdditionalEnumsTest 26/139; and CommissionRulePerformanceBonusTest
+  4/40.
+- Products uniques — CLOSED. The development/test migration removes the
+  superseded derived identity columns and creates owner/global tuple-keyed
+  partial uniques at
+  packages/products/database/migrations/2026_09_12_000001_replace_legacy_identity_indexes.php:12-71,
+  with category parent/root indexes at :159-199 and attribute-value
+  locale/default-locale indexes at :201-223. The implementation uses the
+  actual owner tuple in packages/products/src/Concerns/EnforcesOwnerUniqueIdentity.php:15-53
+  and Category at packages/products/src/Models/Category.php:83. The two
+  release-note lines are at packages/products/docs/03-configuration.md:123-124.
+  Targeted runs: GlobalUniquenessTest 4/21; IdentityIndexTest passed; and
+  AttributeModelTest 35/66 after the stale expectation was migrated to
+  distinct locales.
+- Venue adoption — CLOSED. HasAddresses is present on all seven models,
+  proven by tests/src/Events/VenueAddressAdoptionTest.php:18-29. Canonical
+  address attachment is used by the importer at
+  packages/filament-events/src/Actions/Importer/VenueImporter.php:30-48 and
+  canonical address fields are read by the resource at
+  packages/filament-events/src/Resources/VenueResource.php:108-144.
+  The explicitly required frozen flat-column read path is isolated in
+  packages/events/src/Models/Concerns/ReadsLegacyAddressColumns.php:14-47;
+  new writes use HasAddresses. Digital/addressless and attached cases are
+  proved at tests/src/Events/VenueAddressAdoptionTest.php:32-81.
+  Targeted runs: VenueAddressingIntegrationTest 4/14; VenueAddressAdoptionTest
+  3/15; and EventDataConversionTest 4/10.
+- Area escalation for B was run because the rule collapse, tuple indexes,
+  and seven-model adapter cutover span core/Filament consumers and database
+  contracts. Final runs: Affiliates 1,145 passed/5 skipped/2,664 assertions;
+  FilamentAffiliates 317/879; Products 592/1,084; FilamentProducts 25/98;
+  Events 247/1,101; FilamentEvents 18/175.
+
+### Stream C — synthetic proof harnesses — IMPLEMENTED/CLOSED
+
+- Signals scale — CLOSED. The self-contained 100,000-row fixture is at
+  tests/src/Signals/Feature/SignalEventScaleIndexTest.php:19-63; EXPLAIN and
+  expected-index assertions are at :69-100, with the SQLite/PostgreSQL
+  caveat at :78-82. Targeted run: 1 passed/4 assertions. Signals Area canary:
+  100/759.
+- Contact null-rate — CLOSED. The three owning reads are exercised at
+  tests/src/Contacting/ContactingNullRateOwnershipTest.php:31-120; the
+  explicit denominator, degraded-rate calculation, and fail-able one-percent
+  threshold are at :122-131. Targeted final run: 1/5. Contacting Area canary:
+  356/515.
+- Octane wiring — CLOSED as a static proof. Dispatcher binding inspection
+  covers OwnerContext, both registries, cart instances/factory, and preset
+  restores at tests/src/CommerceSupport/OctaneListenerRegistrationTest.php:12-94.
+  Targeted run: 1/15. CommerceSupport Area canary: 266/784. The true
+  long-lived-worker soak remains blocked by design and is stated in the test
+  at :11.
+
+### Money-vertical acceptance canaries
+
+After all stream Areas, the required same-day canaries ran with --parallel:
+Chip 1,052 passed/4 skipped/2,730 assertions; Cashier 256/524; Checkout
+266/977. No full repository suite was run.
+
+### Audit deviations
+
+- A and B agents stopped after targeted checks; main escalated all required
+  Area suites and recorded the final totals above because their changes cross
+  model, adapter, migration, and queue boundaries.
+- The first Products Area run exposed a stale no-locale duplicate
+  expectation in tests/src/Products/AttributeModelTest.php. The owned test
+  was changed to use distinct locales, then targeted and Products Area runs
+  passed. No deduplication or cleanup machinery was added.
+- One initial affiliate growth proof failed during first-run fixture setup;
+  the canonical-engine rerun passed. The old PerformanceBonusRule contract
+  and four rule classes were removed, and moved call sites/tests were
+  migrated to CommissionRuleEngine. This is the intentional no-compatibility
+  deviation from keeping those old tests literally unchanged; output shapes
+  remain proved identical and no aliases/stubs were added.
+- Stream C's first Contacting targeted attempt observed a transient missing
+  CustomerStatus import while Stream A was still editing the shared worktree.
+  The import was restored at packages/customers/src/Models/Customer.php:20;
+  the final targeted run and Area canary passed.
+- Frozen legacy reads remain only where the stream contracts explicitly
+  required them: customer default-address storage used by the existing
+  checkout read path, and venue/location flat-column reads. No new alias,
+  deprecated API, compatibility shim, or legacy dual write was introduced;
+  the superseded affiliate rule classes and events Addressable concern were
+  deleted.
+- Product and tax schema changes are guarded development/test changes;
+  development databases are reset rather than deduplicated or backfilled.
+  No foreign-key constraints or cascades were added. The Products docs carry
+  the required two-line reset/no-cleanup note.
+- .ai/rules/index.md was absent and was checked; the repository's loaded
+  rules and delegation playbook were followed. No full suite was run.
+- Concurrent out-of-scope Inventory work was left untouched. At final
+  inventory, the paths were packages/filament-inventory/src/Resources/InventoryBatchResource.php,
+  packages/filament-inventory/src/Resources/InventoryLocationResource.php,
+  packages/filament-inventory/src/Resources/InventoryMovementResource.php,
+  packages/filament-inventory/src/Resources/InventorySerialResource.php,
+  packages/inventory/src/Services/Stock/CheckoutReservationService.php,
+  tests/src/FilamentInventory/Unit/ResourcePolicyAccessTest.php, and
+  tests/src/Inventory/Feature/CheckoutReservationConcurrencyTest.php.
+- Post-Pint targeted rechecks also passed: TopPerformerBonusRuleTest 3/9,
+  SeatAllocatorTest 9/17, QueuedDispatchTest 4/13,
+  SetDefaultCustomerAddressTest 2/6, VenueAddressAdoptionTest 3/15, and
+  SignalEventScaleIndexTest 1/4.

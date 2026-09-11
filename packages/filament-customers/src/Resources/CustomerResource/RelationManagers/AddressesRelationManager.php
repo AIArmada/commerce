@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 
+use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
 use AIArmada\Customers\Enums\AddressType;
 use AIArmada\Customers\Models\Address;
 use Filament\Actions\Action;
@@ -152,7 +153,7 @@ class AddressesRelationManager extends RelationManager
 
                         Gate::forUser($user)->authorize('update', $record);
 
-                        $record->setAsDefaultBilling();
+                        app(SetDefaultCustomerAddress::class)->execute($record, 'billing');
                     })
                     ->visible(fn ($record) => ! $record->is_default_billing),
                 Action::make('set_shipping')
@@ -167,7 +168,7 @@ class AddressesRelationManager extends RelationManager
 
                         Gate::forUser($user)->authorize('update', $record);
 
-                        $record->setAsDefaultShipping();
+                        app(SetDefaultCustomerAddress::class)->execute($record, 'shipping');
                     })
                     ->visible(fn ($record) => ! $record->is_default_shipping),
                 DeleteAction::make(),

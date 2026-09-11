@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Data;
 
+use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Events\Models\Venue;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Optional;
@@ -37,25 +38,34 @@ final class VenueData extends Data
             return null;
         }
 
+        $address = $venue->getPrimaryAddressData();
+
         return new self(
             id: $venue->id,
             name: $venue->name,
             slug: $venue->slug,
             venue_type: $venue->venue_type,
-            line1: $venue->line1,
-            line2: $venue->line2,
-            city: $venue->city,
-            state: $venue->state,
-            postcode: $venue->postcode,
-            country_code: $venue->country_code,
-            latitude: $venue->latitude,
-            longitude: $venue->longitude,
-            google_maps_url: $venue->google_maps_url,
-            waze_url: $venue->waze_url,
+            line1: $address?->line1,
+            line2: $address?->line2,
+            city: $address?->city,
+            state: $address?->state,
+            postcode: $address?->postcode,
+            country_code: $address?->countryCode,
+            latitude: $address?->latitude,
+            longitude: $address?->longitude,
+            google_maps_url: $address?->googleMapsUrl,
+            waze_url: $address?->wazeUrl,
             phone: $venue->phone,
             email: $venue->email,
             website_url: $venue->website_url,
-            directions: $venue->directions,
+            directions: self::directionsFrom($address),
         );
+    }
+
+    private static function directionsFrom(?AddressData $address): ?string
+    {
+        $directions = $address?->metadata['directions'] ?? null;
+
+        return is_string($directions) ? $directions : null;
     }
 }

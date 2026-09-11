@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
+use AIArmada\Addressing\Traits\HasAddresses;
 use AIArmada\Events\Database\Factories\VenueFacilityFactory;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -36,6 +37,7 @@ use Illuminate\Support\Carbon;
  */
 final class VenueFacility extends Model
 {
+    use HasAddresses;
     use HasFactory;
     use HasUuids;
 

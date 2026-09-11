@@ -24,12 +24,12 @@
             >
                 @foreach($layout['seats'] as $seat)
                     @php
-                        $s = $status[$seat['id']] ?? 'available';
-                        $isSelectable = $selectable && $s === 'available';
+                        $s = $status[$seat['id']] ?? \AIArmada\Seating\Enums\SeatStatus::Available->value;
+                        $isSelectable = $selectable && $s === \AIArmada\Seating\Enums\SeatStatus::Available->value;
                         $classes = match(true) {
-                            $s === 'sold'     => 'bg-red-300 border-red-500 cursor-not-allowed',
-                            $s === 'held'     => 'bg-yellow-200 border-yellow-400 cursor-not-allowed',
-                            $s === 'blocked'  => 'bg-gray-300 border-gray-500 cursor-not-allowed',
+                            $s === \AIArmada\Seating\Enums\SeatStatus::Sold->value     => 'bg-red-300 border-red-500 cursor-not-allowed',
+                            $s === \AIArmada\Seating\Enums\SeatStatus::Held->value     => 'bg-yellow-200 border-yellow-400 cursor-not-allowed',
+                            $s === \AIArmada\Seating\Enums\SeatStatus::Blocked->value  => 'bg-gray-300 border-gray-500 cursor-not-allowed',
                             in_array($seat['id'], $picked, true) => 'bg-blue-500 text-white border-blue-700',
                             default           => 'bg-green-100 border-green-300 hover:bg-green-200',
                         };

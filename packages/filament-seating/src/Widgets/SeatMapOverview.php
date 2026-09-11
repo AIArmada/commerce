@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSeating\Widgets;
 
+use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -15,7 +16,7 @@ class SeatMapOverview extends BaseWidget
     {
         $mapCount = SeatMapModel::count();
         $seatCount = Seat::count();
-        $blockedCount = Seat::where('status', 'blocked')->count();
+        $blockedCount = Seat::where('status', SeatStatus::Blocked)->count();
 
         return [
             Stat::make('Seat Maps', $mapCount),

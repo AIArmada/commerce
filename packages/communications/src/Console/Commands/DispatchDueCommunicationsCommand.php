@@ -6,9 +6,12 @@ namespace AIArmada\Communications\Console\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Enums\CommunicationStatus;
+use AIArmada\Communications\Enums\DeliveryStatus;
+use AIArmada\Communications\Jobs\DispatchCommunicationDeliveriesJob;
 use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -58,8 +61,8 @@ final class DispatchDueCommunicationsCommand extends Command
         $query = Communication::query()
             ->where('status', CommunicationStatus::Scheduled->value)
             ->where('scheduled_at', '<=', CarbonImmutable::now())
-            ->where(function ($q): void {
-                $q->whereNull('expires_at')
+            ->where(function (Builder $query): void {
+                $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', CarbonImmutable::now());
             });
 
@@ -85,6 +88,35 @@ final class DispatchDueCommunicationsCommand extends Command
                 $communication->status = CommunicationStatus::Queued;
                 $communication->queued_at = CarbonImmutable::now();
                 $communication->save();
+
+                $deliveries = $communication->deliveries()
+                    ->whereIn('status', [
+                        DeliveryStatus::Pending,
+                        DeliveryStatus::Scheduled,
+                        DeliveryStatus::Queued,
+                    ])
+                    ->where(function (Builder $query): void {
+                        $query->whereNull('scheduled_at')
+                            ->orWhere('scheduled_at', '<=', CarbonImmutable::now());
+                    })
+                    ->orderBy('created_at')
+                    ->orderBy('id')
+                    ->get();
+
+                foreach ($deliveries as $delivery) {
+                    if ($delivery->status !== DeliveryStatus::Queued) {
+                        $delivery->status = DeliveryStatus::Queued;
+                        $delivery->queued_at = CarbonImmutable::now();
+                        $delivery->save();
+                    }
+                }
+
+                DispatchCommunicationDeliveriesJob::dispatch(
+                    communicationId: $communication->id,
+                    ownerType: $communication->owner_type,
+                    ownerId: $communication->owner_id,
+                    ownerIsGlobal: $communication->owner_type === null && $communication->owner_id === null,
+                )->afterCommit();
 
                 $bar->advance();
             }

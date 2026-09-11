@@ -243,23 +243,30 @@ Content inputs are normalized server-side before persistence. Titles are trimmed
 
 ```php
 use AIArmada\Events\Models\Venue;
+use AIArmada\Addressing\Models\Address;
 
 $venue = Venue::create([
     'name' => 'MATRADE Hall',
     'slug' => 'matrade-hall',
     'venue_type' => 'convention_center',
-    'line1' => 'Jalan Sultan Haji Ahmad Shah',
-    'city' => 'Kuala Lumpur',
-    'state' => 'WP Kuala Lumpur',
-    'country' => 'MY',
-    'timezone' => 'Asia/Kuala_Lumpur',
     'status' => 'active',
     'visibility' => 'public',
 ]);
+
+$address = Address::create([
+    'line1' => 'Jalan Sultan Haji Ahmad Shah',
+    'city' => 'Kuala Lumpur',
+    'state' => 'WP Kuala Lumpur',
+    'country_code' => 'MY',
+]);
+
+$venue->attachAddress($address, type: 'primary', isPrimary: true);
 ```
 
-> [!info]
-> Set `events.integrations.addressing_enabled=true` to read venue and event location addresses from the shared addressing package. When the flag is off, the package continues to use the flat address columns.
+Venues without a physical address, such as digital or virtual venues, simply
+omit the attachment. The canonical attachment is the write path. The original
+flat venue and event-location columns are frozen read-only storage for rows
+that have not yet acquired a canonical primary address.
 
 ### Venue spaces
 
