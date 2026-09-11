@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Events\ParcelDelivered;
-use AIArmada\Jnt\Events\ParcelInTransit;
-use AIArmada\Jnt\Events\ParcelOutForDelivery;
-use AIArmada\Jnt\Events\ParcelPickedUp;
-use AIArmada\Jnt\Events\TrackingUpdated;
+use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
@@ -19,6 +16,19 @@ use Illuminate\Support\Str;
 use Spatie\WebhookClient\Models\WebhookCall;
 
 describe('ProcessJntWebhook', function (): void {
+    it('uses queued retries and backoff for transient webhook processing', function (): void {
+        config([
+            'jnt.webhooks.retry_times' => 4,
+            'jnt.webhooks.retry_backoff_seconds' => 90,
+        ]);
+
+        $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
+        $processor = new ProcessJntWebhook($webhookCall);
+
+        expect($processor->tries)->toBe(4)
+            ->and($processor->backoff())->toBe(90);
+    });
+
     it('extracts event type from latest detail scanType when bizContent is present', function (): void {
         $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
 
@@ -78,100 +88,7 @@ describe('ProcessJntWebhook', function (): void {
         expect($method->invoke($processor, 'UNKNOWN', []))->toBeNull();
     });
 
-    it('dispatches PickedUp event for pickup status', function (): void {
-        Event::fake();
-
-        $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
-
-        $shipment = new JntOrder;
-        $shipment->forceFill(['id' => 'test-id', 'status' => 'pending']);
-
-        $processor = new ProcessJntWebhook($webhookCall);
-
-        $reflection = new ReflectionClass($processor);
-        $method = $reflection->getMethod('dispatchStatusEvent');
-
-        $method->invoke($processor, $shipment, TrackingStatus::PickedUp, ['test' => 'data']);
-
-        Event::assertDispatched(ParcelPickedUp::class);
-    });
-
-    it('dispatches InTransit event for transit status', function (): void {
-        Event::fake();
-
-        $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
-
-        $shipment = new JntOrder;
-        $shipment->forceFill(['id' => 'test-id']);
-
-        $processor = new ProcessJntWebhook($webhookCall);
-
-        $reflection = new ReflectionClass($processor);
-        $method = $reflection->getMethod('dispatchStatusEvent');
-
-        $method->invoke($processor, $shipment, TrackingStatus::InTransit, []);
-
-        Event::assertDispatched(ParcelInTransit::class);
-    });
-
-    it('dispatches OutForDelivery event', function (): void {
-        Event::fake();
-
-        $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
-
-        $shipment = new JntOrder;
-        $shipment->forceFill(['id' => 'test-id']);
-
-        $processor = new ProcessJntWebhook($webhookCall);
-
-        $reflection = new ReflectionClass($processor);
-        $method = $reflection->getMethod('dispatchStatusEvent');
-
-        $method->invoke($processor, $shipment, TrackingStatus::OutForDelivery, []);
-
-        Event::assertDispatched(ParcelOutForDelivery::class);
-    });
-
-    it('dispatches Delivered event', function (): void {
-        Event::fake();
-
-        $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
-
-        $shipment = new JntOrder;
-        $shipment->forceFill(['id' => 'test-id']);
-
-        $processor = new ProcessJntWebhook($webhookCall);
-
-        $reflection = new ReflectionClass($processor);
-        $method = $reflection->getMethod('dispatchStatusEvent');
-
-        $method->invoke($processor, $shipment, TrackingStatus::Delivered, []);
-
-        Event::assertDispatched(ParcelDelivered::class);
-    });
-
-    it('does not dispatch event for unhandled status', function (): void {
-        Event::fake();
-
-        $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
-
-        $shipment = new JntOrder;
-        $shipment->forceFill(['id' => 'test-id']);
-
-        $processor = new ProcessJntWebhook($webhookCall);
-
-        $reflection = new ReflectionClass($processor);
-        $method = $reflection->getMethod('dispatchStatusEvent');
-
-        $method->invoke($processor, $shipment, TrackingStatus::Exception, []);
-
-        Event::assertNotDispatched(ParcelPickedUp::class);
-        Event::assertNotDispatched(ParcelInTransit::class);
-        Event::assertNotDispatched(ParcelOutForDelivery::class);
-        Event::assertNotDispatched(ParcelDelivered::class);
-    });
-
-    it('dispatches TrackingUpdated when shipment not found', function (): void {
+    it('dispatches the canonical typed tracking event when shipment is not found', function (): void {
         Event::fake();
         config(['jnt.logging.channel' => 'stack']);
 
@@ -188,10 +105,12 @@ describe('ProcessJntWebhook', function (): void {
         $reflection = new ReflectionClass($processor);
         $method = $reflection->getMethod('processEvent');
 
-        // Since there's no shipment with this billCode, it should dispatch TrackingUpdated
         $method->invoke($processor, 'TRANSIT', $webhookCall->payload);
 
-        Event::assertDispatched(TrackingUpdated::class);
+        Event::assertDispatched(TrackingUpdatedEvent::class, function (TrackingUpdatedEvent $event): bool {
+            return $event->tracking instanceof TrackingData
+                && $event->getTrackingNumber() === 'UNKNOWN123';
+        });
     });
 
     it('syncs canonical order fields and tracking events from webhook details', function (): void {

@@ -6,9 +6,10 @@ namespace AIArmada\FilamentShipping\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
+use AIArmada\Shipping\States\ShipmentStatus;
+use AIArmada\Shipping\States\Shipped;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -267,7 +268,7 @@ class ManifestPage extends Page implements HasTable
             $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
-        $query->where('status', ShipmentStatus::Shipped);
+        $query->where('status', ShipmentStatus::normalize(Shipped::class));
 
         if ($this->manifestDate !== null) {
             $query->whereDate('shipped_at', $this->manifestDate);

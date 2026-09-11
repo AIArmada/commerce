@@ -185,6 +185,43 @@ describe('getRates', function (): void {
 
         expect($ratesEast->first()->rate)->toBeGreaterThan($ratesWest->first()->rate);
     });
+
+    it('rounds regional multipliers in integer minor units at the half-sen boundary', function (): void {
+        config([
+            'jnt.shipping.base_rate' => 1,
+            'jnt.shipping.per_kg_rate' => 0,
+            'jnt.shipping.region_multipliers_bp' => ['sabah' => 15000],
+        ]);
+
+        $origin = new AddressData(
+            name: 'Sender',
+            phone: '+60123456789',
+            line1: '123 Main St',
+            postcode: '50000',
+            country: 'MYS',
+        );
+
+        $packages = [
+            new PackageData(weight: 1000, length: 10, width: 10, height: 10, quantity: 1),
+        ];
+
+        $halfSen = new AddressData(
+            name: 'Receiver',
+            phone: '+60198765432',
+            line1: '456 Second St',
+            postcode: '88000',
+            country: 'MYS',
+        );
+
+        config(['jnt.shipping.region_multipliers_bp' => ['sabah' => 15000]]);
+        $roundedUp = $this->driver->getRates($origin, $halfSen, $packages)->first();
+
+        config(['jnt.shipping.region_multipliers_bp' => ['sabah' => 14999]]);
+        $roundedDown = $this->driver->getRates($origin, $halfSen, $packages)->first();
+
+        expect($roundedUp?->rate)->toBe(2)
+            ->and($roundedDown?->rate)->toBe(1);
+    });
 });
 
 describe('servicesDestination', function (): void {

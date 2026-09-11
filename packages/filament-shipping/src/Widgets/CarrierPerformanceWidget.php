@@ -6,8 +6,14 @@ namespace AIArmada\FilamentShipping\Widgets;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\Delivered;
+use AIArmada\Shipping\States\DeliveryFailed;
+use AIArmada\Shipping\States\ExceptionStatus;
+use AIArmada\Shipping\States\InTransit;
+use AIArmada\Shipping\States\OutForDelivery;
+use AIArmada\Shipping\States\ShipmentStatus;
+use AIArmada\Shipping\States\Shipped;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Str;
@@ -48,15 +54,15 @@ class CarrierPerformanceWidget extends ChartWidget
             $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
-        $delivered = ShipmentStatus::Delivered->value;
+        $delivered = ShipmentStatus::normalize(Delivered::class);
         $inTransitStatuses = [
-            ShipmentStatus::Shipped->value,
-            ShipmentStatus::InTransit->value,
-            ShipmentStatus::OutForDelivery->value,
+            ShipmentStatus::normalize(Shipped::class),
+            ShipmentStatus::normalize(InTransit::class),
+            ShipmentStatus::normalize(OutForDelivery::class),
         ];
         $exceptionStatuses = [
-            ShipmentStatus::Exception->value,
-            ShipmentStatus::DeliveryFailed->value,
+            ShipmentStatus::normalize(ExceptionStatus::class),
+            ShipmentStatus::normalize(DeliveryFailed::class),
         ];
 
         $inTransitPlaceholders = implode(', ', array_fill(0, count($inTransitStatuses), '?'));

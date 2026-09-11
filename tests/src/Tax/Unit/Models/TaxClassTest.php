@@ -8,6 +8,7 @@ use AIArmada\Tax\Models\TaxClass;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 $bindTaxOwnerForScoping = function (?Model $owner): void {
     app()->bind(OwnerResolverInterface::class, fn () => new class($owner) implements OwnerResolverInterface
@@ -37,6 +38,18 @@ describe('TaxClass', function () use ($bindTaxOwnerForScoping): void {
         $this->assertEquals('standard', $taxClass->slug);
         $this->assertTrue($taxClass->is_default);
         $this->assertTrue($taxClass->is_active);
+    });
+
+    it('rejects duplicate tax class slugs for the same owner', function (): void {
+        TaxClass::create([
+            'name' => 'Standard Rate',
+            'slug' => 'standard',
+        ]);
+
+        expect(fn () => TaxClass::create([
+            'name' => 'Another Standard Rate',
+            'slug' => 'standard',
+        ]))->toThrow(ValidationException::class);
     });
 
     it('get default method', function (): void {

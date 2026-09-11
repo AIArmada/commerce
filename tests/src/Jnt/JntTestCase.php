@@ -8,6 +8,13 @@ use AIArmada\Commerce\Tests\TestCase;
 
 abstract class JntTestCase extends TestCase
 {
+    protected function defineEnvironment($app): void
+    {
+        parent::defineEnvironment($app);
+
+        $app['config']->set('jnt.webhooks.enabled', true);
+    }
+
     protected function defineDatabaseMigrations(): void
     {
         parent::defineDatabaseMigrations();

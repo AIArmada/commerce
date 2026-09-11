@@ -123,13 +123,13 @@ Once a shipment is Shipped or beyond, it cannot be cancelled through the UI.
 Debug:
 ```php
 use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Enums\ShipmentStatus;
+use AIArmada\Shipping\States\Pending;
 
 // Check data exists
-Shipment::where('status', ShipmentStatus::Pending)->count();
+Shipment::where('status', Pending::class)->count();
 
 // Check with owner scope
-Shipment::forOwner($owner)->where('status', ShipmentStatus::Pending)->count();
+Shipment::forOwner($owner)->where('status', Pending::class)->count();
 ```
 
 ### Widget Not Refreshing

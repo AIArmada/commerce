@@ -6,7 +6,6 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Jnt\Cart\JntShippingCalculator;
-use AIArmada\Jnt\Cart\JntShippingConditionProvider;
 use Illuminate\Support\Facades\DB;
 
 function createConditionTestCart(string $identifier = 'condition-test'): Cart
@@ -41,7 +40,7 @@ function createTestCondition(string $type = 'shipping'): CartCondition
     );
 }
 
-describe('JntShippingConditionProvider', function (): void {
+describe('JntShippingCalculator condition provider', function (): void {
     beforeEach(function (): void {
         config([
             'jnt.cart.quote_ttl_minutes' => 30,
@@ -62,20 +61,20 @@ describe('JntShippingConditionProvider', function (): void {
     it('returns empty conditions when no shipping address in cart metadata', function (): void {
         $cart = createConditionTestCart('no-address');
 
-        $provider = new JntShippingConditionProvider(createRealCalculator());
+        $provider = createRealCalculator();
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toBeEmpty();
     });
 
     it('returns the correct type', function (): void {
-        $provider = new JntShippingConditionProvider(createRealCalculator());
+        $provider = createRealCalculator();
 
         expect($provider->getType())->toBe('shipping');
     });
 
     it('returns the correct priority', function (): void {
-        $provider = new JntShippingConditionProvider(createRealCalculator());
+        $provider = createRealCalculator();
 
         expect($provider->getPriority())->toBe(75);
     });
@@ -85,7 +84,7 @@ describe('JntShippingConditionProvider', function (): void {
 
         $condition = createTestCondition('discount');
 
-        $provider = new JntShippingConditionProvider(createRealCalculator());
+        $provider = createRealCalculator();
 
         expect($provider->validate($condition, $cart))->toBeTrue();
     });
@@ -95,7 +94,7 @@ describe('JntShippingConditionProvider', function (): void {
 
         $condition = createTestCondition('shipping');
 
-        $provider = new JntShippingConditionProvider(createRealCalculator());
+        $provider = createRealCalculator();
 
         expect($provider->validate($condition, $cart))->toBeFalse();
     });
@@ -111,7 +110,7 @@ describe('JntShippingConditionProvider', function (): void {
 
         $condition = createTestCondition('shipping');
 
-        $provider = new JntShippingConditionProvider(createRealCalculator());
+        $provider = createRealCalculator();
 
         expect($provider->validate($condition, $cart))->toBeTrue();
     });
@@ -135,7 +134,7 @@ describe('JntShippingConditionProvider', function (): void {
             'attributes' => ['weight' => 1500],
         ]);
 
-        $provider = new JntShippingConditionProvider(createRealCalculator());
+        $provider = createRealCalculator();
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toHaveCount(1);
@@ -154,7 +153,7 @@ describe('JntShippingConditionProvider', function (): void {
 
         // No items, so zero weight
 
-        $provider = new JntShippingConditionProvider(createRealCalculator());
+        $provider = createRealCalculator();
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toBeEmpty();
@@ -176,7 +175,7 @@ describe('JntShippingConditionProvider', function (): void {
             'cart_weight' => 0, // Match the cart's actual weight (no items)
         ]);
 
-        $provider = new JntShippingConditionProvider(createRealCalculator());
+        $provider = createRealCalculator();
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toHaveCount(1);
@@ -210,7 +209,7 @@ describe('JntShippingConditionProvider', function (): void {
             'cart_weight' => 1000, // Different from current weight
         ]);
 
-        $provider = new JntShippingConditionProvider(createRealCalculator());
+        $provider = createRealCalculator();
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toHaveCount(1);

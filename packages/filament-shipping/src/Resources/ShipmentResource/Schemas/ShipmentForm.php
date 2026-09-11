@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ShipmentResource\Schemas;
 
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
-use AIArmada\Shipping\Enums\ShipmentStatus;
+use AIArmada\Shipping\States\ShipmentStatus;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -36,8 +36,7 @@ final class ShipmentForm
                             ->maxLength(50),
 
                         Select::make('status')
-                            ->options(collect(ShipmentStatus::cases())
-                                ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()]))
+                            ->options(ShipmentStatus::options())
                             ->required(),
 
                         TextInput::make('tracking_number')

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxZoneResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Tax\Models\TaxZone;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -12,6 +14,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Unique;
 
 final class TaxZoneForm
 {
@@ -32,7 +35,19 @@ final class TaxZoneForm
                                     ->label('Code')
                                     ->required()
                                     ->maxLength(20)
-                                    ->unique(ignoreRecord: true)
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule): Unique {
+                                        $owner = OwnerUiScope::resolveOwner(TaxZone::class);
+
+                                        if ($owner !== null) {
+                                            return $rule
+                                                ->where('owner_type', $owner->getMorphClass())
+                                                ->where('owner_id', $owner->getKey());
+                                        }
+
+                                        return $rule
+                                            ->whereNull('owner_type')
+                                            ->whereNull('owner_id');
+                                    })
                                     ->helperText('Unique identifier (e.g., MY, MY-SEL)'),
 
                                 Select::make('type')

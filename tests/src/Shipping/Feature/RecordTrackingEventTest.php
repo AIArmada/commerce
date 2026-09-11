@@ -12,6 +12,7 @@ use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\InTransit;
+use AIArmada\Shipping\States\Shipped;
 use Carbon\CarbonImmutable;
 
 describe('RecordTrackingEvent', function (): void {
@@ -105,5 +106,8 @@ function createShipment(): Shipment
         ]),
     ]);
 
-    return CreateShipment::run($data);
+    $shipment = CreateShipment::run($data);
+    $shipment->forceFill(['status' => Shipped::class])->saveQuietly();
+
+    return $shipment->refresh();
 }

@@ -15,6 +15,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Gate;
 use Throwable;
 
 final class CancelOrderAction
@@ -26,7 +27,7 @@ final class CancelOrderAction
             ->icon(Heroicon::XCircle)
             ->color('danger')
             ->requiresConfirmation()
-            ->authorize(fn (): bool => Filament::auth()?->check() ?? false)
+            ->authorize(fn (JntOrder $record): bool => Gate::allows('update', $record))
             ->modalHeading('Cancel J&T Order')
             ->modalDescription('This will cancel the order with J&T Express. This action cannot be undone.')
             ->modalSubmitActionLabel('Cancel Order')

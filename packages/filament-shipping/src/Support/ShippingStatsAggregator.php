@@ -6,9 +6,16 @@ namespace AIArmada\FilamentShipping\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\Delivered;
+use AIArmada\Shipping\States\DeliveryFailed;
+use AIArmada\Shipping\States\ExceptionStatus;
+use AIArmada\Shipping\States\InTransit;
+use AIArmada\Shipping\States\OutForDelivery;
+use AIArmada\Shipping\States\Pending;
+use AIArmada\Shipping\States\ShipmentStatus;
+use AIArmada\Shipping\States\Shipped;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -17,7 +24,7 @@ final class ShippingStatsAggregator
     public function getPendingCount(): int
     {
         return $this->shipmentQuery()
-            ->where('status', ShipmentStatus::Pending)
+            ->where('status', ShipmentStatus::normalize(Pending::class))
             ->count();
     }
 
@@ -25,9 +32,9 @@ final class ShippingStatsAggregator
     {
         return $this->shipmentQuery()
             ->whereIn('status', [
-                ShipmentStatus::Shipped,
-                ShipmentStatus::InTransit,
-                ShipmentStatus::OutForDelivery,
+                ShipmentStatus::normalize(Shipped::class),
+                ShipmentStatus::normalize(InTransit::class),
+                ShipmentStatus::normalize(OutForDelivery::class),
             ])
             ->count();
     }
@@ -35,7 +42,7 @@ final class ShippingStatsAggregator
     public function getDeliveredTodayCount(): int
     {
         return $this->shipmentQuery()
-            ->where('status', ShipmentStatus::Delivered)
+            ->where('status', ShipmentStatus::normalize(Delivered::class))
             ->whereDate('delivered_at', CarbonImmutable::today())
             ->count();
     }
@@ -44,8 +51,8 @@ final class ShippingStatsAggregator
     {
         return $this->shipmentQuery()
             ->whereIn('status', [
-                ShipmentStatus::Exception,
-                ShipmentStatus::DeliveryFailed,
+                ShipmentStatus::normalize(ExceptionStatus::class),
+                ShipmentStatus::normalize(DeliveryFailed::class),
             ])
             ->count();
     }

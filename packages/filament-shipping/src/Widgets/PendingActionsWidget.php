@@ -8,9 +8,12 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\DeliveryFailed;
+use AIArmada\Shipping\States\ExceptionStatus;
+use AIArmada\Shipping\States\Pending;
+use AIArmada\Shipping\States\ShipmentStatus;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -28,7 +31,7 @@ class PendingActionsWidget extends StatsOverviewWidget
                 ->icon('heroicon-o-inbox-arrow-down')
                 ->color('warning')
                 ->url(ShipmentResource::getUrl('index', [
-                    'tableFilters[status][value]' => ShipmentStatus::Pending->value,
+                    'tableFilters[status][value]' => ShipmentStatus::normalize(Pending::class),
                 ])),
 
             Stat::make('Exceptions', $this->getExceptionShipmentsCount())
@@ -36,7 +39,7 @@ class PendingActionsWidget extends StatsOverviewWidget
                 ->icon('heroicon-o-exclamation-triangle')
                 ->color('danger')
                 ->url(ShipmentResource::getUrl('index', [
-                    'tableFilters[status][value]' => ShipmentStatus::Exception->value,
+                    'tableFilters[status][value]' => ShipmentStatus::normalize(ExceptionStatus::class),
                 ])),
 
             Stat::make('Pending Returns', $this->getPendingReturnsCount())
@@ -71,7 +74,7 @@ class PendingActionsWidget extends StatsOverviewWidget
         }
 
         return $query
-            ->where('status', ShipmentStatus::Pending)
+            ->where('status', ShipmentStatus::normalize(Pending::class))
             ->count();
     }
 
@@ -89,7 +92,10 @@ class PendingActionsWidget extends StatsOverviewWidget
         }
 
         return $query
-            ->whereIn('status', [ShipmentStatus::Exception, ShipmentStatus::DeliveryFailed])
+            ->whereIn('status', [
+                ShipmentStatus::normalize(ExceptionStatus::class),
+                ShipmentStatus::normalize(DeliveryFailed::class),
+            ])
             ->count();
     }
 

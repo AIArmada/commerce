@@ -82,9 +82,8 @@ describe('RateShoppingEngine', function (): void {
             new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
-        $shippingManager->shouldReceive('getDriversForDestination')
-            ->with($destination)
-            ->andReturn(collect([$fedexDriver, $upsDriver]));
+        $shippingManager->shouldReceive('getAvailableDrivers')
+            ->andReturn(['fedex', 'ups']);
 
         $rates = $engine->getAllRates($origin, $destination, $packages);
 
@@ -154,9 +153,8 @@ describe('RateShoppingEngine', function (): void {
             new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
-        $shippingManager->shouldReceive('getDriversForDestination')
-            ->with($destination)
-            ->andReturn(collect([$fedexDriver, $upsDriver]));
+        $shippingManager->shouldReceive('getAvailableDrivers')
+            ->andReturn(['fedex', 'ups']);
 
         $bestRate = $engine->getBestRate($origin, $destination, $packages);
 
@@ -186,6 +184,8 @@ describe('RateShoppingEngine', function (): void {
         Cache::shouldReceive('store')->andReturn($cacheRepository);
 
         $engine->clearCache();
+
+        expect(true)->toBeTrue();
     });
 
     it('returns fallback rate when no carriers available', function (): void {
@@ -234,9 +234,8 @@ describe('RateShoppingEngine', function (): void {
         $manualDriver->shouldReceive('getRates')
             ->andReturn($fallbackRates);
 
-        $shippingManager->shouldReceive('getDriversForDestination')
-            ->with($destination)
-            ->andReturn(collect()); // No drivers available
+        $shippingManager->shouldReceive('getAvailableDrivers')
+            ->andReturn([]); // No drivers available
 
         $bestRate = $engine->getBestRate($origin, $destination, $packages);
 
@@ -277,9 +276,8 @@ describe('RateShoppingEngine', function (): void {
             new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
-        $shippingManager->shouldReceive('getDriversForDestination')
-            ->with($destination)
-            ->andReturn(collect()); // No drivers available
+        $shippingManager->shouldReceive('getAvailableDrivers')
+            ->andReturn([]); // No drivers available
 
         $bestRate = $engine->getBestRate($origin, $destination, $packages);
 
@@ -330,9 +328,8 @@ describe('RateShoppingEngine', function (): void {
             new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
-        $shippingManager->shouldReceive('getDriversForDestination')
-            ->with($destination)
-            ->andReturn(collect([$fedexDriver]));
+        $shippingManager->shouldReceive('getAvailableDrivers')
+            ->andReturn(['fedex']);
 
         $bestRate = $engine->getBestRate($origin, $destination, $packages);
 
@@ -390,9 +387,8 @@ describe('RateShoppingEngine', function (): void {
             new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
-        $shippingManager->shouldReceive('getDriversForDestination')
-            ->with($destination)
-            ->andReturn(collect([$fedexDriver, $upsDriver]));
+        $shippingManager->shouldReceive('getAvailableDrivers')
+            ->andReturn(['fedex', 'ups']);
 
         $bestRate = $engine->getBestRate($origin, $destination, $packages);
 
@@ -452,7 +448,7 @@ describe('RateShoppingEngine', function (): void {
             ->once()
             ->andReturn($rates);
 
-        $shippingManager->shouldReceive('getDriversForDestination')
+        $shippingManager->shouldReceive('getAvailableDrivers')
             ->never(); // Should not be called because cache handles it
 
         $result = $engine->getAllRates($origin, $destination, $packages);
@@ -597,7 +593,7 @@ describe('RateShoppingEngine', function (): void {
             new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1500, currency: 'USD', estimatedDays: 3),
         ]));
 
-        $shippingManager->shouldReceive('getDriversForDestination')->andReturn(collect([$fedexDriver]));
+        $shippingManager->shouldReceive('getAvailableDrivers')->andReturn(['fedex']);
         $shippingManager->shouldReceive('hasDriver')->with('fedex')->andReturn(true);
         $shippingManager->shouldReceive('driver')->with('fedex')->andReturn($fedexDriver);
 

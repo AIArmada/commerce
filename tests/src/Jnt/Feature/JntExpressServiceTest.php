@@ -27,8 +27,6 @@ beforeEach(function (): void {
         'http' => [
             'timeout' => 30,
             'connect_timeout' => 10,
-            'retry_times' => 3,
-            'retry_sleep' => 100, // Faster for tests
         ],
         'logging' => [
             'enabled' => false, // Disable for tests
@@ -109,7 +107,7 @@ test('handles connection errors', function (): void {
     ]);
 })->throws(JntNetworkException::class);
 
-test('retries on 5xx errors', function (): void {
+test('does not retry 5xx errors in the request thread', function (): void {
     Http::fake([
         '*/api/order/addOrder' => Http::sequence()
             ->push(['code' => '0', 'msg' => 'Server error'], 500)
@@ -117,18 +115,15 @@ test('retries on 5xx errors', function (): void {
             ->push(['code' => '1', 'msg' => 'Success', 'data' => ['txlogisticId' => 'TXN-001', 'billCode' => 'JT123']], 200),
     ]);
 
-    $result = $this->service->createOrderFromArray([
+    expect(fn (): mixed => $this->service->createOrderFromArray([
         'orderId' => 'TXN-001',
         'sender' => ['name' => 'John'],
         'receiver' => ['name' => 'Jane'],
         'items' => [['itemName' => 'Item']],
         'packageInfo' => ['weight' => '1'],
-    ]);
+    ]))->toThrow(JntNetworkException::class, 'J&T API server error');
 
-    expect($result->trackingNumber)->toBe('JT123');
-
-    // Verify it was called 3 times (2 failures + 1 success)
-    // Http::assertSentCount(3);
+    Http::assertSentCount(1);
 });
 
 test('handles HTTP errors', function (): void {

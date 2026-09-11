@@ -53,8 +53,6 @@ describe('JntHealthCheck', function (): void {
                 'testing' => 'https://api.test.com',
                 'production' => 'https://api.prod.test.com',
             ],
-            'jnt.retry.times' => 1,
-            'jnt.retry.sleep' => 100,
             'jnt.timeout' => 10,
         ]);
 
