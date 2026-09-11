@@ -21,6 +21,7 @@
   "require": {
     "php": "^8.4",
     "aiarmada/commerce-support": "self.version",
+    "aiarmada/communications": "self.version",
     "aiarmada/contacting": "self.version",
     "aiarmada/inventory": "self.version",
     "aiarmada/seating": "self.version",

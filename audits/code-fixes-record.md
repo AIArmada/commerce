@@ -1157,10 +1157,10 @@ dual-read/write path, or compatibility shim was added.
 - Emptiness re-proven fresh on `cdemo` (0/0 rows, quoted in report);
   `commerce_demo` from `.env` does not exist — proof limited to the
   available persistent database, stated plainly.
-- **Follow-up (not blocking):** `communications` is a hard runtime
-  dependency of the dispatcher but appears in neither `require` nor
-  `suggest` — standalone installs without it fatal on dispatch.
-  Add the hard require or a `class_exists` guard.
+- **Follow-up closed:** `aiarmada/communications: self.version` added
+  to `packages/events/composer.json:24` (hard require, canonical
+  doctrine); resolution test proves the dispatcher contract resolves
+  (`EventNotificationDispatcherResolutionTest`, 1/2).
 - Suites: Events 243/1084, FilamentEvents 18/175; comms
   event-reference 4/14 and addressless invoice canaries green.
 
