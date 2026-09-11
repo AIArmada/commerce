@@ -39,15 +39,14 @@ coverage (1229 tests) pins it — with zero rated findings remaining.
 - Suites: Cart 1052 passed + 2 skipped (2731 assertions),
   FilamentCart 177 passed (604 assertions); PHPStan level 6 clean
   (123 + 33 files). Canaries green: Orders 323, Checkout 266,
-  Cashier 256, Signals 98, Vouchers 889 (3 pre-existing failures
-  below), FilamentVouchers 41.
+  Cashier 256, Signals 98, Vouchers 889, FilamentVouchers 41.
 
 ## Residual notes
 
-- **Pre-existing failures (not this track):** 3 voucher
-  remove/clear/replace tests fail identically with caller updates
-  stashed — cart/voucher condition-storage seam predates this work.
-  Logged for the vouchers/cart track with the stash proof.
+- The 3 voucher remove/clear/replace failures logged here were
+  subsequently fixed by the vouchers track via owned-workaround
+  (`CartIntegrationTest` now 19 passed / 36 assertions); the
+  underlying cart/voucher storage-seam behavior is unchanged.
 - Filament test for the owner-scoping bridge required the canonical
   `cart.owner.enabled` key (not the vestigial `filament-cart` key)
   plus context assignment — updated; vestigial key left untouched.

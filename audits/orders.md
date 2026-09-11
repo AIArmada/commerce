@@ -45,7 +45,8 @@ addresses delegate to the canonical normalizer, and real coverage
   not generic) — recorded as documented, not as debranded.
 - Caller updates in `checkout`/`filament-shipping` are a separate
   follow-up (logged dependencies, applied post-conversion).
-- NULL-unsafe intake/payment uniques deferred — no migration added.
+- NULL-unsafe intake/payment uniques hardened via partial unique
+  indexes (`2026_09_11_000002`, guarded/idempotent).
 
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.

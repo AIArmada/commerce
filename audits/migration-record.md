@@ -78,7 +78,7 @@ Per-package audit files (`audits/*.md`) no longer contain settled migration cont
 - **Migration** `2026_09_07_000002_drop_decimal_quantities_from_inventory_levels_table.php`: drops `quantity_on_hand_decimal` / `quantity_reserved_decimal`, each behind `hasColumn`. Independent repo-wide `rg` confirmed zero readers anywhere; `unit_conversion_factor` kept; `InventoryLevel` docblock/fillable/casts cleaned.
 - **Tests**: `tests/src/Inventory/Feature/InventoryMigrationsTest.php` pins the old file clean, asserts end-state schema, and proves idempotency via double-`up()`.
 - No `down()` methods (permitted; re-runs guarded, rollbacks manual). Work was uncommitted at review time.
-- Out of scope (still open): A1 serial enum-vs-morph code fix. Data-cleanup assessment RECEIVED 2026-09-07 and independently confirmed: the serials-table migration defaults `status` to the raw slug `'available'` (`000006` line 31) while the model casts to the spatie state (FQCN morphs) and Filament queries raw enum values — three raw-slug writers, so rows may hold non-morph values. Cleanup migration needed only if live rows are affected (unconfirmed, no live DB). The A1 audit finding now carries this as fix step (3).
+- Out of scope (closed — see falsification note immediately below): A1 serial enum-vs-morph code fix. Data-cleanup assessment RECEIVED 2026-09-07 and independently confirmed: the serials-table migration defaults `status` to the raw slug `'available'` (`000006` line 31) while the model casts to the spatie state (FQCN morphs) and Filament queries raw enum values — three raw-slug writers, so rows may hold non-morph values. Cleanup migration needed only if live rows are affected (unconfirmed, no live DB). The A1 audit finding now carries this as fix step (3).
 - **Falsification note (2026-09-07 reviewer re-derivation):** the A1 FQCN-storage premise was WRONG. Vendor source (`State::getMorphClass()` returns `static::$name ?? static::class`) plus `Available::$name = 'available'` proves the column stores slugs; the deleted enum carried byte-identical values, so badge/filter/form reads and writes were always consistent — the described corruption mechanism could not occur. The genuine defect was duplicated vocabulary only. Implemented as a behavior-preserving unification (enum deleted, Filament on state classes, zero remaining importers). A1 struck from `inventory.md`; package top severity now Medium.
 
 ## Post-track: customers email unique — implemented (moved to canonical table)
@@ -244,3 +244,28 @@ migrations; no production backfill is authorized.
 - The existing Organizations migration retains its historical `down()`;
   none of the new migrations adds a rollback path. The documented operational
   path for this dev-only repository remains delete-and-rerun.
+
+## Event notification table retirement — blocked — 2026-09-11
+
+- The requested retirement migration was **not added**. The Stream 2 preflight
+  used the sanctioned in-memory SQLite schema and found
+  `event_notification_batches` absent and `event_notification_deliveries`
+  absent; no persistent development database or `database/database.sqlite`
+  was available, so this is not evidence that a real development database is
+  empty.
+- The shipped table creators remain at
+  `packages/events/database/migrations/2000_01_01_000049_create_event_notification_batches_table.php:14-33`
+  and
+  `packages/events/database/migrations/2000_01_01_000050_create_event_notification_deliveries_table.php:14-33`.
+- A repo-wide reference scan found live consumers that make dropping the tables
+  unsafe, including
+  `packages/events/src/Services/EventNotificationDispatcher.php:9-11,23-25,39-61,118,146,150`,
+  `packages/events/src/Actions/DispatchEventChangeChainAction.php:185-195`,
+  `packages/events/src/Models/Event.php:95,430-434`,
+  `packages/filament-events/src/Pages/NotificationCenter.php:29-93`, and
+  `packages/events/config/events.php:80-81`, plus event tests/factories.
+- This is a deliberate migration deviation: no data migration, drop, model
+  removal, or compatibility fallback was performed. The communications bridge
+  remains verified by `tests/src/Communications/EventReferenceTest.php` (4
+  passed, 14 assertions). Retirement requires a separately authorized change
+  covering those consumers and a persistent-database preflight.

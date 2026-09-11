@@ -1,9 +1,8 @@
 # Code Fixes Record
-Completed 2026-09-08. Historical record of implemented code fixes from the
-package audits (the code-only Criticals track, the checkout currency
-follow-ups, the three-stream parallel track, and the inventory A1
-unification). Per-package audit files (`audits/*.md`) describe remaining
-work only.
+Living record of implemented code fixes from the package audits (the code-only Criticals track, the checkout currency
+follow-ups, the parallel implementation tracks, per-package DONE conversions, and the inventory A1
+unification). Per-package audit files (`audits/*.md`) carry verdicts plus residual notes; this file carries the
+per-fix evidence chains.
 
 Migrations live in [`migration-record.md`](migration-record.md) — including
 one post-track addition (customers email unique, below). Review method for
@@ -224,11 +223,11 @@ reported and taken on trust; code correctness was verified directly.
 - **Judgment calls (kept):** invitations accept unregistered emails;
   restore retains historical suspension/archive timestamps;
   payment-subject driver stays pending cashier track.
-- **Deferred (honest):** physical index batches (persons partial/
-  covering, org member/slug uniques, customers pivots, contacting
-  partial-primary/timestamps) — app-level guards, locks, and
-  transactional paths in place; dev-only rule now permits the batch
-  as a follow-up. Orders/events addressing follow-ups open (events
+- **Deferred (honest):** physical index batches are now implemented
+  (guarded `2026_09_11_*` migrations for persons/orgs/customers/
+  contacting; see `migration-record.md`) — app-level guards, locks,
+  and transactional paths remain as defense in depth. Orders/events
+  addressing follow-ups open (events
   full-trait adoption; hardcoded prefixes already fixed — see
   `events.md` finding 3 re-check).
 
@@ -325,14 +324,17 @@ reported and taken on trust; code correctness was verified directly.
   (`ResolveFeedbackInvitationTokenAction.php:21-55`); testimonial
   `scopePublished` gate (approved + published + visible,
   `FeedbackTestimonial.php:91`).
-- Suites: Feedback Area 50 passed (138 assertions),
+- Suites: Feedback Area 50 passed (138 assertions) at conversion,
+  now 54 passed (152 assertions) with queued-analytics coverage.
   FilamentFeedback Area 8 passed (31 assertions); PHPStan level 6
   clean on both packages.
 - **Implemented (2026-09-08, was held then dropped):** 9-file migration
   split (`2000_01_01_000001`–`000009`), schema-identical — mechanical
   per-table verification, only delta the replicated shared preamble.
   Dev-only delete-and-rerun; no backfill.
-- **Deferred:** queued analytics recalc (no aggregate table exists).
+- **Queued analytics recalculation implemented** on the persisted
+  aggregate table (provider-wired listener dispatches the job after
+  commit).
 - Corrected audit claims: "zero tests" was stale at implementation
   time; raw-`DB::table` scoring already applied `OwnerQuery`
   (`CalculateFeedbackResponseScoreAction.php:18`).
@@ -613,12 +615,12 @@ reported and taken on trust; code correctness was verified directly.
   item-status cast, per-order notification routing, admin-only
   internal notes.
 - Suites: Orders 323 passed (725 assertions), FilamentOrders 22
-  passed (65 assertions); PHPStan level 6 clean. No migration
-  (NULL-unsafe uniques deferred).
-- **Logged caller dependencies (main-agent follow-up, not this
-  stream):** `CreateOrderStep` typed call + session id,
-  `FulfillmentQueue` carrier/config logic, checkout document callers,
-  inventory/promotions listener behavior.
+  passed (65 assertions); PHPStan level 6 clean. Partial unique
+  indexes implemented (`2026_09_11_000002`, guarded/idempotent).
+- **Logged caller dependencies (applied post-conversion):**
+  `CreateOrderStep` typed call + session id, `FulfillmentQueue`
+  carrier/config logic, checkout document callers. Inventory/
+  promotions listener behavior belongs to those tracks.
 
 ## Events ownership migration (implemented, one holding found + fixed)
 
@@ -984,15 +986,15 @@ owned sets under delegation-playbook §7.
   FilamentVouchers 42/275; Promotions 73/127; FilamentPromotions 37/74;
   FilamentCashier 133/423. The ten untouched adversaries run individually
   were `tests/src/Cashier/AdversaryChipGatewayRetrievePaymentTest.php`,
-  `tests/src/CashierChip/AdversaryChargeDropsIdempotencyKey.php`,
-  `tests/src/CashierChip/AdversaryFindBillableOwnerBlind.php`,
-  `tests/src/CashierChip/AdversaryFindInvoiceCrossTenant.php`,
-  `tests/src/CashierChip/AdversaryRecurringTokenDoubleCharge.php`,
-  `tests/src/Checkout/AdversaryCashierCallbackAmount.php`,
-  `tests/src/Checkout/AdversaryFailureThenPaidDropped.php`,
-  `tests/src/Chip/AdversaryCrashRecoveryDoublePost.php`,
-  `tests/src/Chip/AdversaryKeylessCheckoutPurchase.php`, and
-  `tests/src/Chip/AdversaryRecurringChargeIdempotency.php`; each passed.
+  `tests/src/CashierChip/AdversaryChargeDropsIdempotencyKeyTest.php`,
+  `tests/src/CashierChip/AdversaryFindBillableOwnerBlindTest.php`,
+  `tests/src/CashierChip/AdversaryFindInvoiceCrossTenantTest.php`,
+  `tests/src/CashierChip/AdversaryRecurringTokenDoubleChargeTest.php`,
+  `tests/src/Checkout/AdversaryCashierCallbackAmountTest.php`,
+  `tests/src/Checkout/AdversaryFailureThenPaidDroppedTest.php`,
+  `tests/src/Chip/AdversaryCrashRecoveryDoublePostTest.php`,
+  `tests/src/Chip/AdversaryKeylessCheckoutPurchaseTest.php`, and
+  `tests/src/Chip/AdversaryRecurringChargeIdempotencyTest.php`; each passed.
   The B canaries passed: Cashier 256/524, Checkout 266/977, Pricing 145/290,
   Chip 1,052 with 4 skipped/2,730, and Cart 1,052 with 2 skipped/2,731.
   Stream B’s implemented items are closed; the Cashier split remains the
@@ -1014,7 +1016,7 @@ owned sets under delegation-playbook §7.
   a raw 999,999-minor-unit event; it proves the raw event is not read at
   `tests/src/Signals/Unit/Services/SignalsDashboardServiceTest.php:318-382`.
   A production-scale EXPLAIN of the correlated acquisition subquery at
-  `packages/signals/src/Reports/AcquisitionReportService.php:156-176` could
+  `packages/signals/src/Services/AcquisitionReportService.php:156-176` could
   not be responsibly produced: the playbook environment has local SQLite,
   no production-like cardinality, and no live database. This is a measured
   environment/data blocker, not “still deferred” without reasoning.
@@ -1110,3 +1112,124 @@ owned sets under delegation-playbook §7.
 - No full repository suite was run. The exact targeted files, owned-area
   escalations, untouched adversary proofs, and main Chip/Cashier/Checkout
   canaries are the verification boundary for this pass.
+
+## Four-stream deferral clearance — 2026-09-11 (no-legacy clarification)
+
+All four streams re-read `docs/agents/delegation-playbook.md`, the relevant
+deferral entries, and the residual notes from the DONE audits before acting.
+The later user clarification that backward compatibility and legacy behavior
+are unwanted controls the earlier Orders pilot wording. No legacy alias,
+dual-read/write path, or compatibility shim was added.
+
+### Stream 1 — Orders HasAddresses pilot
+
+- **VERDICT: BLOCKED; no change.** The pilot was not implemented because the
+  requested no-legacy decision makes retaining `order_addresses` or adding a
+  compatibility API incorrect. A scoped source check found no
+  `legacyAddresses`, `HasAddresses`, or Addressing trait adoption in the
+  owned Orders/FilamentOrders trees.
+- Removal or replacement is blocked by live consumers outside the grant:
+  `packages/checkout/src/Jobs/GenerateCheckoutDocumentsJob.php:69-74`,
+  `packages/shipping/src/Integrations/OrderFulfillmentHandler.php:67-74,149-154`,
+  `tests/src/TestCase.php:1288-1293,1353+`, and
+  `tests/src/Checkout/DocumentsDispatchedEventTest.php:180`.
+- Final area verification: `./vendor/bin/pest --parallel tests/src/Orders`
+  — 330 passed, 743 assertions. The pre-change targeted Orders checks were
+  80 passed, 219 assertions; no FilamentOrders source changed.
+
+### Stream 2 — Event notification table retirement
+
+- **VERDICT: BLOCKED; re-deferred.** The sanctioned SQLite preflight found no
+  `event_notification_batches` or `event_notification_deliveries` tables in
+  the in-memory schema, but that does not prove the persistent development
+  database is empty. The shipped creators remain at
+  `packages/events/database/migrations/2000_01_01_000049_create_event_notification_batches_table.php:14-33`
+  and `...000050_create_event_notification_deliveries_table.php:14-33`.
+- Repository-wide live references remain, including
+  `packages/events/src/Services/EventNotificationDispatcher.php:9-11,23-25,39-61,118,146,150`,
+  `packages/events/src/Models/Event.php:95,430-434`,
+  `packages/filament-events/src/Pages/NotificationCenter.php:29-93`, and
+  `packages/events/config/events.php:80-81`. No model deletion or drop
+  migration was introduced.
+- Bridge evidence remained green:
+  `tests/src/Communications/EventReferenceTest.php` — 4 passed, 14 assertions;
+  `tests/src/Events/EventNotificationDispatchTest.php` — 5 passed, 34
+  assertions; `tests/src/Events/EventNotificationsTest.php` — 4 passed, 5
+  assertions.
+
+### Stream 3 — Money decisions
+
+- **Voucher cache: VERIFIED/CLOSED.** The contract is documented at
+  `packages/vouchers/src/Support/VoucherLookupCache.php:16-21`, wired by
+  `packages/vouchers/src/Services/VoucherService.php:34-70`, invalidated by
+  `packages/vouchers/src/Models/Voucher.php:598,634-637`, and proved by the
+  stale-read test at `tests/src/Vouchers/Unit/VoucherServiceTest.php:45`.
+- **Wall-clock promotions: VERIFIED/CLOSED.** The optional as-of path is at
+  `packages/promotions/src/Services/PromotionService.php:28-46`; the default
+  path remains unchanged at `:91-102`. Parity is proved at
+  `tests/src/Promotions/PromotionServiceBehaviorTest.php:28-42`, with the
+  supplied-instant proof at `:45-68`.
+- **Cashier gateway split: BLOCKED; re-deferred.** The owned delegation seam
+  is `packages/cashier/src/GatewayManager.php:46-48` and is asserted by
+  `tests/src/FilamentCashier/Unit/GatewayBackedListDelegationTest.php:28`,
+  but completion would require editing the read-only multi-provider bridge
+  at `packages/checkout/src/Integrations/Payment/CashierProcessor.php:24-60`.
+- The only Stream 3 source/test change was
+  `tests/src/Promotions/PromotionServiceBehaviorTest.php:45-68`. The following
+  ran with `--parallel`: Vouchers unit 25/70; Vouchers area 898 passed, 7
+  skipped/1,733; Promotions behavior 6/12; Promotions model 34/44;
+  Promotions area 74/130; FilamentVouchers 42/275; FilamentPromotions 37/74;
+  Cashier gateway unit 10/18; additional gateway unit 13/25; Cashier area
+  256/524; FilamentCashier delegation 2/8; FilamentCashier area 133/423.
+- The ten untouched adversary proofs also ran individually and all passed:
+  `tests/src/Cashier/AdversaryChipGatewayRetrievePaymentTest.php`,
+  `tests/src/CashierChip/AdversaryChargeDropsIdempotencyKeyTest.php`,
+  `tests/src/CashierChip/AdversaryFindInvoiceCrossTenantTest.php`,
+  `tests/src/CashierChip/AdversaryRecurringTokenDoubleChargeTest.php`,
+  `tests/src/CashierChip/AdversaryFindBillableOwnerBlindTest.php`,
+  `tests/src/Chip/AdversaryRecurringChargeIdempotencyTest.php`,
+  `tests/src/Chip/AdversaryCrashRecoveryDoublePostTest.php`,
+  `tests/src/Chip/AdversaryKeylessCheckoutPurchaseTest.php`,
+  `tests/src/Checkout/AdversaryCashierCallbackAmountTest.php`, and
+  `tests/src/Checkout/AdversaryFailureThenPaidDroppedTest.php`.
+
+### Stream 4 — Residual sweep
+
+- **Growth batching: CLOSED.** The existing batching path is at
+  `packages/growth/src/Actions/AggregateExperimentMetrics.php:89-112,229-325`;
+  `tests/src/FilamentGrowth/Feature/ResultsAndDashboardTest.php:408-440`
+  measured exactly 3 queries for 10 active experiments, 22 variants, and 22
+  assignments, satisfying the gate. No Growth source was changed.
+- **Ownership exceptions: CLOSED.** The only source/test addition is
+  `tests/src/Events/OwnershipExceptionsMachineCheckTest.php:7-56`, which
+  greps the source and asserts exactly 11 named exceptions.
+- TestCase/demo-key/ManageNav items were re-verified at
+  `tests/src/TestCase.php:401-402`, `demo/config/jnt.php:81-85`, and
+  `tests/src/FilamentCommerceSupport/FilamentCommerceSupportTest.php:23-30`.
+  Octane remains blocked because `laravel/octane` is not installed. Signals
+  EXPLAIN review remains evidence-only at
+  `packages/signals/src/Services/AcquisitionReportService.php:149-176`.
+  The production null-rate measurement was `0/0` because no production-like
+  database/data is available; no sweeping contacting-read change was made.
+- Exact focused runs: ResultsAndDashboard 1/5; ownership machine check 1/2;
+  SignalsDashboardService 1/7; AcquisitionReportService 1/17; event contact
+  read 1/1; ManageNav 9/20. Pint and PHP lint passed.
+
+### Audit deviations
+
+- The later no-legacy clarification superseded the earlier Orders instruction
+  to keep the frozen table readable. Implementing that compatibility behavior
+  would violate the current request, so Stream 1 records a blocker instead.
+- Stream 2 did not add the requested retirement migration: persistent-table
+  emptiness is unproven and live consumers still exist outside its owned set.
+  The exact preflight and deviation are recorded in
+  `audits/migration-record.md`.
+- Stream 3 could not finish the Cashier split without changing the read-only
+  Checkout bridge. Stream 4 could not produce production-scale EXPLAIN or
+  null-rate measurements in the available environment; Octane is likewise
+  unavailable. The Cart canary had a worker-timing delay but eventually passed
+  1,052 tests, 2 skipped, 2,731 assertions.
+- Main integration canaries ran with `--parallel`: Chip — 1,052 passed, 4
+  skipped, 2,730 assertions; Cashier — 256 passed, 524 assertions; Checkout —
+  266 passed, 977 assertions; Orders — 330 passed, 743 assertions. No full
+  repository suite was run.

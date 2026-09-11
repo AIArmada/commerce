@@ -7,7 +7,7 @@ implemented, falsified with source evidence, or recorded as an explicit
 deferral. The state, owner-scoping, driver-resolution, lifecycle, and delete
 paths are covered by the reviewed implementation and Area suites. No
 migration is required; the migration-track decision remains recorded in
-[`migration-record.md`](migration-record.md#shipping).
+[`migration-record.md`](migration-record.md).
 
 ## What was done
 

@@ -52,10 +52,8 @@ Filament actions use real authorization. No migration is required.
 
 ## Audit deviations
 
-- **Demo configuration residual:** `demo/config/jnt.php:81` still uses the
-  old `region_multipliers` key. It was not edited because the demo file is
-  outside this closure's ownership; the migration guidance is
-  `packages/jnt/docs/03-configuration.md:202-205`.
+- **Demo configuration residual — closed:** `demo/config/jnt.php:81` now uses
+  the migrated key per `packages/jnt/docs/03-configuration.md:202-205`.
 - **Polling debounce remains an explicit deferral:** “`TrackParcel` +
   `SyncTrackingAction` should debounce carrier polling per tracking number
   (cache `last_polled_at`, skip if <N minutes) — carrier-rate-limit

@@ -254,8 +254,9 @@ monorepo suite was run.
   models remains deferred until their owner contract is established.
 - The canonical order→registration→pass sequence document and pagination API
   decision remain documentation/API follow-ups.
-- Communications must eventually own the event-reference normalizer; the
-  events bridge consumes the existing communications context/reference APIs.
+- Communications owns the event-reference normalizer
+  (`Support/EventReferenceNormalizer`); the events bridge consumes it with
+  the existing communications context/reference APIs.
 - Existing event-specific seating orchestration and the intentional attendance
   versus social-graph separation remain unchanged.
 

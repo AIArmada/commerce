@@ -42,6 +42,31 @@ it('keeps the default promotion evaluation byte-identical to the additive as-of 
     expect($default)->toBe($asOf)->toContain($promotion->getKey());
 });
 
+it('evaluates promotions at the supplied instant', function (): void {
+    $startsAt = CarbonImmutable::parse('2025-01-02 10:00:00');
+    $endsAt = $startsAt->addHour();
+    $promotion = Promotion::factory()->automatic()->active()->create([
+        'name' => 'Historical Promotion',
+        'discount_value' => 10,
+        'min_purchase_amount' => null,
+        'min_quantity' => null,
+        'per_customer_limit' => null,
+        'usage_limit' => null,
+        'usage_count' => 0,
+        'starts_at' => $startsAt,
+        'ends_at' => $endsAt,
+    ]);
+    $context = new TargetingContext(null);
+    $service = app(PromotionService::class);
+
+    expect($service->getApplicablePromotionsAsOf($context, $startsAt->subSecond())->pluck('id')->all())
+        ->not->toContain($promotion->getKey())
+        ->and($service->getApplicablePromotionsAsOf($context, $startsAt)->pluck('id')->all())
+        ->toContain($promotion->getKey())
+        ->and($service->getApplicablePromotionsAsOf($context, $endsAt->addSecond())->pluck('id')->all())
+        ->not->toContain($promotion->getKey());
+});
+
 it('enforces a per-customer limit from owner-scoped order allocations', function (): void {
     $owner = User::factory()->create();
     $customer = User::factory()->create();

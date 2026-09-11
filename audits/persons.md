@@ -32,10 +32,10 @@ a different project, not a leftover.
 
 ## Residual notes
 
-- Physical index batch (partial uniques, covering indexes) deferred —
-  app-level mitigations (collision-budget slug loop, `lockForUpdate`
-  demotion) hold; the dev-only rule now permits the batch as a
-  follow-up.
+- Physical index batch implemented (`2026_09_11_000001`: conditional
+  slug/primary uniques + covering indexes); app-level mitigations
+  (collision-budget slug loop, `lockForUpdate` demotion) remain as
+  defense in depth.
 - `EventOrganizer`/venue identity migration belongs to the events
   track; `events.md` stays Open.
 

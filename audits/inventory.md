@@ -39,9 +39,10 @@ falsification-recorded earlier; re-verified standing.)
 
 ## Residual notes
 
-- Movement composite index, concurrency stress tests, and filament
-  policy expansion deferred with named mitigations (individual
-  location indexes, level uniqueness constraint, active guards).
+- Movement composite index implemented (`2026_09_11_000004`,
+  guarded/idempotent); concurrency stress tests and filament
+  policy expansion deferred with named mitigations (level uniqueness
+  constraint, active guards).
 - No migration packages remain open anywhere in the program.
 
 If any residual grows teeth, re-open it as a finding. Full finding history

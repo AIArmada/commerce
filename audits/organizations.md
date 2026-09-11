@@ -31,9 +31,9 @@ remaining.
 
 ## Residual notes
 
-- Physical uniques (slug, member pair) deferred — transactional
-  `lockForUpdate` checks + `QueryException` 23000/23505 handling hold;
-  the dev-only rule now permits the batch as a follow-up.
+- Physical uniques implemented (`2026_09_07_074034`: slug unique +
+  member-pair unique, guarded); transactional `lockForUpdate` checks +
+  `QueryException` 23000/23505 handling remain as defense in depth.
 - Invitations intentionally accept unregistered emails (matches the
   membership action contract); restore retains historical
   suspension/archive timestamps per the lifecycle contract.

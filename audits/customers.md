@@ -37,8 +37,8 @@ removed (Contacting-only) — with zero rated findings remaining.
 
 ## Residual notes
 
-- Pivot customer-first indexes deferred — the dev-only rule permits
-  the batch as a follow-up.
+- Pivot customer-first indexes implemented (`2026_09_11_000002`,
+  guarded/idempotent).
 - Downstream reads (`cashier` Stripe email, checkout fallbacks,
   events recipient resolution) degrade to null, null-safe — logged
   dependencies for the owning tracks.

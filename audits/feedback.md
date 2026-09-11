@@ -31,11 +31,14 @@ with zero rated findings remaining.
   `withoutOwnerScope` window; testimonial `scopePublished` gate
   (approved + published + visible) — see `code-fixes-record.md`.
 - **Performance:** aggregate-backed, owner-keyed analytics cached 30s;
-  queued recalculation explicitly deferred (no aggregate table exists).
+  queued recalculation implemented on the analytics aggregate table
+  (listener + job + model, tested) — see `code-fixes-record.md`.
 - **Database/seeder verified as-is:** token unique index + expiry,
   composite subject indexes, opt-in seeder all present — no migration
   changes.
-- Suites: Feedback Area 50 passed (138 assertions), FilamentFeedback
+- Suites: Feedback Area 50 passed (138 assertions) at conversion;
+  now 54 passed (152 assertions) with queued-analytics coverage.
+  FilamentFeedback
   Area 8 passed (31 assertions); PHPStan level 6 clean on both source
   packages; Pint + `git diff --check` clean.
 
@@ -44,8 +47,9 @@ with zero rated findings remaining.
   9 one-table files `2000_01_01_000001`–`000009`, schema-identical
   (mechanical per-table verification; only delta is the replicated
   shared preamble). Dev-only delete-and-rerun applies; no backfill.
-- Queued analytics recalculation deferred until a persisted aggregate
-  exists; current on-demand + 30s cache stands.
+- Queued analytics recalculation implemented on the persisted
+  aggregate table (provider-wired listener dispatches the job
+  after commit) — see `code-fixes-record.md`.
 - The audit's "zero tests" and raw-`DB::table` claims were stale/
   overstated at implementation time (coverage existed; `OwnerQuery`
   was already applied) — corrected in `code-fixes-record.md`.

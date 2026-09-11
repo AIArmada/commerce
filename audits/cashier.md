@@ -40,11 +40,11 @@ taxonomy — with zero tables of its own and no rated findings remaining.
   `chip`/`cashier-chip` contracts do not implement cashier's unified
   contracts; every behavior path delegates. If those contracts ever
   grow unified implementations, delete the adapters.
-- Crash-recovery window on the CHIP money path (no native gateway key;
-  local mechanism only) belongs to the `chip` track, not this package.
-- Checkout's duplicated status mapper/payload builder and missing
-  amount reconciliation belong to the `checkout` track.
-- `cashier-chip` / `chip` audits remain Open.
+- Crash recovery closed via the `chip` durable ledger (reserve/replay
+  with fail-closed reconciliation); see `chip.md`.
+- Checkout amount reconciliation implemented with blocking mismatch
+  behavior; the thin delegating mapper is intentional; see
+  `checkout.md`.
 
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.

@@ -23,9 +23,8 @@ remaining.
 
 ## Residual notes
 
-- Root `TestCase.php` still references the old owner-config path —
-  shared test infra, out of scope; one-line follow-up for whoever
-  owns it.
+- None open (root `TestCase.php` now uses the canonical key — see
+  `code-fixes-record.md`).
 
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.
