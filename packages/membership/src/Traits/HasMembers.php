@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Traits;
 
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Models\MembershipApplication;
@@ -40,20 +41,20 @@ trait HasMembers
 {
     public static function bootHasMembers(): void
     {
-        static::deleting(function (Model $subject): void {
+        static::deleting(function (self $subject): void {
             DB::transaction(function () use ($subject): void {
                 $now = CarbonImmutable::now();
 
-                $subject->applications()
-                    ->withoutOwnerScope()
+                $subject->applications()->getQuery()
+                    ->withoutGlobalScope(OwnerScope::class)
                     ->where('status', ApplicationStatus::Pending->value)
                     ->update([
                         'status' => ApplicationStatus::Cancelled->value,
                         'cancelled_at' => $now,
                     ]);
 
-                $subject->invitations()
-                    ->withoutOwnerScope()
+                $subject->invitations()->getQuery()
+                    ->withoutGlobalScope(OwnerScope::class)
                     ->where('status', InvitationStatus::Pending->value)
                     ->update([
                         'status' => InvitationStatus::Revoked->value,

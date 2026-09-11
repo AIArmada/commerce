@@ -12,6 +12,10 @@ use AIArmada\Orders\Services\OrderService;
 use Illuminate\Contracts\Events\Dispatcher;
 
 describe('Orders ↔ Docs Integration', function (): void {
+    beforeEach(function (): void {
+        config()->set('orders.notifications.payment_confirmation.enabled', false);
+    });
+
     it('creates a paid invoice document when an order is paid', function (): void {
         config()->set('orders.integrations.docs.enabled', true);
         config()->set('orders.owner.enabled', false);
