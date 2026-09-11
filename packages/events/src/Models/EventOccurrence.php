@@ -86,7 +86,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventItinerary> $itineraries
  * @property-read Collection<int, EventChangeLog> $changeLogs
  * @property-read Collection<int, EventUpdate> $updates
- * @property-read Collection<int, EventNotificationBatch> $notificationBatches
  * @property-read Collection<int, SeatMap> $seatMaps
  * @property-read EventOccurrence|null $rescheduledFromOccurrence
  * @property-read EventOccurrence|null $rescheduledToOccurrence
@@ -368,14 +367,6 @@ final class EventOccurrence extends Model implements HasMedia
     public function updates(): HasMany
     {
         return $this->hasMany(EventUpdate::class, 'event_occurrence_id');
-    }
-
-    /**
-     * @return HasMany<EventNotificationBatch, $this>
-     */
-    public function notificationBatches(): HasMany
-    {
-        return $this->hasMany(EventNotificationBatch::class, 'event_occurrence_id');
     }
 
     /**

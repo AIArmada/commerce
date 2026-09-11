@@ -39,7 +39,6 @@ final class FilamentEventsPlugin implements Plugin
     {
         return [
             Pages\CheckInConsole::class,
-            Pages\NotificationCenter::class,
             Pages\ApprovalQueue::class,
             Pages\EventPublicPreview::class,
         ];

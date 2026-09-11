@@ -245,27 +245,17 @@ migrations; no production backfill is authorized.
   none of the new migrations adds a rollback path. The documented operational
   path for this dev-only repository remains delete-and-rerun.
 
-## Event notification table retirement — blocked — 2026-09-11
+## Event notification table retirement — implemented — 2026-09-12
 
-- The requested retirement migration was **not added**. The Stream 2 preflight
-  used the sanctioned in-memory SQLite schema and found
-  `event_notification_batches` absent and `event_notification_deliveries`
-  absent; no persistent development database or `database/database.sqlite`
-  was available, so this is not evidence that a real development database is
-  empty.
-- The shipped table creators remain at
-  `packages/events/database/migrations/2000_01_01_000049_create_event_notification_batches_table.php:14-33`
-  and
-  `packages/events/database/migrations/2000_01_01_000050_create_event_notification_deliveries_table.php:14-33`.
-- A repo-wide reference scan found live consumers that make dropping the tables
-  unsafe, including
-  `packages/events/src/Services/EventNotificationDispatcher.php:9-11,23-25,39-61,118,146,150`,
-  `packages/events/src/Actions/DispatchEventChangeChainAction.php:185-195`,
-  `packages/events/src/Models/Event.php:95,430-434`,
-  `packages/filament-events/src/Pages/NotificationCenter.php:29-93`, and
-  `packages/events/config/events.php:80-81`, plus event tests/factories.
-- This is a deliberate migration deviation: no data migration, drop, model
-  removal, or compatibility fallback was performed. The communications bridge
-  remains verified by `tests/src/Communications/EventReferenceTest.php` (4
-  passed, 14 assertions). Retirement requires a separately authorized change
-  covering those consumers and a persistent-database preflight.
+- Drop migration added:
+  `packages/events/database/migrations/2026_09_12_000001_drop_event_notification_tables.php`
+  drops `event_notification_deliveries` then `event_notification_batches`,
+  each behind `hasTable`, honoring `EVENTS_TABLE_PREFIX` and per-table
+  env overrides. Guarded, re-runnable, dev-only; no backfill.
+- Preflight re-run fresh on persistent `cdemo` (0/0 rows, quoted in the
+  stream report); the `.env` `commerce_demo` database does not exist,
+  so the proof is limited to the available persistent database — stated,
+  not stretched.
+- The shipped creators (`000049`/`000050`) and the retired models are
+  gone with their consumers; a final zero-reference grep (excluding the
+  migration itself and audit prose) proves nothing dangling.

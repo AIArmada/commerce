@@ -1145,27 +1145,24 @@ dual-read/write path, or compatibility shim was added.
 
 ### Stream 2 — Event notification table retirement
 
-- **VERDICT: BLOCKED; re-deferred with new evidence.** The persistent
-  development database proof was run against `cdemo` and returned zero rows
-  in both tables. The configured `commerce_demo` database does not exist, so
-  the proof is limited to the available persistent database. No model
-  deletion or drop migration was introduced.
-- Own repo-wide `rg` still found live references outside the grant, including
-  `packages/events/src/Models/Event.php:95,432`,
-  `EventOccurrence.php:89`, `EventSession.php:90`, `EventChangeLog.php:43`,
-  `DispatchEventChangeChainAction.php:9,185-196`,
-  `RevertEventChangeChainAction.php:24,30-32`, the event-change notification
-  dispatchers, `EventsServiceProvider.php:104,476`,
-  `packages/events/config/events.php:80`, notification factories,
-  `FilamentEventsPlugin.php:42`, and named Events/FilamentEvents tests.
-  Removing the models or adding the drop migration without those edits would
-  leave dangling references. Those paths remain read-only under this grant;
-  `audits/migration-record.md:248` is also outside the grant.
-- Bridge evidence remained green:
-  `tests/src/Communications/EventReferenceTest.php` — 4 passed, 14 assertions;
-  `tests/src/Events/EventNotificationDispatchTest.php` — 5 passed, 34
-  assertions; `tests/src/Events/EventNotificationsTest.php` — 4 passed, 5
-  assertions.
+- **VERDICT: IMPLEMENTED ( expanded grant).** Change notices dispatch
+  through the comms bridge (`DispatchEventChangeChainAction:95`,
+  listener, dispatcher with `CommunicationManager` contract);
+  notification models, job, event wrapper, factories, relations,
+  provider wiring, config keys, and the Filament center deleted;
+  guarded drop migration added
+  (`2026_09_12_000001_drop_event_notification_tables.php`,
+  `hasTable` preflights); grep-test proves zero references
+  (`EventNotificationDispatchTest:115`).
+- Emptiness re-proven fresh on `cdemo` (0/0 rows, quoted in report);
+  `commerce_demo` from `.env` does not exist — proof limited to the
+  available persistent database, stated plainly.
+- **Follow-up (not blocking):** `communications` is a hard runtime
+  dependency of the dispatcher but appears in neither `require` nor
+  `suggest` — standalone installs without it fatal on dispatch.
+  Add the hard require or a `class_exists` guard.
+- Suites: Events 243/1084, FilamentEvents 18/175; comms
+  event-reference 4/14 and addressless invoice canaries green.
 
 ### Stream 3 — Money decisions
 

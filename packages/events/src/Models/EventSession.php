@@ -87,7 +87,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, Pass> $passes
  * @property-read Collection<int, EventChangeLog> $changeLogs
  * @property-read Collection<int, EventUpdate> $updates
- * @property-read Collection<int, EventNotificationBatch> $notificationBatches
  * @property-read Collection<int, SeatMap> $seatMaps
  */
 final class EventSession extends Model implements HasMedia
@@ -359,14 +358,6 @@ final class EventSession extends Model implements HasMedia
     public function updates(): HasMany
     {
         return $this->hasMany(EventUpdate::class, 'event_session_id');
-    }
-
-    /**
-     * @return HasMany<EventNotificationBatch, $this>
-     */
-    public function notificationBatches(): HasMany
-    {
-        return $this->hasMany(EventNotificationBatch::class, 'event_session_id');
     }
 
     /**

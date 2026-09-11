@@ -173,7 +173,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->bind(EventSearchPayloadResolver::class, $this->searchPayloadResolverClass());
         $this->app->bind(EventSearchRelationProvider::class, $this->searchRelationProviderClass());
         $this->app->bind(EventChangeNoticeAudienceResolver::class, $this->changeNoticeAudienceResolverClass());
-        $this->app->bind(EventChangeNoticeNotificationDispatcher::class, $this->changeNoticeNotificationDispatcherClass());
+        $this->app->bind(EventChangeNoticeNotificationDispatcher::class, EventNotificationDispatcher::class);
 
         $indexerClass = $this->searchIndexerClass();
         $this->app->bind(EventSearchIndexer::class, fn (): EventSearchIndexer => app($indexerClass));
@@ -466,20 +466,5 @@ final class EventsServiceProvider extends PackageServiceProvider
         }
 
         throw new RuntimeException('The events.change_notices.audience_resolver config value must be an EventChangeNoticeAudienceResolver class.');
-    }
-
-    private function changeNoticeNotificationDispatcherClass(): string
-    {
-        $dispatcher = config('events.change_notices.notification_dispatcher');
-
-        if ($dispatcher === null) {
-            return EventNotificationDispatcher::class;
-        }
-
-        if (is_string($dispatcher) && is_a($dispatcher, EventChangeNoticeNotificationDispatcher::class, true)) {
-            return $dispatcher;
-        }
-
-        throw new RuntimeException('The events.change_notices.notification_dispatcher config value must be an EventChangeNoticeNotificationDispatcher class.');
     }
 }

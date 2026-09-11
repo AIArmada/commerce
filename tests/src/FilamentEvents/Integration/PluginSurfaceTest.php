@@ -12,7 +12,6 @@ use AIArmada\FilamentEvents\FilamentEventsServiceProvider;
 use AIArmada\FilamentEvents\Pages\ApprovalQueue;
 use AIArmada\FilamentEvents\Pages\CheckInConsole;
 use AIArmada\FilamentEvents\Pages\EventPublicPreview;
-use AIArmada\FilamentEvents\Pages\NotificationCenter;
 use AIArmada\FilamentEvents\Resources\EventChangeLogResource;
 use AIArmada\FilamentEvents\Resources\EventRegistrationParticipantResource;
 use AIArmada\FilamentEvents\Resources\EventResource;
@@ -33,7 +32,6 @@ it('exposes the plugin resources, pages, and widgets', function (): void {
         )
         ->and($pages)->toContain(
             CheckInConsole::class,
-            NotificationCenter::class,
             ApprovalQueue::class,
             EventPublicPreview::class,
         )
@@ -54,7 +52,6 @@ it('reads the configured navigation group from pages', function (): void {
 
     foreach ([
         CheckInConsole::class,
-        NotificationCenter::class,
         ApprovalQueue::class,
         EventPublicPreview::class,
     ] as $page) {

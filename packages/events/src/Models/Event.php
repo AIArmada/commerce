@@ -92,7 +92,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventItinerary> $itineraries
  * @property-read Collection<int, EventChangeLog> $changeLogs
  * @property-read Collection<int, EventUpdate> $updates
- * @property-read Collection<int, EventNotificationBatch> $notificationBatches
  * @property-read Collection<int, EventEscalation> $escalations
  * @property-read Collection<int, SeatMap> $seatMaps
  * @property-read Model|Eloquent $owner
@@ -424,14 +423,6 @@ class Event extends Model implements HasMedia, TicketableInterface
     public function updates(): HasMany
     {
         return $this->hasMany(EventUpdate::class);
-    }
-
-    /**
-     * @return HasMany<EventNotificationBatch, $this>
-     */
-    public function notificationBatches(): HasMany
-    {
-        return $this->hasMany(EventNotificationBatch::class);
     }
 
     /**

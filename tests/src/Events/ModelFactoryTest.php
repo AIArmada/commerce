@@ -7,7 +7,6 @@ use AIArmada\Events\Models\EventAccessPolicy;
 use AIArmada\Events\Models\EventAudienceProfile;
 use AIArmada\Events\Models\EventClassification;
 use AIArmada\Events\Models\EventHeadcountLog;
-use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
@@ -48,7 +47,6 @@ it('creates related event models via their default factories', function (): void
     expect(EventAudienceProfile::factory()->create()->exists)->toBeTrue();
     expect(EventClassification::factory()->create()->exists)->toBeTrue();
     expect(EventHeadcountLog::factory()->create()->exists)->toBeTrue();
-    expect(EventNotificationBatch::factory()->create()->exists)->toBeTrue();
     expect(createEventPass($ticketType)->exists)->toBeTrue();
     expect(EventTimeExpression::factory()->create()->exists)->toBeTrue();
     expect(EventWalkIn::factory()->create()->exists)->toBeTrue();

@@ -5,13 +5,11 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\FilamentEvents\Pages\CheckInConsole;
 use AIArmada\FilamentEvents\Pages\EventPublicPreview;
-use AIArmada\FilamentEvents\Pages\NotificationCenter;
 use AIArmada\FilamentEvents\Resources\EventResource\Pages\ViewEvent;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -53,12 +51,6 @@ it('scopes the special page queries to the current owner', function (): void {
 
             $pass = createEventPass($ticketType, $registration);
 
-            $notificationBatch = EventNotificationBatch::factory()->create([
-                'event_id' => $event->id,
-                'event_occurrence_id' => $occurrence->id,
-                'event_session_id' => $session->id,
-            ]);
-
             return compact(
                 'event',
                 'occurrence',
@@ -66,7 +58,6 @@ it('scopes the special page queries to the current owner', function (): void {
                 'ticketType',
                 'registration',
                 'pass',
-                'notificationBatch',
             );
         });
     };
@@ -89,8 +80,6 @@ it('scopes the special page queries to the current owner', function (): void {
 
     $ownerAPasses = OwnerContext::withOwner($ownerA, fn (): array => (new CheckInConsole)->table($makeTable())->getQuery()->pluck('id')->all());
     $ownerBPasses = OwnerContext::withOwner($ownerB, fn (): array => (new CheckInConsole)->table($makeTable())->getQuery()->pluck('id')->all());
-    $ownerANotifications = OwnerContext::withOwner($ownerA, fn (): array => (new NotificationCenter)->table($makeTable())->getQuery()->pluck('id')->all());
-    $ownerBNotifications = OwnerContext::withOwner($ownerB, fn (): array => (new NotificationCenter)->table($makeTable())->getQuery()->pluck('id')->all());
 
     $previewPage = new EventPublicPreview;
     OwnerContext::withOwner($ownerA, function () use ($previewPage, $ownerBGraph): void {
@@ -99,8 +88,6 @@ it('scopes the special page queries to the current owner', function (): void {
 
     expect($ownerAPasses)->toBe([$ownerAGraph['pass']->id])
         ->and($ownerBPasses)->toBe([$ownerBGraph['pass']->id])
-        ->and($ownerANotifications)->toBe([$ownerAGraph['notificationBatch']->id])
-        ->and($ownerBNotifications)->toBe([$ownerBGraph['notificationBatch']->id])
         ->and($previewPage->event)->toBeNull();
 });
 
@@ -108,7 +95,6 @@ it('builds the special page header actions', function (): void {
     $pages = [
         new ViewEvent,
         new CheckInConsole,
-        new NotificationCenter,
     ];
 
     foreach ($pages as $page) {

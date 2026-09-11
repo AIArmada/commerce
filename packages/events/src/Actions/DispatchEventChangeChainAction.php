@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Events\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Events\EventChangeNoticePublished;
 use AIArmada\Events\Models\EventChangeLog;
-use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventUpdate;
@@ -93,7 +93,7 @@ final class DispatchEventChangeChainAction
             $this->createEventUpdateIfNeeded($changeLog, $changeType, $impactLevel, $reason, $oldValue, $newValue);
 
             if ($requiresNotification) {
-                $this->createNotificationBatch($changeLog, $impactLevel);
+                event(new EventChangeNoticePublished($changeLog));
             }
         });
     }
@@ -180,19 +180,6 @@ final class DispatchEventChangeChainAction
         }
 
         return $update;
-    }
-
-    private function createNotificationBatch(EventChangeLog $changeLog, string $impactLevel): EventNotificationBatch
-    {
-        return EventNotificationBatch::query()->create([
-            'event_id' => $changeLog->event_id,
-            'event_occurrence_id' => $changeLog->event_occurrence_id,
-            'event_session_id' => $changeLog->event_session_id,
-            'event_change_log_id' => $changeLog->id,
-            'audience_scope' => $impactLevel === 'critical' ? 'registrants' : 'followers',
-            'title' => 'Notification: ' . ucfirst(str_replace('_', ' ', $changeLog->change_type)),
-            'status' => 'pending',
-        ]);
     }
 
     private function impactVisibility(string $impactLevel): string

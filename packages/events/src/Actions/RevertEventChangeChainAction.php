@@ -21,14 +21,10 @@ final class RevertEventChangeChainAction
         OwnerContext::withOwner($event->owner, function () use ($changeLog): void {
             $changeLog->update(['visibility' => 'internal']);
 
-            $changeLog->loadMissing(['updates', 'notificationBatches']);
+            $changeLog->loadMissing('updates');
 
             foreach ($changeLog->updates as $update) {
                 $update->update(['archived_at' => CarbonImmutable::now()]);
-            }
-
-            foreach ($changeLog->notificationBatches as $batch) {
-                $batch->update(['status' => 'cancelled', 'cancelled_at' => CarbonImmutable::now()]);
             }
         });
     }

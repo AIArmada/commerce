@@ -2,8 +2,15 @@
 
 declare(strict_types=1);
 
+use AIArmada\Communications\Contracts\CommunicationManager;
+use AIArmada\Communications\Data\CommunicationContextData;
+use AIArmada\Communications\Facades\Communications;
+use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Events\Actions\DispatchEventChangeChainAction;
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Notifications\EventChangeNoticeNotification;
+use Illuminate\Notifications\Notification;
 
 it('creates change log with update for cancellations', function (): void {
     $event = Event::factory()->create();
@@ -21,8 +28,20 @@ it('creates change log with update for cancellations', function (): void {
     expect($event->fresh()->updates)->toHaveCount(1);
 });
 
-it('creates notification batch for critical changes', function (): void {
+it('dispatches critical changes through the communications bridge', function (): void {
+    $fake = Communications::fake();
+    app()->instance(CommunicationManager::class, $fake);
     $event = Event::factory()->create();
+    $registration = EventRegistration::factory()->create([
+        'event_id' => $event->id,
+        'status' => 'confirmed',
+    ]);
+    $participant = $registration->participants()->create([
+        'event_id' => $event->id,
+        'name' => 'Alice Example',
+        'is_primary' => true,
+    ]);
+    $participant->addContactMethod(ContactMethodData::email('alice@example.com'));
 
     DispatchEventChangeChainAction::run(
         eventId: $event->id,
@@ -33,5 +52,12 @@ it('creates notification batch for critical changes', function (): void {
         reason: 'Weather conditions',
     );
 
-    expect($event->fresh()->notificationBatches)->toHaveCount(1);
+    Communications::assertSent(function (mixed $notifiable, Notification $notification, mixed $context) use ($registration, $event): bool {
+        return $notifiable instanceof EventRegistration
+            && $notifiable->is($registration)
+            && $notification instanceof EventChangeNoticeNotification
+            && $context instanceof CommunicationContextData
+            && $context->subjectId === $event->id
+            && $context->purpose === 'event-change-notice';
+    }, count: 1);
 });

@@ -40,7 +40,6 @@ use Illuminate\Support\Carbon;
  * @property Carbon $created_at
  * @property-read Event $event
  * @property-read Collection<int, EventUpdate> $updates
- * @property-read Collection<int, EventNotificationBatch> $notificationBatches
  */
 final class EventChangeLog extends Model
 {
@@ -125,14 +124,6 @@ final class EventChangeLog extends Model
     public function updates(): HasMany
     {
         return $this->hasMany(EventUpdate::class, 'event_change_log_id');
-    }
-
-    /**
-     * @return HasMany<EventNotificationBatch, $this>
-     */
-    public function notificationBatches(): HasMany
-    {
-        return $this->hasMany(EventNotificationBatch::class, 'event_change_log_id');
     }
 
     /**

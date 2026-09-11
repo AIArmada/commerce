@@ -77,8 +77,6 @@ return [
             'event_change_logs' => env('EVENTS_TABLE_CHANGE_LOGS', $tablePrefix . 'event_change_logs'),
             'event_updates' => env('EVENTS_TABLE_UPDATES', $tablePrefix . 'event_updates'),
             'event_update_items' => env('EVENTS_TABLE_UPDATE_ITEMS', $tablePrefix . 'event_update_items'),
-            'event_notification_batches' => env('EVENTS_TABLE_NOTIFICATION_BATCHES', $tablePrefix . 'event_notification_batches'),
-            'event_notification_deliveries' => env('EVENTS_TABLE_NOTIFICATION_DELIVERIES', $tablePrefix . 'event_notification_deliveries'),
             'event_submissions' => env('EVENTS_TABLE_SUBMISSIONS', $tablePrefix . 'event_submissions'),
             'event_submission_logs' => env('EVENTS_TABLE_SUBMISSION_LOGS', $tablePrefix . 'event_submission_logs'),
             'event_submission_attachments' => env('EVENTS_TABLE_SUBMISSION_ATTACHMENTS', $tablePrefix . 'event_submission_attachments'),
@@ -273,7 +271,6 @@ return [
 
     'change_notices' => [
         'audience_resolver' => null,
-        'notification_dispatcher' => null,
     ],
 
     /* Integrations */
