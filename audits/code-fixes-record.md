@@ -1145,18 +1145,22 @@ dual-read/write path, or compatibility shim was added.
 
 ### Stream 2 — Event notification table retirement
 
-- **VERDICT: BLOCKED; re-deferred.** The sanctioned SQLite preflight found no
-  `event_notification_batches` or `event_notification_deliveries` tables in
-  the in-memory schema, but that does not prove the persistent development
-  database is empty. The shipped creators remain at
-  `packages/events/database/migrations/2000_01_01_000049_create_event_notification_batches_table.php:14-33`
-  and `...000050_create_event_notification_deliveries_table.php:14-33`.
-- Repository-wide live references remain, including
-  `packages/events/src/Services/EventNotificationDispatcher.php:9-11,23-25,39-61,118,146,150`,
-  `packages/events/src/Models/Event.php:95,430-434`,
-  `packages/filament-events/src/Pages/NotificationCenter.php:29-93`, and
-  `packages/events/config/events.php:80-81`. No model deletion or drop
-  migration was introduced.
+- **VERDICT: BLOCKED; re-deferred with new evidence.** The persistent
+  development database proof was run against `cdemo` and returned zero rows
+  in both tables. The configured `commerce_demo` database does not exist, so
+  the proof is limited to the available persistent database. No model
+  deletion or drop migration was introduced.
+- Own repo-wide `rg` still found live references outside the grant, including
+  `packages/events/src/Models/Event.php:95,432`,
+  `EventOccurrence.php:89`, `EventSession.php:90`, `EventChangeLog.php:43`,
+  `DispatchEventChangeChainAction.php:9,185-196`,
+  `RevertEventChangeChainAction.php:24,30-32`, the event-change notification
+  dispatchers, `EventsServiceProvider.php:104,476`,
+  `packages/events/config/events.php:80`, notification factories,
+  `FilamentEventsPlugin.php:42`, and named Events/FilamentEvents tests.
+  Removing the models or adding the drop migration without those edits would
+  leave dangling references. Those paths remain read-only under this grant;
+  `audits/migration-record.md:248` is also outside the grant.
 - Bridge evidence remained green:
   `tests/src/Communications/EventReferenceTest.php` — 4 passed, 14 assertions;
   `tests/src/Events/EventNotificationDispatchTest.php` — 5 passed, 34
@@ -1175,18 +1179,16 @@ dual-read/write path, or compatibility shim was added.
   path remains unchanged at `:91-102`. Parity is proved at
   `tests/src/Promotions/PromotionServiceBehaviorTest.php:28-42`, with the
   supplied-instant proof at `:45-68`.
-- **Cashier gateway split: BLOCKED; re-deferred.** The owned delegation seam
-  is `packages/cashier/src/GatewayManager.php:46-48` and is asserted by
-  `tests/src/FilamentCashier/Unit/GatewayBackedListDelegationTest.php:28`,
-  but completion would require editing the read-only multi-provider bridge
-  at `packages/checkout/src/Integrations/Payment/CashierProcessor.php:24-60`.
-- The only Stream 3 source/test change was
-  `tests/src/Promotions/PromotionServiceBehaviorTest.php:45-68`. The following
-  ran with `--parallel`: Vouchers unit 25/70; Vouchers area 898 passed, 7
-  skipped/1,733; Promotions behavior 6/12; Promotions model 34/44;
-  Promotions area 74/130; FilamentVouchers 42/275; FilamentPromotions 37/74;
-  Cashier gateway unit 10/18; additional gateway unit 13/25; Cashier area
-  256/524; FilamentCashier delegation 2/8; FilamentCashier area 133/423.
+- **Cashier gateway split: IMPLEMENTED.** The named Checkout bridge now
+  resolves the configured gateway seam with `gateway(null)` and no longer
+  selects a gateway from `PaymentRequest::provider`
+  (`packages/checkout/src/Integrations/Payment/CashierProcessor.php:55-57`).
+  `tests/src/Checkout/CashierProcessorTest.php:65-128` asserts the seam
+  directly. No `packages/cashier/src/Gateways/**` edit was necessary; the
+  existing configured seam remains at `packages/cashier/src/GatewayManager.php:46-48`.
+- Stream B verification: targeted CashierProcessor 5 passed/51 assertions;
+  Cashier 256/524; Checkout 266/977; PHPStan on `packages/checkout/src`
+  clean; Pint and `git diff --check` clean.
 - The ten untouched adversary proofs also ran individually and all passed:
   `tests/src/Cashier/AdversaryChipGatewayRetrievePaymentTest.php`,
   `tests/src/CashierChip/AdversaryChargeDropsIdempotencyKeyTest.php`,
@@ -1227,16 +1229,16 @@ dual-read/write path, or compatibility shim was added.
   to keep the frozen table readable; Stream 1 implemented full replacement
   under it, and the follow-up closed the invoice read path plus composer
   require (see Stream 1 verdict above).
-- Stream 2 did not add the requested retirement migration: persistent-table
-  emptiness is unproven and live consumers still exist outside its owned set.
-  The exact preflight and deviation are recorded in
-  `audits/migration-record.md`.
-- Stream 3 could not finish the Cashier split without changing the read-only
-  Checkout bridge. Stream 4 could not produce production-scale EXPLAIN or
-  null-rate measurements in the available environment; Octane is likewise
-  unavailable. The Cart canary had a worker-timing delay but eventually passed
-  1,052 tests, 2 skipped, 2,731 assertions.
-- Main integration canaries ran with `--parallel`: Chip — 1,052 passed, 4
-  skipped, 2,730 assertions; Cashier — 256 passed, 524 assertions; Checkout —
-  266 passed, 977 assertions; Orders — 330 passed, 743 assertions. No full
-  repository suite was run.
+- Stream 2's persistent `cdemo` proof is explicit `0/0`; the configured
+  `commerce_demo` database was absent, and the remaining live references are
+  outside the authorized set. No migration-record update was possible without
+  changing the out-of-scope `audits/migration-record.md`.
+- Stream 3 used the explicitly granted Checkout exception. Provider-aware
+  refund/void/status paths remain at
+  `packages/checkout/src/Integrations/Payment/CashierProcessor.php:130,182,235`
+  and the unused helper remains at `:387-397`; those are outside the named
+  bridge slice and were not changed.
+- Main integration canaries ran with `--parallel`: Events — 245 passed,
+  1,107 assertions; Cashier — 256 passed, 524 assertions; Checkout — 266
+  passed, 977 assertions. The ten adversary proofs passed individually (10
+  tests, 23 assertions). No full repository suite was run.

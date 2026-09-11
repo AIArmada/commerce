@@ -62,7 +62,7 @@ it('resolves cashier payment status through the active gateway', function (): vo
         ->and($result->provider)->toBe('chip');
 });
 
-it('creates payments through the unified billable and payment contracts', function (): void {
+it('creates payments through the configured Cashier gateway seam', function (): void {
     $billable = mock(BillableContract::class);
     $payment = mock(PaymentContract::class);
 
@@ -117,6 +117,7 @@ it('creates payments through the unified billable and payment contracts', functi
             failureUrl: 'https://example.test/failure',
             cancelUrl: 'https://example.test/cancel',
             metadata: ['checkout_session_id' => 'session-456'],
+            provider: 'chip',
         ),
     );
 

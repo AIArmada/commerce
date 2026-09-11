@@ -52,8 +52,7 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
             }
 
             $options = $this->buildChargeOptions($session, $request);
-            $provider = $this->requestedProvider($request);
-            $gateway = app(GatewayManager::class)->gateway($provider);
+            $gateway = app(GatewayManager::class)->gateway(null);
             $provider = $gateway->name();
             $payment = $gateway->charge($billable, $request->amount, $request->paymentMethod, $options);
 
@@ -383,17 +382,6 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
             gatewayResponse: $response,
             provider: $provider,
         );
-    }
-
-    private function requestedProvider(PaymentRequest $request): ?string
-    {
-        $provider = is_string($request->provider) ? mb_trim($request->provider) : '';
-
-        if ($provider !== '' && $provider !== $this->getIdentifier()) {
-            return $provider;
-        }
-
-        return null;
     }
 
     /**
