@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderAddress;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Created;
 
@@ -223,263 +223,126 @@ describe('OrderItem Model', function (): void {
     });
 });
 
-describe('OrderAddress Model', function (): void {
-    describe('OrderAddress Creation', function (): void {
-        it('can create a shipping address', function (): void {
-            $order = Order::create([
-                'order_number' => 'ORD-ADDR1-' . uniqid(),
-                'status' => Created::class,
-                'currency' => 'MYR',
-                'subtotal' => 5000,
-                'grand_total' => 5000,
-            ]);
+describe('Order canonical addresses', function (): void {
+    it('can attach and read a primary shipping address', function (): void {
+        $order = createOrdersAddressTestOrder('shipping');
+        $address = Address::create([
+            'line1' => '123 Ship Street',
+            'city' => 'Kuala Lumpur',
+            'state' => 'KL',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
 
-            $address = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'shipping',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'line1' => '123 Ship Street',
-                'city' => 'Kuala Lumpur',
-                'state' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
+        $pivot = $order->attachAddress($address, type: 'shipping', isPrimary: true);
+        $primary = $order->primaryAddress('shipping');
 
-            expect($address)->toBeInstanceOf(OrderAddress::class)
-                ->and($address->type)->toBe('shipping')
-                ->and($address->city)->toBe('Kuala Lumpur');
-        });
-
-        it('can create both shipping and billing addresses', function (): void {
-            $order = Order::create([
-                'order_number' => 'ORD-ADDR2-' . uniqid(),
-                'status' => Created::class,
-                'currency' => 'MYR',
-                'subtotal' => 5000,
-                'grand_total' => 5000,
-            ]);
-
-            $shipping = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'shipping',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'line1' => 'Ship Address',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
-
-            $billing = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'billing',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'line1' => 'Bill Address',
-                'city' => 'PJ',
-                'postcode' => '47500',
-                'country' => 'MY',
-            ]);
-
-            expect($shipping->type)->toBe('shipping')
-                ->and($billing->type)->toBe('billing');
-        });
+        expect($pivot->type)->toBe('shipping')
+            ->and($order->addresses()->whereKey($address->id)->exists())->toBeTrue()
+            ->and($primary)->not->toBeNull()
+            ->and($primary?->city)->toBe('Kuala Lumpur');
     });
 
-    describe('OrderAddress Relationship', function (): void {
-        it('belongs to an order', function (): void {
-            $order = Order::create([
-                'order_number' => 'ORD-ADDR3-' . uniqid(),
-                'status' => Created::class,
-                'currency' => 'MYR',
-                'subtotal' => 5000,
-                'grand_total' => 5000,
-            ]);
+    it('can attach billing and shipping addresses independently', function (): void {
+        $order = createOrdersAddressTestOrder('types');
+        $billing = Address::create([
+            'line1' => 'Bill Address',
+            'city' => 'PJ',
+            'postcode' => '47500',
+            'country_code' => 'MY',
+        ]);
+        $shipping = Address::create([
+            'line1' => 'Ship Address',
+            'city' => 'KL',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
 
-            $address = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'shipping',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'line1' => 'Main Street',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
+        $order->attachAddress($billing, type: 'billing', isPrimary: true);
+        $order->attachAddress($shipping, type: 'shipping', isPrimary: true);
 
-            expect($address->order->id)->toBe($order->id);
-        });
+        expect($order->addresses)->toHaveCount(2)
+            ->and($order->addressesOfType('billing')->pluck('id')->all())->toContain($billing->id)
+            ->and($order->addressesOfType('shipping')->pluck('id')->all())->toContain($shipping->id);
     });
 
-    describe('OrderAddress Full Name', function (): void {
-        it('can compose full name', function (): void {
-            $order = Order::create([
-                'order_number' => 'ORD-ADDR4-' . uniqid(),
-                'status' => Created::class,
-                'currency' => 'MYR',
-                'subtotal' => 5000,
-                'grand_total' => 5000,
-            ]);
+    it('promotes only the newest primary address for a type', function (): void {
+        $order = createOrdersAddressTestOrder('primary');
+        $first = Address::create(['line1' => 'First Street', 'country_code' => 'MY']);
+        $second = Address::create(['line1' => 'Second Street', 'country_code' => 'MY']);
 
-            $address = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'shipping',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'line1' => 'Main Street',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
+        $order->attachAddress($first, type: 'shipping', isPrimary: true);
+        $order->attachAddress($second, type: 'shipping', isPrimary: true);
 
-            expect($address->getFullName())->toBe('John Doe');
-        });
+        expect($order->primaryAddress('shipping')?->id)->toBe($second->id)
+            ->and($order->addresses()->whereKey($first->id)->first()?->pivot->is_primary)->toBeFalse()
+            ->and($order->addresses()->whereKey($second->id)->first()?->pivot->is_primary)->toBeTrue();
     });
 
-    describe('OrderAddress Type Helpers', function (): void {
-        it('can check if address is billing', function (): void {
-            $order = Order::create([
-                'order_number' => 'ORD-ADDR5-' . uniqid(),
-                'status' => Created::class,
-                'currency' => 'MYR',
-                'subtotal' => 5000,
-                'grand_total' => 5000,
-            ]);
+    it('preserves order contact fields in canonical address metadata', function (): void {
+        $order = createOrdersAddressTestOrder('metadata');
+        $address = Address::create([
+            'line1' => '123 Main Street',
+            'country_code' => 'MY',
+            'metadata' => [
+                Order::ADDRESS_CONTACT_METADATA_KEY => [
+                    'first_name' => 'John',
+                    'last_name' => 'Doe',
+                    'company' => 'ACME Corp',
+                    'phone' => '0123456789',
+                    'email' => 'john@example.com',
+                ],
+            ],
+        ]);
 
-            $billing = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'billing',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'line1' => 'Bill Street',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
+        $order->attachAddress($address, type: 'billing', isPrimary: true);
+        $contact = data_get($order->primaryAddress('billing')?->metadata, Order::ADDRESS_CONTACT_METADATA_KEY);
 
-            $shipping = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'shipping',
-                'first_name' => 'Jane',
-                'last_name' => 'Doe',
-                'line1' => 'Ship Street',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
-
-            expect($billing->isBilling())->toBeTrue()
-                ->and($billing->isShipping())->toBeFalse()
-                ->and($shipping->isBilling())->toBeFalse()
-                ->and($shipping->isShipping())->toBeTrue();
-        });
+        expect($contact)->toMatchArray([
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'company' => 'ACME Corp',
+            'phone' => '0123456789',
+            'email' => 'john@example.com',
+        ]);
     });
 
-    describe('OrderAddress Formatting', function (): void {
-        it('can format address as one line', function (): void {
-            $order = Order::create([
-                'order_number' => 'ORD-ADDR6-' . uniqid(),
-                'status' => Created::class,
-                'currency' => 'MYR',
-                'subtotal' => 5000,
-                'grand_total' => 5000,
-            ]);
+    it('reads canonical formatted address fields without an order address row', function (): void {
+        $order = createOrdersAddressTestOrder('formatted');
+        $address = Address::create([
+            'line1' => '123 Main Street',
+            'line2' => 'Floor 5',
+            'city' => 'Kuala Lumpur',
+            'state' => 'KL',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+            'formatted_address' => '123 Main Street, Floor 5, Kuala Lumpur, KL 50000, MY',
+        ]);
 
-            $address = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'shipping',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'line1' => '123 Main Street',
-                'line2' => 'Floor 5',
-                'city' => 'Kuala Lumpur',
-                'state' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
+        $order->attachAddress($address, type: 'shipping', isPrimary: true);
+        $primary = $order->primaryAddress('shipping');
 
-            $oneLine = $address->getOneLine();
-            expect($oneLine)->toContain('123 Main Street')
-                ->and($oneLine)->toContain('Floor 5')
-                ->and($oneLine)->toContain('Kuala Lumpur')
-                ->and($oneLine)->toContain('KL')
-                ->and($oneLine)->toContain('50000')
-                ->and($oneLine)->toContain('MY');
-        });
+        expect($primary?->line1)->toBe('123 Main Street')
+            ->and($primary?->line2)->toBe('Floor 5')
+            ->and($primary?->formatted_address)->toBe('123 Main Street, Floor 5, Kuala Lumpur, KL 50000, MY');
+    });
 
-        it('can format address as multi-line', function (): void {
-            $order = Order::create([
-                'order_number' => 'ORD-ADDR7-' . uniqid(),
-                'status' => Created::class,
-                'currency' => 'MYR',
-                'subtotal' => 5000,
-                'grand_total' => 5000,
-            ]);
+    it('returns no default address when the order has no attachments', function (): void {
+        $order = createOrdersAddressTestOrder('addressless');
 
-            $address = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'shipping',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'company' => 'ACME Corp',
-                'line1' => '123 Main Street',
-                'line2' => 'Floor 5',
-                'city' => 'Kuala Lumpur',
-                'state' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
-
-            $formatted = $address->getFormatted();
-            $lines = explode("\n", $formatted);
-
-            expect($lines)->toHaveCount(6)
-                ->and($lines[0])->toBe('John Doe')
-                ->and($lines[1])->toBe('ACME Corp')
-                ->and($lines[2])->toBe('123 Main Street')
-                ->and($lines[3])->toBe('Floor 5')
-                ->and($lines[4])->toContain('Kuala Lumpur')
-                ->and($lines[5])->toBe('MY');
-        });
-
-        it('can convert to address array', function (): void {
-            $order = Order::create([
-                'order_number' => 'ORD-ADDR8-' . uniqid(),
-                'status' => Created::class,
-                'currency' => 'MYR',
-                'subtotal' => 5000,
-                'grand_total' => 5000,
-            ]);
-
-            $address = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'shipping',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'company' => 'ACME Corp',
-                'line1' => '123 Main Street',
-                'line2' => 'Floor 5',
-                'city' => 'Kuala Lumpur',
-                'state' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'phone' => '0123456789',
-                'email' => 'john@example.com',
-            ]);
-
-            $array = $address->toAddressArray();
-
-            expect($array)->toHaveKey('name', 'John Doe')
-                ->and($array)->toHaveKey('company', 'ACME Corp')
-                ->and($array)->toHaveKey('line1', '123 Main Street')
-                ->and($array)->toHaveKey('line2', 'Floor 5')
-                ->and($array)->toHaveKey('city', 'Kuala Lumpur')
-                ->and($array)->toHaveKey('state', 'KL')
-                ->and($array)->toHaveKey('postcode', '50000')
-                ->and($array)->toHaveKey('country_code', 'MY')
-                ->and($array)->toHaveKey('phone', '0123456789')
-                ->and($array)->toHaveKey('email', 'john@example.com');
-        });
+        expect($order->addresses)->toBeEmpty()
+            ->and($order->primaryAddress('billing'))->toBeNull()
+            ->and($order->primaryAddress('shipping'))->toBeNull();
     });
 });
+
+function createOrdersAddressTestOrder(string $suffix): Order
+{
+    return Order::create([
+        'order_number' => 'ORD-ADDR-' . $suffix . '-' . uniqid(),
+        'status' => Created::class,
+        'currency' => 'MYR',
+        'subtotal' => 5000,
+        'grand_total' => 5000,
+    ]);
+}

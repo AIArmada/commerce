@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Resources\OrderResource\Schemas;
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Orders\Models\Order;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -62,27 +63,15 @@ class OrderInfolist
 
             Section::make('Addresses')
                 ->schema([
-                    TextEntry::make('billingAddress.formatted')
+                    TextEntry::make('billing_address')
                         ->label('Billing Address')
-                        ->getStateUsing(function (Order $record): ?HtmlString {
-                            if (! $record->billingAddress) {
-                                return null;
-                            }
-
-                            return new HtmlString(nl2br(e($record->billingAddress->getFormatted())));
-                        })
+                        ->getStateUsing(fn (Order $record): ?HtmlString => static::formatAddress($record->primaryAddress('billing')))
                         ->placeholder('Not provided')
                         ->html(),
 
-                    TextEntry::make('shippingAddress.formatted')
+                    TextEntry::make('shipping_address')
                         ->label('Shipping Address')
-                        ->getStateUsing(function (Order $record): ?HtmlString {
-                            if (! $record->shippingAddress) {
-                                return null;
-                            }
-
-                            return new HtmlString(nl2br(e($record->shippingAddress->getFormatted())));
-                        })
+                        ->getStateUsing(fn (Order $record): ?HtmlString => static::formatAddress($record->primaryAddress('shipping')))
                         ->placeholder('Not provided')
                         ->html(),
                 ])
@@ -128,5 +117,47 @@ class OrderInfolist
                 ->columns(2)
                 ->collapsible(),
         ];
+    }
+
+    private static function formatAddress(?Address $address): ?HtmlString
+    {
+        if ($address === null) {
+            return null;
+        }
+
+        $metadata = $address->metadata;
+        $contact = is_array($metadata)
+            && is_array($metadata[Order::ADDRESS_CONTACT_METADATA_KEY] ?? null)
+            ? $metadata[Order::ADDRESS_CONTACT_METADATA_KEY]
+            : [];
+        $hasText = static fn (mixed $value): bool => is_string($value) && $value !== '';
+        $name = mb_trim(implode(' ', array_filter([
+            $contact['first_name'] ?? null,
+            $contact['last_name'] ?? null,
+        ], $hasText)));
+        $locality = implode(', ', array_filter([
+            $address->city,
+            $address->state,
+        ], $hasText));
+        $location = mb_trim(implode(' ', array_filter([
+            $locality,
+            $address->postcode,
+        ], $hasText)));
+
+        $lines = array_filter([
+            $name,
+            is_string($contact['company'] ?? null) ? $contact['company'] : null,
+            $address->line1,
+            $address->line2,
+            $location,
+            $address->country_code ?? $address->country,
+            is_string($contact['phone'] ?? null) ? $contact['phone'] : null,
+        ], $hasText);
+
+        if ($lines === []) {
+            return null;
+        }
+
+        return new HtmlString(nl2br(e(implode("\n", $lines))));
     }
 }

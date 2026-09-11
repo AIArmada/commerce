@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderAddress;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Models\OrderNote;
 use AIArmada\Orders\Models\OrderPayment;
@@ -239,16 +240,19 @@ describe('Order Model', function (): void {
                 'unit_price' => 5000,
             ]);
 
-            OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'billing',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
+            $address = Address::create([
                 'line1' => '123 Billing St',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
+                'metadata' => [
+                    Order::ADDRESS_CONTACT_METADATA_KEY => [
+                        'first_name' => 'John',
+                        'last_name' => 'Doe',
+                    ],
+                ],
             ]);
+            $order->attachAddress($address, type: 'billing', isPrimary: true);
 
             OrderPayment::create([
                 'order_id' => $order->id,
@@ -278,7 +282,11 @@ describe('Order Model', function (): void {
 
             expect(Order::find($orderId))->toBeNull();
             expect(OrderItem::where('order_id', $orderId)->count())->toBe(0);
-            expect(OrderAddress::where('order_id', $orderId)->count())->toBe(0);
+            expect(Addressable::query()
+                ->where('addressable_type', $order->getMorphClass())
+                ->where('addressable_id', $orderId)
+                ->count())->toBe(0)
+                ->and(Address::find($address->id))->not->toBeNull();
             expect(OrderPayment::where('order_id', $orderId)->count())->toBe(0);
             expect(OrderRefund::where('order_id', $orderId)->count())->toBe(0);
             expect(OrderNote::where('order_id', $orderId)->count())->toBe(0);
@@ -347,41 +355,47 @@ describe('Order Model', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $billingAddress = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'billing',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'email' => 'john@example.com',
-                'phone' => '123456789',
+            $billingAddress = Address::create([
                 'line1' => '123 Main St',
                 'city' => 'Kuala Lumpur',
                 'state' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
+                'metadata' => [
+                    Order::ADDRESS_CONTACT_METADATA_KEY => [
+                        'first_name' => 'John',
+                        'last_name' => 'Doe',
+                        'email' => 'john@example.com',
+                        'phone' => '123456789',
+                    ],
+                ],
             ]);
+            $order->attachAddress($billingAddress, type: 'billing', isPrimary: true);
 
-            $shippingAddress = OrderAddress::create([
-                'order_id' => $order->id,
-                'type' => 'shipping',
-                'first_name' => 'Jane',
-                'last_name' => 'Doe',
-                'email' => 'jane@example.com',
-                'phone' => '987654321',
+            $shippingAddress = Address::create([
                 'line1' => '456 Oak St',
                 'city' => 'Penang',
                 'state' => 'PG',
                 'postcode' => '10000',
                 'country' => 'MY',
+                'metadata' => [
+                    Order::ADDRESS_CONTACT_METADATA_KEY => [
+                        'first_name' => 'Jane',
+                        'last_name' => 'Doe',
+                        'email' => 'jane@example.com',
+                        'phone' => '987654321',
+                    ],
+                ],
             ]);
+            $order->attachAddress($shippingAddress, type: 'shipping', isPrimary: true);
 
             $order->refresh();
 
             expect($order->addresses)->toHaveCount(2)
-                ->and($order->billingAddress)->not->toBeNull()
-                ->and($order->billingAddress->first_name)->toBe('John')
-                ->and($order->shippingAddress)->not->toBeNull()
-                ->and($order->shippingAddress->first_name)->toBe('Jane');
+                ->and($order->primaryAddress('billing'))->not->toBeNull()
+                ->and(data_get($order->primaryAddress('billing')?->metadata, Order::ADDRESS_CONTACT_METADATA_KEY . '.first_name'))->toBe('John')
+                ->and($order->primaryAddress('shipping'))->not->toBeNull()
+                ->and(data_get($order->primaryAddress('shipping')?->metadata, Order::ADDRESS_CONTACT_METADATA_KEY . '.first_name'))->toBe('Jane');
         });
 
         it('can have payments', function (): void {

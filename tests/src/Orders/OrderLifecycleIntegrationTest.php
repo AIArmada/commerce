@@ -66,7 +66,7 @@ describe('Order Lifecycle Integration', function (): void {
         expect($order)->toBeInstanceOf(Order::class);
         expect($order->status)->toBeInstanceOf(PendingPayment::class);
         expect($order->items)->toHaveCount(2);
-        expect($order->billingAddress)->not->toBeNull();
+        expect($order->primaryAddress('billing'))->not->toBeNull();
 
         // 2. Confirm payment
         $order = $service->confirmPayment($order, 'txn_integration_123', 'stripe', 22200);

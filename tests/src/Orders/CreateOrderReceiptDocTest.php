@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Actions\CreateOrderReceiptDoc;
@@ -24,7 +25,7 @@ it('returns the existing receipt document when one already exists', function ():
     $order = receiptDocumentOrder('receipt-existing');
 
     $firstReceipt = app(CreateOrderReceiptDoc::class)->execute($order, 'txn_receipt_abc', 'chip');
-    $secondReceipt = app(CreateOrderReceiptDoc::class)->execute($order->fresh(['items', 'billingAddress']) ?? $order, 'txn_receipt_abc', 'chip');
+    $secondReceipt = app(CreateOrderReceiptDoc::class)->execute($order->fresh(['items', 'addresses']) ?? $order, 'txn_receipt_abc', 'chip');
 
     expect((string) $secondReceipt->getKey())->toBe((string) $firstReceipt->getKey())
         ->and(Doc::query()
@@ -57,17 +58,21 @@ function receiptDocumentOrder(string $suffix): Order
         'currency' => 'MYR',
     ]);
 
-    $order->addresses()->create([
-        'type' => 'billing',
-        'first_name' => 'Receipt',
-        'last_name' => 'Customer',
+    $address = Address::create([
         'line1' => '123 Receipt Street',
         'city' => 'Kuala Lumpur',
         'postcode' => '50000',
         'country' => 'MY',
-        'email' => 'receipt+' . $suffix . '@example.com',
-        'phone' => '0123456789',
+        'metadata' => [
+            Order::ADDRESS_CONTACT_METADATA_KEY => [
+                'first_name' => 'Receipt',
+                'last_name' => 'Customer',
+                'email' => 'receipt+' . $suffix . '@example.com',
+                'phone' => '0123456789',
+            ],
+        ],
     ]);
+    $order->attachAddress($address, type: 'billing', isPrimary: true);
 
-    return $order->fresh(['items', 'billingAddress']) ?? $order;
+    return $order->fresh(['items', 'addresses']) ?? $order;
 }

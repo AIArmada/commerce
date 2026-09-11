@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Events\OrderPaid;
@@ -132,16 +133,20 @@ describe('OrdersServiceProvider', function (): void {
                 ->paid()
                 ->create();
 
-            $order->addresses()->create([
-                'type' => 'billing',
-                'first_name' => 'Billing',
-                'last_name' => 'Customer',
+            $address = Address::create([
                 'line1' => '123 Billing Street',
                 'city' => 'Kuala Lumpur',
                 'postcode' => '50000',
                 'country_code' => 'MY',
-                'email' => 'billing@example.com',
+                'metadata' => [
+                    Order::ADDRESS_CONTACT_METADATA_KEY => [
+                        'first_name' => 'Billing',
+                        'last_name' => 'Customer',
+                        'email' => 'billing@example.com',
+                    ],
+                ],
             ]);
+            $order->attachAddress($address, type: 'billing', isPrimary: true);
 
             return $order;
         });

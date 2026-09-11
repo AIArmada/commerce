@@ -1123,19 +1123,25 @@ dual-read/write path, or compatibility shim was added.
 
 ### Stream 1 — Orders HasAddresses pilot
 
-- **VERDICT: BLOCKED; no change.** The pilot was not implemented because the
-  requested no-legacy decision makes retaining `order_addresses` or adding a
-  compatibility API incorrect. A scoped source check found no
-  `legacyAddresses`, `HasAddresses`, or Addressing trait adoption in the
-  owned Orders/FilamentOrders trees.
-- Removal or replacement is blocked by live consumers outside the grant:
-  `packages/checkout/src/Jobs/GenerateCheckoutDocumentsJob.php:69-74`,
-  `packages/shipping/src/Integrations/OrderFulfillmentHandler.php:67-74,149-154`,
-  `tests/src/TestCase.php:1288-1293,1353+`, and
-  `tests/src/Checkout/DocumentsDispatchedEventTest.php:180`.
+- **VERDICT: IMPLEMENTED (write path + consumers + invoice read path;
+  pilot complete).** `Order` uses `HasAddresses`; creation attaches
+  canonical addresses via `attachAddress()` (`Order.php:77`,
+  `CreateOrder.php:325`); legacy `billingAddress`/`shippingAddress`
+  relations deleted with no alias, shim, or dual-write. Checkout +
+  fulfillment consumers migrated. Digital orders stay addressless
+  through persistence, snapshot, and invoice rendering
+  (`OrderAddresslessInvoiceTest`).
+- **Invoice read path closed (follow-up micro-stream):** builders read
+  canonical billing→shipping fallback with addressless omit
+  (`BuildsOrderDocs.php:160`); Blade + infolist render canonically;
+  hard `aiarmada/addressing` require added
+  (`packages/orders/composer.json:21`). Zero legacy references remain
+  across all five files. The 12 PHPStan errors are gone.
+  Addressful + removal + digital coverage extended in the same test
+  file.
 - Final area verification: `./vendor/bin/pest --parallel tests/src/Orders`
-  — 330 passed, 743 assertions. The pre-change targeted Orders checks were
-  80 passed, 219 assertions; no FilamentOrders source changed.
+  — 334 passed, 785 assertions; Checkout 266/977; FilamentOrders 22/65;
+  PHPStan `packages/orders/src` clean.
 
 ### Stream 2 — Event notification table retirement
 
@@ -1218,8 +1224,9 @@ dual-read/write path, or compatibility shim was added.
 ### Audit deviations
 
 - The later no-legacy clarification superseded the earlier Orders instruction
-  to keep the frozen table readable. Implementing that compatibility behavior
-  would violate the current request, so Stream 1 records a blocker instead.
+  to keep the frozen table readable; Stream 1 implemented full replacement
+  under it, and the follow-up closed the invoice read path plus composer
+  require (see Stream 1 verdict above).
 - Stream 2 did not add the requested retirement migration: persistent-table
   emptiness is unproven and live consumers still exist outside its owned set.
   The exact preflight and deviation are recorded in

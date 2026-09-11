@@ -69,7 +69,7 @@ final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
     private function resolveOrder(CheckoutSession $session): ?Order
     {
         $order = $session->order()
-            ->with(['items', 'billingAddress'])
+            ->with(['items', 'addresses'])
             ->whereKey($this->orderId)
             ->first();
 

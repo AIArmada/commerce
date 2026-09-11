@@ -1350,27 +1350,6 @@ abstract class TestCase extends Orchestra
             $table->timestamps();
         });
 
-        Schema::create('order_addresses', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->uuid('order_id');
-            $table->nullableUuidMorphs('owner');
-            $table->string('type')->default('shipping');
-            $table->string('first_name')->nullable();
-            $table->string('last_name')->nullable();
-            $table->string('company')->nullable();
-            $table->string('line1');
-            $table->string('line2')->nullable();
-            $table->string('city');
-            $table->string('state')->nullable();
-            $table->string('postcode')->nullable();
-            $table->string('country_code', 2)->default('MY');
-            $table->string('country')->default('MY');
-            $table->string('phone')->nullable();
-            $table->string('email')->nullable();
-            $table->json('metadata')->nullable();
-            $table->timestamps();
-        });
-
         Schema::create('order_payments', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('order_id');

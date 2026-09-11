@@ -132,10 +132,10 @@ describe('OrderService', function (): void {
                 ->and($order->order_number)->toBe($orderData['order_number'])
                 ->and($order->status)->toBeInstanceOf(PendingPayment::class)
                 ->and($order->items)->toHaveCount(2)
-                ->and($order->billingAddress)->not->toBeNull()
-                ->and($order->shippingAddress)->not->toBeNull()
-                ->and($order->billingAddress->first_name)->toBe('John')
-                ->and($order->shippingAddress->first_name)->toBe('Jane');
+                ->and($order->primaryAddress('billing'))->not->toBeNull()
+                ->and($order->primaryAddress('shipping'))->not->toBeNull()
+                ->and(data_get($order->primaryAddress('billing')?->metadata, Order::ADDRESS_CONTACT_METADATA_KEY . '.first_name'))->toBe('John')
+                ->and(data_get($order->primaryAddress('shipping')?->metadata, Order::ADDRESS_CONTACT_METADATA_KEY . '.first_name'))->toBe('Jane');
         });
 
         it('can add items to an order', function (): void {
@@ -189,9 +189,9 @@ describe('OrderService', function (): void {
 
             $order->refresh();
 
-            expect($order->billingAddress)->not->toBeNull()
-                ->and($order->billingAddress->first_name)->toBe('John')
-                ->and($order->billingAddress->phone)->toBe('0123456789')
+            expect($order->primaryAddress('billing'))->not->toBeNull()
+                ->and(data_get($order->primaryAddress('billing')?->metadata, Order::ADDRESS_CONTACT_METADATA_KEY . '.first_name'))->toBe('John')
+                ->and(data_get($order->primaryAddress('billing')?->metadata, Order::ADDRESS_CONTACT_METADATA_KEY . '.phone'))->toBe('0123456789')
                 ->and($addressData)->toBe($addressSnapshot);
         });
     });
@@ -302,7 +302,7 @@ describe('OrderService', function (): void {
                 ->and($order->items)->toHaveCount(1)
                 ->and($order->items->first()->purchasable_id)->toBe('prod_1')
                 ->and($order->items->first()->sku)->toBe('TEST-001')
-                ->and($order->billingAddress)->not->toBeNull();
+                ->and($order->primaryAddress('billing'))->not->toBeNull();
         });
 
         it('rejects the former duck-typed cart payload', function (): void {

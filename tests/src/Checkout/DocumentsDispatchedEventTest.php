@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Checkout\Events\DocumentsDispatched;
 use AIArmada\Checkout\Jobs\GenerateCheckoutDocumentsJob;
 use AIArmada\Checkout\Models\CheckoutSession;
@@ -177,18 +178,22 @@ function checkoutDocumentGenerationOrder(string $suffix): Order
         'currency' => 'MYR',
     ]);
 
-    $order->addresses()->create([
-        'type' => 'billing',
-        'first_name' => 'Checkout',
-        'last_name' => 'Customer',
+    $address = Address::create([
         'line1' => '123 Checkout Street',
         'city' => 'Kuala Lumpur',
         'postcode' => '50000',
         'country_code' => 'MY',
         'country' => 'MY',
-        'email' => 'checkout-docs+' . $suffix . '@example.com',
-        'phone' => '0123456789',
+        'metadata' => [
+            Order::ADDRESS_CONTACT_METADATA_KEY => [
+                'first_name' => 'Checkout',
+                'last_name' => 'Customer',
+                'email' => 'checkout-docs+' . $suffix . '@example.com',
+                'phone' => '0123456789',
+            ],
+        ],
     ]);
+    $order->attachAddress($address, type: 'billing', isPrimary: true);
 
-    return $order->fresh(['items', 'billingAddress']) ?? $order;
+    return $order->fresh(['items', 'addresses']) ?? $order;
 }

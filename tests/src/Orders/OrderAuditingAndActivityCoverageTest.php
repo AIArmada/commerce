@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Traits\HasAddresses;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderAddress;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Models\OrderNote;
 use AIArmada\Orders\Models\OrderPayment;
@@ -36,12 +36,8 @@ it('order refund model is auditable and activity loggable', function (): void {
         ->and(in_array(Auditable::class, class_implements(OrderRefund::class), true))->toBeTrue();
 });
 
-it('order address model is auditable and activity loggable', function (): void {
-    $traits = class_uses_recursive(OrderAddress::class);
-
-    expect($traits)->toContain(HasCommerceAudit::class)
-        ->and($traits)->toContain(LogsCommerceActivity::class)
-        ->and(in_array(Auditable::class, class_implements(OrderAddress::class), true))->toBeTrue();
+it('order model uses the canonical address attachment contract', function (): void {
+    expect(class_uses_recursive(Order::class))->toContain(HasAddresses::class);
 });
 
 it('order item model is auditable and activity loggable', function (): void {
