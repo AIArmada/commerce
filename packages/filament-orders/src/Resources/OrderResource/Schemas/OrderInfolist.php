@@ -65,13 +65,13 @@ class OrderInfolist
                 ->schema([
                     TextEntry::make('billing_address')
                         ->label('Billing Address')
-                        ->getStateUsing(fn (Order $record): ?HtmlString => static::formatAddress($record->primaryAddress('billing')))
+                        ->getStateUsing(fn (Order $record): ?HtmlString => self::formatAddress($record->primaryAddress('billing')))
                         ->placeholder('Not provided')
                         ->html(),
 
                     TextEntry::make('shipping_address')
                         ->label('Shipping Address')
-                        ->getStateUsing(fn (Order $record): ?HtmlString => static::formatAddress($record->primaryAddress('shipping')))
+                        ->getStateUsing(fn (Order $record): ?HtmlString => self::formatAddress($record->primaryAddress('shipping')))
                         ->placeholder('Not provided')
                         ->html(),
                 ])

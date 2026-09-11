@@ -18,8 +18,20 @@ class SettingsBaseTableMigrationTestCase extends OrchestraTestCase
 {
     private static string $databasePath;
 
+    private static string $databaseDirectory;
+
     public static function setUpBeforeClass(): void
     {
+        $databaseDirectory = sys_get_temp_dir() . '/aiarmada-settings-' . bin2hex(random_bytes(16));
+
+        if (! mkdir($databaseDirectory . '/migrations', 0755, true) && ! is_dir($databaseDirectory . '/migrations')) {
+            throw new RuntimeException('Unable to create a temporary database migrations directory.');
+        }
+
+        if (! mkdir($databaseDirectory . '/settings', 0755, true) && ! is_dir($databaseDirectory . '/settings')) {
+            throw new RuntimeException('Unable to create a temporary settings migrations directory.');
+        }
+
         $databasePath = tempnam(sys_get_temp_dir(), 'aiarmada-settings-');
 
         if ($databasePath === false) {
@@ -27,6 +39,7 @@ class SettingsBaseTableMigrationTestCase extends OrchestraTestCase
         }
 
         self::$databasePath = $databasePath;
+        self::$databaseDirectory = $databaseDirectory;
 
         parent::setUpBeforeClass();
     }
@@ -38,6 +51,10 @@ class SettingsBaseTableMigrationTestCase extends OrchestraTestCase
         if (is_file(self::$databasePath)) {
             unlink(self::$databasePath);
         }
+
+        rmdir(self::$databaseDirectory . '/migrations');
+        rmdir(self::$databaseDirectory . '/settings');
+        rmdir(self::$databaseDirectory);
     }
 
     protected function setUp(): void
@@ -62,6 +79,7 @@ class SettingsBaseTableMigrationTestCase extends OrchestraTestCase
 
     protected function defineEnvironment($app): void
     {
+        $app->useDatabasePath(self::$databaseDirectory);
         $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
         $app['config']->set('app.env', 'testing');
         $app['config']->set('database.default', 'testing');

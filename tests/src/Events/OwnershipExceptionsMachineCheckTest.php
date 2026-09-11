@@ -2,42 +2,41 @@
 
 declare(strict_types=1);
 
-use Symfony\Component\Process\Process;
-
 it('keeps exactly eleven intentionally unscoped event model exceptions', function (): void {
     $repositoryPath = dirname(__DIR__, 3);
     $modelsPath = 'packages/events/src/Models';
 
-    $unscopedModels = new Process([
-        'rg',
-        '--files-without-match',
-        '--glob',
-        '*.php',
-        'use (HasOwner|ScopesByEventOwner)',
-        $modelsPath,
-    ], $repositoryPath);
-    $unscopedModels->mustRun();
-
-    $modelFiles = new Process([
-        'rg',
-        '--files-with-matches',
-        '--glob',
-        '*.php',
-        '^[[:space:]]*(final |abstract )?class [A-Za-z_]',
-        $modelsPath,
-    ], $repositoryPath);
-    $modelFiles->mustRun();
-
-    $exceptions = array_values(array_intersect(
-        array_filter(
-            array_map('trim', preg_split('/\R/', $unscopedModels->getOutput()) ?: []),
-            static fn (string $path): bool => $path !== '',
+    $exceptions = [];
+    $modelIterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(
+            $repositoryPath . DIRECTORY_SEPARATOR . $modelsPath,
+            FilesystemIterator::SKIP_DOTS,
         ),
-        array_filter(
-            array_map('trim', preg_split('/\R/', $modelFiles->getOutput()) ?: []),
-            static fn (string $path): bool => $path !== '',
-        ),
-    ));
+    );
+
+    foreach ($modelIterator as $modelFile) {
+        if (! $modelFile instanceof SplFileInfo || $modelFile->getExtension() !== 'php') {
+            continue;
+        }
+
+        $contents = file_get_contents($modelFile->getPathname());
+
+        if ($contents === false) {
+            throw new RuntimeException("Unable to read event model file [{$modelFile->getPathname()}].");
+        }
+
+        if (
+            preg_match('/use (HasOwner|ScopesByEventOwner)/', $contents) === 1
+            || preg_match('/^[[:space:]]*(final |abstract )?class [A-Za-z_]/m', $contents) !== 1
+        ) {
+            continue;
+        }
+
+        $relativePath = mb_substr($modelFile->getPathname(), mb_strlen($repositoryPath) + 1);
+
+        $exceptions[] = str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
+    }
+
     sort($exceptions);
 
     expect($exceptions)->toHaveCount(11)
