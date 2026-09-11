@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Filament\Exports;
+namespace AIArmada\FilamentVouchers\Exports;
 
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Support\AffiliateReportingContextResolver;

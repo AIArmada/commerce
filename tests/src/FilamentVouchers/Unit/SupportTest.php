@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\FilamentVouchers\Integrations\FilamentCartBridge;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
 use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Filament\Integrations\FilamentCartBridge;
 use AIArmada\Vouchers\Models\Voucher as FilamentVoucher;
 use AIArmada\Vouchers\States\Active;
 use Illuminate\Database\Schema\Blueprint;

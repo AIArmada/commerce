@@ -6,7 +6,7 @@ use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\FilamentCart\Pages\CartDashboard;
 use AIArmada\FilamentCart\Pages\LiveDashboardPage;
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ViewCart;
-use AIArmada\Vouchers\Filament\Extensions\CartVoucherActions;
+use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
 use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Filament\Resources\Pages\ViewRecord;

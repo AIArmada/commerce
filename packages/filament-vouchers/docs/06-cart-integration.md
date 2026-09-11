@@ -21,7 +21,7 @@ When both packages are installed, Filament Vouchers automatically enables cart i
 Use `CartVoucherActions` to add voucher functionality to cart pages:
 
 ```php
-use AIArmada\Vouchers\Filament\Extensions\CartVoucherActions;
+use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
 ```
 
 ### Apply Voucher
@@ -73,7 +73,7 @@ Features:
 namespace App\Filament\Resources\CartResource\Pages;
 
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ViewCart as BaseViewCart;
-use AIArmada\Vouchers\Filament\Extensions\CartVoucherActions;
+use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
 
 class ViewCart extends BaseViewCart
 {
@@ -94,7 +94,7 @@ class ViewCart extends BaseViewCart
 namespace App\Filament\Resources\CartResource\Pages;
 
 use AIArmada\FilamentCart\Resources\CartResource\Pages\EditCart as BaseEditCart;
-use AIArmada\Vouchers\Filament\Extensions\CartVoucherActions;
+use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
 
 class EditCart extends BaseEditCart
 {
@@ -181,7 +181,7 @@ Voucher usage records automatically link to cart detail pages when `aiarmada/fil
 The `FilamentCartBridge` service provides comprehensive integration between vouchers and carts:
 
 ```php
-use AIArmada\FilamentVouchers\Support\Integrations\FilamentCartBridge;
+use AIArmada\FilamentVouchers\Integrations\FilamentCartBridge;
 
 $bridge = app(FilamentCartBridge::class);
 
@@ -213,7 +213,7 @@ if ($bridge->isAvailable()) {
 ### Example: Cart Lookup
 
 ```php
-use AIArmada\FilamentVouchers\Support\Integrations\FilamentCartBridge;
+use AIArmada\FilamentVouchers\Integrations\FilamentCartBridge;
 
 $bridge = app(FilamentCartBridge::class);
 

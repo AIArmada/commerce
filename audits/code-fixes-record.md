@@ -835,8 +835,9 @@ reported and taken on trust; code correctness was verified directly.
   to domain definitions.
 - **Recorded deferrals:** tuple-keyed partial uniques and related data cleanup
   remain deferred with no migration; the promotions wall-clock decision remains
-  default-only for current callers; vouchers F1 Filament relocation remains
-  deferred because its `filament-cart` consumer is read-only for this stream.
+  default-only for current callers; vouchers F1 Filament relocation is now
+  implemented (three files moved to `filament-vouchers`, consumers rewired,
+  zero old-namespace references — see the F1 closure entry below).
 - Suites: Products **589 passed (1064 assertions)**, FilamentProducts **25
   passed (98 assertions)**; Promotions **73 passed (127 assertions)**,
   FilamentPromotions **37 passed (74 assertions)**; Vouchers **892 passed + 7
@@ -846,6 +847,18 @@ reported and taken on trust; code correctness was verified directly.
   and `packages/filament-vouchers/src/Widgets/VoucherSuggestionsWidget.php:78-81`.
 - No migration required. Full package-specific deviations and residuals are
   in `products.md`, `promotions.md`, and `vouchers.md`.
+
+## Vouchers F1 relocation closure (implemented)
+
+- The three domain `src/Filament/` files moved to `filament-vouchers`
+  (`Exports/VoucherUsageExporter.php`, `Extensions/CartVoucherActions.php`,
+  `Integrations/FilamentCartBridge.php`); the old directory is gone with no
+  alias, re-export, or shim. Consumers rewired in the same pass:
+  `filament-cart` `ViewCart.php`, `FilamentCart` `PagesTest.php`, the
+  Filament Vouchers provider and usage table, plus owned README/docs
+  imports. Repo-wide sweep confirms zero old-namespace references.
+- Suites: FilamentCart 177 passed (604 assertions), FilamentVouchers 43
+  passed (277 assertions), including new header-action coverage.
 
 ## Shipping / tax / J&T (implemented)
 

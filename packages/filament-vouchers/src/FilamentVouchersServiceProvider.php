@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers;
 
+use AIArmada\FilamentVouchers\Integrations\FilamentCartBridge;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
 use AIArmada\FilamentVouchers\Support\VoucherStatsAggregator;
-use AIArmada\Vouchers\Filament\Integrations\FilamentCartBridge;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;

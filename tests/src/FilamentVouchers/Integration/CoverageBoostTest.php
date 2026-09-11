@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\FilamentCart\Resources\CartResource\Pages\ViewCart;
 use AIArmada\FilamentVouchers\Actions\ActivateVoucherAction;
 use AIArmada\FilamentVouchers\Actions\AddToMyWalletAction;
 use AIArmada\FilamentVouchers\Actions\ApplyVoucherToCartAction;
 use AIArmada\FilamentVouchers\Actions\BulkGenerateVouchersAction;
 use AIArmada\FilamentVouchers\Actions\ManualRedeemVoucherAction;
 use AIArmada\FilamentVouchers\Actions\PauseVoucherAction;
+use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use AIArmada\FilamentVouchers\Pages\StackingConfigurationPage;
 use AIArmada\FilamentVouchers\Pages\TargetingConfigurationPage;
@@ -36,9 +39,9 @@ use AIArmada\FilamentVouchers\Widgets\VoucherStatsWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherUsageTimelineWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherWalletStatsWidget;
-use AIArmada\Vouchers\Filament\Extensions\CartVoucherActions;
 use Filament\Actions\Action;
 use Filament\Panel;
+use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -152,4 +155,22 @@ it('builds resources, schemas, tables, relation managers, pages, widgets, and ac
     // Plugin
     $panel = Panel::make()->id('admin');
     (new FilamentVouchersPlugin)->register($panel);
+});
+
+it('resolves relocated voucher actions on the cart view header', function (): void {
+    $page = new ViewCart;
+    $recordProperty = new ReflectionProperty(ViewRecord::class, 'record');
+    $recordProperty->setAccessible(true);
+    $recordProperty->setValue($page, new Cart);
+
+    $headerActionsMethod = new ReflectionMethod(ViewCart::class, 'getHeaderActions');
+    $headerActionsMethod->setAccessible(true);
+
+    /** @var array<int, Action> $actions */
+    $actions = $headerActionsMethod->invoke($page);
+    $actionNames = array_map(static fn (Action $action): string => $action->getName(), $actions);
+
+    expect($actionNames)
+        ->toContain('apply_voucher')
+        ->toContain('show_applied_vouchers');
 });

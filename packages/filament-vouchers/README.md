@@ -131,7 +131,7 @@ When `aiarmada/filament-cart` is installed, the plugin automatically enables:
 Add voucher actions to your cart resource pages:
 
 ```php
-use AIArmada\Vouchers\Filament\Extensions\CartVoucherActions;
+use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
 
 protected function getHeaderActions(): array
 {
