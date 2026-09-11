@@ -827,8 +827,11 @@ reported and taken on trust; code correctness was verified directly.
   still reject.
 - **Promotions:** per-customer limits, owner-checked order allocation reads,
   atomic usage increments, normalized exact code lookup, SQL prefilters, and
-  chunked evaluation are implemented. The additive as-of API is parity-tested;
-  default wall-clock pricing semantics remain unchanged. Duplicate issue-voucher
+  chunked evaluation are implemented. The as-of API is now canonical:
+  the default path delegates to `getApplicablePromotionsAsOf()` with
+  the current instant (parity-tested, all four downstream canaries
+  green); wall-clock semantics are preserved through the single
+  implementation, not a parallel path. Duplicate issue-voucher
   actions are retained deliberately for their distinct list and record UX.
 - **Vouchers:** the pre-existing remove/clear/replace cart failures were fixed
   in the owned voucher storage seam; domain money stays integer-only, float DTO
@@ -838,8 +841,7 @@ reported and taken on trust; code correctness was verified directly.
   non-competitive reporting counters. The Filament stats aggregator delegates
   to domain definitions.
 - **Recorded deferrals:** tuple-keyed partial uniques and related data cleanup
-  remain deferred with no migration; the promotions wall-clock decision remains
-  default-only for current callers; vouchers F1 Filament relocation is now
+  remain deferred with no migration; vouchers F1 Filament relocation is now
   implemented (three files moved to `filament-vouchers`, consumers rewired,
   zero old-namespace references — see the F1 closure entry below).
 - Suites: Products **589 passed (1064 assertions)**, FilamentProducts **25

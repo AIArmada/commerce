@@ -32,10 +32,12 @@ pricing bridge continues to receive the same default wall-clock semantics.
 - **Filament write funnel:** create and deactivate pages use the domain
   actions. The two issue-voucher action entry points are deliberately retained
   for their distinct list and record UX; they are not an accidental duplicate.
-- **As-of API:** `getApplicablePromotionsAsOf()` is additive at
-  `packages/promotions/src/Services/PromotionService.php:38-45`. The default
-  path remains unchanged and parity is asserted in
-  `tests/src/Promotions/PromotionServiceBehaviorTest.php:28-43`.
+- **As-of API (canonical):** `getApplicablePromotionsAsOf()` is the single
+  evaluation core at
+  `packages/promotions/src/Services/PromotionService.php:38-45`; the default
+  path delegates to it with the current instant. Parity is asserted in
+  `tests/src/Promotions/PromotionServiceBehaviorTest.php:28-43`, and the
+  fake-clock boundary proof covers time-faked evaluation.
 - **PHPStan optional-class narrowing:** the guarded Orders class is documented
   as a `class-string<Order>` near
   `packages/promotions/src/Services/PromotionService.php:229-247`; this
@@ -48,8 +50,10 @@ pricing bridge continues to receive the same default wall-clock semantics.
 - The original recommendation to remove one issue-voucher action is declined:
   both actions remain deliberately because record and list contexts expose
   different UX entry points.
-- The wall-clock/as-of decision is additive only. The pricing bridge continues
-  current semantics; historical callers may opt into the new as-of method.
+- The wall-clock/as-of decision is closed: as-of is canonical, the default
+  delegates with the current instant. The pricing bridge continues
+  unchanged semantics through the single implementation; historical callers
+  may still opt into the as-of method directly.
 
 ## Residual notes
 

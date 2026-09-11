@@ -67,6 +67,38 @@ it('evaluates promotions at the supplied instant', function (): void {
         ->not->toContain($promotion->getKey());
 });
 
+it('uses the fakeable clock for default evaluation across a promotion boundary', function (): void {
+    $startsAt = CarbonImmutable::parse('2025-01-02 10:00:00');
+    $promotion = Promotion::factory()->automatic()->active()->create([
+        'name' => 'Clock Boundary Promotion',
+        'discount_value' => 10,
+        'min_purchase_amount' => null,
+        'min_quantity' => null,
+        'per_customer_limit' => null,
+        'starts_at' => $startsAt,
+        'ends_at' => $startsAt->addHour(),
+    ]);
+    $context = new TargetingContext(null);
+    $service = app(PromotionService::class);
+
+    try {
+        CarbonImmutable::setTestNow($startsAt->subSecond());
+        $before = $service->getApplicablePromotions($context)->pluck('id')->all();
+        $beforeAsOf = $service->getApplicablePromotionsAsOf($context, CarbonImmutable::now())->pluck('id')->all();
+
+        CarbonImmutable::setTestNow($startsAt->addSecond());
+        $after = $service->getApplicablePromotions($context)->pluck('id')->all();
+        $afterAsOf = $service->getApplicablePromotionsAsOf($context, CarbonImmutable::now())->pluck('id')->all();
+    } finally {
+        CarbonImmutable::setTestNow();
+    }
+
+    expect($before)->toBe($beforeAsOf)
+        ->not->toContain($promotion->getKey())
+        ->and($after)->toBe($afterAsOf)
+        ->toContain($promotion->getKey());
+});
+
 it('enforces a per-customer limit from owner-scoped order allocations', function (): void {
     $owner = User::factory()->create();
     $customer = User::factory()->create();
