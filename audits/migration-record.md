@@ -287,3 +287,12 @@ migrations; no production backfill is authorized.
 - The shipped creators (`000049`/`000050`) and the retired models are
   gone with their consumers; a final zero-reference grep (excluding the
   migration itself and audit prose) proves nothing dangling.
+
+## Venue shim removal — blocked, no migration — 2026-09-12
+
+- No migration added. A verified census (106 live lines, 20 files)
+  showed 10 call sites in 7 unowned files depend on the shim-only
+  `getPrimaryAddressData()` method; deleting the trait or dropping the
+  flat columns without migrating those readers would fatal, not
+  degrade. Retry is scoped as a 7-file migration stream; the census
+  stands as its file list.

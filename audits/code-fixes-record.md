@@ -1345,6 +1345,15 @@ read paths remain only where the stream specifications require them.
   proved at tests/src/Events/VenueAddressAdoptionTest.php:32-81.
   Targeted runs: VenueAddressingIntegrationTest 4/14; VenueAddressAdoptionTest
   3/15; and EventDataConversionTest 4/10.
+- Shim removal — BLOCKED with verified census (no code changed). A
+  repo-wide census found 106 live lines across 20 files; 10 call sites
+  in 7 files sit outside any grant issued so far and all call
+  `getPrimaryAddressData()`, which exists only on the shim trait
+  (addressing's `HasAddresses` exposes `primaryAddress()` instead).
+  Deletion without them is fatal undefined-method, not silent nulls.
+  Retry needs a 7-file grant with the rewrite rule
+  `getPrimaryAddressData()?->x` → `primaryAddress()?->x`; no recount
+  needed — the census above is the file list.
 - Area escalation for B was run because the rule collapse, tuple indexes,
   and seven-model adapter cutover span core/Filament consumers and database
   contracts. Final runs: Affiliates 1,145 passed/5 skipped/2,664 assertions;
