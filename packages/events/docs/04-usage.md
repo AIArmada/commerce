@@ -264,9 +264,8 @@ $venue->attachAddress($address, type: 'primary', isPrimary: true);
 ```
 
 Venues without a physical address, such as digital or virtual venues, simply
-omit the attachment. The canonical attachment is the write path. The original
-flat venue and event-location columns are frozen read-only storage for rows
-that have not yet acquired a canonical primary address.
+omit the attachment. The canonical attachment is the write path, and venue and
+event-location consumers read from the canonical primary address.
 
 ### Venue spaces
 

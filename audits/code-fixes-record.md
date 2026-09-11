@@ -1339,26 +1339,26 @@ read paths remain only where the stream specifications require them.
   packages/filament-events/src/Actions/Importer/VenueImporter.php:30-48 and
   canonical address fields are read by the resource at
   packages/filament-events/src/Resources/VenueResource.php:108-144.
-  The explicitly required frozen flat-column read path is isolated in
-  packages/events/src/Models/Concerns/ReadsLegacyAddressColumns.php:14-47;
-  new writes use HasAddresses. Digital/addressless and attached cases are
-  proved at tests/src/Events/VenueAddressAdoptionTest.php:32-81.
+  Canonical primary-address reads are retained. Digital/addressless and
+  attached cases are proved at
+  tests/src/Events/VenueAddressAdoptionTest.php:32-81.
   Targeted runs: VenueAddressingIntegrationTest 4/14; VenueAddressAdoptionTest
   3/15; and EventDataConversionTest 4/10.
-- Shim removal — BLOCKED with verified census (no code changed). A
-  repo-wide census found 106 live lines across 20 files; 10 call sites
-  in 7 files sit outside any grant issued so far and all call
-  `getPrimaryAddressData()`, which exists only on the shim trait
-  (addressing's `HasAddresses` exposes `primaryAddress()` instead).
-  Deletion without them is fatal undefined-method, not silent nulls.
-  Retry needs a 7-file grant with the rewrite rule
-  `getPrimaryAddressData()?->x` → `primaryAddress()?->x`; no recount
-  needed — the census above is the file list.
+- Shim removal — IMPLEMENTED. The legacy trait is deleted and both event
+  models now use only `HasAddresses`
+  (`packages/events/src/Models/Venue.php:63-70`,
+  `packages/events/src/Models/EventLocation.php:68-73`). Owned consumers read
+  canonical `primaryAddress()` fields, including the Filament venue resource
+  (`packages/filament-events/src/Resources/VenueResource.php:157-160`). The
+  guarded drop migration removes the former venue/location address columns
+  (`packages/events/database/migrations/2026_09_12_000002_drop_legacy_venue_address_columns.php:11-95`),
+  with no backfill; the grep and rerun proofs are at
+  `tests/src/Events/VenueAddressShimRemovalTest.php:10-104`.
 - Area escalation for B was run because the rule collapse, tuple indexes,
   and seven-model adapter cutover span core/Filament consumers and database
   contracts. Final runs: Affiliates 1,145 passed/5 skipped/2,664 assertions;
   FilamentAffiliates 317/879; Products 592/1,084; FilamentProducts 25/98;
-  Events 247/1,101; FilamentEvents 18/175.
+  Events 248/1,128; FilamentEvents 18/175.
 
 ### Stream C — synthetic proof harnesses — IMPLEMENTED/CLOSED
 
@@ -1406,10 +1406,10 @@ Chip 1,052 passed/4 skipped/2,730 assertions; Cashier 256/524; Checkout
   the final targeted run and Area canary passed.
 - Frozen legacy reads remain only where the stream contracts explicitly
   required them: customer default-address storage used by the existing
-  checkout read path, and venue/location flat-column reads. No new alias,
-  deprecated API, compatibility shim, or legacy dual write was introduced;
-  the superseded affiliate rule classes and events Addressable concern were
-  deleted.
+  checkout read path. Venue/location flat-column reads were removed. No new
+  alias, deprecated API, compatibility shim, or legacy dual write was
+  introduced; the superseded affiliate rule classes and events Addressable
+  concern were deleted.
 - Product and tax schema changes are guarded development/test changes;
   development databases are reset rather than deduplicated or backfilled.
   No foreign-key constraints or cascades were added. The Products docs carry

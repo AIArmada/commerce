@@ -23,7 +23,7 @@ final class SessionLocationsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('location_role')->badge(),
                 Tables\Columns\TextColumn::make('label'),
                 Tables\Columns\TextColumn::make('city')
-                    ->state(fn (EventLocation $record): ?string => $record->getPrimaryAddressData()?->city),
+                    ->state(fn (EventLocation $record): ?string => $record->primaryAddress()?->city),
                 Tables\Columns\TextColumn::make('status')->badge(),
             ])
             ->filters([])

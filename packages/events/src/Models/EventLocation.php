@@ -6,7 +6,6 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Addressing\Traits\HasAddresses;
 use AIArmada\Events\Database\Factories\EventLocationFactory;
-use AIArmada\Events\Models\Concerns\ReadsLegacyAddressColumns;
 use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -71,7 +70,6 @@ final class EventLocation extends Model
     use HasAddresses;
     use HasFactory;
     use HasUuids;
-    use ReadsLegacyAddressColumns;
     use ScopesByEventOwner;
 
     protected $fillable = [

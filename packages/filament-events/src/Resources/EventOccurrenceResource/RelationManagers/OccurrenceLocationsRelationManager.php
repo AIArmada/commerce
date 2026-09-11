@@ -23,9 +23,9 @@ final class OccurrenceLocationsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('location_role')->badge(),
                 Tables\Columns\TextColumn::make('label')->searchable(),
                 Tables\Columns\TextColumn::make('city')
-                    ->state(fn (EventLocation $record): ?string => $record->getPrimaryAddressData()?->city),
+                    ->state(fn (EventLocation $record): ?string => $record->primaryAddress()?->city),
                 Tables\Columns\TextColumn::make('state')
-                    ->state(fn (EventLocation $record): ?string => $record->getPrimaryAddressData()?->state),
+                    ->state(fn (EventLocation $record): ?string => $record->primaryAddress()?->state),
                 Tables\Columns\TextColumn::make('status')->badge(),
             ])
             ->filters([])

@@ -288,11 +288,19 @@ migrations; no production backfill is authorized.
   gone with their consumers; a final zero-reference grep (excluding the
   migration itself and audit prose) proves nothing dangling.
 
-## Venue shim removal — blocked, no migration — 2026-09-12
+## Venue shim removal — implemented — 2026-09-12
 
-- No migration added. A verified census (106 live lines, 20 files)
-  showed 10 call sites in 7 unowned files depend on the shim-only
-  `getPrimaryAddressData()` method; deleting the trait or dropping the
-  flat columns without migrating those readers would fatal, not
-  degrade. Retry is scoped as a 7-file migration stream; the census
-  stands as its file list.
+- The legacy trait was deleted; `Venue` and `EventLocation` now use only
+  `HasAddresses` (`packages/events/src/Models/Venue.php:63-70`,
+  `packages/events/src/Models/EventLocation.php:68-73`). Event and Filament
+  consumers read canonical `primaryAddress()` fields, including
+  `packages/filament-events/src/Resources/VenueResource.php:157-160`.
+- Guarded drop migration
+  `packages/events/database/migrations/2026_09_12_000002_drop_legacy_venue_address_columns.php:11-95`
+  removes the former venue/location address columns, preflights tables and
+  columns, removes affected indexes, and is re-runnable. No backfill was
+  added; development databases are delete-and-rerun/re-seed.
+- The zero-reference and migration proofs are covered by
+  `tests/src/Events/VenueAddressShimRemovalTest.php:10-104`; addressful and
+  addressless venue behavior is covered by
+  `tests/src/Events/VenueAddressAdoptionTest.php:33-80`.

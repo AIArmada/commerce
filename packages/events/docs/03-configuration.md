@@ -226,8 +226,8 @@ Each resolver can be bound to a custom class for domain-specific behavior.
 
 The events package requires `aiarmada/addressing`. Venue, space, facility, and
 event-location models use `HasAddresses` for canonical address attachments.
-`Venue` and `EventLocation` keep their pre-existing flat columns readable only
-when no canonical primary address is attached; new writes must use
+`Venue` and `EventLocation` read their canonical primary address attachment;
+new writes must use
 `attachAddress()`. Custom resolvers can override the other integration points.
 
 ### Notifications

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources;
 
-use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Events\Models\Venue;
 use AIArmada\FilamentEvents\Actions\Exporter\VenueExporter;
 use AIArmada\FilamentEvents\Actions\Importer\VenueImporter;
@@ -54,7 +54,7 @@ final class VenueResource extends Resource
                     ->state(static fn (Venue $record): ?string => static::address($record)?->state),
                 Tables\Columns\TextColumn::make('country_code')
                     ->label('Country')
-                    ->state(static fn (Venue $record): ?string => static::address($record)?->countryCode),
+                    ->state(static fn (Venue $record): ?string => static::address($record)?->country_code),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (mixed $state): string => match ((string) $state) {
@@ -119,7 +119,7 @@ final class VenueResource extends Resource
                             ->state(static fn (Venue $record): ?string => static::address($record)?->postcode),
                         TextEntry::make('country_code')
                             ->label('Country')
-                            ->state(static fn (Venue $record): ?string => static::address($record)?->countryCode),
+                            ->state(static fn (Venue $record): ?string => static::address($record)?->country_code),
                     ])->columns(2),
                 Section::make('Coordinates / Maps')
                     ->schema([
@@ -129,11 +129,11 @@ final class VenueResource extends Resource
                             ->state(static fn (Venue $record): ?float => static::address($record)?->longitude),
                         TextEntry::make('provider_place_id')
                             ->label('Provider Place ID')
-                            ->state(static fn (Venue $record): ?string => static::address($record)?->providerPlaceId),
+                            ->state(static fn (Venue $record): ?string => static::address($record)?->provider_place_id),
                         TextEntry::make('google_maps_url')
-                            ->state(static fn (Venue $record): ?string => static::address($record)?->googleMapsUrl),
+                            ->state(static fn (Venue $record): ?string => static::address($record)?->google_maps_url),
                         TextEntry::make('waze_url')
-                            ->state(static fn (Venue $record): ?string => static::address($record)?->wazeUrl),
+                            ->state(static fn (Venue $record): ?string => static::address($record)?->waze_url),
                     ])->columns(2),
                 Section::make('Contact')
                     ->schema([
@@ -154,9 +154,9 @@ final class VenueResource extends Resource
         ];
     }
 
-    private static function address(Venue $venue): ?AddressData
+    private static function address(Venue $venue): ?Address
     {
-        return $venue->getPrimaryAddressData();
+        return $venue->primaryAddress();
     }
 
     private static function directions(Venue $venue): ?string

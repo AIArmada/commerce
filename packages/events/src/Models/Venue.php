@@ -9,7 +9,6 @@ use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Events\Database\Factories\VenueFactory;
-use AIArmada\Events\Models\Concerns\ReadsLegacyAddressColumns;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -69,7 +68,6 @@ class Venue extends Model implements HasMedia
     use HasSocialProfiles;
     use HasUuids;
     use InteractsWithMedia;
-    use ReadsLegacyAddressColumns;
 
     protected $fillable = [
         'parent_venue_id',

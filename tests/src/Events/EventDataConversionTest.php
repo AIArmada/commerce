@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Data\EventData;
 use AIArmada\Events\Data\EventDetailData;
 use AIArmada\Events\Data\EventLocationData;
@@ -56,21 +58,30 @@ it('projects only the event-level primary location into event data', function ()
     $event = Event::factory()->published()->create();
     $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
-    EventLocation::factory()->create([
+    $nestedLocation = EventLocation::factory()->create([
         'event_id' => $event->id,
         'event_occurrence_id' => $occurrence->id,
-        'city' => 'Nested City',
-        'state' => 'Nested State',
-        'country_code' => 'MY',
-    ]);
-    EventLocation::factory()->create([
-        'event_id' => $event->id,
-        'city' => 'Event City',
-        'state' => 'Event State',
-        'country_code' => 'MY',
     ]);
 
-    expect(EventData::fromEvent($event)->location_summary)->toBe('Event City, Event State, MY');
+    $eventLocation = EventLocation::factory()->create([
+        'event_id' => $event->id,
+    ]);
+
+    OwnerContext::withOwner(null, function () use ($event, $nestedLocation, $eventLocation): void {
+        $nestedLocation->attachAddress(Address::create([
+            'city' => 'Nested City',
+            'state' => 'Nested State',
+            'country_code' => 'MY',
+        ]), type: 'primary', isPrimary: true);
+
+        $eventLocation->attachAddress(Address::create([
+            'city' => 'Event City',
+            'state' => 'Event State',
+            'country_code' => 'MY',
+        ]), type: 'primary', isPrimary: true);
+
+        expect(EventData::fromEvent($event)->location_summary)->toBe('Event City, Event State, MY');
+    });
 });
 
 it('snapshots venue space names and exposes them in location data', function (): void {

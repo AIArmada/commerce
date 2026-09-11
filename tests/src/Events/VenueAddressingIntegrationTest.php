@@ -14,39 +14,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-test('venue falls back to flat address columns when shared addressing is disabled', function (): void {
-    config()->set('events.integrations.addressing_enabled', false);
-
-    $venue = Venue::factory()->create([
-        'line1' => 'Legacy Line 1',
-        'line2' => 'Legacy Line 2',
-        'city' => 'Legacy City',
-        'state' => 'Legacy State',
-        'postcode' => '50450',
-        'country_code' => 'MY',
-        'country' => 'Malaysia',
-    ]);
-
-    $address = $venue->getPrimaryAddressData();
-
-    expect($address?->line1)->toBe('Legacy Line 1')
-        ->and($address?->line2)->toBe('Legacy Line 2')
-        ->and($address?->city)->toBe('Legacy City')
-        ->and($address?->countryCode)->toBe('MY');
-});
-
-test('venue reads primary address data from the shared address relation when addressing is enabled', function (): void {
-    config()->set('events.integrations.addressing_enabled', true);
-
-    $venue = Venue::factory()->create([
-        'line1' => 'Legacy Line 1',
-        'line2' => 'Legacy Line 2',
-        'city' => 'Legacy City',
-        'state' => 'Legacy State',
-        'postcode' => '50450',
-        'country_code' => 'ZZ',
-        'country' => 'Legacy Country',
-    ]);
+test('venue reads the canonical primary address relation', function (): void {
+    $venue = Venue::factory()->create();
 
     $address = Address::create([
         'line1' => '123 Jalan Ampang',
@@ -58,18 +27,14 @@ test('venue reads primary address data from the shared address relation when add
         'country' => 'Malaysia',
     ]);
 
-    $venue->addresses()->attach($address->id, [
-        'id' => (string) Str::orderedUuid(),
-        'type' => 'primary',
-        'is_primary' => true,
-    ]);
+    $venue->attachAddress($address, type: 'primary', isPrimary: true);
 
-    $addressData = $venue->getPrimaryAddressData();
+    $addressData = $venue->primaryAddress();
 
     expect($addressData?->line1)->toBe('123 Jalan Ampang')
         ->and($addressData?->line2)->toBe('Level 10')
         ->and($addressData?->city)->toBe('Kuala Lumpur')
-        ->and($addressData?->countryCode)->toBe('MY')
+        ->and($addressData?->country_code)->toBe('MY')
         ->and(DB::table('addressables')->where('address_id', $address->id)->value('owner_id'))
         ->toBe(OwnerContext::resolve()?->getKey());
 });
@@ -77,12 +42,9 @@ test('venue reads primary address data from the shared address relation when add
 test('venue uses the configured addressables table throughout the shared address relation', function (): void {
     $pivotTable = 'events_custom_addressables';
     $originalPivotTable = config('addressing.database.tables.addressables');
-    $originalAddressingEnabled = config('events.integrations.addressing_enabled');
 
     try {
         config()->set('addressing.database.tables.addressables', $pivotTable);
-        config()->set('events.integrations.addressing_enabled', true);
-
         Schema::create($pivotTable, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('address_id')->index();
@@ -109,19 +71,16 @@ test('venue uses the configured addressables table throughout the shared address
             'is_primary' => true,
         ]);
 
-        expect($venue->getPrimaryAddressData()?->line1)->toBe('123 Jalan Ampang')
+        expect($venue->primaryAddress()?->line1)->toBe('123 Jalan Ampang')
             ->and(DB::table($pivotTable)->where('address_id', $address->id)->value('is_primary'))
             ->toBe(1);
     } finally {
         Schema::dropIfExists($pivotTable);
         config()->set('addressing.database.tables.addressables', $originalPivotTable);
-        config()->set('events.integrations.addressing_enabled', $originalAddressingEnabled);
     }
 });
 
 test('event locations keep shared addresses isolated by their event owner', function (): void {
-    config()->set('events.integrations.addressing_enabled', true);
-
     $ownerA = User::factory()->create();
     $ownerB = User::factory()->create();
 

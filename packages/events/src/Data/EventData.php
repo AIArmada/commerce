@@ -42,7 +42,7 @@ final class EventData extends Data
             ->first();
 
         $location = $event->primaryLocation;
-        $address = $location?->getPrimaryAddressData();
+        $address = $location?->primaryAddress();
 
         return new self(
             id: $event->id,
@@ -59,7 +59,7 @@ final class EventData extends Data
             archived_at: $event->archived_at,
             starts_at: $occurrence?->starts_at,
             ends_at: $occurrence?->ends_at,
-            location_summary: $location ? collect([$address?->city, $address?->state, $address?->countryCode])->filter()->implode(', ') : null,
+            location_summary: $location ? collect([$address?->city, $address?->state, $address?->country_code])->filter()->implode(', ') : null,
             cover_image_url: null,
             created_at: CarbonImmutable::make($event->created_at),
             updated_at: CarbonImmutable::make($event->updated_at),

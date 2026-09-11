@@ -25,12 +25,12 @@ final class LocationsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('location_role')->badge(),
                 Tables\Columns\TextColumn::make('label')->searchable(),
                 Tables\Columns\TextColumn::make('city')
-                    ->state(fn (EventLocation $record): ?string => $record->getPrimaryAddressData()?->city),
+                    ->state(fn (EventLocation $record): ?string => $record->primaryAddress()?->city),
                 Tables\Columns\TextColumn::make('state')
-                    ->state(fn (EventLocation $record): ?string => $record->getPrimaryAddressData()?->state),
+                    ->state(fn (EventLocation $record): ?string => $record->primaryAddress()?->state),
                 Tables\Columns\TextColumn::make('country_code')
                     ->label('Country')
-                    ->state(fn (EventLocation $record): ?string => $record->getPrimaryAddressData()?->countryCode),
+                    ->state(fn (EventLocation $record): ?string => $record->primaryAddress()?->country_code),
                 Tables\Columns\TextColumn::make('status')->badge(),
             ])
             ->filters([])
