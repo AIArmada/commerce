@@ -7,6 +7,7 @@ namespace AIArmada\Promotions\Services;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
+use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Contracts\PromotionServiceInterface;
 use AIArmada\Promotions\Models\Promotion;
 use Carbon\CarbonImmutable;
@@ -226,7 +227,7 @@ final class PromotionService implements PromotionServiceInterface
             return true;
         }
 
-        /** @phpstan-var class-string<\AIArmada\Orders\Models\Order> $orderClass */
+        /** @phpstan-var class-string<Order> $orderClass */
         $orderClass = 'AIArmada\\Orders\\Models\\Order';
 
         if (! class_exists($orderClass)) {
