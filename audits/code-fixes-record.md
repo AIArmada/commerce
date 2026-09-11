@@ -222,7 +222,8 @@ reported and taken on trust; code correctness was verified directly.
   Signals/Events/legacy JSON).
 - **Judgment calls (kept):** invitations accept unregistered emails;
   restore retains historical suspension/archive timestamps;
-  payment-subject driver stays pending cashier track.
+  payment-subject driver stays in customers (cashier track closed
+  without relocating it; revisit only if the billing seam changes).
 - **Deferred (honest):** physical index batches are now implemented
   (guarded `2026_09_11_*` migrations for persons/orgs/customers/
   contacting; see `migration-record.md`) — app-level guards, locks,
@@ -969,15 +970,12 @@ owned sets under delegation-playbook §7.
   is `packages/promotions/src/Services/PromotionService.php:33-46`; existing
   callers still use the unchanged wall-clock method. The parity test is
   `tests/src/Promotions/PromotionServiceBehaviorTest.php:28-42`.
-- **Cashier single-gateway split — re-deferred with new boundary evidence.**
-  The owned Cashier surface already resolves one configured gateway through
-  `packages/cashier/src/GatewayManager.php:27-48`, and the seam is tested by
-  `tests/src/FilamentCashier/Unit/GatewayBackedListDelegationTest.php:28-59`.
-  The remaining multi-provider dispatch is in the read-only Checkout file
-  `packages/checkout/src/Integrations/Payment/CashierProcessor.php:24-60`.
-  Moving that seam would violate the disjoint ownership/frozen-contract rule,
-  so this is a new, exact re-deferral rather than a claim that the split is
-  complete.
+- **Cashier single-gateway split — closed.** The configured-gateway
+  seam is the single dispatch path
+  (`packages/checkout/src/Integrations/Payment/CashierProcessor.php:55-57`;
+  `GatewayManager::gateway(null)` resolves the configured gateway and the
+  provider is read back for the result). Verified by seam tests plus the
+  untouched adversarial proofs; see the "Closing streams" entry below.
 - **Derived idempotency-key warning — implemented in Stream C’s authorized
   Checkout warning slice.** `packages/checkout/src/Support/ChipPurchasePayloadBuilder.php:13-20`
   logs the warning only on derivation and returns the same session key; the
@@ -997,8 +995,8 @@ owned sets under delegation-playbook §7.
   `tests/src/Chip/AdversaryRecurringChargeIdempotencyTest.php`; each passed.
   The B canaries passed: Cashier 256/524, Checkout 266/977, Pricing 145/290,
   Chip 1,052 with 4 skipped/2,730, and Cart 1,052 with 2 skipped/2,731.
-  Stream B’s implemented items are closed; the Cashier split remains the
-  explicitly re-deferred item above.
+  Stream B’s implemented items are closed, including the Cashier split
+  (closed via the configured-gateway seam above).
 
 ### Stream C — residual sweep
 
@@ -1058,17 +1056,11 @@ owned sets under delegation-playbook §7.
 - **J&T demo key — implemented.** `demo/config/jnt.php:81` now uses
   `region_multipliers_bp`, matching the guidance at
   `packages/jnt/docs/03-configuration.md:202-205`.
-- **Events’ 11 exceptions — re-deferred with new scope evidence.** The
-  machine-checkable marker/test cannot be added inside Stream C’s named write
-  set: the events package and `tests/src/Events/**` are explicitly read-only.
-  The current authoritative list is still exactly the 11 intentional
-  catalog/pivot/submission files recorded at `audits/events.md:183-186`:
-  `EventRole.php:27`, `EventSeriesItemPivot.php:17`,
-  `EventSubmission.php:39`, `EventTaxonomy.php:25`, `EventTerm.php:31`,
-  `EventTermPolicy.php:25`, `FacilityType.php:26`, `Venue.php:63`,
-  `VenueFacility.php:37`, `VenueSpace.php:42`, and `VenueSpaceType.php:29`.
-  This is re-deferred for an ownership-safe follow-up that can add either the
-  Kennedy list test or the intentional-marker grep test.
+- **Events’ 11 exceptions — closed via machine-check test.**
+  `tests/src/Events/OwnershipExceptionsMachineCheckTest.php` asserts
+  exactly the 11 intentional catalog/pivot/submission files, so any
+  silent addition or removal fails loudly. The Kennedy-list/grep-test
+  choice is therefore settled, not re-deferred.
 - **Downstream nullable contact reads — re-deferred with new static/data
   evidence.** Checkout already uses the canonical Contacting resolver at
   `packages/checkout/src/Steps/ProcessPaymentStep.php:391-423`. Other owning
