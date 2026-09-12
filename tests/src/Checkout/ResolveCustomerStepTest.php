@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectResolverInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\ResolvedPaymentSubject;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
+use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Customers\Actions\CreateCustomer;
 use AIArmada\Customers\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Models\Customer;
@@ -48,7 +49,10 @@ describe('ResolveCustomerStep', function (): void {
             ->and($session->billable_type)->toBe($user->getMorphClass())
             ->and($session->billable_id)->toBe((string) $user->getKey())
             ->and($session->billable?->is($user))->toBeTrue()
-            ->and(Customer::query()->where('email', $user->email)->exists())->toBeFalse();
+            ->and(ContactMethod::query()
+                ->where('type', 'email')
+                ->where('normalized_value', $user->email)
+                ->exists())->toBeFalse();
     });
 
     it('does not create a guest customer from billing and shipping data for direct-capable gateways', function (): void {

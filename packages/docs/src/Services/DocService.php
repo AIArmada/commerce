@@ -393,7 +393,7 @@ final class DocService implements DocServiceInterface
      * Calculate document totals from minor-unit item values.
      *
      * Every item must use integer `quantity`, `unit_price_minor`, and optional
-     * `tax_amount_minor`. Legacy major-unit aliases are rejected.
+     * `tax_amount_minor`. Major-unit keys are rejected.
      *
      * @param  array<int, array<string, mixed>>  $items
      * @return array{subtotal_minor: int, tax_amount_minor: int, total_minor: int}

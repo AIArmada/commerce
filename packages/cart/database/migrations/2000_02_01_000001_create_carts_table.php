@@ -102,13 +102,20 @@ return new class extends Migration
             "{$tableName}_expired" => '(owner_type, owner_id, expires_at)',
             "{$tableName}_analytics" => '(owner_type, owner_id, updated_at, instance)',
         ];
+        $connection = Schema::getConnection();
+        $grammar = $connection->getQueryGrammar();
 
         foreach ($indexes as $indexName => $columns) {
             if (Schema::hasIndex($tableName, $indexName)) {
                 continue;
             }
 
-            DB::statement("CREATE INDEX {$indexName} ON `{$tableName}` {$columns}");
+            $connection->statement(sprintf(
+                'CREATE INDEX %s ON %s %s',
+                $grammar->wrap($indexName),
+                $grammar->wrapTable($tableName),
+                $columns,
+            ));
         }
     }
 };
