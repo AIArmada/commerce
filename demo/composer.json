@@ -161,6 +161,66 @@
         {
             "type": "path",
             "url": "../packages/filament-inventory"
+        },
+        {
+            "type": "path",
+            "url": "../packages/addressing"
+        },
+        {
+            "type": "path",
+            "url": "../packages/affiliate-network"
+        },
+        {
+            "type": "path",
+            "url": "../packages/authz"
+        },
+        {
+            "type": "path",
+            "url": "../packages/communications"
+        },
+        {
+            "type": "path",
+            "url": "../packages/contacting"
+        },
+        {
+            "type": "path",
+            "url": "../packages/engagement"
+        },
+        {
+            "type": "path",
+            "url": "../packages/events"
+        },
+        {
+            "type": "path",
+            "url": "../packages/feedback"
+        },
+        {
+            "type": "path",
+            "url": "../packages/filament-commerce-support"
+        },
+        {
+            "type": "path",
+            "url": "../packages/membership"
+        },
+        {
+            "type": "path",
+            "url": "../packages/organizations"
+        },
+        {
+            "type": "path",
+            "url": "../packages/persons"
+        },
+        {
+            "type": "path",
+            "url": "../packages/seating"
+        },
+        {
+            "type": "path",
+            "url": "../packages/ticketing"
+        },
+        {
+            "type": "path",
+            "url": "../packages/filament-addressing"
         }
     ],
     "require": {
@@ -205,7 +265,8 @@
         "aiarmada/filament-tax": "*",
         "aiarmada/filament-authz": "*",
         "aiarmada/inventory": "*",
-        "aiarmada/filament-inventory": "*"
+        "aiarmada/filament-inventory": "*",
+        "aiarmada/filament-addressing": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
