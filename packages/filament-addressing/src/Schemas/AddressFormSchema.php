@@ -14,6 +14,7 @@ use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\FilamentAddressing\Rules\AddressAreasBelongToCountry;
 use AIArmada\FilamentAddressing\Rules\StateBelongsToCountry;
 use Carbon\CarbonImmutable;
@@ -103,6 +104,10 @@ class AddressFormSchema
                         ->where('is_active', true)
                         ->when(self::areaTypes($definition['level']) !== [], fn ($query) => $query->whereIn('type', self::areaTypes($definition['level'])))
                         ->when(self::areaLevels($definition['level']) !== [], fn ($query) => $query->whereIn('level', self::areaLevels($definition['level'])));
+                    $operator = match (ConnectionDriver::name($query->getConnection())) {
+                        'pgsql' => 'ilike',
+                        default => 'like',
+                    };
 
                     $parentId = self::parentId($definition, $get, $prefix);
 
@@ -132,11 +137,11 @@ class AddressFormSchema
                     }
 
                     return $query
-                        ->where(function ($searchQuery) use ($search): void {
+                        ->where(function ($searchQuery) use ($search, $operator): void {
                             $searchQuery
-                                ->where('name', 'like', "%{$search}%")
-                                ->orWhere('slug', 'like', "%{$search}%")
-                                ->orWhere('code', 'like', "%{$search}%");
+                                ->where('name', $operator, "%{$search}%")
+                                ->orWhere('slug', $operator, "%{$search}%")
+                                ->orWhere('code', $operator, "%{$search}%");
                         })
                         ->orderBy('name')
                         ->limit(50)

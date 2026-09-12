@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Support;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
@@ -109,6 +110,10 @@ final class OwnerTypeRegistry
 
         /** @var class-string<Model> $modelClass */
         $query = $modelClass::query()->limit($limit);
+        $operator = match (ConnectionDriver::name($query->getConnection())) {
+            'pgsql' => 'ilike',
+            default => 'like',
+        };
 
         $search = $search ? mb_trim($search) : null;
         $searchableColumns = Arr::wrap($definition['search_attributes'] ?? []);
@@ -117,13 +122,13 @@ final class OwnerTypeRegistry
             if ($searchableColumns === []) {
                 $query->where(
                     Arr::get($definition, 'title_attribute', $modelClass::query()->getModel()->getKeyName()),
-                    'like',
+                    $operator,
                     "%{$search}%"
                 );
             } else {
-                $query->where(function ($builder) use ($search, $searchableColumns): void {
+                $query->where(function ($builder) use ($search, $searchableColumns, $operator): void {
                     foreach ($searchableColumns as $column) {
-                        $builder->orWhere((string) $column, 'like', "%{$search}%");
+                        $builder->orWhere((string) $column, $operator, "%{$search}%");
                     }
                 });
             }

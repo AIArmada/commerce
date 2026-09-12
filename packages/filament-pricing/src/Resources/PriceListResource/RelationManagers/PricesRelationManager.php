@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -59,16 +60,26 @@ final class PricesRelationManager extends RelationManager
                                 $owner,
                                 (bool) config('products.features.owner.include_global', false)
                             );
+                            $operator = match (ConnectionDriver::name($query->getConnection())) {
+                                'pgsql' => 'ilike',
+                                default => 'like',
+                            };
 
                             return $query
-                                ->where('name', 'like', "%{$search}%")
+                                ->where('name', $operator, "%{$search}%")
                                 ->limit(50)
                                 ->pluck('name', 'id')
                                 ->toArray();
                         }
 
                         if ($type === Variant::class) {
-                            return Variant::query()
+                            $variantQuery = Variant::query();
+                            $operator = match (ConnectionDriver::name($variantQuery->getConnection())) {
+                                'pgsql' => 'ilike',
+                                default => 'like',
+                            };
+
+                            return $variantQuery
                                 ->with('product')
                                 ->whereHas('product', function ($query) use ($owner): void {
                                     OwnerQuery::applyToEloquentBuilder(
@@ -77,9 +88,9 @@ final class PricesRelationManager extends RelationManager
                                         (bool) config('products.features.owner.include_global', false)
                                     );
                                 })
-                                ->where(function ($query) use ($search): void {
-                                    $query->where('sku', 'like', "%{$search}%")
-                                        ->orWhereHas('product', fn ($inner) => $inner->where('name', 'like', "%{$search}%"));
+                                ->where(function ($query) use ($search, $operator): void {
+                                    $query->where('sku', $operator, "%{$search}%")
+                                        ->orWhereHas('product', fn ($inner) => $inner->where('name', $operator, "%{$search}%"));
                                 })
                                 ->limit(50)
                                 ->get()

@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use BackedEnum;
 use Closure;
@@ -202,9 +203,15 @@ final class AffiliateForm
                             ->helperText('Leave empty for admin-managed affiliates without portal access.')
                             ->getSearchResultsUsing(function (string $search): array {
                                 $userModel = config('auth.providers.users.model', User::class);
+                                $query = $userModel::query();
+                                $operator = match (ConnectionDriver::name($query->getConnection())) {
+                                    'pgsql' => 'ilike',
+                                    default => 'like',
+                                };
 
-                                return $userModel::where('email', 'like', "%{$search}%")
-                                    ->orWhere('name', 'like', "%{$search}%")
+                                return $query
+                                    ->where('email', $operator, "%{$search}%")
+                                    ->orWhere('name', $operator, "%{$search}%")
                                     ->limit(50)
                                     ->pluck('email', 'id')
                                     ->toArray();

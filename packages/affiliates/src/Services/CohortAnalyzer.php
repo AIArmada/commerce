@@ -14,6 +14,7 @@ use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 /**
  * Analyzes affiliate cohorts by acquisition date to track lifetime value and performance trends.
@@ -349,9 +350,12 @@ final class CohortAnalyzer
         $affiliatesTable = (new Affiliate)->getTable();
         $driver = ConnectionDriver::name(DB::connection());
 
-        $dateFormat = $driver === 'sqlite'
-            ? "strftime('%Y-%m', created_at)"
-            : "DATE_FORMAT(created_at, '%Y-%m')";
+        $dateFormat = match ($driver) {
+            'pgsql' => "to_char(created_at, 'YYYY-MM')",
+            'mysql', 'mariadb' => "DATE_FORMAT(created_at, '%Y-%m')",
+            'sqlite' => "strftime('%Y-%m', created_at)",
+            default => throw new RuntimeException("Unsupported database driver [{$driver}] for affiliate cohorts."),
+        };
 
         $cohortQuery = DB::table($affiliatesTable)
             ->select('id', DB::raw("$dateFormat as cohort_month"))

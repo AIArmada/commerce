@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Pages;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventCheckInService;
@@ -94,12 +95,17 @@ final class CheckInConsole extends Page implements HasTable
                     ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false))
             );
 
+        $operator = match (ConnectionDriver::name($query->getConnection())) {
+            'pgsql' => 'ilike',
+            default => 'like',
+        };
+
         if ($this->passOrRegistration) {
-            $query->where(function (Builder $q): void {
-                $q->where('pass_no', 'like', "%{$this->passOrRegistration}%")
+            $query->where(function (Builder $q) use ($operator): void {
+                $q->where('pass_no', $operator, "%{$this->passOrRegistration}%")
                     ->orWhereHas(
                         'registration',
-                        fn (Builder $r) => $r->where('registration_no', 'like', "%{$this->passOrRegistration}%")
+                        fn (Builder $r) => $r->where('registration_no', $operator, "%{$this->passOrRegistration}%")
                     );
             });
         }

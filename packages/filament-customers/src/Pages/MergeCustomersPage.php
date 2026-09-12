@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Pages;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Customer;
@@ -91,19 +92,26 @@ final class MergeCustomersPage extends Page implements HasForms
      */
     protected function searchCustomers(string $search): array
     {
-        return Customer::query()
-            ->tap(fn ($query) => OwnerUiScope::apply($query))
-            ->where(function ($query) use ($search): void {
-                $query->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('company', 'like', "%{$search}%")
-                    ->orWhereHas('contactMethods', function ($contactMethods) use ($search): void {
+        $query = Customer::query()
+            ->tap(fn ($query) => OwnerUiScope::apply($query));
+
+        $operator = match (ConnectionDriver::name($query->getConnection())) {
+            'pgsql' => 'ilike',
+            default => 'like',
+        };
+
+        return $query
+            ->where(function ($query) use ($search, $operator): void {
+                $query->where('first_name', $operator, "%{$search}%")
+                    ->orWhere('last_name', $operator, "%{$search}%")
+                    ->orWhere('company', $operator, "%{$search}%")
+                    ->orWhereHas('contactMethods', function ($contactMethods) use ($search, $operator): void {
                         $contactMethods
                             ->whereIn('type', ['email', 'phone', 'mobile', 'whatsapp'])
-                            ->where(function ($contactMethods) use ($search): void {
+                            ->where(function ($contactMethods) use ($search, $operator): void {
                                 $contactMethods
-                                    ->where('value', 'like', "%{$search}%")
-                                    ->orWhere('normalized_value', 'like', "%{$search}%");
+                                    ->where('value', $operator, "%{$search}%")
+                                    ->orWhere('normalized_value', $operator, "%{$search}%");
                             });
                     });
             })

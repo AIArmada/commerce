@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources\JntTrackingEventResource\Tables;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use Filament\Actions\ViewAction;
@@ -133,16 +134,21 @@ final class JntTrackingEventTable
 
     private static function applyDeliveredStatusFilter(Builder $query): Builder
     {
-        return $query->where(function (Builder $builder): void {
+        $operator = match (ConnectionDriver::name($query->getConnection())) {
+            'pgsql' => 'ilike',
+            default => 'like',
+        };
+
+        return $query->where(function (Builder $builder) use ($operator): void {
             $builder->where('scan_type_code', '100')
                 ->orWhere('scan_type', 'POD')
                 ->orWhere('scan_type', 'SIGN')
                 ->orWhere('scan_type', 'SIGN_STATION')
-                ->orWhere('scan_type_name', 'like', '%deliver%')
-                ->orWhere('scan_type_name', 'like', '%sign%')
-                ->orWhere('description', 'like', '%deliver%')
-                ->orWhere('description', 'like', '%sign%')
-                ->orWhere('description', 'like', '%received by%');
+                ->orWhere('scan_type_name', $operator, '%deliver%')
+                ->orWhere('scan_type_name', $operator, '%sign%')
+                ->orWhere('description', $operator, '%deliver%')
+                ->orWhere('description', $operator, '%sign%')
+                ->orWhere('description', $operator, '%received by%');
         });
     }
 }

@@ -6,6 +6,7 @@ namespace AIArmada\Authz\Console\Commands;
 
 use AIArmada\Authz\Console\Concerns\Prohibitable;
 use AIArmada\Authz\Models\Role;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -127,8 +128,13 @@ class SuperAdminCommand extends Command
                     return [];
                 }
 
-                return $userModel::query()
-                    ->where($emailColumn, 'like', "%{$search}%")
+                $query = $userModel::query();
+                $likeOperator = ConnectionDriver::name($query->getConnection()) === 'pgsql'
+                    ? 'ILIKE'
+                    : 'LIKE';
+
+                return $query
+                    ->where($emailColumn, $likeOperator, "%{$search}%")
                     ->limit(10)
                     ->get()
                     ->mapWithKeys(fn ($user): array => [

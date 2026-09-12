@@ -15,6 +15,7 @@ use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use BackedEnum;
@@ -91,11 +92,18 @@ final class AffiliateMarketplacePage extends Page
             return AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)
                 ->where('status', OfferStatus::Published)
                 ->where('visibility', OfferVisibility::Public)
-                ->when(mb_strlen((string) $search) >= 3, fn (Builder $query) => $query->where(function (Builder $q) use ($search): void {
+                ->when(mb_strlen((string) $search) >= 3, function (Builder $query) use ($search): Builder {
                     $escaped = str_replace(['%', '_'], ['\%', '\_'], (string) $search);
-                    $q->where('name', 'like', "%{$escaped}%")
-                        ->orWhere('description', 'like', "%{$escaped}%");
-                }))
+                    $operator = match (ConnectionDriver::name($query->getConnection())) {
+                        'pgsql' => 'ilike',
+                        default => 'like',
+                    };
+
+                    return $query->where(function (Builder $q) use ($escaped, $operator): void {
+                        $q->where('name', $operator, "%{$escaped}%")
+                            ->orWhere('description', $operator, "%{$escaped}%");
+                    });
+                })
                 ->when($this->categoryFilter, fn (Builder $query) => $query->where('category_id', $this->categoryFilter))
                 ->when($this->sortBy === 'featured', fn (Builder $query) => $query->orderByDesc('is_featured')->orderByDesc('created_at'))
                 ->when($this->sortBy === 'newest', fn (Builder $query) => $query->orderByDesc('created_at'))

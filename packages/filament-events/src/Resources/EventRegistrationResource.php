@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Models\EventRegistration;
@@ -77,12 +78,19 @@ final class EventRegistrationResource extends Resource
 
                         return $record->participants->first()?->name ?? '';
                     })
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $query
-                        ->whereHas('registrant', fn (Builder $q) => $q
-                            ->where('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%"))
-                        ->orWhereHas('participants', fn (Builder $q) => $q
-                            ->where('name', 'like', "%{$search}%"))),
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $operator = match (ConnectionDriver::name($query->getConnection())) {
+                            'pgsql' => 'ilike',
+                            default => 'like',
+                        };
+
+                        return $query
+                            ->whereHas('registrant', fn (Builder $q) => $q
+                                ->where('first_name', $operator, "%{$search}%")
+                                ->orWhere('last_name', $operator, "%{$search}%"))
+                            ->orWhereHas('participants', fn (Builder $q) => $q
+                                ->where('name', $operator, "%{$search}%"));
+                    }),
                 Tables\Columns\TextColumn::make('registrant.email')
                     ->label('Email')
                     ->state(function (EventRegistration $record): ?string {
@@ -95,21 +103,27 @@ final class EventRegistrationResource extends Resource
                         return static::participantContactValue($record->participants->first(), 'email');
                     })
                     ->copyable()
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $query
-                        ->whereHasMorph(
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $operator = match (ConnectionDriver::name($query->getConnection())) {
+                            'pgsql' => 'ilike',
+                            default => 'like',
+                        };
+
+                        return $query->whereHasMorph(
                             'registrant',
                             [Customer::class],
                             fn (Builder $registrantQuery): Builder => $registrantQuery->whereHas(
                                 'contactMethods',
                                 fn (Builder $contactQuery): Builder => $contactQuery
                                     ->where('type', 'email')
-                                    ->where(function (Builder $valueQuery) use ($search): void {
+                                    ->where(function (Builder $valueQuery) use ($search, $operator): void {
                                         $valueQuery
-                                            ->where('normalized_value', 'like', "%{$search}%")
-                                            ->orWhere('value', 'like', "%{$search}%");
+                                            ->where('normalized_value', $operator, "%{$search}%")
+                                            ->orWhere('value', $operator, "%{$search}%");
                                     }),
                             ),
-                        )),
+                        );
+                    }),
                 Tables\Columns\TextColumn::make('registrant.phone')
                     ->label('Phone')
                     ->state(function (EventRegistration $record): ?string {

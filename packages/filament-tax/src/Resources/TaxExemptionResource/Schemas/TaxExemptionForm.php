@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
@@ -57,13 +58,17 @@ final class TaxExemptionForm
 
                                         /** @var Builder<Model> $query */
                                         $query = $type::query();
+                                        $operator = match (ConnectionDriver::name($query->getConnection())) {
+                                            'pgsql' => 'ilike',
+                                            default => 'like',
+                                        };
 
                                         if ($type === 'AIArmada\\Customers\\Models\\Customer') {
                                             return $query
-                                                ->where(function (Builder $builder) use ($search): void {
+                                                ->where(function (Builder $builder) use ($search, $operator): void {
                                                     $builder
-                                                        ->where('full_name', 'like', "%{$search}%")
-                                                        ->orWhere('email', 'like', "%{$search}%");
+                                                        ->where('full_name', $operator, "%{$search}%")
+                                                        ->orWhere('email', $operator, "%{$search}%");
                                                 })
                                                 ->limit(50)
                                                 ->get()
@@ -75,17 +80,17 @@ final class TaxExemptionForm
 
                                         if ($type === 'AIArmada\\Customers\\Models\\CustomerGroup') {
                                             return $query
-                                                ->where('name', 'like', "%{$search}%")
+                                                ->where('name', $operator, "%{$search}%")
                                                 ->limit(50)
                                                 ->pluck('name', 'id')
                                                 ->toArray();
                                         }
 
                                         return $query
-                                            ->where(function (Builder $builder) use ($search): void {
+                                            ->where(function (Builder $builder) use ($search, $operator): void {
                                                 $builder
-                                                    ->where('name', 'like', "%{$search}%")
-                                                    ->orWhere('email', 'like', "%{$search}%");
+                                                    ->where('name', $operator, "%{$search}%")
+                                                    ->orWhere('email', $operator, "%{$search}%");
                                             })
                                             ->limit(50)
                                             ->get()

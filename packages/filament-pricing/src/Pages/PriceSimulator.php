@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Pages;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -109,9 +110,13 @@ final class PriceSimulator extends Page
                                     $owner,
                                     (bool) config('products.features.owner.include_global', false),
                                 );
+                                $operator = match (ConnectionDriver::name($query->getConnection())) {
+                                    'pgsql' => 'ilike',
+                                    default => 'like',
+                                };
 
                                 return $query
-                                    ->where('name', 'like', "%{$search}%")
+                                    ->where('name', $operator, "%{$search}%")
                                     ->limit(50)
                                     ->get()
                                     ->mapWithKeys(function (Product $product): array {
@@ -166,18 +171,23 @@ final class PriceSimulator extends Page
                                 $owner = $this->resolveOwner();
 
                                 $includeGlobal = (bool) config('products.features.owner.include_global', false);
+                                $variantQuery = Variant::query();
+                                $operator = match (ConnectionDriver::name($variantQuery->getConnection())) {
+                                    'pgsql' => 'ilike',
+                                    default => 'like',
+                                };
 
-                                return Variant::query()
+                                return $variantQuery
                                     ->with('product')
-                                    ->where(function ($query) use ($owner, $search, $includeGlobal): void {
-                                        $query->where('sku', 'like', "%{$search}%")
-                                            ->orWhereHas('product', function ($inner) use ($owner, $search, $includeGlobal): void {
+                                    ->where(function ($query) use ($owner, $search, $includeGlobal, $operator): void {
+                                        $query->where('sku', $operator, "%{$search}%")
+                                            ->orWhereHas('product', function ($inner) use ($owner, $search, $includeGlobal, $operator): void {
                                                 OwnerQuery::applyToEloquentBuilder(
                                                     $inner,
                                                     $owner,
                                                     $includeGlobal,
                                                 )
-                                                    ->where('name', 'like', "%{$search}%");
+                                                    ->where('name', $operator, "%{$search}%");
                                             });
                                     })
                                     ->whereHas('product', function ($query) use ($owner, $includeGlobal): void {
@@ -265,12 +275,16 @@ final class PriceSimulator extends Page
                                     $owner,
                                     $this->customerIncludesGlobal(),
                                 );
+                                $operator = match (ConnectionDriver::name($query->getConnection())) {
+                                    'pgsql' => 'ilike',
+                                    default => 'like',
+                                };
 
                                 return $query
-                                    ->where(function (Builder $query) use ($search): void {
+                                    ->where(function (Builder $query) use ($search, $operator): void {
                                         $query
-                                            ->where('full_name', 'like', "%{$search}%")
-                                            ->orWhere('email', 'like', "%{$search}%");
+                                            ->where('full_name', $operator, "%{$search}%")
+                                            ->orWhere('email', $operator, "%{$search}%");
                                     })
                                     ->limit(50)
                                     ->get()

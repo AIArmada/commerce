@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Snapshots;
 
 use AIArmada\Cart\Database\Factories\CartSnapshotItemFactory;
 use AIArmada\Cart\Support\CartMoney;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -191,7 +192,11 @@ final class CartSnapshotItem extends Model
     #[Scope]
     protected function byName(Builder $query, string $name): void
     {
-        $query->where('name', 'like', "%{$name}%");
+        $likeOperator = ConnectionDriver::name($query->getConnection()) === 'pgsql'
+            ? 'ILIKE'
+            : 'LIKE';
+
+        $query->where('name', $likeOperator, "%{$name}%");
     }
 
     /**

@@ -6,6 +6,7 @@ namespace AIArmada\FilamentVouchers\Integrations;
 
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentCart\Resources\CartResource;
@@ -289,12 +290,17 @@ final class FilamentCartBridge
             /** @var Builder<Model> $query */
             $query = $model::query();
             $query = $this->scopeForOwner($query);
+            $driver = ConnectionDriver::name($query->getConnection());
 
             return $query
                 ->whereNotNull('conditions')
-                ->where(function ($q) use ($voucherCode, $escapedCode): void {
-                    $q->whereJsonContains('conditions', ['voucher' => $voucherCode])
-                        ->orWhereRaw('conditions LIKE ?', ['%"code":"' . $escapedCode . '"%']);
+                ->where(function ($q) use ($voucherCode, $escapedCode, $driver): void {
+                    $q->whereJsonContains('conditions', ['voucher' => $voucherCode]);
+
+                    match ($driver) {
+                        'pgsql' => $q->orWhereRaw('conditions::text ILIKE ?', ['%"code":"' . $escapedCode . '"%']),
+                        default => $q->orWhereRaw('conditions LIKE ?', ['%"code":"' . $escapedCode . '"%']),
+                    };
                 })
                 ->count();
         } catch (Throwable $exception) {
@@ -332,10 +338,15 @@ final class FilamentCartBridge
             /** @var Builder<Model> $query */
             $query = $model::query();
             $query = $this->scopeForOwner($query);
+            $driver = ConnectionDriver::name($query->getConnection());
+            $condition = match ($driver) {
+                'pgsql' => 'conditions::text ILIKE ?',
+                default => 'conditions LIKE ?',
+            };
 
             $cartsWithVouchers = $query
                 ->whereNotNull('conditions')
-                ->whereRaw("conditions LIKE '%voucher%'")
+                ->whereRaw($condition, ['%voucher%'])
                 ->count();
 
             return [

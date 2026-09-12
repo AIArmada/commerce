@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Customers\Models\Customer;
@@ -238,12 +239,16 @@ class ProductForm
                                         $query = Customer::query();
 
                                         $query = OwnerQuery::applyToEloquentBuilder($query, $owner, (bool) config('customers.features.owner.include_global', false));
+                                        $operator = match (ConnectionDriver::name($query->getConnection())) {
+                                            'pgsql' => 'ilike',
+                                            default => 'like',
+                                        };
 
                                         return $query
-                                            ->where(function (Builder $query) use ($search): void {
+                                            ->where(function (Builder $query) use ($search, $operator): void {
                                                 $query
-                                                    ->where('full_name', 'like', "%{$search}%")
-                                                    ->orWhere('email', 'like', "%{$search}%");
+                                                    ->where('full_name', $operator, "%{$search}%")
+                                                    ->orWhere('email', $operator, "%{$search}%");
                                             })
                                             ->limit(50)
                                             ->get()
