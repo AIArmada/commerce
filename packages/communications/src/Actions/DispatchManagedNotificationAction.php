@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\Communications\Contracts\CommunicationContextAware;
 use AIArmada\Communications\Contracts\ContentRenderer;
 use AIArmada\Communications\Contracts\DestinationResolver;
 use AIArmada\Communications\Contracts\PayloadRedactor;
@@ -146,7 +147,7 @@ final class DispatchManagedNotificationAction
             return [$communication, $deliveryIdsByChannel];
         });
 
-        if (method_exists($notification, 'withCommunicationContext')) {
+        if ($notification instanceof CommunicationContextAware) {
             $notification->withCommunicationContext(
                 communicationId: $communication->id,
                 deliveryIdsByChannel: $deliveryIdsByChannel,

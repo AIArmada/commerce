@@ -58,3 +58,5 @@ If queries return unexpected results:
 ## PHPStan errors
 
 If you encounter PHPStan errors related to dynamic properties on the trait (`HasCommunicationContext`), ensure your notification class either uses the trait or extends `BaseCommunicationNotification`.
+
+Managed dispatch (`DispatchManagedNotificationAction`) attaches context only to notifications implementing `AIArmada\Communications\Contracts\CommunicationContextAware` (already the case when extending `BaseCommunicationNotification`). Notifications using the `HasCommunicationContext` trait directly must also implement the contract, otherwise no context is attached.
