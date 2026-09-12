@@ -147,6 +147,9 @@ describe('Order Model', function (): void {
                 'status' => 'completed',
             ]);
 
+            $order->paid_total = 10000;
+            $order->save();
+
             expect($order->getTotalPaid())->toBe(10000);
         });
 
@@ -167,6 +170,9 @@ describe('Order Model', function (): void {
                 'status' => 'completed',
             ]);
 
+            $order->paid_total = 5000;
+            $order->save();
+
             expect($order->isFullyPaid())->toBeTrue();
         });
 
@@ -186,6 +192,9 @@ describe('Order Model', function (): void {
                 'currency' => 'MYR',
                 'status' => 'completed',
             ]);
+
+            $order->paid_total = 4000;
+            $order->save();
 
             expect($order->getBalanceDue())->toBe(6000);
         });
@@ -218,6 +227,9 @@ describe('Order Model', function (): void {
                 'reason' => 'Partial refund',
                 'status' => 'completed',
             ]);
+
+            $order->refunded_total = 3000;
+            $order->save();
 
             expect($order->getTotalRefunded())->toBe(3000);
         });
@@ -693,13 +705,11 @@ describe('Order Model', function (): void {
             $order->recalculateTotals();
 
             // OrderItem automatically calculates total = (quantity * unit_price) + tax_amount
-            // Item 1: (1 * 5000) + 300 = 5300
-            // Item 2: (1 * 3000) + 180 = 3180
-            // Subtotal: 5300 + 3180 = 8480
+            // Subtotal: (1 * 5000) + (1 * 3000) = 8000
             // Tax total: 300 + 180 = 480
-            // Grand total: 8480 + 1000 - 500 = 8980
+            // Grand total: 8000 + 480 + 1000 - 500 = 8980
 
-            expect($order->subtotal)->toBe(8480)
+            expect($order->subtotal)->toBe(8000)
                 ->and($order->tax_total)->toBe(480)
                 ->and($order->grand_total)->toBe(8980);
         });

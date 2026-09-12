@@ -245,6 +245,22 @@ public function test_checkout_redirects(): void
 
 ## Test Helpers
 
+### Testing Owner-Scoped Renewals
+
+Run renewal tests inside the owner context that owns the subscription. Renewal attempts inherit
+that owner, and another owner's context must not be able to read or process the attempt:
+
+```php
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CashierChip\Subscription\RenewalAttempt;
+
+$attempts = OwnerContext::withOwner($owner, fn () => RenewalAttempt::query()->get());
+```
+
+Existing renewal-attempt rows are assigned during the package migration from their parent
+subscription, so test suites that use legacy fixtures should run migrations before asserting
+owner isolation.
+
 ### Assert Subscribed
 
 ```php

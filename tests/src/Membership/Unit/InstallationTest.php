@@ -21,14 +21,16 @@ it('creates membership applications table', function (): void {
     $schema = app('db')->getSchemaBuilder();
 
     expect($schema->hasTable('membership_applications'))->toBeTrue()
-        ->and($schema->hasColumns('membership_applications', ['owner_type', 'owner_id']))->toBeTrue();
+        ->and($schema->hasColumns('membership_applications', ['owner_type', 'owner_id']))->toBeTrue()
+        ->and($schema->hasIndex('membership_applications', 'membership_applications_subject_applicant_status_unique'))->toBeTrue();
 });
 
 it('creates membership invitations table', function (): void {
     $schema = app('db')->getSchemaBuilder();
 
     expect($schema->hasTable('membership_invitations'))->toBeTrue()
-        ->and($schema->hasColumns('membership_invitations', ['owner_type', 'owner_id']))->toBeTrue();
+        ->and($schema->hasColumns('membership_invitations', ['owner_type', 'owner_id']))->toBeTrue()
+        ->and($schema->hasIndex('membership_invitations', 'membership_invitations_subject_email_role_status_unique'))->toBeTrue();
 });
 
 it('has membership application model', function (): void {

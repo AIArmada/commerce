@@ -125,3 +125,29 @@ $invitation = OwnerContext::withOwner(
     ),
 );
 ```
+
+Pending invitations are unique per subject, normalized email, role, and
+status. Repeating the same invitation request returns the existing pending
+invitation without sending another `MembershipInvitationSent` event. A new
+invitation can be created after the previous invitation reaches a terminal
+status.
+
+## Apply for Membership
+
+```php
+use AIArmada\Membership\Actions\ApplyForMembershipAction;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+
+$application = OwnerContext::withOwner(
+    $team,
+    fn () => ApplyForMembershipAction::run(
+        subject: $team,
+        user: $applicant,
+        justification: 'I want to join this team.',
+    ),
+);
+```
+
+Only one pending application is kept for a subject and applicant. Repeated or
+concurrent submissions return that application without dispatching a duplicate
+`MembershipApplicationSubmitted` event.

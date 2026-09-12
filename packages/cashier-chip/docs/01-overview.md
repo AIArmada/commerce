@@ -33,7 +33,7 @@ patterns on top of `aiarmada/chip`.
 
 - **Actions** — `ChargeChipCustomer`, `RefundChipPayment`, `CreateChipSubscription`, `CancelChipSubscription`, `SyncChipPurchaseStatus` — canonical entry points for billing operations
 - **Billable surface** — trait-based customer, payment method, checkout, charge, and subscription APIs
-- **Persistence** — `cashier_chip_*` subscription tables plus CHIP billable columns
+- **Persistence** — `cashier_chip_*` subscription, subscription-item, payment-method, and renewal-attempt tables plus CHIP billable columns
 - **Runtime behavior** — application-managed renewals (via `RenewSubscriptionsCommand` with `OwnerBatchRunner`), webhook processing, and local billing workflows
 - **Testing surface** — helpers and patterns for billing flows, recurring tokens, and webhook handling
 
@@ -46,7 +46,7 @@ src/
 ├── Billing/          # Billable, Cashier, Checkout, Coupon, Discount, PromotionCode
 ├── Payment/          # Payment, PaymentMethod, PaymentMethodStore, StoredPaymentMethod,
 │                     # InvoicePayment
-├── Subscription/    # Subscription, SubscriptionBuilder, SubscriptionItem
+├── Subscription/    # Subscription, SubscriptionBuilder, SubscriptionItem, RenewalAttempt
 ├── Invoice/         # Invoice, InvoiceLineItem
 ├── Console/         # RenewSubscriptionsCommand, WebhookCommand
 ├── Contracts/       # BillableContract, etc.
@@ -63,7 +63,9 @@ tests/
 ## Owner scoping and security notes
 
 - Cashier CHIP should mirror the owner-scoping behavior of `aiarmada/chip` and `commerce-support`
+- Renewal attempts inherit the owner tuple from their parent subscription and are filtered by the current owner context
 - Renewals, webhook callbacks, and customer lookups should re-enter the correct owner context before mutating subscriptions or payment methods
+- The owner-column migration backfills existing renewal attempts from their subscriptions; orphaned attempts remain ownerless and are excluded unless global rows are explicitly included
 
 ## Key CHIP differences
 

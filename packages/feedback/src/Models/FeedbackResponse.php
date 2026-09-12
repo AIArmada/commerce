@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $respondent_type
  * @property string|null $respondent_id
  * @property FeedbackResponseStatus $status
+ * @property bool $enforce_respondent_uniqueness
  * @property bool $is_anonymous
  * @property bool $is_editable
  * @property float|null $score
@@ -72,7 +73,7 @@ final class FeedbackResponse extends Model
         'feedback_form_id', 'feedback_invitation_id',
         'subject_type', 'subject_id',
         'respondent_type', 'respondent_id',
-        'status', 'is_anonymous', 'is_editable',
+        'status', 'enforce_respondent_uniqueness', 'is_anonymous', 'is_editable',
         'score', 'max_score',
         'started_at', 'submitted_at', 'reviewed_at', 'rejected_at', 'marked_spam_at',
         'ip_address', 'user_agent',
@@ -90,6 +91,7 @@ final class FeedbackResponse extends Model
     {
         return [
             'status' => FeedbackResponseStatus::class,
+            'enforce_respondent_uniqueness' => 'boolean',
             'is_anonymous' => 'boolean',
             'is_editable' => 'boolean',
             'score' => 'decimal:2',

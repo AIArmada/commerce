@@ -106,3 +106,25 @@ it('allows multiple applications on the same subject', function (): void {
     expect($application1->id)->not->toBe($application2->id);
     expect(MembershipApplication::query()->where('subject_id', $this->subject->getKey())->count())->toBe(2);
 });
+
+it('reuses a pending application for the same subject and applicant', function (): void {
+    $first = ApplyForMembershipAction::make()->handle(
+        subject: $this->subject,
+        user: $this->user,
+        justification: 'First application.',
+    );
+    $second = ApplyForMembershipAction::make()->handle(
+        subject: $this->subject,
+        user: $this->user,
+        justification: 'Duplicate application.',
+    );
+
+    expect($second->is($first))->toBeTrue()
+        ->and(MembershipApplication::query()
+            ->where('subject_id', $this->subject->getKey())
+            ->where('applicant_id', $this->user->getKey())
+            ->where('status', ApplicationStatus::Pending)
+            ->count())->toBe(1);
+
+    Event::assertDispatchedTimes(MembershipApplicationSubmitted::class, 1);
+});

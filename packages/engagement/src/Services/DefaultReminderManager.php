@@ -9,6 +9,7 @@ use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\Remindable;
 use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderCancelled;
 use AIArmada\Engagement\Events\ReminderCreated;
 use AIArmada\Engagement\Events\ReminderFailed;
@@ -19,6 +20,7 @@ use AIArmada\Engagement\Support\EngagementModelGuard;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 
 final class DefaultReminderManager implements ReminderManager
 {
@@ -111,18 +113,44 @@ final class DefaultReminderManager implements ReminderManager
     public function markSent(Reminder $reminder): void
     {
         $reminder = OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
-        $reminder->update(['status' => 'sent', 'sent_at' => CarbonImmutable::now()]);
-        event(new ReminderSent($reminder));
+
+        DB::transaction(function () use ($reminder): void {
+            $lockedReminder = Reminder::query()
+                ->pending()
+                ->whereKey($reminder->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedReminder instanceof Reminder) {
+                return;
+            }
+
+            $lockedReminder->update(['status' => ReminderStatus::Sent, 'sent_at' => CarbonImmutable::now()]);
+            event(new ReminderSent($lockedReminder));
+        });
     }
 
     public function markFailed(Reminder $reminder, string $reason): void
     {
         $reminder = OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
-        $reminder->update([
-            'status' => 'failed',
-            'failed_at' => CarbonImmutable::now(),
-            'failure_reason' => $reason,
-        ]);
-        event(new ReminderFailed($reminder, $reason));
+
+        DB::transaction(function () use ($reminder, $reason): void {
+            $lockedReminder = Reminder::query()
+                ->pending()
+                ->whereKey($reminder->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedReminder instanceof Reminder) {
+                return;
+            }
+
+            $lockedReminder->update([
+                'status' => ReminderStatus::Failed,
+                'failed_at' => CarbonImmutable::now(),
+                'failure_reason' => $reason,
+            ]);
+            event(new ReminderFailed($lockedReminder, $reason));
+        });
     }
 }

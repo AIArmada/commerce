@@ -24,6 +24,7 @@ These keys control package-owned schema naming:
 | `database.table_prefix` | Prefix used for the package-owned billing tables |
 | `database.tables.subscriptions` | Subscription table name |
 | `database.tables.subscription_items` | Subscription items table name |
+| `database.tables.renewal_attempts` | Renewal attempts table name |
 
 ## Defaults
 
@@ -42,6 +43,11 @@ The owner-scope settings mirror the multitenancy contract from `commerce-support
 | `features.owner.include_global` | Include global rows when owner mode is enabled |
 | `features.owner.auto_assign_on_create` | Auto-assign the current owner on create |
 | `features.owner.validate_billable_owner` | Re-validate billable ownership on write flows |
+
+When owner scoping is enabled, `RenewalAttempt` records inherit `owner_type` and `owner_id` from
+their parent subscription. Direct renewal-attempt queries and writes therefore require the same
+owner context as the subscription. The package migrations add the owner columns and backfill
+legacy attempts from their parent subscriptions.
 
 ## Rate limits
 

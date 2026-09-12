@@ -12,6 +12,7 @@ use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Models\Reminder;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 final class SendDueRemindersCommand extends Command
 {
@@ -59,12 +60,10 @@ final class SendDueRemindersCommand extends Command
                                 return false;
                             }
 
-                            if ($reminder->status !== ReminderStatus::Pending && $reminder->status !== ReminderStatus::Scheduled) {
+                            if (! $this->sendReminder($reminder)) {
                                 continue;
                             }
 
-                            event(new ReminderDue($reminder));
-                            $this->reminderManager->markSent($reminder);
                             $remaining--;
                             $count++;
                         }
@@ -79,5 +78,25 @@ final class SendDueRemindersCommand extends Command
         $this->info("Sent {$count} reminders.");
 
         return self::SUCCESS;
+    }
+
+    private function sendReminder(Reminder $reminder): bool
+    {
+        return DB::transaction(function () use ($reminder): bool {
+            $lockedReminder = Reminder::query()
+                ->pending()
+                ->whereKey($reminder->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedReminder instanceof Reminder) {
+                return false;
+            }
+
+            event(new ReminderDue($lockedReminder));
+            $this->reminderManager->markSent($lockedReminder);
+
+            return true;
+        });
     }
 }

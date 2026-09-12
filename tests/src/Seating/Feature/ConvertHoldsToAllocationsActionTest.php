@@ -9,6 +9,8 @@ use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Seating\Models\SeatHold;
 use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Seating\Models\SeatSection;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -54,4 +56,31 @@ it('denormalizes seat_section_id on allocation', function (): void {
 
     $allocation = $allocations->first();
     expect($allocation->seat_section_id)->not->toBeNull();
+});
+
+it('does not create duplicate active allocations for competing holds', function (): void {
+    $competingHold = SeatHold::factory()->create(['seat_id' => $this->hold->seat_id]);
+
+    $allocations = app(ConvertHoldsToAllocationsAction::class)->handle(
+        holds: [$this->hold, $competingHold],
+        mode: SeatingMode::Assigned,
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    );
+
+    expect($allocations)->toHaveCount(1)
+        ->and(SeatAllocation::query()->where('seat_id', $this->hold->seat_id)->where('status', 'active')->count())->toBe(1)
+        ->and(SeatHold::query()->whereNotNull('converted_at')->count())->toBe(1);
+});
+
+it('enforces one active allocation per seat at the database boundary', function (): void {
+    if (! in_array(DB::connection()->getDriverName(), ['pgsql', 'sqlite'], true)) {
+        $this->markTestSkipped('The partial unique index is only available on PostgreSQL and SQLite.');
+    }
+
+    SeatAllocation::factory()->create(['seat_id' => $this->hold->seat_id]);
+
+    expect(fn (): SeatAllocation => DB::transaction(
+        fn (): SeatAllocation => SeatAllocation::factory()->create(['seat_id' => $this->hold->seat_id]),
+    ))->toThrow(QueryException::class);
 });

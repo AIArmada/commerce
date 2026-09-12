@@ -233,6 +233,11 @@ $due = app(ReminderManager::class)->dueReminders();
 
 Schedule `engagement:send-due-reminders` in your console kernel. Engagement owns due detection and the `ReminderDue`/`ReminderSent` lifecycle; when `aiarmada/communications` is installed, the due event is delivered through `DispatchManagedNotificationAction` and receives an `engagement_reminder` communication reference. Without communications, host applications may provide their own `ReminderDue` listener.
 
+Each due reminder is reloaded with a row lock while `ReminderDue` is dispatched,
+so overlapping command runs skip reminders already claimed or completed. Direct
+`markSent` and `markFailed` calls only transition pending or scheduled reminders;
+terminal reminders are left unchanged.
+
 ## Sharing
 
 ```php
@@ -258,6 +263,14 @@ $share = app(EngagementManager::class)->share($user, $event, [
 ```
 
 Share channels are free-form. Common values: `whatsapp`, `telegram`, `email`, `twitter`, `facebook`, `copy_link`.
+
+## Concurrent engagement writes
+
+Follow, bookmark, response, and reaction identity writes run inside transactions
+and lock an existing identity before restoring or returning it. The package's
+owner-aware unique indexes are the final race guard; if two requests create the
+same identity concurrently, the losing request returns the committed record
+instead of emitting a second lifecycle event or counter update.
 
 ## Working with engagement counters
 

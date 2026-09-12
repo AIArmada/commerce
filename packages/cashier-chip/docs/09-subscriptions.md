@@ -13,6 +13,18 @@ Cashier CHIP provides local subscription management. Unlike Stripe, CHIP doesn't
 3. Scheduled job → Charges recurring token on billing date
 4. Webhook confirms → Updates subscription status
 
+## Renewal ownership
+
+When owner scoping is enabled, each `RenewalAttempt` is assigned the same owner as its parent
+subscription. `RenewalAttempt::query()` and renewal command writes are filtered and guarded by the
+current owner context, so scheduled jobs must run through the package's owner-aware execution
+path.
+
+The package migrations add an indexed nullable owner tuple to `cashier_chip_renewal_attempts` and
+backfill legacy attempts from their subscriptions. Attempts whose subscription is missing or
+ownerless remain global and are not returned by owner-scoped queries unless global rows are
+explicitly included.
+
 ## Creating Subscriptions
 
 The canonical way to create a subscription is via the `CreateChipSubscription` Action.
@@ -456,6 +468,20 @@ $ended = Subscription::ended()->get();
 | `chip_price` | string | Price identifier |
 | `quantity` | int | Quantity |
 | `unit_amount` | int | Unit price in cents |
+
+### cashier_chip_renewal_attempts
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `subscription_id` | uuid | Parent subscription identifier |
+| `status` | string | Renewal state |
+| `amount_minor` | int | Amount claimed in minor currency units |
+| `period_key` | string nullable | Billing-period idempotency key |
+| `owner_type` | string nullable | Owner scope morph type |
+| `owner_id` | uuid nullable | Owner scope morph key |
+| `lease_expires_at` | timestamp nullable | Claim lease expiry |
+| `completed_at` | timestamp nullable | Completion time |
 
 ### chip_customers
 

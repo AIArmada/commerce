@@ -106,6 +106,10 @@ abstract class MembershipTestCase extends BaseTestCase
             $table->index('applicant_id');
             $table->index('status');
             $table->index('reviewer_id');
+            $table->unique(
+                ['subject_type', 'subject_id', 'applicant_id', 'status'],
+                'membership_applications_subject_applicant_status_unique',
+            );
         });
 
         // Membership invitations table
@@ -133,6 +137,10 @@ abstract class MembershipTestCase extends BaseTestCase
             $table->index('email');
             $table->index('token');
             $table->index('invited_by');
+            $table->unique(
+                ['subject_type', 'subject_id', 'email', 'role', 'status'],
+                'membership_invitations_subject_email_role_status_unique',
+            );
         });
 
         // Test subjects table for HasMembers trait

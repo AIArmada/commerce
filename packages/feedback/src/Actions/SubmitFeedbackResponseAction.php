@@ -14,8 +14,11 @@ use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackInvitation;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\DeadlockException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Throwable;
 
 final class SubmitFeedbackResponseAction
 {
@@ -30,6 +33,16 @@ final class SubmitFeedbackResponseAction
 
     public function execute(SubmitFeedbackResponseData $data): FeedbackResponse
     {
+        return retry(
+            5,
+            fn (): FeedbackResponse => $this->executeWithinTransaction($data),
+            50,
+            fn (Throwable $exception): bool => $exception instanceof DeadlockException,
+        );
+    }
+
+    private function executeWithinTransaction(SubmitFeedbackResponseData $data): FeedbackResponse
+    {
         return DB::transaction(function () use ($data): FeedbackResponse {
             $guardedForm = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $data->formId);
             $form = FeedbackForm::with('questions.options')
@@ -39,6 +52,12 @@ final class SubmitFeedbackResponseAction
 
             $this->assertFormAcceptingSubmissions($form, $data);
             $this->assertSubmittedQuestionsBelongToForm($form, $data);
+
+            $existingResponse = $this->findExistingSubmittedResponse($form, $data);
+
+            if ($existingResponse !== null) {
+                return $existingResponse;
+            }
 
             $invitation = null;
             if ($data->invitationId !== null) {
@@ -53,65 +72,82 @@ final class SubmitFeedbackResponseAction
                 $this->assertInvitationValid($invitation, $form);
             }
 
-            $response = $this->startResponse->execute(
-                form: $form,
-                respondentType: $data->respondentType,
-                respondentId: $data->respondentId,
-                invitation: $invitation,
-                isAnonymous: $data->isAnonymous,
-            );
+            try {
+                return DB::transaction(function () use ($form, $data, $invitation): FeedbackResponse {
+                    $response = $this->startResponse->execute(
+                        form: $form,
+                        respondentType: $data->respondentType,
+                        respondentId: $data->respondentId,
+                        invitation: $invitation,
+                        isAnonymous: $data->isAnonymous,
+                    );
 
-            $submittedValues = [];
-            foreach ($data->answers as $answer) {
-                $submittedValues[$answer->questionKey] = $answer->value;
-            }
+                    $submittedValues = [];
+                    foreach ($data->answers as $answer) {
+                        $submittedValues[$answer->questionKey] = $answer->value;
+                    }
 
-            $visibleQuestions = $this->validateAnswers->execute($form, $submittedValues);
+                    $visibleQuestions = $this->validateAnswers->execute($form, $submittedValues);
 
-            $answerModels = [];
-            foreach ($visibleQuestions as $question) {
-                $value = $submittedValues[$question->key] ?? null;
+                    $answerModels = [];
+                    foreach ($visibleQuestions as $question) {
+                        $value = $submittedValues[$question->key] ?? null;
 
-                if ($value === null && ! $question->is_required) {
-                    continue;
+                        if ($value === null && ! $question->is_required) {
+                            continue;
+                        }
+
+                        $normalized = $this->normalizeAnswer->execute($question, $value);
+                        $score = $this->calculateAnswerScore->execute($question, $value);
+
+                        $answerData = array_merge($normalized, [
+                            'feedback_response_id' => $response->id,
+                            'feedback_question_id' => $question->id,
+                            'score' => $score,
+                        ]);
+
+                        $answerModels[] = $response->answers()->create($answerData);
+                    }
+
+                    $response->forceFill([
+                        'status' => FeedbackResponseStatus::Submitted,
+                        'enforce_respondent_uniqueness' => $form->is_one_response_per_respondent,
+                        'submitted_at' => CarbonImmutable::now(),
+                        'ip_address' => $data->ipAddress,
+                        'user_agent' => $data->userAgent,
+                    ])->save();
+
+                    if (isset($invitation)) {
+                        $invitation->forceFill([
+                            'status' => FeedbackInvitationStatus::Submitted,
+                            'submitted_at' => CarbonImmutable::now(),
+                        ])->save();
+                    }
+
+                    $this->calculateResponseScore->execute($response);
+
+                    if (config('feedback.features.testimonials', true)) {
+                        $this->extractTestimonial->execute($response);
+                    }
+
+                    FeedbackResponseSubmitted::dispatch($response);
+
+                    return $response;
+                }, 5);
+            } catch (QueryException $exception) {
+                if (! $this->isDuplicateResponseConstraintViolation($exception)) {
+                    throw $exception;
                 }
 
-                $normalized = $this->normalizeAnswer->execute($question, $value);
-                $score = $this->calculateAnswerScore->execute($question, $value);
+                $existingResponse = $this->findExistingSubmittedResponse($form, $data);
 
-                $answerData = array_merge($normalized, [
-                    'feedback_response_id' => $response->id,
-                    'feedback_question_id' => $question->id,
-                    'score' => $score,
-                ]);
+                if ($existingResponse === null) {
+                    throw $exception;
+                }
 
-                $answerModels[] = $response->answers()->create($answerData);
+                return $existingResponse;
             }
-
-            $response->forceFill([
-                'status' => FeedbackResponseStatus::Submitted,
-                'submitted_at' => CarbonImmutable::now(),
-                'ip_address' => $data->ipAddress,
-                'user_agent' => $data->userAgent,
-            ])->save();
-
-            if (isset($invitation)) {
-                $invitation->forceFill([
-                    'status' => FeedbackInvitationStatus::Submitted,
-                    'submitted_at' => CarbonImmutable::now(),
-                ])->save();
-            }
-
-            $this->calculateResponseScore->execute($response);
-
-            if (config('feedback.features.testimonials', true)) {
-                $this->extractTestimonial->execute($response);
-            }
-
-            FeedbackResponseSubmitted::dispatch($response);
-
-            return $response;
-        });
+        }, 5);
     }
 
     private function assertFormAcceptingSubmissions(FeedbackForm $form, SubmitFeedbackResponseData $data): void
@@ -135,18 +171,34 @@ final class SubmitFeedbackResponseAction
         if ($form->is_login_required && ($data->respondentType === null || $data->respondentId === null)) {
             throw new RuntimeException('You must be logged in to submit this form.');
         }
+    }
 
-        if ($form->is_one_response_per_respondent && $data->respondentType && $data->respondentId) {
-            $existing = FeedbackResponse::where('feedback_form_id', $form->id)
-                ->where('respondent_type', $data->respondentType)
-                ->where('respondent_id', $data->respondentId)
-                ->where('status', 'submitted')
-                ->exists();
-
-            if ($existing) {
-                throw new RuntimeException('You have already submitted a response for this form.');
-            }
+    private function findExistingSubmittedResponse(
+        FeedbackForm $form,
+        SubmitFeedbackResponseData $data,
+    ): ?FeedbackResponse {
+        if (! $form->is_one_response_per_respondent
+            || $data->respondentType === null
+            || $data->respondentId === null) {
+            return null;
         }
+
+        return FeedbackResponse::query()
+            ->lockForUpdate()
+            ->where('feedback_form_id', $form->id)
+            ->where('respondent_type', $data->respondentType)
+            ->where('respondent_id', $data->respondentId)
+            ->where('status', FeedbackResponseStatus::Submitted)
+            ->first();
+    }
+
+    private function isDuplicateResponseConstraintViolation(QueryException $exception): bool
+    {
+        return in_array(
+            (string) ($exception->errorInfo[0] ?? $exception->getPrevious()?->getCode() ?? $exception->getCode()),
+            ['23000', '23505'],
+            true,
+        );
     }
 
     private function assertInvitationValid(FeedbackInvitation $invitation, FeedbackForm $form): void

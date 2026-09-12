@@ -8,10 +8,14 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationReference;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Enums\ReminderStatus;
+use AIArmada\Engagement\Events\ReminderDue;
+use AIArmada\Engagement\Events\ReminderFailed;
+use AIArmada\Engagement\Events\ReminderSent;
 use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
     $this->manager = app(ReminderManager::class);
@@ -68,6 +72,53 @@ it('marks failed reminders with failure_reason', function (): void {
 
     expect($reminder->fresh()->status)->toBe(ReminderStatus::Failed);
     expect($reminder->fresh()->failure_reason)->toBe('Channel unavailable');
+});
+
+it('does not transition a terminal reminder again', function (): void {
+    Event::fake([ReminderSent::class, ReminderFailed::class]);
+
+    $reminder = Reminder::factory()->create([
+        'remindable_type' => 'event',
+        'remindable_id' => 'event-1',
+        'recipient_type' => 'user',
+        'recipient_id' => 'user-1',
+        'reminder_type' => 'before_start',
+        'status' => ReminderStatus::Pending,
+        'remind_at' => now()->subMinute(),
+    ]);
+
+    $this->manager->markSent($reminder);
+    $this->manager->markFailed($reminder, 'Late failure');
+
+    $freshReminder = $reminder->fresh();
+
+    expect($freshReminder->status)->toBe(ReminderStatus::Sent)
+        ->and($freshReminder->sent_at)->not->toBeNull()
+        ->and($freshReminder->failed_at)->toBeNull()
+        ->and($freshReminder->failure_reason)->toBeNull();
+
+    Event::assertDispatchedTimes(ReminderSent::class, 1);
+    Event::assertNotDispatched(ReminderFailed::class);
+});
+
+it('dispatches a due reminder only once across command runs', function (): void {
+    Event::fake([ReminderDue::class]);
+
+    $reminder = Reminder::factory()->create([
+        'remindable_type' => 'event',
+        'remindable_id' => 'event-1',
+        'recipient_type' => 'user',
+        'recipient_id' => 'user-1',
+        'reminder_type' => 'before_start',
+        'status' => ReminderStatus::Pending,
+        'remind_at' => now()->subMinute(),
+    ]);
+
+    expect(Artisan::call('engagement:send-due-reminders'))->toBe(0)
+        ->and(Artisan::call('engagement:send-due-reminders'))->toBe(0);
+
+    Event::assertDispatchedTimes(ReminderDue::class, 1);
+    expect($reminder->fresh()->status)->toBe(ReminderStatus::Sent);
 });
 
 it('processes due reminders across owners', function (): void {

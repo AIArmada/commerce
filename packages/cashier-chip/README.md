@@ -43,6 +43,7 @@ By default, Cashier CHIP uses these schema pieces:
 - `cashier_chip_payment_methods` for stored recurring tokens
 - `cashier_chip_subscriptions`
 - `cashier_chip_subscription_items`
+- `cashier_chip_renewal_attempts` for owner-scoped renewal claims and outcomes
 
 Cashier CHIP stores CHIP-specific customer links and recurring tokens in its own package tables.
 Your billable model does **not** need `chip_id`, `default_pm_id`, `pm_type`, or `pm_last_four`

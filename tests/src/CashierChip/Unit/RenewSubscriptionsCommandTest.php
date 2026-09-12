@@ -205,6 +205,33 @@ describe('RenewSubscriptionsCommand', function (): void {
             ->and($secondAttempt?->period_key)->not->toBe($firstAttempt?->period_key);
     });
 
+    it('does not reclaim an expired renewal attempt for the same period', function (): void {
+        /** @var User $user */
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $subscription = Subscription::factory()->for($user, 'billable')->create([
+            'chip_status' => SubscriptionStatus::Active,
+            'next_billing_at' => Carbon::now()->subDay(),
+        ]);
+
+        SubscriptionItem::factory()->forSubscription($subscription)->create([
+            'unit_amount' => 1000,
+            'quantity' => 1,
+        ]);
+
+        $claimRenewalAttempt = app(ClaimRenewalAttempt::class);
+        $attempt = $claimRenewalAttempt->handle($subscription->id);
+
+        expect($attempt)->toBeInstanceOf(RenewalAttempt::class);
+
+        $attempt?->update(['lease_expires_at' => CarbonImmutable::now()->subMinute()]);
+
+        expect($claimRenewalAttempt->handle($subscription->id))->toBeNull()
+            ->and(RenewalAttempt::query()
+                ->where('subscription_id', $subscription->id)
+                ->where('period_key', $attempt?->period_key)
+                ->count())->toBe(1);
+    });
+
     it('charges the frozen renewal amount after subscription item mutation', function (): void {
         /** @var User $user */
         $user = $this->createUser(['chip_id' => 'cli_123']);

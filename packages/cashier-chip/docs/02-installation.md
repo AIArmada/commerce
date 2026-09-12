@@ -35,6 +35,7 @@ return [
         'tables' => [
             'subscriptions' => 'cashier_chip_subscriptions',
             'subscription_items' => 'cashier_chip_subscription_items',
+            'renewal_attempts' => 'cashier_chip_renewal_attempts',
         ],
     ],
 
@@ -100,10 +101,14 @@ After the `aiarmada/chip` and `aiarmada/cashier-chip` migrations run, these tabl
 - `cashier_chip_payment_methods` - Stored recurring tokens for billable models from `aiarmada/cashier-chip`
 - `cashier_chip_subscriptions` - Subscription records
 - `cashier_chip_subscription_items` - Subscription line items
+- `cashier_chip_renewal_attempts` - Claimed and completed renewal attempts
 
 Cashier CHIP stores CHIP-specific customer and payment-method state in its own package tables.
 Your billable model does **not** need `chip_id`, `default_pm_id`, `pm_type`, or `pm_last_four`
 columns.
+
+The renewal-attempt owner migration adds owner columns and backfills existing attempts from their
+parent subscriptions.
 
 ## Billable Model
 

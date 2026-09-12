@@ -8,6 +8,11 @@ title: Troubleshooting
 
 The service prevents duplicate active records for the same actor/subject pair. If you see unexpected results, check for previous `unfollowed`, `removed`, or `cancelled` records that may need reactivating. The package transitions statuses — it never deletes rows.
 
+Concurrent follow, bookmark, response, and reaction requests are protected by
+the identity unique indexes and transaction-level row locking. Make sure the
+package migrations, including `2026_09_13_000002_add_engagement_identity_uniques`,
+have been run when deploying this behavior.
+
 ### Reminders not sending
 
 Ensure the console command is scheduled in your kernel:
@@ -20,6 +25,11 @@ Check:
 - The reminder's `remind_at` is in the past or within the processing window
 - The notification channels are configured (`engagement.reminder.default_channels`)
 - The recipient model implements `Illuminate\Notifications\Notifiable`
+
+The due-reminder command locks each candidate while dispatching it. An overlapping
+worker may therefore skip a reminder that another worker has already claimed;
+this is expected. A reminder already marked `sent` or `failed` is not transitioned
+again by `markSent` or `markFailed`.
 
 ### Subscriptions not matching
 

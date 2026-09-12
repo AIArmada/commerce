@@ -39,7 +39,7 @@ keywords:
 ## Decide fast
 - Use when: Subscriptions billed through CHIP.
 - Skip when: Stripe billing — see cashier; one-off CHIP collect — see chip.
-- Owner/security: Owner-scoped (Subscription, SubscriptionItem, StoredPaymentMethod).
+- Owner/security: Owner-scoped (Subscription, SubscriptionItem, StoredPaymentMethod, RenewalAttempt).
 
 ## Key surfaces
 - Actions/Services: `Actions/CancelChipSubscription`, `Actions/ChargeChipCustomer`, `Actions/ClaimRenewalAttempt`, `Actions/CreateChipSubscription`, `Actions/RefundChipPayment`, `Actions/SyncChipPurchaseStatus`

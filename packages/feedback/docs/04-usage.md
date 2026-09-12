@@ -111,6 +111,13 @@ $response = app(SubmitFeedbackResponseAction::class)->execute(
 );
 ```
 
+When the form enables one response per respondent, repeating the same submission
+returns the existing submitted response.
+
+Starting the same response again while it is still a draft returns that draft.
+When one-response mode is disabled, the draft is reused until submission and
+later submissions create additional submitted responses.
+
 ## Anonymous response
 
 ```php

@@ -47,7 +47,9 @@ trait.
 ## 4. Remember the renewal model
 
 CHIP subscriptions are application-managed. If you use recurring billing, schedule the renewal
-command and make sure it runs inside the correct owner context in multi-tenant apps.
+command and make sure it runs inside the correct owner context in multi-tenant apps. Renewal
+attempts are owner-scoped records: they inherit ownership from the subscription, and direct
+`RenewalAttempt` queries or writes must run inside that same owner context.
 
 ## 5. Use the Action classes
 

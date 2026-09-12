@@ -16,6 +16,7 @@ use AIArmada\CashierChip\Subscription\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
@@ -106,6 +107,17 @@ class RenewSubscriptionsCommand extends Command
 
     protected function executeAttempt(RenewalAttempt $attempt): string
     {
+        if ((bool) config('cashier-chip.features.owner.enabled', false)) {
+            /** @var RenewalAttempt $guardedAttempt */
+            $guardedAttempt = OwnerWriteGuard::findOrFailForOwner(
+                RenewalAttempt::class,
+                (string) $attempt->getKey(),
+                includeGlobal: (bool) config('cashier-chip.features.owner.include_global', false),
+                message: 'Renewal attempt is not accessible in the current owner scope.',
+            );
+            $attempt = $guardedAttempt;
+        }
+
         $subscription = $attempt->subscription()->with(['billable', 'items'])->first();
         $billable = $subscription?->billable;
 
