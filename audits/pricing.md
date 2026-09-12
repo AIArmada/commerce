@@ -36,8 +36,9 @@ and the simulator guarded — with zero rated findings remaining.
 
 ## Residual notes
 
-- Wall-clock promotion evaluation stays until promotions exposes
-  as-of behavior — promotions-track decision, not this package.
+- Promotion evaluation resolves through promotions' public contract, whose
+  as-of core is canonical (default delegates with the current instant) —
+  promotions-track decision, now closed; not this package.
 - Checkout `class_exists` workaround removal is a checkout-track
   follow-up.
 

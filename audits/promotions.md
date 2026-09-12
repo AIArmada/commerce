@@ -5,7 +5,8 @@
 `promotions` and `filament-promotions` have passed the implementation review.
 All rated findings are implemented, falsified with evidence, or recorded as
 explicit residual decisions below. No migration is required. The existing
-pricing bridge continues to receive the same default wall-clock semantics.
+pricing bridge receives the same effective evaluation semantics, now through
+the single as-of core with the current instant.
 
 ## What was done
 

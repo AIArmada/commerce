@@ -985,10 +985,12 @@ owned sets under delegation-playbook §7.
   The stale-then-invalidate proof is
   `tests/src/Vouchers/Unit/VoucherServiceTest.php:45-68`; owner separation and
   model-write invalidation are covered at `:70-212`.
-- **Wall-clock promotions — implemented additively.** The optional as-of path
-  is `packages/promotions/src/Services/PromotionService.php:33-46`; existing
-  callers still use the unchanged wall-clock method. The parity test is
-  `tests/src/Promotions/PromotionServiceBehaviorTest.php:28-42`.
+- **Wall-clock promotions — as-of is now canonical.** The evaluation core
+  is `getApplicablePromotionsAsOf()`; the default delegates to it with the
+  current instant (`packages/promotions/src/Services/PromotionService.php:33-46`
+  and private core). The parity test is
+  `tests/src/Promotions/PromotionServiceBehaviorTest.php:28-42`, plus the
+  fake-clock boundary proof at `:70-100`.
 - **Cashier single-gateway split — closed.** The configured-gateway
   seam is the single dispatch path
   (`packages/checkout/src/Integrations/Payment/CashierProcessor.php:55-57`;
@@ -1182,11 +1184,15 @@ dual-read/write path, or compatibility shim was added.
   `packages/vouchers/src/Services/VoucherService.php:34-70`, invalidated by
   `packages/vouchers/src/Models/Voucher.php:598,634-637`, and proved by the
   stale-read test at `tests/src/Vouchers/Unit/VoucherServiceTest.php:45`.
-- **Wall-clock promotions: VERIFIED/CLOSED.** The optional as-of path is at
+- **Wall-clock promotions: VERIFIED/CLOSED (canonical flip).** As-of is the
+  single evaluation core at
   `packages/promotions/src/Services/PromotionService.php:28-46`; the default
-  path remains unchanged at `:91-102`. Parity is proved at
+  delegates with the current instant and the wall-clock branch is deleted.
+  Parity is proved at
   `tests/src/Promotions/PromotionServiceBehaviorTest.php:28-42`, with the
-  supplied-instant proof at `:45-68`.
+  supplied-instant proof at `:45-68` and the fake-clock boundary at `:70-100`.
+  Downstream canaries green: Pricing 145/290, Cart 1053/2733, Checkout
+  266/977, Orders 334/785.
 - **Cashier gateway split: IMPLEMENTED.** The named Checkout bridge now
   resolves the configured gateway seam with `gateway(null)` and no longer
   selects a gateway from `PaymentRequest::provider`

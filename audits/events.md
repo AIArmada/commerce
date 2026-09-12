@@ -4,7 +4,9 @@
 
 `events` and `filament-events` have passed the implementation pass. Every
 rated finding is implemented, falsified with evidence, or recorded below as
-an explicit bounded deferral. No migration was required. The existing
+an explicit bounded deferral. No migration was required at audit time; the
+2026-09-12 venue shim retirement added the guarded legacy-column drop
+migration (see item 3 below). The existing
 `Addressable` table-prefix correction, the intentional separation between
 attendance intent and the social graph, and the completed checkout,
 addressing, and customers contracts were treated as fixed inputs.
@@ -186,10 +188,14 @@ observers, relation managers, or panel resources.
    by `CrossTenantIsolationTest` and the 244-test Events suite. The live
    registration/ticket scope value objects and submission-specific boundary
    are intentionally retained; see Audit deviations.
-3. **Venue/address overlap — CORRECTED/DEFERRED.** Resolver-backed address
-   delegation and the custom-table integration proof are present; the seven
-   non-owner venue/facility/location models are documented rather than given
-   unsafe duplicate owner adoption. No migration was required.
+3. **Venue/address overlap — CLOSED/IMPLEMENTED 2026-09-12.** The legacy
+   read trait is deleted; `Venue` and `EventLocation` use only `HasAddresses`
+   and all owned consumers read canonical `primaryAddress()` fields. The
+   guarded drop migration removes the former venue/location address columns
+   with no backfill; zero-reference and rerun proofs are in
+   `tests/src/Events/VenueAddressShimRemovalTest.php:10-104`. The remaining
+   non-owner venue/facility models are documented rather than given unsafe
+   duplicate owner adoption.
 4. **Notifications — IMPLEMENTED as the requested phased bridge.** Content
    stays in events; delivery uses communications context plus an event
    reference; event batch/delivery models remain. Table retirement and its
@@ -250,8 +256,9 @@ monorepo suite was run.
 
 - Event notification table retirement remains a separate migration project;
   this pass deliberately did not delete models or tables.
-- Full `HasAddresses` adoption for the seven non-owner venue/facility/location
-  models remains deferred until their owner contract is established.
+- Full `HasAddresses` adoption for the remaining non-owner venue/facility
+  models (`Venue` and `EventLocation` adopted 2026-09-12) remains deferred
+  until their owner contract is established.
 - The canonical order→registration→pass sequence document and pagination API
   decision remain documentation/API follow-ups.
 - Communications owns the event-reference normalizer
@@ -274,10 +281,11 @@ monorepo suite was run.
   forks; no compatibility aliases were added.
 - `EventWriteGuard` was retained because its owner-disabled behavior differs
   from `OwnerWriteGuard` and its event write call sites are widespread.
-- Venue `HasAddresses` adoption was not forced. The task requires adoption only
-  on models that already carry `HasOwner`; all seven named venue/facility/
-  location models fail that precondition. Their address-column duplication was
-  documented and no blind migration was attempted.
+- Venue `HasAddresses` is now the only address path on `Venue` and
+  `EventLocation` (legacy trait deleted 2026-09-12, columns dropped via the
+  guarded migration). The remaining named venue/facility models that carry
+  neither `HasOwner` nor `HasAddresses` keep documented behavior rather than
+  unsafe duplicate adoption.
 - The cross-package canonical sequence doc was not edited because `docs` was a
   read-only surface for Stream B. This is an explicit deferral, not an
   unverified claim.
