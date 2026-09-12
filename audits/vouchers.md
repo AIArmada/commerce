@@ -53,12 +53,9 @@ required.
 
 ## Audit deviations
 
-- **F1 relocation deferred.** The recorded recommendation remains: “Move all
-  three files to `filament-vouchers` (`Actions/` or `Support/` + exporter
-  namespace), keeping class names where possible; leave no alias (per no-legacy
-  rule — update the single consumer `filament-cart` ViewCart import in the same
-  pass).” It is deferred because that required consumer is read-only in this
-  stream; the domain package was not forked and no duplicate UI path was made.
+- **F1 relocation CLOSED.** The three files were moved to
+  `filament-vouchers`, consumers rewired, zero old-namespace references —
+  see the F1 closure entry in `code-fixes-record.md`.
 - DTO float fields are rejected, not coerced, because construction-time
   rejection is the chosen contract and the runtime guard remains useful for
   untyped payloads.
@@ -70,9 +67,8 @@ required.
 
 ## Residual notes
 
-- The F1 move remains an explicit follow-up until the `filament-cart` consumer
-  can be changed in an owned stream. The domain `src/Filament/` files remain in
-  their current location deliberately.
+- The F1 move is closed (three files in `filament-vouchers`, consumers
+  rewired, zero old-namespace references).
 - `HasVoucherOwnership` and `Support/CartWithVouchers` were retained because
   live callers were found; the audit's zero-caller deletion proposal was
   falsified.

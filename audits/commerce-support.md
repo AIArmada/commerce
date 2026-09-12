@@ -32,8 +32,10 @@ constraints/cascades, no soft deletes). Zero rated findings remain.
 
 ## Residual notes
 
-- Octane flush path unexercised under real Octane (not installed in test
-  env) — exercise on first Octane deploy.
+- Octane flush path: the first-Octane-deploy condition is met (production
+  runs Octane) with no leakage symptoms reported; soaking continues via
+  production telemetry. Symptom class to watch: one request seeing a
+  previous request's state, owned by `OwnerContext` lifecycle.
 - `ManageCommerceNavigation` feature test still missing;
   `FilamentCommerceSupport` coverage thin.
 - `OwnerSignedDownload` / `PublicHttpUrlGuard` call-site coverage never

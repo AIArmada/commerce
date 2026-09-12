@@ -31,9 +31,11 @@ findings remaining.
 - **Falsified:** event steps in defaults (C-3), unused hard
   requirements (L-2) — verified absent, no change — see
   `code-fixes-record.md`.
-- **Deferred (correct):** voucher-cache invalidation contract (P-2);
-  cashier single-gateway split (cashier track).
-- Suites: Checkout 263 passed (962 assertions); PHPStan level 6
+- **Closed since:** voucher-cache invalidation contract (P-2) is
+  VERIFIED/CLOSED — stale-then-invalidate proof plus model-write hooks;
+  see the Stream 3 entry in `code-fixes-record.md`. Cashier
+  single-gateway split closed in the cashier track.
+- Suites: Checkout 266 passed (977 assertions); PHPStan level 6
   clean. No migration required.
 
 ## Residual notes

@@ -74,7 +74,8 @@ the single as-of core with the current instant.
 ## Verification
 
 - `php -d memory_limit=1G ./vendor/bin/phpstan analyse packages/promotions/src --level=6` — **No errors**.
-- Promotions: **73 passed, 127 assertions** (`tests/src/Promotions`).
+- Promotions: **75 passed, 134 assertions** (`tests/src/Promotions`,
+  post as-of-canonical flip with fake-clock boundary proof).
 - FilamentPromotions: **37 passed, 74 assertions** (`tests/src/FilamentPromotions`).
 
 If any residual grows teeth, re-open it as a finding. Full finding history

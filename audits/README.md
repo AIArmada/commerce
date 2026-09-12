@@ -73,14 +73,17 @@ Dominant remaining risk themes: logged micro-dependencies owned by other tracks 
 
 1. **Owner-scoping gaps (security).** `events` is settled: 7 direct owner models, 46 relation-via-event models, and 11 intentional catalog/pivot/submission exceptions, with parity tests. Settled: `addressing`/`persons` owner morphs shipped, `growth`/`signals` parity enforced, `tax` demoted (global scope applies), `orders` intake scoped both paths, `customers` resolver scoped + model-hook uniqueness + owner-aware unique index (see `code-fixes-record.md`). See `events.md`, `tax.md`.
 2. **Identity concept split (done 2026-09-08).** Topology decided and implemented: `Person` shared root, `Customer` owner-scoped + `person_id`, `Organization` tenant, `EventOrganizer` event-scoped. Native contact layer removed (Contacting-only). See `persons.md`, `customers.md`.
-3. **Address lineage (done).** `addressing` canonical with resolver everywhere; `customers` pilot live (legacy frozen); orders pilot implemented end-to-end (write path, consumers, invoice reads, composer contract); events pivot via resolver. See `addressing.md`, `events.md`, `orders.md`.
+3. **Address lineage (done).** `addressing` canonical with resolver everywhere; `customers` pilot live and legacy storage retired 2026-09-12 (rewired to canonical primaries, table dropped); orders pilot implemented end-to-end (write path, consumers, invoice reads, composer contract); events pivot via resolver with `Venue`/`EventLocation` adopted. See `addressing.md`, `events.md`, `orders.md`.
 4. **Payments modeled three times (done 2026-09-08).** `cashier` thin multiplexer, `cashier-chip` canonical billing, `chip` HTTP/API owner, durable idempotency ledger — collapse complete; see `cashier.md`, `cashier-chip.md`, `chip.md`. Checkout keeps a thin delegating mapper plus TTL/single-use/rate-limited callbacks; see `checkout.md`.
 5. **Pricing/promotions/vouchers (residual).** Dead promotion strategies deleted, BOGO promotion type removed (voucher-side BOGO mechanic untouched and live), voucher provenance canonicalized, broken cross-package class references fixed, pricing bridged through promotions' public contract, validator consolidated. See `pricing.md`, `vouchers.md`.
 6. **Events ↔ ticketing ↔ seating boundary (cleared 2026-09-11).** Event-side ticketing DTO/action forks remain removed; ticketing’s registry placement and transactional batch issuance, seating’s set-based allocation, explicit GA mode handling, and Filament enum alignment are settled. Read-only event dependencies and deferrals are recorded in `ticketing.md` and `seating.md`.
-7. **Foundation residue.** Models moved, money strict, navigation canonical, Octane flush wired, helpers grouped, stubs unified (see `code-fixes-record.md`; dependency-direction guard in place). Remaining: Octane exercised under real Octane, `ManageCommerceNavigation` feature test. See `commerce-support.md`, `authz.md`, `jnt.md`.
+7. **Foundation residue.** Models moved, money strict, navigation canonical, Octane flush wired, helpers grouped, stubs unified (see `code-fixes-record.md`; dependency-direction guard in place). Remaining: `ManageCommerceNavigation` feature test; Octane soaking via production telemetry (first-deploy condition met). See `commerce-support.md`, `authz.md`, `jnt.md`.
 8. **Filament adapters duplicating domain.** Snapshot dual-write (`filament-cart`), condition-application duplication, `CreateCustomer`/`UpdateCustomerProfile` parsing duplication, customer merge split across core/Filament, `GrowthStatsAggregator` N+1. See `cart.md`, `customers.md`, `growth.md`.
 9. **Zero tests in nearly all packages.** Repo-root `tests/src/<Area>/` has partial coverage only. Test-absence findings are uniformly Medium per the rubric. Every audit lists highest-value first tests.
-10. **Migration hygiene (residual).** Inventory decimal columns remain open; the duplicate historical `events` migration number is documented and did not require a new migration in this pass. Feedback 9-table split done 2026-09-08.
+10. **Migration hygiene (residual).** Inventory decimal columns closed
+  2026-09-07 (drop migration, zero readers); the duplicate historical
+  `events` migration number is documented and did not require a new
+  migration in this pass. Feedback 9-table split done 2026-09-08.
 
 ## Second pass (hardening) + migration track
 
@@ -96,7 +99,7 @@ Dominant remaining risk themes: logged micro-dependencies owned by other tracks 
 3. **Chip crash-recovery window (closed 2026-09-08):** was gateway-success-then-crash double-charge — now durable ledger reserve/replay + keyed mutation legs; all 10 adversarial proofs green.
 4. **Events isolation (done 2026-09-09):** owner parity implemented and verified; remaining exceptions and deferrals are recorded in `events.md`.
 5. **Identity/address consolidation (done).** Topology live, customers pilot + native-layer removal done, resolver shipped, physical index batches applied, orders pilot closed. See `addressing.md`, `events.md`, `orders.md`.
-6. **Foundation residue:** ManageNav feature test, real-Octane exercise.
+6. **Foundation residue:** ManageNav feature test; Octane soaking via production telemetry.
 7. **Pricing/vouchers residual (done).** Pricing bridged through promotions' public contract; voucher validator consolidated. See `pricing.md`, `vouchers.md`.
 8. **Events/ticketing/seating + affiliate-network:** events/ticketing/seating cleared 2026-09-11; programs-vs-offers boundary is documented in `affiliate-network.md`.
 9. **Remainder:** foundation residue (item 7) and per-audit residual notes only; no open tracks.

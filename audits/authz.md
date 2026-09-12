@@ -33,8 +33,9 @@ findings remaining.
 - `authz.scopes` migration toward `HasOwner` for the 57 bespoke-scoped
   `events` models belongs to the `events` track; this package's bridge
   (`ScopesAuthzTenancy`, `ImpersonationScopeGuard`) is unchanged.
-- Octane flush path unexercised under real Octane (not installed in
-  test env) — exercise on first Octane deploy.
+- Octane flush path: the first-Octane-deploy condition is met (production
+  runs Octane) with no leakage symptoms reported; soaking continues via
+  production telemetry.
 - Existing `down()` methods in the two authz migrations intentionally
   kept (harmless; guideline requires no `down()`, it does not forbid
   it).

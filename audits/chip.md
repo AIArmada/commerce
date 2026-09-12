@@ -47,8 +47,11 @@ the explicitly held crash-recovery window below.
   as dependencies) were implemented in the same pass —
   `CashierProcessor` fail-closed evidence, `CreateOrderStep` blocking
   reconciliation, paid-wins callback policy; see `checkout.md`
-  post-track note. Token TTL (A-7) and CHIP-cluster deletion (A-5)
-  remain checkout-track work.
+  post-track note. Token TTL (A-7) is closed — the 24h default matches
+  session TTL per `checkout.md` (revisit together if either changes).
+  CHIP-cluster deletion and the A-5 translation layers stay deliberately
+  until chip's contracts accept checkout shapes natively; see
+  `checkout.md`.
 - Checkout/docs/customer subscribers for the new event contract remain
   a logged dependency — no docs/customer files were touched here.
 

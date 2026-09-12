@@ -228,9 +228,11 @@ reported and taken on trust; code correctness was verified directly.
   (guarded `2026_09_11_*` migrations for persons/orgs/customers/
   contacting; see `migration-record.md`) — app-level guards, locks,
   and transactional paths remain as defense in depth. Orders/events
-  addressing follow-ups open (events
-  full-trait adoption; hardcoded prefixes already fixed — see
-  `events.md` finding 3 re-check).
+  addressing follow-ups narrowed 2026-09-12: hardcoded prefixes fixed;
+  events `Venue`/`EventLocation` adopted `HasAddresses` with the legacy
+  trait deleted and columns dropped (see `events.md` finding 3 re-check);
+  only the remaining non-owner venue/facility models stay deferred for
+  lack of an owner contract.
 
 ## Cashier multiplexer collapse (implemented)
 
@@ -840,8 +842,10 @@ reported and taken on trust; code correctness was verified directly.
   and `voucher_usage`/`times_used` plus `applied_count` are explicitly
   non-competitive reporting counters. The Filament stats aggregator delegates
   to domain definitions.
-- **Recorded deferrals:** tuple-keyed partial uniques and related data cleanup
-  remain deferred with no migration; vouchers F1 Filament relocation is now
+- **Recorded deferrals:** tuple-keyed partial uniques remain deferred for
+  promotions only, with no migration (products got tuple-keyed
+  owner/global partial uniques via `2026_09_12_000001`; related data
+  cleanup likewise deferred); vouchers F1 Filament relocation is now
   implemented (three files moved to `filament-vouchers`, consumers rewired,
   zero old-namespace references — see the F1 closure entry below).
 - Suites: Products **589 passed (1064 assertions)**, FilamentProducts **25

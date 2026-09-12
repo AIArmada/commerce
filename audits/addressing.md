@@ -33,8 +33,10 @@ zero rated findings remaining.
 - Timestamp/index micro-improvements deferred — the dev-only rule
   permits a batch as a follow-up.
 - Orders pilot implemented end-to-end (write path, consumers,
-  invoice reads, composer contract); events full-trait adoption
-  remains deferred (events track, not this package).
+  invoice reads, composer contract); events adoption is partially done
+  (`Venue` and `EventLocation` on `HasAddresses` since 2026-09-12, legacy
+  columns dropped) with the remaining non-owner models deferred to the
+  events track, not this package.
 
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.

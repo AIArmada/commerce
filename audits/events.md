@@ -134,10 +134,12 @@ surface, not only the focused isolation test.
   capacity remain event-owned; address and geocode access delegates through
   `Addressable`, whose resolver-backed pivot behavior is already in place
   (`packages/events/src/Models/Concerns/Addressable.php:24-38,50-64`). No blind
-  column migration was made. Full `HasAddresses` adoption is deferred for
-  `Venue`, `VenueSpace`, `VenueSpaceType`, `VenueFacility`, `EventFacility`,
-  `FacilityType`, and `EventLocation`, because none of those models already
-  carries `HasOwner`, as required by the task boundary.
+   column migration was made. Full `HasAddresses` adoption remains deferred
+   for the non-owner `VenueSpace`, `VenueSpaceType`, `VenueFacility`,
+   `EventFacility`, and `FacilityType` models (`Venue` and `EventLocation`
+   adopted 2026-09-12 with the legacy trait deleted and columns dropped —
+   see item 3 above), because none of those models already carries
+   `HasOwner`, as required by the task boundary.
 
 Files changed: canonical ticketing DTO/action seams, event data/action imports,
 notification job and content adapter, event traits/helpers, venue guard

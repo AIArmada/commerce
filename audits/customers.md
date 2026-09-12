@@ -31,7 +31,7 @@ removed (Contacting-only) — with zero rated findings remaining.
 - **Kept by policy:** hard `contacting` require (canonical doctrine,
   demotion overruled); payment-subject driver stays (cashier-track
   dependency, logged).
-- Suites: Customers 242 passed (421 assertions), FilamentCustomers 28
+- Suites: Customers 242 passed (428 assertions), FilamentCustomers 28
   passed (63 assertions); PHPStan level 6 clean. Orders (287/664) +
   Checkout (253/931) canaries green.
 
@@ -42,8 +42,9 @@ removed (Contacting-only) — with zero rated findings remaining.
 - Downstream reads (`cashier` Stripe email, checkout fallbacks,
   events recipient resolution) degrade to null, null-safe — logged
   dependencies for the owning tracks.
-- `CustomerResolver`/segmentation decomposition and default-address
-  action remain future simplifications, not findings.
+- `SetDefaultCustomerAddress` rewired to canonical addressing primaries
+  2026-09-12 (legacy storage dropped); `CustomerResolver`/segmentation
+  decomposition remains a future simplification, not a finding.
 
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.
