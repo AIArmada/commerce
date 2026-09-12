@@ -56,9 +56,10 @@ required.
   `is_compound ASC, priority DESC` on an index of `(zone_id, tax_class,
   is_active)` — the sort is not covered; fine at this cardinality, revisit
   only with thousands of rates per zone.”
-- **P-2 remains an explicit deferral:** “Calculator dispatches
-  `TaxCalculated`/`TaxZoneResolved`/`TaxExemptionApplied` per line — ensure
-  checkout calls it per cart total, not per unit, or listeners must be cheap.”
+- **P-2 closed as vacuous:** `TaxCalculated`/`TaxZoneResolved`/
+  `TaxExemptionApplied` have zero listeners repo-wide — unconsumed events
+  cost nothing. Reopen only if a listener is added, at which point its
+  cost goes on that change.
 - The `checkout` and other dependent packages were read-only for this
   closure; their canary behavior is recorded by the review record and was not
   rewritten here.

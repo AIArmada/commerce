@@ -75,9 +75,11 @@ migration is required; the migration-track decision remains recorded in
 
 ## Residual notes
 
-No migration or compatibility shim is required. Revisit the deferred cache
-stampede proof and label token entropy/TTL/cache-eviction hardening when their
-operational risk makes them material.
+No migration or compatibility shim is required. S-1 label-token hardening
+is VERIFIED/CLOSED: ULID tokens, 30-minute cache TTL, Laravel temporary
+signed route, tracking-number binding, auth-user check, and owner match
+(`PrintLabelAction.php:65-79`, `LabelController.php:18-44`). Revisit the
+deferred cache stampede proof only when its operational risk materializes.
 
 ## Verification
 

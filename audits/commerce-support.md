@@ -38,8 +38,9 @@ constraints/cascades, no soft deletes). Zero rated findings remain.
   previous request's state, owned by `OwnerContext` lifecycle.
 - `ManageCommerceNavigation` feature test still missing;
   `FilamentCommerceSupport` coverage thin.
-- `OwnerSignedDownload` / `PublicHttpUrlGuard` call-site coverage never
-  audited — follow-up grep, not a code change.
+- `OwnerSignedDownload`/`PublicHttpUrlGuard` call-site audit done:
+  exactly two download sites (`AwbController`, `PrintAwbTableAction`),
+  both token-bound and owner/user-authorized with 403 on mismatch.
 - `currency_symbol()` intentionally retained (`MoneyFormatter::symbol()`
   falls back to it).
 

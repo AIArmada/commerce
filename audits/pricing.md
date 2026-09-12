@@ -39,8 +39,8 @@ and the simulator guarded — with zero rated findings remaining.
 - Promotion evaluation resolves through promotions' public contract, whose
   as-of core is canonical (default delegates with the current instant) —
   promotions-track decision, now closed; not this package.
-- Checkout `class_exists` workaround removal is a checkout-track
-  follow-up.
+- No `class_exists` workaround remains — the surviving guards are normal
+  optional-dependency checks, not behavior shims.
 
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.

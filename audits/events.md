@@ -256,8 +256,8 @@ monorepo suite was run.
 
 ## Residual notes
 
-- Event notification table retirement remains a separate migration project;
-  this pass deliberately did not delete models or tables.
+- Event notification table retirement CLOSED 2026-09-12 (guarded drop
+  migration removes deliveries then batches; see `migration-record.md`).
 - Full `HasAddresses` adoption for the remaining non-owner venue/facility
   models (`Venue` and `EventLocation` adopted 2026-09-12) remains deferred
   until their owner contract is established.
