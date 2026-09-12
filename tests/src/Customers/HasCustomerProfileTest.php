@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Concerns\HasCustomerProfile;
 use AIArmada\Customers\Enums\CustomerStatus;
@@ -163,6 +164,29 @@ describe('HasCustomerProfile Trait', function (): void {
 
             expect($user->getDefaultShippingAddress())->toBeNull();
         });
+
+        it('returns the canonical primary shipping address', function (): void {
+            $user = TestUserWithProfile::create([
+                'name' => 'Shipping Profile',
+                'email' => 'shipping-profile-' . uniqid() . '@example.com',
+                'password' => 'password',
+            ]);
+            $customer = Customer::create([
+                'user_id' => $user->id,
+                'first_name' => 'Shipping',
+                'last_name' => 'Profile',
+                'status' => CustomerStatus::Active,
+            ]);
+            $address = Address::create([
+                'line1' => '1 Shipping Street',
+                'city' => 'Kuala Lumpur',
+                'postcode' => '50000',
+                'country_code' => 'MY',
+            ]);
+            $customer->attachAddress($address, type: 'shipping', isPrimary: true);
+
+            expect($user->getDefaultShippingAddress()?->is($address))->toBeTrue();
+        });
     });
 
     describe('getDefaultBillingAddress Method', function (): void {
@@ -174,6 +198,29 @@ describe('HasCustomerProfile Trait', function (): void {
             ]);
 
             expect($user->getDefaultBillingAddress())->toBeNull();
+        });
+
+        it('returns the canonical primary billing address', function (): void {
+            $user = TestUserWithProfile::create([
+                'name' => 'Billing Profile',
+                'email' => 'billing-profile-' . uniqid() . '@example.com',
+                'password' => 'password',
+            ]);
+            $customer = Customer::create([
+                'user_id' => $user->id,
+                'first_name' => 'Billing',
+                'last_name' => 'Profile',
+                'status' => CustomerStatus::Active,
+            ]);
+            $address = Address::create([
+                'line1' => '1 Billing Street',
+                'city' => 'Kuala Lumpur',
+                'postcode' => '50000',
+                'country_code' => 'MY',
+            ]);
+            $customer->attachAddress($address, type: 'billing', isPrimary: true);
+
+            expect($user->getDefaultBillingAddress()?->is($address))->toBeTrue();
         });
     });
 });

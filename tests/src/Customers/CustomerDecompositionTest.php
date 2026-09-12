@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Customers\Enums\AddressType;
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Services\CustomerResolver;
 
@@ -58,32 +57,29 @@ test('customer decomposition preserves the resolver fixture output exactly', fun
         ->and($customer->status)->toBe(CustomerStatus::Active)
         ->and($customer->getCasts()['status'])->toBe(CustomerStatus::class);
 
-    $addresses = $customer->legacyAddresses()
-        ->orderBy('type')
+    $addresses = $customer->addresses()
         ->get()
+        ->sortBy(fn (Address $address): string => (string) $address->pivot?->type)
+        ->values()
         ->map(function (Address $address): array {
-            $attributes = $address->only([
-                'type',
-                'recipient_name',
-                'company',
-                'line1',
-                'line2',
-                'city',
-                'state',
-                'postcode',
-                'country_code',
-                'is_default_billing',
-                'is_default_shipping',
-            ]);
-            $attributes['type'] = $address->type->value;
-
-            return $attributes;
+            return [
+                'type' => $address->pivot?->type,
+                'recipient_name' => $address->metadata['recipient_name'] ?? null,
+                'company' => $address->metadata['company'] ?? null,
+                'line1' => $address->line1,
+                'line2' => $address->line2,
+                'city' => $address->city,
+                'state' => $address->state,
+                'postcode' => $address->postcode,
+                'country_code' => $address->country_code,
+                'is_primary' => (bool) $address->pivot?->is_primary,
+            ];
         })
         ->all();
 
     expect($addresses)->toBe([
         [
-            'type' => AddressType::Billing->value,
+            'type' => 'billing',
             'recipient_name' => 'Ada Lovelace',
             'company' => 'Analytical Engines',
             'line1' => '1 Logic Lane',
@@ -92,11 +88,10 @@ test('customer decomposition preserves the resolver fixture output exactly', fun
             'state' => 'WP',
             'postcode' => '50000',
             'country_code' => 'MY',
-            'is_default_billing' => true,
-            'is_default_shipping' => false,
+            'is_primary' => true,
         ],
         [
-            'type' => AddressType::Shipping->value,
+            'type' => 'shipping',
             'recipient_name' => 'Ada Lovelace',
             'company' => 'Analytical Engines',
             'line1' => '2 Algorithm Avenue',
@@ -105,8 +100,7 @@ test('customer decomposition preserves the resolver fixture output exactly', fun
             'state' => 'Selangor',
             'postcode' => '46000',
             'country_code' => 'MY',
-            'is_default_billing' => false,
-            'is_default_shipping' => true,
+            'is_primary' => true,
         ],
     ]);
 });

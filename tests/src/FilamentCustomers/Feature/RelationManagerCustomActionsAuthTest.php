@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerNote;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Pages\ViewCustomer;
@@ -34,16 +34,17 @@ it('custom relation manager actions require authentication (abort 403)', functio
         'accepts_marketing' => false,
     ]));
 
-    $address = OwnerContext::withOwner(null, fn (): Address => Address::query()->create([
-        'customer_id' => $customer->getKey(),
-        'type' => 'both',
-        'line1' => 'Line 1',
-        'city' => 'City',
-        'postcode' => '12345',
-        'country' => 'MY',
-        'is_default_billing' => false,
-        'is_default_shipping' => false,
-    ]));
+    $address = OwnerContext::withOwner(null, function () use ($customer): Address {
+        $address = Address::query()->create([
+            'line1' => 'Line 1',
+            'city' => 'City',
+            'postcode' => '12345',
+            'country' => 'MY',
+        ]);
+        $customer->attachAddress($address, type: 'billing');
+
+        return $address;
+    });
 
     $note = OwnerContext::withOwner(null, fn (): CustomerNote => CustomerNote::query()->create([
         'customer_id' => $customer->getKey(),

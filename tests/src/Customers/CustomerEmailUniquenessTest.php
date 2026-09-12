@@ -33,7 +33,7 @@ it('does not persist native customer contact attributes', function (): void {
 
     expect(Schema::hasColumn($customer->getTable(), 'email'))->toBeFalse()
         ->and(Schema::hasColumn($customer->getTable(), 'phone'))->toBeFalse()
-        ->and(Schema::hasColumn((string) config('customers.database.tables.addresses', 'customer_addresses'), 'phone'))->toBeFalse()
+        ->and(config('customers.database.tables.addresses'))->toBeNull()
         ->and($customer->getAttributes())->not->toHaveKeys(['email', 'phone'])
         ->and($customer->resolveEmail())->toBeNull()
         ->and($customer->resolvePhone())->toBeNull();

@@ -2,15 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Data\ContactMethodData;
+use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Models\Addressable;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Customers\Actions\MergeCustomers;
 use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
-use AIArmada\Customers\Enums\AddressType;
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Services\CustomerResolver;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
-describe('Address Model', function (): void {
+describe('Customer canonical addresses', function (): void {
     beforeEach(function (): void {
         $this->customer = Customer::create([
             'first_name' => 'Address',
@@ -19,350 +21,190 @@ describe('Address Model', function (): void {
         ]);
     });
 
-    describe('Table Name', function (): void {
-        it('returns configured table name', function (): void {
-            $address = new Address;
-            expect($address->getTable())->toBeString();
-        });
+    it('resolves the shared addressing table and relation', function (): void {
+        $address = new Address;
+
+        expect($address->getTable())->toBeString()
+            ->and($this->customer->addresses())->toBeInstanceOf(MorphToMany::class);
     });
 
-    describe('Casts', function (): void {
-        it('has type cast', function (): void {
-            $address = new Address;
-            $casts = $address->getCasts();
-            expect(array_key_exists('type', $casts))->toBeTrue();
-        });
+    it('attaches addresses with a typed primary pivot', function (): void {
+        $address = Address::create([
+            'line1' => '123 Main St',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
 
-        it('has boolean casts', function (): void {
-            $address = new Address;
-            $casts = $address->getCasts();
-            expect(array_key_exists('is_default_billing', $casts))->toBeTrue()
-                ->and(array_key_exists('is_default_shipping', $casts))->toBeTrue();
-        });
+        $this->customer->attachAddress($address, type: 'shipping', isPrimary: true);
+
+        $persisted = $this->customer->fresh()?->primaryAddress('shipping');
+
+        expect($persisted?->is($address))->toBeTrue()
+            ->and($persisted?->pivot?->type)->toBe('shipping')
+            ->and($persisted?->pivot?->is_primary)->toBeTrue();
     });
 
-    describe('Relationships', function (): void {
-        it('belongs to a customer', function (): void {
-            $address = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '123 Main St',
-                'city' => 'Kuala Lumpur',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
+    it('keeps exactly one primary address for each type', function (): void {
+        $first = Address::create([
+            'line1' => '123 First St',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
+        $second = Address::create([
+            'line1' => '456 Second St',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
 
-            expect($address->customer)->toBeInstanceOf(Customer::class)
-                ->and($address->customer->id)->toBe($this->customer->id);
-        });
+        $this->customer->attachAddress($first, type: 'billing', isPrimary: true);
+        $this->customer->attachAddress($second, type: 'billing', isPrimary: true);
+
+        $billing = $this->customer->fresh()?->addressesOfType('billing');
+
+        expect($billing?->where('pivot.is_primary', true))->toHaveCount(1)
+            ->and($this->customer->fresh()?->primaryAddress('billing')?->is($second))->toBeTrue();
     });
 
-    describe('Type Helpers', function (): void {
-        it('checks if billing address', function (): void {
-            $billing = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '123 Billing St',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'type' => AddressType::Billing,
-            ]);
+    it('changes only the requested customer primary type', function (): void {
+        $billing = Address::create([
+            'line1' => '1 Billing Street',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
+        $shipping = Address::create([
+            'line1' => '2 Shipping Street',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
+        $replacement = Address::create([
+            'line1' => '3 Replacement Street',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
 
-            $shipping = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '456 Shipping St',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'type' => AddressType::Shipping,
-            ]);
+        $this->customer->attachAddress($billing, type: 'billing', isPrimary: true);
+        $this->customer->attachAddress($shipping, type: 'shipping', isPrimary: true);
+        $this->customer->attachAddress($replacement, type: 'billing');
 
-            $both = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '789 Both St',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'type' => AddressType::Both,
-            ]);
+        app(SetDefaultCustomerAddress::class)->execute($this->customer, $replacement, 'billing');
 
-            expect($billing->isBillingAddress())->toBeTrue()
-                ->and($both->isBillingAddress())->toBeTrue()
-                ->and($shipping->isBillingAddress())->toBeFalse();
-        });
+        $freshCustomer = $this->customer->fresh();
 
-        it('checks if shipping address', function (): void {
-            $billing = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '123 Billing St',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'type' => AddressType::Billing,
-            ]);
-
-            $shipping = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '456 Shipping St',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'type' => AddressType::Shipping,
-            ]);
-
-            expect($shipping->isShippingAddress())->toBeTrue()
-                ->and($billing->isShippingAddress())->toBeFalse();
-        });
+        expect($freshCustomer?->primaryAddress('billing')?->is($replacement))->toBeTrue()
+            ->and($freshCustomer?->primaryAddress('shipping')?->is($shipping))->toBeTrue();
     });
 
-    describe('Default Management', function (): void {
-        it('can set as default billing', function (): void {
-            $address1 = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '123 Main St',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'is_default_billing' => true,
-            ]);
+    it('attaches a persisted address when making it primary', function (): void {
+        $address = Address::create([
+            'line1' => '123 Main St',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
 
-            $address2 = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '456 Other St',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
+        app(SetDefaultCustomerAddress::class)->execute($this->customer, $address, 'shipping');
 
-            app(SetDefaultCustomerAddress::class)->execute($address2, 'billing');
-
-            expect($address2->fresh()->is_default_billing)->toBeTrue()
-                ->and($address1->fresh()->is_default_billing)->toBeFalse();
-        });
-
-        it('can set as default shipping', function (): void {
-            $address1 = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '123 Main St',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'is_default_shipping' => true,
-            ]);
-
-            $address2 = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '456 Other St',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
-
-            app(SetDefaultCustomerAddress::class)->execute($address2, 'shipping');
-
-            expect($address2->fresh()->is_default_shipping)->toBeTrue()
-                ->and($address1->fresh()->is_default_shipping)->toBeFalse();
-        });
+        expect($this->customer->fresh()?->primaryAddress('shipping')?->is($address))->toBeTrue();
     });
 
-    describe('Full Address Attribute', function (): void {
-        it('returns concatenated address parts', function (): void {
-            $address = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '123 Main St',
-                'line2' => 'Suite 100',
+    it('rejects unsaved addresses in the default action', function (): void {
+        $address = new Address([
+            'line1' => 'Unsaved Street',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
+
+        expect(fn (): mixed => app(SetDefaultCustomerAddress::class)->execute($this->customer, $address, 'shipping'))
+            ->toThrow(LogicException::class, 'Only persisted addresses can be made default.');
+    });
+
+    it('hydrates canonical addresses from resolver payloads', function (): void {
+        $resolver = app(CustomerResolver::class);
+
+        $customer = $resolver->resolve(
+            user: null,
+            sessionCustomer: null,
+            billingData: [
+                'email' => 'resolver-' . uniqid() . '@example.com',
+                'name' => 'Resolver Test',
+                'phone' => '+60123456789',
+            ],
+            shippingData: [
+                'name' => 'Resolver Test',
+                'company' => 'Resolver Co',
+                'line1' => '123 Resolver St',
+                'line2' => 'Suite 200',
                 'city' => 'Kuala Lumpur',
                 'state' => 'WP',
                 'postcode' => '50000',
-                'country_code' => 'MY',
-            ]);
+                'country' => 'MY',
+            ],
+        );
 
-            expect($address->full_address)->toContain('123 Main St')
-                ->and($address->full_address)->toContain('Kuala Lumpur')
-                ->and($address->full_address)->toContain('MY');
-        });
+        $address = $customer?->addresses()
+            ->wherePivot('type', 'shipping')
+            ->first();
+
+        expect($address)->not->toBeNull()
+            ->and($address?->line1)->toBe('123 Resolver St')
+            ->and($address?->line2)->toBe('Suite 200')
+            ->and($address?->metadata['recipient_name'])->toBe('Resolver Test')
+            ->and($address?->metadata['company'])->toBe('Resolver Co')
+            ->and($customer?->primaryAddress('shipping')?->is($address))->toBeTrue()
+            ->and($customer?->resolvePhone())->toBe('+60123456789');
     });
 
-    describe('Formatted Address', function (): void {
-        it('returns multi-line formatted address', function (): void {
-            $address = Address::create([
-                'customer_id' => $this->customer->id,
-                'recipient_name' => 'John Doe',
-                'company' => 'Acme Inc',
-                'line1' => '123 Main St',
-                'line2' => 'Suite 100',
-                'city' => 'Kuala Lumpur',
-                'state' => 'WP',
-                'postcode' => '50000',
-                'country_code' => 'MY',
-            ]);
+    it('detaches customer address pivots without deleting reusable address rows', function (): void {
+        $address = Address::create([
+            'line1' => '123 Main St',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
+        $this->customer->attachAddress($address, type: 'shipping', isPrimary: true);
 
-            $address->addContactMethod(ContactMethodData::phone('+60123456789', 'MY'));
-            $address->load('contactMethods');
+        $this->customer->delete();
 
-            $formatted = $address->getFormattedAddress();
-
-            expect($formatted)->toContain('John Doe')
-                ->and($formatted)->toContain('Acme Inc')
-                ->and($formatted)->toContain('123 Main St')
-                ->and($formatted)->toContain('+60123456789');
-        });
+        expect(Addressable::query()->where('address_id', $address->id)->exists())->toBeFalse()
+            ->and(OwnerContext::withOwner(
+                $address->owner,
+                fn (): bool => Address::query()->whereKey($address->id)->exists(),
+            ))->toBeTrue();
     });
 
-    describe('Shipping Label', function (): void {
-        it('returns array for shipping label', function (): void {
-            $address = Address::create([
-                'customer_id' => $this->customer->id,
-                'recipient_name' => 'Jane Doe',
-                'company' => 'Test Corp',
-                'line1' => '123 Main St',
-                'line2' => 'Apt 4B',
-                'city' => 'KL',
-                'state' => 'WP',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
-            $address->addContactMethod(ContactMethodData::phone('+60123456789', 'MY'));
+    it('keeps the surviving customer primary when merging address attachments', function (): void {
+        $source = Customer::create([
+            'first_name' => 'Source',
+            'last_name' => 'Customer',
+            'status' => CustomerStatus::Active,
+        ]);
+        $targetAddress = Address::create([
+            'line1' => '123 Target Street',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
+        $sourceAddress = Address::create([
+            'line1' => '456 Source Street',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+        ]);
 
-            $label = $address->toShippingLabel();
+        $this->customer->attachAddress($targetAddress, type: 'billing', isPrimary: true);
+        $source->attachAddress($sourceAddress, type: 'billing', isPrimary: true);
 
-            expect($label)->toBeArray()
-                ->and($label['name'])->toBe('Jane Doe')
-                ->and($label['company'])->toBe('Test Corp')
-                ->and($label['line1'])->toBe('123 Main St')
-                ->and($label['city'])->toBe('KL')
-                ->and($label['phone'])->toBe('+60123456789');
-        });
+        app(MergeCustomers::class)->execute($this->customer, $source);
 
-        it('falls back to customer name when no recipient', function (): void {
-            $address = Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '123 Main St',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-            ]);
-
-            $label = $address->toShippingLabel();
-
-            expect($label['name'])->toBe('Address Test');
-        });
-    });
-
-    describe('Resolver address payload', function (): void {
-        it('stores address fields and customer contact methods separately', function (): void {
-            $resolver = app(CustomerResolver::class);
-
-            $customer = $resolver->resolve(
-                null,
-                null,
-                [
-                    'email' => 'resolver-' . uniqid() . '@example.com',
-                    'name' => 'Resolver Test',
-                    'phone' => '+60123456789',
-                ],
-                [
-                    'name' => 'Resolver Test',
-                    'line1' => '123 Resolver St',
-                    'line2' => 'Suite 200',
-                    'city' => 'Kuala Lumpur',
-                    'state' => 'WP',
-                    'postcode' => '50000',
-                    'country' => 'MY',
-                ],
-            );
-
-            $address = $customer?->legacyAddresses()->where('type', AddressType::Shipping->value)->first();
-
-            expect($address)->not->toBeNull()
-                ->and($address?->line1)->toBe('123 Resolver St')
-                ->and($address?->line2)->toBe('Suite 200')
-                ->and($customer?->resolvePhone())->toBe('+60123456789');
-        });
-    });
-
-    describe('Scopes', function (): void {
-        it('can filter billing addresses', function (): void {
-            Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '123 Billing',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'type' => AddressType::Billing,
-            ]);
-
-            Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '456 Shipping',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'type' => AddressType::Shipping,
-            ]);
-
-            $billing = Address::billing()->get();
-
-            expect($billing->every(fn ($a) => $a->isBillingAddress()))->toBeTrue();
-        });
-
-        it('can filter shipping addresses', function (): void {
-            Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '456 Shipping',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'type' => AddressType::Shipping,
-            ]);
-
-            $shipping = Address::shipping()->get();
-
-            expect($shipping->every(fn ($a) => $a->isShippingAddress()))->toBeTrue();
-        });
-
-        it('can filter default billing addresses', function (): void {
-            Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '123 Default Billing',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'is_default_billing' => true,
-            ]);
-
-            $defaultBilling = Address::defaultBilling()->get();
-
-            expect($defaultBilling->every(fn ($a) => $a->is_default_billing))->toBeTrue();
-        });
-
-        it('can filter default shipping addresses', function (): void {
-            Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '123 Default Shipping',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'is_default_shipping' => true,
-            ]);
-
-            $defaultShipping = Address::defaultShipping()->get();
-
-            expect($defaultShipping->every(fn ($a) => $a->is_default_shipping))->toBeTrue();
-        });
-
-        it('can filter verified addresses', function (): void {
-            Address::create([
-                'customer_id' => $this->customer->id,
-                'line1' => '123 Verified',
-                'city' => 'KL',
-                'postcode' => '50000',
-                'country' => 'MY',
-                'is_verified' => true,
-            ]);
-
-            $verified = Address::verified()->get();
-
-            expect($verified->every(fn ($a) => $a->is_verified))->toBeTrue();
-        });
+        expect($this->customer->fresh()?->primaryAddress('billing')?->is($targetAddress))->toBeTrue()
+            ->and($this->customer->fresh()?->addresses()->count())->toBe(2)
+            ->and(Customer::query()->whereKey($source->getKey())->exists())->toBeFalse();
     });
 });

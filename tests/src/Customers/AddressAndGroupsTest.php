@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Customers\Enums\AddressType;
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\Segment;
 
-describe('Address Model', function (): void {
+describe('Customer addresses', function (): void {
     describe('Address Creation', function (): void {
         it('can create an address for a customer', function (): void {
             $customer = Customer::create([
@@ -20,18 +19,17 @@ describe('Address Model', function (): void {
             ]);
 
             $address = Address::create([
-                'customer_id' => $customer->id,
-                'recipient_name' => 'John Doe',
                 'line1' => '123 Main Street',
                 'city' => 'Kuala Lumpur',
                 'state' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
-                'type' => 'shipping',
             ]);
+            $customer->attachAddress($address, type: 'shipping');
 
             expect($address)->toBeInstanceOf(Address::class)
-                ->and($address->city)->toBe('Kuala Lumpur');
+                ->and($address->city)->toBe('Kuala Lumpur')
+                ->and($customer->addresses()->whereKey($address->id)->exists())->toBeTrue();
         });
     });
 
@@ -45,27 +43,23 @@ describe('Address Model', function (): void {
             ]);
 
             $shipping = Address::create([
-                'customer_id' => $customer->id,
-                'recipient_name' => 'Jane Doe',
                 'line1' => '100 Ship Street',
                 'city' => 'Petaling Jaya',
                 'postcode' => '47810',
                 'country' => 'MY',
-                'type' => 'shipping',
             ]);
+            $customer->attachAddress($shipping, type: 'shipping');
 
             $billing = Address::create([
-                'customer_id' => $customer->id,
-                'recipient_name' => 'Jane Doe',
                 'line1' => '200 Bill Street',
                 'city' => 'Shah Alam',
                 'postcode' => '40100',
                 'country' => 'MY',
-                'type' => 'billing',
             ]);
+            $customer->attachAddress($billing, type: 'billing');
 
-            expect($shipping->type)->toBe(AddressType::Shipping)
-                ->and($billing->type)->toBe(AddressType::Billing);
+            expect($customer->addressesOfType('shipping')->pluck('id'))->toContain($shipping->id)
+                ->and($customer->addressesOfType('billing')->pluck('id'))->toContain($billing->id);
         });
     });
 
@@ -79,29 +73,25 @@ describe('Address Model', function (): void {
             ]);
 
             $default = Address::create([
-                'customer_id' => $customer->id,
                 'line1' => 'Default Street',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
-                'is_default_billing' => true,
-                'is_default_shipping' => true,
             ]);
+            $customer->attachAddress($default, type: 'billing', isPrimary: true);
+            $customer->attachAddress($default, type: 'shipping', isPrimary: true);
 
             $other = Address::create([
-                'customer_id' => $customer->id,
                 'line1' => 'Other Street',
                 'city' => 'KL',
                 'postcode' => '50001',
                 'country' => 'MY',
-                'is_default_billing' => false,
-                'is_default_shipping' => false,
             ]);
+            $customer->attachAddress($other, type: 'billing');
 
-            expect($default->is_default_billing)->toBeTrue()
-                ->and($default->is_default_shipping)->toBeTrue()
-                ->and($other->is_default_billing)->toBeFalse()
-                ->and($other->is_default_shipping)->toBeFalse();
+            expect($customer->primaryAddress('billing')?->is($default))->toBeTrue()
+                ->and($customer->primaryAddress('shipping')?->is($default))->toBeTrue()
+                ->and($customer->addresses()->whereKey($other->id)->exists())->toBeTrue();
         });
     });
 });

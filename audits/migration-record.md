@@ -304,3 +304,16 @@ migrations; no production backfill is authorized.
   `tests/src/Events/VenueAddressShimRemovalTest.php:10-104`; addressful and
   addressless venue behavior is covered by
   `tests/src/Events/VenueAddressAdoptionTest.php:33-80`.
+
+## Customers address storage retirement — implemented — 2026-09-12
+
+- Guarded cleanup migration:
+  `packages/customers/database/migrations/2026_09_12_000003_drop_legacy_customer_address_storage.php`
+  preflights the configured table and known package-local columns, removes
+  non-primary indexes, and drops the retired table. Missing tables or
+  non-matching shapes are no-ops, so the migration is re-runnable.
+- No data was copied or backfilled. The former schema creator, model, concern,
+  and factory were removed after all consumers moved to
+  `addressing.Address` plus `HasAddresses`. Development databases use
+  delete-and-rerun; PostgreSQL shape proof rides on the next demo boot after
+  the available SQLite verification.

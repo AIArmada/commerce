@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\CustomerNote;
@@ -17,14 +16,6 @@ it('customer model is auditable and activity loggable', function (): void {
     expect($traits)->toContain(HasCommerceAudit::class)
         ->and($traits)->toContain(LogsCommerceActivity::class)
         ->and(in_array(Auditable::class, class_implements(Customer::class), true))->toBeTrue();
-});
-
-it('address model is auditable and activity loggable', function (): void {
-    $traits = class_uses_recursive(Address::class);
-
-    expect($traits)->toContain(HasCommerceAudit::class)
-        ->and($traits)->toContain(LogsCommerceActivity::class)
-        ->and(in_array(Auditable::class, class_implements(Address::class), true))->toBeTrue();
 });
 
 it('customer group model is auditable and activity loggable', function (): void {

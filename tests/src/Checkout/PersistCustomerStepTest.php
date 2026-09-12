@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\PersistCustomerStep;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -50,7 +51,7 @@ describe('PersistCustomerStep', function (): void {
                 ->exists() ?? false;
         });
         $customerAddressCount = OwnerContext::withOwner(null, function () use ($customer): int {
-            return $customer?->legacyAddresses()->count() ?? 0;
+            return $customer?->addresses()->count() ?? 0;
         });
         $billableMatches = OwnerContext::withOwner(null, function () use ($session, $customer): bool {
             return $session->fresh(['billable'])?->billable?->is($customer) ?? false;
@@ -86,14 +87,13 @@ describe('PersistCustomerStep', function (): void {
             ]);
             $guestCustomer->addContactMethod(ContactMethodData::email('guest@example.com'));
 
-            $guestCustomer->legacyAddresses()->create([
-                'type' => 'billing',
+            $mergeAddress = Address::create([
                 'line1' => '789 Merge Street',
                 'city' => 'Kuala Lumpur',
                 'postcode' => '50000',
-                'country' => 'MY',
-                'is_default_billing' => true,
+                'country_code' => 'MY',
             ]);
+            $guestCustomer->attachAddress($mergeAddress, type: 'billing', isPrimary: true);
 
             return [$userCustomer, $guestCustomer];
         });
@@ -128,7 +128,7 @@ describe('PersistCustomerStep', function (): void {
             return $session->fresh(['customer', 'billable']);
         });
         $userCustomerAddressCount = OwnerContext::withOwner(null, function () use ($userCustomer): int {
-            return $userCustomer->fresh()->legacyAddresses()->count();
+            return $userCustomer->fresh()->addresses()->count();
         });
         $guestExists = OwnerContext::withOwner(null, function () use ($guestCustomer): bool {
             return Customer::query()->whereKey($guestCustomer->id)->exists();

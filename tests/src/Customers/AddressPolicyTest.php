@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Enums\AddressType;
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Policies\AddressPolicy;
 use Illuminate\Database\Eloquent\Model;
@@ -94,8 +93,6 @@ describe('AddressPolicy', function (): void {
             ], null);
 
             $address = createAddressPolicyAddress([
-                'customer_id' => $customer->id,
-                'type' => AddressType::Shipping,
                 'line1' => '123 Test St',
                 'city' => 'Test City',
                 'postcode' => '12345',
@@ -120,8 +117,6 @@ describe('AddressPolicy', function (): void {
             ], $owner);
 
             $address = createAddressPolicyAddress([
-                'customer_id' => $customer->id,
-                'type' => AddressType::Shipping,
                 'line1' => '123 Test St',
                 'city' => 'Test City',
                 'postcode' => '12345',
@@ -156,8 +151,6 @@ describe('AddressPolicy', function (): void {
             ], $ownerB);
 
             $addressA = createAddressPolicyAddress([
-                'customer_id' => $customerA->id,
-                'type' => AddressType::Shipping,
                 'line1' => '123 A St',
                 'city' => 'A City',
                 'postcode' => '11111',
@@ -167,8 +160,6 @@ describe('AddressPolicy', function (): void {
             ], $ownerA);
 
             $addressB = createAddressPolicyAddress([
-                'customer_id' => $customerB->id,
-                'type' => AddressType::Shipping,
                 'line1' => '456 B St',
                 'city' => 'B City',
                 'postcode' => '22222',
@@ -206,8 +197,6 @@ describe('AddressPolicy', function (): void {
             ], null);
 
             $address = createAddressPolicyAddress([
-                'customer_id' => $customer->id,
-                'type' => AddressType::Billing,
                 'line1' => '789 Update St',
                 'city' => 'Update City',
                 'postcode' => '33333',
@@ -230,8 +219,6 @@ describe('AddressPolicy', function (): void {
             ], null);
 
             $address = createAddressPolicyAddress([
-                'customer_id' => $customer->id,
-                'type' => AddressType::Billing,
                 'line1' => '789 Update St',
                 'city' => 'Update City',
                 'postcode' => '33333',
@@ -256,8 +243,6 @@ describe('AddressPolicy', function (): void {
             ], null);
 
             $address = createAddressPolicyAddress([
-                'customer_id' => $customer->id,
-                'type' => AddressType::Both,
                 'line1' => '999 Delete St',
                 'city' => 'Delete City',
                 'postcode' => '44444',
@@ -280,8 +265,6 @@ describe('AddressPolicy', function (): void {
             ], null);
 
             $address = createAddressPolicyAddress([
-                'customer_id' => $customer->id,
-                'type' => AddressType::Both,
                 'line1' => '999 Delete St',
                 'city' => 'Delete City',
                 'postcode' => '44444',

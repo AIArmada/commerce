@@ -1194,35 +1194,6 @@ abstract class TestCase extends Orchestra
             });
         }
 
-        if (! Schema::hasTable('customer_addresses')) {
-            Schema::create('customer_addresses', function (Blueprint $table): void {
-                $table->uuid('id')->primary();
-                $table->uuid('customer_id');
-                $table->nullableUuidMorphs('owner');
-                $table->string('type')->default('shipping');
-                $table->string('first_name')->nullable();
-                $table->string('last_name')->nullable();
-                $table->string('company')->nullable();
-                $table->string('line1');
-                $table->string('line2')->nullable();
-                $table->string('city');
-                $table->string('state')->nullable();
-                $table->string('country');
-                $table->string('phone')->nullable();
-                $table->string('recipient_name')->nullable();
-                $table->boolean('is_default')->default(false);
-                $table->boolean('is_default_billing')->default(false);
-                $table->boolean('is_default_shipping')->default(false);
-                $table->boolean('is_verified')->default(false);
-                $table->string('postcode')->nullable();
-                $table->string('label')->nullable();
-                $table->decimal('latitude', 10, 7)->nullable();
-                $table->decimal('longitude', 10, 7)->nullable();
-                $table->json('metadata')->nullable();
-                $table->timestamps();
-            });
-        }
-
         if (! Schema::hasTable('customer_notes')) {
             Schema::create('customer_notes', function (Blueprint $table): void {
                 $table->uuid('id')->primary();

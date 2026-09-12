@@ -20,7 +20,7 @@ describe('Customer Model - Extended Coverage', function (): void {
                 ->toBeInstanceOf(MorphToMany::class);
         });
 
-        it('can attach a reusable addressing address without changing the legacy profile table', function (): void {
+        it('can attach a reusable addressing address to the customer', function (): void {
             [$customer, $address] = OwnerContext::withOwner(null, function (): array {
                 $customer = Customer::create([
                     'first_name' => 'Address',
@@ -42,8 +42,8 @@ describe('Customer Model - Extended Coverage', function (): void {
 
             expect(OwnerContext::withOwner(null, fn (): bool => $customer->primaryAddress('shipping')?->is($address) ?? false))
                 ->toBeTrue()
-                ->and(OwnerContext::withOwner(null, fn (): int => $customer->legacyAddresses()->count()))
-                ->toBe(0);
+                ->and(OwnerContext::withOwner(null, fn (): int => $customer->addresses()->count()))
+                ->toBe(1);
         });
 
         it('has segments relationship', function (): void {
@@ -82,7 +82,7 @@ describe('Customer Model - Extended Coverage', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            expect($customer->getDefaultBillingAddress())->toBeNull();
+            expect($customer->primaryAddress('billing'))->toBeNull();
         });
 
         it('returns null for default shipping when none set', function (): void {
@@ -93,7 +93,7 @@ describe('Customer Model - Extended Coverage', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            expect($customer->getDefaultShippingAddress())->toBeNull();
+            expect($customer->primaryAddress('shipping'))->toBeNull();
         });
     });
 

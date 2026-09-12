@@ -168,21 +168,22 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
             return;
         }
 
-        // Load default addresses if available
         $billingData = $session->billing_data ?? [];
         $shippingData = $session->shipping_data ?? [];
 
-        if (empty($billingData) && method_exists($customer, 'getDefaultBillingAddress')) {
-            $address = $customer->getDefaultBillingAddress();
-            if ($address !== null) {
-                $billingData = $address->attributesToArray();
+        if (empty($billingData)) {
+            $billingAddress = $customer->primaryAddress('billing');
+
+            if ($billingAddress !== null) {
+                $billingData = $billingAddress->attributesToArray();
             }
         }
 
-        if (empty($shippingData) && method_exists($customer, 'getDefaultShippingAddress')) {
-            $address = $customer->getDefaultShippingAddress();
-            if ($address !== null) {
-                $shippingData = $address->attributesToArray();
+        if (empty($shippingData)) {
+            $shippingAddress = $customer->primaryAddress('shipping');
+
+            if ($shippingAddress !== null) {
+                $shippingData = $shippingAddress->attributesToArray();
             }
         }
 

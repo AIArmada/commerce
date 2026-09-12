@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Actions\RebuildAllSegments;
 use AIArmada\Customers\Actions\RemoveCustomerFromSegment;
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Services\SegmentationService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -138,35 +139,30 @@ it('enforces owner scoping for addresses', function (): void {
         'owner_id' => $ownerB->getKey(),
     ], $ownerB);
 
-    OwnerContext::withOwner($ownerA, function () use ($customerA): void {
-        Address::query()->create([
-            'customer_id' => $customerA->id,
+    $addressA = OwnerContext::withOwner($ownerA, function (): Address {
+        return Address::query()->create([
             'line1' => '123 Owner A',
             'city' => 'KL',
             'postcode' => '50000',
             'country' => 'MY',
         ]);
     });
+    OwnerContext::withOwner($ownerA, fn (): mixed => $customerA->attachAddress($addressA, type: 'shipping'));
 
-    OwnerContext::withOwner($ownerB, function () use ($customerB): void {
-        Address::query()->create([
-            'customer_id' => $customerB->id,
+    $addressB = OwnerContext::withOwner($ownerB, function (): Address {
+        return Address::query()->create([
             'line1' => '456 Owner B',
             'city' => 'KL',
             'postcode' => '50000',
             'country' => 'MY',
         ]);
     });
+    OwnerContext::withOwner($ownerB, fn (): mixed => $customerB->attachAddress($addressB, type: 'shipping'));
 
-    OwnerContext::withOwner($ownerA, function () use ($customerB): void {
+    OwnerContext::withOwner($ownerA, function () use ($addressB, $customerA): void {
         expect(Address::query()->count())->toBe(1);
 
-        expect(fn () => Address::query()->create([
-            'customer_id' => $customerB->id,
-            'line1' => 'Cross-tenant',
-            'city' => 'KL',
-            'postcode' => '50000',
-            'country' => 'MY',
-        ]))->toThrow(InvalidArgumentException::class);
+        expect(fn () => $customerA->attachAddress($addressB, type: 'shipping'))
+            ->toThrow(AuthorizationException::class);
     });
 });

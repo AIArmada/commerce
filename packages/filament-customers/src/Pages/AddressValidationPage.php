@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Pages;
 
+use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Models\Addressable;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Customers\Models\Address;
+use AIArmada\Customers\Models\Customer;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Artisan;
 use UnitEnum;
 
@@ -52,41 +55,49 @@ class AddressValidationPage extends Page
     public function getUnvalidatedAddresses(): array
     {
         $query = Address::query()
-            ->with('customer')
-            ->whereNull('verified_at');
+            ->with(['addressableLinks.addressable'])
+            ->whereNull('validated_at')
+            ->whereHas('addressableLinks', function (Builder $query): void {
+                $query->where('addressable_type', (new Customer)->getMorphClass());
+            });
 
-        if ((bool) config('customers.features.owner.enabled', false)) {
-            $query = OwnerUiScope::apply($query, includeGlobal: false);
-        }
+        $query = OwnerUiScope::apply($query, includeGlobal: false);
 
         return $query->limit(100)
             ->get()
-            ->map(fn (Address $address) => [
+            ->map(fn (Address $address): array => [
                 'id' => $address->id,
-                'customer_name' => $address->customer?->full_name ?? 'Unknown',
-                'full_address' => $address->full_address ?? "{$address->line1}, {$address->city}, {$address->postcode}",
+                'customer_name' => $this->resolveCustomerName($address),
+                'full_address' => $address->formatted_address
+                    ?? implode(', ', array_filter([$address->line1, $address->city, $address->postcode])),
                 'country' => $address->country ?? $address->country_code,
-                'validated' => $address->getAttribute('verified_at') !== null,
+                'validated' => $address->validated_at !== null,
             ])
             ->all();
     }
 
-    public function validateAddress(string $addressId): void
+    private function resolveCustomerName(Address $address): string
     {
-        $address = (bool) config('customers.features.owner.enabled', false)
-            ? OwnerWriteGuard::findOrFailForOwner(Address::class, $addressId, includeGlobal: false)
-            : Address::find($addressId);
+        foreach ($address->addressableLinks as $link) {
+            if (! $link instanceof Addressable || ! $link->addressable instanceof Customer) {
+                continue;
+            }
 
-        if ($address === null) {
-            Notification::make()
-                ->title('Address not found')
-                ->danger()
-                ->send();
-
-            return;
+            return $link->addressable->full_name;
         }
 
-        $address->update(['verified_at' => CarbonImmutable::now()]);
+        return 'Unknown';
+    }
+
+    public function validateAddress(string $addressId): void
+    {
+        /** @var Address $address */
+        $address = OwnerWriteGuard::findOrFailForOwner(Address::class, $addressId, includeGlobal: false);
+
+        $address->update([
+            'validation_status' => 'verified',
+            'validated_at' => CarbonImmutable::now(),
+        ]);
 
         Notification::make()
             ->title('Address validated successfully')

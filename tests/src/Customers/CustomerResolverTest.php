@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Customers\Actions\CreateCustomer;
 use AIArmada\Customers\Actions\UpdateCustomerProfile;
-use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\Segment;
@@ -98,7 +98,7 @@ describe('CustomerResolver', function (): void {
                 shippingData: []
             );
 
-            expect($guest->fresh()?->legacyAddresses()->count())->toBe(1);
+            expect($guest->fresh()?->addresses()->count())->toBe(1);
 
             return [$guest, $resolved];
         });
@@ -144,7 +144,7 @@ describe('CustomerResolver', function (): void {
             ->not->toBeNull()
             ->and($resolved?->id)->not->toBe($guest->id)
             ->and(OwnerContext::withOwner($owner, fn (): ?string => $resolved?->resolveEmail()))->toBe($email)
-            ->and(OwnerContext::withOwner($owner, fn (): int => $guest->legacyAddresses()->count()))->toBe(0);
+            ->and(OwnerContext::withOwner($owner, fn (): int => $guest->addresses()->count()))->toBe(0);
     });
 
     it('resolves existing guest customer by email contact method even without normalized value', function (): void {
@@ -329,7 +329,7 @@ describe('CustomerResolver', function (): void {
                 shippingData: []
             );
 
-            expect($guest->fresh()?->legacyAddresses()->count())->toBe(1);
+            expect($guest->fresh()?->addresses()->count())->toBe(1);
 
             return [$guest, $resolved];
         });

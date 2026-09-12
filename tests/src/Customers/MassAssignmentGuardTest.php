@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Customers\Models\Address;
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\CustomerNote;

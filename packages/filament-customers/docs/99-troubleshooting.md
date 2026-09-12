@@ -109,7 +109,7 @@ public static function getRelations(): array
 }
 
 // Check relationship exists on model
-$customer->legacyAddresses; // Should not error
+$customer->addresses; // Should not error
 ```
 
 ### Policy Denying Access
@@ -359,8 +359,9 @@ $customer = Customer::query()
     ->forOwner(OwnerContext::resolve(), includeGlobal: false)
     ->findOrFail($customerId);
 
-// Then safe to create address
-$customer->legacyAddresses()->create([...]);
+// Then safely attach a canonical address
+$address = \AIArmada\Addressing\Models\Address::create([...]);
+$customer->attachAddress($address, type: 'shipping', isPrimary: true);
 ```
 
 ## Getting Help

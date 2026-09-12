@@ -171,10 +171,10 @@ reported and taken on trust; code correctness was verified directly.
   Title fail-fast fallback. Topology decided and documented:
   `Person` = shared root, `Customer` = owner-scoped + `person_id`,
   `Organization` = tenant, `EventOrganizer` = event-scoped.
-- **Customers pilot:** `Customer::person()` relation +
+- **Customers:** `Customer::person()` relation +
   `LinkCustomerToPerson` action (owner-safe, plus `executeByKey` for
-  ID callers), `HasAddresses` adopted with `legacyAddresses()`
-  retention and legacy bridge. **Dependency decision ratified:**
+  ID callers), with `HasAddresses` as the sole customer address path.
+  **Dependency decision ratified:**
   customers hard-requires addressing (unconditional trait use;
   one-directional, no cycle) — recorded as policy for the orders pilot.
   Doctrine now mechanical: addressing CONTEXT declares canonical-addressing
@@ -1412,12 +1412,11 @@ Chip 1,052 passed/4 skipped/2,730 assertions; Cashier 256/524; Checkout
   CustomerStatus import while Stream A was still editing the shared worktree.
   The import was restored at packages/customers/src/Models/Customer.php:20;
   the final targeted run and Area canary passed.
-- Frozen legacy reads remain only where the stream contracts explicitly
-  required them: customer default-address storage used by the existing
-  checkout read path. Venue/location flat-column reads were removed. No new
-  alias, deprecated API, compatibility shim, or legacy dual write was
-  introduced; the superseded affiliate rule classes and events Addressable
-  concern were deleted.
+- Customers legacy address storage was retired in this pass; checkout default
+  resolution now uses the canonical `primaryAddress()` API. Venue/location
+  flat-column reads were removed. No new alias, deprecated API, compatibility
+  shim, or legacy dual write was introduced; the superseded affiliate rule
+  classes and events Addressable concern were deleted.
 - Product and tax schema changes are guarded development/test changes;
   development databases are reset rather than deduplicated or backfilled.
   No foreign-key constraints or cascades were added. The Products docs carry
@@ -1436,3 +1435,22 @@ Chip 1,052 passed/4 skipped/2,730 assertions; Cashier 256/524; Checkout
   SeatAllocatorTest 9/17, QueuedDispatchTest 4/13,
   SetDefaultCustomerAddressTest 2/6, VenueAddressAdoptionTest 3/15, and
   SignalEventScaleIndexTest 1/4.
+
+## Customers address storage retirement — implemented — 2026-09-12
+
+- `Customer` already owns the canonical `HasAddresses` relation; all
+  customer address writers and readers now use typed addressable pivots,
+  `attachAddress()`, `setPrimaryAddress()`, and `primaryAddress()`.
+- Checkout default hydration, payment-subject country resolution, customer
+  merge, resolver synchronization, customer deletion, and the Filament
+  relation manager were independently re-verified against the canonical
+  path. The former package-local Address model, concern, factory, and schema
+  creator were removed.
+- The cleanup migration
+  `packages/customers/database/migrations/2026_09_12_000003_drop_legacy_customer_address_storage.php`
+  preflights the configured table and known columns, removes non-primary
+  indexes, and drops only the retired table shape. It has no backfill or
+  rollback path; development uses delete-and-rerun.
+- Verification: Customers 242 passed / 428 assertions; Checkout 266 passed /
+  977 assertions; Filament Customers 28 passed / 64 assertions; PHPStan level 6
+  passed for all touched package sources.

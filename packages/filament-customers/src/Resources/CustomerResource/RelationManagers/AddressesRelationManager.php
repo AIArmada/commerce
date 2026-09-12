@@ -4,29 +4,29 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
-use AIArmada\Customers\Enums\AddressType;
-use AIArmada\Customers\Models\Address;
+use AIArmada\Customers\Models\Customer;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\CreateAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\AttachAction;
+use Filament\Actions\DetachAction;
 use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
-use Filament\Tables;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Gate;
+use LogicException;
 
 class AddressesRelationManager extends RelationManager
 {
-    protected static string $relationship = 'legacyAddresses';
+    protected static string $relationship = 'addresses';
 
-    protected static ?string $recordTitleAttribute = 'label';
+    protected static ?string $title = 'Addresses';
 
     public function form(Schema $schema): Schema
     {
@@ -34,25 +34,12 @@ class AddressesRelationManager extends RelationManager
             ->schema([
                 Forms\Components\TextInput::make('label')
                     ->label('Label')
-                    ->placeholder('e.g., Home, Office')
-                    ->maxLength(100),
+                    ->maxLength(255),
 
-                Forms\Components\Select::make('type')
-                    ->label('Type')
-                    ->options(
-                        collect(AddressType::cases())
-                            ->mapWithKeys(fn ($type) => [$type->value => $type->label()])
-                    )
+                Forms\Components\TextInput::make('country_code')
+                    ->label('Country')
                     ->required()
-                    ->default('both'),
-
-                Forms\Components\TextInput::make('recipient_name')
-                    ->label('Recipient Name')
-                    ->maxLength(255),
-
-                Forms\Components\TextInput::make('company')
-                    ->label('Company')
-                    ->maxLength(255),
+                    ->maxLength(2),
 
                 Forms\Components\TextInput::make('line1')
                     ->label('Address Line 1')
@@ -68,36 +55,16 @@ class AddressesRelationManager extends RelationManager
                         Forms\Components\TextInput::make('city')
                             ->label('City')
                             ->required()
-                            ->maxLength(100),
+                            ->maxLength(255),
 
                         Forms\Components\TextInput::make('state')
-                            ->label('State')
-                            ->maxLength(100),
+                            ->label('State / Region')
+                            ->maxLength(255),
 
                         Forms\Components\TextInput::make('postcode')
                             ->label('Postcode')
                             ->required()
                             ->maxLength(20),
-                    ]),
-
-                Forms\Components\Select::make('country')
-                    ->label('Country')
-                    ->options([
-                        'MY' => 'Malaysia',
-                        'SG' => 'Singapore',
-                        'ID' => 'Indonesia',
-                        'TH' => 'Thailand',
-                        'BN' => 'Brunei',
-                    ])
-                    ->default('MY')
-                    ->required(),
-
-                Grid::make(2)
-                    ->schema([
-                        Forms\Components\Toggle::make('is_default_billing')
-                            ->label('Default Billing'),
-                        Forms\Components\Toggle::make('is_default_shipping')
-                            ->label('Default Shipping'),
                     ]),
             ]);
     }
@@ -107,37 +74,32 @@ class AddressesRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('label')
             ->columns([
-                Tables\Columns\TextColumn::make('label')
-                    ->label('Label')
-                    ->placeholder('Unnamed'),
-
-                Tables\Columns\TextColumn::make('type')
+                TextColumn::make('label')
+                    ->searchable(),
+                TextColumn::make('line1')
+                    ->searchable()
+                    ->limit(40),
+                TextColumn::make('city')
+                    ->searchable(),
+                TextColumn::make('state')
+                    ->searchable(),
+                TextColumn::make('postcode'),
+                TextColumn::make('country_code')
+                    ->label('Country'),
+                TextColumn::make('pivot.type')
                     ->label('Type')
-                    ->badge()
-                    ->formatStateUsing(fn ($state) => $state->label()),
-
-                Tables\Columns\TextColumn::make('full_address')
-                    ->label('Address')
-                    ->limit(50)
-                    ->searchable(['line1', 'city', 'postcode']),
-
-                Tables\Columns\IconColumn::make('is_default_billing')
-                    ->label('Billing')
+                    ->badge(),
+                IconColumn::make('pivot.is_primary')
+                    ->label('Primary')
                     ->boolean(),
-
-                Tables\Columns\IconColumn::make('is_default_shipping')
-                    ->label('Shipping')
-                    ->boolean(),
-            ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('type')
-                    ->options(
-                        collect(AddressType::cases())
-                            ->mapWithKeys(fn ($type) => [$type->value => $type->label()])
-                    ),
+                TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable(),
             ])
             ->headerActions([
-                CreateAction::make(),
+                AttachAction::make()
+                    ->label('Add Address')
+                    ->preloadRecordSelect(),
             ])
             ->actions([
                 EditAction::make(),
@@ -153,9 +115,15 @@ class AddressesRelationManager extends RelationManager
 
                         Gate::forUser($user)->authorize('update', $record);
 
-                        app(SetDefaultCustomerAddress::class)->execute($record, 'billing');
+                        $customer = $this->getOwnerRecord();
+
+                        if (! $customer instanceof Customer) {
+                            throw new LogicException('Customer address actions require a customer owner record.');
+                        }
+
+                        app(SetDefaultCustomerAddress::class)->execute($customer, $record, 'billing');
                     })
-                    ->visible(fn ($record) => ! $record->is_default_billing),
+                    ->visible(fn (Address $record): bool => ! self::isPrimaryForType($record, 'billing')),
                 Action::make('set_shipping')
                     ->label('Set as Shipping')
                     ->icon('heroicon-o-truck')
@@ -168,15 +136,23 @@ class AddressesRelationManager extends RelationManager
 
                         Gate::forUser($user)->authorize('update', $record);
 
-                        app(SetDefaultCustomerAddress::class)->execute($record, 'shipping');
+                        $customer = $this->getOwnerRecord();
+
+                        if (! $customer instanceof Customer) {
+                            throw new LogicException('Customer address actions require a customer owner record.');
+                        }
+
+                        app(SetDefaultCustomerAddress::class)->execute($customer, $record, 'shipping');
                     })
-                    ->visible(fn ($record) => ! $record->is_default_shipping),
-                DeleteAction::make(),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                    ->visible(fn (Address $record): bool => ! self::isPrimaryForType($record, 'shipping')),
+                DetachAction::make()
+                    ->label('Remove'),
             ]);
+    }
+
+    private static function isPrimaryForType(Address $address, string $type): bool
+    {
+        return (string) ($address->pivot?->type ?? '') === $type
+            && (bool) ($address->pivot?->is_primary ?? false);
     }
 }
