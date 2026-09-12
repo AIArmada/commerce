@@ -35,8 +35,8 @@ zero rated findings remaining.
 - Orders pilot implemented end-to-end (write path, consumers,
   invoice reads, composer contract); events adoption is partially done
   (`Venue` and `EventLocation` on `HasAddresses` since 2026-09-12, legacy
-  columns dropped) with the remaining non-owner models deferred to the
-  events track, not this package.
+  columns dropped) with the remaining non-owner models closed as
+  won't-do by design (shared catalog, correctly unowned — events track).
 
 If any residual grows teeth, re-open it as a finding. Full finding history
 lives in `migration-record.md`, `code-fixes-record.md`, and git history.

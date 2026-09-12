@@ -134,12 +134,11 @@ surface, not only the focused isolation test.
   capacity remain event-owned; address and geocode access delegates through
   `Addressable`, whose resolver-backed pivot behavior is already in place
   (`packages/events/src/Models/Concerns/Addressable.php:24-38,50-64`). No blind
-   column migration was made. Full `HasAddresses` adoption remains deferred
-   for the non-owner `VenueSpace`, `VenueSpaceType`, `VenueFacility`,
-   `EventFacility`, and `FacilityType` models (`Venue` and `EventLocation`
-   adopted 2026-09-12 with the legacy trait deleted and columns dropped —
-   see item 3 above), because none of those models already carries
-   `HasOwner`, as required by the task boundary.
+   column migration was made. `HasAddresses` stays off the non-owner
+   `VenueSpace`, `VenueSpaceType`, `VenueFacility`, `EventFacility`, and
+   `FacilityType` models by design (shared catalog rows are correctly
+   unowned; `Venue` and `EventLocation` adopted 2026-09-12 because they
+   are owner-scoped — see item 3 above).
 
 Files changed: canonical ticketing DTO/action seams, event data/action imports,
 notification job and content adapter, event traits/helpers, venue guard
@@ -258,9 +257,11 @@ monorepo suite was run.
 
 - Event notification table retirement CLOSED 2026-09-12 (guarded drop
   migration removes deliveries then batches; see `migration-record.md`).
-- Full `HasAddresses` adoption for the remaining non-owner venue/facility
-  models (`Venue` and `EventLocation` adopted 2026-09-12) remains deferred
-  until their owner contract is established.
+- Full `HasAddresses` on the remaining non-owner venue/facility models is
+  WON'T-DO BY DESIGN: shared catalog rows are correctly unowned, and
+  forcing owner-scoped addresses onto them would corrupt the catalog
+  boundary rather than complete it. (`Venue` and `EventLocation` adopted
+  2026-09-12 because they are owner-scoped.)
 - The canonical order→registration→pass sequence document and pagination API
   decision remain documentation/API follow-ups.
 - Communications owns the event-reference normalizer
@@ -285,9 +286,9 @@ monorepo suite was run.
   from `OwnerWriteGuard` and its event write call sites are widespread.
 - Venue `HasAddresses` is now the only address path on `Venue` and
   `EventLocation` (legacy trait deleted 2026-09-12, columns dropped via the
-  guarded migration). The remaining named venue/facility models that carry
-  neither `HasOwner` nor `HasAddresses` keep documented behavior rather than
-  unsafe duplicate adoption.
+  guarded migration). The remaining named venue/facility models stay
+  un-adopted by design (shared catalog, correctly unowned) — documented
+  behavior, not a deferral.
 - The cross-package canonical sequence doc was not edited because `docs` was a
   read-only surface for Stream B. This is an explicit deferral, not an
   unverified claim.
