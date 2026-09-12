@@ -9,13 +9,16 @@
 declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
         $jsonType = commerce_json_column_type('engagement', 'jsonb');
-        commerce_schema_create_if_missing(config('engagement.database.tables.engagement_counters', 'engagement_counters'), function (Blueprint $table) use ($jsonType): void {
+        $tableName = (string) config('engagement.database.tables.engagement_counters', 'engagement_counters');
+        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('subject_type')->index();
             $table->uuid('subject_id')->index();
@@ -37,5 +40,20 @@ return new class extends Migration
                 'owner_id',
             ], 'engagement_counters_unique_idx');
         });
+
+        if (! Schema::hasTable($tableName)) {
+            return;
+        }
+
+        if (
+            in_array(DB::connection()->getDriverName(), ['pgsql', 'sqlite'], true)
+            && ! Schema::hasIndex($tableName, 'engagement_counters_global_unique_idx')
+        ) {
+            DB::statement(
+                'CREATE UNIQUE INDEX IF NOT EXISTS engagement_counters_global_unique_idx '
+                . 'ON ' . $tableName . ' (subject_type, subject_id, counter_type, counter_key) '
+                . 'WHERE owner_type IS NULL AND owner_id IS NULL',
+            );
+        }
     }
 };

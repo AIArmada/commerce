@@ -27,6 +27,7 @@ return new class extends Migration
             $table->integer('default_commission_rate_basis_points')->default(1000);
             $table->string('commission_type')->default('percentage');
             $table->integer('cookie_lifetime_days')->default(30);
+            $table->char('currency', 3)->nullable();
             $table->string('terms_url')->nullable();
 
             $table->nullableUuidMorphs('owner');

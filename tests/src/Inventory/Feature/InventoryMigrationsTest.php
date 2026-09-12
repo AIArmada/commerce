@@ -10,13 +10,12 @@ it('includes the operations table in the configurable table map', function (): v
         ->and((new InventoryOperation)->getTable())->toBe('inventory_operations');
 });
 
-it('keeps the reservation group schema change in its dedicated migration', function (): void {
+it('carries the reservation group column in the allocations table shape', function (): void {
     $repoRoot = dirname(__DIR__, 4);
     $allocationTable = config('inventory.database.tables.allocations', 'inventory_allocations');
-    $reservationsMigrationPath = $repoRoot . '/packages/inventory/database/migrations/2026_07_12_000002_create_inventory_reservations_table.php';
-    $dedicatedMigrationPath = $repoRoot . '/packages/inventory/database/migrations/2026_09_07_000001_add_reservation_group_id_to_inventory_allocations_table.php';
+    $createMigrationPath = $repoRoot . '/packages/inventory/database/migrations/2000_09_01_000004_create_inventory_allocations_table.php';
 
-    $reservationsMigration = file_get_contents($reservationsMigrationPath);
+    $reservationsMigration = file_get_contents($repoRoot . '/packages/inventory/database/migrations/2026_07_12_000002_create_inventory_reservations_table.php');
     expect($reservationsMigration)->toBeString()
         ->not->toContain('reservation_group_id');
 
@@ -29,9 +28,12 @@ it('keeps the reservation group schema change in its dedicated migration', funct
     expect($reservationGroupColumn)->not->toBeNull()
         ->and($reservationGroupColumn['nullable'])->toBeTrue();
 
+    expect(file_get_contents($createMigrationPath))->toContain('reservation_group_id')
+        ->and(file_get_contents($createMigrationPath))->toContain('inv_allocations_reservation_group_idx');
+
     $columnsBeforeRerun = Schema::getColumnListing($allocationTable);
     $indexesBeforeRerun = Schema::getIndexes($allocationTable);
-    $migration = require $dedicatedMigrationPath;
+    $migration = require $createMigrationPath;
 
     $migration->up();
     $migration->up();
@@ -40,17 +42,20 @@ it('keeps the reservation group schema change in its dedicated migration', funct
         ->and(Schema::getIndexes($allocationTable))->toEqual($indexesBeforeRerun);
 });
 
-it('drops unused decimal quantity columns while keeping unit conversion', function (): void {
+it('omits unused decimal quantity columns from the levels shape while keeping unit conversion', function (): void {
     $repoRoot = dirname(__DIR__, 4);
     $levelsTable = config('inventory.database.tables.levels', 'inventory_levels');
-    $migrationPath = $repoRoot . '/packages/inventory/database/migrations/2026_09_07_000002_drop_decimal_quantities_from_inventory_levels_table.php';
+    $createMigrationPath = $repoRoot . '/packages/inventory/database/migrations/2000_09_01_000002_create_inventory_levels_table.php';
 
     expect(Schema::hasColumn($levelsTable, 'quantity_on_hand_decimal'))->toBeFalse()
         ->and(Schema::hasColumn($levelsTable, 'quantity_reserved_decimal'))->toBeFalse()
         ->and(Schema::hasColumn($levelsTable, 'unit_conversion_factor'))->toBeTrue();
 
+    expect(file_get_contents($createMigrationPath))->not->toContain('quantity_on_hand_decimal')
+        ->and(file_get_contents($createMigrationPath))->not->toContain('quantity_reserved_decimal');
+
     $columnsBeforeRerun = Schema::getColumnListing($levelsTable);
-    $migration = require $migrationPath;
+    $migration = require $createMigrationPath;
 
     $migration->up();
     $migration->up();
@@ -58,7 +63,7 @@ it('drops unused decimal quantity columns while keeping unit conversion', functi
     expect(Schema::getColumnListing($levelsTable))->toEqual($columnsBeforeRerun);
 });
 
-it('adds the movement location history index idempotently', function (): void {
+it('carries the movement location history index in the movements shape idempotently', function (): void {
     $movementTable = config('inventory.database.tables.movements', 'inventory_movements');
     $indexName = 'inventory_movements_location_history_index';
     $columns = ['from_location_id', 'to_location_id', 'occurred_at'];
@@ -67,9 +72,12 @@ it('adds the movement location history index idempotently', function (): void {
         ->and(Schema::hasIndex($movementTable, $columns))->toBeTrue();
 
     $repoRoot = dirname(__DIR__, 4);
-    $migrationPath = $repoRoot
-        . '/packages/inventory/database/migrations/2026_09_11_000004_add_movement_location_history_index.php';
-    $migration = require $migrationPath;
+    $createMigrationPath = $repoRoot
+        . '/packages/inventory/database/migrations/2000_09_01_000003_create_inventory_movements_table.php';
+
+    expect(file_get_contents($createMigrationPath))->toContain($indexName);
+
+    $migration = require $createMigrationPath;
 
     $migration->up();
     $migration->up();

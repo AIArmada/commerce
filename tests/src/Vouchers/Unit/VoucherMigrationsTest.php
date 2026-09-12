@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 it('backfills promotion ids from valid historical voucher metadata without overwriting values', function (): void {
@@ -53,27 +51,10 @@ it('removes the unused voucher credit tables and redundant code index', function
         ->and(Schema::hasIndex('vouchers', 'vouchers_code_unique'))->toBeTrue();
 });
 
-it('keeps the only code index when the unique code index is absent', function (): void {
-    $tableName = 'vouchers_without_unique_code';
-    $indexName = $tableName . '_code_index';
-    $originalTable = config('vouchers.database.tables.vouchers');
+it('ships a single unique code index on vouchers', function (): void {
+    $create = file_get_contents(dirname(__DIR__, 4) . '/packages/vouchers/database/migrations/2001_04_01_000001_create_vouchers_table.php');
 
-    try {
-        config(['vouchers.database.tables.vouchers' => $tableName]);
-
-        Schema::create($tableName, function (Blueprint $table) use ($indexName): void {
-            $table->uuid('id')->primary();
-            $table->string('code');
-            $table->index('code', $indexName);
-        });
-
-        $migration = require dirname(__DIR__, 4) . '/packages/vouchers/database/migrations/2026_09_07_100002_drop_redundant_voucher_code_index.php';
-        $migration->up();
-        $migration->up();
-
-        expect(Schema::hasIndex($tableName, $indexName))->toBeTrue();
-    } finally {
-        config(['vouchers.database.tables.vouchers' => $originalTable]);
-        Schema::dropIfExists($tableName);
-    }
+    expect($create)->toBeString()
+        ->and($create)->toContain("->string('code')->unique()")
+        ->and($create)->not->toContain("->index('code')");
 });

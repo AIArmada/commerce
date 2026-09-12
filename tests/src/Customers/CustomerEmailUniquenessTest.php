@@ -6,9 +6,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
@@ -117,35 +115,13 @@ it('keeps global email uniqueness separate from owned email uniqueness', functio
         }))->toThrow(ValidationException::class);
 });
 
-it('drops the removed native contact columns in the cutover migration', function (): void {
-    $tableName = 'customer_email_preflight_' . Str::lower(Str::random(8));
-
-    Schema::create($tableName, function (Blueprint $table): void {
-        $table->uuid('id')->primary();
-        $table->string('email')->nullable();
-        $table->string('phone')->nullable();
-        $table->string('owner_type')->nullable();
-        $table->uuid('owner_id')->nullable();
-    });
-
-    $ownerId = (string) Str::uuid();
-
-    DB::table($tableName)->insert([
-        'id' => (string) Str::uuid(),
-        'email' => 'legacy@example.com',
-        'owner_type' => CustomersTestOwner::class,
-        'owner_id' => $ownerId,
-    ]);
-
-    config()->set('customers.database.tables.customers', $tableName);
-
-    $migration = require dirname(__DIR__, 3) . '/packages/customers/database/migrations/2026_09_07_120000_add_owner_email_uniqueness_to_customers_table.php';
-
-    $migration->up();
+it('keeps the removed native contact columns out of the customers table shape', function (): void {
+    $tableName = config('customers.database.tables.customers', 'customers');
+    $createMigration = file_get_contents(dirname(__DIR__, 3) . '/packages/customers/database/migrations/2000_05_01_000001_create_customers_table.php');
 
     expect(Schema::hasColumn($tableName, 'email'))->toBeFalse()
-        ->and(Schema::hasColumn($tableName, 'phone'))->toBeFalse();
-
-    Schema::dropIfExists($tableName);
-    config()->set('customers.database.tables.customers', 'customers');
+        ->and(Schema::hasColumn($tableName, 'phone'))->toBeFalse()
+        ->and($createMigration)->toBeString()
+        ->and($createMigration)->not->toContain("'email'")
+        ->and($createMigration)->not->toContain("'phone'");
 });

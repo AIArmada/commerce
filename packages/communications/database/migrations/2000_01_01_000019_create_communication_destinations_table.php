@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('recipient_type');
             $table->uuid('recipient_id');
             $table->string('channel')->index();
-            $table->string('address')->nullable();
+            $table->text('address')->nullable();
             $table->string('external_id')->nullable();
             $table->string('status')->default('active')->index();
             $table->boolean('is_primary')->default(false);
