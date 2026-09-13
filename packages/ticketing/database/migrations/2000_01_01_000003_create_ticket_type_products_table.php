@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('ticketing', 'jsonb');
 
-        commerce_schema_create_if_missing(config('ticketing.database.tables.ticket_type_products', 'ticket_type_products'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('ticketing.database.tables.ticket_type_products', 'ticket_type_products'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('ticket_type_id', 36)->nullable()->index();
             $table->string('product_type')->nullable();

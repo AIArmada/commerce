@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Support\ProductIdentityIndexes;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -10,7 +11,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        commerce_schema_create_if_missing(config('products.database.tables.attribute_values', 'product_attribute_values'), function (Blueprint $table): void {
+        $tableName = (string) config('products.database.tables.attribute_values', 'product_attribute_values');
+
+        Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)
@@ -30,11 +33,14 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            // Unique constraint: one value per attribute per model per locale
-            $table->unique(['attribute_id', 'attributable_type', 'attributable_id', 'locale'], 'attr_val_unique');
-
             $table->index('attribute_id');
         });
+
+        if (! app()->environment(['local', 'development', 'testing'])) {
+            return;
+        }
+
+        ProductIdentityIndexes::attributeValues($tableName);
     }
 
     public function down(): void

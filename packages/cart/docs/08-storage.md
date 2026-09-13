@@ -94,6 +94,8 @@ UPDATE carts SET ..., version = version + 1
 // If 0 rows updated, throw CartConflictException
 ```
 
+The `carts` table also carries a composite `(identifier, instance, version)` index so the CAS lookup fast-path never scans.
+
 ### Handling Conflicts
 
 ```php

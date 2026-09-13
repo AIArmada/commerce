@@ -15,7 +15,7 @@ it('carries the reservation group column in the allocations table shape', functi
     $allocationTable = config('inventory.database.tables.allocations', 'inventory_allocations');
     $createMigrationPath = $repoRoot . '/packages/inventory/database/migrations/2000_09_01_000004_create_inventory_allocations_table.php';
 
-    $reservationsMigration = file_get_contents($repoRoot . '/packages/inventory/database/migrations/2026_07_12_000002_create_inventory_reservations_table.php');
+    $reservationsMigration = file_get_contents($repoRoot . '/packages/inventory/database/migrations/2000_09_01_000016_create_inventory_reservations_table.php');
     expect($reservationsMigration)->toBeString()
         ->not->toContain('reservation_group_id');
 
@@ -29,17 +29,9 @@ it('carries the reservation group column in the allocations table shape', functi
         ->and($reservationGroupColumn['nullable'])->toBeTrue();
 
     expect(file_get_contents($createMigrationPath))->toContain('reservation_group_id')
-        ->and(file_get_contents($createMigrationPath))->toContain('inv_allocations_reservation_group_idx');
-
-    $columnsBeforeRerun = Schema::getColumnListing($allocationTable);
-    $indexesBeforeRerun = Schema::getIndexes($allocationTable);
-    $migration = require $createMigrationPath;
-
-    $migration->up();
-    $migration->up();
-
-    expect(Schema::getColumnListing($allocationTable))->toEqual($columnsBeforeRerun)
-        ->and(Schema::getIndexes($allocationTable))->toEqual($indexesBeforeRerun);
+        ->and(file_get_contents($createMigrationPath))->toContain('inv_allocations_reservation_group_idx')
+        ->and(file_get_contents($createMigrationPath))->toContain('Schema::create')
+        ->and(file_get_contents($createMigrationPath))->not->toContain('hasTable');
 });
 
 it('omits unused decimal quantity columns from the levels shape while keeping unit conversion', function (): void {
@@ -52,15 +44,8 @@ it('omits unused decimal quantity columns from the levels shape while keeping un
         ->and(Schema::hasColumn($levelsTable, 'unit_conversion_factor'))->toBeTrue();
 
     expect(file_get_contents($createMigrationPath))->not->toContain('quantity_on_hand_decimal')
-        ->and(file_get_contents($createMigrationPath))->not->toContain('quantity_reserved_decimal');
-
-    $columnsBeforeRerun = Schema::getColumnListing($levelsTable);
-    $migration = require $createMigrationPath;
-
-    $migration->up();
-    $migration->up();
-
-    expect(Schema::getColumnListing($levelsTable))->toEqual($columnsBeforeRerun);
+        ->and(file_get_contents($createMigrationPath))->not->toContain('quantity_reserved_decimal')
+        ->and(file_get_contents($createMigrationPath))->toContain('Schema::create');
 });
 
 it('carries the movement location history index in the movements shape idempotently', function (): void {
@@ -75,13 +60,6 @@ it('carries the movement location history index in the movements shape idempoten
     $createMigrationPath = $repoRoot
         . '/packages/inventory/database/migrations/2000_09_01_000003_create_inventory_movements_table.php';
 
-    expect(file_get_contents($createMigrationPath))->toContain($indexName);
-
-    $migration = require $createMigrationPath;
-
-    $migration->up();
-    $migration->up();
-
-    expect(Schema::hasIndex($movementTable, $indexName))->toBeTrue()
-        ->and(Schema::hasIndex($movementTable, $columns))->toBeTrue();
+    expect(file_get_contents($createMigrationPath))->toContain($indexName)
+        ->and(file_get_contents($createMigrationPath))->toContain('Schema::create');
 });

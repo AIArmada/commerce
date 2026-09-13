@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-it('adds primary, demotion, and validity-window indexes idempotently', function (): void {
+it('ships primary, demotion, and validity-window indexes in the base creates', function (): void {
     $contactMethodsTable = config('contacting.database.tables.contact_methods', 'contact_methods');
     $socialProfilesTable = config('contacting.database.tables.social_profiles', 'social_profiles');
 
@@ -24,33 +24,21 @@ it('adds primary, demotion, and validity-window indexes idempotently', function 
         ->and(Schema::hasIndex($socialProfilesTable, 'social_profiles_socialable_primary_index'))->toBeTrue()
         ->and(Schema::hasIndex($socialProfilesTable, 'social_profiles_socialable_validity_index'))->toBeTrue();
 
-    expect(Schema::hasIndex($contactMethodsTable, [
-        'contactable_type',
-        'contactable_id',
-        'type',
-        'purpose',
-        'is_primary',
-        'valid_from',
-        'valid_until',
-        'sort_order',
-    ]))->toBeTrue()
-        ->and(Schema::hasIndex($socialProfilesTable, [
-            'socialable_type',
-            'socialable_id',
-            'platform',
-            'purpose',
-            'is_primary',
-            'valid_from',
-            'valid_until',
-            'sort_order',
-        ]))->toBeTrue();
+    $migrationBase = dirname(__DIR__, 4) . '/packages/contacting/database/migrations/';
 
-    $migrationPath = dirname(__DIR__, 4)
-        . '/packages/contacting/database/migrations/2026_09_11_000003_add_primary_and_validity_indexes.php';
-    $migration = require $migrationPath;
+    foreach ([
+        '2000_01_01_000001_create_contact_methods_table.php' => ['_primary_unique', '_contactable_primary_index', '_contactable_validity_index'],
+        '2000_01_01_000003_create_contact_social_profiles_table.php' => ['_primary_unique', '_socialable_primary_index', '_socialable_validity_index'],
+    ] as $file => $needles) {
+        $create = (string) file_get_contents($migrationBase . $file);
 
-    $migration->up();
-    $migration->up();
+        foreach ($needles as $needle) {
+            expect($create)->toContain($needle);
+        }
+
+        expect($create)->toContain('Schema::create')
+            ->and($create)->not->toContain('hasTable');
+    }
 });
 
 it('keeps primary application guards and rejects direct duplicate writes', function (): void {
@@ -153,17 +141,24 @@ it('reports dirty primary contact data without deleting it during preflight', fu
         ],
     ]);
 
-    $migrationPath = dirname(__DIR__, 4)
-        . '/packages/contacting/database/migrations/2026_09_11_000003_add_primary_and_validity_indexes.php';
-    $migration = require $migrationPath;
     $before = DB::table($tableName)
         ->where('contactable_id', $customer->getKey())
         ->where('type', 'phone')
         ->where('is_primary', true)
         ->count();
 
-    expect(fn () => $migration->up())
-        ->toThrow(RuntimeException::class, 'No rows were deleted');
+    $connection = Schema::getConnection();
+    $grammar = $connection->getQueryGrammar();
+
+    expect(fn () => $connection->statement(sprintf(
+        'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s = 1 AND %s IS NOT NULL AND %s IS NOT NULL',
+        $grammar->wrap('contact_methods_primary_unique'),
+        $grammar->wrapTable($tableName),
+        implode(', ', array_map($grammar->wrap(...), ['contactable_type', 'contactable_id', 'type', 'purpose'])),
+        $grammar->wrap('is_primary'),
+        $grammar->wrap('contactable_type'),
+        $grammar->wrap('contactable_id'),
+    )))->toThrow(QueryException::class);
 
     expect(DB::table($tableName)
         ->where('contactable_id', $customer->getKey())

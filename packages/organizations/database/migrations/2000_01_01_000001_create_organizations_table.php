@@ -12,14 +12,10 @@ return new class extends Migration
     {
         $tableName = (string) config('organizations.database.tables.organizations', 'organizations');
 
-        if (Schema::hasTable($tableName)) {
-            return;
-        }
-
-        commerce_schema_create_if_missing($tableName, function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name')->index();
-            $table->string('slug')->index();
+            $table->string('slug')->unique('organizations_slug_unique');
             $table->text('description')->nullable();
             $table->string('status')->default('active')->index();
             $table->string('visibility')->default('private')->index();

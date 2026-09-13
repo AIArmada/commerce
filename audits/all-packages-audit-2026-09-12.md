@@ -1,15 +1,17 @@
 ---
 title: All Packages Audit — Bugs, Security, Performance
 date: 2026-09-12
+updated: 2026-09-13
 scope: packages/* (67 packages)
 mode: verified merged — false positives removed, severities corrected
 source: verified-bugs-2026-09-12.md + verified-security-2026-09-12.md + verified-performance-2026-09-12.md merged back
+migration-batch: 12 items DONE 2026-09-13, recorded in §8
 ---
 
 # All Packages Audit — Bugs / Security / Performance (2026-09-12, verified)
 
 Scope: all 67 packages under `packages/*` (36 core/domain + 31 `filament-*` adapters).
-Method: `CONTEXT.md` + `src` listing per package, `rg` for known anti-patterns, targeted `read` of models/actions/services/webhooks/migrations/filament resources. Each item re-read at cited `file:line`. No code changed.
+Method: `CONTEXT.md` + `src` listing per package, `rg` for known anti-patterns, targeted `read` of models/actions/services/webhooks/migrations/filament resources. Each item re-read at cited `file:line`. Code was unchanged at audit time; the 12-item migration batch in §8 has since been implemented — affected bullets below are tagged `DONE`.
 
 This file merges the three verified splits back into one. FALSE items are removed from the body and listed once in §7 (do not re-file). Corrected severity shown where the original was inflated.
 
@@ -112,7 +114,7 @@ Performance: clean. `AuthzScope deleting` 5× `DB::table` in one txn; volume bou
 Bugs:
 - `Models/MembershipApplication.php:38-50` HIGH — `status/granted_role/reviewer_*/reviewed_at/cancelled_at` fillable, no model default; direct `create()` bypasses Approve/Reject.
 - `Actions/InviteMemberAction.php:34-45` MEDIUM — existing Pending returned as-is, `$token` stays null → no resend.
-- Missing composite unique `(subject,email,role,status)` MEDIUM — only `token` unique; `lockForUpdate` dedupe races.
+- DONE (2026-09-13, §8 item 1) — Missing composite unique `(subject,email,role,status)` MEDIUM — only `token` unique; `lockForUpdate` dedupe races. Fixed: composites folded into the applications/invitations creates; lock + 23000 rescue returns existing.
 Security: clean — `OwnerWriteGuard` + `lockForUpdate` on Accept/Revoke/Cancel/Approve/Reject; `hash_equals` token; `token` hidden.
 Performance: `AddMemberAction.php:65` LOW — `hasColumn` schema check inside txn per call (cache it).
 
@@ -141,7 +143,7 @@ Bugs:
 - `ImportAddressAreasAction.php:36-214` MEDIUM (was HIGH) — 3–6 queries/row, no txn/chunk; offline import perf + partial on abort.
 - `ImportPostalCodesAction.php:25-132` MEDIUM (was HIGH) — per-row `DB::transaction` exists (`:63`), but still per-row queries, no chunk.
 Security: clean — `AddressOwnerGuard` + `Addressable:saving` + morph checks; search bound params + clamped limit; seed `DB::table` global-only.
-Performance: `LOWER(name)` full scans MEDIUM — `NormalizeAddressDataAction:83,108,137`, `SearchAddressAreas:84-96`, `HierarchyResolver:40,69`; add functional/lower index; cache `Schema::hasTable` (`Normalize:191-196` hits info-schema per save). `Addressable` owner + `(type/id)` + `is_primary` indexes present.
+Performance: DONE (2026-09-13, §8 item 9) — `LOWER(name)` full scans MEDIUM — `NormalizeAddressDataAction:83,108,137`, `SearchAddressAreas:84-96`, `HierarchyResolver:40,69`; add functional/lower index; cache `Schema::hasTable` (`Normalize:191-196` hits info-schema per save). Fixed: `LOWER(name)` functional indexes folded into the geography creates. `Addressable` owner + `(type/id)` + `is_primary` indexes present.
 
 ### contacting
 Bugs:
@@ -182,7 +184,7 @@ Security: clean — `LinkCustomerToPerson` persons-global by design; customer si
 Performance:
 - `Segment:146-175` HIGH — `getMatchingCustomers()->get()` + `rebuildCustomerList sync(pluck)` loads all matches; chunk/paginate.
 - `RebuildAllSegments:32-117` MEDIUM — per-segment `sync` + `pluck` + per-ID `event()`; N+1 events.
-- Missing `(owner,status)` composite MEDIUM.
+- DONE (2026-09-13, §8 item 6) — Missing `(owner,status)` composite MEDIUM. Fixed: `(owner_type, owner_id, status)` / `(owner_type, owner_id, is_active)` folded into the customers/segments creates.
 
 ### products (`aiarmada/products`)
 Bugs:
@@ -220,7 +222,7 @@ Bugs:
 - `TaxExemption status` fillable HIGH — bypasses `approve()/transitionStatus()`.
 - `TaxZone deleting` bulk skips events LOW — harmless (Rate has no `deleting` hook).
 Security: `TaxCalculator:127-160` LOW (was MEDIUM) — `exemptable_type/customer_type` from context, no morph allowlist; lookup owner-scoped so arbitrary string only misses, not leaks.
-Performance: `scopeForAddress:149-175` + `matchesAddress:177-205` MEDIUM — `orWhereJsonContains/Length` + PHP postcode loop per checkout; missing `(owner)` index on rates MEDIUM.
+Performance: DONE (2026-09-13, §8 item 11) — `scopeForAddress:149-175` + `matchesAddress:177-205` MEDIUM — `orWhereJsonContains/Length` + PHP postcode loop per checkout. Fixed by design (no migration): request-scoped owner-aware resolver cache with zone/rate-write invalidation. The `(owner)` index sub-claim was FALSE — `nullableMorphs('owner')` already indexes (see §7).
 
 ### ticketing
 Bugs:
@@ -237,7 +239,7 @@ Performance:
 
 ### seating
 Bugs:
-- `ConvertHoldsToAllocationsAction` HIGH — no lock, no owner comparison, check-then-create races → double allocation. Needs `FOR UPDATE` + partial unique.
+- DONE (2026-09-13, §8 item 5) — `ConvertHoldsToAllocationsAction` HIGH — no lock, no owner comparison, check-then-create races → double allocation. Fixed: `FOR UPDATE` locks + partial unique `(seat_id)` where active (§8); concurrent converts skip instead of double-allocating.
 - `DefaultSeatAllocator:100-136`, `EnsureSeatHoldAction:86-122` MEDIUM-HIGH (was HIGH) — bulk `insert()` bypasses events/validation; owner manually assigned so not cross-tenant, but `seat_id` TOCTOU stands.
 - `SeatHold/SeatAllocation` no `booted()` HIGH — any `seat_id/held_by_*/allocated_to_*` accepted outside allocator.
 - `Seat/SeatMap/SeatSection` `each(delete)` no txn/chunk MEDIUM.
@@ -345,9 +347,9 @@ Performance:
 
 ### engagement
 Bugs:
-- follow/bookmark/react/respond HIGH — `first→create`, no lock, no composite unique (only counters unique) → twins skew counters.
-- Reminder double-send HIGH — `markSent/Failed:111-127` no status precondition; `SendDueRemindersCommand:56-73` re-check non-atomic, no lease.
-- `share_token Str::random(16)` indexed not unique MEDIUM → collisions.
+- DONE (2026-09-13, §8 item 2) — follow/bookmark/react/respond HIGH — `first→create`, no lock, no composite unique (only counters unique) → twins skew counters. Fixed: actor+subject composites folded into creates; lock + 23000 rescue returns existing.
+- DONE (2026-09-13, §8 item 2) — Reminder double-send HIGH — `markSent/Failed:111-127` no status precondition; `SendDueRemindersCommand:56-73` re-check non-atomic, no lease. Fixed: status preconditions + row locks + send lease.
+- DONE (2026-09-13, §8 item 2) — `share_token Str::random(16)` indexed not unique MEDIUM → collisions. Fixed: unique folded into the shares create.
 - Unbounded reminder/subscription creation MEDIUM — no dedup/throttle.
 - `BookmarkCollectionItem` dedup unverified — `firstOrCreate` without confirmed unique; verify migration.
 Security:
@@ -359,7 +361,7 @@ Performance:
 
 ### feedback
 Bugs:
-- `SubmitFeedbackResponseAction:139-149` HIGH — `exists()` then insert, form lock only, no `(form,respondent)` unique → duplicates.
+- DONE (2026-09-13, §8 item 3) — `SubmitFeedbackResponseAction:139-149` HIGH — `exists()` then insert, form lock only, no `(form,respondent)` unique → duplicates. Fixed: submitted-only partial unique folded into the responses create; idempotent Start (reuses drafts); full-transition rescue returns the winner; flag-off multi-submit still allowed.
 - Invitation-expiry rollback MEDIUM — `assertInvitationValid:170-173` marks `Expired` then throws inside same txn → rolled back.
 - `StartFeedbackResponseAction:42-59` MEDIUM — unlimited drafts, flips invitation to `Started` with no status check.
 - `DeleteFeedbackFormAction:20-46` MEDIUM — `get()->each->delete()` N+1.
@@ -387,7 +389,7 @@ Security:
 Performance:
 - 3+ round-trips per cart MEDIUM (narrowed) — true for snapshot path (`save` + items `upsert:210` + conditions `upsert:277`); primary `carts` storage single-row JSON.
 - CAS spin no backoff MEDIUM — `handleCasConflict:732-745` throws, no retry.
-- Missing `(identifier,instance,version)` composite LOW.
+- DONE (2026-09-13, §8 item 8) — Missing `(identifier,instance,version)` composite LOW. Fixed: kept additive (`2026_09_12_162447_add_cas_lookup_index_to_carts_table.php`).
 
 ### checkout
 Bugs:
@@ -410,8 +412,8 @@ Performance:
 
 ### orders
 Bugs:
-- `Order:399-409` HIGH — `recalculateTotals` tax-inconsistent (`subtotal=sum(tax-inclusive total)`, keeps `tax_total` separate, `grand=items+shipping-discount` drops tax); disagrees with `CreateOrderFromCart:40-50` by `tax_total`.
-- `Order:380-384` HIGH — `getBalanceDue = grand-paid+refunded` (10000/10000/2000 → 2000 due, should be 0).
+- DONE (2026-09-13, §8 item 10) — `Order:399-409` HIGH — `recalculateTotals` tax-inconsistent (`subtotal=sum(tax-inclusive total)`, keeps `tax_total` separate, `grand=items+shipping-discount` drops tax); disagrees with `CreateOrderFromCart:40-50` by `tax_total`. Fixed: ex-tax subtotal, `grand = subtotal + tax_total + shipping - discount`.
+- DONE (2026-09-13, §8 item 10) — `Order:380-384` HIGH — `getBalanceDue = grand-paid+refunded` (10000/10000/2000 → 2000 due, should be 0). Fixed: `grand - paid`.
 - `OrderPayment:222-241` MEDIUM — lock-free `exists()` TOCTOU; only `PaymentConfirmed:42-84` handles 23000.
 - `CreateOrder:154-176` MEDIUM — strict `(string)===/(int)===` intake compare breaks whitespace-variant retry.
 - `OrderItem saving:232-234` LOW — unconditional `total` overwrite, no clamp/quantity check.
@@ -420,7 +422,7 @@ Security:
 - Child inherit when scoping disabled MEDIUM — fall back to unscoped `findOrFail` + inherit when `orders.owner.enabled` off.
 - `findExistingIntake:333-340` LOW — `forOwner(includeGlobal)` oracle (conflict vs return reveals totals to guesser).
 Performance:
-- 4–5 `sum()` per balance check HIGH — single `SUM(CASE)` or cached columns.
+- DONE (2026-09-13, §8 item 10) — 4–5 `sum()` per balance check HIGH — single `SUM(CASE)` or cached columns. Fixed: `paid_total` / `refunded_total` / `pending_refunded_total` folded into the orders create; `OrderPayment`/`OrderRefund` model events are the single sync mechanism (atomic increments), and the five manual mutation sites now refresh instead of assigning.
 - Row-by-row inserts + `fresh` in txn MEDIUM — 50 lines = 50+ inserts + selects under lock.
 
 ### shipping
@@ -484,12 +486,12 @@ Performance:
 
 ### cashier-chip
 Bugs:
-- No `(subscription_id,period_key)` unique MEDIUM-HIGH — `ClaimRenewalAttempt:21-69` SELECT-then-INSERT serialized only by subscription lock; crashed lease → double-bill.
+- DONE (2026-09-13, §8 item 4) — No `(subscription_id,period_key)` unique MEDIUM-HIGH — `ClaimRenewalAttempt:21-69` SELECT-then-INSERT serialized only by subscription lock; crashed lease → double-bill. Fixed: kept additive (partial unique where not null) with atomic claim + 23000 rescue.
 - `WebhookCommand:55` MEDIUM — dead key `cashier-chip.webhooks.verify_signature` display-only; real switch in `chip`.
 Security:
 - `PaymentMethodStore:72-182` GOOD — scoped → `withoutOwnerScope` re-check → `AuthorizationException` on cross-tenant.
 - `validate_billable_owner=false` kill-switch LOW.
-- `RenewalAttempt` no owner columns MEDIUM — isolation via `belongsTo subscription` join only.
+- DONE (2026-09-13, §8 item 12) — `RenewalAttempt` no owner columns MEDIUM — isolation via `belongsTo subscription` join only. Fixed: kept additive (owner columns + chunked backfill from parent subscriptions); `HasOwner`/`HasOwnerScopeConfig` with inheritance and `OwnerWriteGuard` on claim paths.
 Performance: `ChipSubscription items` N+1 MEDIUM (corrected citation `:1158` with `loadMissing:1140`) — eager-load `items` at query site.
 
 ### docs
@@ -605,10 +607,34 @@ Per-package exceptions (false positives removed; see §7):
 - pricing fan-out exact N unmeasured (direction kept).
 - ticketing `get()->sum()` HIGH → MEDIUM (only `getTotalAvailable`; `getTotalOnHand` already SQL).
 - shipping serial-only fan-out (default parallel via `Concurrency`; serial only in fallback).
+- tax missing `(owner)` index on rates (falsified 2026-09-13: `nullableMorphs('owner')` already creates the composite index in `2001_03_01_000003_create_tax_rates_table.php`; no change made).
 
 ---
 
-## 8. How to verify (per-package, not repo-wide)
+## 8. Migration batch — DONE (2026-09-13)
+
+The 12 migration issues from the verified findings are implemented (11) or falsified (1). Per repo convention additive migrations were folded into their table creates (follow-up to `8268bd020`) except where noted. No `constrained()` / `cascadeOnDelete()` anywhere. Breaking changes allowed, no legacy paths. Package docs updated in the same pass (see each item).
+
+| # | Finding (§ ref) | Fix | Docs |
+|---|-----------------|-----|------|
+| 1 | membership missing composite unique (§1) | Composites folded into the applications/invitations creates; lock + 23000 rescue returns existing | `packages/membership/docs/04-usage.md` |
+| 2 | engagement dup uniques + `share_token` + reminder lease (§3) | Actor+subject composites + `share_token` unique folded into creates; lock + rescue; status preconditions + send lease | `packages/engagement/docs/01-overview.md`, `99-troubleshooting.md` |
+| 3 | feedback one-response unique (§3) | Submitted-only partial unique folded into the responses create (pgsql/sqlite; code-level on MySQL); idempotent Start; full-transition rescue; flag-off multi-submit kept | `packages/feedback/docs/04-usage.md`, `99-troubleshooting.md` |
+| 4 | cashier-chip `(subscription_id, period_key)` unique (§5) | Kept additive (`2026_09_13_000001_*`); atomic claim + 23000 rescue | `packages/cashier-chip/docs/09-subscriptions.md` |
+| 5 | seating active-allocation partial unique (§2) | Kept additive (`2026_09_12_162834_*`, pgsql/sqlite; row locks elsewhere); locks + 23000-skip | `packages/seating/docs/99-troubleshooting.md` |
+| 6 | customers `(owner, status)` composites (§2) | Folded into the customers/segments creates | `packages/customers/docs/99-troubleshooting.md` |
+| 7 | tax `(owner)` index on rates (§2) | FALSE — already exists via `nullableMorphs`; dropped, see §7 | — |
+| 8 | cart `(identifier, instance, version)` composite (§4) | Kept additive (`2026_09_12_162447_*`) | `packages/cart/docs/08-storage.md` |
+| 9 | addressing `LOWER(name)` indexes (§1) | Folded into the geography creates (normalized-column fallback) | `packages/addressing/docs/99-troubleshooting.md` |
+| 10 | orders cached totals + `recalculateTotals`/`getBalanceDue` (§4) | Columns folded into the orders create; model events are the single sync; ex-tax subtotal formula | `packages/orders/docs/04-usage.md` |
+| 11 | tax zone matching (§2) | No migration by design: request-scoped owner-aware resolver cache + `scoped()` bindings | `packages/tax/docs/99-troubleshooting.md` |
+| 12 | `RenewalAttempt` owner columns (§5) | Kept additive (columns + chunked backfill); `HasOwner` + inheritance + guards | `packages/cashier-chip/docs/01-overview.md`, `02-installation.md`, `09-subscriptions.md`, `11-testing.md` |
+
+Full evidence trail (migrations, code, tests) is recorded in `audits/migration-record.md` ("Audit hardening batch (12 items)"). Gate: uniques fail on dirty data — run duplicate preflights on the live DB before migrating.
+
+---
+
+## 9. How to verify (per-package, not repo-wide)
 
 - DB: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database` (expect empty).
 - Filament nav: `rg "static.*\$navigationGroup" packages/filament-*/src` (expect empty); `rg "'navigation_group'" packages/filament-*/config` (expect empty).

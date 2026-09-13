@@ -317,3 +317,93 @@ migrations; no production backfill is authorized.
   `addressing.Address` plus `HasAddresses`. Development databases use
   delete-and-rerun; PostgreSQL shape proof rides on the next demo boot after
   the available SQLite verification.
+
+## Audit hardening batch (12 items) — implemented — 2026-09-12/13
+
+Source: `audits/verified-bugs-2026-09-12.md`, `audits/verified-security-2026-09-12.md`,
+`audits/verified-performance-2026-09-12.md` (merged into
+`audits/all-packages-audit-2026-09-12.md`). Each finding was re-verified
+against source before fixing; one was falsified (see item 7). Per repo
+convention the additive migrations were folded into their table creates
+(follow-up to `8268bd020`), so the evidence below points at the create
+files unless noted. No `constrained()` / `cascadeOnDelete()` anywhere.
+Breaking changes allowed, no legacy paths.
+
+1. Membership dedup uniques — implemented. Composite uniques
+   `(subject_type, subject_id, applicant_id, status)` and
+   `(subject_type, subject_id, email, role, status)` folded into
+   `2000_01_01_000001_create_membership_applications_table.php` /
+   `2000_01_01_000002_create_membership_invitations_table.php`;
+   `InviteMemberAction` / `ApplyForMembershipAction` use lock + 23000
+   rescue returning the existing row. Docs: `packages/membership/docs/04-usage.md`.
+2. Engagement identity uniques — implemented. Actor+subject composites
+   (follows, bookmarks, responses, reactions incl. type) plus
+   `share_token` unique folded into the `2000_06_01_*` creates;
+   `DefaultEngagementManager` follow/bookmark/react/respond use lock +
+   23000 rescue, reminders gained status preconditions and a send lease.
+   Docs: `packages/engagement/docs/01-overview.md`, `99-troubleshooting.md`.
+3. Feedback one-response backstop — implemented. Partial unique on
+   `(feedback_form_id, respondent_type, respondent_id)` where
+   `status = submitted` folded into
+   `2000_01_01_000005_create_feedback_responses_table.php`
+   (PostgreSQL/SQLite; MySQL relies on action-level checks, no portable
+   partial-index syntax). `StartFeedbackResponseAction` is idempotent
+   (reuses open drafts); `SubmitFeedbackResponseAction` rescues races
+   across the full transition. Flag-off multi-submit still allowed.
+   Docs: `packages/feedback/docs/04-usage.md`, `99-troubleshooting.md`.
+4. Cashier-chip renewal uniqueness — implemented (kept as additive
+   migrations, not folded):
+   `2026_09_13_000001_add_subscription_period_unique_index_to_chip_renewal_attempts_table.php`
+   (partial unique on `(subscription_id, period_key)` where not null),
+   with atomic claim + 23000 rescue in `ClaimRenewalAttempt`.
+   Docs: `packages/cashier-chip/docs/09-subscriptions.md`.
+5. Seating active-allocation uniqueness — implemented (kept additive):
+   `2026_09_12_162834_add_active_seat_allocation_unique_index.php`
+   (partial unique on `(seat_id)` where active, pgsql/sqlite; row locks
+   are the guard elsewhere). `ConvertHoldsToAllocationsAction` locks
+   holds and seats with 23000-skip. Docs:
+   `packages/seating/docs/99-troubleshooting.md`.
+6. Customers owner indexes — implemented. Composites
+   `(owner_type, owner_id, status)` / `(owner_type, owner_id, is_active)`
+   folded into the customers/segments creates. Docs:
+   `packages/customers/docs/99-troubleshooting.md`.
+7. Tax owner index — dropped (false positive). `nullableMorphs('owner')`
+   already creates the composite index in
+   `2001_03_01_000003_create_tax_rates_table.php`. No change made.
+8. Cart CAS index — implemented (kept additive):
+   `2026_09_12_162447_add_cas_lookup_index_to_carts_table.php`
+   composite `(identifier, instance, version)`. Docs:
+   `packages/cart/docs/08-storage.md`.
+9. Addressing lower-name indexes — implemented. `LOWER(name)`
+   functional indexes on countries, states, cities, areas, and area
+   names folded into the `2001_01_01_0000*` creates (normalized-column
+   fallback where unsupported). Docs:
+   `packages/addressing/docs/99-troubleshooting.md`.
+10. Orders cached payment/refund totals — implemented. `paid_total` /
+    `refunded_total` / `pending_refunded_total` folded into
+    `2000_11_01_000001_create_orders_table.php`; `OrderPayment` /
+    `OrderRefund` model events are the single sync mechanism (atomic
+    increments; paid is cumulative so `markAsRefunded` never decrements),
+    and the five manual mutation sites now refresh instead of assigning.
+    Also fixed `recalculateTotals` tax inconsistency (ex-tax subtotal;
+    `grand = subtotal + tax + shipping - discount`) and `getBalanceDue`
+    (no longer adds refunds back). Docs:
+    `packages/orders/docs/04-usage.md`.
+11. Tax zone resolution — corrected (no migration, by design).
+    Request-scoped owner-aware memoization of address/default zone
+    resolution with zone/rate-write invalidation and `scoped()` bindings
+    for Octane safety; a normalized members table was judged unnecessary
+    blast radius. Docs: `packages/tax/docs/99-troubleshooting.md`.
+12. RenewalAttempt owner columns — implemented (kept additive):
+    `2026_09_13_000002_add_owner_columns_to_chip_renewal_attempts_table.php`
+    plus `2026_09_13_000003_backfill_chip_renewal_attempt_owners.php`
+    (chunked backfill from parent subscriptions);
+    `HasOwner`/`HasOwnerScopeConfig` with owner inheritance and
+    `OwnerWriteGuard` on claim paths. Docs:
+    `packages/cashier-chip/docs/01-overview.md`,
+    `02-installation.md`, `09-subscriptions.md`, `11-testing.md`.
+
+- Verification: per-package Pest suites and PHPStan level 6 at fix time;
+  full CI (`CI` workflow on `main`) is the final gate — see run history.
+- Gate: uniques fail on dirty data — run duplicate preflights on the
+  live DB before migrating (same rule as the Organizations entry).

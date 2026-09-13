@@ -13,7 +13,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -98,42 +97,11 @@ it('blocks cross-owner renewal attempt creation and processing', function (): vo
         ->toThrow(AuthorizationException::class);
 });
 
-it('backfills legacy renewal attempts from their subscriptions', function (): void {
-    $owner = makeCashierChipRenewalOwner('Renewal Backfill Owner');
-    $subscription = makeCashierChipDueSubscription($owner);
+it('creates renewal attempts with owner columns and the subscription period unique index', function (): void {
     $attemptsTable = (new RenewalAttempt)->getTable();
-    $attemptId = Str::uuid()->toString();
-    $now = CarbonImmutable::now();
+    $uniqueIndex = str_replace(['.', '-', ' '], '_', $attemptsTable) . '_subscription_period_unique';
 
     expect(Schema::hasColumns($attemptsTable, ['owner_type', 'owner_id']))->toBeTrue()
-        ->and(Schema::hasIndex($attemptsTable, ['owner_type', 'owner_id']))->toBeTrue();
-
-    DB::table($attemptsTable)->insert([
-        'id' => $attemptId,
-        'subscription_id' => $subscription->id,
-        'status' => 'claimed',
-        'amount_minor' => 1000,
-        'period_key' => '2026-09',
-        'purchase_id' => null,
-        'last_error_code' => null,
-        'lease_expires_at' => $now->addHour(),
-        'completed_at' => null,
-        'owner_type' => null,
-        'owner_id' => null,
-        'created_at' => $now,
-        'updated_at' => $now,
-    ]);
-
-    /** @var object{up: Closure(): void} $migration */
-    $migration = require dirname(__DIR__, 4) . '/packages/cashier-chip/database/migrations/2026_09_13_000003_backfill_chip_renewal_attempt_owners.php';
-
-    OwnerContext::withOwner(null, function () use ($migration): void {
-        $migration->up();
-        $migration->up();
-    });
-
-    $attempt = DB::table($attemptsTable)->where('id', $attemptId)->first();
-
-    expect($attempt?->owner_type)->toBe($owner->getMorphClass())
-        ->and((string) $attempt?->owner_id)->toBe((string) $owner->getKey());
+        ->and(Schema::hasIndex($attemptsTable, ['owner_type', 'owner_id']))->toBeTrue()
+        ->and(Schema::hasIndex($attemptsTable, $uniqueIndex))->toBeTrue();
 });

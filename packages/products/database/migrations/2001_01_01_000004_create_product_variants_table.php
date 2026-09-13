@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Support\ProductIdentityIndexes;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -10,14 +11,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        commerce_schema_create_if_missing(config('products.database.tables.variants', 'product_variants'), function (Blueprint $table): void {
+        $tableName = (string) config('products.database.tables.variants', 'product_variants');
+
+        Schema::create($tableName, function (Blueprint $table): void {
             $jsonColumnType = commerce_json_column_type('products', 'jsonb');
 
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)
             $table->nullableUuidMorphs('owner');
-            $table->string('owner_scope', 64)->default('global');
 
             $table->foreignUuid('product_id');
 
@@ -47,13 +49,17 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->unique(['owner_scope', 'sku']);
-
             $table->index('product_id');
             $table->index('is_enabled');
             $table->index('is_default');
             $table->index('deactivated_at');
         });
+
+        if (! app()->environment(['local', 'development', 'testing'])) {
+            return;
+        }
+
+        ProductIdentityIndexes::owner($tableName, 'sku');
     }
 
     public function down(): void

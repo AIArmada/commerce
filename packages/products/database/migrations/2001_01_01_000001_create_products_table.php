@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Support\ProductIdentityIndexes;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -10,13 +11,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        commerce_schema_create_if_missing(config('products.database.tables.products', 'products'), function (Blueprint $table): void {
+        $tableName = (string) config('products.database.tables.products', 'products');
+
+        Schema::create($tableName, function (Blueprint $table): void {
             $jsonColumnType = commerce_json_column_type('products', 'jsonb');
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)
             $table->nullableUuidMorphs('owner');
-            $table->string('owner_scope', 64)->default('global');
 
             // Basic fields
             $table->string('name');
@@ -69,9 +71,6 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->unique(['owner_scope', 'slug']);
-            $table->unique(['owner_scope', 'sku']);
-
             // Indexes
             $table->index(['status', 'visibility']);
             $table->index('type');
@@ -81,6 +80,13 @@ return new class extends Migration
             $table->index('deactivated_at');
             $table->index('archived_at');
         });
+
+        if (! app()->environment(['local', 'development', 'testing'])) {
+            return;
+        }
+
+        ProductIdentityIndexes::owner($tableName, 'slug');
+        ProductIdentityIndexes::owner($tableName, 'sku');
     }
 
     public function down(): void

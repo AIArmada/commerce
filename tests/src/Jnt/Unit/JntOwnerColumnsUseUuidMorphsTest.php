@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 
 it('uses nullableMorphs for JNT owner columns', function (): void {
@@ -42,12 +41,11 @@ it('uses nullableMorphs for JNT owner columns', function (): void {
     expect($webhooks)->not->toContain("nullableUuidMorphs('owner')");
 });
 
-it('can rerun the JNT webhook extension without duplicate indexes', function (): void {
-    /** @var Migration $migration */
-    $migration = require dirname(__DIR__, 4) . '/packages/jnt/database/migrations/2000_10_01_000005_add_jnt_webhook_columns_to_webhook_calls_table.php';
+it('ships the JNT webhook extension columns in its migration', function (): void {
+    $create = (string) file_get_contents(dirname(__DIR__, 4) . '/packages/jnt/database/migrations/2000_10_01_000005_add_jnt_webhook_columns_to_webhook_calls_table.php');
 
-    $migration->up();
-    $migration->up();
+    expect($create)->toContain("'tracking_number'")
+        ->and($create)->toContain('jnt_webhook_calls_pending_idx');
 
     expect(Schema::hasColumn('webhook_calls', 'tracking_number'))->toBeTrue()
         ->and(Schema::hasIndex('webhook_calls', 'jnt_webhook_calls_pending_idx'))->toBeTrue();

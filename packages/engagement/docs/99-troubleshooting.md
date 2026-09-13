@@ -9,9 +9,9 @@ title: Troubleshooting
 The service prevents duplicate active records for the same actor/subject pair. If you see unexpected results, check for previous `unfollowed`, `removed`, or `cancelled` records that may need reactivating. The package transitions statuses — it never deletes rows.
 
 Concurrent follow, bookmark, response, and reaction requests are protected by
-the identity unique indexes and transaction-level row locking. Make sure the
-package migrations, including `2026_09_13_000002_add_engagement_identity_uniques`,
-have been run when deploying this behavior.
+the identity unique indexes (folded into the package's create migrations)
+and transaction-level row locking. Make sure the
+package migrations have been run when deploying this behavior.
 
 ### Reminders not sending
 

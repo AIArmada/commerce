@@ -13,11 +13,7 @@ return new class extends Migration
         $tableName = config('contacting.database.tables.contact_snapshots', 'contact_snapshots');
         $jsonColumnType = commerce_json_column_type('contacting', 'json');
 
-        if (Schema::hasTable($tableName)) {
-            return;
-        }
-
-        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonColumnType): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
 
             $table->nullableUuidMorphs('owner');

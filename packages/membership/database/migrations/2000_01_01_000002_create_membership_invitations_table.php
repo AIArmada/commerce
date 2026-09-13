@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -12,7 +13,7 @@ return new class extends Migration
         $tokenLength = max(64, (int) config('membership.invitations.token_length', 64));
         $tableName = (string) config('membership.database.tables.invitations', 'membership_invitations');
 
-        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($tokenLength): void {
+        Schema::create($tableName, function (Blueprint $table) use ($tokenLength): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->string('subject_type');
@@ -20,17 +21,24 @@ return new class extends Migration
             $table->string('email');
             $table->string('role');
             $table->string('token', $tokenLength)->unique();
+            $table->string('status')->default('pending')->index();
             $table->foreignUuid('invited_by');
             $table->timestampTz('expires_at')->nullable();
+            $table->timestampTz('expired_at')->nullable()->index();
             $table->timestampTz('accepted_at')->nullable();
             $table->foreignUuid('accepted_by')->nullable();
             $table->timestampTz('revoked_at')->nullable();
             $table->foreignUuid('revoked_by')->nullable();
+            $table->timestampTz('last_state_change_at')->nullable()->index();
             $table->timestampsTz();
 
             $table->index(['subject_type', 'subject_id']);
             $table->index('email');
             $table->index('invited_by');
+            $table->unique(
+                ['subject_type', 'subject_id', 'email', 'role', 'status'],
+                'membership_invitations_subject_email_role_status_unique',
+            );
         });
     }
 };

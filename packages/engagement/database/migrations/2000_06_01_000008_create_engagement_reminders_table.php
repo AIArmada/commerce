@@ -9,13 +9,14 @@
 declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
         $jsonType = commerce_json_column_type('engagement', 'jsonb');
-        commerce_schema_create_if_missing(config('engagement.database.tables.reminders', 'reminders'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('engagement.database.tables.reminders', 'reminders'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('remindable_type')->index();
             $table->uuid('remindable_id')->index();

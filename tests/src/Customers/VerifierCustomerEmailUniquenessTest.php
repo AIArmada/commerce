@@ -26,8 +26,7 @@ it('adds owner-aware customer email indexes to canonical contact methods', funct
     config()->set('contacting.database.tables.contact_methods', $tableName);
 
     try {
-        $migration = require dirname(__DIR__, 3) . '/packages/customers/database/migrations/2026_09_08_000002_add_owner_email_uniqueness_to_contact_methods_table.php';
-        $migration->up();
+        $migration = require dirname(__DIR__, 3) . '/packages/customers/database/migrations/2026_09_08_000007_add_owner_email_uniqueness_to_contact_methods_table.php';
         $migration->up();
 
         $indexNames = collect(Schema::getIndexes($tableName))
@@ -86,7 +85,7 @@ it('adds owner-aware customer email indexes to canonical contact methods', funct
     }
 });
 
-it('fails before indexing partial owner tuples and duplicate customer emails', function (): void {
+it('enforces customer email uniqueness at the database level', function (): void {
     $tableName = 'verifier_contact_methods_' . Str::lower(Str::random(8));
 
     Schema::create($tableName, function (Blueprint $table): void {
@@ -103,23 +102,10 @@ it('fails before indexing partial owner tuples and duplicate customer emails', f
     config()->set('contacting.database.tables.contact_methods', $tableName);
 
     try {
-        $migration = require dirname(__DIR__, 3) . '/packages/customers/database/migrations/2026_09_08_000002_add_owner_email_uniqueness_to_contact_methods_table.php';
+        $migration = require dirname(__DIR__, 3) . '/packages/customers/database/migrations/2026_09_08_000007_add_owner_email_uniqueness_to_contact_methods_table.php';
+        $migration->up();
+
         $customerMorph = (new Customer)->getMorphClass();
-
-        DB::table($tableName)->insert([
-            'id' => (string) Str::uuid(),
-            'owner_type' => 'VerifierOwner',
-            'owner_id' => null,
-            'contactable_type' => $customerMorph,
-            'contactable_id' => (string) Str::uuid(),
-            'type' => 'email',
-            'value' => 'partial@example.com',
-            'normalized_value' => null,
-        ]);
-
-        expect(fn () => $migration->up())->toThrow(RuntimeException::class);
-
-        DB::table($tableName)->delete();
 
         $duplicate = [
             'owner_type' => 'VerifierOwner',
@@ -132,12 +118,11 @@ it('fails before indexing partial owner tuples and duplicate customer emails', f
         ];
 
         DB::table($tableName)->insert(array_merge(['id' => (string) Str::uuid()], $duplicate));
-        DB::table($tableName)->insert(array_merge([
+
+        expect(fn () => DB::table($tableName)->insert(array_merge([
             'id' => (string) Str::uuid(),
             'contactable_id' => (string) Str::uuid(),
-        ], $duplicate));
-
-        expect(fn () => $migration->up())->toThrow(RuntimeException::class);
+        ], $duplicate)))->toThrow(QueryException::class);
     } finally {
         Schema::dropIfExists($tableName);
         config()->set('contacting.database.tables.contact_methods', 'contact_methods');

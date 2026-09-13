@@ -120,12 +120,8 @@ it('queues recalculation with the response owner tuple', function (): void {
     });
 });
 
-it('has a guarded aggregate schema and can rerun its migration', function (): void {
+it('ships a guarded aggregate schema in the base create migration', function (): void {
     $table = (string) config('feedback.database.tables.form_analytics', 'feedback_form_analytics');
-    $migration = require dirname(__DIR__, 3) . '/packages/feedback/database/migrations/2026_09_11_000001_create_feedback_form_analytics_table.php';
-
-    $migration->up();
-    $migration->up();
 
     expect(Schema::hasTable($table))->toBeTrue()
         ->and(Schema::hasColumns($table, [

@@ -18,11 +18,7 @@ return new class extends Migration
         $tables = $databaseConfig['tables'] ?? [];
         $tableName = $tables['subscription_items'] ?? $tablePrefix . 'subscription_items';
 
-        if (Schema::hasTable($tableName)) {
-            return;
-        }
-
-        commerce_schema_create_if_missing($tableName, function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->foreignUuid('subscription_id');

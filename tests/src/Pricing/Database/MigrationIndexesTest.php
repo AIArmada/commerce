@@ -14,7 +14,6 @@ it('indexes price tier lookups by tierable and price list', function (): void {
         $migration = require dirname(__DIR__, 4) . '/packages/pricing/database/migrations/2000_12_01_000003_create_price_tiers_table.php';
 
         $migration->up();
-        $migration->up();
 
         $index = collect(Schema::getIndexes($table))
             ->firstWhere('name', 'price_tiers_tierable_lookup_idx');

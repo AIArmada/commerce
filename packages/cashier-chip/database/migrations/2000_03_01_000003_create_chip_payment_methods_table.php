@@ -16,11 +16,7 @@ return new class extends Migration
         $tableName = $tables['payment_methods'] ?? $tablePrefix . 'payment_methods';
         $jsonColumnType = commerce_json_column_type('cashier-chip', 'jsonb');
 
-        if (Schema::hasTable($tableName)) {
-            return;
-        }
-
-        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonColumnType, $tableName): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType, $tableName): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->uuidMorphs('billable');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -11,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('events', 'jsonb');
 
-        commerce_schema_create_if_missing(config('events.database.tables.event_registrations', 'event_registrations'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('events.database.tables.event_registrations', 'event_registrations'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('event_id')->index();
             $table->foreignUuid('event_occurrence_id')->nullable()->index();
@@ -38,6 +39,7 @@ return new class extends Migration
             $table->timestampTz('refunded_at')->nullable()->index();
             $table->timestampTz('refund_pending_at')->nullable()->index();
             $table->timestampTz('expired_at')->nullable();
+            $table->timestampTz('last_state_change_at')->nullable()->index();
             $table->text('status_reason')->nullable();
             $table->text('notes')->nullable();
             $table->{$jsonType}('metadata')->nullable();

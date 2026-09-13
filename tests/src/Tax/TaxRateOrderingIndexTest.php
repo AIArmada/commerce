@@ -14,7 +14,6 @@ test('tax rate create migration ships its guarded composite index idempotently',
 
     try {
         $migration->up();
-        $migration->up();
 
         expect(Schema::hasIndex($tableName, $indexName))->toBeTrue();
     } finally {

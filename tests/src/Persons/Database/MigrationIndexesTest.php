@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-it('adds the identity and assignment indexes idempotently', function (): void {
+it('ships the identity and assignment indexes in the base creates', function (): void {
     $tables = [
         'persons' => config('persons.database.tables.persons', 'persons'),
         'person_names' => config('persons.database.tables.person_names', 'person_names'),
@@ -33,15 +33,25 @@ it('adds the identity and assignment indexes idempotently', function (): void {
         expect(Schema::hasIndex($tableName, $indexName))->toBeTrue();
     }
 
-    $migrationPath = dirname(__DIR__, 4)
-        . '/packages/persons/database/migrations/2026_09_11_000001_add_identity_indexes_to_persons_tables.php';
-    $migration = require $migrationPath;
+    $migrationBase = dirname(__DIR__, 4) . '/packages/persons/database/migrations/';
 
-    $migration->up();
-    $migration->up();
+    $contents = [
+        '2000_01_01_000001_create_persons_table.php' => ['persons_slug_unique', 'Schema::create'],
+        '2000_01_01_000002_create_person_names_table.php' => ['person_names_primary_unique', 'person_names_person_primary_index'],
+        '2000_01_01_000006_create_title_assignments_table.php' => ['title_assignments_target_status_index'],
+        '2000_01_01_000008_create_credential_assignments_table.php' => ['credential_assignments_target_status_index'],
+        '2000_01_01_000009_create_affiliations_table.php' => ['affiliations_primary_unique', 'affiliations_target_primary_index'],
+    ];
 
-    foreach ($expectedIndexes as [$tableName, $indexName]) {
-        expect(Schema::hasIndex($tableName, $indexName))->toBeTrue();
+    foreach ($contents as $migrationFile => $needles) {
+        $create = (string) file_get_contents($migrationBase . $migrationFile);
+
+        foreach ($needles as $needle) {
+            expect($create)->toContain($needle);
+        }
+
+        expect($create)->not->toContain('hasTable')
+            ->and($create)->not->toContain('hasIndex');
     }
 });
 
@@ -89,43 +99,4 @@ it('keeps primary application guards and rejects direct duplicate writes', funct
         'created_at' => now(),
         'updated_at' => now(),
     ]))->toThrow(QueryException::class);
-});
-
-it('reports dirty slug data without deleting it during the dry-run preflight', function (): void {
-    $tableName = (string) config('persons.database.tables.persons', 'persons');
-    Schema::table($tableName, function ($table): void {
-        $table->dropIndex('persons_slug_unique');
-    });
-
-    $slug = 'preflight-duplicate-' . Str::lower(Str::random(8));
-    DB::table($tableName)->insert([
-        [
-            'id' => (string) Str::uuid(),
-            'name' => 'Preflight One',
-            'slug' => $slug,
-            'searchable_name' => 'preflight one',
-            'status' => 'active',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ],
-        [
-            'id' => (string) Str::uuid(),
-            'name' => 'Preflight Two',
-            'slug' => $slug,
-            'searchable_name' => 'preflight two',
-            'status' => 'active',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ],
-    ]);
-
-    $migrationPath = dirname(__DIR__, 4)
-        . '/packages/persons/database/migrations/2026_09_11_000001_add_identity_indexes_to_persons_tables.php';
-    $migration = require $migrationPath;
-    $before = DB::table($tableName)->where('slug', $slug)->count();
-
-    expect(fn () => $migration->up())
-        ->toThrow(RuntimeException::class, 'No rows were deleted');
-
-    expect(DB::table($tableName)->where('slug', $slug)->count())->toBe($before);
 });

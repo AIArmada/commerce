@@ -15,7 +15,7 @@ return new class extends Migration
         $tableName = (string) config('cart.database.tables.snapshot_conditions', 'cart_snapshot_conditions');
         $jsonType = (string) commerce_json_column_type('cart', config('cart.database.json_column_type', 'jsonb'));
 
-        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonType): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('cart_id');
             $table->foreignUuid('cart_item_id')->nullable();
@@ -59,8 +59,8 @@ return new class extends Migration
             && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
-                DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_rules_gin_index ON {$tableName} USING GIN (rules)");
-                DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_attributes_gin_index ON {$tableName} USING GIN (attributes)");
+                DB::statement("CREATE INDEX {$tableName}_rules_gin_index ON {$tableName} USING GIN (rules)");
+                DB::statement("CREATE INDEX {$tableName}_attributes_gin_index ON {$tableName} USING GIN (attributes)");
             });
         }
     }

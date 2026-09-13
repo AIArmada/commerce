@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Support\ProductIdentityIndexes;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -10,18 +11,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        commerce_schema_create_if_missing(config('products.database.tables.categories', 'product_categories'), function (Blueprint $table): void {
+        $tableName = (string) config('products.database.tables.categories', 'product_categories');
+
+        Schema::create($tableName, function (Blueprint $table): void {
             $jsonColumnType = commerce_json_column_type('products', 'jsonb');
 
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)
             $table->nullableUuidMorphs('owner');
-            $table->string('owner_scope', 64)->default('global');
 
             // Parent for hierarchy
             $table->foreignUuid('parent_id')->nullable();
-            $table->string('parent_scope', 36)->default('root');
 
             $table->string('name');
             $table->string('slug');
@@ -43,12 +44,16 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            // Unique slug per parent
-            $table->unique(['owner_scope', 'parent_scope', 'slug']);
             $table->index('parent_id');
             $table->index('status');
             $table->index('hidden_at');
         });
+
+        if (! app()->environment(['local', 'development', 'testing'])) {
+            return;
+        }
+
+        ProductIdentityIndexes::categories($tableName);
     }
 
     public function down(): void

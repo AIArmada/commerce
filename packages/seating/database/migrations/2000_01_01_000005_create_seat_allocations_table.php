@@ -11,8 +11,9 @@ return new class extends Migration
     public function up(): void
     {
         $jsonType = commerce_json_column_type('seating', 'json');
+        $tableName = (string) config('seating.database.tables.seat_allocations', 'seat_allocations');
 
-        commerce_schema_create_if_missing(config('seating.database.tables.seat_allocations', 'seat_allocations'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
             $table->uuid('seat_id')->nullable();
@@ -32,6 +33,27 @@ return new class extends Migration
             $table->index(['seat_section_id', 'status'], 'sa_section_status_idx');
             $table->index(['released_by_type', 'released_by_id'], 'sa_released_by_idx');
         });
+
+        $connection = Schema::getConnection();
+
+        if (! in_array($connection->getDriverName(), ['pgsql', 'sqlite'], true)) {
+            /*
+             * Drivers without partial-index predicates retain the existing
+             * composite (seat_id, status) lookup index. Conversion locks the
+             * seat row with FOR UPDATE as the integrity guard on those drivers.
+             */
+            return;
+        }
+
+        $grammar = $connection->getQueryGrammar();
+
+        $connection->statement(sprintf(
+            'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s = \'active\'',
+            $grammar->wrap('seating_allocations_active_seat_unique'),
+            $grammar->wrapTable($tableName),
+            $grammar->wrap('seat_id'),
+            $grammar->wrap('status'),
+        ));
     }
 
     public function down(): void

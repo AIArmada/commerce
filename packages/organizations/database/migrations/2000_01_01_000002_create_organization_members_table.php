@@ -12,11 +12,7 @@ return new class extends Migration
     {
         $tableName = (string) config('organizations.database.tables.members', 'organization_members');
 
-        if (Schema::hasTable($tableName)) {
-            return;
-        }
-
-        commerce_schema_create_if_missing($tableName, function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('organization_id')->index();
             $table->foreignUuid('user_id')->index();
@@ -24,7 +20,8 @@ return new class extends Migration
             $table->timestampTz('joined_at')->nullable();
             $table->timestampsTz();
 
-            $table->index(['organization_id', 'user_id']);
+            $table->unique(['organization_id', 'user_id'], 'organization_members_organization_user_unique');
+            $table->index(['organization_id', 'role'], 'organization_members_organization_role_index');
         });
     }
 };

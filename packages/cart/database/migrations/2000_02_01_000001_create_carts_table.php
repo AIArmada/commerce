@@ -17,7 +17,7 @@ return new class extends Migration
         $tableName = config('cart.database.table', 'carts');
         $jsonType = (string) commerce_json_column_type('cart', 'jsonb');
 
-        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonType): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType, $tableName): void {
             $table->uuid('id')->primary();
             $table->string('identifier')->index();
             $table->string('owner_scope')->default('global');
@@ -35,6 +35,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->unique(['owner_scope', 'identifier', 'instance']);
+            $table->index(['identifier', 'instance', 'version'], $tableName . '_identifier_instance_version_index');
             $table->index('expired_at');
             $table->index('checked_out_at');
             $table->index('abandoned_at');
@@ -44,9 +45,9 @@ return new class extends Migration
         $driver = ConnectionDriver::name(Schema::getConnection());
 
         if ($jsonType === 'jsonb' && $driver === 'pgsql') {
-            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_items_gin_index ON \"{$tableName}\" USING GIN (\"items\")");
-            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_conditions_gin_index ON \"{$tableName}\" USING GIN (\"conditions\")");
-            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_metadata_gin_index ON \"{$tableName}\" USING GIN (\"metadata\")");
+            DB::statement("CREATE INDEX {$tableName}_items_gin_index ON \"{$tableName}\" USING GIN (\"items\")");
+            DB::statement("CREATE INDEX {$tableName}_conditions_gin_index ON \"{$tableName}\" USING GIN (\"conditions\")");
+            DB::statement("CREATE INDEX {$tableName}_metadata_gin_index ON \"{$tableName}\" USING GIN (\"metadata\")");
         }
 
         if ($driver === 'pgsql') {
@@ -64,31 +65,31 @@ return new class extends Migration
     private function addPostgreSQLIndexes(string $tableName, string $jsonType): void
     {
         DB::statement("
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS {$tableName}_lookup_covering
+            CREATE INDEX {$tableName}_lookup_covering
             ON \"{$tableName}\" (owner_type, owner_id, identifier, instance)
             INCLUDE (id, version, updated_at, expires_at)
         ");
 
         DB::statement("
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS {$tableName}_active
+            CREATE INDEX {$tableName}_active
             ON \"{$tableName}\" (owner_type, owner_id, expires_at, identifier, instance)
         ");
 
         DB::statement("
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS {$tableName}_expired
+            CREATE INDEX {$tableName}_expired
             ON \"{$tableName}\" (owner_type, owner_id, expires_at)
             WHERE expires_at IS NOT NULL
         ");
 
         if ($jsonType === 'jsonb') {
             DB::statement("
-                CREATE INDEX CONCURRENTLY IF NOT EXISTS {$tableName}_analytics
+                CREATE INDEX {$tableName}_analytics
                 ON \"{$tableName}\" (owner_type, owner_id, updated_at, instance)
                 WHERE items IS NOT NULL AND items != '[]'::jsonb
             ");
         } else {
             DB::statement("
-                CREATE INDEX CONCURRENTLY IF NOT EXISTS {$tableName}_analytics
+                CREATE INDEX {$tableName}_analytics
                 ON \"{$tableName}\" (owner_type, owner_id, updated_at, instance)
                 WHERE items IS NOT NULL
             ");
@@ -106,9 +107,6 @@ return new class extends Migration
         $grammar = $connection->getQueryGrammar();
 
         foreach ($indexes as $indexName => $columns) {
-            if (Schema::hasIndex($tableName, $indexName)) {
-                continue;
-            }
 
             $connection->statement(sprintf(
                 'CREATE INDEX %s ON %s %s',

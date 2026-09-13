@@ -14,7 +14,7 @@ return new class extends Migration
         $progressTable = config('affiliates.database.tables.training_progress', 'affiliate_training_progress');
         $jsonType = commerce_json_column_type('affiliates');
 
-        commerce_schema_create_if_missing($modulesTable, function (Blueprint $table) use ($jsonType): void {
+        Schema::create($modulesTable, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('title');
             $table->text('description')->nullable();
@@ -33,7 +33,7 @@ return new class extends Migration
 
         });
 
-        commerce_schema_create_if_missing($progressTable, function (Blueprint $table): void {
+        Schema::create($progressTable, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('affiliate_id')->index();
             $table->foreignUuid('module_id')->index();

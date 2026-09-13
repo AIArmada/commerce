@@ -9,13 +9,14 @@
 declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
         $jsonType = commerce_json_column_type('engagement', 'jsonb');
-        commerce_schema_create_if_missing(config('engagement.database.tables.shares', 'engagement_shares'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('engagement.database.tables.shares', 'engagement_shares'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('sharer_type')->nullable()->index();
             $table->uuid('sharer_id')->nullable()->index();
@@ -38,6 +39,7 @@ return new class extends Migration
             $table->timestampsTz();
             $table->index(['sharer_type', 'sharer_id']);
             $table->index(['shareable_type', 'shareable_id']);
+            $table->unique(['share_token'], 'engagement_shares_share_token_unique');
         });
     }
 };

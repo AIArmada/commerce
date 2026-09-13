@@ -9,13 +9,14 @@
 declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
         $jsonType = commerce_json_column_type('engagement', 'jsonb');
-        commerce_schema_create_if_missing(config('engagement.database.tables.responses', 'responses'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('engagement.database.tables.responses', 'responses'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('responder_type')->index();
             $table->uuid('responder_id')->index();
@@ -34,6 +35,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
+            $table->unique(['responder_type', 'responder_id', 'respondable_type', 'respondable_id', 'owner_type', 'owner_id'], 'engagement_responses_actor_subject_unique');
         });
     }
 };

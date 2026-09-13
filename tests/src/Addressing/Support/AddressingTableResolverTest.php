@@ -55,12 +55,6 @@ it('uses the canonical configured table names for runtime models and every addre
             expect(Schema::hasTable($tableName))->toBeTrue("Missing configured table [{$tableKey}] ({$tableName}).");
         }
 
-        $ownerMigration = require $repositoryRoot . '/packages/addressing/database/migrations/2026_09_07_090000_add_owner_columns_to_addressing_tables.php';
-        $cutoverMigration = require $repositoryRoot . '/packages/addressing/database/migrations/2026_09_07_100000_reject_legacy_ownerless_addressing_rows.php';
-
-        $ownerMigration->up();
-        $cutoverMigration->up();
-
         expect((new Address)->getTable())->toBe($tables['addresses'])
             ->and((new Addressable)->getTable())->toBe($tables['addressables']);
 

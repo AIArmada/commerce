@@ -14,7 +14,7 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        commerce_schema_create_if_missing($tablePrefix . 'purchases', function (Blueprint $table): void {
+        Schema::create($tablePrefix . 'purchases', function (Blueprint $table): void {
             // Core API fields - exact match with CHIP API
             $table->uuid('id')->primary();
             $table->string('type')->default('purchase');
@@ -142,16 +142,16 @@ return new class extends Migration
             && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
             $tableName = $tablePrefix . 'purchases';
-            DB::statement("CREATE INDEX IF NOT EXISTS chip_purchases_metadata_gin_index ON \"{$tableName}\" USING GIN (\"metadata\")");
+            DB::statement("CREATE INDEX chip_purchases_metadata_gin_index ON \"{$tableName}\" USING GIN (\"metadata\")");
 
             // Add optimized expression indexes for cart_id lookups (PostgreSQL only)
             DB::statement("
-                CREATE INDEX IF NOT EXISTS chip_purchases_metadata_cart_id_idx
+                CREATE INDEX chip_purchases_metadata_cart_id_idx
                 ON {$tablePrefix}purchases ((metadata->>'cart_id'))
             ");
 
             DB::statement("
-                CREATE INDEX IF NOT EXISTS chip_purchases_status_cart_id_idx
+                CREATE INDEX chip_purchases_status_cart_id_idx
                 ON {$tablePrefix}purchases (status, ((metadata->>'cart_id')))
             ");
         }

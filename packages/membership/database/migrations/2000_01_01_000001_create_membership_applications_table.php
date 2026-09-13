@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -13,7 +14,7 @@ return new class extends Migration
 
         $tableName = (string) config('membership.database.tables.applications', 'membership_applications');
 
-        commerce_schema_create_if_missing($tableName, function (Blueprint $table) use ($jsonType): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->string('subject_type');
@@ -33,6 +34,10 @@ return new class extends Migration
             $table->index('applicant_id');
             $table->index('status');
             $table->index('reviewer_id');
+            $table->unique(
+                ['subject_type', 'subject_id', 'applicant_id', 'status'],
+                'membership_applications_subject_applicant_status_unique',
+            );
         });
     }
 };
