@@ -1,0 +1,42 @@
+End-to-end review of packages/filament-customers (Filament UI-only package; no routes/migrations/tests dirs exist). All findings below were verified by reading the cited bodies plus cross-package contracts (customers models/actions/policies, commerce-support OwnerUiScope/OwnerWriteGuard, contacting HasContactMethods, artisan commands).
+
+HIGH
+
+1. [bug/high] SegmentRebuildPage calls a nonexistent artisan command — src/Pages/SegmentRebuildPage.php:93. `Artisan::call('customers:rebuild-segment', ['segment' => $segmentId])` but the only registered command is `customers:rebuild-segments {--segment=...}` (packages/customers/src/Console/Commands/RebuildSegmentsCommand.php:24). Every single-segment rebuild throws CommandNotFoundException (500). Fix: call `customers:rebuild-segments` with `--segment` option, or better dispatch a queued job. Confidence: high.
+
+2. [bug/high] AddressValidationPage batch action calls a nonexistent command — src/Pages/AddressValidationPage.php:110. `Artisan::call('customers:validate-addresses')` matches zero commands in the monorepo (grep-verified). Always 500s. Fix: implement the command/queued job or remove the action. Confidence: high.
+
+3. [bug/high] Missing Blade views for two pages — src/Pages/SegmentRebuildPage.php:22 (`pages.segment-rebuild`) and src/Pages/AddressValidationPage.php:26 (`pages.address-validation`); resources/views/pages/ contains only merge-customers.blade.php. Both pages 500 when enabled (they are behind default-off feature flags + plugin opt-in, so latent until activated). Fix: add the views. Confidence: high.
+
+4. [bug/high] Segment status conditions silently ignored — src/Resources/SegmentResource/Schemas/SegmentForm.php:112-119 stores `value_status`, but Segment::applyConditions (packages/customers/src/Models/Segment.php:346) normalizes only `value_numeric ?? value_boolean ?? value` — `value_status` is never read, so `$value === null` → condition skipped. Automatic segments with a status rule match as if the rule didn't exist. Fix: persist the status under `value` (matching the documented public API) or extend applyConditions. Confidence: high.
+
+5. [security/high] MergeCustomersPage::merge has no authorization — src/Pages/MergeCustomersPage.php:144-167. Any panel user reaching the page can merge (= mutate target + permanently delete source) any two owner-scoped customers; there is no Gate/policy check (update on both, delete on source), unlike the bulk actions and SegmentsTable::rebuild elsewhere in this package. Companion gaps: no server-side target!==source recheck in merge() (only a field rule), and core MergeCustomers throws raw InvalidArgumentException on cross-owner (owner-disabled mode) → unhandled 500 instead of a validation error. Fix: authorize update+delete via policies, recheck distinct IDs, catch and notify. Confidence: high.
+
+MEDIUM
+
+6. [security+performance/medium] SegmentRebuildPage actions unauthenticated-by-policy and synchronous — src/Pages/SegmentRebuildPage.php:69-109. rebuildSegment() skips the `rebuild` policy check that SegmentsTable.php:104 correctly enforces, and both it and rebuildAllSegments() run Artisan::call synchronously in the web request (timeout risk on large segments). Fix: Gate::authorize('rebuild'), dispatch async. Confidence: high.
+
+7. [security/medium] AddressValidationPage::validateAddress lacks update authorization — src/Pages/AddressValidationPage.php:92-106. OwnerWriteGuard scoping is applied but any page user can mark any scoped address `verified` without an `update` policy check. Fix: Gate::authorize('update', $address). Confidence: high.
+
+8. [security/medium] AddressesRelationManager attach select is unscoped — src/Resources/CustomerResource/RelationManagers/AddressesRelationManager.php:99-103. AttachAction::preloadRecordSelect() has no OwnerUiScope constraint, so the picker can surface and attach cross-owner Address rows; EditAction additionally edits the shared Address row in place (affects every customer sharing it). Fix: recordSelectOptionsQuery scoped by owner, or create-only flow. Confidence: med (policy may mitigate edit, but attach picker is visibly unscoped).
+
+9. [bug/medium] Sortable on `full_name` accessor breaks — src/Resources/CustomerResource/Tables/CustomersTable.php:34-38. `full_name` is an accessor (getFullNameAttribute), not a column; plain ->sortable() generates ORDER BY `full_name` → SQL error when the header is clicked. Fix: sortQueryUsing on first_name/last_name or drop sortable. Confidence: med-high.
+
+10. [bug/medium] Dead null-handling after findOrFailForOwner — src/Pages/MergeCustomersPage.php:155-165 + :193-203 and src/Pages/SegmentRebuildPage.php:71-82. OwnerWriteGuard::findOrFailForOwner throws AuthorizationException on miss/cross-owner (ResolveOwnedModelOrFailAction.php:87) and never returns null, so the "not found" notifications are unreachable when owner scoping is on (inconsistent with the owner-disabled path that does return null). Secure failure mode, but dead code + hostile UX (403 page in Livewire). Fix: try/catch → notification. Confidence: high.
+
+11. [performance/medium] N+1 via resolveEmail()/resolveCustomer() — CustomersTable.php:38, RecentCustomersWidget.php:32, MergeCustomersPage.php:93-142. Verified HasContactMethods::resolveContact builds a fresh query on every call (no relation reuse), so each table/widget row costs an extra query, and each merge-search keystroke costs up to 20 × (OwnerWriteGuard lookup + email query) via getCustomerLabel(). Fix: eager-load/select primary emails once; reuse already-fetched rows for labels. Confidence: high.
+
+12. [performance/medium] Unbounded segment list + per-row counts — SegmentRebuildPage.php:51-67. getSegments() has no limit and calls $segment->customers()->count() per row (N+1). Fix: withCount('customers') + pagination/limit. Confidence: high.
+
+13. [performance/medium] Unbounded customer preload in SegmentForm — src/Resources/SegmentResource/Schemas/SegmentForm.php:145-154. Relationship multi-select with ->preload() loads every owner-scoped customer into the form. Fix: drop preload (searchable async) or cap. Same pattern, lower impact: CustomersTable segments filter pluck (CustomersTable.php:80-83). Confidence: high.
+
+LOW
+
+14. [performance/low] Navigation badges query on every admin request — CustomerResource.php:44-50, SegmentResource.php:40-46. Two COUNT queries per page load with no caching. Consider short-TTL cache via OwnerCache. Confidence: high.
+15. [bug/low] LIKE wildcards unescaped in merge search — MergeCustomersPage.php:105-114. `%`, `_`, `\` in input act as wildcards (bound params, so no SQLi — just overbroad matches). Escape with addcslashes. Confidence: high.
+16. [bug/low] Validation gaps: NotesRelationManager content has no maxLength (unbounded note bodies); AddressesRelationManager country_code accepts any 2 chars (no case/format rule). Confidence: high.
+17. [process/low] Package ships zero tests (no tests/ dir) for merge, segment sync guards, and scope helpers — the exact logic carrying the 403/fail-closed guarantees above. Confidence: high.
+
+POSITIVES (brief): owner scoping is otherwise consistent — getEloquentQuery + OwnerUiScope(includeGlobal:false) on both resources, badges, widgets, and relationship queries; syncManualSegments/syncManualCustomers correctly re-resolve owner scope and 403 on forged IDs; bulk marketing actions and SegmentsTable rebuild correctly Gate-authorize per record; policies (Customer/Segment/Address/CustomerNote) exist with owner-aware checks; destructive actions use requiresConfirmation; merge search is limit(20), unvalidated addresses limit(100); navigation follows the config-group + getNavigationGroup convention; MergeCustomersAction stays a thin UI caller over the core domain action; no raw SQL injection, XSS sinks, SSRF, path traversal, deserialization, FK violations, SoftDeletes, or Octane-unsafe static state found in this package.
+
+NOT VERIFIED / non-issues checked: Filament relationship columns (`segments.name`) likely benefit from Filament's own eager loading — not claimed as N+1; CustomerStatsWidget date math is CarbonImmutable-safe (no mutation bug); `callable $get` rule closure is compatible with invokable Filament Get; notification bodies with customer names go through Filament's escaped rendering.

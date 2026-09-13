@@ -1,0 +1,39 @@
+E2E review: packages/filament-commerce-support — 9 findings (3 medium bug, 2 medium, 4 low) + positives. No critical/high.
+
+F1 — MEDIUM / bug — src/Support/NavigationConfigurator.php:45-74 (+ src/Pages/ManageCommerceNavigation.php:385-399) — Shallow per-entry merge permanently drops file-level keys. Confidence: high.
+apply() uses top-level array_merge, so a settings entry for a class/group wholly replaces the file-config entry. But save() persists partial configs (item: hidden/label?/sort/parent_item?/group; group: label/icon only when non-empty). hasDifferences() only compares submitted keys, so e.g. file config label 'Foo' with a blank form label yields no label key; if sort differs the entry is saved label-less and apply() then shadows the file label forever. Same for group icons and component keys like visible.
+Evidence: `config()->set('...items', array_merge(config('...items', []), $overrides));` vs `overrideFromSidebarItem()` omitting blank label/parent_item.
+Recommendation: merge per entry with array_replace_recursive in apply(), or persist complete merged configs in save().
+
+F2 — MEDIUM / bug — src/Pages/ManageCommerceNavigation.php:104-109 vs 351-369 — Group-rename round-trip mis-buckets items; resave silently detaches them. Confidence: high.
+save() rewrites each item's group from key to label ($groupRenames). But buildSidebarForForm() matches strictly on key: `if ($itemGroup === $key)`. After any rename (label != key), the next mount files those items under Ungrouped, and saving from that state persists group='' — silent detachment. Rendering engine is unaffected (it matches labels too), so the corruption is manager-only and invisible until resave.
+Recommendation: match by key OR label when bucketing, or store keys in settings and resolve labels at render.
+
+F3 — MEDIUM / bug — src/Pages/ManageCommerceNavigation.php:200-205,238-242 vs 324,430 — Sort Order inputs are silently discarded. Confidence: high.
+The form defines numeric Sort inputs for groups and items, but save() uses drag position only (`$groupConfig['sort'] = $groupSortIndex;`, `$config['sort'] = $index + 1;`), never reading $section['sort']/$item['sort']. Typed values are lost on every save.
+Recommendation: remove the inputs or honor them (e.g. use entered value when it differs from positional default).
+
+F4 — MEDIUM / bug (validation gap) — src/Pages/ManageCommerceNavigation.php:284-289 — save() bypasses all form validation. Confidence: high.
+save() reads `$this->data['sidebar']` directly and never calls getState()/validate, so required-component, Select allowlist, maxLength(255), numeric/min/max rules never run. Arbitrary component-class strings (persisted as settings keys, feeding F8), overlong labels, negative/non-numeric sorts are all accepted. Filament rules are enforced only via getState().
+Recommendation: `$state = $this->getSchema('form')?->getState()` in save(); allowlist component against CommerceNavigation::registeredNavigationComponents(); add maxLength on group_key, maxItems on repeaters, and a heroicon-name regex on icon (a bad icon value renders for all admins).
+
+F5 — MEDIUM / bug (integration) — src/FilamentCommerceSupportPlugin.php:31-46 — Currency/Language/Timezone resources are never registered. Confidence: med.
+register() only adds ManageCommerceNavigation; no $panel->resources([...]), and docs/02-installation.md shows only ->plugin(...). Filament discovery covers app paths, not package src, so the advertised reference-data UI is unreachable out-of-box unless the host manually registers it.
+Recommendation: register the three resources in the plugin (gated by navigation.enabled + resource config), or document manual registration.
+
+F6 — LOW / bug (UI) — src/Pages/ManageCommerceNavigation.php:187,192,198,205,209,213,218 — hidden() closures test each field's own state, not group_key. Confidence: high.
+`->hidden(fn (?string $state) => ($state ?? '') === '__ungrouped__')` on label/icon/sort/toggles compares that field's own value, so group fields stay visible in the Ungrouped section (only the group_key field itself hides correctly). Verified against vendor CanBeHidden/evaluate ($state = own component state; sibling read needs Get). Coercive typing confirmed — cosmetic only, no crash.
+Recommendation: `->hidden(fn (Get $get): bool => $get('group_key') === '__ungrouped__')`.
+
+F7 — LOW / bug — src/Pages/ManageCommerceNavigation.php:525-550 — resolveSettings() misses QueryException and writes on GET. Confidence: high.
+Unlike NavigationConfigurator::resolveSettings() (catches QueryException|MissingSettings), the page resolver catches only MissingSettings: a fresh install without the settings table 500s on mount/save instead of degrading gracefully. It also insertOrIgnores seed rows during mount() (side-effecting GET, fails on read-only replicas) with hardcoded spatie table columns.
+Recommendation: catch QueryException and fall back to an empty in-memory instance with a warning notification; share one resolver with NavigationConfigurator.
+
+F8 — LOW / security (defense-in-depth) — src/Pages/ManageCommerceNavigation.php:157-174,251-265 — Static method invoked on settings-persisted class names. Confidence: med.
+normalizeOverrideForSidebar() and the itemLabel closure call `$class::getNavigationLabel()` for $class keys drawn from $settings->overrides, which F4 shows are attacker-influenceable (no allowlist). Planting requires the nav permission, and the gadget is narrow (no-arg static named getNavigationLabel), but stored class names should never be invoked.
+Recommendation: only call when in_array($class, registeredNavigationComponents(), true), else class_basename($class).
+
+F9 — LOW / bug+performance (minor nits, grouped) — various. Confidence: high/med.
+(a) Duplicate component in two groups silently last-wins (save():339-348). (b) Real group keyed `__ungrouped__` is swallowed as ungrouped (:141,:298). (c) TimezoneResource::getNavigationSort() lacks the `, 100` default its siblings have (TimezoneResource.php:47-50). (d) apply() assumes settings entries are arrays; a corrupted non-array entry fatals on `$itemConfig['group']` (NavigationConfigurator.php:62-63). (e) Repeaters unbounded (no maxItems/maxLength on group_key) — settings JSON bloat is re-merged each panel boot; reads are cache-backed (verified spatie SettingsCache), so impact is small. (f) Octane/test staleness: NavigationConfigurator $captured/$original* statics never refresh in-process (no reset method) — stale snapshot after runtime config changes / cross-test pollution. Recommend allowlists, per-entry is_array guards, repeater limits, and a NavigationConfigurator::reset() for tests.
+
+POSITIVES (verified, not guessed): canAccess() denies by default on missing/empty permission, and vendor confirms Page uses CanAuthorizeAccess with mount+hydrate hooks — save() is auth-protected on every Livewire request. Reference resources expose only index+view pages with form disabled by default read_only=true. No HasOwner/owner-scoped data in package (global reference data + global settings by design); no unscoped owner queries. No raw SQL (bound insertOrIgnore; table name config-controlled), no unserialize/file/URL handling → no injection/SSRF/traversal/deserialization surface. Blade has no unescaped output. Searchable/sorted columns carry unique indexes (currencies.code, languages.code, timezones.name) and tables are tiny seeds; pagination bounded. SettingsSaved listener ordering is correct (restore genuine defaults, then apply()). Follows repo rules: config-driven navigation.group + getNavigationGroup, no FK/SoftDeletes/money. Process note: package ships no tests/ dir although repo standard is Pest — F1/F2 merge/rename logic in particular deserves coverage.

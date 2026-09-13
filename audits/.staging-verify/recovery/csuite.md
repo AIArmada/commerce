@@ -1,0 +1,23 @@
+End-to-end review: packages/csuite — metapackage, no runtime code.
+
+STRUCTURE (verified): package contains only composer.json, CONTEXT.md, README.md, docs/*.md, tests/BundleTest.php. No src/, config/, routes/, database/migrations. Therefore the bulk of the checklist is N/A by design: no HasOwner queries/counts/route bindings/jobs/commands/widgets, no mass assignment, validation, auth, injection/XSS/SSRF/traversal/deserialization surfaces, no queries (N+1/indexes/pagination), no cache, no static state (Octane). Owner-scoping/security correctly documented as inherited from underlying packages (docs/01-overview.md:45-48).
+
+FINDINGS:
+
+1. [medium | bug] packages/csuite/tests/BundleTest.php:1 — Bundle test is orphaned, never executes. phpunit.xml testsuite points only at `tests/src`; tests/Pest.php `in(...)` list has no Csuite entry; nothing references BundleTest. Evidence: `<directory>tests/src</directory>` in phpunit.xml; Pest extends list lacks Csuite. So provider-rename / missing-package / constraint drift is undetected. Recommendation: move/copy test to tests/src/Csuite/ (or add testsuite dir + Pest mapping) and assert it runs in CI. Confidence: high.
+
+2. [medium | bug] packages/csuite/README.md:152 — Broken license link `[LICENSE](LICENSE)`; verified `packages/csuite/LICENSE` does not exist (only repo-root LICENSE). Recommendation: link `../../LICENSE` or drop link. Confidence: high.
+
+3. [low | bug] packages/csuite/composer.json:1 — Bundle includes `cashier` + `cashier-chip` but omits `filament-cashier` + `filament-cashier-chip`, which exist in-repo (FilamentCashierPlugin, FilamentCashierChipPlugin classes verified) and have tests (tests/src/FilamentCashier*). BundleTest plugin list (BundleTest.php:50-58) omits them too. Either an omission (no admin UI for bundled payment orchestration) or intentional — but unlike signals/growth/membership/moderation/references it is not listed in the documented exclusion policy (docs/01-overview.md:15-20, README.md:64-66). Recommendation: add the two plugins or document the exclusion. Confidence: med.
+
+4. [low | bug] packages/csuite/docs/03-configuration.md:63-83 — Cart config snippet is stale vs actual packages/cart/config/cart.php. Doc shows `tables: alert_rules/alert_logs/daily_metrics/recovery_*` + `table_prefix: cart_`; actual config has `tables: snapshots/snapshot_items/snapshot_conditions`, no `table_prefix`, plus money.rounding_mode/owner/limits keys. Copy-paste yields unknown keys / missing behavior. Recommendation: regenerate snippet from real config. Confidence: high.
+
+5. [low | bug] packages/csuite/docs/03-configuration.md:170-179 — Navigation example references filament-products/filament-orders/filament-shipping and AttributeResource, none of which are bundled. Misleading copy-paste in bundle docs. Recommendation: use bundled packages (filament-cart/vouchers/docs/...) in the example. Confidence: high.
+
+6. [low | bug] packages/csuite/docs/04-usage.md:268-272 + docs/02-installation.md:20-28 — "Everything" / "Full Suite Installation" headings contradict the deliberate-subset bundle policy; `composer require aiarmada/commerce` does not install everything. Recommendation: rename to "Curated bundle". Confidence: med.
+
+7. [low | security] packages/csuite/composer.json — `"minimum-stability": "dev"` on a published metapackage permits pre-release transitive deps for consumers. Common in monorepos using `self.version`, but worth a note. Recommendation: keep only if required for dev-branch installs; otherwise stable. Confidence: low (policy call).
+
+8. [low | bug] packages/csuite/tests/BundleTest.php:33-34 — `file_get_contents` on derived package path with no existence check: a missing/renamed package dir yields PHP warning + TypeError instead of a clean assertion failure. Recommendation: assert `is_file()` first. Confidence: high.
+
+POSITIVES (brief): correct `"type": "metapackage"`; all 17 aiarmada deps consistently pinned `self.version`; every bundled name verified present in packages/ with laravel provider extras; CONTEXT.md guardrails explicitly forbid adding runtime code here; docs honestly state no auto-registration of Filament plugins and per-package setup still required (99-troubleshooting); `commerce:setup` referenced in docs verified to exist (commerce-support SetupCommand, uses password prompts for secrets); BundleTest asserts both provider registration and Filament Plugin contracts — good coverage if wired into the suite (see finding 1).

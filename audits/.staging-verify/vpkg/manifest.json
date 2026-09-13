@@ -1,0 +1,340 @@
+{
+ "false_list": "/tmp/vpkg/FALSE-list.md",
+ "verifiers": [
+  {
+   "id": "v-r2-filament-cashier-etc",
+   "pkgs": [
+    "filament-cashier",
+    "ticketing",
+    "pricing",
+    "filament-chip"
+   ],
+   "e2e": [
+    "/tmp/round2/review-filament-cashier-etc.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-filament-cashier.md",
+    "/tmp/vpkg/audit-ticketing.md",
+    "/tmp/vpkg/audit-pricing.md",
+    "/tmp/vpkg/audit-filament-chip.md"
+   ]
+  },
+  {
+   "id": "v-r2-filament-feedback-etc",
+   "pkgs": [
+    "filament-feedback",
+    "signals",
+    "filament-shipping",
+    "tax"
+   ],
+   "e2e": [
+    "/tmp/round2/review-filament-feedback-etc.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-filament-feedback.md",
+    "/tmp/vpkg/audit-signals.md",
+    "/tmp/vpkg/audit-filament-shipping.md",
+    "/tmp/vpkg/audit-tax.md"
+   ]
+  },
+  {
+   "id": "v-r2-filament-jnt-etc",
+   "pkgs": [
+    "filament-jnt",
+    "persons",
+    "jnt",
+    "filament-orders"
+   ],
+   "e2e": [
+    "/tmp/round2/review-filament-jnt-etc.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-filament-jnt.md",
+    "/tmp/vpkg/audit-persons.md",
+    "/tmp/vpkg/audit-jnt.md",
+    "/tmp/vpkg/audit-filament-orders.md"
+   ]
+  },
+  {
+   "id": "v-r2-filament-organizations-etc",
+   "pkgs": [
+    "filament-organizations",
+    "products",
+    "filament-pricing",
+    "references"
+   ],
+   "e2e": [
+    "/tmp/round2/review-filament-organizations-etc.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-filament-organizations.md",
+    "/tmp/vpkg/audit-products.md",
+    "/tmp/vpkg/audit-filament-pricing.md",
+    "/tmp/vpkg/audit-references.md"
+   ]
+  },
+  {
+   "id": "v-r2-filament-products-etc",
+   "pkgs": [
+    "filament-products",
+    "organizations",
+    "filament-seating",
+    "filament-persons"
+   ],
+   "e2e": [
+    "/tmp/round2/review-filament-products-etc.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-filament-products.md",
+    "/tmp/vpkg/audit-organizations.md",
+    "/tmp/vpkg/audit-filament-seating.md",
+    "/tmp/vpkg/audit-filament-persons.md"
+   ]
+  },
+  {
+   "id": "v-r2-filament-promotions-etc",
+   "pkgs": [
+    "filament-promotions",
+    "inventory",
+    "vouchers",
+    "filament-engagement"
+   ],
+   "e2e": [
+    "/tmp/round2/review-filament-promotions-etc.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-filament-promotions.md",
+    "/tmp/vpkg/audit-inventory.md",
+    "/tmp/vpkg/audit-vouchers.md",
+    "/tmp/vpkg/audit-filament-engagement.md"
+   ]
+  },
+  {
+   "id": "v-r2-filament-signals-etc",
+   "pkgs": [
+    "filament-signals",
+    "promotions",
+    "filament-vouchers",
+    "filament-ticketing"
+   ],
+   "e2e": [
+    "/tmp/round2/review-filament-signals-etc.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-filament-signals.md",
+    "/tmp/vpkg/audit-promotions.md",
+    "/tmp/vpkg/audit-filament-vouchers.md",
+    "/tmp/vpkg/audit-filament-ticketing.md"
+   ]
+  },
+  {
+   "id": "v-r2-filament-tax-etc",
+   "pkgs": [
+    "filament-tax",
+    "shipping",
+    "growth",
+    "filament-growth"
+   ],
+   "e2e": [
+    "/tmp/round2/review-filament-tax-etc.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-filament-tax.md",
+    "/tmp/vpkg/audit-shipping.md",
+    "/tmp/vpkg/audit-growth.md",
+    "/tmp/vpkg/audit-filament-growth.md"
+   ]
+  },
+  {
+   "id": "v-r2-membership-etc",
+   "pkgs": [
+    "membership",
+    "moderation"
+   ],
+   "e2e": [
+    "/tmp/round2/review-membership-etc.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-membership.md",
+    "/tmp/vpkg/audit-moderation.md"
+   ]
+  },
+  {
+   "id": "v-r2-seating-etc",
+   "pkgs": [
+    "seating",
+    "orders",
+    "filament-events",
+    "filament-inventory"
+   ],
+   "e2e": [
+    "/tmp/round2/review-seating-etc.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-seating.md",
+    "/tmp/vpkg/audit-orders.md",
+    "/tmp/vpkg/audit-filament-events.md",
+    "/tmp/vpkg/audit-filament-inventory.md"
+   ]
+  },
+  {
+   "id": "v-r1-0",
+   "pkgs": [
+    "addressing",
+    "affiliate-network",
+    "affiliates",
+    "authz"
+   ],
+   "e2e": [
+    "/tmp/recovery/addressing.md",
+    "/tmp/recovery/affiliate-network.md",
+    "/tmp/recovery/affiliates.md",
+    "/tmp/recovery/authz.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-addressing.md",
+    "/tmp/vpkg/audit-affiliate-network.md",
+    "/tmp/vpkg/audit-affiliates.md",
+    "/tmp/vpkg/audit-authz.md"
+   ]
+  },
+  {
+   "id": "v-r1-1",
+   "pkgs": [
+    "cart",
+    "cashier",
+    "cashier-chip",
+    "checkout"
+   ],
+   "e2e": [
+    "/tmp/recovery/cart.md",
+    "/tmp/recovery/cashier.md",
+    "/tmp/recovery/cashier-chip.md",
+    "/tmp/recovery/checkout.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-cart.md",
+    "/tmp/vpkg/audit-cashier.md",
+    "/tmp/vpkg/audit-cashier-chip.md",
+    "/tmp/vpkg/audit-checkout.md"
+   ]
+  },
+  {
+   "id": "v-r1-2",
+   "pkgs": [
+    "chip",
+    "commerce-support",
+    "communications",
+    "contacting"
+   ],
+   "e2e": [
+    "/tmp/recovery/chip.md",
+    "/tmp/recovery/commerce-support.md",
+    "/tmp/recovery/communications.md",
+    "/tmp/recovery/contacting.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-chip.md",
+    "/tmp/vpkg/audit-commerce-support.md",
+    "/tmp/vpkg/audit-communications.md",
+    "/tmp/vpkg/audit-contacting.md"
+   ]
+  },
+  {
+   "id": "v-r1-3",
+   "pkgs": [
+    "csuite",
+    "customers",
+    "docs",
+    "engagement"
+   ],
+   "e2e": [
+    "/tmp/recovery/csuite.md",
+    "/tmp/recovery/customers.md",
+    "/tmp/recovery/docs.md",
+    "/tmp/recovery/engagement.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-csuite.md",
+    "/tmp/vpkg/audit-customers.md",
+    "/tmp/vpkg/audit-docs.md",
+    "/tmp/vpkg/audit-engagement.md"
+   ]
+  },
+  {
+   "id": "v-r1-4",
+   "pkgs": [
+    "events",
+    "feedback",
+    "filament-addressing",
+    "filament-affiliate-network"
+   ],
+   "e2e": [
+    "/tmp/recovery/events.md",
+    "/tmp/recovery/feedback.md",
+    "/tmp/recovery/filament-addressing.md",
+    "/tmp/recovery/filament-affiliate-network.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-events.md",
+    "/tmp/vpkg/audit-feedback.md",
+    "/tmp/vpkg/audit-filament-addressing.md",
+    "/tmp/vpkg/audit-filament-affiliate-network.md"
+   ]
+  },
+  {
+   "id": "v-r1-5",
+   "pkgs": [
+    "filament-affiliates",
+    "filament-authz",
+    "filament-cart",
+    "filament-cashier-chip"
+   ],
+   "e2e": [
+    "/tmp/recovery/filament-affiliates.md",
+    "/tmp/recovery/filament-authz.md",
+    "/tmp/recovery/filament-cart.md",
+    "/tmp/recovery/filament-cashier-chip.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-filament-affiliates.md",
+    "/tmp/vpkg/audit-filament-authz.md",
+    "/tmp/vpkg/audit-filament-cart.md",
+    "/tmp/vpkg/audit-filament-cashier-chip.md"
+   ]
+  },
+  {
+   "id": "v-r1-6",
+   "pkgs": [
+    "filament-commerce-support",
+    "filament-communications",
+    "filament-contacting",
+    "filament-customers"
+   ],
+   "e2e": [
+    "/tmp/recovery/filament-commerce-support.md",
+    "/tmp/recovery/filament-communications.md",
+    "/tmp/recovery/filament-contacting.md",
+    "/tmp/recovery/filament-customers.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-filament-commerce-support.md",
+    "/tmp/vpkg/audit-filament-communications.md",
+    "/tmp/vpkg/audit-filament-contacting.md",
+    "/tmp/vpkg/audit-filament-customers.md"
+   ]
+  },
+  {
+   "id": "v-r1-7",
+   "pkgs": [
+    "filament-docs"
+   ],
+   "e2e": [
+    "/tmp/recovery/filament-docs.md"
+   ],
+   "audit": [
+    "/tmp/vpkg/audit-filament-docs.md"
+   ]
+  }
+ ]
+}

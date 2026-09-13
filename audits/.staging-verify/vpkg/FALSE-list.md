@@ -1,0 +1,40 @@
+## 7. Removed as FALSE (do not re-file)
+
+- customers `LinkCustomerToPerson` unscoped (persons global by design; customer side guarded).
+- pricing nested-txn + `price_list_id` scope (both correct).
+- inventory `createOrFirst` no-unique (unique `reference,owner_type,owner_id` exists + txn).
+- seating `seat_holds` missing owner cols (has `nullableMorphs('owner')`).
+- events `(float)price` (no file:line located).
+- events `EloquentEventSearchEngine:24` unscoped leak (inherits `HasOwner` global scope).
+- affiliates `findByCode` unscoped (applies `forOwner` + `requireOwnerContext`).
+- affiliates `MatureConversion` missing `approved_at` (auto-set `AffiliateConversion:200-218`; lock-free part kept).
+- affiliate-network `$syncingImport` leak (has `try/finally` reset).
+- vouchers `AddVoucherToWallet` silent duplicates (unique `voucher_wallets_one_active_per_holder WHERE redeemed_at IS NULL` exists; residual is 500s).
+- authz `Permission.php` teams-key (no teams code there; Role half kept).
+- addressing silent coercion of explicit ids (throws on mismatch).
+- feedback `CalculateFeedbackResponseScore` unscoped (uses `OwnerQuery::applyToQueryBuilder`).
+- feedback analytics job ownerless (implements `OwnerScopedJob` + `withOwner`).
+- cart `NormalizedCartSynchronizer` UUID-enumeration wipe (parent `forOwner` + re-scope; kept as LOW pattern note).
+- cart `CartOwnerScope` null-fragile (delegates to shared `OwnerQuery`).
+- checkout callback never-match (gateway keys identical under success/failure/cancel; residual LOW type-segment).
+- shipping Octane memo leak + missed zone invalidation (`$app->scoped()` + owner-keyed cache + zone clears cache like rates).
+- shipping label "signed" (is token+auth+owner-match, not signed — still safe; jnt AWB is the signed reference).
+- chip `usleep` on mutating path (only GET/HEAD/OPTIONS retry).
+- cashier-chip duplicate claim impl (delegates to `claimRenewalAttempt->handle`; helpers only).
+- cashier-chip duplicate N+1 citation (wrong lines; real map `:1158` with `loadMissing:1140`).
+- docs `DueDocReminders` unscoped (uses `forCurrentOwner`; intentional owner enumeration).
+- filament-persons HIGH cross-tenant list (Person explicitly unscoped shared identity; bare query correct).
+- filament-organizations user-options unscoped (verified limited to `$record->members()`).
+- filament-promotions missing `OwnerWriteGuard` (uses it `:124-130` when owner enabled).
+- filament-cashier-chip `get()->sum(fn)` (now `withSum`; residual uncached `count()` only).
+- filament-shipping key-drift/rate-scope (both proved scoped: core `shipping.features.owner.*`; `ShippingRateResource` scopes via `whereHas(zone forOwner)`).
+- filament-cart badge `"0"` (resources return `null` when 0; only `CartStatsWidget:93` rate string).
+- filament-affiliates `FraudSignal:198` unscoped badge (re-applies `OwnerQuery:200-208` when owner enabled).
+- growth `handle():60-66` as bug (kept as perf only).
+- inventory exports unpaginated (all use `cursor()`).
+- pricing fan-out exact N unmeasured (direction kept).
+- ticketing `get()->sum()` HIGH → MEDIUM (only `getTotalAvailable`; `getTotalOnHand` already SQL).
+- shipping serial-only fan-out (default parallel via `Concurrency`; serial only in fallback).
+- tax missing `(owner)` index on rates (falsified 2026-09-13: `nullableMorphs('owner')` already creates the composite index in `2001_03_01_000003_create_tax_rates_table.php`; no change made).
+
+---

@@ -1,0 +1,8 @@
+### Prior-audit filament notes (§6; G1-G6 global + package bullets)
+- `filament-orders` GOOD exemplary — `throttle+FilamentAuthenticate`, 404 when owner unresolved, `forOwner+findOrFail`, `Gate::allows('view')` download.
+- G1 Navigation PASS — no static `$navigationGroup`, no flat key, no `Plugin::get()` delegation (except `filament-authz/RoleResource:149-162` badge delegation LOW). Non-standard sort key paths compliant but fragile.
+- G2 `getNavigationBadge()` uncached COUNT per nav render MEDIUM — every resource. Copy `filament-docs/DocResource:134-154` (`OwnerCache` 30s + `SUM(CASE)`), `filament-orders/OrderResource:64-65` (`FilamentOrdersCache`), `filament-jnt/NavigationBadgeHelper:16-24` (auth+owner-keyed cache). Worst: `CartDashboard:48,55` double-counts same query.
+- G3 N+1 `TextColumn relation.field` without `with()` MEDIUM — only `AffiliateLink/Touchpoint`, `PassTransfer`, ticketing `Pass` eager-load. Worst: `filament-affiliates` (7 resources), `filament-events`.
+- G4 Unpaginated `Select::options(Model::pluck()->all())+preload()` MEDIUM — whole-table load. Use `relationship()+getSearchResultsUsing`. Clusters: affiliates, addressing, persons. GOOD: `filament-authz/UserAuthzForm:66-71` (`modifyQueryUsing`).
+- G5 Domain leakage LOW/MEDIUM — `filament-vouchers/MoneyHelper` overlaps `MoneyNormalizer`; `VoucherSuggestionsWidget:223-228` re-implements math; `UplineVisualizationWidget` tree math belongs in core.
+- G6 Collection sums — `filament-cashier-chip` now `withSum('items','unit_amount')` (`MRR:45,67,135`, `RevenueChart:99,113`); residual is 3–7 uncached `count()` per widget render MEDIUM. `filament-inventory/InventoryLocationInfolist:85,89,93` 3 queries per view MEDIUM — use `withCount/withSum`.

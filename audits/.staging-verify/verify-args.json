@@ -1,0 +1,361 @@
+{
+ "workspace": "/Users/Saiffil/Herd/commerce",
+ "false_list": "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/FALSE-list.md",
+ "verifiers": [
+  {
+   "id": "v-r2-filament-cashier-etc",
+   "pkgs": [
+    "filament-cashier",
+    "ticketing",
+    "pricing",
+    "filament-chip"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/round2/review-filament-cashier-etc.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-cashier.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-ticketing.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-pricing.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-chip.md"
+   ],
+   "round": 2
+  },
+  {
+   "id": "v-r2-filament-feedback-etc",
+   "pkgs": [
+    "filament-feedback",
+    "signals",
+    "filament-shipping",
+    "tax"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/round2/review-filament-feedback-etc.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-feedback.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-signals.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-shipping.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-tax.md"
+   ],
+   "round": 2
+  },
+  {
+   "id": "v-r2-filament-jnt-etc",
+   "pkgs": [
+    "filament-jnt",
+    "persons",
+    "jnt",
+    "filament-orders"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/round2/review-filament-jnt-etc.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-jnt.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-persons.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-jnt.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-orders.md"
+   ],
+   "round": 2
+  },
+  {
+   "id": "v-r2-filament-organizations-etc",
+   "pkgs": [
+    "filament-organizations",
+    "products",
+    "filament-pricing",
+    "references"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/round2/review-filament-organizations-etc.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-organizations.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-products.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-pricing.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-references.md"
+   ],
+   "round": 2
+  },
+  {
+   "id": "v-r2-filament-products-etc",
+   "pkgs": [
+    "filament-products",
+    "organizations",
+    "filament-seating",
+    "filament-persons"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/round2/review-filament-products-etc.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-products.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-organizations.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-seating.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-persons.md"
+   ],
+   "round": 2
+  },
+  {
+   "id": "v-r2-filament-promotions-etc",
+   "pkgs": [
+    "filament-promotions",
+    "inventory",
+    "vouchers",
+    "filament-engagement"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/round2/review-filament-promotions-etc.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-promotions.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-inventory.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-vouchers.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-engagement.md"
+   ],
+   "round": 2
+  },
+  {
+   "id": "v-r2-filament-signals-etc",
+   "pkgs": [
+    "filament-signals",
+    "promotions",
+    "filament-vouchers",
+    "filament-ticketing"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/round2/review-filament-signals-etc.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-signals.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-promotions.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-vouchers.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-ticketing.md"
+   ],
+   "round": 2
+  },
+  {
+   "id": "v-r2-filament-tax-etc",
+   "pkgs": [
+    "filament-tax",
+    "shipping",
+    "growth",
+    "filament-growth"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/round2/review-filament-tax-etc.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-tax.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-shipping.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-growth.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-growth.md"
+   ],
+   "round": 2
+  },
+  {
+   "id": "v-r2-membership-etc",
+   "pkgs": [
+    "membership",
+    "moderation"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/round2/review-membership-etc.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-membership.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-moderation.md"
+   ],
+   "round": 2
+  },
+  {
+   "id": "v-r2-seating-etc",
+   "pkgs": [
+    "seating",
+    "orders",
+    "filament-events",
+    "filament-inventory"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/round2/review-seating-etc.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-seating.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-orders.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-events.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-inventory.md"
+   ],
+   "round": 2
+  },
+  {
+   "id": "v-r1-0",
+   "pkgs": [
+    "addressing",
+    "affiliate-network",
+    "affiliates",
+    "authz"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/addressing.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/affiliate-network.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/affiliates.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/authz.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-addressing.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-affiliate-network.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-affiliates.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-authz.md"
+   ],
+   "round": 1
+  },
+  {
+   "id": "v-r1-1",
+   "pkgs": [
+    "cart",
+    "cashier",
+    "cashier-chip",
+    "checkout"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/cart.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/cashier.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/cashier-chip.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/checkout.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-cart.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-cashier.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-cashier-chip.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-checkout.md"
+   ],
+   "round": 1
+  },
+  {
+   "id": "v-r1-2",
+   "pkgs": [
+    "chip",
+    "commerce-support",
+    "communications",
+    "contacting"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/chip.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/commerce-support.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/communications.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/contacting.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-chip.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-commerce-support.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-communications.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-contacting.md"
+   ],
+   "round": 1
+  },
+  {
+   "id": "v-r1-3",
+   "pkgs": [
+    "csuite",
+    "customers",
+    "docs",
+    "engagement"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/csuite.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/customers.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/docs.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/engagement.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-csuite.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-customers.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-docs.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-engagement.md"
+   ],
+   "round": 1
+  },
+  {
+   "id": "v-r1-4",
+   "pkgs": [
+    "events",
+    "feedback",
+    "filament-addressing",
+    "filament-affiliate-network"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/events.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/feedback.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/filament-addressing.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/filament-affiliate-network.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-events.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-feedback.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-addressing.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-affiliate-network.md"
+   ],
+   "round": 1
+  },
+  {
+   "id": "v-r1-5",
+   "pkgs": [
+    "filament-affiliates",
+    "filament-authz",
+    "filament-cart",
+    "filament-cashier-chip"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/filament-affiliates.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/filament-authz.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/filament-cart.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/filament-cashier-chip.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-affiliates.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-authz.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-cart.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-cashier-chip.md"
+   ],
+   "round": 1
+  },
+  {
+   "id": "v-r1-6",
+   "pkgs": [
+    "filament-commerce-support",
+    "filament-communications",
+    "filament-contacting",
+    "filament-customers"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/filament-commerce-support.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/filament-communications.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/filament-contacting.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/filament-customers.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-commerce-support.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-communications.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-contacting.md",
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-customers.md"
+   ],
+   "round": 1
+  },
+  {
+   "id": "v-r1-7",
+   "pkgs": [
+    "filament-docs"
+   ],
+   "e2e": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/recovery/filament-docs.md"
+   ],
+   "audit": [
+    "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/audit-filament-docs.md"
+   ],
+   "round": 1
+  }
+ ],
+ "verdict_r1": "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/verdicts-r1.md",
+ "verdict_r2": "/Users/Saiffil/Herd/commerce/audits/.staging-verify/vpkg/verdicts-r2.md"
+}

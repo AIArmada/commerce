@@ -1,0 +1,760 @@
+## addressing
+- [R1:#1] CONFIRMED medium bug | src/Data/AddressData.php:151 | "Non-numeric lat/lng" still (float) w/o is_numeric; "abc"→0.0 valid coord, unlike seed actions
+- [R1:#2] CONFIRMED medium bug | src/Actions/ImportAddressAreasAction.php:176 | "Re-import never quiesces" synced_at in $data ⇒ fill always dirty; every re-import all-updated
+- [R1:#3] CONFIRMED medium bug | src/Actions/ImportAddressAreasAction.php:112 | "Dry-run skips validation" dry-run returns before parent/hierarchy checks; is_active=true unconditional
+- [R1:#4] CONFIRMED medium sec | src/Support/NormalizeNavigationUrl.php:9 | "Stored navigation URLs" zero call sites; raw persist + verbatim return; render-side XSS unverified
+- [R1:#5] CONFIRMED medium perf | src/Models/Address.php:69 | "Every Address save" saving hook always normalizes; uncached Schema::hasTable + LOWER scans
+- [R1:#6] FIXED medium perf | database/migrations/2001_01_01_000002:25 | "Missing indexes states" name indexes now in creates (states/cities/countries _lower_index)
+- [R1:#7] CONFIRMED medium perf+bug | src/Actions/ImportAddressAreasAction.php:36 | "Per-row N+1" per-row country+existing+parent SELECTs, delete+updateOrCreate, no txn
+- [R1:#8] CONFIRMED medium bug | src/Actions/SaveAddressAreaAction.php:83 | "Record save relationship" save() then relationship delete+create outside any txn
+- [R1:#9] CONFIRMED low bug | src/Support/CsvAddressAreaSource.php:142 | "Malformed CSV JSON" JSON_THROW_ON_ERROR escapes InvalidArgumentException catch; strict col count
+- [R1:#10] CONFIRMED low bug | src/Traits/HasAddresses.php:106 | "Re-attach ignores label" existing-pivot path updates is_primary only; changed $label dropped
+- [R1:#11] CONFIRMED low bug | src/Casts/AddressDataCast.php:44 | "Array set-path skips" arrays json_encoded raw; no alias/trim/uppercase normalization
+- [R1:#12] CONFIRMED low bug | src/Models/Address.php:69 | "Formatted never recomputed" saving hook preserves formatted_* verbatim; derived fields fillable
+- [R1:#13] CONFIRMED low sec | src/Models/Address.php:110 | "Trust-sensitive fields fillable" validation_*/provider_* fillable; forgeable via naive create()
+- [R1:#14] CONFIRMED low sec | src/Support/AddressOwnerGuard.php:79 | "Morph-type oracle via" distinct unresolvable/missing/inaccessible messages; class/ID probing
+- [R1:#15] CONFIRMED low perf | src/Actions/SeedAddressCitiesAction.php:57 | "Unbounded seed N+1" per-row SELECT+write to ~150k; parentOptions full-table get
+- [AUD:B1] ADOPTED medium bug | src/Models/Address.php:74 | deleting bulk-deletes pivots (skips events) + nulls snapshots, no txn; confirmed
+- [AUD:B2] ADOPTED medium perf+bug | src/Actions/ImportAddressAreasAction.php:36 | DUP R1:#7 counted once; 3-6 queries/row, no txn/chunk
+- [AUD:B3] ADOPTED medium perf | src/Actions/ImportPostalCodesAction.php:25 | Per-row txn exists (:63) but per-row queries + coverage rewrite, no chunk
+- [AUD:B4] ADOPTED medium perf | database/migrations/2001_01_01_000003:26 | DUP R1:#6 counted once; FIXED 2026-09-13 indexes folded into creates
+- [AUD:Q#9] ADOPTED medium perf | database/migrations/2001_01_01_000003:26 | DUP AUD:B4 counted once; §8 row 9 LOWER(name) indexes done
+## affiliate-network
+- [R1:#1] CONFIRMED high bug | src/Models/AffiliateSite.php:107 | "Site delete orphans" offers()->delete() skips Offer::deleting; creatives/apps/links orphaned
+- [R1:#2] CONFIRMED high bug | src/Console/Commands/ArchiveExpiredOffersCommand.php:30 | "Archive command SQL-errors" OwnerBatchRunner selects owner cols offers table lacks; no ownerScopeConfig
+- [R1:#3] CONFIRMED medium bug+sec | src/Actions/UpdateOffer.php:21 | "Unguarded mass update" raw $data incl site/category/rate_source; site moves only guarded when owner on
+- [R1:#4] CONFIRMED medium bug | database/migrations/2000_01_01_000003:25 | "status default pending" 'pending' default not in OfferStatus; enum cast throws on read
+- [R1:#5] CONFIRMED medium bug | src/Listeners/RecordNetworkConversionForOrder.php:27 | "Conversion recording neither" no idempotency check before write; request()->cookie() off-request empty
+- [R1:#6] CONFIRMED medium bug | src/Actions/ApplyToOffer.php:46 | "Re-apply race cooldown" check-then-create no 23000 rescue; cooldown from updated_at; DUP AUD:B1 sev kept
+- [R1:#7] CONFIRMED medium bug | src/Services/OfferLinkService.php:36 | "createLink enforces nothing" no active/approval/target_url checks; stored open redirect; DUP AUD:B2
+- [R1:#8] CONFIRMED medium perf | src/Services/OfferImportService.php:47 | "Sync is N+1" per-subject SELECT+write; unbounded programIds; only OfferNotFoundException caught
+- [R1:#9] CONFIRMED medium perf+bug | src/Console/Commands/ArchiveExpiredOffersCommand.php:25 | "Unbounded get per-row" ->get()+per-row update; archived_at never set; --older-than unvalidated
+- [R1:#10] CONFIRMED medium perf | database/migrations/2000_01_01_000003:42 | "Missing indexes hot" no ends_at / (site,program,subject) / (status,visibility) indexes
+- [R1:#11] CONFIRMED low sec | database/migrations/2000_01_01_000002:21 | "slug globally unique" global unique slug on owner-scoped model; one tenant blocks others
+- [R1:#12] CONFIRMED low sec | src/Services/Catalog/RemoteCatalogClient.php:110 | "Token fail-open programId" decrypt fail → anonymous request; programId raw in path
+- [R1:#13] CONFIRMED low sec | src/Listeners/RecordNetworkConversionForOrder.php:54 | "Attribution window trusts" client clicked_at; unsigned JSON cookie; no server click record
+- [R1:#14] CONFIRMED low bug | src/Actions/UpdateOffer.php:23 | "fresh returns null" fresh() into non-nullable event ctors/returns at 5 sites; race TypeError
+- [R1:#15] CONFIRMED low bug | src/Actions/CreateOffer.php:52 | "No domain validation" missing name → undefined key in Str::slug; rate/URL/status unvalidated
+- [R1:#16] CONFIRMED low perf | src/Services/OfferManagementService.php:203 | "getApprovedOffers unbounded" pluck+whereIn+get; middleware resolveLink per anl request
+- [AUD:B1] ADOPTED medium bug | src/Actions/ApplyToOffer.php:45 | DUP R1:#6 counted once; check-then-create race → 500
+- [AUD:B2] ADOPTED medium bug | src/Services/OfferLinkService.php:36 | DUP R1:#7 counted once; arbitrary target_url open redirect
+- [AUD:B3] ADOPTED medium bug | src/Models/AffiliateOfferLink.php:157 | raw increment() clicks/conversions; no bot/dedup/idempotency; confirmed
+- [AUD:B4] ADOPTED medium bug | src/Models/AffiliateOfferLink.php:60 | counters (clicks/conversions/revenue) + checksum/last_synced_at fillable; confirmed
+- [AUD:B5] ADOPTED low perf | src/Services/OfferImportService.php:44 | array_slice(500) loop, no chunk/cursor; confirmed; related R1:#8
+## affiliates
+- [R1:#1] CONFIRMED high bug | src/Actions/Conversions/RecordAffiliateConversion.php:179 | "payload commission bypasses" raw (int) return; negative persists; min/max caps skipped off engine path
+- [R1:#2] CONFIRMED high bug | src/Actions/Payouts/CreatePayout.php:36 | "pays conversions ANY" only whereNull filter; any status paid; AffiliateBalance untouched; related AUD:B1
+- [R1:#3] CONFIRMED high bug | src/Actions/Payouts/UpdatePayoutStatus.php:34 | "arbitrary status transitions" any→any; conversions/balance never synced; DUP AUD:B2 sev kept
+- [R1:#4] CONFIRMED medium bug | src/Actions/Conversions/ApplyConversionAccounting.php:74 | "Approved Rejected leaks" only Pending/Qualified prev handled; Approved→Rejected leaks balance
+- [R1:#5] CONFIRMED medium bug | src/Models/Affiliate.php:393 | "deleting hook mass-deletes" attributions mass-delete skips ::deleting (:217); touchpoints orphaned
+- [R1:#6] CONFIRMED medium sec | src/Http/Controllers/AffiliateApiController.php:42 | "links endpoint validation" url/ttl/subject_* unvalidated; empty allowed_hosts permits any host
+- [R1:#7] CONFIRMED medium bug | src/Services/FraudDetectionService.php:37 | "fraud pipeline dead" zero in-package callers; visit/conversion paths use ad-hoc checks
+- [R1:#8] CONFIRMED medium perf | src/Services/AffiliateReportService.php:22 | "Unbounded conversion collections" ->get() then PHP sums in getSummary/TrafficSources/affiliateSummary
+- [R1:#9] CONFIRMED medium perf | src/Services/DailyAggregationService.php:35 | "queries per affiliate" ~5 queries/affiliate; whereDate defeats indexes; updateOrCreate races
+- [R1:#10] CONFIRMED medium bug | src/Actions/Conversions/ProcessConversionMaturity.php:27 | "unbounded get matured" all matured qualified conversions via ->get(); needs chunkById
+- [R1:#11] CONFIRMED high bug | src/Services/Commissions/CommissionRuleEngine.php:31 | "context-keyed rulesCache persists" singleton (:109 provider) + array cache; adopt audit HIGH; DUP AUD:B13
+- [R1:#12] CONFIRMED medium sec | src/Models/Affiliate.php:108 | "owner fillable spoof" owner_type/id fillable on Affiliate/Conversion/Payout/Attribution models
+- [R1:#13] CONFIRMED low bug | src/Support/Links/AffiliateLinkGenerator.php:36 | "verify TypeErrors array" array aff_sig passes truthy check into hash_equals; extra params mutable
+- [R1:#14] CONFIRMED low sec | src/Console/Commands/ExportAffiliatePayoutCommand.php:22 | "payout interpolated traversal" {payout} in storage path; --path arbitrary write; console-only
+- [R1:#15] CONFIRMED low bug | src/Actions/Affiliates/CreateAffiliate.php:37 | "validation gaps name" name unchecked; negative rate; parent existence/owner unvalidated; status bypass
+- [R1:#16] CONFIRMED low sec | config/affiliates.php:132 | "cookie secure null" secure defaults null via env; tracking cookies not Secure by default
+- [R1:#17] CONFIRMED low bug | src/Actions/Affiliates/TrackAffiliateVisit.php:207 | "rate-limit increment-then-put" increment-then-put TTL race; concurrent first-hits slip window
+- [R1:#18] CONFIRMED low perf | src/Actions/Affiliates/AttachAffiliateToCart.php:260 | "prune pluck unbounded" unbounded pluck(:288) + null-sensitive last_seen_at ordering
+- [R1:#19] CONFIRMED low perf | src/Actions/Conversions/ApplyConversionAccounting.php:118 | "Schema hasTable conversion" hasTable info-schema hit on every conversion handle
+- [R1:#20] CONFIRMED low bug | src/Actions/Conversions/MatureConversion.php:31 | "occurred_at assumed non-null" null occurred_at → Error on addDays; kept per FALSE-list
+- [AUD:B1] ADOPTED critical bug | src/Actions/Payouts/CreatePayout.php:36 | read-no-lock get + create + conditional claim → double-spend; related R1:#2, distinct claim
+- [AUD:B2] ADOPTED high bug | src/Actions/Payouts/UpdatePayoutStatus.php:40 | DUP R1:#3 counted once; cancel/fail never refunds available_minor
+- [AUD:B3] ADOPTED high bug | src/Actions/Conversions/MatureConversion.php:25 | no txn/lock; concurrent matures double-release; confirmed; lock-free kept per FALSE-list
+- [AUD:B4] ADOPTED high bug | src/Actions/Conversions/ApplyConversionAccounting.php:90 | unclamped decrement(holding/lifetime) → negative; confirmed
+- [AUD:B5] ADOPTED medium bug | src/Actions/Conversions/RecordAffiliateConversion.php:41 | no txn; idempotent only with external_reference (createOrFirst :138); confirmed
+- [AUD:B6] ADOPTED medium bug | src/Actions/Conversions/ApplyConversionAccounting.php:36 | Affiliate lockForUpdate but Balance mutated lock-free → TOCTOU; confirmed
+- [AUD:B7] ADOPTED high bug | src/Services/CommissionCalculator.php:12 | DUP R1:#1 counted once; max(0) only, no rate cap; payload.commission trusted
+- [AUD:B8] ADOPTED high sec | src/Actions/Payouts/CreatePayout.php:65 | $attributes owner_* unvalidated vs context → payout re-home; confirmed
+- [AUD:B9] ADOPTED medium sec | src/Support/Webhooks/WebhookDispatcher.php:32 | null signature when secret empty; still queues/sends; confirmed
+- [AUD:B10] ADOPTED medium sec | src/Actions/Affiliates/TrackAffiliateVisit.php:236 | fingerprint disabled by default (:238); Bearer [REDACTED] attribution cookie; light-confirmed
+- [AUD:B11] ADOPTED low sec | src/Support/Middleware/EnsureApiAuthorized.php:15 | 'none' mode disables API auth via config; confirmed (path under Support/)
+- [AUD:B12] ADOPTED low sec | src/Services/DailyAggregationService.php:40 | raw ip persisted (ip_address queried); no hashing/retention note; light-confirmed
+- [AUD:B13] ADOPTED high bug | src/AffiliatesServiceProvider.php:109 | DUP R1:#11 counted once; singleton binding verified, HIGH stands
+- [AUD:B14] ADOPTED medium perf | src/Services/AffiliateReportService.php:20 | per-slice queries + tier/promotion N+1; confirmed shape; related R1:#8
+- [AUD:Q#2] ADOPTED critical bug | src/Actions/Payouts/CreatePayout.php:36 | DUP AUD:B1 counted once; double-spend race fix-first
+- [AUD:Q#13] ADOPTED high bug | src/Actions/Conversions/MatureConversion.php:25 | DUP AUD:B3 counted once; lock-free double-release
+- [AUD:Q#14] ADOPTED high bug | src/Actions/Conversions/ApplyConversionAccounting.php:90 | DUP AUD:B4 counted once; negative holding
+- [AUD:Q#15] ADOPTED high bug | src/Actions/Payouts/UpdatePayoutStatus.php:40 | DUP AUD:B2 counted once; never refunds balance
+## authz
+- [R1:#1] CONFIRMED high bug | src/AuthzServiceProvider.php:139 | "registerTeamResolver container binding" inert; vendor PermissionRegistrar:60 news from permission.team_resolver config
+- [R1:#2] CONFIRMED high perf | src/AuthzServiceProvider.php:100 | "uncached super-admin Gate" every can() unsets relations + hasRole query; no per-request memo
+- [R1:#3] CONFIRMED high perf | src/Authz.php:61 | "withoutTeams userCanInScope call" forgetCachedPermissions twice per call; stampede risk; redundancy needs runtime test
+- [R1:#4] CONFIRMED high sec | src/Services/ImpersonateManager.php:98 | "take enforces zero" take() has no authorization; adopt audit HIGH; DUP AUD:B2
+- [R1:#5] CONFIRMED medium bug | src/Models/Role.php:65 | "create drops parent" no enum_value + no RoleAlreadyExists; vendor Role:56-80 does both
+- [R1:#6] CONFIRMED medium bug | src/Models/Permission.php:41 | "create findOrCreate overrides" no enum_value; BackedEnum mishandled; vendor converts (:56,:141)
+- [R1:#7] CONFIRMED medium bug | src/Models/Role.php:35 | "permissions hardcodes Permission" ignores Config::permissionModel(); vendor Role:90 uses Config
+- [R1:#8] CONFIRMED medium bug | src/Guard/SessionGuard.php:23 | "quietLogin calls setUser" base setUser fires Authenticated (vendor :1012); breaks quiet contract
+- [R1:#9] CONFIRMED medium sec | src/Services/ImpersonateManager.php:279 | "sanitizeBackToUrl accepts slash" /\evil.com passes; no backslash/control rejection (both copies)
+- [R1:#10] CONFIRMED medium bug | src/AuthzServiceProvider.php:257 | "canBeImpersonated splits expression" naive comma split; nested exprs break; empty → undefined $args[0]
+- [R1:#11] CONFIRMED medium bug | src/Http/Controllers/LeaveImpersonationController.php:1 | "dead unwired routes" routes/ empty; no loadRoutesFrom; no auth middleware
+- [R1:#12] CONFIRMED medium perf | src/Support/AuthzScopeResolver.php:45 | "resolveId runs firstOrCreate" write (+save) on read path; unique race without retry
+- [R1:#13] CONFIRMED low bug | src/Console/Commands/SyncAuthzCommand.php:42 | "no config validation" bad types → TypeError; null perms risk detach-all; no txn
+- [R1:#14] CONFIRMED low bug | src/Models/AuthzScope.php:65 | "cascade own committed" inner txn commits before outer delete; DB::table skips model events
+- [R1:#15] CONFIRMED low bug | src/helpers.php:72 | "self-impersonation guard strict" === on auth identifiers; int/string mismatch bypasses guard
+- [R1:#16] CONFIRMED low bug | src/Console/Commands/SuperAdminCommand.php:38 | "panel option ignored" --panel unused; name hardcoded; LIKE unescaped; check-then-insert race
+- [R1:#17] CONFIRMED low bug | src/Support/CommandProhibitor.php:15 | "static prohibition state" statics leak across tests; prohibitDestructiveCommands double-loops
+- [R1:#18] CONFIRMED low perf | database/migrations/2000_01_01_000001:22 | "unique plus redundant" identical unique + index on (type,id); drop second
+- [R1:#19] CONFIRMED low bug | database/migrations/2000_01_01_000001:18 | "uuid-only pivot scopeable" uuid scopeable/pivot keys break int-PK hosts; undocumented
+- [R1:#20] CONFIRMED low bug | src/Services/PermissionKeyBuilder.php:51 | "unknown case config" silent kebab fallback; Permission::getPermissions pure delegation
+- [R1:#21] CONFIRMED low sec | src/AuthzServiceProvider.php:211 | "extend session replaces" replaces session driver for ALL guards app-wide; document
+- [R1:#22] CONFIRMED medium correctness | tests/:absent | "No tests ship" no tests/ dir; zero coverage for impersonation/Gate/resolver/sanitizer
+- [AUD:B1] ADOPTED low bug | src/Models/Role.php:65 | caller-supplied teams key wins (!array_key_exists :75); harden if request-adjacent; confirmed
+- [AUD:B2] ADOPTED high sec | src/Services/ImpersonateManager.php:98 | DUP R1:#4 counted once; take() zero authorization
+- [AUD:B3] ADOPTED low bug | src/Models/Role.php:110 | findByParam loops raw $params into where; protected static; allowlist if exposed; confirmed
+- [AUD:Q#1] ADOPTED high sec | src/Services/ImpersonateManager.php:98 | DUP AUD:B2 counted once; take() no-authz fix-first row
+## cart
+- [R1:#1] CONFIRMED high security | cart/src/Support/LoginMigrationIdentifierResolver.php:56 | "Guest-cart migration keyed": Attempting caches session under identifier; Login pulls it and merges. Price impact med.
+- [R1:#2] CONFIRMED medium security | cart/src/CartManager.php:230 | "CartManager::swap() silently drops": swap() forces withOwner(null), reads/writes/deletes cross-scope.
+- [R1:#3] CONFIRMED medium bug | cart/src/Storage/DatabaseStorage.php:352 | "swapIdentifier() unconditionally deletes": target deleted pre-swap, no merge/signal; DUP AUD:B6.
+- [R1:#4] CONFIRMED high bug | cart/src/Storage/DatabaseStorage.php:710 | "Concurrent first-writes race": no 23000 rescue on insert path; raw QueryException 500; DUP AUD:B1,Q#1 adopted HIGH.
+- [R1:#5] CONFIRMED high bug | cart/src/Actions/MigrateGuestCartToUserAction.php:67 | "Guest→user migration is": 5 separate writes, no txn; partial failure duplicates; DUP AUD:B2,Q#2 adopted HIGH.
+- [R1:#6] CONFIRMED medium bug | cart/src/Actions/MigrateGuestCartToUserAction.php:255 | "mergeItems() writes raw": merged qty skips max_item_quantity + CartItem validation (putItems checks count/size only).
+- [R1:#7] CONFIRMED med-high bug | cart/src/Actions/ApplyStoredCondition.php:64 | "applyCustom() has no": raw $data keys, uncaught ConditionTarget; DUP AUD:B5 adopted med-high.
+- [R1:#8] CONFIRMED medium perf | cart/src/Console/Commands/ClearAbandonedCartsCommand.php:278 | "Snapshot abandonment marking": unbounded get() + per-row save; count doubles scan.
+- [R1:#9] CONFIRMED medium perf | cart/src/Console/Commands/ClearAbandonedCartsCommand.php:556 | "Abandoned-cart deletion plucks": pluck-all-then-chunk; --batch-size does not bound memory.
+- [R1:#10] CONFIRMED medium perf | cart/src/Snapshots/SyncCartOnEvent.php:37 | "Every cart mutation": 1 dispatch/event, job not ShouldBeUnique, no version guard; overtake possible.
+- [R1:#11] CONFIRMED medium perf | cart/src/Traits/ManagesStorage.php:128 | "Associated-model restoration issues": per-item unscoped ::find on stored class+id; N+1.
+- [R1:#12] CONFIRMED medium bug | cart/src/Traits/ManagesItems.php:311 | "Bulk paths amplify": per-item read+write+events+jobs; mid-loop failure = partial import.
+- [R1:#13] CONFIRMED medium bug | cart/src/Traits/ManagesItems.php:28 | "add()/update() accept malformed": missing id key; untyped qty delta flows to arithmetic.
+- [R1:#14] CONFIRMED low bug | cart/src/Actions/MigrateGuestCartToUserAction.php:184 | "Swap-path merge attribution": mark-before-target-write; merged_into_id never set on swap path.
+- [R1:#15] CONFIRMED low bug | cart/src/Actions/MigrateGuestCartToUserAction.php:303 | "sumItemQuantities() assumes well-formed": typed reducer + unguarded qty; corrupt rows TypeError.
+- [R1:#16] CONFIRMED low security | cart/src/Storage/DatabaseStorage.php:169 | "flush() in an": explicit-global flush() truncate()s all tenants; testing/local gate only.
+- [R1:#17] CONFIRMED low perf | cart/src/Models/Traits/AssociatedModelTrait.php:37 | "Full associated-model toArray()": full toArray persisted; restore uses class+id only; bloat to 1MB cap.
+- [R1:#18] CONFIRMED low bug | cart/src/Storage/DatabaseStorage.php:547 | "Unbounded recursion in": validateSerializable no depth cap pre-size-check; comma-split surprises.
+- [R1:#19] CONFIRMED low bug | cart/src/Models/CartItem.php:186 | "Price string normalization": commas stripped so '1,000' = 1000 minor (100x ambiguity vs decimals).
+- [R1:#20] CONFIRMED low bug | cart/src/Snapshots/CartSnapshot.php:279 | "Minor hardening gaps:": user() unscoped, mis-resolves guests; flash() assumes web session.
+- [AUD:B1] ADOPTED high bug | cart/src/Storage/DatabaseStorage.php:683 | DUP R1:#4; CAS insert race, no duplicate-key retry. Counted once.
+- [AUD:B2] ADOPTED high bug | cart/src/Actions/MigrateGuestCartToUserAction.php:107 | DUP R1:#5; non-atomic migration, duplicates. Counted once.
+- [AUD:B3] ADOPTED medium bug | cart/src/Models/CartModel.php:161 | markAsConverted: no version/lock/already-converted guard; light confirm.
+- [AUD:B4] ADOPTED medium bug | cart/src/Models/Condition.php:399 | "+5" syntax documented in docblock; residual unit-cliff concern stands.
+- [AUD:B5] ADOPTED med-high bug | cart/src/Actions/ApplyStoredCondition.php:64 | DUP R1:#7; no allowlist/range on custom fields. Counted once.
+- [AUD:B6] ADOPTED medium bug | cart/src/Storage/DatabaseStorage.php:352 | DUP R1:#3; unconditional target wipe. Counted once.
+- [AUD:B7] ADOPTED low security | cart/src/Snapshots/NormalizedCartSynchronizer.php:135 | child unscoped but parent forOwner + re-scope; harden only.
+- [AUD:B8] ADOPTED low security | cart/src/Console/Commands/ClearAbandonedCartsCommand.php:90 | raw deletes safe via owner-tuple iteration; no action.
+- [AUD:B9] ADOPTED medium perf | cart/src/Snapshots/NormalizedCartSynchronizer.php:92 | snapshot path: save + items/conditions upserts; primary single-row.
+- [AUD:B10] ADOPTED medium perf | cart/src/Storage/DatabaseStorage.php:732 | handleCasConflict throws, no retry/backoff.
+- [AUD:B11] FIXED low perf | cart/database/migrations/2000_02_01_000001:38 | (identifier,instance,version) index present in base migration; no 2026 file.
+- [AUD:Q#1] ADOPTED high bug | cart/src/Storage/DatabaseStorage.php:683 | DUP R1:#4; queue row 34. Counted once.
+- [AUD:Q#2] ADOPTED high bug | cart/src/Actions/MigrateGuestCartToUserAction.php:107 | DUP R1:#5; queue row 35. Counted once.
+- [AUD:Q#4] ADOPTED low perf | cart/database/migrations/2000_02_01_000001:38 | DUP AUD:B11; migration-batch row 8 consolidated. Counted once.
+## cashier
+- [R1:#1] DOWNGRADED (was critical) high security | cashier/src/Actions/SyncWebhook.php:22 | "Webhooks handled without": never verifies; Stripe re-encode breaks HMAC; CHIP ignores headers. DUP AUD:B1,B2,B6,Q#1-3.
+- [R1:#2] CONFIRMED critical bug | cashier/src/Checkout/CartCheckoutBuilder.php:285 | "Cart→CHIP checkout creates": price() posts amount 0; PurchasesApi rejects only <0, RM0.00 live.
+- [R1:#3] CONFIRMED high security | cashier/src/Gateways/Chip/ChipPayment.php:439 | "toArray()/toJson() serialize": recurring_token serialized into logs/queues/Telescope.
+- [R1:#4] CONFIRMED high bug | cashier/src/Actions/CreatePayment.php:45 | "Rate-limit exception swallowed": limiter exc wrapped, retryAfter lost; raw message leaked.
+- [R1:#5] DOWNGRADED (was high) medium bug | cashier/src/Gateways/StripeGateway.php:140 | "Full refunds send": 'amount'=>null always posted; DUP AUD:B3 adopted MEDIUM.
+- [R1:#6] CONFIRMED high security | cashier/src/Gateways/StripeGateway.php:178 | "Owner check missing": checkout/subscription retrieval unchecked (CHIP retrieveSubscription is scoped).
+- [R1:#7] CONFIRMED high bug | cashier/src/Console/Commands/WebhookReplayCommand.php:29 | "Replay-all is dead": 0-op success; closure ignores owner batch; hard-coded Customer; forged event-id.
+- [R1:#8] CONFIRMED medium bug | cashier/src/Gateways/ChipGateway.php:124 | "No rate limiting": CHIP charge/refund/sub-create lack PaymentOperationLimiter.
+- [R1:#9] CONFIRMED medium perf | cashier/src/Checkout/CartCheckoutBuilder.php:166 | "External gateway HTTP": gateway API call inside DB::transaction holds locks over I/O.
+- [R1:#10] CONFIRMED medium bug | cashier/src/Actions/CreatePayment.php:24 | "No input validation": all 4 Actions lack validation + owner authorization.
+- [R1:#11] CONFIRMED medium bug | cashier/src/Actions/RefundPayment.php:19 | "$options accepted but": $options never forwarded to gateway refund().
+- [R1:#12] CONFIRMED medium perf | cashier/src/Gateways/Stripe/StripePayment.php:110 | "isRefunded()/receiptUrl() build": new StripeClient + charges.retrieve per call; N+1 API.
+- [R1:#13] CONFIRMED medium perf | cashier/src/Concerns/ManagesGateway.php:169 | "Unbounded fan-out +": allGateway* loop; subscriptions unbounded get; per-sub queries.
+- [R1:#14] CONFIRMED medium bug | cashier/src/Support/UnifiedInvoice.php:46 | "fromStripe() calls $invoice->invoicePdf()": invoicePdf() absent, fatal if called; fromChip MYR hardcoded.
+- [R1:#15] CONFIRMED medium bug | cashier/src/Concerns/ManagesGateway.php:45 | "setPreferredGateway() persists any": unvalidated string persisted; assumes column exists.
+- [R1:#16] CONFIRMED medium security | cashier/src/Events/PaymentEvent.php:14 | "SerializesModels events carry": PaymentContract + ?Request queued; bloat/fail risk.
+- [R1:#17] CONFIRMED low bug | cashier/src/Cashier.php:160 | "formatAmount() computes $locale": $locale computed then ignored by Money->format().
+- [R1:#18] CONFIRMED low bug | cashier/src/Concerns/Billable.php:128 | "onGenericTrial() calls ->isFuture()": fatal if model lacks datetime cast.
+- [R1:#19] CONFIRMED low bug | cashier/src/Concerns/Billable.php:57 | "swallow ALL Throwable": outages/misconfig masked as not-subscribed.
+- [R1:#20] CONFIRMED low security | cashier/src/Gateways/ChipGateway.php:506 | "customerPortalUrl() interpolates user-supplied": panel into route name; returnUrl fallback open-redirect.
+- [R1:#21] CONFIRMED low perf | cashier/src/Support/OwnerScopedQuery.php:14 | "static Schema::hasColumn cache": never invalidated (Octane-stale); DUP AUD:B5.
+- [R1:#22] CONFIRMED low bug | cashier/src/Gateways/AbstractGateway.php:244 | "Owner-mode detection diverges": ownerScopeConfig vs CashierChip::findBillable flags disagree.
+- [R1:#23] CONFIRMED low process | cashier/:0 | "No tests/, routes/,": no Test.php/routes/migrations in package; money paths uncovered.
+- [AUD:B1] ADOPTED high bug | cashier/src/Gateways/StripeGateway.php:413 | DUP R1:#1; re-encode breaks HMAC. Counted once.
+- [AUD:B2] ADOPTED high bug | cashier/src/Actions/SyncWebhook.php:21 | DUP R1:#1; verify never enforced. Counted once.
+- [AUD:B3] ADOPTED medium bug | cashier/src/Gateways/StripeGateway.php:147 | DUP R1:#5; explicit null amount. Counted once.
+- [AUD:B4] ADOPTED medium bug | cashier/src/Gateways/StripeGateway.php:218 | cross-owner null indistinguishable from 404.
+- [AUD:B5] ADOPTED low perf | cashier/src/Support/OwnerScopedQuery.php:17 | DUP R1:#21; static cache. Counted once.
+- [AUD:B6] ADOPTED high security | cashier/src/Gateways/StripeGateway.php:385 | DUP R1:#1; primitive correct, callers never verify. Counted once.
+- [AUD:B7] ADOPTED high perf | cashier/src/Gateways/StripeGateway.php:297 | invoices(): per-invoice asStripeInvoice API fetch.
+- [AUD:B8] ADOPTED low perf | cashier/src/Gateways/StripeGateway.php:279 | subscriptions(): unbounded get; partial overlap R1:#13.
+- [AUD:Q#1] ADOPTED high bug | cashier/src/Gateways/StripeGateway.php:413 | DUP R1:#1; queue row 6. Counted once.
+- [AUD:Q#2] ADOPTED high bug | cashier/src/Actions/SyncWebhook.php:21 | DUP R1:#1; queue row 7. Counted once.
+- [AUD:Q#3] ADOPTED high security | cashier/src/Gateways/StripeGateway.php:385 | DUP R1:#1; constructEvent row. Counted once.
+## cashier-chip
+- [R1:#1] CONFIRMED critical bug | cashier-chip/src/Concerns/ManagesInvoices.php:136 | "invoice() calls undefined": addProduct absent (Money/Object/Cents/LineItem only), fatal.
+- [R1:#2] CONFIRMED critical bug | cashier-chip/src/Subscription/Subscription.php:702 | "swap() drops unit_amount,": items rebuilt w/o amount; renewal sums to 0.
+- [R1:#3] CONFIRMED high bug | cashier-chip/src/Actions/SyncChipPurchaseStatus.php:98 | "webhook handler extends": no purchase-id dedup; force-active resurrects canceled.
+- [R1:#4] DOWNGRADED (was high) medium bug | cashier-chip/src/Console/RenewSubscriptionsCommand.php:136 | "renewal charge has": no idempotency_key; unique blocks re-claim but 'unknown' never reconciled.
+- [R1:#5] CONFIRMED high bug | cashier-chip/src/Actions/CreateChipSubscription.php:45 | "coupon accepted without": no validity check; expired codes discounted + usage recorded.
+- [R1:#6] CONFIRMED medium security | cashier-chip/src/Payment/StoredPaymentMethod.php:97 | "recurring tokens stored": no encrypted cast on either model; DB leak = reusable credentials.
+- [R1:#7] CONFIRMED medium bug | cashier-chip/src/Subscription/Subscription.php:1293 | "renewals ignore coupon_discount": claim charges items sum; only upcomingInvoice subtracts.
+- [R1:#8] CONFIRMED medium security | cashier-chip/src/Concerns/PerformsCharges.php:213 | "findPayment() has no": any-id purchase fetch; no client-id check (cf findInvoice).
+- [R1:#9] CONFIRMED medium security | cashier-chip/src/Invoice/Invoice.php:366 | "header injection via": unsanitized number()/filename in Content-Disposition.
+- [R1:#10] CONFIRMED medium bug | cashier-chip/src/Billing/Checkout.php:81 | "Checkout::create lacks amount-bounds/currency": no bounds assert; raw currency/amount.
+- [R1:#11] CONFIRMED medium bug | cashier-chip/src/Concerns/ManagesPaymentMethods.php:201 | "createSetupPurchase lets raw": options['chip'] overrides client_id/brand_id/purchase.
+- [R1:#12] CONFIRMED medium bug | cashier-chip/src/Subscription/Subscription.php:858 | "charge() null-derefs when": $this->customer unguarded (orphaned subs); cf ?-> in recurringToken().
+- [R1:#13] CONFIRMED medium bug | cashier-chip/src/Subscription/SubscriptionBuilder.php:204 | "billing_interval is an": free string into Carbon add() at 4+ sites; corrupt value stalls billing.
+- [R1:#14] CONFIRMED medium perf | cashier-chip/src/Subscription/Subscription.php:1188 | "remote N+1: invoices()": unbounded attempts x live getPurchase; billable fans out.
+- [R1:#15] CONFIRMED medium perf | cashier-chip/src/Concerns/ManagesSubscriptions.php:169 | "subscription($type) loads entire": full history + items + billable to find one type.
+- [R1:#16] CONFIRMED low bug | cashier-chip/src/Concerns/ManagesInvoices.php:43 | "sortByDesc('created_at') on": Invoice has date(), no created_at, no-op sort.
+- [R1:#17] FALSE low bug | cashier-chip/database/migrations/2000_03_01_000001:22 | "subscription_items table created": 000001 creates subscriptions only; no duplication in current source.
+- [R1:#18] CONFIRMED low security | cashier-chip/src/Concerns/ManagesPaymentMethods.php:218 | "redirect/webhook URLs unvalidated": redirect/callback URLs unvalidated; user input = open-redirect.
+- [R1:#19] CONFIRMED low security | cashier-chip/src/Actions/SyncChipPurchaseStatus.php:60 | "entire CHIP purchase": full payload persisted to method metadata (PII retention/growth).
+- [R1:#20] CONFIRMED low bug | cashier-chip/src/Payment/PaymentMethodStore.php:86 | "default flip (update": update-all-false then save, no txn/index; races yield 0-2 defaults.
+- [R1:#21] FIXED low bug | cashier-chip/database/migrations/2000_03_01_000004:17 | "RenewalAttempt — not": owner cols + HasOwner + unique present; residual: no lease reaper.
+- [R1:#22] CONFIRMED low perf | cashier-chip/src/Payment/PaymentMethod.php:168 | "isDefault() re-queries defaultPaymentMethod": per-call query; per-token delete + deleteAll redundant.
+- [R1:#23] CONFIRMED low bug | cashier-chip/src/Subscription/Subscription.php:108 | "recurring_token in $fillable": sensitive mass-assignable; creation uses forceFill anyway.
+- [R1:#24] CONFIRMED low process | cashier-chip/:0 | "package has no": no Test.php in package; renewals/webhooks/swap unverified.
+- [AUD:B1] FIXED med-high bug | cashier-chip/database/migrations/2000_03_01_000004:30 | unique present + atomic claim w/ 23000 rescue; s8 item 4 done.
+- [AUD:B2] ADOPTED medium bug | cashier-chip/src/Console/WebhookCommand.php:55 | verify_signature key display-only; real switch in chip.
+- [AUD:B3] ADOPTED low security | cashier-chip/src/Payment/PaymentMethodStore.php:72 | positive: cross-tenant write guards verified; no action.
+- [AUD:B4] ADOPTED low security | cashier-chip/config/cashier-chip.php:44 | validate_billable_owner kill-switch exists, default true.
+- [AUD:B5] FIXED medium security | cashier-chip/src/Subscription/RenewalAttempt.php:36 | owner cols + HasOwner/inheritance + guards; s8 item 12 done.
+- [AUD:B6] ADOPTED medium perf | cashier-chip/src/Subscription/Subscription.php:1158 | items map; eager-load at query site (FALSE-list rejects wrong-line dup).
+- [AUD:Q#1] ADOPTED med-high bug | cashier-chip/database/migrations/2000_03_01_000004:30 | DUP AUD:B1; migration row 4. Counted once.
+- [AUD:Q#2] ADOPTED medium security | cashier-chip/src/Subscription/RenewalAttempt.php:36 | DUP AUD:B5; migration row 12. Counted once.
+## checkout
+- [R1:#1] CONFIRMED high bug | checkout/src/Integrations/Payment/CashierProcessor.php:71 | "Stripe webhook stores": top-level id (evt_*) stored as payment_id; siblings read data.object.
+- [R1:#2] DOWNGRADED (was high) medium security | checkout/src/Services/CheckoutService.php:51 | "startCheckout($cartId, $customerId) persists": arbitrary customer/cart, no owner check; DUP AUD:B4,B9.
+- [R1:#3] CONFIRMED high security | checkout/src/Models/CheckoutSession.php:80 | "$fillable includes owner_type/owner_id": status/totals/payment_data/owner fillable; free-order; DUP AUD:B8 HIGH.
+- [R1:#4] CONFIRMED medium security | checkout/src/Steps/PersistCustomerStep.php:104 | "resolveStoredActor resolves an": morph class from fillable payment_data; unscoped query.
+- [R1:#5] CONFIRMED medium bug | checkout/src/Steps/ProcessPaymentStep.php:350 | "buildCallbackUrl hardcodes the": 'session' hardcoded vs configurable query param.
+- [R1:#6] CONFIRMED medium bug | checkout/src/Integrations/Payment/ChipProcessor.php:78 | "handleCallback passes raw": raw total/currency into ?int amount; no minorAmount normalization.
+- [R1:#7] CONFIRMED medium bug | checkout/src/Support/CheckoutCallbackStatePolicy.php:35 | "callback idempotency only": Completed-only; repeat failure re-updates + re-dispatches CheckoutFailed.
+- [R1:#8] CONFIRMED medium perf | checkout/src/Steps/CalculatePricingStep.php:170 | "resolvePriceable does one": per-item unscoped find; owner check only when enabled; DUP AUD:B13.
+- [R1:#9] CONFIRMED low bug | checkout/src/Support/ChipPurchasePayloadBuilder.php:13 | "idempotency key is": bare session id reused across retries; warning logged per call.
+- [R1:#10] CONFIRMED low bug | checkout/src/Http/Controllers/PaymentCallbackController.php:188 | "callbackRouteMatchesGateway validates the": success-map-only; FALSE-list: identical keys pass, residual type-segment.
+- [R1:#11] CONFIRMED medium security | checkout/src/Http/Controllers/PaymentCallbackController.php:129 | "RateLimiter::hit runs": hit before token verify; no UUID check; DUP AUD:B10 adopted MEDIUM.
+- [R1:#12] CONFIRMED low bug | checkout/src/Models/CheckoutSession.php:278 | "transitionStatus() calls Spatie": transitionTo then direct DB update; double write + events.
+- [R1:#13] CONFIRMED low bug | checkout/src/Services/CheckoutService.php:428 | "failed payment verification": silent failed result; no transition/message/event (maybe intentional).
+- [R1:#14] CONFIRMED high perf | checkout/src/Models/CheckoutSession.php:183 | "pipeline issues ~2–3": per-step update x11, ~25-35 queries; DUP AUD:B12 adopted HIGH.
+- [R1:#15] CONFIRMED low security | checkout/src/Http/Controllers/PaymentCallbackController.php:247 | "redirect($url) uses config-controlled": config URLs + server ids; informational, keep server-sourced.
+- [R1:#16] CONFIRMED low bug | checkout/src/Actions/EnsureCheckoutOfferProduct.php:112 | "basePriceForProduct stores max(price,": max(price,compare) charged as price; needs product confirm.
+- [AUD:B1] ADOPTED high bug | checkout/src/Services/CheckoutService.php:78 | resumeCheckout unscoped find(); session enumeration.
+- [AUD:B2] ADOPTED medium bug | checkout/src/Actions/CheckoutFinalizer.php:29 | raw transitionTo path; inconsistent vs transitionStatus().
+- [AUD:B3] ADOPTED high bug | checkout/src/Models/CheckoutSession.php:183 | JSON blob read-modify-write, no lock; nested txn lengthens locks.
+- [AUD:B4] ADOPTED medium security | checkout/src/Services/CheckoutService.php:51 | DUP R1:#2; no owner assertion. Counted once.
+- [AUD:B5] ADOPTED medium bug | checkout/src/Steps/CreateOrderStep.php:156 | index-aligned pricing; join on item_id instead.
+- [AUD:B6] ADOPTED medium bug | checkout/src/Steps/CreateOrderStep.php:326 | 'unknown' gateway/txn collapse idempotency key.
+- [AUD:B7] ADOPTED low bug | checkout/src/Http/Controllers/PaymentCallbackController.php:188 | DUP R1:#10; FALSE-list residual type-segment. Counted once.
+- [AUD:B8] ADOPTED high security | checkout/src/Models/CheckoutSession.php:80 | DUP R1:#3; fillable hijack/free-order. Counted once.
+- [AUD:B9] ADOPTED medium security | checkout/src/Services/CheckoutService.php:51 | DUP R1:#2; ownerless session. Counted once.
+- [AUD:B10] ADOPTED medium security | checkout/src/Http/Controllers/PaymentCallbackController.php:129 | DUP R1:#11; hit-before-verify. Counted once.
+- [AUD:B11] ADOPTED low bug | checkout/src/Models/CheckoutSession.php:302 | intentional raw PK update; document only, no change.
+- [AUD:B12] ADOPTED high perf | checkout/src/Services/CheckoutService.php:93 | DUP R1:#14; 20-30 UPDATEs per pipeline. Counted once.
+- [AUD:B13] ADOPTED medium perf | checkout/src/Steps/CalculatePricingStep.php:194 | DUP R1:#8; 1 query/line. Counted once.
+- [AUD:B14] ADOPTED medium perf | checkout/src/Services/CheckoutService.php:107 | txn wraps stepExecutor incl. gateway I/O; move I/O out.
+- [AUD:Q#1] ADOPTED high bug | checkout/src/Services/CheckoutService.php:78 | DUP AUD:B1; queue row 8. Counted once.
+- [AUD:Q#2] ADOPTED high security | checkout/src/Models/CheckoutSession.php:80 | DUP R1:#3; queue row 9. Counted once.
+- [AUD:Q#3] ADOPTED high bug | checkout/src/Models/CheckoutSession.php:183 | DUP AUD:B3; lost-update queue row. Counted once.
+- [AUD:Q#4] ADOPTED medium security | checkout/src/Services/CheckoutService.php:51 | DUP R1:#2; gap row from audit-cart.md. Counted once.
+## chip
+- [R1:#1] CONFIRMED high bug | packages/chip/src/Services/Collect/PurchasesApi.php:238 | "Stale cache refunds" 24h op+purchase+payload key; repeat same-amount refund returns stale, no API call
+- [R1:#2] CONFIRMED medium security | packages/chip/src/Http/Controllers/WebhookController.php:29 | "Owner before signature" resolve+500 pre-auth vs 401 oracle; resolved twice :30/:69
+- [R1:#3] CONFIRMED medium bug | packages/chip/src/Support/PurchaseIdempotencyLedger.php:16 | "Reservations never expire" no TTL/cleanup; crash bricks key; stubs inflate pending_execute counts
+- [R1:#4] CONFIRMED medium bug | packages/chip/src/Actions/SyncChipRecordsFromApiAction.php:51 | "Sync fatals scoped" exists() outside try; OwnerScope throws with no console owner context
+- [R1:#5] CONFIRMED medium bug | packages/chip/src/Webhooks/ProcessChipWebhook.php:33 | "Dedup race dispatches" check-then-act; UPDATE path defeats unique key. DUP AUD:B5
+- [R1:#6] CONFIRMED medium performance | packages/chip/src/Services/LocalAnalyticsService.php:204 | "Unbounded PHP aggregation" revenue/monitor/retry load full sets, filter in PHP
+- [R1:#7] CONFIRMED medium bug | packages/chip/src/Actions/Purchases/SyncPurchaseRefundState.php:42 | "Refund lost update" sum-then-forceFill without txn/lock. DUP AUD:B4
+- [R1:#8] CONFIRMED medium bug | packages/chip/src/Http/Controllers/SendWebhookController.php:19 | "Send unattributed webhooks" no owner resolve/context; zero in-package listeners
+- [R1:#9] CONFIRMED low bug | packages/chip/src/ChipServiceProvider.php:171 | "Dead signature middleware" singleton never attached; routes use ['api'] only
+- [R1:#10] CONFIRMED low bug | packages/chip/config/chip.php:113 | "No webhook throttle" default ['api']; no explicit throttle:x,y in package
+- [R1:#11] CONFIRMED low bug | packages/chip/src/Models/ChipModel.php:42 | "Permissive mass assignment" $guarded owner-only; risk via filament/app create paths
+- [R1:#12] CONFIRMED low bug | packages/chip/database/migrations/2000_04_01_000001_create_chip_purchases_table.php:21 | "32-bit int columns" unix-time/money ints; Y2038 overflow + ~RM21M cap
+- [R1:#13] CONFIRMED low bug | packages/chip/src/Clients/ChipCollectClient.php:36 | "Public-key bypasses pipeline" direct Http skips retry/rate-limit/logging wrapper
+- [R1:#14] CONFIRMED low performance | packages/chip/src/Clients/Http/BaseHttpClient.php:128 | "Global rate-limit key" chip_api:class shared across all tenants
+- [R1:#15] CONFIRMED low bug | packages/chip/src/Data/EnrichedWebhookPayload.php:118 | "Robustness nits trio" parse can throw; outbound id interpolation; bank-acct unvalidated
+- [AUD:B1] ADOPTED high bug | packages/chip/src/Data/PurchaseDetailsData.php:96 | Float qty math on minor units truncates; use half-up minor-unit rounding
+- [AUD:B2] ADOPTED medium bug | packages/chip/src/Webhooks/Handlers/PurchasePaidHandler.php:27 | Paid handler sets status only; paid_on/total_minor/method stay stale
+- [AUD:B3] ADOPTED medium bug | packages/chip/src/Actions/Purchases/SyncPurchaseRefundState.php:56 | Partial refunds marked fully refunded; no partially_refunded state kept
+- [AUD:B4] ADOPTED medium bug | packages/chip/src/Actions/Purchases/SyncPurchaseRefundState.php:42 | DUP R1:#7; merged, counted once
+- [AUD:B5] ADOPTED medium bug | packages/chip/src/Webhooks/ProcessChipWebhook.php:97 | DUP R1:#5; merged, counted once
+- [AUD:B6] ADOPTED medium bug | packages/chip/src/Services/ChipCustomerDirectory.php:31 | owner=null adds no explicit scope; callers must pass owner
+- [AUD:Q#32] ADOPTED high bug | packages/chip/src/Data/PurchaseDetailsData.php:96 | DUP AUD:B1; queue row merged, counted once
+## commerce-support
+- [R1:#1] DOWNGRADED (was high) medium security | packages/commerce-support/src/Models/Report.php:47 | "Report mass assignment" fillable morph+workflow fields; adopt MEDIUM. DUP AUD:B6
+- [R1:#2] CONFIRMED high bug | packages/commerce-support/src/Actions/ProcessWebhookCallAction.php:29 | "Webhook dedup race" per-row lock; concurrent same-event both pass; effects under lock
+- [R1:#3] DOWNGRADED (was medium) low security | packages/commerce-support/src/Actions/ProcessWebhookCallAction.php:65 | "Exception string persisted" (string)$e trace to DB; adopt LOW. DUP AUD:B3
+- [R1:#4] CONFIRMED medium security | packages/commerce-support/src/Targeting/TargetingContext.php:303 | "Spoofable targeting headers" X-Channel/CF-IPCountry/Referer steer channel/country rules
+- [R1:#5] CONFIRMED medium security | packages/commerce-support/src/Support/OwnerFilesystem.php:60 | "Traversal check bypassable" substring '..' misses encoded/backslash/drive paths; default disk
+- [R1:#6] CONFIRMED medium bug | packages/commerce-support/src/Support/OwnerContext.php:160 | "Phantom owner contexts" fromTypeAndId never queries; orphaned tuples yield scope
+- [R1:#7] CONFIRMED medium performance | packages/commerce-support/database/migrations/1970_01_01_000004_create_webhook_calls_table.php.stub:22 | "Webhook_calls unindexed" zero indexes; JSON-path dedup scans full table
+- [R1:#8] CONFIRMED medium performance | packages/commerce-support/src/Support/OwnerBatchRunner.php:92 | "Unbounded owner tuples" distinct()->get() all in memory. DUP AUD:B7
+- [R1:#9] CONFIRMED medium bug | packages/commerce-support/src/Support/OwnerCache.php:126 | "Cache invalidation no-ops" tag flush swallowed on untaggable drivers; remember() herd
+- [R1:#10] CONFIRMED medium performance | packages/commerce-support/src/Targeting/TargetingContext.php:135 | "Targeting N+1 queries" orders()->count() + per-line categories, unmemoized
+- [R1:#11] CONFIRMED medium bug | packages/commerce-support/src/Concerns/LogsCommerceActivity.php:74 | "Logs capture fillable" loggable defaults to fillable; sensitive list omits email/phone/name
+- [R1:#12] DOWNGRADED (was low-medium) low bug | packages/commerce-support/src/Support/MoneyNormalizer.php:32 | "Float minor-units path" cents/100 float; display-only per audit. DUP AUD:B1
+- [R1:#13] CONFIRMED low bug | packages/commerce-support/src/Filament/Widgets/CommerceHealthWidget.php:57 | "Health rendered thrice" 3 getters re-run latestResults; preg_split unguarded :185
+- [R1:#14] CONFIRMED low performance | packages/commerce-support/src/Actions/SeedCurrenciesAction.php:25 | "Seeding N+1 rows" per-row select+save x150+, no txn/upsert. DUP AUD:B9
+- [R1:#15] CONFIRMED low bug | packages/commerce-support/src/Targeting/TargetingEngine.php:156 | "Unbounded expression recursion" and/or/not recurse sans depth cap in eval+validate
+- [R1:#16] CONFIRMED low security | packages/commerce-support/src/Http/PinnedHttpClient.php:28 | "Curl-only DNS pin" CURLOPT_RESOLVE ignored on non-curl drivers
+- [R1:#17] CONFIRMED low bug | packages/commerce-support/src/Actions/UpsertEnvVariablesAction.php:19 | "Non-atomic env rewrite" get-put no lock/backup; dup keys stale; forced quotes
+- [R1:#18] CONFIRMED low performance | packages/commerce-support/src/Traits/HasOwner.php:334 | "Owner name N+1" $this->owner lazy-load per row in accessor
+- [R1:#19] CONFIRMED low bug | packages/commerce-support/database/migrations/1970_01_01_000001_create_tag_tables.php.stub:31 | "Taggables UUID fixed" int-PK tagging breaks; 2025_* + tags stubs lack down()
+- [AUD:B1] ADOPTED low bug | packages/commerce-support/src/Support/MoneyNormalizer.php:32 | DUP R1:#12; merged, counted once
+- [AUD:B2] ADOPTED low bug | packages/commerce-support/src/Support/MoneyNormalizer.php:45 | formatCurrency false into string return; add false check
+- [AUD:B3] ADOPTED low bug | packages/commerce-support/src/Actions/ProcessWebhookCallAction.php:65 | DUP R1:#3; merged, counted once
+- [AUD:B4] ADOPTED low bug | packages/commerce-support/src/Models/Tag.php:10 | No getTable() override; breaks prefix contract
+- [AUD:B5] ADOPTED low security | packages/commerce-support/src/Webhooks/CommerceSignatureValidator.php:71 | hmac+hash_equals ok; no replay/sha256= strip
+- [AUD:B6] ADOPTED medium security | packages/commerce-support/src/Models/Report.php:47 | DUP R1:#1; merged, counted once
+- [AUD:B7] ADOPTED medium performance | packages/commerce-support/src/Support/OwnerBatchRunner.php:92 | DUP R1:#8; merged, counted once
+- [AUD:B8] ADOPTED low bug | packages/commerce-support/src/Support/OwnerBatchRunner.php:113 | Global include_global flip w/ finally; correct but Octane-fragile
+- [AUD:B9] ADOPTED low performance | packages/commerce-support/src/Actions/SeedLanguagesAction.php:34 | DUP R1:#14; merged, counted once
+## communications
+- [R1:#1] CONFIRMED high bug | packages/communications/src/Actions/CreateTrackingTokenAction.php:28 | "Token hash returned" raw token lost; getToken leaks hash as bearer. DUP AUD:B1
+- [R1:#2] CONFIRMED high security | packages/communications/src/Actions/CreateTrackingTokenAction.php:35 | "Plaintext target URL" unencrypted, unvalidated scheme/host; parse_url false risk
+- [R1:#3] DOWNGRADED (was high) low security | packages/communications/src/Support/DestinationProtectorService.php:12 | "Unauthenticated AES-CBC" no MAC; lax decode; adopt LOW. DUP AUD:B6
+- [R1:#4] CONFIRMED high bug | packages/communications/src/Services/CommunicationRecorderService.php:122 | "Enum-string status compare" strict string checks on enum always false; stuck Processing
+- [R1:#5] CONFIRMED high bug | packages/communications/src/Actions/ApplyProviderEventAction.php:84 | "State machine bypassed" direct writes allow regressions, skip Delivery* events
+- [R1:#6] CONFIRMED high bug | packages/communications/src/Webhooks/ConfigWebhookOwnerResolver.php:12 | "Null owner resolver" default null; global scope breaks owner-scoped guard lookup
+- [R1:#7] CONFIRMED medium bug | packages/communications/src/Services/CommunicationManagerService.php:34 | "Idempotency race leaks" exists-then-acquire race; throw leaves lock for full TTL
+- [R1:#8] CONFIRMED medium performance | packages/communications/src/Actions/PlanCommunicationDeliveriesAction.php:34 | "Unbounded plan transaction" per-item queries in txn; no cap; parse throws
+- [R1:#9] CONFIRMED medium performance | packages/communications/src/Jobs/DispatchCommunicationDeliveriesJob.php:44 | "Unbounded dispatch get" all queued into memory; per-row transitions
+- [R1:#10] CONFIRMED medium performance | packages/communications/src/Models/CommunicationDelivery.php:203 | "Unbounded cascade deletes" each()+chunk x6, no txn; children orphaned. DUP AUD:B3
+- [R1:#11] CONFIRMED medium performance | packages/communications/src/Console/Commands/DispatchDueCommunicationsCommand.php:69 | "Dispatch count-plus-chunk" count then re-query; per-row get/saves/job storm
+- [R1:#12] CONFIRMED medium security | packages/communications/src/Http/Controllers/WebhookController.php:25 | "Unbounded webhook payload" no size/depth cap before queue dispatch
+- [R1:#13] CONFIRMED medium bug | packages/communications/src/Actions/RecordTrackingInteractionAction.php:20 | "Tokens never expire-checked" expired/revoked still tracked; free-form type
+- [R1:#14] CONFIRMED medium bug | packages/communications/src/Actions/DispatchManagedNotificationAction.php:78 | "Unsafe notifiable handling" scalar TypeError; FQCN vs morph; hardcoded max 3
+- [R1:#15] CONFIRMED medium security | packages/communications/src/Actions/ReceiveInboundCommunicationAction.php:86 | "Inbound stored raw" subject/body unredacted; sender morphs unvalidated
+- [R1:#16] CONFIRMED low security | packages/communications/src/Http/Middleware/VerifyWebhookSignature.php:29 | "Provider enumeration codes" 404 vs 401; fixed algo/header only
+- [R1:#17] CONFIRMED low bug | packages/communications/src/Jobs/ProcessWebhookEventJob.php:89 | "Fingerprint md5 collapse" json_encode false yields constant hash; wrong dedup
+- [R1:#18] CONFIRMED low bug | packages/communications/src/Console/Commands/ExpireCommunicationsCommand.php:80 | "Expiry overwrites deadline" expires_at=now; skips events + deliveries
+- [R1:#19] CONFIRMED low bug | packages/communications/src/Console/Commands/PruneCommunicationDataCommand.php:60 | "Before parse crashes" CarbonImmutable::parse uncaught on invalid --before
+- [R1:#20] CONFIRMED low bug | packages/communications/src/Actions/ResolveCommunicationThreadAction.php:26 | "Thread check-then-create" race; non-unique (channel,external_thread_id)
+- [R1:#21] CONFIRMED low bug | packages/communications/src/Actions/StartDeliveryAttemptAction.php:22 | "Attempt count race" read-modify-write sans lock; dup attempt_number
+- [R1:#22] CONFIRMED low performance | packages/communications/src/Actions/RecalculateCommunicationStatusAction.php:21 | "Unbounded status prune" get-all statuses; count-then-delete single stmt
+- [R1:#23] CONFIRMED low bug | packages/communications/src/Services/NotificationInboxService.php:192 | "Swallowed guard exception" InvalidArgumentException eaten; check skipped
+- [R1:#24] CONFIRMED low bug | packages/communications/src/Actions/RecordProviderEventAction.php:81 | "Exists-then-insert race" unique violation surfaces raw QueryException
+- [R1:#25] CONFIRMED low correctness | packages/communications/src/Policies/CommunicationPolicy.php:11 | "Policy methods missing" no update/delete (deny default); Filament risk unconfirmed
+- [R1:#26] CONFIRMED low correctness | packages/communications/src/Listeners/AutoCaptureNotificationListener.php:61 | "Object-id state keys" spl_object_id reuse on GC; registry unpruned
+- [AUD:B1] ADOPTED high bug | packages/communications/src/Actions/CreateTrackingTokenAction.php:26 | DUP R1:#1; merged, counted once
+- [AUD:B2] ADOPTED high bug | packages/communications/src/Actions/AddCommunicationRecipientAction.php:25 | findOrFail trusts global scope; add OwnerWriteGuard
+- [AUD:B3] ADOPTED medium bug | packages/communications/src/Models/Communication.php:221 | DUP R1:#10; merged, counted once
+- [AUD:B4] ADOPTED high security | packages/communications/src/Actions/AddCommunicationRecipientAction.php:25 | DUP AUD:B2; merged, counted once
+- [AUD:B5] ADOPTED medium security | packages/communications/src/Models/CommunicationAttachment.php:47 | disk/path/mime fillable; confirm server-side mimes/max
+- [AUD:B6] ADOPTED low security | packages/communications/src/Support/DestinationProtectorService.php:12 | DUP R1:#3; merged, counted once
+- [AUD:B7] ADOPTED info note | packages/communications/src/Http/Middleware/VerifyWebhookSignature.php:29 | GOOD: HMAC+hash_equals+300s ingress; no action
+- [AUD:Q#16] ADOPTED high bug | packages/communications/src/Actions/CreateTrackingTokenAction.php:26 | DUP AUD:B1; queue row merged, counted once
+- [AUD:Q#17] ADOPTED high bug | packages/communications/src/Actions/AddCommunicationRecipientAction.php:25 | DUP AUD:B2; queue row merged, counted once
+## contacting
+- [R1:#1] CONFIRMED medium bug | packages/contacting/src/Actions/UpdateContactMethodAction.php:38 | "Update clears flags" is_primary/verified/metadata overwritten by DTO defaults
+- [R1:#2] CONFIRMED medium bug | packages/contacting/src/Data/ContactMethodData.php:12 | "No validation persists" empty/invalid rows saved; resolvers serve raw invalid
+- [R1:#3] CONFIRMED medium bug | packages/contacting/src/Concerns/HasContactMethods.php:19 | "Mass delete orphans" ->delete() skips guards/events; cross-owner rows dangle
+- [R1:#4] CONFIRMED medium bug | packages/contacting/src/Actions/CreateContactMethodAction.php:31 | "Dead DTO fields" display/normalized/verifiedAt ignored; validity/sort unsettable
+- [R1:#5] CONFIRMED low bug | packages/contacting/src/Actions/CreateContactMethodAction.php:39 | "Optional countryCode leaks" Optional object passes ?? into string column
+- [R1:#6] CONFIRMED low security | packages/contacting/src/Actions/BuildContactLinksAction.php:74 | "Raw link concatenation" mailto/tel/handle unencoded; hardening-level
+- [R1:#7] CONFIRMED low bug | packages/contacting/src/Support/SocialProfileConfig.php:62 | "Handle keeps query" ?ref pollutes stored handle; uppercase scheme nulled
+- [R1:#8] CONFIRMED medium bug | packages/contacting/src/Models/ContactMethod.php:68 | "Caller-asserted verification" no workflow/event; verified_at unsynced; adopt MEDIUM. DUP AUD:B1
+- [R1:#9] CONFIRMED low bug | packages/contacting/database/migrations/2000_01_01_000001_create_contact_methods_table.php:62 | "Primary index omits" owner cols missing (path moved post-batch); CONCAT_WS collides
+- [R1:#10] CONFIRMED low performance | packages/contacting/src/Actions/CreateContactSnapshotAction.php:81 | "Snapshot N+1 writes" per-item owner+save; unbounded gets; no source index; double guard
+- [R1:#11] CONFIRMED low bug | packages/contacting/src/Models/ContactSnapshot.php:50 | "Mutable dead snapshots" update/delete open; lineage fillable; DTO/contracts unwired
+- [AUD:B1] ADOPTED medium bug | packages/contacting/src/Models/ContactMethod.php:56 | DUP R1:#8; merged, counted once
+- [AUD:B2] ADOPTED low bug | packages/contacting/src/Models/ContactMethod.php:260 | Null-parent primary early-return by design; orphans noted
+## csuite
+- [R1:#1] CONFIRMED medium bug | packages/csuite/tests/BundleTest.php:1 | "Orphaned bundle test" phpunit testsuite=tests/src only; Pest in() lacks Csuite; test never runs.
+- [R1:#2] CONFIRMED low bug | packages/csuite/README.md:152 | "Broken license link" links LICENSE but packages/csuite/LICENSE does not exist; only repo-root LICENSE.
+- [R1:#3] CONFIRMED low bug | packages/csuite/composer.json:11 | "Missing cashier plugins" filament-cashier(+chip) exist w/ plugins yet absent from require and exclusion policy.
+- [R1:#4] CONFIRMED low bug | packages/csuite/docs/03-configuration.md:63 | "Stale cart snippet" tables/prefix keys mismatch cart.php snapshots/rounding_mode/owner/limits keys.
+- [R1:#5] CONFIRMED low bug | packages/csuite/docs/03-configuration.md:170 | "Wrong nav example" cites filament-products/orders/shipping + AttributeResource; none bundled.
+- [R1:#6] CONFIRMED low bug | packages/csuite/docs/04-usage.md:268 | "Everything heading misleading" Everything/Full Suite Installation headings vs curated-subset policy.
+- [R1:#7] CONFIRMED low security | packages/csuite/composer.json:34 | "Dev stability published" minimum-stability dev on metapackage; prefer-stable set; policy call.
+- [R1:#8] CONFIRMED low bug | packages/csuite/tests/BundleTest.php:33 | "Unchecked manifest read" file_get_contents on derived path w/o is_file; warning+TypeError not clean failure.
+## customers
+- [R1:#1] CONFIRMED high security | packages/customers/src/Services/CustomerResolver.php:53 | "Unvalidated session customer" resolveExisting/resolve return/update/merge sessionCustomer w/o owner check.
+- [R1:#2] FALSE high security | packages/customers/src/Actions/LinkCustomerToPerson.php:18 | "Unscoped person link" matches FALSE-list: persons global by design; customer side guarded.
+- [R1:#3] CONFIRMED high bug | packages/customers/src/Concerns/ResolvesCustomerIdentity.php:21 | "Relation bypasses scope" customer()/customerProfile() getResults ignore OwnerScope; no re-verify.
+- [R1:#4] CONFIRMED high bug | packages/customers/database/migrations/2000_05_01_000001_create_customers_table.php:22 | "Duplicate user profiles" user_id nullable w/o unique; getOrCreate check-then-create w/o lock.
+- [R1:#5] CONFIRMED medium bug | packages/customers/src/Models/Customer.php:171 | "Email TOCTOU race" assert-unique then create w/o catch; concurrent dup throws raw QueryException.
+- [R1:#6] CONFIRMED medium bug | packages/customers/src/Models/Segment.php:348 | "Flapping segment membership" query path skips null/1=0 unknown vs in-memory true/false.
+- [R1:#7] CONFIRMED high perf | packages/customers/src/Services/SegmentationService.php:197 | "Unbounded segment loads" DUP AUD:B5; stats/getMatching+sync unbounded; adopt HIGH.
+- [R1:#8] CONFIRMED medium perf | packages/customers/src/Concerns/ResolvesCustomerIdentity.php:76 | "Non-sargable email lookup" LOWER(TRIM(COALESCE)) wraps column in 3 queries; NULLIF part unverified.
+- [R1:#9] CONFIRMED medium security | packages/customers/src/Models/Customer.php:87 | "Over-broad customer fillable" user_id/status/timestamps/metadata fillable; hijack + audit forgery.
+- [R1:#10] CONFIRMED medium security | packages/customers/src/Models/Customer.php:303 | "Unrestricted documents upload" documents collection w/o mime/size limits; avatar restricted.
+- [R1:#11] CONFIRMED medium bug | packages/customers/src/Actions/SetDefaultCustomerAddress.php:30 | "Cross-owner address attach" attach w/o owner check; group pivot role/joined_at dropped.
+- [R1:#12] CONFIRMED medium bug | packages/customers/src/Actions/UpdateCustomerProfile.php:73 | "Checkout contact bloat" phone added every resolve w/o dedupe; address exact-match dedupe only.
+- [R1:#13] CONFIRMED low bug | packages/customers/src/Models/Segment.php:298 | "Dual slug truth" app checks owner tuple but DB unique is (owner_scope,slug); race 500s.
+- [R1:#14] CONFIRMED low bug | packages/customers/src/Policies/CustomerPolicy.php:50 | "Permissive customer policies" viewAny/create auth-only; orders guard unenforced; marketing default true.
+- [AUD:B1] ADOPTED medium bug | packages/customers/src/Models/Customer.php:103 | DUP R1:#9; created_at/updated_at fillable (audit-noise, not takeover).
+- [AUD:B2] ADOPTED medium bug | packages/customers/src/Models/Segment.php:283 | deactivated_at set on deactivate, never cleared on re-activate.
+- [AUD:B3] ADOPTED medium bug | packages/customers/src/Models/Customer.php:322 | deleting orphans contactMethods/socialProfiles/media; only notes/addresses detached.
+- [AUD:B4] ADOPTED medium bug | packages/customers/src/Actions/CreateCustomer.php:67 | LinkCustomerToPerson runs after txn returns; link failure leaves person-less customer.
+- [AUD:B5] ADOPTED high perf | packages/customers/src/Models/Segment.php:146 | DUP R1:#7; getMatching ->get() + sync(pluck) loads all matches.
+- [AUD:B6] ADOPTED medium perf | packages/customers/src/Actions/RebuildAllSegments.php:85 | DUP R1:#7; per-segment sync + pluck + per-ID events.
+- [AUD:B7] FIXED medium perf | packages/customers/database/migrations/2000_05_01_000001_create_customers_table.php:59 | DONE S8-6; (owner,status)+(owner,is_active) composites present in creates.
+- [AUD:Q#6] FIXED medium perf | packages/customers/database/migrations/2000_05_01_000002_create_customer_segments_table.php:47 | DUP AUD:B7; S8 row 6 folded into creates.
+## docs
+- [R1:#1] CONFIRMED high bug | packages/docs/database/migrations/2000_06_01_000002_create_docs_tables.php:45 | "Global doc collision" doc_number globally unique vs per-owner sequences; owners collide.
+- [R1:#2] CONFIRMED high security | packages/docs/src/Models/Doc.php:113 | "Fillable pdf hijack" pdf_path fillable + update() mass-assigns; download serves it; in-disk read.
+- [R1:#3] CONFIRMED medium security | packages/docs/src/Services/DocService.php:446 | "Config key traversal" raw doc_type in docs.types.* keys (service+renderer); no allowlist.
+- [R1:#4] DOWNGRADED (was medium) low security | packages/docs/src/Rendering/TiptapJsonRenderer.php:186 | "Permissive embed URLs" DUP AUD:B4; any http(s) allowed; adopt LOW.
+- [R1:#5] CONFIRMED medium bug | packages/docs/src/Services/DocEmailService.php:266 | "Queued mail stuck" only sync branch sets Sent; Mail::queue path has no Sent transition.
+- [R1:#6] CONFIRMED medium bug | packages/docs/src/Services/SequenceManager.php:32 | "Sequence first-use race" no unique on sequences(type+owner); period double-insert 500s.
+- [R1:#7] CONFIRMED medium bug | packages/docs/src/Services/DocService.php:68 | "Split numbering paths" DUP AUD:B1; create() uniqid-random vs createFromType atomic sequence.
+- [R1:#8] CONFIRMED medium bug | packages/docs/src/Services/DocService.php:239 | "Update bypasses machine" mass-assigns status/totals/number/type/pdf; no machine/totals/owner check.
+- [R1:#9] CONFIRMED medium bug | packages/docs/src/Services/DocService.php:159 | "Unvalidated caller totals" no-items path persists monetary fields as-is; create() only non-negative.
+- [R1:#10] CONFIRMED medium bug | packages/docs/src/Models/DocVersion.php:79 | "Raw version restore" restore() updates snapshot directly; stale fields, no version, no guard.
+- [R1:#11] CONFIRMED medium bug | packages/docs/src/Services/DocPaymentRecorder.php:62 | "Unfiltered paid total" sum ignores status; method unvalidated; paid_at caller-set.
+- [R1:#12] CONFIRMED medium bug | packages/docs/src/States/DocStatus.php:128 | "Silent draft fallback" unknown status resolves to Draft instead of throwing.
+- [R1:#13] CONFIRMED medium perf | packages/docs/src/Services/DueDocReminders.php:40 | "Unbounded reminder scan" unbounded get + whereDoesntHave + JSON scan; job loops queries.
+- [R1:#14] CONFIRMED medium perf | packages/docs/src/Mail/DocMail.php:82 | "Per-send PDF regen" attachments() always generatePdf(save:true); never reuses fresh pdf.
+- [R1:#15] CONFIRMED low security | packages/docs/src/Mail/DocMail.php:129 | "Unvalidated CC metadata" CC from metadata cc string; breaks workers or exfils PDF.
+- [R1:#16] CONFIRMED low security | packages/docs/src/Services/DocEmailService.php:31 | "Unvalidated email recipient" send/sendReminder take recipient email w/o validation.
+- [R1:#17] CONFIRMED low security | packages/docs/routes/docs.php:9 | "Unthrottled public routes" track/share lack throttle; Crypt tracking tokens never expire.
+- [R1:#18] CONFIRMED low bug | packages/docs/src/Models/Doc.php:283 | "Orphaned PDF delete" deleting cascades DB rows but never deletes pdf_path from disk.
+- [R1:#19] CONFIRMED low bug | packages/docs/src/Services/DocService.php:330 | "Version max race" createVersion max()+1 w/o lock; concurrent dup version 500s.
+- [R1:#20] CONFIRMED low bug | packages/docs/src/Http/Controllers/DocPreviewController.php:40 | "Preview skips recheck" bound Doc skips owner re-check; only string ids re-checked.
+- [R1:#21] CONFIRMED low perf | packages/docs/src/Rendering/TiptapJsonRenderer.php:31 | "Uncapped JSON render" recursive render w/o depth/node cap; big body DoS.
+- [R1:#22] CONFIRMED low perf | packages/docs/src/Services/SequenceManager.php:101 | "Lockless preview lock" preview() inherits lockForUpdate outside a transaction.
+- [R1:#23] CONFIRMED low bug | packages/docs/src/DataObjects/DocData.php:70 | "Free-form doc type" docType persisted w/o DocType-enum validation.
+- [R1:#24] CONFIRMED low bug | packages/docs/src/Services/DocService.php:63 | "Half-built create path" create() has no txn + no initial version; pdf failure partial.
+- [AUD:B1] ADOPTED medium bug | packages/docs/src/Numbering/Strategies/DefaultNumberStrategy.php:52 | DUP R1:#7; uniqid('',true) time-based predictable suffix.
+- [AUD:B2] ADOPTED medium bug | packages/docs/src/Http/Controllers/DocDownloadController.php:62 | sync storePdf/Browsershot render inside GET on cache miss.
+- [AUD:B3] ADOPTED low bug | packages/docs/src/Services/DocRenderService.php:177 | caller pdfOptions merged but constrained to fixed keys; mitigated.
+- [AUD:B4] ADOPTED low security | packages/docs/src/Rendering/TiptapJsonRenderer.php:186 | DUP R1:#4; javascript/traversal blocked; residual http embeds.
+- [AUD:Q#11] ADOPTED low perf | audits/.staging-verify/vpkg/audit-docs.md:11 | tax-scoped S8 row; no migration by design; no action in docs.
+## engagement
+- [R1:#1] CONFIRMED critical bug | packages/engagement/src/Services/DefaultEngagementManager.php:540 | "Mismatched share token" stored token vs URL token generated independently; never match.
+- [R1:#2] CONFIRMED high bug | packages/engagement/src/Console/Commands/ReconcileEngagementCountersCommand.php:68 | "Ownerless reconcile command" no OwnerContext/BatchRunner; owner.enabled defaults true.
+- [R1:#3] CONFIRMED high bug | packages/engagement/src/Services/DefaultReminderManager.php:40 | "Dead offset reminders" offset stored w/ remind_at NULL; anchor fn never called; excluded.
+- [R1:#4] DOWNGRADED (was high) medium bug | packages/engagement/src/Services/DefaultEngagementManager.php:571 | "Race-condition duplicates" 4 flows FIXED (DUP AUD:B1); subscribe+collection-item still racy.
+- [R1:#5] CONFIRMED high security | packages/engagement/src/Services/DefaultReminderManager.php:61 | "Unvalidated notification class" class from options/fillable via app(); only is_a bound.
+- [R1:#6] CONFIRMED medium bug | packages/engagement/src/Console/Commands/SendDueRemindersCommand.php:96 | "Aborting reminder loop" event+markSent w/o try/catch; throw aborts chunk; no markFailed.
+- [R1:#7] CONFIRMED medium bug | packages/engagement/src/Services/DefaultEngagementManager.php:342 | "Spurious response changed" existing/cancelled/same-type always fires ResponseChanged.
+- [R1:#8] CONFIRMED medium bug | packages/engagement/database/migrations/2000_06_01_000009_create_engagement_counters_table.php:34 | "MySQL counter gap" unique has nullable owner cols; partial unique pgsql/sqlite only.
+- [R1:#9] CONFIRMED medium security | packages/engagement/src/Services/DefaultEngagementManager.php:526 | "Unauthorized share creation" share() has no policy hook; no canShare; siblings authorize.
+- [R1:#10] CONFIRMED medium perf | packages/engagement/src/Services/DefaultSubscriptionManager.php:190 | "Unbounded criteria scan" findMatching loads all via get() + PHP compare per call.
+- [R1:#11] CONFIRMED medium perf | packages/engagement/src/Services/DefaultEngagementCounterService.php:343 | "Synchronous recount listeners" each write triggers COUNT recalc inside request txn.
+- [R1:#12] CONFIRMED low bug | packages/engagement/src/Console/Commands/SendDueRemindersCommand.php:56 | "Dead limit call" limit() before chunkById overridden; bounding via remaining checks.
+- [R1:#13] CONFIRMED low bug | packages/engagement/src/Console/Commands/ReconcileEngagementCountersCommand.php:71 | "Offset distinct chunk" chunk() over DISTINCT skips/dups on mid-run change.
+- [R1:#14] CONFIRMED low security | packages/engagement/src/Models/Reminder.php:53 | "Fillable morph identities" morph cols/status/timestamps/notification_class fillable.
+- [R1:#15] CONFIRMED low bug | packages/engagement/src/Services/DefaultEngagementStateResolver.php:79 | "Lazy cursor resolvers" subscriptions/reminders return unbounded cursor; stateFor is array.
+- [R1:#16] CONFIRMED low perf | packages/engagement/database/migrations/2000_06_01_000008_create_engagement_reminders_table.php:27 | "Missing composite indexes" single indexes only; no hot-path composites.
+- [R1:#17] CONFIRMED low bug | packages/engagement/src/Models/BookmarkCollection.php:66 | "N-plus-one collection delete" items()->each(delete) w/o txn; slow + partial on failure.
+- [R1:#18] CONFIRMED low security | packages/engagement/src/Services/DefaultShareUrlGenerator.php:17 | "Unvalidated free-form inputs" no length checks at boundaries; token concatenated unencoded.
+- [R1:#19] CONFIRMED low security | packages/engagement/src/Console/Commands/MatchSubscriptionsCommand.php:103 | "Broadcast sensitive attributes" match context from attributesToArray; console-only.
+- [AUD:B1] FIXED high bug | packages/engagement/database/migrations/2000_06_01_000001_create_engagement_follows_table.php:39 | DUP R1:#4; DONE S8-2; actor+subject uniques + lock + 23000 rescue.
+- [AUD:B2] FIXED high bug | packages/engagement/src/Services/DefaultReminderManager.php:113 | DONE S8-2; markSent/Failed pending-precondition + row locks; atomic claim.
+- [AUD:B3] FIXED medium bug | packages/engagement/database/migrations/2000_06_01_000010_create_engagement_shares_table.php:42 | DONE S8-2; share_token unique folded into shares create.
+- [AUD:B4] ADOPTED medium bug | packages/engagement/src/Services/DefaultReminderManager.php:31 | setReminder has no dedup/throttle; repeats create unbounded rows.
+- [AUD:B5] ADOPTED medium bug | packages/engagement/src/Services/DefaultEngagementManager.php:571 | DUP R1:#4; firstOrCreate w/o unique; items migration indexes only.
+- [AUD:B6] ADOPTED medium security | packages/engagement/src/Services/DefaultEngagementPolicyResolver.php:15 | resolver returns true; creates rely on ambient context.
+- [AUD:B7] ADOPTED low bug | packages/engagement/src/Services/DefaultEngagementCounterService.php:115 | state/counter reads rely on global scope; prefer explicit forOwner.
+- [AUD:B8] ADOPTED medium perf | packages/engagement/src/Services/DefaultEngagementCounterService.php:228 | per-type count + updateOrCreate fan-out in recalculate.
+- [AUD:Q#30] FIXED high bug | packages/engagement/database/migrations/2000_06_01_000001_create_engagement_follows_table.php:39 | DUP AUD:B1; fix-first row 30 resolved by S8-2.
+- [AUD:Q#FF2] FIXED high bug | packages/engagement/src/Services/DefaultReminderManager.php:113 | DUP AUD:B2; fix-first double-send row resolved by preconditions.
+- [AUD:Q#2] FIXED high bug | packages/engagement/database/migrations/2000_06_01_000010_create_engagement_shares_table.php:42 | DUP AUD:B1; S8 row 2 composites+token+lease confirmed.
+## events
+- [R1:#1] CONFIRMED high bug | src/Actions/SyncEventClassificationsAction.php:73 | "delete-then-recreate classifications race": no txn/guard; find() per row; per-value firstOrCreate.
+- [R1:#2] CONFIRMED high security | src/Models/Venue.php:65 | "nine models missing boundary": Venue/Taxonomy/Term/Role/etc lack owner traits; global firstOrCreate.
+- [R1:#3] CONFIRMED high bug | src/Actions/PromoteInterestedToConfirmedAction.php:30 | "capacity check-then-act race": no lock/txn; agent ships inventory before registrations exist.
+- [R1:#4] CONFIRMED high security | src/Services/RegistrationService.php:100 | "unvalidated items answers participants": ticket/prices verbatim; morph/status unchecked. DUP AUD:B3.
+- [R1:#5] CONFIRMED medium bug | src/Actions/UpdateEventSessionAction.php:30 | "status bypasses state machine": fillable incl status; update() skips transitionTo checks.
+- [R1:#6] CONFIRMED medium bug | src/Resolvers/DefaultEventRegistrationEligibility.php:18 | "eligibility ignores session event": occurrence-only early return; session/event unchecked.
+- [R1:#7] CONFIRMED medium security | src/Services/DefaultEventCheckInService.php:95 | "arbitrary attendee morph attach": attendee_type/id, metadata/notes persisted unvalidated.
+- [R1:#8] CONFIRMED medium performance | src/Actions/RegisterForFreeAction.php:160 | "idempotency scans entire scope": get()->filter on metadata; no index; hot-path linear.
+- [R1:#9] CONFIRMED medium performance | src/Services/EventQueryService.php:21 | "unbounded result sets grow": findPublished/findByOwner get(); limit unclamped. DUP AUD:B9.
+- [R1:#10] CONFIRMED medium bug | src/Console/Commands/FinalizeEventOrdersCommand.php:24 | "console lacks owner context": direct query; scope asserts owner; no --owner/--global.
+- [R1:#11] CONFIRMED medium security | src/Policies/EventPolicy.php:15 | "single policy viewAny-true": sole Gate::policy; viewAny true; rest unregistered.
+- [R1:#12] CONFIRMED medium bug | src/Actions/CloneEventContentsAction.php:60 | "unguarded partial clone risk": raw IDs; per-row saves; unknown relations skipped.
+- [R1:#13] CONFIRMED high security | src/Models/Event.php:162 | "mass-assignable owner tuple": owner/created_by/status/timestamps fillable. DUP AUD:B1.
+- [R1:#14] CONFIRMED low bug | src/Models/EventRegistration.php:98 | "bundle linkage unverified currency": parent/registrant unchecked; USD hardcoded vs MYR config.
+- [R1:#15] CONFIRMED low bug | src/Models/EventRegistration.php:91 | "interested non-blocking plus slug": interested excluded; max(1,count); slug non-unique.
+- [R1:#16] CONFIRMED low performance | database/migrations/2000_01_01_000014_create_event_registrations_table.php:18 | "missing composite capacity index": single-col only; (float) zero-checks smell-only.
+- [R1:#17] CONFIRMED low bug | src/Actions/SyncManagementAssignmentToAuthzAction.php:58 | "silent missing-role no-op": returns silently; raw pivot write unlogged.
+- [R1:#18] CONFIRMED low bug | src/Data/RegisterInput.php:10 | "dead DTOs overbroad removal": DTOs unreferenced in src; remove(event_id) wipes all docs.
+- [AUD:B1] ADOPTED high bug | src/Models/Event.php:162 | owner/created_by/status/timestamps fillable; counted once. DUP R1:#13.
+- [AUD:B2] ADOPTED critical bug | src/Models/Event.php:100 | no booted/deleting cascade; delete orphans subtree. DUP AUD:Q1.
+- [AUD:B3] ADOPTED high bug | src/Services/RegistrationService.php:51 | fill(Arr::except) no Validator; totals/parent forgeable. DUP R1:#4.
+- [AUD:B4] ADOPTED high bug | src/Models/EventRegistrationItem.php:46 | ticket_type_id fillable; never same-event/owner checked. DUP R1:#4.
+- [AUD:B5] ADOPTED medium security | src/Models/Concerns/ScopesByEventOwner.php:85 | whereNull(eventId) OR whereIn(subselect); per-model matrix decides.
+- [AUD:B6] ADOPTED medium security | src/Services/EventSearchDocumentBuilder.php:188 | withoutGlobalScope indexer builds cross-owner docs; needs ACL review.
+- [AUD:B7] ADOPTED medium security | filament-events | occurrence/session/attendance inherit null-matrix; that pkg out of scope here.
+- [AUD:B8] ADOPTED medium performance | src/Services/RegistrationService.php:77 | per-row create() in one txn; chunk/queue for 100+.
+- [AUD:B9] ADOPTED medium performance | src/Services/EventQueryService.php:21 | no paginate() in src; cursor needed. DUP R1:#9.
+- [AUD:Q1] ADOPTED critical bug | src/Models/Event.php:100 | delete orphans entire subtree; counted once. DUP AUD:B2.
+- [AUD:Q2] ADOPTED high bug | src/Services/RegistrationService.php:51 | forged totals, unvalidated ticket_type_id. DUP AUD:B3.
+- [AUD:Q3] ADOPTED high bug | src/Models/EventRegistrationItem.php:46 | ticket_type_id same-event/owner never checked. DUP AUD:B4.
+- [AUD:Q4] UNVERIFIED low process | packages/orders/docs/04-usage.md | orders-pkg migration note; verify against orders sources (out of scope).
+## feedback
+- [R1:#1] CONFIRMED high bug | src/Actions/DuplicateFeedbackFormAction.php:38 | "duplicate drops section-less questions": loops sections only; null-section questions lost.
+- [R1:#2] CONFIRMED high bug | src/Traits/ReceivesFeedback.php:41 | "trait creates empty form": ignores template definition; bypasses guarded action+event.
+- [R1:#3] CONFIRMED high bug | src/Analytics/NpsCalculator.php:61 | "per-question aggregates response score": whereHas filters but CASE/AVG run on responses.score.
+- [R1:#4] CONFIRMED high security | src/Actions/MarkFeedbackResponseAsSpamAction.php:11 | "mutations skip OwnerWriteGuard": 10 actions forceFill+save; guard grep-absent.
+- [R1:#5] DOWNGRADED (was HIGH) medium bug | src/Actions/SubmitFeedbackResponseAction.php:186 | "one-response bypass remains": race FIXED via partial unique; reviewed resubmit open. DUP AUD:B1.
+- [R1:#6] CONFIRMED medium bug | src/Actions/CalculateFeedbackResponseScoreAction.php:26 | "max_score uses MAX answer": MAX(single) not sum of per-question maxima.
+- [R1:#7] CONFIRMED medium bug | src/Analytics/FeedbackAnalyticsService.php:43 | "pending_review duplicates completed count": both count status=submitted.
+- [R1:#8] CONFIRMED medium bug | src/Support/ValidationRuleBuilder.php:73 | "choice answers lack allowlist": no in: rules; Matrix/Likert get string branch.
+- [R1:#9] CONFIRMED medium bug | src/Actions/SendFeedbackInvitationAction.php:40 | "invitation never marked sent": Pending+null sent_at; Sent event never dispatched.
+- [R1:#10] CONFIRMED medium security | src/Actions/StartFeedbackResponseAction.php:24 | "respondent identity caller-asserted": any existing Model subclass passes; no auth bind.
+- [R1:#11] CONFIRMED medium bug | src/Actions/SaveFeedbackFormStructureAction.php:48 | "question keys lack uniqueness": dup keys corrupt submit; no isTypeAvailable check.
+- [R1:#12] CONFIRMED medium performance | src/Models/FeedbackForm.php:64 | "cascades hydrate then delete": deleting hooks each()->delete(); plucks all ids. DUP AUD:B4.
+- [R1:#13] CONFIRMED medium performance | src/Support/ScoreCalculator.php:67 | "per-option queries plus round-trips": query per option value; live calc 7 queries. DUP AUD:B8.
+- [R1:#14] CONFIRMED medium bug | src/Actions/StartFeedbackResponseAction.php:28 | "Start bypasses status checks": no form/invitation status validation on direct calls.
+- [R1:#15] CONFIRMED medium bug | src/Actions/ExtractFeedbackTestimonialAction.php:15 | "testimonial uses arbitrary unsanitized answer": first text_value raw to public quote; no guard.
+- [R1:#16] CONFIRMED medium bug | src/Models/FeedbackForm.php:87 | "migrations ignore table prefix": models prepend prefix, migrations don't; no down().
+- [R1:#17] CONFIRMED low bug | src/Data/SubmitFeedbackResponseData.php:9 | "response metadata silently dropped": $data->metadata accepted, never persisted.
+- [R1:#18] CONFIRMED low security | src/Actions/ResolveFeedbackInvitationTokenAction.php:21 | "rate limit keyed per-token": fresh bucket per guess; tokens 256-bit good.
+- [R1:#19] CONFIRMED low bug | src/Analytics/FeedbackAnalyticsService.php:116 | "trend query MySQL-specific DATE": DATE()+groupBy('date') breaks pgsql/sqlite.
+- [R1:#20] CONFIRMED low bug | src/Analytics/FeedbackAnalyticsService.php:80 | "nps csat ignore parameters": take form+key, return bare calculators.
+- [R1:#21] CONFIRMED low performance | database/migrations/2000_01_01_000005_create_feedback_responses_table.php:54 | "one-response check lacks MySQL index": unique only pgsql/sqlite; slug unindexed.
+- [R1:#22] CONFIRMED low bug | src/Support/AnswerValueNormalizer.php:28 | "normalizer coerces unsafe garbage": parse() throws; (float) maps 'abc' to 0.
+- [R1:#23] CONFIRMED low bug | src/Actions/SubmitFeedbackResponseAction.php:116 | "ip_address stored untruncated string": overlong XFF value causes SQL 500.
+- [R1:#24] CONFIRMED low bug | src/Support/InvitationUrlGenerator.php:12 | "invitation URLs lack matching route": no Route:: in pkg or filament-feedback; app builds it.
+- [AUD:B1] FIXED high bug | database/migrations/2000_01_01_000005_create_feedback_responses_table.php:73 | partial unique+idempotent Start+rescue verified. DUP R1:#5 race.
+- [AUD:B2] ADOPTED medium bug | src/Actions/SubmitFeedbackResponseAction.php:222 | expiry mark then throw inside txn rolls back; Resolve path persists.
+- [AUD:B3] ADOPTED medium bug | src/Actions/StartFeedbackResponseAction.php:127 | draft-reuse FIXED 09-13; invite to Started skips status check. DUP R1:#14.
+- [AUD:B4] ADOPTED medium performance | src/Actions/DeleteFeedbackFormAction.php:20 | get()->each->delete() N+1; counted once. DUP R1:#12.
+- [AUD:B5] ADOPTED low bug | src/Support/InvitationUrlGenerator.php:12 | no sweeper in src; raw token URL mitigated by hash-unique+limits.
+- [AUD:B6] UNVERIFIED high security | src/Actions/SubmitFeedbackResponseAction.php:47 | needs HTTP test: anonymous submit with feedback.owner enabled (403 vs leak).
+- [AUD:B7] ADOPTED medium security | src/Actions/ResolveFeedbackInvitationTokenAction.php:32 | returns full unscoped model; no $hidden on token_hash/contacts.
+- [AUD:B8] ADOPTED medium performance | src/Analytics/FeedbackAnalyticsService.php:41 | per-view recalc, no debounce; counted once. DUP R1:#13.
+- [AUD:Q1] FIXED high bug | src/Actions/SubmitFeedbackResponseAction.php:137 | duplicate rescue returns winner; counted once. DUP AUD:B1.
+- [AUD:Q2] FIXED high bug | database/migrations/2000_01_01_000005_create_feedback_responses_table.php:34 | unique folded into create; idempotent Start verified.
+## filament-addressing
+- [R1:#1] CONFIRMED medium bug | src/Resources/AddressResource/Pages/CreateAddress.php:25 | "CreateAddress ignores model override": hardcodes new Address vs getModel config.
+- [R1:#2] CONFIRMED medium bug | src/Exports/AddressExporter.php:14 | "exporter hardcodes model unscoped": static $model; no getModel/scope; flag mitigates.
+- [R1:#3] CONFIRMED medium bug | src/Resources/PostalCodeResource/Pages/ListPostalCodes.php:20 | "postcode actions lack importer exporter": no importer/exporter classes; import key missing.
+- [R1:#4] CONFIRMED medium performance | src/Tables/AddressAreaTable.php:100 | "uncached distinct scans render": 4+ distinct queries per render; no cache.
+- [R1:#5] CONFIRMED medium performance | src/Tables/AddressAreaTable.php:26 | "relation columns lack eager loads": names/roles/parent per-row; no with() in src. DUP AUD:B4.
+- [R1:#6] CONFIRMED medium performance | src/Schemas/AddressFormSchema.php:67 | "state country options unbounded": no-country plucks all states; get()+map uncached.
+- [R1:#7] CONFIRMED low bug | src/Schemas/AddressFormSchema.php:140 | "area search unescaped wildcards": raw %search% in like/ilike; % matches all.
+- [R1:#8] CONFIRMED low bug | src/Resources/PostalCodeResource/Pages/CreatePostalCode.php:10 | "postcode pages lack guard": no canAccess vs siblings; routes withheld anyway.
+- [R1:#9] CONFIRMED low bug | src/RelationManagers/AddressesRelationManager.php:15 | "dead code unscoped manager": 2 unused types; no-op query; unregistered unscoped RM.
+- [R1:#10] CONFIRMED low bug | src/Resources/AddressCountryResource.php:136 | "ISO2 accepts one-char values": maxLength(2) only; no min/size/alpha rule.
+- [R1:#11] CONFIRMED low process | tests (missing) | "package ships zero tests": tests/ dir absent (path error); scoping/gating untested.
+- [AUD:B1] ADOPTED medium security | src/Resources/AddressAreaResource.php:68 | bare parent query vs scoped siblings; areas filter country-only (PostalCode:89).
+- [AUD:B2] ADOPTED low process | src/Resources | G1 navigation PASS; no static $navigationGroup in src.
+- [AUD:B3] FALSE medium performance | src/Resources | no getNavigationBadge anywhere in pkg; G2 COUNT claim N/A here.
+- [AUD:B4] ADOPTED medium performance | src/Tables/AddressAreaTable.php:26 | relation TextColumns without with(); counted once. DUP R1:#5.
+- [AUD:B5] ADOPTED medium performance | src/Schemas/AddressFormSchema.php:32 | unbounded select-option loads cluster; counted once. DUP R1:#6.
+- [AUD:B6] ADOPTED low process | src | no addressing leakage instance cited; MoneyHelper absent; residual caution.
+- [AUD:B7] ADOPTED low performance | src | no addressing sums instance cited; cashier/inventory only; N/A here.
+## filament-affiliate-network
+- [R2:H1] CONFIRMED high bug | src/Resources/AffiliateSiteResource/Tables/AffiliateSitesTable.php:71 | withOwner(null) re-fetch lacks withoutOwnerScope; owned sites 404 when owner on.
+- [R2:H2] CONFIRMED high bug | src/Resources/AffiliateOfferApplicationResource/Tables/AffiliateOfferApplicationsTable.php:79 | admin actions use ambient ctx; core re-queries scoped; cross-tenant 404.
+- [R2:H3] CONFIRMED high bug | src/Resources/AffiliateOfferApplicationResource/Tables/AffiliateOfferApplicationsTable.php:34 | affiliate.email is virtual accessor yet searchable; search errors (sortable gone).
+- [R2:M1] CONFIRMED medium bug | src/Pages/MerchantDashboardPage.php:91 | global admin page uses ambient scopes; counts throw or mis-scope when owner on.
+- [R2:M2] CONFIRMED medium performance | src/Pages/AffiliateMarketplacePage.php:173 | per-card getApplicationStatus hits service x50 rows; blade:82; no pagination.
+- [R2:M3] CONFIRMED medium performance | src/Support/AffiliateNetworkOptionsProvider.php:16 | pluck()->all() unbounded unordered option lists. DUP AUD:B5.
+- [R2:M4] CONFIRMED medium bug | src/Resources/AffiliateOfferResource/Schemas/AffiliateOfferForm.php:47 | slug no unique rule vs DB unique(site,slug); numeric rates; unbounded fields.
+- [R2:M5] CONFIRMED medium bug | src/Resources/AffiliateOfferCategoryResource/Schemas/AffiliateOfferCategoryForm.php:26 | parent excludes self only; mutators existence-only; cycles possible.
+- [R2:M6] CONFIRMED medium security | src/Pages/AffiliateMarketplacePage.php:128 | affiliate resolved by email match; no verified-email check; host-dependent.
+- [R2:M7] CONFIRMED medium bug | src/Resources/AffiliateOfferResource/Tables/AffiliateOffersTable.php:100 | activate/pause update outside owner ctx; bypass domain service/events.
+- [R2:L1] CONFIRMED low security | src/Pages/AffiliateMarketplacePage.php:185 | no canAccess/throttle; state-changing actions; uncapped reason; public-by-design?
+- [R2:L2] CONFIRMED low bug | src/Resources/AffiliateOfferApplicationResource/Tables/AffiliateOfferApplicationsTable.php:164 | ?string returns mixed id/getName; strict_types TypeError risk.
+- [R2:L3] CONFIRMED low performance | resources/views/pages/merchant-dashboard.blade.php:37 | getRecentApplications/getTopOffers each called twice (isEmpty+foreach).
+- [R2:L4] CONFIRMED low bug | src/Resources/AffiliateSiteResource/Schemas/AffiliateSiteForm.php:28 | domain no format/normalization; any status transition; verified_at stale.
+- [R2:L5] CONFIRMED low bug | src/Support/NetworkStatsAggregator.php:25 | sum() mixed into formatMinor(int) strict; revenue hardcoded USD; multi-currency.
+- [R2:L6] CONFIRMED low bug | src/Widgets/TopOffersWidget.php:32 | sort reorders cached top-10-by-clicks only; silently misleading.
+- [AUD:B1] ADOPTED low security | src/Support/NetworkAdminAccess.php:12 | 4 resources+policies+pages gate on allows(); fails closed on empty ability.
+- [AUD:B2] ADOPTED low process | src | G1 navigation PASS; no static $navigationGroup in src.
+- [AUD:B3] FALSE medium performance | src | no getNavigationBadge anywhere in pkg; G2 COUNT claim N/A here.
+- [AUD:B4] FALSE medium performance | src/Resources/AffiliateOfferResource.php:78 | resources/pages/widgets all eager-load; G3 claim N/A here.
+- [AUD:B5] ADOPTED medium performance | src/Support/AffiliateNetworkOptionsProvider.php:16 | unbounded pluck options; counted once. DUP R2:M3.
+- [AUD:B6] ADOPTED low process | src | no pkg leakage instance cited; TopOffers formats per-record; residual caution.
+- [AUD:B7] ADOPTED low performance | src/Widgets/TopOffersWidget.php:57 | TopOffers already withSum; no other pkg instance; N/A here.
+## filament-affiliates
+- [R1:#1] CONFIRMED high security | src/Resources/AffiliateResource/Schemas/AffiliateForm.php:196-197 | "Hidden owner_type/owner_id are" Hiddens lack dehydrated(false); arbitrary owner set via tampering
+- [R1:#2] CONFIRMED high security | src/Actions/UpdateAffiliateFraudSignalStatus.php:27-29 | "Fraud-signal status change" unscoped re-fetch; policy update checks perms only, no owner check
+- [R1:#3] CONFIRMED high bug | src/Pages/PayoutBatchPage.php:159-179 | "Manual Reject bypasses" direct FailedPayout update; no releaseReservedFunds, funds stuck reserved
+- [R1:#4] CONFIRMED high security | src/Pages/ManageAffiliateCommissionSettings.php:13-75 | "Commission settings page" no canAccess (siblings have it); save() casts raw rates, no validation
+- [R1:#5] DOWNGRADED (was medium) low security | src/Pages/Portal/PortalRegistration.php:82-103 | "Registration override: raw" form-scoped data; codes public by design; findByCode FALSE per FALSE-list
+- [R1:#6] CONFIRMED med bug | src/Pages/Portal/PortalConversions.php:52-64 | "orWhereIn without grouping" A OR B breaks AND scopes; upline ids unscoped
+- [R1:#7] CONFIRMED med security | src/Services/PayoutExportService.php:138-148 | "Export has CSV" raw cells (=,+,-,@), unescaped PDF meta/title, raw reference filename
+- [R1:#8] CONFIRMED med bug | src/Actions/BulkPayoutAction.php:57-61 | "Bulk payout always" $failed counted, never surfaced; success toast unconditional
+- [R1:#9] CONFIRMED med security | src/Pages/Portal/PortalLinks.php:83-129 | "generateLink trusts public" $targetUrl unvalidated; exact-host check; naive concat, no urlencode
+- [R1:#10] CONFIRMED med performance | src/Widgets/UplineVisualizationWidget.php:99-160 | "Unbounded recursive/N+1 reads" per-node queries; public $depth unclamped; avg loads all
+- [R1:#11] CONFIRMED med performance | src/Pages/PayoutBatchPage.php:91-103 | "Per-row queries, full-collection" N+1 methods; exports load all; 30s/10s polling uncached
+- [R1:#12] CONFIRMED med bug | src/Resources/AffiliateConversionResource/Tables/AffiliateConversionsTable.php:132-148 | "Direct state mutation" bypasses allowTransition guards (pending→paid); payout switch non-atomic
+- [R1:#13] CONFIRMED low security | resources/views/pages/portal/links.blade.php:26 | "codes interpolated into" writeText('{{ }}) breakout; admin code lacks alphaDash (AffiliateForm:38-53)
+- [R1:#14] CONFIRMED low bug | src/Resources/AffiliatePayoutResource.php:78-86 | "Unscoped/unbounded affiliate picker" pluck-all DUP AUD:B1; uncond guard; divideBy:100 JPY wrong
+- [R1:#15] CONFIRMED low bug | src/Pages/ReportsPage.php:101-124 | "Unvalidated custom dates" CarbonImmutable::parse throws; no start<=end; header runs 3 queries
+- [AUD:B1] ADOPTED med-high bug | src/Resources/AffiliatePayoutResource.php:80-83 | DUP R1:#14 unscoped options verified; link/membership/ticket relationship() part plausible
+- [AUD:B2] ADOPTED pass nav | src/Resources/AffiliatePayoutResource.php:1-30 | G1 Navigation PASS adopted; config-group pattern, no static group keys
+- [AUD:B3] ADOPTED med performance | src/Resources/AffiliateFraudSignalResource.php:196-214 | G2 uncached badge COUNT verified (scoped per FALSE-list, uncached); cache it
+- [AUD:B4] ADOPTED med performance | src/Pages/Portal/PortalConversions.php:75 | G3 relation-field N+1 plausible (affiliate.code w/o with()); package-wide pattern
+- [AUD:B5] ADOPTED med performance | src/Resources/AffiliatePayoutResource.php:78-86 | G4 pluck-all+preload verified; DUP R1:#14; use relationship()+search
+- [AUD:B6] ADOPTED low bug | src/Widgets/UplineVisualizationWidget.php:99-160 | G5 tree math in adapter verified (buildNode/avg); belongs in core
+- [AUD:B7] ADOPTED med performance | src/Widgets/PerformanceOverviewWidget.php:26-97 | G6 uncached counts per render verified (7 aggregates, 30s poll, no cache)
+## filament-authz
+- [R1:#1] CONFIRMED high bug | src/Actions/ImpersonateAction.php:130-161 | "Page action never" ends at take(), no redirect; sibling table action redirects (:190); 419s
+- [R1:#2] CONFIRMED med bug | src/Middleware/SyncAuthzTenant.php:34-59 | "No try/finally around" exception skips team-id restore; Octane leak
+- [R1:#3] CONFIRMED med bug | src/Concerns/HasPanelAuthz.php:33 | "Hardcoded panel prefix bypasses" PermissionKeyBuilder; hyphen ids/custom sep break
+- [R1:#4] CONFIRMED med bug | src/Console/SeederCommand.php:213-281 | "Roles keyed by" name-only drops cross-guard dupes; unescaped interpolation into seeder PHP
+- [R1:#5] CONFIRMED med bug | src/FilamentAuthzPlugin.php:663-759 | "applyConfigOverrides() writes per-panel" fluent settings to global config; last panel wins
+- [R1:#6] CONFIRMED med security | src/Support/UserAuthzForm.php:73-89 | "Direct-permissions saveRelationshipsUsing syncs" raw $state IDs; roles path throws (225-227)
+- [R1:#7] CONFIRMED med performance | src/Tables/Actions/ImpersonateTableAction.php:88-123 | "canImpersonate() runs ImpersonationScopeGuard" + role reload per row; ~2-3 queries/row
+- [R1:#8] CONFIRMED med performance | src/Forms/Components/PermissionTabFactory.php:483-493 | "setPermissionStateForRecord() runs permissions()" pluck per checkbox section; memoize
+- [R1:#9] CONFIRMED low bug | src/Console/GeneratePoliciesCommand.php:52-61 | "No null check" after getPanel; invalid --panel TypeErrors
+- [R1:#10] CONFIRMED low security | src/Resources/RoleResource/Schemas/RoleForm.php:69-75 | "Central-app scope select" nullable, no in:/exists rule; forged scope mass-assigned
+- [R1:#11] CONFIRMED low security | src/Resources/UserResource.php:221-236 | "Password field has" no min/Password rule or confirmation
+- [R1:#12] CONFIRMED low bug | src/Forms/Components/PermissionTabFactory.php:118 | "Labels interpolated unescaped" into visibleJs quotes (:118,:160); apostrophe breaks Alpine
+- [R1:#13] CONFIRMED low security | src/Http/Controllers/ImpersonateController.php:19-71 | "Actor authorization is" after target lookup (404-vs-403 oracle); UUIDs mitigate
+- [R1:#14] CONFIRMED low performance | src/Resources/PermissionResource.php:248-259 | "renderDirectUsers() selects full" rows incl hashes; options pluck unbounded
+- [R1:#15] CONFIRMED low bug | src/Console/GeneratePoliciesCommand.php:182-224 | "Permission names interpolated" into can('...'); discovery-derived; var_export fix
+- [AUD:B1] ADOPTED low security | src/Resources/UserResource.php:47-50 | Only impersonation guard verified, no OwnerUiScope; PermissionResource bare OK-if-global
+- [AUD:B2] ADOPTED low bug | src/Resources/RoleResource.php:149-162 | G1 badge delegation via getPlugin() verified; rest PASS
+- [AUD:B3] ADOPTED med performance | src/Resources/RoleResource.php:149-153 | G2 badge here has no COUNT (config/plugin); uncached-count pattern plausible
+- [AUD:B4] ADOPTED med performance | src/Resources/UserResource.php:47-50 | G3 N+1 pattern plausible; package-specific instances not enumerated
+- [AUD:B5] ADOPTED pass performance | src/Support/UserAuthzForm.php:66-71 | G4 GOOD cited here verified (modifyQueryUsing); nothing to fix
+- [AUD:B6] ADOPTED pass bug | src/Services/EntityDiscoveryService.php:22 | G5 no authz leakage cited; discovery via key builder; plausible PASS
+- [AUD:B7] ADOPTED med performance | src/Forms/Components/PermissionTabFactory.php:408-434 | G6 uncached plucks analogue verified (direct users + permission options)
+## filament-cart
+- [R1:#1] CONFIRMED high bug | src/Resources/CartResource/RelationManagers/ConditionsRelationManager.php:19 | "Relation manager renders" snapshot rows with stored table; display_name/is_active absent; bulk TypeError
+- [R1:#2] CONFIRMED high bug | src/Listeners/SendCartAbandonedNotification.php:9 | "Hard dependency on" aiarmada/checkout absent from require (suggest only); standalone fatal
+- [R1:#3] CONFIRMED med security | src/Listeners/SendCartAbandonedNotification.php:62-69 | "Unvalidated retry URL" verbatim mail button (open redirect); offer_name CR/LF in subject
+- [R1:#4] CONFIRMED med bug | src/Listeners/SendCartAbandonedNotification.php:39-44 | "Purchaser email used" is_string-only; malformed fails on queue worker; listener sync
+- [R1:#5] CONFIRMED med performance | src/Pages/CartDashboard.php:46-66 | "Abandoned-cart count query" badge+color each call count(); DUP AUD:B3 (audit worst-case)
+- [R1:#6] CONFIRMED med performance | src/Resources/CartResource/Tables/CartsTable.php:207-232 | "Bulk clear/delete loops" authorize+resolve+sync per row; mid-loop abort partial
+- [R1:#7] CONFIRMED med performance | src/Resources/CartItemResource/Tables/CartItemsTable.php:36 | "N+1 parent cart" $record->cart per row; getEloquentQuery lacks with('cart')
+- [R1:#8] CONFIRMED med bug | src/Widgets/CartStatsWidget.php:48 | "Total Value stat" sums minor units across currencies; formatted in default currency
+- [R1:#9] CONFIRMED med bug | src/Resources/CartResource/Schemas/CartForm.php:28-31 | "Cart form validation" global unique vs scoped migration; price no min; value rejects %; dead pages
+- [R1:#10] CONFIRMED low bug | src/Widgets/RecentActivityWidget.php:67-89 | "limit(50) fights pagination" caps paginated table; select omits owner cols
+- [R1:#11] CONFIRMED low bug | src/Actions/ApplyConditionAction.php:53 | "Cart resolution throws" before try (:53,:106; Remove :75,:124); orphan item 500s
+- [R1:#12] CONFIRMED med performance | src/Resources/CartItemResource.php:81-84 | "Navigation badges run" uncached counts; (string) cast shows 0; DUP AUD:B3; FALSE-list stale
+- [R1:#13] CONFIRMED low performance | src/Actions/ApplyConditionAction.php:131-142 | "Condition options load" unbounded get()+groupBy per modal open
+- [R1:#14] CONFIRMED low bug | src/Resources/ConditionResource/Tables/ConditionsTable.php:52-60 | "Target column match" arms never hit; stored DSL is scope@phase/application
+- [R1:#15] CONFIRMED low bug | src/Services/CartDownloadService.php:18-24 | "Silent JSON-encode fallback" ?: '{}' masks failure; no owner check in service
+- [R1:#16] CONFIRMED low performance | src/Resources/ConditionResource/Pages/EditCondition.php:31-48 | "Remove from All" runs RemoveStoredConditions sync in request
+- [R1:#17] CONFIRMED low security | src/Pages/LiveDashboardPage.php:34-37 | "LiveDashboardPage::canAccess() checks only" config; no policies; any panel user views/mutates
+- [AUD:B1] ADOPTED low bug | src/Resources/CartItemResource.php:81-84 | Scoping exemplary adopted; badge-0 claim CONTRADICTED by :83; see R1:#12
+- [AUD:B2] ADOPTED pass nav | src/Resources/CartResource.php:99-105 | G1 Navigation PASS adopted; config group + getNavigationGroup pattern
+- [AUD:B3] ADOPTED med performance | src/Pages/CartDashboard.php:46-66 | G2 uncached COUNT verified; DUP R1:#5 + R1:#12 (counted once)
+- [AUD:B4] ADOPTED med performance | src/Resources/CartItemResource/Tables/CartItemsTable.php:23-26 | G3 cart.identifier w/o with() verified; DUP R1:#7
+- [AUD:B5] ADOPTED med performance | src/Actions/ApplyConditionAction.php:131-142 | G4 unbounded options analogue verified; DUP R1:#13
+- [AUD:B6] ADOPTED pass bug | src/Widgets/CartStatsWidget.php:23-31 | G5 no cart leakage cited; stats via CartMoney/OwnerCache; plausible PASS
+- [AUD:B7] ADOPTED med performance | src/Widgets/CartStatsWidget.php:43-60 | G6 SQL sums used (cached 60s); chart loop 7 counts analogue; plausible
+## filament-cashier-chip
+- [R1:#1] CONFIRMED critical bug | src/Resources/SubscriptionResource/Pages/ListSubscriptions.php:36-60 | "Bulk pause/resume mass-updates" raw chip_status; no paused_at/events/CHIP; cross-tenant when owner off
+- [R1:#2] CONFIRMED high bug | src/Resources/BaseCashierChipResource.php:47-86 | "CustomerResource SQL-crashes when" owner on: owner cols on User/Team; chip.owner half FALSE, no such key
+- [R1:#3] CONFIRMED high bug | src/CustomerPortal/Pages/Subscriptions.php:156-187 | "Canceled grace-period subscriptions" excluded from list; $cancelledSubscriptions never rendered; no Resume
+- [R1:#4] CONFIRMED high performance | src/Resources/CustomerResource/Tables/CustomerTable.php:62-98 | "Severe per-row N+1" count/row + defaultPaymentMethod x2 + chipId/onTrial per row
+- [R1:#5] DOWNGRADED (was high) med performance | src/Widgets/MRRWidget.php:119-149 | "Dashboard fires ~60+" monthly withSum+get loops, no cache; DUP AUD:B7; withSum per FALSE-list
+- [R1:#6] CONFIRMED med bug | src/Resources/CustomerResource/Pages/ListCustomers.php:34-60 | "Sync All to" unscoped unbounded sync CHIP calls in request; relation throws outside try
+- [R1:#7] CONFIRMED med bug | src/Concerns/InteractsWithCashierChipData.php:31 | "Under explicit-global admin" includeGlobal:false + null owner to whereNull (OwnerQuery:46-47); zeros
+- [R1:#8] CONFIRMED med bug | src/Concerns/InteractsWithCashierChipData.php:42-53 | "normalizeToMonthly() DivisionByZeroError when" count=0; domain guards, widget copy not
+- [R1:#9] CONFIRMED med bug | src/Widgets/ChurnRateWidget.php:39-88 | "Churn denominators inconsistent:" status filter only in current-month path, prev/chart unfiltered
+- [R1:#10] CONFIRMED med bug | src/Widgets/MRRWidget.php:41-76 | "MRR discount handling" full coupon off monthly (yearly wrong); previous ignores discounts; adapter logic
+- [R1:#11] CONFIRMED med security | src/CustomerPortal/Pages/Subscriptions.php:96-102 | "Raw $e->getMessage()" to users (Subscriptions x2, PaymentMethods x2); log + generic msg
+- [R1:#12] CONFIRMED med bug | src/Resources/CustomerResource/RelationManagers/SubscriptionsRelationManager.php:21 | "hardcoded $relationship='subscriptions' but" guard admits chipSubscriptions-only (:102); crash
+- [R1:#13] CONFIRMED med bug | src/Resources/SubscriptionResource/Schemas/SubscriptionInfolist.php:91 | "method_exists($record->customer, 'chipId')" TypeErrors when customer null
+- [R1:#14] CONFIRMED med bug | src/CustomerPortal/Pages/PaymentMethods.php:65-94 | "getAddPaymentMethodUrl() creates a" setup purchase on render; catch-all returns '#' silently
+- [R1:#15] CONFIRMED med performance | src/CustomerPortal/Pages/Invoices.php:105-114 | "Unbounded invoice list:" all invoices, blade loops every row, no pagination
+- [R1:#16] CONFIRMED med performance | src/Resources/BaseCashierChipResource.php:32-37 | "getNavigationBadge() runs a" count/request + asserts context (throws); DUP AUD:B3
+- [R1:#17] CONFIRMED low security | src/Widgets/RevenueChartWidget.php:69 | "config currency interpolated" into JS callback; config-controlled; allowlist it
+- [R1:#18] CONFIRMED low bug | src/Resources/InvoiceResource/Tables/InvoiceTable.php:160-168 | "Dead buttons: InvoiceTable.php:160-168" download_pdf empty; ListInvoices export_csv no-op
+- [R1:#19] CONFIRMED low bug | src/Resources/BaseCashierChipResource.php:51 | "BaseCashierChipResource.php:51 default" true vs domain false (cashier-chip.php:41); align
+- [R1:#20] CONFIRMED low bug | src/Resources/CustomerResource/RelationManagers/SubscriptionsRelationManager.php:112 | "getStatusColor(SubscriptionStatus $status) non-nullable" vs null-accepting formatter; null TypeError
+- [R1:#21] CONFIRMED low bug | src/Resources/CustomerResource/Tables/CustomerTable.php:27 | "static $genericTrialQuerySupport schema" cache persists across Octane/test; keyed conn|table
+- [R1:#22] CONFIRMED low bug | src/Resources/SubscriptionResource/RelationManagers/SubscriptionItemsRelationManager.php:99-148 | "quantity/price forms: quantity/unit_amount" min only, no max; price free text; admin-only
+- [R1:#23] CONFIRMED low bug | src/CustomerPortal/Pages/Invoices.php:59-77 | "abort(404) inside a" Livewire action; prefer Notification + return
+- [AUD:B1] ADOPTED med performance | src/Concerns/InteractsWithBillable.php:26-47 | Inheritance GOOD adopted; getBillable user/team only, no owner bind; billable-scoped, no IDOR
+- [AUD:B2] ADOPTED pass nav | src/Resources/BaseCashierChipResource.php:22-30 | G1 Navigation PASS adopted; config group+sort verified
+- [AUD:B3] ADOPTED med performance | src/Resources/BaseCashierChipResource.php:32-37 | G2 uncached badge COUNT verified; DUP R1:#16 (counted once)
+- [AUD:B4] ADOPTED med performance | src/Resources/CustomerResource/Tables/CustomerTable.php:74-98 | G3 per-row relation queries verified; DUP R1:#4
+- [AUD:B5] ADOPTED pass performance | src/Resources/CustomerResource.php:41-50 | G4 no pluck-preload select cited here; no model/form binding; plausible PASS
+- [AUD:B6] ADOPTED low bug | src/Widgets/MRRWidget.php:41-76 | G5 analogue verified (MRR/normalizeToMonthly in adapter); DUP R1:#10
+- [AUD:B7] ADOPTED med performance | src/Widgets/MRRWidget.php:41-76 | G6 withSum verified (:45,:67,:135); residual uncached counts; DUP R1:#5 (counted once)
+## filament-commerce-support
+- [R1:#1] CONFIRMED med bug | src/Support/NavigationConfigurator.php:46 | "Shallow per-entry merge" array_merge intact :46,:71; save partial, submitted-keys diff :780
+- [R1:#2] CONFIRMED med bug | src/Pages/ManageCommerceNavigation.php:106 | "Group-rename round-trip mis-buckets" strict key match vs label rewrite :361-369
+- [R1:#3] CONFIRMED med bug | src/Pages/ManageCommerceNavigation.php:430 | "Sort Order inputs" ignored; positional sort only :324,:430, typed values lost
+- [R1:#4] CONFIRMED med bug | src/Pages/ManageCommerceNavigation.php:284 | "save() bypasses all" reads $this->data directly; no getState/validate call
+- [R1:#5] CONFIRMED med bug | src/FilamentCommerceSupportPlugin.php:31 | "Currency/Language/Timezone resources" never registered; pages-only register()
+- [R1:#6] CONFIRMED low bug | src/Pages/ManageCommerceNavigation.php:192 | "hidden() closures test" own state not group_key :187-218, fields stay visible
+- [R1:#7] CONFIRMED low bug | src/Pages/ManageCommerceNavigation.php:525 | "resolveSettings() misses QueryException" catches MissingSettings only + seeds on GET
+- [R1:#8] CONFIRMED low security | src/Pages/ManageCommerceNavigation.php:161 | "Static method invoked" on settings class names, no allowlist :157-174,:251-265
+- [R1:#9] CONFIRMED low bug+perf | src/Pages/ManageCommerceNavigation.php:339 | "Duplicate component in" +5 nits hold: no ,100 :47, no is_array :62, no reset()
+- [AUD:B1] ADOPTED info meta | audits/.staging-verify/vpkg/audit-filament-commerce-support.md:2 | Pkg rated OK; light confirm, no contradiction in current source
+- [AUD:B2] ADOPTED pass nav | audits/.staging-verify/vpkg/audit-filament-commerce-support.md:3 | G1 PASS light-confirmed: config-driven groups, no static nav props
+- [AUD:B3] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-commerce-support.md:4 | G2 badges: no getNavigationBadge in pkg; N/A here
+- [AUD:B4] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-commerce-support.md:5 | G3 N+1: no relation columns; tiny seed tables; N/A here
+- [AUD:B5] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-commerce-support.md:6 | G4 pluck+preload: no occurrences in pkg; N/A here
+- [AUD:B6] ADOPTED low leak | audits/.staging-verify/vpkg/audit-filament-commerce-support.md:7 | G5 cites vouchers only; N/A here
+- [AUD:B7] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-commerce-support.md:8 | G6 cites cashier-chip/inventory only; N/A here
+## filament-communications
+- [R1:#1] CONFIRMED med bug | src/Resources/CommunicationDeliveryResource.php:97 | "Retry action lets" RuntimeException bubble; no try/catch :97-110, throws :21-29
+- [R1:#2] CONFIRMED med bug | src/Widgets/DeliveryStatusOverviewWidget.php:20 | "Status buckets silently" count 12/19; 7 cases dropped, enum has 19
+- [R1:#3] CONFIRMED low bug | src/RelationManagers/CommunicationsRelationManager.php:15 | "All three relation" managers orphaned; zero getRelationManagers in pkg
+- [R1:#4] CONFIRMED low bug | src/Resources/CommunicationResource/Pages/ViewCommunication.php:17 | "Page-level infolist() duplicates" resource infolist verbatim; will drift
+- [R1:#5] CONFIRMED low bug | src/Resources/CommunicationDeliveryResource.php:36 | "every resource returns" identical navigation.sort; order nondeterministic
+- [R1:#6] CONFIRMED low bug | src/Resources/CommunicationDeliveryResource.php:73 | "channel/provider filter options" hardcoded dup lists across 3+ resources
+- [R1:#7] CONFIRMED low security | src/Resources/CommunicationResource.php:1 | "no canViewAny/policy/canView" gates anywhere; owner scope only
+- [R1:#8] CONFIRMED low perf | src/Widgets/DeliveryStatusOverviewWidget.php:18 | "Four COUNT(*) subqueries" uncached on every dashboard render
+- [R1:#9] CONFIRMED low bug | src/FilamentCommunicationsPlugin.php:44 | "DeliveryStatusOverviewWidget is registered" unconditionally vs gated resources
+- [AUD:B1] ADOPTED info meta | audits/.staging-verify/vpkg/audit-filament-communications.md:2 | Pkg GOOD all-7-scoped; OwnerUiScope confirmed on resources read
+- [AUD:B2] ADOPTED pass nav | audits/.staging-verify/vpkg/audit-filament-communications.md:3 | G1 PASS holds; R1:#5 same-sort fragility consistent with note
+- [AUD:B3] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-communications.md:4 | G2 badges: none in pkg; N/A here
+- [AUD:B4] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-communications.md:5 | G3 N+1: no relation traversal in columns; N/A here
+- [AUD:B5] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-communications.md:6 | G4 pluck+preload: no occurrences in pkg; N/A here
+- [AUD:B6] ADOPTED low leak | audits/.staging-verify/vpkg/audit-filament-communications.md:7 | G5 cites vouchers only; N/A here
+- [AUD:B7] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-communications.md:8 | G6 pattern resembles R1:#8 but cites other pkgs; kept separate
+## filament-contacting
+- [R1:#1] CONFIRMED high security | src/Tables/ContactMethodTable.php:89 | "read_only mode enforced" visible-only; vendor checks disabled/authz, never isVisible
+- [R1:#2] CONFIRMED med security | src/Imports/ContactMethodImporter.php:32 | "Importer is_public cast" null->true vs core private default email/phone :205
+- [R1:#3] CONFIRMED med bug | src/Resources/ContactMethodResource.php:65 | "Standalone create pages" lack parent fields; resolve(null,null) returns null
+- [R1:#4] CONFIRMED med bug | src/Imports/ContactMethodImporter.php:17 | "Importers define zero" rules; no ->rules on any ImportColumn in pkg
+- [R1:#5] CONFIRMED med bug | src/Imports/ContactMethodImporter.php:37 | "Owner-guard import rejections" blank: vendor drops generic Throwable msg :93-96
+- [R1:#6] CONFIRMED med security | src/RelationManagers/ContactMethodsRelationManager.php:1 | "Relation managers perform" no owner check; OwnerUiScope only in resources
+- [R1:#7] CONFIRMED low bug | src/Imports/ContactMethodImporter.php:57 | "getModelLabel() returns FQCN" shown in import UI/notifications, both importers
+- [R1:#8] CONFIRMED low bug | src/Tables/ContactSnapshotTable.php:38 | "Option-less SelectFilters render" empty: no options :37-43 plus country_code :83
+- [R1:#9] CONFIRMED low bug | config/filament-contacting.php:16 | "tables.default_pagination config" defined once, zero callers, setting inert
+- [R1:#10] CONFIRMED low bug | src/Support/ContactingFilamentConfig.php:24 | "Dead config surface" 8 methods + ResolvesContactingModels uncalled; url plain text
+- [R1:#11] CONFIRMED low bug | docs/04-usage.md:12 | "Docs use wrong-case" AiArmada in 3 docs; ^5.6.7 vs composer ^5.7.0
+- [R1:#12] CONFIRMED low security | src/Schemas/SocialProfileInfolistSchema.php:28 | "Infolist renders raw" url to href; safe only via NormalizesUrl http(s) coercion
+- [R1:#13] CONFIRMED low bug | src/Imports/ContactMethodImporter.php:49 | "Importers always insert" resolveRecord always new; re-import duplicates rows
+- [R1:#14] CONFIRMED low bug | src/Schemas/ContactMethodFormSchema.php:43 | "Form validation gaps" no conditional value rules; empty social profile allowed
+- [R1:#15] CONFIRMED low perf | composer.json:10 | "Unused filament-phone-input dependency" required, zero src references
+- [AUD:B1] ADOPTED info meta | audits/.staging-verify/vpkg/audit-filament-contacting.md:2 | Pkg GOOD; OwnerUiScope on all 3 resources + exporters confirmed
+- [AUD:B2] ADOPTED pass nav | audits/.staging-verify/vpkg/audit-filament-contacting.md:3 | G1 PASS light-confirmed: config-driven group/sort/icons
+- [AUD:B3] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-contacting.md:4 | G2 badges: none in pkg; N/A here
+- [AUD:B4] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-contacting.md:5 | G3 N+1: no relationship columns; N/A here
+- [AUD:B5] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-contacting.md:6 | G4 pluck+preload: no occurrences in pkg; N/A here
+- [AUD:B6] ADOPTED low leak | audits/.staging-verify/vpkg/audit-filament-contacting.md:7 | G5 cites vouchers only; N/A here
+- [AUD:B7] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-contacting.md:8 | G6 cites cashier-chip/inventory only; N/A here
+## filament-customers
+- [R1:#1] CONFIRMED high bug | src/Pages/SegmentRebuildPage.php:93 | "SegmentRebuildPage calls nonexistent" command; only customers:rebuild-segments exists
+- [R1:#2] CONFIRMED high bug | src/Pages/AddressValidationPage.php:110 | "AddressValidationPage batch action" command matches zero signatures monorepo-wide
+- [R1:#3] CONFIRMED high bug | src/Pages/SegmentRebuildPage.php:22 | "Missing Blade views" both pages 500; only merge-customers.blade.php exists
+- [R1:#4] CONFIRMED high bug | src/Resources/SegmentResource/Schemas/SegmentForm.php:112 | "Segment status conditions" dropped by applyConditions :346; service path OK
+- [R1:#5] CONFIRMED high security | src/Pages/MergeCustomersPage.php:144 | "MergeCustomersPage::merge has" no Gate; no server recheck; raw InvalidArgumentException
+- [R1:#6] CONFIRMED med sec+perf | src/Pages/SegmentRebuildPage.php:69 | "SegmentRebuildPage actions unauthenticated" no rebuild Gate + sync Artisan::call
+- [R1:#7] CONFIRMED med security | src/Pages/AddressValidationPage.php:92 | "AddressValidationPage::validateAddress lacks" update Gate; scoping only
+- [R1:#8] CONFIRMED med security | src/Resources/CustomerResource/RelationManagers/AddressesRelationManager.php:100 | "AddressesRelationManager attach select" unscoped preload; shared-row in-place edit
+- [R1:#9] CONFIRMED med bug | src/Resources/CustomerResource/Tables/CustomersTable.php:34 | "Sortable on full_name" accessor ORDER BY fails; accessor in HasCustomerLifecycle
+- [R1:#10] CONFIRMED med bug | src/Pages/MergeCustomersPage.php:155 | "Dead null-handling after" findOrFailForOwner throws AuthorizationException :87
+- [R1:#11] CONFIRMED med perf | src/Resources/CustomerResource/Tables/CustomersTable.php:38 | "N+1 via resolveEmail()" fresh query per call, no relation reuse
+- [R1:#12] CONFIRMED med perf | src/Pages/SegmentRebuildPage.php:51 | "Unbounded segment list" no limit + per-row customers()->count()
+- [R1:#13] CONFIRMED med perf | src/Resources/SegmentResource/Schemas/SegmentForm.php:145 | "Unbounded customer preload" relationship+preload; segments filter pluck too
+- [R1:#14] CONFIRMED low perf | src/Resources/CustomerResource.php:43 | "Navigation badges query" uncached COUNTs on every admin page load
+- [R1:#15] CONFIRMED low bug | src/Pages/MergeCustomersPage.php:105 | "LIKE wildcards unescaped" %_\\ input acts as wildcards :105-114, bound so no SQLi
+- [R1:#16] CONFIRMED low bug | src/Resources/CustomerResource/RelationManagers/NotesRelationManager.php:33 | "Validation gaps: NotesRelationManager" no maxLength; country any 2 chars
+- [R1:#17] CONFIRMED low process | src/Pages/MergeCustomersPage.php:144 | "Package ships zero" tests; no tests/ dir, merge/sync/scope logic uncovered
+- [AUD:B1] ADOPTED info meta | audits/.staging-verify/vpkg/audit-filament-customers.md:2 | Pkg GOOD exemplary; scoping + per-record Gates confirmed
+- [AUD:B2] ADOPTED pass nav | audits/.staging-verify/vpkg/audit-filament-customers.md:3 | G1 PASS light-confirmed: config groups + getNavigationGroup
+- [AUD:B3] ADOPTED med perf DUP R1:#14 | audits/.staging-verify/vpkg/audit-filament-customers.md:4 | G2 uncached badges identical to R1:#14; counted once
+- [AUD:B4] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-customers.md:5 | G3 plausible: segments.name/createdBy.name cols, no with() seen
+- [AUD:B5] ADOPTED med perf DUP R1:#13 | audits/.staging-verify/vpkg/audit-filament-customers.md:6 | G4 pluck+preload identical to R1:#13; counted once
+- [AUD:B6] ADOPTED low leak | audits/.staging-verify/vpkg/audit-filament-customers.md:7 | G5 cites vouchers only; N/A here
+- [AUD:B7] ADOPTED med perf | audits/.staging-verify/vpkg/audit-filament-customers.md:8 | G6 cites cashier-chip/inventory only; N/A here
+## filament-docs
+- [R2:C1] CONFIRMED critical security | packages/filament-docs/src/Resources/DocResource.php:60-73 | canCreate/Edit/Delete all pass on purchase.viewAny; same in all 4 resources. Gate each on its own ability.
+- [R2:H1] CONFIRMED high security | packages/filament-docs/src/Pages/AgingReportPage.php:41-44 | shares purchase.viewAny with chip PurchaseResource:32-40; payment view grants doc view, plus write via C1.
+- [R2:H2] CONFIRMED high bug | packages/filament-docs/src/Resources/DocResource/Schemas/DocForm.php:93-97 | free status Select; EditDoc->DocService::update $doc->update skips transitionTo guards, timestamps, history.
+- [R2:H3] CONFIRMED high bug | packages/filament-docs/src/Resources/DocResource/RelationManagers/PaymentsRelationManager.php:100-135 | RM create/edit/delete skip recorder: no balance cap/lock/transitions; DocPayment has no recalc hook.
+- [R2:H4] CONFIRMED high bug/security | packages/filament-docs/src/Resources/DocResource/Schemas/DocForm.php:59 | doc_number + template slug unique() unscoped; cross-owner collisions/probing. EmailTemplate scoping is the fix pattern.
+- [R2:M1] CONFIRMED medium bug | packages/filament-docs/src/Actions/RecordPaymentAction.php:104-122 | no try/catch; recorder InvalidArgumentException becomes Livewire 500, not a validation message.
+- [R2:M2] CONFIRMED medium bug | packages/filament-docs/src/Actions/SendEmailAction.php:45-60 | dropdown omits trigger filter; non-send picks always throw in resolveTemplate -> generic Email Failed.
+- [R2:M3] CONFIRMED medium perf | packages/filament-docs/src/Pages/AgingReportPage.php:199-238 | getAgingSummary unbounded get() + per-row now(); aggregate buckets in SQL or cache.
+- [R2:M4] CONFIRMED medium perf | packages/filament-docs/src/Resources/DocResource/Tables/DocsTable.php:198-208 | bulk generate_pdfs loops generatePdf(save:true) in-request; chunk + queue large selections.
+- [R2:M5] CONFIRMED medium security | packages/filament-docs/src/Resources/DocResource/RelationManagers/ApprovalsRelationManager.php:240-253 | assigned_to null lets any page viewer approve; require explicit approval ability.
+- [R2:M6] DOWNGRADED (was medium) low bug | packages/filament-docs/src/Resources/DocResource/Tables/DocsTable.php:210-219 | markAsSent no-ops on ineligible (Doc.php:257-262): no throw/partial fail; residual is silent skip.
+- [R2:L1] CONFIRMED low perf | packages/filament-docs/src/Widgets/DocStatsWidget.php:26-36 | 7 uncached queries here, 8 in StatusBreakdown, uncached template badge, approvals badge/blade double-count.
+- [R2:L2] CONFIRMED low maint | packages/filament-docs/src/Support/DocsOwnerScope.php:11-26 | zero code usages (CONTEXT.md refs only); checks live in OwnerUiScope. Remove or wire in.
+- [R2:L3] CONFIRMED low bug | packages/filament-docs/src/Resources/DocEmailTemplateResource.php:210-217 | duplicate slug uses second-resolution timestamp; same-second dupes collide; no feedback notification.
+- [R2:L4] CONFIRMED low bug | packages/filament-docs/src/Pages/PendingApprovalsPage.php:156-195 | approve/reject inline update duplicates DocApproval::approve/reject:137-153; same behavior, SST issue only.
+- [R2:L5] CONFIRMED low correctness | packages/filament-docs/src/Rendering/DocsRichContentFileAttachmentProvider.php:44-46 | endOfHour stretches URL expiry; DATE(paid_at)+alias GROUP BY; currency/tax/item gaps (file moved to Rendering/).
+- [AUD:B1] ADOPTED info positive | packages/filament-docs/src/Resources/DocResource.php:134-154 | audit GOOD exemplary; cached OwnerCache + SUM(CASE) badge confirmed in current source.
+- [AUD:B2] ADOPTED info positive | packages/filament-docs/src/Resources/DocResource.php:157-160 | G1 navigation PASS: config getNavigationGroup, no static group in all 4 resources + pages.
+- [AUD:B3] ADOPTED medium perf | packages/filament-docs/src/Resources/DocTemplateResource.php:102-107 | G2 uncached badge; main badge cached so kept low. DUP R2:L1, counted once there.
+- [AUD:B4] ADOPTED medium perf | packages/filament-docs/src/Resources/DocResource/Tables/DocsTable.php:94-96 | G3 N+1: pkg not in offender list; light-confirm pass; template.name column minor residual.
+- [AUD:B5] ADOPTED medium perf | packages/filament-docs/src/Resources/DocResource/Schemas/DocForm.php:71-85 | G4 whole-table pluck: pkg not in clusters; light-confirm pass; doc_type-scoped pluck minor residual.
+- [AUD:B6] ADOPTED low maint | audits/.staging-verify/vpkg/audit-filament-docs.md:7 | G5 domain leakage cites vouchers pkg only; nothing cited for filament-docs.
+- [AUD:B7] ADOPTED medium perf | audits/.staging-verify/vpkg/audit-filament-docs.md:8 | G6 collection sums cites cashier-chip/inventory only; nothing cited for filament-docs.
