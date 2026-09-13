@@ -141,6 +141,8 @@ describe('Order Transitions', function (): void {
             expect($order->refunds)->toHaveCount(1);
             expect($order->refunds->first()->amount)->toBe(10000);
             expect($order->refunds->first()->reason)->toBe('Order canceled: Customer request');
+            expect($order->getTotalPendingRefunded())->toBe(10000)
+                ->and($order->getRemainingRefundable())->toBe(0);
         });
     });
 

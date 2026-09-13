@@ -228,9 +228,9 @@ describe('OrderService', function (): void {
 
             $updatedOrder = $service->recalculateTotals($order);
 
-            expect($updatedOrder->subtotal)->toBe(10450) // 5300 + 5150 (item totals)
+            expect($updatedOrder->subtotal)->toBe(10000) // (1 * 5000) + (2 * 2500), ex-tax
                 ->and($updatedOrder->tax_total)->toBe(450) // 300 + 150 (tax_amounts)
-                ->and($updatedOrder->grand_total)->toBe(10750); // 10450 + 500 - 200
+                ->and($updatedOrder->grand_total)->toBe(10750); // 10000 + 450 + 500 - 200
         });
 
         it('maps the typed cart contract through a cart manager', function (): void {

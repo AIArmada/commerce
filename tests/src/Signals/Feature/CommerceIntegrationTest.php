@@ -32,6 +32,9 @@ beforeEach(function (): void {
         $table->unsignedBigInteger('shipping_total')->default(0);
         $table->unsignedBigInteger('tax_total')->default(0);
         $table->unsignedBigInteger('grand_total')->default(0);
+        $table->unsignedBigInteger('paid_total')->default(0);
+        $table->unsignedBigInteger('refunded_total')->default(0);
+        $table->unsignedBigInteger('pending_refunded_total')->default(0);
         $table->string('currency', 3)->default('MYR');
         $table->text('notes')->nullable();
         $table->text('internal_notes')->nullable();

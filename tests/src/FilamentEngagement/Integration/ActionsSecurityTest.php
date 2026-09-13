@@ -90,13 +90,15 @@ it('keeps the overview widget cache isolated per owner', function (): void {
         ]);
     });
 
-    OwnerContext::withOwner($ownerB, function () use ($ownerB): void {
-        foreach (range(1, 2) as $_index) {
+    OwnerContext::withOwner($ownerB, function () use ($ownerA, $ownerB): void {
+        // Follows are unique per (actor, subject, owner): use two distinct
+        // followables so owner B legitimately has two rows.
+        foreach ([$ownerA, $ownerB] as $followable) {
             Follow::query()->create([
                 'follower_type' => $ownerB->getMorphClass(),
                 'follower_id' => $ownerB->getKey(),
-                'followable_type' => $ownerB->getMorphClass(),
-                'followable_id' => $ownerB->getKey(),
+                'followable_type' => $followable->getMorphClass(),
+                'followable_id' => $followable->getKey(),
                 'status' => FollowStatus::Active,
             ]);
         }

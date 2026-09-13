@@ -532,6 +532,16 @@ abstract class TestCase extends Orchestra
             $table->timestamps();
         });
 
+        // Laravel database notifications (notification-channel writes in tests)
+        Schema::create('notifications', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('type');
+            $table->uuidMorphs('notifiable');
+            $table->json('data');
+            $table->timestamp('read_at')->nullable();
+            $table->timestamps();
+        });
+
         // Spatie Permission tables
         Schema::dropIfExists('role_has_permissions');
         Schema::dropIfExists('model_has_roles');

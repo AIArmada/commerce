@@ -211,6 +211,32 @@ describe('OrderPayment Model', function (): void {
                 ->and($payment->status)->toBe(PaymentStatus::Failed)
                 ->and($payment->failure_reason)->toBe('Card declined');
         });
+
+        it('keeps paid total aligned when a completed payment amount is reduced to zero', function (): void {
+            $order = Order::create([
+                'order_number' => 'ORD-PAY-ZERO-' . uniqid(),
+                'status' => Created::class,
+                'currency' => 'MYR',
+                'subtotal' => 10000,
+                'grand_total' => 10000,
+            ]);
+
+            $payment = OrderPayment::create([
+                'order_id' => $order->id,
+                'gateway' => 'manual',
+                'amount' => 10000,
+                'currency' => 'MYR',
+                'status' => PaymentStatus::Completed,
+            ]);
+
+            $order->refresh();
+            expect($order->getTotalPaid())->toBe(10000);
+
+            $payment->update(['amount' => 0]);
+            $order->refresh();
+
+            expect($order->getTotalPaid())->toBe(0);
+        });
     });
 
     describe('OrderPayment Formatting', function (): void {

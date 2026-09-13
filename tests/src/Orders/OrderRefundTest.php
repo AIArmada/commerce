@@ -188,6 +188,46 @@ describe('OrderRefund Model', function (): void {
                 ->and($refund->status)->toBe(RefundStatus::Failed)
                 ->and($refund->notes)->toBe('Gateway error');
         });
+
+        it('keeps cached refund totals aligned when amount and status change', function (): void {
+            $order = Order::create([
+                'order_number' => 'ORD-REF-SYNC-' . uniqid(),
+                'status' => Completed::class,
+                'currency' => 'MYR',
+                'subtotal' => 10000,
+                'grand_total' => 10000,
+            ]);
+
+            $refund = OrderRefund::create([
+                'order_id' => $order->id,
+                'gateway' => 'manual',
+                'amount' => 5000,
+                'currency' => 'MYR',
+                'reason' => 'Customer request',
+                'status' => RefundStatus::Pending,
+            ]);
+
+            $order->refresh();
+            expect($order->getTotalPendingRefunded())->toBe(5000);
+
+            $refund->update(['amount' => 7000]);
+            $order->refresh();
+            expect($order->getTotalPendingRefunded())->toBe(7000);
+
+            $refund->update([
+                'amount' => 6000,
+                'status' => RefundStatus::Completed,
+            ]);
+            $order->refresh();
+
+            expect($order->getTotalPendingRefunded())->toBe(0)
+                ->and($order->getTotalRefunded())->toBe(6000);
+
+            $refund->update(['amount' => 0]);
+            $order->refresh();
+
+            expect($order->getTotalRefunded())->toBe(0);
+        });
     });
 
     describe('OrderRefund Formatting', function (): void {
