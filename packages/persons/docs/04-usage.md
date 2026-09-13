@@ -27,6 +27,28 @@ The model also enforces this mapping when a status is saved directly, so
 Filament and direct Eloquent saves cannot leave a published person without a
 published_at timestamp.
 
+## Lifecycle and assignment invariants
+
+```php
+use AIArmada\Persons\Actions\CreatePersonAction;
+use AIArmada\Persons\Actions\ReorderTitleAction;
+use AIArmada\Persons\Enums\TitleUsagePosition;
+
+$person = app(CreatePersonAction::class)->execute(['name' => 'Ahmad Rahman']);
+
+$title = app(ReorderTitleAction::class)->create([
+    'category_id' => $category->id,
+    'name' => 'Dr',
+    'usage_position' => TitleUsagePosition::BeforeName,
+    'sort_order' => 1,
+]);
+```
+
+- `bio` accepts a locale map (`['en' => '...']`) or a list of `locale`/`text` entries; anything else throws `InvalidArgumentException`.
+- `TitleIssuer` with type government/university requires an `institution_id`.
+- `AssignTitleAction`/`AssignCredentialAction` are idempotent: re-assigning the same title/credential returns the existing assignment (`CreatePersonAction` always creates).
+- `ReorderTitleAction::create()/update()` renumbers the `(category_id, usage_position)` scope gaplessly (`1..N`) in a transaction with `lockForUpdate`.
+
 ## Multi-context names
 
 ```php

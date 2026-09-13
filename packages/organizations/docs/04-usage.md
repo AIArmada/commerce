@@ -25,6 +25,22 @@ action; transferring ownership never rewrites `created_by`. The new owner
 must already be a member, and the action locks the owner set while changing
 both roles.
 
+Slug and membership uniqueness are enforced at the database level. Creation
+retries slug collisions automatically (`slug`, `slug-2`, …) and rethrows
+`23000`/`23505` violations that are not slug conflicts; concurrent duplicate
+memberships on `(organization_id, user_id)` are rejected as
+`AuthorizationException` instead of leaking a query error.
+
+```php
+use AIArmada\Organizations\Actions\CreateOrganizationAction;
+
+// Explicit slugs use the same collision handling (slug, slug-2, …).
+$organization = CreateOrganizationAction::make()->handle($user, [
+    'name' => 'Knowledge Circle',
+    'slug' => 'knowledge-circle',
+]);
+```
+
 Use the supplied lifecycle actions for public/private transitions and
 active/suspended/archived transitions. Use membership actions for all member
 writes so the organization ownership guard is applied.
@@ -42,16 +58,16 @@ trusted membership; the application resolver must verify the actor is a
 member.
 
 The shipped default requires context. Public or intentionally global routes
-must pass `required:false` explicitly and should enter an explicit global
+must pass `current.organization:false` explicitly and should enter an explicit global
 owner context in the handler.
 
 ## Lifecycle and audit hook
 
-Archive, restore, suspend, public, private, and ownership-transfer workflows
-are exposed as core actions. Each transition is centralized through the
-organization state-transition service and invokes `OrganizationLifecycleHook`;
-bind that hook to the host activity logger when lifecycle audit records are
-required.
+Archive, restore, suspend, make-public, and make-private go through
+`AIArmada\Organizations\Support\OrganizationStateTransition` (timestamps are
+retained as history); ownership transfer is a separate transactional
+workflow. All six invoke `OrganizationLifecycleHook`; bind that hook to the
+host activity logger when lifecycle audit records are required.
 
 Restoring an organization makes its status active but retains terminal
 timestamps as historical facts. Use `isActive()` together with the lifecycle

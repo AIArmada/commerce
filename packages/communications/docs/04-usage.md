@@ -199,3 +199,9 @@ php artisan communications:prune-inboxes
 All tenant-owned queries are automatically scoped to the current owner when `communications.features.owner.enabled` is true. Use `OwnerContext::withOwner()` for scoped operations. Inbox records follow the same owner boundary as the rest of the communications data.
 
 Webhook payloads cannot select an owner. Bind `AIArmada\Communications\Contracts\WebhookOwnerResolver` to resolve a trusted owner model from provider-authenticated payload data. Returning `null` processes the event in explicit global context.
+
+## Eligibility contracts
+
+Eligibility resolves through the `AIArmada\Communications\Services\PermissiveEligibilityResolver` binding. Custom resolvers implement `resolveConsent()` (`ConsentResolver`) and `resolveSuppression()` (`SuppressionResolver`).
+
+Webhooks are allowlisted per provider (`communications.webhooks.providers`), HMAC-signed (`X-Webhook-Signature` over the raw body), timestamp-bound (`X-Webhook-Timestamp`, default 300s tolerance), and rate-limited (`throttle:communications-webhooks`). Unconfigured providers fail closed — see `03-configuration.md` (`communications.php:73-89`).

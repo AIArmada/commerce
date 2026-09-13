@@ -53,6 +53,8 @@ The create form includes sections:
 5. **Targeting Conditions** — Key-value conditions
 6. **Options** — Active, stackable, priority
 
+Create and deactivate go through domain actions (`Pages\CreatePromotion` calls `CreatePromotion::handle($data)`; `Pages\EditPromotion` deactivate header action calls `DeactivatePromotion::handle($record)`) so validation, code normalization, and events stay in `aiarmada/promotions`.
+
 ### Edit View
 
 Same form as create, with current values populated.

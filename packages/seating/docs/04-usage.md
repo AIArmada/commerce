@@ -51,6 +51,8 @@ $results = app(SeatAllocatorInterface::class)->allocate(
 
 Each result is an `AllocationResult` DTO with `seatId`, `sectionCode`, `rowLabel`, `seatLabel`, and `category`.
 
+`DefaultSeatAllocator`/`EnsureSeatHoldAction` select with set-based `limit($quantity)` preferred + `limit($remaining)` fallback batches inside a `DB::transaction()`, constrained to the map's sections (`whereHas('section')`), `available()` status, unheld TTL (`whereDoesntHave('holds', expires_at > now)`), and the ambient owner scope, with `lockForUpdate()`. Shortfalls throw `InsufficientSeatsException` before any `SeatHold` insert; holds are batch-inserted via a single `SeatHold::insert()`. `SeatingMode::requiresSeatAllocation()` returns `true` only for `Assigned`/`Hybrid`, so `None`/`GeneralAdmission` intentionally return an empty collection. The Livewire picker (`toggleSeat()`) applies the same map/available/TTL/active-allocation checks and silently ignores ineligible seats.
+
 ## Livewire Component
 
 ```blade
@@ -82,6 +84,18 @@ php artisan seating:release-expired-holds
 Options:
 
 - `--chunk=500` — chunk size for batch deletion
+
+## Seat status lifecycle
+
+`seats.status` is a `string` column holding `SeatStatus` values, cast to the `SeatStatus` enum on the model (`'status' => SeatStatus::class`, default `Available`). Query via the retained `available()` scope rather than raw strings:
+
+```php
+use AIArmada\Seating\Enums\SeatStatus;
+use AIArmada\Seating\Models\Seat;
+
+$open = Seat::query()->available()->get();
+$seat->status === SeatStatus::Available;
+```
 
 ## Custom Allocator
 

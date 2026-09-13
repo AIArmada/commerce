@@ -14,8 +14,7 @@ title: Troubleshooting
 
 ## Renewal attempts are missing
 
-**Likely cause:** the query is running outside the subscription owner's context, or the legacy
-owner backfill has not run.
+**Likely cause:** the query is running outside the subscription owner's context, or the package migrations have not run.
 
 **Fix:** run the package migrations and execute renewal queries or commands inside the matching
 `OwnerContext`. Global attempts are only visible from an explicit global context or when global

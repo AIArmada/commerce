@@ -84,7 +84,7 @@ return [
 ### Defaults
 
 - `defaults.currency` is the fallback currency used by money helpers.
-- Product, variant, compare, and cost prices are always stored and exchanged as integer minor units. Environments that previously set `store_money_in_cents=false` must backfill their stored major-unit values once (multiply by 100) before enabling this version.
+- Product, variant, compare, and cost prices are always stored and exchanged as integer minor units.
 
 ### Owner behavior
 
@@ -121,7 +121,6 @@ The package reads collection limits and mime rules from `media.collections.*`, a
 
 - `seo.slug_max_length` is used by product and category slug generation.
 - Product slug and SKU identity are enforced by the `(owner_type, owner_id, identity)` tuple. Development/test migrations install separate partial unique indexes for owner-scoped and global rows; no derived scope column participates in identity.
-- This identity cutover is development-only and assumes reset development databases; no deduplication or cleanup machinery is included.
 
 ## Environment variables
 

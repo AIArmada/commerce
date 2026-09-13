@@ -80,7 +80,7 @@ package.
 
 ### Variant Management
 
-For any **variant-capable** product, use the Variants relation manager.
+For any **variant-capable** product, use the Variants relation manager. Matrix generation failures surface inline: exceeding `products.features.variants.max_generated` shows a danger `Variant limit exceeded` notification with the combination count, while matrices above `queue_threshold` dispatch `GenerateVariantsJob` and toast `Variant generation started` (existing SKUs are skipped idempotently).
 
 Common examples:
 

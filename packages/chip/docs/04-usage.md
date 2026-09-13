@@ -318,6 +318,39 @@ class CompleteOrder
 - `PayoutSuccess` - Payout completed
 - `PayoutFailed` - Payout failed
 
+### Webhook envelope contract
+
+Every Collect webhook dispatches the generic `WebhookReceived` envelope first, then the typed purchase/payout event. Prefer the typed events; use the envelope only for raw routing. No consumer in `packages/customers` subscribes yet.
+
+```php
+use AIArmada\Chip\Events\WebhookReceived;
+
+final class LogChipWebhook
+{
+    public function handle(WebhookReceived $event): void
+    {
+        $event->eventType; // e.g. 'purchase.paid'
+        $event->purchase;  // ?PurchaseData
+        $event->payment;   // ?PaymentData (payment.* only)
+        $event->payout;    // ?PayoutData (payout webhooks only)
+
+        if ($event->isPurchaseEvent()) {
+            // Defer to the typed PurchaseEvent below.
+        }
+    }
+}
+```
+
+All typed purchase events extend abstract `AIArmada\Chip\Events\PurchaseEvent` (`$purchase` + `$payload`, `fromPayload()`, `eventType()`, and `getReference()` / `getPurchaseId()` / `getAmount()` / `getCurrency()` accessors).
+
+### Purchase status, totals, and idempotency
+
+Canonical statuses live in `AIArmada\Chip\Enums\PurchaseStatus` (`paid`, `cleared`, `settled` are success; `pending_refund` is still processing — wait for `payment.refunded`). When mapping webhooks, the recognized event type wins over the payload status (`ChipPaymentStatusMapper::mapWebhook()`).
+
+Currency must be a three-letter ISO 4217 code, amounts are integer minor units, and quantities are integers greater than zero. Subtotal/total overrides must reconcile (`subtotal - discount + tax === total`) or creation throws `ChipValidationException`.
+
+`AIArmada\Chip\Support\PurchaseIdempotencyLedger` fails closed: replaying a key with a different payload fingerprint throws, and a key reserved without a recorded response throws until reconciled. Reserving requires an owner context when `chip.owner.enabled` is set.
+
 ## Testing
 
 ### Webhook Simulation

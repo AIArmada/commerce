@@ -339,6 +339,32 @@ Event::listen(function (PassTransferred $event): void {
 });
 ```
 
+## Canonical DTOs and component expansion
+
+```php
+use AIArmada\Ticketing\Actions\ExpandTicketTypeComponentsAction;
+use AIArmada\Ticketing\Data\PassData;
+use AIArmada\Ticketing\Data\TicketTypeData;
+
+$typeDto = TicketTypeData::fromTicketType($ticketType);
+$passDto = PassData::fromPass($pass);
+$components = app(ExpandTicketTypeComponentsAction::class)->handle($ticketType, multiplier: 2);
+```
+
+Use `TicketTypeData::fromTicketType()` and `PassData::fromPass()` at boundaries instead of hand-mapping models. `ExpandTicketTypeComponentsAction` expands `components → componentTicketType` by `quantity × multiplier` and returns an empty collection when there are no components.
+
+## Ticketing owner guard
+
+`TicketingOwnerGuard::assertRelations()` requires an owner or explicit global context, then checks each relation: `HasOwner` models must resolve in the current scope, and `eventOwnerRelation` models (via-event) must also resolve. Missing required relations throw `AuthorizationException`:
+
+```php
+use AIArmada\Ticketing\Support\TicketingOwnerGuard;
+
+TicketingOwnerGuard::assertRelations($pass, [
+    ['relation' => 'ticketType', 'required' => true],
+]);
+```
+
 ## Read next
 
 - [Configuration](03-configuration.md) — Review configuration options

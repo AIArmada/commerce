@@ -123,7 +123,9 @@ registrations.
 | `owner.auto_assign_on_create` | Assign the current owner to newly-created ticketing rows |
 
 Ticket types, components, product and seating options, passes, pass holders, and
-pass transfers are owner-scoped. Owner context is required for owner-enabled
+pass transfers are owner-scoped. All seven models (`TicketType`, `TicketTypeComponent`,
+`TicketTypeProduct`, `TicketTypeSeatingOption`, `Pass`, `PassHolder`, `PassTransfer`)
+read the same scope config key, `ticketing.owner`. Owner context is required for owner-enabled
 reads and writes; global operations must be wrapped in an explicit
 `OwnerContext::withOwner(null, ...)` scope. Existing rows with no owner are not
 implicitly visible to tenants.

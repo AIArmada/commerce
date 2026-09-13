@@ -65,7 +65,7 @@ tests/
 - Cashier CHIP should mirror the owner-scoping behavior of `aiarmada/chip` and `commerce-support`
 - Renewal attempts inherit the owner tuple from their parent subscription and are filtered by the current owner context
 - Renewals, webhook callbacks, and customer lookups should re-enter the correct owner context before mutating subscriptions or payment methods
-- The owner-column migration backfills existing renewal attempts from their subscriptions; orphaned attempts remain ownerless and are excluded unless global rows are explicitly included
+- Attempts whose subscription is missing stay ownerless and are excluded unless global rows are explicitly included
 
 ## Key CHIP differences
 

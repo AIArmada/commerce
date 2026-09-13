@@ -29,7 +29,9 @@ projections, and domain-specific authorization policy.
 involvement roles belong to `events`. Owner-scoped customer rows use the
 organization's owner tuple. A persons affiliation may reference an
 organization only when the host explicitly configures `Organization` as its
-institution model.
+institution model. No institution columns are added on the organizations
+side; `persons` keeps the opaque nullable `institution_id` and fails closed
+without that explicit configuration.
 
 ## What this package owns
 

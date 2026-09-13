@@ -132,4 +132,17 @@ Models using `AIArmada\Products\Traits\HasAttributes` get these helpers:
 
 Custom-attribute predicates use the EAV `attribute_values` relation and are intended for admin/catalog management queries. Keep storefront listing/search paths on materialized product fields or dedicated read models rather than filtering large catalogs through EAV joins.
 
-Category identity is scoped by `(owner_type, owner_id, parent_id, slug)`. Root and child categories use separate partial unique indexes so `parent_id = null` remains a first-class identity value. The derived `parent_scope` column is removed by the development/test cutover migration; existing pivot primary-key styles are unchanged.
+## Identity enforcement
+
+Identity is enforced in `EnforcesOwnerUniqueIdentity::bootEnforcesOwnerUniqueIdentity()` plus dev-only partial uniques in `Support\ProductIdentityIndexes`:
+
+- `Product::uniqueIdentityColumns()` returns `['slug', 'sku']`; `Variant` returns `['sku']`; `Category` returns `['slug']` scoped further by `parent_id` via `modifyUniqueIdentityQuery()`.
+- Owner-scoped rows match `(owner_type, owner_id, identity)`; global rows match `(identity)` with `owner_* IS NULL`. Category root/child rows use separate partials so `parent_id = null` stays a first-class identity value.
+- Conflicts throw `UniqueConstraintViolationException` on create and `InvalidArgumentException` on update. There is no `createOrFirst()` helper and no `parent_scope` column in `src/`; use `first()` + `create()` explicitly.
+
+```php
+use AIArmada\Products\Models\Product;
+
+$existing = Product::query()->forOwner($team)->where('sku', 'TSHIRT-001')->first()
+    ?? Product::query()->create(['name' => 'Tee', 'sku' => 'TSHIRT-001']);
+```

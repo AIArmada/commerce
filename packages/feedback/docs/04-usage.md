@@ -159,3 +159,35 @@ Event::listen(FeedbackResponseSubmitted::class, function ($event) {
     // Issue certificate, update metrics, etc.
 });
 ```
+
+## Form structure path
+
+`SaveFeedbackFormStructureAction` is the single owner-guarded structure path (`saveSection` / `saveQuestion` / `saveOption`, each via `OwnerWriteGuard::findOrFailForOwner`). Pass the parent id every time so cross-form attaches fail fast:
+
+```php
+use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
+
+app(SaveFeedbackFormStructureAction::class)->saveSection(formId: $form->id, data: ['title' => 'Basics']);
+app(SaveFeedbackFormStructureAction::class)->saveOption(questionId: $question->id, data: ['label' => 'Yes', 'value' => 'yes']);
+```
+
+## Invitation tokens
+
+`SendFeedbackInvitationAction` mints `bin2hex(random_bytes(32))` and persists only `hash('sha256', $rawToken)`. Resolve via `ResolveFeedbackInvitationTokenAction`, which does the hashed lookup plus expiry, single-use (`submitted` rejects reuse), and rate-limit (`feedback.security.invitation_rate_limit`):
+
+```php
+use AIArmada\Feedback\Actions\ResolveFeedbackInvitationTokenAction;
+
+$invitation = app(ResolveFeedbackInvitationTokenAction::class)->execute($rawToken);
+```
+
+## Analytics aggregates
+
+`summaryForForm()` reads the `feedback_form_analytics` aggregate row and falls back to live calculation. The dashboard is owner-keyed via `OwnerCache::remember(..., config('feedback.analytics.dashboard_cache_ttl', 30))`, and submissions queue `RecalculateFeedbackFormAnalyticsJob::forResponse($response)` to refresh the aggregate:
+
+```php
+use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
+
+$data = app(FeedbackAnalyticsService::class)->summaryForForm($form);
+$dashboard = app(FeedbackAnalyticsService::class)->dashboard();
+```

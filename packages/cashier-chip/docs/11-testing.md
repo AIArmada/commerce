@@ -257,9 +257,7 @@ use AIArmada\CashierChip\Subscription\RenewalAttempt;
 $attempts = OwnerContext::withOwner($owner, fn () => RenewalAttempt::query()->get());
 ```
 
-Existing renewal-attempt rows are assigned during the package migration from their parent
-subscription, so test suites that use legacy fixtures should run migrations before asserting
-owner isolation.
+Renewal attempts inherit their owner from the parent subscription at write time. Run the package migrations before asserting owner isolation.
 
 ### Assert Subscribed
 

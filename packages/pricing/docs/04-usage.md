@@ -247,6 +247,21 @@ $tier->getDescription(); // "10-49 units" or "50+ units"
 $tier->getDiscountDescription(); // "10% off" or "RM 5.00 off"
 ```
 
+### Tier resolution rules
+
+Tiers resolve through the canonical `TierResolverInterface` singleton (`Support\TierResolver`):
+
+```php
+use AIArmada\Pricing\Contracts\TierResolverInterface;
+
+$tier = app(TierResolverInterface::class)->resolve(Product::class, $product->id, 25, [
+    'price_list_id' => $wholesale->id,
+]); // ?TierPriceResultData with price + tier description
+```
+
+- Active-only (`is_active = true`); quantities `<= 1` never match.
+- With `price_list_id`, list-specific tiers win over global (`price_list_id = null`) tiers; without it, only global tiers apply. Highest `min_quantity` wins.
+
 ## Calculation Priority
 
 The price calculator evaluates prices in this order:
@@ -271,6 +286,21 @@ The price calculator evaluates prices in this order:
 
 6. **Base Price**
    - Falls back to the item's base price
+
+### Promotions bridge and lifecycle
+
+Promotions resolve via `PromotionServiceInterface::calculateDiscounts()` through `Actions\ApplyPromotionalAdjustment`. The bridge returns `null` when the promotions package is not installed or bound, and pricing never queries promotion tables directly.
+
+- Deactivation is dual-flag: `isActive()` and every calculator query require `is_active = true` (lists) plus `deactivated_at = null` within the `starts_at`/`ends_at` window.
+- Saving a default list demotes the other defaults in its owner scope inside the model `save()` transaction; the newly saved list wins.
+- `effective_at` accepts a `DateTimeInterface`, timestamp, or date string via the shared `ResolvesEffectiveAt` trait (calculator plus customer/segment resolvers); unparsable values fall back to now.
+
+### Ownership checks, currency errors, and deletes
+
+- When `aiarmada/customers` is installed, `customer_id`/`segment_id` on a price list must reference an existing record; otherwise saving throws `AuthorizationException`.
+- `PriceResultData::getMoney()` (and the savings/original variants) throw `AIArmada\Pricing\Exceptions\InvalidCurrencyException` for unknown currency codes.
+- Deleting a price list removes its prices and tiers in one transaction; deletes outside the current owner scope throw.
+- The Filament `PriceSimulator` (`filament-pricing`) requires `aiarmada/products`; without it the page renders an unavailable state instead of simulating.
 
 ## Example: Complete Pricing Flow
 

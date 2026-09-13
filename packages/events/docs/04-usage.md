@@ -669,3 +669,70 @@ $dispatcher->dispatch($batch);
 ```
 
 Dispatch is idempotent for the tuple `(batch, recipient type, recipient id, channel)`. A manual retry resets only terminal failed deliveries; already-sent deliveries are never resent.
+
+## Ownership model
+
+7 models use `HasOwner` directly (`Event`, `EventSeries`, `EventTemplate`, `EventOrganizer`, `EventItinerary`, `EventHeadcountLog`, `EventWalkIn`). 44 models inherit the event boundary via `ScopesByEventOwner` (`event_owner` scope). 11 stay unscoped: catalog/pivot/submission exceptions (`EventRole`, `EventTaxonomy`, `EventTerm`, `EventTermPolicy`, `EventSeriesItemPivot`, `EventSubmission`) plus venue catalog (`Venue`, `VenueSpace`, `VenueSpaceType`, `FacilityType`, `VenueFacility`).
+
+```php
+use AIArmada\Events\Support\EventWriteGuard;
+
+$event = EventWriteGuard::findOrFail($eventId);
+```
+
+Write paths resolve the event first via `EventWriteGuard::findOrFail()`, which enforces the owner scope before mutating children.
+
+## Owner query notes
+
+```php
+use AIArmada\Events\Services\EventQueryService;
+
+$events = app(EventQueryService::class)->findByOwner($owner);
+```
+
+`EventQueryService::findByOwner()` is unbounded by design (`forOwner($owner)->get()`) with no in-repo caller. Paginate in the application when the owner has many events; service-level pagination is deferred.
+
+## Order to registration to pass sequence
+
+```php
+use AIArmada\Events\Actions\CreateRegistrationsFromOrderAction;
+use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
+
+$registrations = app(CreateRegistrationsFromOrderAction::class)->handle($target, $orderItem, $participants, $purchaser);
+$passes = app(IssueEventRegistrationPassesAction::class)->handle($registrations->first());
+```
+
+Canonical paid flow: order item → `CreateRegistrationsFromOrderAction` (scope + eligibility + `RegistrationService::register` + component expansion) → `IssueEventRegistrationPassesAction` → ticketing `IssuePassesAction`. Free order items reuse `RegisterForFreeAction` with `defer_pass_issuance` before the same pass step.
+
+## Ticketing DTOs and delivery
+
+```php
+use AIArmada\Ticketing\Actions\ExpandTicketTypeComponentsAction;
+use AIArmada\Ticketing\Data\PassData;
+use AIArmada\Ticketing\Data\TicketTypeData;
+
+$dto = TicketTypeData::fromTicketType($ticketType);
+$passDto = PassData::fromPass($pass);
+$components = app(ExpandTicketTypeComponentsAction::class)->handle($ticketType);
+```
+
+Use the canonical ticketing DTOs and `ExpandTicketTypeComponentsAction` (also used by `CreateEventComponentRegistrationsAction`). Delivery goes through the communications manager (`EventNotificationDispatcher`); cross-package links stay as `EventReference` rows with content remaining in events.
+
+## Content sync and model traits
+
+```php
+use AIArmada\Events\Actions\SynchronizeEventContent;
+
+app(SynchronizeEventContent::class)->handle($event);
+```
+
+`EventContentSynchronizer` is canonical for title/summary/description normalization. `src/Traits` keeps 6 relation traits plus 3 organizer traits (`CanOrganizeEvents`, `HasEvents`, `OwnsEvents`). There is no global helper and no `files` autoload in `composer.json`.
+
+## Venue and facility addresses
+
+Venue catalog (`VenueSpace`, `VenueSpaceType`, `FacilityType`, `VenueFacility`) is unowned by design; `Venue` is also unowned. `EventLocation` and `EventFacility` are event-scoped via `ScopesByEventOwner`. All seven use only addressing `HasAddresses`; read via the canonical primary address:
+
+```php
+$primary = $venue->primaryAddress();
+$primary = $location->primaryAddress();
+```

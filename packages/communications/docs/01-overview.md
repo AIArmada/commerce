@@ -49,3 +49,5 @@ The domain ships 17 models, 31 actions, and 14 services (see `src/Actions/`, `sr
 - No database foreign-key constraints, cascades, or soft deletes
 - All timestamps are timezone-aware
 - All primary keys are UUIDs
+- Eligibility contracts: `resolveConsent()` / `resolveSuppression()` on the shared `PermissiveEligibilityResolver`
+- Provider webhooks are allowlisted, HMAC-signed, timestamp-bound, and rate-limited — see `03-configuration.md` and `04-usage.md`

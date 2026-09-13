@@ -89,3 +89,18 @@ $collection->getMatchingProducts()->pluck('id');
 ```php
 $product->getCustomAttributesArray();
 ```
+
+## Schema and query caveats
+
+- Owner/identity uniques (`slug`, `sku`, `code`, category `parent_id + slug`) are created only in `local`, `development`, and `testing` via `ProductIdentityIndexes`. Production relies on the `EnforcesOwnerUniqueIdentity` application check.
+- `attribute_values` locale uniques are split partials (`locale IS NOT NULL` vs `locale IS NULL`); always query with `->whereNull('locale')` or `->forLocale()` rather than relying on plain unique behavior.
+- EAV `whereHas('attributeValues')` helpers (`whereCustomAttribute()`, `forAttribute()`) are for admin/catalog queries. Keep storefront hot paths on materialized columns or read models.
+- `attribute_values.value` is raw `text`. Read typed data via the `typed_value` accessor (`Attribute::castValue()` / `serializeValue()` per `AttributeType`):
+
+```php
+use AIArmada\Products\Models\AttributeValue;
+
+$value = AttributeValue::query()->findOrFail($id)->typed_value;
+```
+
+- `PricesRelationManager` only renders when `aiarmada/pricing` is installed (`class_exists(Price::class)` gate in `ProductResource::getRelations()` and `canViewForRecord()`). If the tab is missing, install/enable the pricing package first.

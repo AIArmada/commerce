@@ -20,8 +20,7 @@ subscription. `RenewalAttempt::query()` and renewal command writes are filtered 
 current owner context, so scheduled jobs must run through the package's owner-aware execution
 path.
 
-The package migrations add an indexed nullable owner tuple to `cashier_chip_renewal_attempts` and
-backfill legacy attempts from their subscriptions. Attempts whose subscription is missing or
+`cashier_chip_renewal_attempts` carries an indexed nullable owner tuple inherited from the parent subscription. Attempts whose subscription is missing or
 ownerless remain global and are not returned by owner-scoped queries unless global rows are
 explicitly included.
 

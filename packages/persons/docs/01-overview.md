@@ -65,6 +65,12 @@ link migration.
 - Users, members, donations, reports, share tracking, or Filament admin surfaces.
 - Country data — `nationality_country_id`, `title.country_id`, and `title_issuers.country_id` are loose UUIDs; relations into `aiarmada/addressing` are optional and wired at the application layer.
 
+Country and institution pointers are fail-closed through
+`AIArmada\Persons\Support\PersonsModelReferenceGuard`: a non-null ID with no
+configured (or non-Eloquent) model throws, as does an ID with no matching row.
+There are no database foreign-key constraints; integrity is enforced in
+application logic on every save.
+
 ## Core Concepts
 
 | Concept | Description |

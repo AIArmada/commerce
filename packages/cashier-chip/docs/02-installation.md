@@ -107,9 +107,6 @@ Cashier CHIP stores CHIP-specific customer and payment-method state in its own p
 Your billable model does **not** need `chip_id`, `default_pm_id`, `pm_type`, or `pm_last_four`
 columns.
 
-The renewal-attempt owner migration adds owner columns and backfills existing attempts from their
-parent subscriptions.
-
 ## Billable Model
 
 Add the `Billable` trait to your User model:

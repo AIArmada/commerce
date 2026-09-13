@@ -26,6 +26,10 @@ php artisan vendor:publish --tag=feedback-config
 php artisan migrate
 ```
 
+## Migration files
+
+10 one-table files (`000001` forms through `000010` form analytics, each a single `Schema::create`).
+
 ## Seeding templates
 
 ```bash

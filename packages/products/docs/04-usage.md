@@ -54,6 +54,8 @@ $variants = GenerateVariants::run($product);
 // Returns Collection<int, Variant>
 ```
 
+Generation caps at `features.variants.max_generated` (default 200) and throws `VariantGenerationLimitExceeded` above it. Above `features.variants.queue_threshold` (default 50) the request dispatches `GenerateVariantsJob` and returns an empty collection; the job re-runs via `generateSynchronously()`. Writes are chunked in groups of 50 inside `DB::transaction()`, and existing owner-scoped SKUs are returned as-is without inserting duplicates (idempotent retry safe). Filament surfaces the cap as a danger notification (`VariantsRelationManager`).
+
 ### ApplyAttributeChanges
 
 ```php

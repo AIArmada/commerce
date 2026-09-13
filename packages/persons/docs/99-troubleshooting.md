@@ -38,3 +38,10 @@ Each table name is configurable via `persons.database.tables.*` or env vars (`PE
 // config/persons.php
 'table_prefix' => 'myapp_',
 ```
+
+## Slug and primary uniqueness indexes
+
+- `persons.slug` is unique when non-null: a plain unique index on MySQL, a partial `WHERE slug IS NOT NULL` unique index elsewhere.
+- `person_names` and `affiliations` enforce one primary per scope via driver-conditional partial uniques (`person_names_primary_unique` on `(person_id, name_type, language_code)`, `affiliations_primary_unique` on `(affiliatable_type, affiliatable_id)`), plus covering indexes on the lookup paths.
+- Slug collisions resolve as `<slug>-<short-uuid>` with a numeric suffix; generation throws `LogicException` after 100 attempts.
+- Primary replacement keeps its `lockForUpdate` demotion in a transaction; the partial unique is the database backstop, so a unique-violation on concurrent writes means retry the write.
