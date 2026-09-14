@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Resources\InvoiceResource\Schemas;
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Carbon\CarbonImmutable;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;
@@ -185,8 +186,13 @@ final class InvoiceInfolist
 
                     Grid::make(2)
                         ->schema([
-                            TextEntry::make('paid_on')
+                            TextEntry::make('paid_at')
                                 ->label('Paid At')
+                                ->getStateUsing(function (Purchase $record): ?CarbonImmutable {
+                                    $paidOn = $record->payments()->whereNotNull('paid_on')->orderByDesc('paid_on')->value('paid_on');
+
+                                    return is_numeric($paidOn) ? CarbonImmutable::createFromTimestampUTC((int) $paidOn) : null;
+                                })
                                 ->dateTime(config('filament-cashier-chip.tables.date_format', 'Y-m-d H:i:s'))
                                 ->placeholder('Not paid'),
 

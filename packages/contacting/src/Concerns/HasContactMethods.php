@@ -22,6 +22,7 @@ trait HasContactMethods
             /** @phpstan-ignore-next-line dynamic relationship from trait */
             $model->contactMethods()->withoutOwnerScope()->chunkById(100, function (Collection $contactMethods): void {
                 foreach ($contactMethods as $contactMethod) {
+                    /** @var ContactMethod $contactMethod */
                     $owner = $contactMethod->getRelationValue('owner');
 
                     if ($owner === null && $contactMethod->getAttribute('owner_type') !== null) {

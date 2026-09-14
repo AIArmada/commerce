@@ -108,23 +108,23 @@ it('executes ViewOrder action handlers (error paths) without crashing', function
     /** @var TestOwner $owner */
     $owner = TestOwner::query()->firstOrFail();
 
-    $pendingOrder = Order::query()->create([
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => $owner->getKey(),
+    $pendingOrder = Order::query()->make([
         'status' => PendingPayment::class,
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
     ]);
+    $pendingOrder->assignOwner($owner);
+    $pendingOrder->save();
 
-    $processingOrder = Order::query()->create([
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => $owner->getKey(),
+    $processingOrder = Order::query()->make([
         'status' => Processing::class,
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
     ]);
+    $processingOrder->assignOwner($owner);
+    $processingOrder->save();
 
     $page = new class extends ViewOrder
     {

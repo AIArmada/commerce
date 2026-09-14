@@ -89,14 +89,14 @@ it('evaluates ViewOrder header action authorization + visibility closures', func
 
     makeAuthedUser($owner);
 
-    $order = Order::query()->create([
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => $owner->getKey(),
+    $order = Order::query()->make([
         'status' => PendingPayment::class,
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
     ]);
+    $order->assignOwner($owner);
+    $order->save();
 
     $page = new class extends ViewOrder
     {
@@ -125,15 +125,15 @@ it('hides invoice downloads when the feature is disabled', function (): void {
 
     makeAuthedUser($owner);
 
-    $order = Order::query()->create([
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => $owner->getKey(),
+    $order = Order::query()->make([
         'status' => Processing::class,
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
         'paid_at' => now(),
     ]);
+    $order->assignOwner($owner);
+    $order->save();
 
     $page = new class extends ViewOrder
     {
@@ -160,14 +160,14 @@ it('evaluates status-dependent header actions for processing orders', function (
 
     makeAuthedUser($owner);
 
-    $order = Order::query()->create([
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => $owner->getKey(),
+    $order = Order::query()->make([
         'status' => Processing::class,
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
     ]);
+    $order->assignOwner($owner);
+    $order->save();
 
     $page = new class extends ViewOrder
     {

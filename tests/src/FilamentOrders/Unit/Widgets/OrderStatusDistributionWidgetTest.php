@@ -44,44 +44,30 @@ it('builds a status distribution chart scoped to the current owner plus global',
 
     // Owner A: 2 processing, 1 pending
     OwnerContext::withOwner($ownerA, function () use ($ownerA): void {
-        Order::query()->create([
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
-            'status' => Processing::class,
-            'currency' => 'MYR',
-            'subtotal' => 10000,
-            'grand_total' => 10000,
-        ]);
+        foreach ([Processing::class, Processing::class, PendingPayment::class] as $status) {
+            $order = Order::query()->make([
+                'status' => $status,
+                'currency' => 'MYR',
+                'subtotal' => 10000,
+                'grand_total' => 10000,
+            ]);
 
-        Order::query()->create([
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
-            'status' => Processing::class,
-            'currency' => 'MYR',
-            'subtotal' => 10000,
-            'grand_total' => 10000,
-        ]);
-
-        Order::query()->create([
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
-            'status' => PendingPayment::class,
-            'currency' => 'MYR',
-            'subtotal' => 10000,
-            'grand_total' => 10000,
-        ]);
+            $order->assignOwner($ownerA);
+            $order->save();
+        }
     });
 
     // Owner B: should be ignored
     OwnerContext::withOwner($ownerB, function () use ($ownerB): void {
-        Order::query()->create([
-            'owner_type' => $ownerB->getMorphClass(),
-            'owner_id' => $ownerB->getKey(),
+        $order = Order::query()->make([
             'status' => Processing::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,
         ]);
+
+        $order->assignOwner($ownerB);
+        $order->save();
     });
 
     // Global: 1 processing

@@ -22,6 +22,7 @@ trait HasSocialProfiles
             /** @phpstan-ignore-next-line dynamic relationship from trait */
             $model->socialProfiles()->withoutOwnerScope()->chunkById(100, function (Collection $socialProfiles): void {
                 foreach ($socialProfiles as $socialProfile) {
+                    /** @var SocialProfile $socialProfile */
                     $owner = $socialProfile->getRelationValue('owner');
 
                     if ($owner === null && $socialProfile->getAttribute('owner_type') !== null) {

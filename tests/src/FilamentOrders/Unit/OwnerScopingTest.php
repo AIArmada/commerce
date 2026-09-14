@@ -44,25 +44,31 @@ it('scopes OrderResource to current owner plus global', function (): void {
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
     $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
-        return Order::query()->create([
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
+        $order = Order::query()->make([
             'status' => Created::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,
         ]);
+
+        $order->assignOwner($ownerA);
+        $order->save();
+
+        return $order;
     });
 
     $orderB = OwnerContext::withOwner($ownerB, function () use ($ownerB): Order {
-        return Order::query()->create([
-            'owner_type' => $ownerB->getMorphClass(),
-            'owner_id' => $ownerB->getKey(),
+        $order = Order::query()->make([
             'status' => Created::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,
         ]);
+
+        $order->assignOwner($ownerB);
+        $order->save();
+
+        return $order;
     });
 
     $orderGlobal = OwnerContext::withOwner(null, function (): Order {

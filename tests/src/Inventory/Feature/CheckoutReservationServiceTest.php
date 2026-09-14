@@ -15,7 +15,6 @@ use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
-use ReflectionMethod;
 
 describe('CheckoutReservationService', function (): void {
     beforeEach(function (): void {

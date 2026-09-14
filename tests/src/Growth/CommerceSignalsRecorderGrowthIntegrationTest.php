@@ -106,18 +106,23 @@ it('records checkout and order signals with projected experiment context', funct
         return $session->fresh();
     });
 
-    $order = OwnerContext::withOwner($owner, fn (): Order => Order::query()->create([
-        'customer_id' => 'customer-recorder-1',
-        'grand_total' => 129900,
-        'currency' => 'MYR',
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => (string) $owner->getKey(),
-        'metadata' => [
-            'checkout_session_id' => $checkoutSession->getKey(),
-            'cart_id' => 'cart-recorder-1',
-        ],
-        'paid_at' => now(),
-    ]));
+    $order = OwnerContext::withOwner($owner, function () use ($owner, $checkoutSession): Order {
+        $order = Order::query()->make([
+            'customer_id' => 'customer-recorder-1',
+            'grand_total' => 129900,
+            'currency' => 'MYR',
+            'metadata' => [
+                'checkout_session_id' => $checkoutSession->getKey(),
+                'cart_id' => 'cart-recorder-1',
+            ],
+            'paid_at' => now(),
+        ]);
+
+        $order->assignOwner($owner);
+        $order->save();
+
+        return $order;
+    });
 
     $recorder = app(CommerceSignalsRecorder::class);
 
@@ -149,18 +154,23 @@ it('reads cart context from order metadata when strict missing-attribute protect
         $trackedProperty = growthRecorderTrackedProperty($owner);
         [$experiment, $variant] = growthRecorderExperimentContext($owner, $trackedProperty, 'customer-recorder-strict', 'cart-recorder-strict');
 
-        $order = OwnerContext::withOwner($owner, fn (): Order => Order::query()->create([
-            'customer_id' => 'customer-recorder-strict',
-            'grand_total' => 90900,
-            'currency' => 'MYR',
-            'owner_type' => $owner->getMorphClass(),
-            'owner_id' => (string) $owner->getKey(),
-            'metadata' => [
-                'checkout_session_id' => 'checkout-session-strict',
-                'cart_id' => 'cart-recorder-strict',
-            ],
-            'paid_at' => now(),
-        ]));
+        $order = OwnerContext::withOwner($owner, function () use ($owner): Order {
+            $order = Order::query()->make([
+                'customer_id' => 'customer-recorder-strict',
+                'grand_total' => 90900,
+                'currency' => 'MYR',
+                'metadata' => [
+                    'checkout_session_id' => 'checkout-session-strict',
+                    'cart_id' => 'cart-recorder-strict',
+                ],
+                'paid_at' => now(),
+            ]);
+
+            $order->assignOwner($owner);
+            $order->save();
+
+            return $order;
+        });
 
         $orderPaid = app(CommerceSignalsRecorder::class)->recordOrderPaid($order, 'txn-growth-strict', 'chip');
 
@@ -180,17 +190,22 @@ it('uses the tracked property owner for growth enrichment when only a resolver o
     $trackedProperty = growthRecorderTrackedProperty($owner);
     [$experiment, $variant] = growthRecorderExperimentContext($owner, $trackedProperty, 'customer-recorder-2', 'cart-recorder-2');
 
-    $order = OwnerContext::withOwner($owner, fn (): Order => Order::query()->create([
-        'customer_id' => 'customer-recorder-2',
-        'grand_total' => 219900,
-        'currency' => 'MYR',
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => (string) $owner->getKey(),
-        'metadata' => [
-            'cart_id' => 'cart-recorder-2',
-        ],
-        'paid_at' => now(),
-    ]));
+    $order = OwnerContext::withOwner($owner, function () use ($owner): Order {
+        $order = Order::query()->make([
+            'customer_id' => 'customer-recorder-2',
+            'grand_total' => 219900,
+            'currency' => 'MYR',
+            'metadata' => [
+                'cart_id' => 'cart-recorder-2',
+            ],
+            'paid_at' => now(),
+        ]);
+
+        $order->assignOwner($owner);
+        $order->save();
+
+        return $order;
+    });
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($foreignOwner) implements OwnerResolverInterface
     {

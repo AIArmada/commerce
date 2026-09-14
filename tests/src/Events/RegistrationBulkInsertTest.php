@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Models\Event;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 it('persists bulk children with identical data to per-row creates', function (): void {
     $event = Event::factory()->create();

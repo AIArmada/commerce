@@ -48,15 +48,16 @@ it('calculates stats using an owner-scoped query', function (): void {
 
     // Today (owner A): 1 paid order
     $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
-        $order = Order::query()->create([
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
+        $order = Order::query()->make([
             'status' => Created::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,
             'paid_at' => now(),
         ]);
+
+        $order->assignOwner($ownerA);
+        $order->save();
 
         $order->forceFill(['created_at' => now()->copy()->subHour(), 'updated_at' => now()->copy()->subHour()])->save();
 
@@ -65,15 +66,16 @@ it('calculates stats using an owner-scoped query', function (): void {
 
     // Today (owner B): should be ignored
     $orderB = OwnerContext::withOwner($ownerB, function () use ($ownerB): Order {
-        $order = Order::query()->create([
-            'owner_type' => $ownerB->getMorphClass(),
-            'owner_id' => $ownerB->getKey(),
+        $order = Order::query()->make([
             'status' => Created::class,
             'currency' => 'MYR',
             'subtotal' => 99999,
             'grand_total' => 99999,
             'paid_at' => now(),
         ]);
+
+        $order->assignOwner($ownerB);
+        $order->save();
 
         $order->forceFill(['created_at' => now()->copy()->subHour(), 'updated_at' => now()->copy()->subHour()])->save();
 
@@ -99,15 +101,16 @@ it('calculates stats using an owner-scoped query', function (): void {
 
     // Yesterday (owner A): 1 paid order
     $orderYesterday = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
-        $order = Order::query()->create([
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
+        $order = Order::query()->make([
             'status' => Created::class,
             'currency' => 'MYR',
             'subtotal' => 5000,
             'grand_total' => 5000,
             'paid_at' => now()->copy()->subDay(),
         ]);
+
+        $order->assignOwner($ownerA);
+        $order->save();
 
         $order->forceFill(['created_at' => now()->copy()->subDay()->subHour(), 'updated_at' => now()->copy()->subDay()->subHour()])->save();
 

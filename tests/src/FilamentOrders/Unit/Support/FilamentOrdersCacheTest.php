@@ -25,10 +25,13 @@ it('forgets the global stats through owner-scoped cache tags', function (): void
 it('forgets the owner-specific stats through owner-scoped cache tags', function (): void {
     Cache::spy();
 
-    FilamentOrdersCache::forgetForOrder(new Order([
+    $order = new Order;
+    $order->forceFill([
         'owner_type' => 'App\\Models\\Store',
         'owner_id' => 'store-123',
-    ]));
+    ]);
+
+    FilamentOrdersCache::forgetForOrder($order);
 
     $ownerKey = OwnerScopeKey::forTypeAndId('App\\Models\\Store', 'store-123');
 
@@ -36,10 +39,13 @@ it('forgets the owner-specific stats through owner-scoped cache tags', function 
 });
 
 it('rejects empty-string owner payloads', function (): void {
-    FilamentOrdersCache::forgetForOrder(new Order([
+    $order = new Order;
+    $order->forceFill([
         'owner_type' => '',
         'owner_id' => '',
-    ]));
+    ]);
+
+    FilamentOrdersCache::forgetForOrder($order);
 })->throws(InvalidArgumentException::class);
 
 it('computes dashboard statistics with one cached aggregate query', function (): void {

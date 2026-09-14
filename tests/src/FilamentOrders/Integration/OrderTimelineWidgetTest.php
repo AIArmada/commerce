@@ -52,15 +52,15 @@ it('builds a timeline from payments, notes and shipment state', function (): voi
         }
     });
 
-    $order = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
+    $order = Order::query()->make([
         'status' => Created::class,
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
         'shipped_at' => now()->subHour(),
     ]);
+    $order->assignOwner($ownerA);
+    $order->save();
 
     $order->forceFill(['created_at' => now()->subHours(6), 'updated_at' => now()->subHours(6)])->save();
 
