@@ -26,7 +26,7 @@ it('adds owner-aware customer email indexes to canonical contact methods', funct
     config()->set('contacting.database.tables.contact_methods', $tableName);
 
     try {
-        $migration = require dirname(__DIR__, 3) . '/packages/customers/database/migrations/2026_09_08_000007_add_owner_email_uniqueness_to_contact_methods_table.php';
+        $migration = require dirname(__DIR__, 3) . '/packages/customers/database/migrations/2000_05_01_000007_add_owner_email_uniqueness_to_contact_methods_table.php';
         $migration->up();
 
         $indexNames = collect(Schema::getIndexes($tableName))
@@ -102,7 +102,7 @@ it('enforces customer email uniqueness at the database level', function (): void
     config()->set('contacting.database.tables.contact_methods', $tableName);
 
     try {
-        $migration = require dirname(__DIR__, 3) . '/packages/customers/database/migrations/2026_09_08_000007_add_owner_email_uniqueness_to_contact_methods_table.php';
+        $migration = require dirname(__DIR__, 3) . '/packages/customers/database/migrations/2000_05_01_000007_add_owner_email_uniqueness_to_contact_methods_table.php';
         $migration->up();
 
         $customerMorph = (new Customer)->getMorphClass();
