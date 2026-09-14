@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Models\Event;
@@ -103,10 +105,10 @@ it('uses one indistinguishable message for unresolvable and missing addressables
 
         foreach ([
             ['App\\Does\\Not\\Exist', (string) Str::orderedUuid()],
-            [AIArmada\Addressing\Models\AddressCountry::class, (string) Str::orderedUuid()],
+            [AddressCountry::class, (string) Str::orderedUuid()],
         ] as [$type, $id]) {
             try {
-                AIArmada\Addressing\Support\AddressOwnerGuard::assertAddressableIsWritable($type, $id);
+                AddressOwnerGuard::assertAddressableIsWritable($type, $id);
                 $messages[] = null;
             } catch (AuthorizationException $exception) {
                 $messages[] = $exception->getMessage();
