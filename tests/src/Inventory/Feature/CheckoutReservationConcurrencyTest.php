@@ -299,3 +299,92 @@ it('concurrently reserves stock with exactly one winner and no orphaned reservat
         inventoryConcurrencyRestoreDatabase($databasePath, $originalDatabase);
     }
 });
+
+it('retries snapshot-upgrade refusals until a stalled writer releases the lock', function (): void {
+    config()->set('inventory.owner.enabled', false);
+    config()->set('inventory.models.product', InventoryItem::class);
+
+    $item = InventoryItem::create(['name' => 'Retry Budget Item']);
+    $location = InventoryLocation::factory()->create([
+        'name' => 'Retry Budget Location',
+        'code' => 'LOC-RETRY-BUDGET',
+    ]);
+
+    app(InventoryService::class)->receive($item, (string) $location->getKey(), 10);
+
+    $originalDatabase = config('database.connections.testing.database');
+
+    if (! is_string($originalDatabase)) {
+        throw new RuntimeException('The testing database path must be a string.');
+    }
+
+    $databasePath = inventoryConcurrencyCreateDatabaseCopy();
+
+    try {
+        inventoryConcurrencyUseDatabase($databasePath);
+
+        $holdingPath = inventoryConcurrencyTemporaryPath('inv-holding-');
+        $holderPid = pcntl_fork();
+
+        if ($holderPid === -1) {
+            throw new RuntimeException('Unable to fork an inventory lock holder.');
+        }
+
+        if ($holderPid === 0) {
+            config()->set('database.connections.testing.database', $databasePath);
+            DB::purge('testing');
+
+            $connection = DB::connection('testing');
+            $connection->statement('BEGIN IMMEDIATE');
+            $connection->table((new InventoryLevel)->getTable())->limit(1)->update([
+                'quantity_on_hand' => DB::raw('quantity_on_hand'),
+            ]);
+            file_put_contents($holdingPath, 'holding', LOCK_EX);
+
+            usleep(600000);
+
+            $connection->statement('ROLLBACK');
+
+            exit(0);
+        }
+
+        try {
+            $deadline = microtime(true) + 10;
+
+            while (! is_file($holdingPath)) {
+                if (microtime(true) >= $deadline) {
+                    throw new RuntimeException('The inventory lock holder did not take the lock.');
+                }
+
+                usleep(1000);
+            }
+
+            // The holder keeps the write lock for 600ms: longer than the old
+            // 200ms retry budget (which must surface a QueryException) but
+            // well within the ~4s budget, so only the fixed service succeeds.
+            $outcome = app(CheckoutReservationServiceInterface::class)->reserve(
+                reference: 'retry-budget-ref',
+                lines: [new ReservationLine(productId: (string) $item->getKey(), quantity: 6)],
+                ttlSeconds: 900,
+            );
+
+            expect($outcome->state)->toBe('reserved');
+
+            pcntl_waitpid($holderPid, $status);
+        } finally {
+            $status = 0;
+            $state = pcntl_waitpid($holderPid, $status, WNOHANG);
+
+            if ($state === 0 && function_exists('posix_kill')) {
+                posix_kill($holderPid, SIGTERM);
+                pcntl_waitpid($holderPid, $status);
+            }
+
+            if (is_file($holdingPath)) {
+                unlink($holdingPath);
+            }
+        }
+    } finally {
+        inventoryConcurrencyRestoreDatabase($databasePath, $originalDatabase);
+    }
+});
