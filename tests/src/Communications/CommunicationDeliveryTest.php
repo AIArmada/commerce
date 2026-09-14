@@ -20,20 +20,21 @@ use AIArmada\Communications\Models\CommunicationTrackingToken;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
-    $this->communication = Communication::create([
+    $this->communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'delivery-test',
         'status' => CommunicationStatus::Draft,
     ]);
+    $this->communication->save();
 
     $this->recipient = CommunicationRecipient::create([
         'communication_id' => $this->communication->id,
         'role' => 'to',
     ]);
 
-    $this->delivery = CommunicationDelivery::create([
+    $this->delivery = (new CommunicationDelivery)->forceFill([
         'communication_id' => $this->communication->id,
         'recipient_id' => $this->recipient->id,
         'channel' => 'mail',
@@ -42,6 +43,7 @@ beforeEach(function (): void {
         'attempt_count' => 0,
         'max_attempts' => 3,
     ]);
+    $this->delivery->save();
 });
 
 test('creates a delivery record', function (): void {
@@ -98,16 +100,16 @@ test('has many tracking tokens', function (): void {
 });
 
 test('delivery accepts status transitions', function (): void {
-    $this->delivery->update(['status' => DeliveryStatus::Sending]);
+    $this->delivery->forceFill(['status' => DeliveryStatus::Sending])->save();
     expect($this->delivery->fresh()->status->value)->toBe('sending');
 
-    $this->delivery->update(['status' => DeliveryStatus::Sent]);
+    $this->delivery->forceFill(['status' => DeliveryStatus::Sent])->save();
     expect($this->delivery->fresh()->status->value)->toBe('sent');
 
-    $this->delivery->update(['status' => DeliveryStatus::Delivered]);
+    $this->delivery->forceFill(['status' => DeliveryStatus::Delivered])->save();
     expect($this->delivery->fresh()->status->value)->toBe('delivered');
 
-    $this->delivery->update(['status' => DeliveryStatus::Failed, 'failure_message' => 'Bounce']);
+    $this->delivery->forceFill(['status' => DeliveryStatus::Failed, 'failure_message' => 'Bounce'])->save();
     expect($this->delivery->fresh()->status->value)->toBe('failed');
     expect($this->delivery->fresh()->failure_message)->toBe('Bounce');
 });

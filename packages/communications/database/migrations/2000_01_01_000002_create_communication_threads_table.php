@@ -17,7 +17,7 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->string('subject_type')->nullable();
             $table->string('subject_id')->nullable();
-            $table->string('external_thread_id')->nullable()->index();
+            $table->string('external_thread_id')->nullable();
             $table->string('channel')->nullable();
             $table->string('title')->nullable();
             $table->string('status')->index();
@@ -28,6 +28,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 
+            $table->unique(['channel', 'external_thread_id']);
             $table->index(['owner_type', 'owner_id', 'status', 'last_communication_at']);
             $table->index(['subject_type', 'subject_id']);
         });

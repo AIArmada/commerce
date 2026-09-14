@@ -20,7 +20,7 @@ final class ExportAffiliatePayoutCommand extends Command
     public function handle(): int
     {
         $reference = $this->argument('payout');
-        $path = $this->option('path') ?: storage_path('payouts/' . $reference . '.csv');
+        $path = $this->option('path') ?: storage_path('payouts/' . basename((string) $reference) . '.csv');
 
         $runner = new OwnerBatchRunner(
             AffiliatePayout::class,

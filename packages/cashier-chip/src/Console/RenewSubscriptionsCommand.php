@@ -89,6 +89,16 @@ class RenewSubscriptionsCommand extends Command
                         continue;
                     }
 
+                    $reconciled = $this->reconcileUnknownAttempt((string) $subscription->id);
+
+                    if ($reconciled !== null) {
+                        $summary[$reconciled]++;
+
+                        if ($reconciled === 'unknown') {
+                            continue;
+                        }
+                    }
+
                     $attempt = $this->claimRenewalAttempt->handle((string) $subscription->id);
 
                     if (! $attempt instanceof RenewalAttempt) {
@@ -128,6 +138,12 @@ class RenewSubscriptionsCommand extends Command
         }
 
         /** @var Model&BillableContract $billable */
+        if ($attempt->amount_minor === 0) {
+            $this->recordSuccess($attempt, $subscription);
+
+            return 'renewed';
+        }
+
         if (! Cashier::isAmountWithinBounds($attempt->amount_minor)) {
             $this->recordFailure($attempt, $subscription, 'INVALID_RENEWAL_AMOUNT');
 
@@ -152,6 +168,7 @@ class RenewSubscriptionsCommand extends Command
                     [
                         'product_name' => "Subscription: {$subscription->type}",
                         'reference' => "Renewal {$attempt->id}",
+                        'idempotency_key' => "renewal-{$attempt->id}",
                         'metadata' => [
                             'subscription_id' => $subscription->id,
                             'renewal_attempt_id' => $attempt->id,
@@ -191,23 +208,98 @@ class RenewSubscriptionsCommand extends Command
         $billable = $subscription->billable;
         $currency = $billable instanceof BillableContract ? $billable->preferredCurrency() : 'MYR';
 
-        return MoneyFormatter::formatMinor($subscription->calculateSubscriptionAmount(), $currency);
+        return MoneyFormatter::formatMinor($subscription->renewalAmount(), $currency);
     }
 
-    private function recordSuccess(RenewalAttempt $attempt, Subscription $subscription, Payment $payment): void
+    /**
+     * Reconcile the latest 'unknown' renewal attempt before claiming a new one.
+     *
+     * @return string|null The outcome when an unknown attempt was handled, null when none blocks this subscription.
+     */
+    protected function reconcileUnknownAttempt(string $subscriptionId): ?string
+    {
+        $unknown = RenewalAttempt::query()
+            ->where('subscription_id', $subscriptionId)
+            ->where('status', 'unknown')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (! $unknown instanceof RenewalAttempt) {
+            return null;
+        }
+
+        if ($unknown->purchase_id === null) {
+            $reclaimed = DB::transaction(function () use ($unknown): ?RenewalAttempt {
+                $locked = RenewalAttempt::query()->lockForUpdate()->find($unknown->id);
+
+                if (! $locked instanceof RenewalAttempt || $locked->status !== 'unknown') {
+                    return null;
+                }
+
+                $leaseMinutes = max(1, (int) config('cashier-chip.renewals.lease_minutes', 30));
+
+                $locked->forceFill([
+                    'status' => 'claimed',
+                    'last_error_code' => null,
+                    'lease_expires_at' => CarbonImmutable::now()->addMinutes($leaseMinutes),
+                ])->save();
+
+                return $locked;
+            });
+
+            if (! $reclaimed instanceof RenewalAttempt) {
+                return 'skipped';
+            }
+
+            return $this->executeAttempt($reclaimed);
+        }
+
+        try {
+            $payment = new Payment(Cashier::chip()->getPurchase($unknown->purchase_id));
+        } catch (Throwable) {
+            return 'unknown';
+        }
+
+        $subscription = $unknown->subscription()->with('items')->first();
+
+        if (! $subscription instanceof Subscription) {
+            $this->recordSkipped($unknown, 'INVALID_RENEWAL_SUBJECT');
+
+            return 'skipped';
+        }
+
+        if ($payment->isSucceeded()) {
+            $this->recordSuccess($unknown, $subscription, $payment);
+
+            return 'renewed';
+        }
+
+        if ($payment->isPending()) {
+            return 'unknown';
+        }
+
+        $this->recordFailure($unknown, $subscription, 'PAYMENT_DECLINED');
+
+        return 'failed';
+    }
+
+    private function recordSuccess(RenewalAttempt $attempt, Subscription $subscription, ?Payment $payment = null): void
     {
         $changed = DB::transaction(function () use ($attempt, $subscription, $payment): bool {
             $lockedAttempt = RenewalAttempt::query()->lockForUpdate()->find($attempt->id);
             $lockedSubscription = Subscription::query()->with('items')->lockForUpdate()->find($subscription->id);
 
-            if (! $lockedAttempt instanceof RenewalAttempt || ! $lockedSubscription instanceof Subscription || $lockedAttempt->status !== 'claimed') {
+            if (! $lockedAttempt instanceof RenewalAttempt || ! $lockedSubscription instanceof Subscription || ! in_array($lockedAttempt->status, ['claimed', 'unknown'], true)) {
                 return false;
             }
 
-            $nextBillingAt = $lockedSubscription->next_billing_at?->copy()->add(
-                $lockedSubscription->billing_interval ?? 'month',
-                $lockedSubscription->billing_interval_count ?? 1,
-            );
+            $nextBillingAt = $lockedSubscription->next_billing_at instanceof CarbonImmutable
+                ? Subscription::advanceBillingDate(
+                    $lockedSubscription->next_billing_at,
+                    $lockedSubscription->billing_interval,
+                    $lockedSubscription->billing_interval_count
+                )
+                : null;
             $lockedSubscription->forceFill([
                 'chip_status' => SubscriptionStatus::Active,
                 'next_billing_at' => $nextBillingAt,
@@ -216,7 +308,7 @@ class RenewSubscriptionsCommand extends Command
             ])->save();
             $lockedAttempt->forceFill([
                 'status' => 'completed',
-                'purchase_id' => $payment->id(),
+                'purchase_id' => $payment?->id(),
                 'last_error_code' => null,
                 'lease_expires_at' => null,
                 'completed_at' => CarbonImmutable::now(),
@@ -243,7 +335,7 @@ class RenewSubscriptionsCommand extends Command
 
     private function recordSkipped(RenewalAttempt $attempt, string $code): void
     {
-        RenewalAttempt::query()->whereKey($attempt->id)->where('status', 'claimed')->update([
+        RenewalAttempt::query()->whereKey($attempt->id)->whereIn('status', ['claimed', 'unknown'])->update([
             'status' => 'skipped',
             'last_error_code' => $code,
             'lease_expires_at' => null,
@@ -257,7 +349,7 @@ class RenewSubscriptionsCommand extends Command
         $changed = DB::transaction(function () use ($attempt, $subscription, $code): bool {
             $lockedAttempt = RenewalAttempt::query()->lockForUpdate()->find($attempt->id);
 
-            if (! $lockedAttempt instanceof RenewalAttempt || $lockedAttempt->status !== 'claimed') {
+            if (! $lockedAttempt instanceof RenewalAttempt || ! in_array($lockedAttempt->status, ['claimed', 'unknown'], true)) {
                 return false;
             }
 

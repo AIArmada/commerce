@@ -25,10 +25,9 @@ use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Listeners\HandleUserLogin;
+use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartMigrationService;
 use AIArmada\Cart\Storage\DatabaseStorage;
-use AIArmada\Cart\Support\LoginMigrationCacheKey;
-use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -37,7 +36,6 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Session;
@@ -80,6 +78,9 @@ it('can migrate guest cart to user cart', function (): void {
         $table->longText('metadata')->nullable();
         $table->bigInteger('version')->default(1)->index()->comment('Version number for optimistic locking');
         $table->timestamp('expires_at')->nullable()->index();
+        $table->timestamp('expired_at')->nullable();
+        $table->timestamp('checked_out_at')->nullable();
+        $table->timestamp('abandoned_at')->nullable();
         $table->uuid('merged_into_id')->nullable();
         $table->timestamps();
         $table->unique(['owner_scope', 'identifier', 'instance']);
@@ -280,10 +281,11 @@ it('handles user login event automatically when configured', function (): void {
     Auth::shouldReceive('user')->andReturn($this->user);
     Auth::shouldReceive('check')->andReturn(true);
 
-    // Mock session properly - include put() method
+    // Mock session properly - include pull() for the stashed pre-login session id
     Session::shouldReceive('getId')->andReturn('guest_session_login_123');
     Session::shouldReceive('flash')->withAnyArgs()->andReturn(true);
     Session::shouldReceive('put')->withAnyArgs()->andReturn(true);
+    Session::shouldReceive('pull')->with(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY)->andReturn('guest_session_login_123');
 
     // Add items to guest cart directly via storage
     $storage->putItems('guest_session_login_123', 'default', [
@@ -296,12 +298,8 @@ it('handles user login event automatically when configured', function (): void {
         ],
     ]);
 
-    // Set the cache key for migration (matches getUserIdentifier logic)
-    Cache::put(LoginMigrationCacheKey::make('testuser@example.com'), 'guest_session_login_123');
-
     $listener = new HandleUserLogin(
         app(MigrateCartOnLoginAction::class),
-        app(LoginMigrationIdentifierResolver::class),
         app(Container::class),
     );
     $event = new Login('web', $this->user, false);
@@ -360,13 +358,11 @@ it('migrates guest carts into the authenticated owner cart when owner scoping is
         ],
     ]);
 
-    Cache::put(LoginMigrationCacheKey::make('owner-user@example.com'), $guestSessionId);
-
+    Session::shouldReceive('pull')->with(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY)->andReturn($guestSessionId);
     Session::shouldReceive('flash')->withAnyArgs()->andReturnTrue();
 
     $listener = new HandleUserLogin(
         app(MigrateCartOnLoginAction::class),
-        app(LoginMigrationIdentifierResolver::class),
         app(Container::class),
     );
     $event = new Login('web', $owner, false);

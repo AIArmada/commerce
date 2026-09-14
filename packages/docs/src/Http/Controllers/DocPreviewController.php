@@ -17,11 +17,29 @@ final class DocPreviewController
 {
     public function __invoke(Doc | string $doc, DocRenderService $renderer): Response
     {
-        if (! $doc instanceof Doc) {
-            if ((bool) config('docs.owner.enabled', false)) {
+        $ownerEnabled = (bool) config('docs.owner.enabled', false);
+
+        if ($doc instanceof Doc) {
+            if ($ownerEnabled) {
                 try {
-                    /** @var Doc $doc */
-                    $doc = OwnerWriteGuard::findOrFailForOwner(
+                    /** @var Doc $docModel */
+                    $docModel = OwnerWriteGuard::findOrFailForOwner(
+                        Doc::class,
+                        (string) $doc->getKey(),
+                        OwnerContext::CURRENT,
+                        (bool) config('docs.owner.include_global', false),
+                    );
+                } catch (AuthorizationException) {
+                    throw new NotFoundHttpException('Document not found.');
+                }
+            } else {
+                $docModel = $doc;
+            }
+        } else {
+            if ($ownerEnabled) {
+                try {
+                    /** @var Doc $docModel */
+                    $docModel = OwnerWriteGuard::findOrFailForOwner(
                         Doc::class,
                         $doc,
                         OwnerContext::CURRENT,
@@ -31,14 +49,14 @@ final class DocPreviewController
                     throw new NotFoundHttpException('Document not found.');
                 }
             } else {
-                $doc = Doc::query()->find($doc);
+                $docModel = Doc::query()->find($doc);
 
-                if (! $doc instanceof Doc) {
+                if (! $docModel instanceof Doc) {
                     throw new NotFoundHttpException('Document not found.');
                 }
             }
         }
 
-        return response($renderer->renderHtml($doc, RenderAudience::AdminPreview)->toHtml());
+        return response($renderer->renderHtml($docModel, RenderAudience::AdminPreview)->toHtml());
     }
 }

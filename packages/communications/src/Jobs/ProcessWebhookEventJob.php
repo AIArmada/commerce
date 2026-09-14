@@ -88,11 +88,22 @@ final class ProcessWebhookEventJob implements ShouldBeUnique, ShouldQueue
 
     private function fingerprint(): string
     {
-        return 'webhook:' . md5(json_encode([
+        $eventId = $this->payload['id'] ?? $this->payload['event_id'] ?? null;
+
+        if (is_string($eventId) && $eventId !== '') {
+            return 'webhook:' . hash('sha256', implode('|', [
+                $this->provider,
+                $this->ownerType ?? '',
+                $this->ownerId ?? '',
+                $eventId,
+            ]));
+        }
+
+        return 'webhook:' . hash('sha256', json_encode([
             'provider' => $this->provider,
             'ownerType' => $this->ownerType,
             'ownerId' => $this->ownerId,
             'payload' => $this->payload,
-        ]));
+        ], JSON_THROW_ON_ERROR));
     }
 }

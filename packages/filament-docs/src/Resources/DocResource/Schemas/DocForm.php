@@ -14,6 +14,7 @@ use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\Support\DocRichContentStorage;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\KeyValue;
@@ -29,6 +30,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 final class DocForm
 {
@@ -56,13 +58,15 @@ final class DocForm
                                 TextInput::make('doc_number')
                                     ->label('Document Number')
                                     ->helperText('Leave empty to auto-generate')
-                                    ->unique(ignoreRecord: true),
+                                    ->disabledOn('edit')
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => DocsOwnerScope::scopeUniqueRuleToOwner($rule)),
 
                                 Select::make('doc_type')
                                     ->label('Document Type')
                                     ->options($docTypeOptions)
                                     ->default($defaultDocType)
                                     ->required()
+                                    ->disabledOn('edit')
                                     ->live()
                                     ->afterStateUpdated(function (Set $set): void {
                                         $set('doc_template_id', null);
@@ -70,7 +74,7 @@ final class DocForm
 
                                 Select::make('doc_template_id')
                                     ->label('Template')
-                                    ->options(function (Get $get): array {
+                                    ->getSearchResultsUsing(function (string $search, Get $get): array {
                                         $query = OwnerUiScope::apply(DocTemplate::query(), includeGlobal: false);
 
                                         $docType = $get('doc_type');
@@ -78,11 +82,19 @@ final class DocForm
                                             $query->where('doc_type', $docType);
                                         }
 
-                                        /** @var array<string, string> $options */
-                                        $options = $query->orderBy('name')->pluck('name', 'id')->all();
+                                        /** @var array<string, string> $results */
+                                        $results = $query
+                                            ->where('name', 'like', "%{$search}%")
+                                            ->orderBy('name')
+                                            ->limit(50)
+                                            ->pluck('name', 'id')
+                                            ->all();
 
-                                        return $options;
+                                        return $results;
                                     })
+                                    ->getOptionLabelUsing(static fn (mixed $value): ?string => $value === null || $value === ''
+                                        ? null
+                                        : OwnerUiScope::apply(DocTemplate::query(), includeGlobal: false)->whereKey($value)->value('name'))
                                     ->live()
                                     ->searchable()
                                     ->helperText('Optional: Select a template'),
@@ -92,7 +104,7 @@ final class DocForm
                             ->schema([
                                 Select::make('status')
                                     ->label('Status')
-                                    ->options(DocStatus::options())
+                                    ->options(fn (?Doc $record): array => self::statusOptions($record))
                                     ->default(DocStatus::normalize(Draft::class))
                                     ->required(),
 
@@ -111,7 +123,9 @@ final class DocForm
                                 TextInput::make('currency')
                                     ->label('Currency')
                                     ->default((string) config('docs.defaults.currency', 'MYR'))
-                                    ->maxLength(3)
+                                    ->length(3)
+                                    ->regex('/^[A-Za-z]{3}$/')
+                                    ->dehydrateStateUsing(static fn (mixed $state): ?string => is_string($state) ? mb_strtoupper($state) : $state)
                                     ->required()
                                     ->live(),
 
@@ -119,6 +133,8 @@ final class DocForm
                                     ->label('Tax Rate')
                                     ->numeric()
                                     ->default(0)
+                                    ->minValue(0)
+                                    ->maxValue(100)
                                     ->suffix('%')
                                     ->helperText('e.g., 6 for 6%'),
                             ]),
@@ -196,6 +212,7 @@ final class DocForm
                                         TextInput::make('name')
                                             ->label('Item Name')
                                             ->required()
+                                            ->maxLength(255)
                                             ->columnSpan(2),
 
                                         TextInput::make('quantity')
@@ -203,12 +220,14 @@ final class DocForm
                                             ->numeric()
                                             ->default(1)
                                             ->minValue(1)
+                                            ->maxValue(999999)
                                             ->required(),
 
                                         TextInput::make('unit_price_minor')
                                             ->label('Unit Price (minor units)')
                                             ->numeric()
                                             ->minValue(0)
+                                            ->maxValue(99999999999)
                                             ->step(1)
                                             ->dehydrateStateUsing(static fn (mixed $state): int => (int) $state)
                                             ->required(),
@@ -238,6 +257,7 @@ final class DocForm
                                     ->numeric()
                                     ->minValue(0)
                                     ->step(1)
+                                    ->disabledOn('edit')
                                     ->dehydrateStateUsing(static fn (mixed $state): ?int => blank($state) ? null : (int) $state)
                                     ->helperText('Auto-calculated if empty'),
 
@@ -246,6 +266,7 @@ final class DocForm
                                     ->numeric()
                                     ->minValue(0)
                                     ->step(1)
+                                    ->disabledOn('edit')
                                     ->dehydrateStateUsing(static fn (mixed $state): ?int => blank($state) ? null : (int) $state)
                                     ->helperText('Auto-calculated if empty'),
 
@@ -262,6 +283,7 @@ final class DocForm
                                     ->numeric()
                                     ->minValue(0)
                                     ->step(1)
+                                    ->disabledOn('edit')
                                     ->dehydrateStateUsing(static fn (mixed $state): ?int => blank($state) ? null : (int) $state)
                                     ->helperText('Auto-calculated if empty'),
                             ]),
@@ -296,6 +318,23 @@ final class DocForm
                     ->collapsible()
                     ->collapsed(),
             ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function statusOptions(?Doc $record): array
+    {
+        $options = DocStatus::options($record);
+
+        if (! $record?->exists) {
+            return $options;
+        }
+
+        $allowed = [$record->status::class, ...$record->status->transitionableStates()];
+        $allowedValues = array_map(static fn (string $state): string => DocStatus::normalize($state), $allowed);
+
+        return array_intersect_key($options, array_flip($allowedValues));
     }
 
     private static function selectedTemplateUses(Get $get, ?Doc $record, DocTemplateBlockType $blockType): bool

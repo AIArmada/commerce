@@ -8,6 +8,7 @@ use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver;
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
+use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventChangeLog;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Notifications\EventChangeNoticeNotification;
@@ -38,44 +39,62 @@ final class EventNotificationDispatcher implements EventChangeNoticeNotification
             ? new Collection
             : collect($this->audienceResolver->resolve($changeLog->eventUpdate, $audienceScope));
 
-        if ($recipients->isEmpty() && $audienceScope === 'registrants') {
-            $recipients = EventRegistration::query()
-                ->where('event_id', $event->getKey())
-                ->whereIn('status', EventRegistration::CAPACITY_BLOCKING_STATUSES)
-                ->get();
-        }
-
         $notification = new EventChangeNoticeNotification(
             'Event Change Notice',
             $changeLog->reason,
         );
-        $recipients
-            ->filter(static function (mixed $recipient): bool {
-                if (! $recipient instanceof Model) {
-                    return false;
-                }
 
-                $key = $recipient->getKey();
+        if ($recipients->isNotEmpty() || $audienceScope !== 'registrants') {
+            $this->notifyRecipients($recipients, $changeLog, $event, $notification, $audienceScope);
 
-                return is_string($key) && Str::isUuid($key);
-            })
-            ->each(function (Model $recipient) use ($changeLog, $event, $notification, $audienceScope): void {
-                if (! $this->hasMailDestination($recipient, $notification)) {
-                    return;
-                }
+            return;
+        }
 
-                $this->manager->notify($recipient, $notification, CommunicationContextData::from([
-                    'category' => 'transactional',
-                    'purpose' => 'event-change-notice',
-                    'subjectType' => $event->getMorphClass(),
-                    'subjectId' => (string) $event->getKey(),
-                    'metadata' => [
-                        'event_id' => (string) $event->getKey(),
-                        'event_change_log_id' => (string) $changeLog->getKey(),
-                        'audience_scope' => $audienceScope,
-                    ],
-                ]));
+        EventRegistration::query()
+            ->where('event_id', $event->getKey())
+            ->whereIn('status', EventRegistration::CAPACITY_BLOCKING_STATUSES)
+            ->chunkById(500, function ($registrations) use ($changeLog, $event, $notification, $audienceScope): void {
+                $this->notifyRecipients($registrations, $changeLog, $event, $notification, $audienceScope);
             });
+    }
+
+    /**
+     * @param  iterable<int, mixed>  $recipients
+     */
+    private function notifyRecipients(
+        iterable $recipients,
+        EventChangeLog $changeLog,
+        Event $event,
+        EventChangeNoticeNotification $notification,
+        string $audienceScope,
+    ): void {
+        foreach ($recipients as $recipient) {
+            if (! $recipient instanceof Model) {
+                continue;
+            }
+
+            $key = $recipient->getKey();
+
+            if (! is_string($key) || ! Str::isUuid($key)) {
+                continue;
+            }
+
+            if (! $this->hasMailDestination($recipient, $notification)) {
+                continue;
+            }
+
+            $this->manager->notify($recipient, $notification, CommunicationContextData::from([
+                'category' => 'transactional',
+                'purpose' => 'event-change-notice',
+                'subjectType' => $event->getMorphClass(),
+                'subjectId' => (string) $event->getKey(),
+                'metadata' => [
+                    'event_id' => (string) $event->getKey(),
+                    'event_change_log_id' => (string) $changeLog->getKey(),
+                    'audience_scope' => $audienceScope,
+                ],
+            ]));
+        }
     }
 
     private function hasMailDestination(Model $recipient, EventChangeNoticeNotification $notification): bool

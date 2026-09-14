@@ -18,7 +18,7 @@ it('rejects an expired callback token', function (): void {
     config()->set('checkout.payment.callback_token_ttl', 3600);
     config()->set('checkout.redirects.failure', '/checkout/failed');
 
-    $session = CheckoutSession::create([
+    $session = CheckoutSession::forceCreate([
         'cart_id' => 'callback-token-expired',
         'status' => AwaitingPayment::class,
         'selected_payment_gateway' => 'chip',
@@ -51,7 +51,7 @@ it('consumes a successful callback token without reprocessing a replay', functio
         ->once()
         ->andReturnUsing(function (CheckoutSession $session) use ($orderId): CheckoutResult {
             $session->transitionStatus(Completed::class);
-            $session->update([
+            $session->persistState([
                 'order_id' => $orderId,
                 'payment_redirect_url' => null,
             ]);
@@ -60,7 +60,7 @@ it('consumes a successful callback token without reprocessing a replay', functio
         });
     app()->instance(CheckoutServiceInterface::class, $checkoutService);
 
-    $session = CheckoutSession::create([
+    $session = CheckoutSession::forceCreate([
         'cart_id' => 'callback-token-single-use',
         'status' => AwaitingPayment::class,
         'selected_payment_gateway' => 'chip',
@@ -100,7 +100,7 @@ it('rate-limits callback attempts per session before token processing', function
     $checkoutService->shouldReceive('handlePaymentCallback')->never();
     app()->instance(CheckoutServiceInterface::class, $checkoutService);
 
-    $session = CheckoutSession::create([
+    $session = CheckoutSession::forceCreate([
         'cart_id' => 'callback-token-rate-limited',
         'status' => AwaitingPayment::class,
         'selected_payment_gateway' => 'chip',

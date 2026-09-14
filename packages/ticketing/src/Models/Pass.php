@@ -6,6 +6,7 @@ namespace AIArmada\Ticketing\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Seating\Actions\ReleaseAllocationsAction;
 use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Ticketing\Database\Factories\PassFactory;
 use AIArmada\Ticketing\Events\PassCancelled;
@@ -90,6 +91,18 @@ class Pass extends Model
                 ['relation' => 'ticketable', 'required' => true],
                 ['relation' => 'registration'],
             ]);
+        });
+
+        static::deleting(function (self $pass): void {
+            if (class_exists(ReleaseAllocationsAction::class)) {
+                app(ReleaseAllocationsAction::class)->handle(
+                    allocToType: $pass->getMorphClass(),
+                    allocToId: (string) $pass->getKey(),
+                );
+            }
+
+            $pass->holderHistory()->delete();
+            $pass->transferHistory()->delete();
         });
     }
 

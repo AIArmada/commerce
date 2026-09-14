@@ -55,7 +55,8 @@ final class TaxClassesTable
                     ->label('Active'),
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.classes.update') ?? false),
             ])
             ->toolbarActions([
                 BulkAction::make('delete')

@@ -10,6 +10,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\LaravelData\Data;
+use Throwable;
 
 /**
  * Enriched webhook payload with local context.
@@ -115,7 +116,11 @@ final class EnrichedWebhookPayload extends Data
         }
 
         if (is_string($candidate) && $candidate !== '') {
-            return CarbonImmutable::parse($candidate);
+            try {
+                return CarbonImmutable::parse($candidate);
+            } catch (Throwable) {
+                return null;
+            }
         }
 
         return null;

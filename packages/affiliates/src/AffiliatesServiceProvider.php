@@ -106,7 +106,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(DailyAggregationService::class);
         $this->app->singleton(FraudDetectionService::class);
         $this->app->singleton(PayoutProcessorFactory::class);
-        $this->app->singleton(CommissionRuleEngine::class);
+        $this->app->scoped(CommissionRuleEngine::class);
         $this->app->singleton(ProgramService::class);
         $this->app->singleton(Support\Catalog\PromotableRegistry::class);
         $this->app->singleton(ProgramCatalogService::class);

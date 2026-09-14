@@ -72,3 +72,12 @@ host activity logger when lifecycle audit records are required.
 Restoring an organization makes its status active but retains terminal
 timestamps as historical facts. Use `isActive()` together with the lifecycle
 timestamps when presenting current state.
+
+Only active organizations can be made public; publishing a suspended or
+archived organization throws. Restoring a public organization returns it to
+private so visibility is never re-published silently — publish it again
+explicitly once reviewed. Going private clears `published_at`, mirroring how
+publishing clears `privatized_at`. Creation input is validated up front
+(name required within 255 characters, string slug and description), and
+lifecycle fields (`status`, `visibility`, timestamps, `created_by`) are not
+mass-assignable: use the lifecycle actions, which write them explicitly.

@@ -22,6 +22,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class SendInstruction extends ChipIntegerModel
 {
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'id',
+        'bank_account_id',
+        'amount',
+        'email',
+        'description',
+        'reference',
+        'send_recipient_receipt',
+        'state',
+        'receipt_url',
+        'slug',
+        'created_at',
+        'updated_at',
+    ];
+
     public function amountMoney(): Attribute
     {
         return Attribute::get(function (): ?Money {

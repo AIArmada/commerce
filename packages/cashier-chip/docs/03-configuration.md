@@ -72,7 +72,10 @@ coupon paths still fail loudly rather than silently skipping validation or usage
 | --- | --- |
 | `path` | Webhook route prefix |
 | `webhooks.secret` | CHIP webhook secret |
-| `webhooks.verify_signature` | Enable or disable webhook signature verification |
+| `redirects.allowed_hosts` | Optional allowlist for redirect/callback URL hosts (empty allows any host) |
+
+Signature verification is owned by the `chip` package: use `chip.webhooks.verify_signature`
+(`CHIP_WEBHOOK_VERIFY_SIGNATURE`). `cashier-chip` only stores the shared secret for display.
 
 ## Invoices
 

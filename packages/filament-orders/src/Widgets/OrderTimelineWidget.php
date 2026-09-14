@@ -140,6 +140,7 @@ final class OrderTimelineWidget extends Widget implements HasForms
                 Forms\Components\Textarea::make('content')
                     ->label('Note')
                     ->required()
+                    ->maxLength(2000)
                     ->rows(2)
                     ->placeholder('Add a note to this order timeline...'),
 
@@ -149,6 +150,7 @@ final class OrderTimelineWidget extends Widget implements HasForms
                         'internal' => 'Internal Only',
                         'customer' => 'Customer Visible',
                     ])
+                    ->in(['internal', 'customer'])
                     ->default('internal')
                     ->helperText('Customer will see customer-visible notes in their order history'),
             ])
@@ -174,10 +176,21 @@ final class OrderTimelineWidget extends Widget implements HasForms
             return;
         }
 
+        $note = self::normalizeNoteInput($data);
+
+        if ($note === null) {
+            Notification::make()
+                ->title('Note must be 1–2000 characters with a valid visibility')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         try {
             $this->record->orderNotes()->create([
-                'content' => $data['content'],
-                'visibility' => $data['visibility'] ?? 'internal',
+                'content' => $note['content'],
+                'visibility' => $note['visibility'],
                 'user_id' => Filament::auth()->id(),
             ]);
         } catch (Throwable $e) {
@@ -201,5 +214,28 @@ final class OrderTimelineWidget extends Widget implements HasForms
             ->title('Note added successfully')
             ->success()
             ->send();
+    }
+
+    /**
+     * Server-side note guard: form rules are client-bypassable over Livewire,
+     * so tampered payloads are re-validated here. Returns null when invalid.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{content: string, visibility: string}|null
+     */
+    public static function normalizeNoteInput(array $data): ?array
+    {
+        $content = $data['content'] ?? null;
+        $visibility = $data['visibility'] ?? 'internal';
+
+        if (! is_string($content) || mb_trim($content) === '' || mb_strlen($content) > 2000) {
+            return null;
+        }
+
+        if (! in_array($visibility, ['internal', 'customer'], true)) {
+            return null;
+        }
+
+        return ['content' => $content, 'visibility' => $visibility];
     }
 }

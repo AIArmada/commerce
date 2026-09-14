@@ -42,7 +42,8 @@ final class DevicesReport extends ReportPage implements HasTable
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-signals.features.devices_report', true);
+        return (bool) config('filament-signals.features.devices_report', true)
+            && static::canAccess();
     }
 
     /**

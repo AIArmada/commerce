@@ -29,6 +29,7 @@ final class TopSellingProductsWidget extends BaseWidget
         $query = $this->withResolvedOwnerOrExplicitGlobal(function (): Builder {
             return Product::query()
                 ->forOwner()
+                ->withCount(['variants'])
                 ->where('status', ProductStatus::Active)
                 ->latest()
                 ->limit(10);
@@ -81,11 +82,12 @@ final class TopSellingProductsWidget extends BaseWidget
 
     private function withResolvedOwnerOrExplicitGlobal(callable $callback): mixed
     {
-        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
-            return $callback();
-        }
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            OwnerContext::resolve(),
+            'Recent products require an owner context or explicit global context.',
+        );
 
-        return OwnerContext::withOwner(null, static fn (): mixed => $callback());
+        return $callback();
     }
 
     private function getVariantsCount(Product $record): int

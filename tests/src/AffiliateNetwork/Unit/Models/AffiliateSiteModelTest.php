@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
+use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -94,6 +97,28 @@ describe('AffiliateSite Model', function (): void {
             $site->delete();
 
             expect(AffiliateOffer::whereIn('id', $offers->pluck('id'))->count())->toBe(0);
+        });
+
+        test('deleting site deletes offer grandchildren', function (): void {
+            $site = AffiliateSite::factory()->verified()->create();
+            $offer = AffiliateOffer::factory()->forSite($site)->create();
+            $affiliate = createTestAffiliate();
+
+            $creative = AffiliateOfferCreative::factory()->forOffer($offer)->create();
+            $application = AffiliateOfferApplication::factory()
+                ->forOffer($offer)
+                ->forAffiliate($affiliate)
+                ->create();
+            $link = AffiliateOfferLink::factory()
+                ->forOffer($offer)
+                ->forAffiliate($affiliate)
+                ->create();
+
+            $site->delete();
+
+            expect(AffiliateOfferCreative::query()->whereKey($creative->id)->count())->toBe(0)
+                ->and(AffiliateOfferApplication::query()->whereKey($application->id)->count())->toBe(0)
+                ->and(AffiliateOfferLink::query()->whereKey($link->id)->count())->toBe(0);
         });
     });
 

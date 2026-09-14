@@ -8,6 +8,7 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerNote;
 use AIArmada\Customers\Policies\CustomerNotePolicy;
+use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -28,14 +29,50 @@ function bindNotePolicyOwnerResolver(?Model $owner): void
 }
 
 /**
+ * @param  array<string>  $permissions
+ */
+function createNotePolicyTestUser(array $permissions): Authorizable
+{
+    return new class($permissions) implements Authorizable
+    {
+        /**
+         * @param  array<string>  $permissions
+         */
+        public function __construct(private readonly array $permissions) {}
+
+        public function can($abilities, $arguments = []): bool
+        {
+            $abilities = is_array($abilities) ? $abilities : [$abilities];
+
+            return array_intersect($abilities, $this->permissions) !== [];
+        }
+    };
+}
+
+/**
  * @param  array<string, mixed>  $attributes
  */
 function createNotePolicyCustomer(array $attributes, ?Model $owner = null): Customer
 {
-    /** @var Customer $customer */
-    $customer = OwnerContext::withOwner($owner, fn (): Customer => Customer::query()->create($attributes));
+    $restricted = [];
 
-    return $customer;
+    foreach (['user_id', 'status', 'is_guest', 'accepts_marketing', 'created_at', 'updated_at'] as $key) {
+        if (array_key_exists($key, $attributes)) {
+            $restricted[$key] = $attributes[$key];
+            unset($attributes[$key]);
+        }
+    }
+
+    return OwnerContext::withOwner($owner, function () use ($attributes, $restricted): Customer {
+        /** @var Customer $customer */
+        $customer = Customer::query()->create($attributes);
+
+        if ($restricted !== []) {
+            $customer->forceFill($restricted)->save();
+        }
+
+        return $customer;
+    });
 }
 
 /**
@@ -64,16 +101,23 @@ beforeEach(function (): void {
     }
 
     $this->policy = new CustomerNotePolicy;
-    $this->user = new class
-    {
-        public string $id = 'user-a';
-    };
+    $this->permitted = createNotePolicyTestUser([
+        'customers.notes.view',
+        'customers.notes.create',
+        'customers.notes.update',
+        'customers.notes.delete',
+    ]);
+    $this->denied = createNotePolicyTestUser([]);
 });
 
 describe('CustomerNotePolicy', function (): void {
     describe('viewAny', function (): void {
-        it('allows viewing any notes when authenticated', function (): void {
-            expect($this->policy->viewAny($this->user))->toBeTrue();
+        it('allows viewing any notes with the view permission', function (): void {
+            expect($this->policy->viewAny($this->permitted))->toBeTrue();
+        });
+
+        it('denies viewing any notes without the view permission', function (): void {
+            expect($this->policy->viewAny($this->denied))->toBeFalse();
         });
 
         it('denies viewing any notes when unauthenticated', function (): void {
@@ -100,7 +144,7 @@ describe('CustomerNotePolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->view($this->user, $note))->toBeTrue();
+            expect($this->policy->view($this->permitted, $note))->toBeTrue();
         });
 
         it('denies viewing owner-scoped note without owner resolver', function (): void {
@@ -123,7 +167,7 @@ describe('CustomerNotePolicy', function (): void {
                 'owner_id' => $owner->getKey(),
             ], $owner);
 
-            expect($this->policy->view($this->user, $note))->toBeFalse();
+            expect($this->policy->view($this->permitted, $note))->toBeFalse();
         });
 
         it('denies cross-tenant note access when owner resolver is set', function (): void {
@@ -166,14 +210,39 @@ describe('CustomerNotePolicy', function (): void {
 
             bindNotePolicyOwnerResolver($ownerA);
 
-            expect($this->policy->view($this->user, $noteA))->toBeTrue()
-                ->and($this->policy->view($this->user, $noteB))->toBeFalse();
+            expect($this->policy->view($this->permitted, $noteA))->toBeTrue()
+                ->and($this->policy->view($this->permitted, $noteB))->toBeFalse();
+        });
+
+        it('denies viewing an in-scope note without the view permission', function (): void {
+            $customer = createNotePolicyCustomer([
+                'first_name' => 'Global',
+                'last_name' => 'Customer',
+                'email' => 'global-noview-note-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => null,
+                'owner_id' => null,
+            ], null);
+
+            $note = createPolicyNote([
+                'customer_id' => $customer->id,
+                'content' => 'No view note content',
+                'is_internal' => true,
+                'owner_type' => null,
+                'owner_id' => null,
+            ], null);
+
+            expect($this->policy->view($this->denied, $note))->toBeFalse();
         });
     });
 
     describe('create', function (): void {
-        it('allows creating notes when authenticated', function (): void {
-            expect($this->policy->create($this->user))->toBeTrue();
+        it('allows creating notes with the create permission', function (): void {
+            expect($this->policy->create($this->permitted))->toBeTrue();
+        });
+
+        it('denies creating notes without the create permission', function (): void {
+            expect($this->policy->create($this->denied))->toBeFalse();
         });
 
         it('denies creating notes when unauthenticated', function (): void {
@@ -200,7 +269,28 @@ describe('CustomerNotePolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->update($this->user, $note))->toBeTrue();
+            expect($this->policy->update($this->permitted, $note))->toBeTrue();
+        });
+
+        it('denies updating an in-scope note without the update permission', function (): void {
+            $customer = createNotePolicyCustomer([
+                'first_name' => 'Global',
+                'last_name' => 'Customer',
+                'email' => 'global-noupdate-note-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => null,
+                'owner_id' => null,
+            ], null);
+
+            $note = createPolicyNote([
+                'customer_id' => $customer->id,
+                'content' => 'No update note content',
+                'is_internal' => false,
+                'owner_type' => null,
+                'owner_id' => null,
+            ], null);
+
+            expect($this->policy->update($this->denied, $note))->toBeFalse();
         });
 
         it('denies updating note when unauthenticated', function (): void {
@@ -244,7 +334,28 @@ describe('CustomerNotePolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->delete($this->user, $note))->toBeTrue();
+            expect($this->policy->delete($this->permitted, $note))->toBeTrue();
+        });
+
+        it('denies deleting an in-scope note without the delete permission', function (): void {
+            $customer = createNotePolicyCustomer([
+                'first_name' => 'Global',
+                'last_name' => 'Customer',
+                'email' => 'global-nodelete-note-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => null,
+                'owner_id' => null,
+            ], null);
+
+            $note = createPolicyNote([
+                'customer_id' => $customer->id,
+                'content' => 'No delete note content',
+                'is_internal' => true,
+                'owner_type' => null,
+                'owner_id' => null,
+            ], null);
+
+            expect($this->policy->delete($this->denied, $note))->toBeFalse();
         });
 
         it('denies deleting note when unauthenticated', function (): void {

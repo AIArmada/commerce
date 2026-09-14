@@ -11,6 +11,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use LogicException;
+use Spatie\Permission\Exceptions\RoleDoesNotExist;
 use Spatie\Permission\Guard;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -118,8 +119,13 @@ final class MembershipRoleSyncService
     public function revokeFromUser(Model $subject, Model $user, MemberRole $role): void
     {
         $this->inSubjectTeam($subject, function () use ($role, $user): void {
-            /** @phpstan-ignore method.notFound */
-            $user->removeRole($role->spatieRoleName());
+            try {
+                /** @phpstan-ignore method.notFound */
+                $user->removeRole($role->spatieRoleName());
+            } catch (RoleDoesNotExist) {
+                // The mapped role row is missing in this team (legacy member,
+                // pruned role, or team-scope toggle). Detaching is a no-op.
+            }
         });
     }
 

@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTicketing\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource\RelationManagers\TicketTypeComponentsRelationManager;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource\RelationManagers\TicketTypeProductsRelationManager;
+use AIArmada\FilamentTicketing\Support\TicketableReferenceGuard;
+use AIArmada\FilamentTicketing\Support\TicketMoney;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Ticketing\Enums\TicketAccessType;
 use AIArmada\Ticketing\Enums\TicketTypeStatus;
@@ -14,6 +18,7 @@ use AIArmada\Ticketing\Enums\TicketTypeVisibility;
 use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 use BackedEnum;
+use Closure;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\MorphToSelect;
@@ -23,10 +28,13 @@ use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
 final class TicketTypeResource extends Resource
@@ -34,6 +42,49 @@ final class TicketTypeResource extends Resource
     protected static ?string $model = TicketType::class;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    /**
+     * Whether the purchase-quantity bounds are inverted. Empty bounds are
+     * always acceptable.
+     */
+    public static function minQuantityExceedsMax(mixed $min, mixed $max): bool
+    {
+        if ($min === null || $min === '' || $max === null || $max === '') {
+            return false;
+        }
+
+        return (int) $min > (int) $max;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('ticket-type.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('ticket-type.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('ticket-type.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('ticket-type.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('ticket-type.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
@@ -72,8 +123,11 @@ final class TicketTypeResource extends Resource
                     ->types(
                         fn (TicketableTypeRegistry $registry) => collect($registry->all())->map(
                             fn (string $class): MorphToSelect\Type => MorphToSelect\Type::make($class)
-                                ->titleAttribute('name')
-                                ->searchColumns(['name', 'code', 'title'])
+                                ->titleAttribute(TicketableReferenceGuard::titleAttributeFor($class))
+                                ->searchColumns(TicketableReferenceGuard::searchColumnsFor($class))
+                                ->modifyOptionsQueryUsing(
+                                    static fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false)
+                                )
                         )->toArray()
                     )
                     ->searchable()
@@ -85,7 +139,14 @@ final class TicketTypeResource extends Resource
                             ->maxLength(255),
                         TextInput::make('code')
                             ->required()
-                            ->maxLength(50),
+                            ->maxLength(50)
+                            // Mirrors the database unique on
+                            // (ticketable_type, ticketable_id, code).
+                            ->unique(ignoreRecord: true, modifyRuleUsing: static function (Unique $rule, Get $get): Unique {
+                                return $rule
+                                    ->where('ticketable_type', (string) $get('ticketable_type'))
+                                    ->where('ticketable_id', (string) $get('ticketable_id'));
+                            }),
                         Textarea::make('description')
                             ->maxLength(65535)
                             ->columnSpanFull(),
@@ -97,19 +158,42 @@ final class TicketTypeResource extends Resource
                             ->nullable(),
                         TextInput::make('price')
                             ->numeric()
-                            ->prefix('$'),
+                            ->minValue(0)
+                            ->suffix(fn (Get $get): string => (string) ($get('currency') ?? 'MYR'))
+                            ->helperText('Ticket price in major units; stored as integer minor units.')
+                            ->formatStateUsing(
+                                static fn (?int $state): ?string => TicketMoney::toDisplay($state)
+                            )
+                            ->dehydrateStateUsing(
+                                static fn (?string $state): ?int => TicketMoney::toMinor($state)
+                            ),
                         TextInput::make('currency')
+                            ->alpha()
                             ->maxLength(3)
-                            ->default('USD'),
+                            ->default('MYR')
+                            ->dehydrateStateUsing(
+                                static fn (?string $state): ?string => $state !== null ? mb_strtoupper($state) : null
+                            ),
                         TextInput::make('admits_quantity')
                             ->numeric()
+                            ->integer()
+                            ->minValue(1)
                             ->required()
                             ->default(1),
                         TextInput::make('min_quantity')
                             ->numeric()
-                            ->nullable(),
+                            ->integer()
+                            ->minValue(0)
+                            ->nullable()
+                            ->rules([static fn (Get $get): Closure => static function (string $attribute, mixed $value, Closure $fail) use ($get): void {
+                                if (self::minQuantityExceedsMax($value, $get('max_quantity'))) {
+                                    $fail('The minimum quantity must not exceed the maximum quantity.');
+                                }
+                            }]),
                         TextInput::make('max_quantity')
                             ->numeric()
+                            ->integer()
+                            ->minValue(0)
                             ->nullable(),
                     ])->columns(2),
                 Section::make('Sales & Visibility')
@@ -123,7 +207,8 @@ final class TicketTypeResource extends Resource
                         DateTimePicker::make('sales_starts_at')
                             ->nullable(),
                         DateTimePicker::make('sales_ends_at')
-                            ->nullable(),
+                            ->nullable()
+                            ->rules(['after_or_equal:sales_starts_at']),
                         TextInput::make('sort_order')
                             ->numeric()
                             ->default(0),
@@ -144,7 +229,12 @@ final class TicketTypeResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => TicketAccessType::tryFrom($state)?->color() ?? 'gray'),
                 Tables\Columns\TextColumn::make('price')
-                    ->money(fn (TicketType $record): string => $record->currency ?? 'USD'),
+                    ->formatStateUsing(
+                        static fn (?int $state, TicketType $record): string => $state === null
+                            ? '—'
+                            : MoneyFormatter::formatMinor($state, $record->currency ?? 'MYR')
+                    )
+                    ->alignEnd(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => TicketTypeStatus::tryFrom($state)?->color() ?? 'gray'),
@@ -193,7 +283,12 @@ final class TicketTypeResource extends Resource
                         TextEntry::make('description'),
                         TextEntry::make('access_type')->badge(),
                         TextEntry::make('seating_mode'),
-                        TextEntry::make('price')->money(fn (TicketType $record): string => $record->currency ?? 'USD'),
+                        TextEntry::make('price')
+                            ->formatStateUsing(
+                                static fn (?int $state, TicketType $record): string => $state === null
+                                    ? '—'
+                                    : MoneyFormatter::formatMinor($state, $record->currency ?? 'MYR')
+                            ),
                         TextEntry::make('currency'),
                         TextEntry::make('admits_quantity'),
                         TextEntry::make('min_quantity'),

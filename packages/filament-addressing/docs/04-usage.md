@@ -164,6 +164,8 @@ final class VenueResource
 
 The relation manager is opt-in. It is never auto-attached to other resources.
 
+When owner mode is enabled, the attach record picker only offers addresses owned by the current owner, and the edit/remove row actions are hidden and blocked (403) for addresses owned by anyone else.
+
 ## Enable Central Address Resource
 
 Only enable this for trusted admin panels.

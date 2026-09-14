@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Schemas;
 
+use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
+use AIArmada\FilamentContacting\Support\ContactingLinks;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -15,6 +17,8 @@ final class SocialProfileInfolistSchema
      */
     public static function make(): array
     {
+        $openUrlActions = app(ContactingFilamentConfig::class)->openUrlActions();
+
         return [
             Section::make('Social Profile')
                 ->schema([
@@ -26,7 +30,7 @@ final class SocialProfileInfolistSchema
                     TextEntry::make('handle'),
 
                     TextEntry::make('url')
-                        ->url(fn (?string $state): ?string => $state)
+                        ->url(fn (?string $state): ?string => $openUrlActions ? ContactingLinks::safeHttpUrl($state) : null)
                         ->visible(fn (?string $state): bool => $state !== null && $state !== ''),
 
                     TextEntry::make('display_name'),

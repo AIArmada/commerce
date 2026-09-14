@@ -6,6 +6,7 @@ namespace AIArmada\FilamentEngagement\Actions;
 
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
+use AIArmada\FilamentEngagement\Support\AuthenticatedUser;
 use Filament\Actions\Action;
 
 final class BookmarkAction
@@ -17,7 +18,7 @@ final class BookmarkAction
             ->icon('heroicon-o-bookmark')
             ->action(function ($livewire, $record): void {
                 $record = ActionRecordResolver::resolveOrFail($record);
-                app(EngagementManager::class)->bookmark(auth()->user(), $record);
+                app(EngagementManager::class)->bookmark(AuthenticatedUser::resolve(), $record);
             });
     }
 }

@@ -47,7 +47,7 @@ final readonly class HandleCheckoutPaymentCallback
             if ($callbackType === 'success' && $result->success) {
                 $paymentData = $processedSession->payment_data ?? [];
                 $paymentData['callback_token_consumed_at'] = CarbonImmutable::now()->toIso8601String();
-                $processedSession->update(['payment_data' => $paymentData]);
+                $processedSession->persistState(['payment_data' => $paymentData]);
                 $processedSession->refresh();
             }
 

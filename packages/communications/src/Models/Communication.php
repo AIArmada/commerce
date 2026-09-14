@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -75,15 +76,12 @@ final class Communication extends Model
         'batch_id',
         'thread_id',
         'parent_id',
-        'subject_type',
         'subject_id',
-        'sender_type',
         'sender_id',
         'direction',
         'category',
         'priority',
         'purpose',
-        'status',
         'idempotency_key',
         'locale',
         'timezone',
@@ -221,12 +219,17 @@ final class Communication extends Model
     protected static function booted(): void
     {
         static::deleting(function (Communication $communication): void {
-            self::deleteRelatedModels($communication->recipients());
-            self::deleteRelatedModels($communication->contents());
-            self::deleteRelatedModels($communication->deliveries());
-            self::deleteRelatedModels($communication->events());
-            self::deleteRelatedModels($communication->references());
-            self::deleteRelatedModels($communication->attachments());
+            DB::transaction(function () use ($communication): void {
+                $communication->children()->update(['parent_id' => null]);
+
+                $communication->recipients()->delete();
+                $communication->contents()->delete();
+                $communication->events()->delete();
+                $communication->references()->delete();
+                $communication->attachments()->delete();
+
+                self::deleteRelatedModels($communication->deliveries());
+            });
         });
     }
 

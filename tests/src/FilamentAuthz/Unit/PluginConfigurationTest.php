@@ -125,6 +125,17 @@ describe('Permission Format Settings', function (): void {
 
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
+
+    it('defaults the permission case to camel', function (): void {
+        expect(FilamentAuthzPlugin::make()->getPermissionCase())->toBe('camel');
+    });
+
+    it('honors an explicit permission case over the default', function (): void {
+        $plugin = FilamentAuthzPlugin::make()
+            ->permissionCase('snake');
+
+        expect($plugin->getPermissionCase())->toBe('snake');
+    });
 });
 
 describe('Exclude Settings', function (): void {

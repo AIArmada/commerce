@@ -10,6 +10,7 @@ use AIArmada\Communications\Actions\RetryCommunicationDeliveryAction;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Filament\Communications\Resources\CommunicationDeliveryResource\Pages;
+use AIArmada\Filament\Communications\Support\CommunicationFilterOptions;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -21,6 +22,8 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use RuntimeException;
 
 final class CommunicationDeliveryResource extends Resource
 {
@@ -35,7 +38,8 @@ final class CommunicationDeliveryResource extends Resource
 
     public static function getNavigationSort(): ?int
     {
-        return config('filament-communications.navigation.sort');
+        return config('filament-communications.navigation.sort')
+            + (int) config('filament-communications.navigation.offsets.deliveries', 0);
     }
 
     /**
@@ -71,21 +75,9 @@ final class CommunicationDeliveryResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(collect(DeliveryStatus::cases())->pluck('value', 'value')),
                 Tables\Filters\SelectFilter::make('channel')
-                    ->options([
-                        'email' => 'Email',
-                        'sms' => 'SMS',
-                        'push' => 'Push',
-                        'in_app' => 'In-App',
-                    ]),
+                    ->options(CommunicationFilterOptions::channels()),
                 Tables\Filters\SelectFilter::make('provider')
-                    ->options([
-                        'ses' => 'SES',
-                        'sendgrid' => 'SendGrid',
-                        'twilio' => 'Twilio',
-                        'slack' => 'Slack',
-                        'fcm' => 'FCM',
-                        'apns' => 'APNS',
-                    ]),
+                    ->options(CommunicationFilterOptions::providers()),
             ])
             ->actions([
                 Action::make('retry')
@@ -95,13 +87,23 @@ final class CommunicationDeliveryResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn (CommunicationDelivery $record): bool => $record->status === DeliveryStatus::Failed)
                     ->action(function (CommunicationDelivery $record): void {
-                        $delivery = OwnerWriteGuard::findOrFailForOwner(
-                            CommunicationDelivery::class,
-                            $record->getKey(),
-                            includeGlobal: false,
-                        );
+                        try {
+                            $delivery = OwnerWriteGuard::findOrFailForOwner(
+                                CommunicationDelivery::class,
+                                $record->getKey(),
+                                includeGlobal: false,
+                            );
 
-                        app(RetryCommunicationDeliveryAction::class)->handle((string) $delivery->getKey());
+                            app(RetryCommunicationDeliveryAction::class)->handle((string) $delivery->getKey());
+                        } catch (ModelNotFoundException | RuntimeException $exception) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Delivery retry failed')
+                                ->body($exception->getMessage())
+                                ->send();
+
+                            return;
+                        }
 
                         Notification::make()
                             ->success()

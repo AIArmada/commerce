@@ -17,14 +17,28 @@ final class DefaultEventRegistrationEligibility implements EventRegistrationElig
 
     public function ensureEligible(EventRegistrationScope $scope): void
     {
-        if ($scope->occurrence === null || $this->lifecyclePolicy->canAcceptRegistrations($scope->occurrence)) {
-            return;
+        if (! $this->lifecyclePolicy->canAcceptRegistrationsForEvent($scope->event)) {
+            throw new EventRegistrationNotAvailableException(sprintf(
+                'Registration is not available for event %s while it is %s.',
+                $scope->event->getKey(),
+                $scope->event->status->getValue(),
+            ));
         }
 
-        throw new EventRegistrationNotAvailableException(sprintf(
-            'Registration is not available for occurrence %s while it is %s.',
-            $scope->occurrence->getKey(),
-            $scope->occurrence->status->getValue(),
-        ));
+        if ($scope->occurrence !== null && ! $this->lifecyclePolicy->canAcceptRegistrations($scope->occurrence)) {
+            throw new EventRegistrationNotAvailableException(sprintf(
+                'Registration is not available for occurrence %s while it is %s.',
+                $scope->occurrence->getKey(),
+                $scope->occurrence->status->getValue(),
+            ));
+        }
+
+        if ($scope->session !== null && ! $this->lifecyclePolicy->canAcceptRegistrationsForSession($scope->session)) {
+            throw new EventRegistrationNotAvailableException(sprintf(
+                'Registration is not available for session %s while it is %s.',
+                $scope->session->getKey(),
+                $scope->session->status->getValue(),
+            ));
+        }
     }
 }

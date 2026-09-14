@@ -82,6 +82,7 @@ return [
         'include_global' => env('CHIP_OWNER_INCLUDE_GLOBAL', false),
         'auto_assign_on_create' => env('CHIP_OWNER_AUTO_ASSIGN', true),
         'webhook_brand_id_map' => [],
+        'send_webhook_owner' => [],
     ],
 
     /*
@@ -110,7 +111,7 @@ return [
     'webhooks' => [
         'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
         'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhooks'),
-        'middleware' => ['api'],
+        'middleware' => ['api', 'throttle:120,1'],
         'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
         'log_payloads' => env('CHIP_WEBHOOK_LOG_PAYLOADS', false),
         'store_webhooks' => env('CHIP_WEBHOOK_STORE', true),

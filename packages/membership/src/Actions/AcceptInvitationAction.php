@@ -18,13 +18,13 @@ final class AcceptInvitationAction
 {
     use AsAction;
 
-    public function handle(MembershipInvitation $invitation, Model $user): void
+    public function handle(MembershipInvitation $invitation, Model $user, ?string $token = null): void
     {
         $userEmail = method_exists($user, 'getEmailForVerification')
             ? $user->getEmailForVerification()
             : $user->getAttribute('email');
 
-        $acceptedInvitation = DB::transaction(function () use ($invitation, $user, $userEmail): MembershipInvitation {
+        $acceptedInvitation = DB::transaction(function () use ($invitation, $token, $user, $userEmail): MembershipInvitation {
             $guardedInvitation = OwnerWriteGuard::findOrFailForOwner(
                 MembershipInvitation::class,
                 (string) $invitation->getKey(),
@@ -37,6 +37,10 @@ final class AcceptInvitationAction
 
             if (! $lockedInvitation->isValid()) {
                 throw new RuntimeException('Invitation is no longer valid.');
+            }
+
+            if ($token !== null && ! $lockedInvitation->matchesToken($token)) {
+                throw new RuntimeException('Invitation token is invalid.');
             }
 
             if (! is_string($userEmail) || mb_strtolower($userEmail) !== $lockedInvitation->email) {

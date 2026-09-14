@@ -54,6 +54,14 @@ return [
     /* Notifications */
     'notifications' => [
         'reminder' => env('ENGAGEMENT_NOTIFICATION_REMINDER_CLASS', EngagementReminderNotification::class),
+        'allowed' => [
+            EngagementReminderNotification::class,
+        ],
+    ],
+
+    /* State */
+    'state' => [
+        'result_limit' => (int) env('ENGAGEMENT_STATE_RESULT_LIMIT', 100),
     ],
 
     /* Model class overrides */

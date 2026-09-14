@@ -22,6 +22,14 @@ final class AddMemberAction
 {
     use AsAction;
 
+    /**
+     * Pivot id-column presence by connection and table. Pivot schemas are
+     * deploy-time constants, so this never varies within a worker lifecycle.
+     *
+     * @var array<string, bool>
+     */
+    private static array $pivotIdColumnCache = [];
+
     public function handle(Model $subject, Model $user, MemberRole $role): void
     {
         app(MembershipSubjectGuard::class)->validate($subject);
@@ -35,15 +43,21 @@ final class AddMemberAction
     /**
      * Persist a membership when the caller already resolved the member row.
      * This keeps role-change workflows from issuing the same membership read twice.
+     * Role changes suppress the added hook because they dispatch a role-changed hook instead.
      */
-    public function handleResolvedMember(Model $subject, Model $user, MemberRole $role, ?Model $existingMember): void
+    public function handleResolvedMember(Model $subject, Model $user, MemberRole $role, ?Model $existingMember, bool $notifyAdded = true): void
     {
         app(MembershipSubjectGuard::class)->validate($subject);
 
-        $this->persist($subject, $user, $role, $existingMember);
+        $this->persist($subject, $user, $role, $existingMember, $notifyAdded);
     }
 
-    private function persist(Model $subject, Model $user, MemberRole $role, ?Model $existingMember): void
+    public static function flushPivotIdColumnCache(): void
+    {
+        self::$pivotIdColumnCache = [];
+    }
+
+    private function persist(Model $subject, Model $user, MemberRole $role, ?Model $existingMember, bool $notifyAdded = true): void
     {
         /** @phpstan-ignore property.notFound */
         $existingRole = $existingMember?->pivot?->role;
@@ -57,14 +71,14 @@ final class AddMemberAction
 
                 $pivotData = [
                     'role' => $role->spatieRoleName(),
-                    'joined_at' => CarbonImmutable::now(),
                 ];
 
-                if (
-                    $existingMember === null
-                    && $subject->getConnection()->getSchemaBuilder()->hasColumn($membershipTable, 'id')
-                ) {
-                    $pivotData['id'] = (string) Str::uuid();
+                if ($existingMember === null) {
+                    $pivotData['joined_at'] = CarbonImmutable::now();
+
+                    if ($this->pivotHasIdColumn($subject, $membershipTable)) {
+                        $pivotData['id'] = (string) Str::uuid();
+                    }
                 }
 
                 /** @phpstan-ignore method.notFound */
@@ -90,9 +104,18 @@ final class AddMemberAction
             throw new AuthorizationException('The membership already exists or was created concurrently.');
         }
 
-        if (app()->bound(MembershipHook::class)) {
+        if ($notifyAdded && app()->bound(MembershipHook::class)) {
             app(MembershipHook::class)->onMemberAdded($subject, $user, $role);
         }
+    }
+
+    private function pivotHasIdColumn(Model $subject, string $membershipTable): bool
+    {
+        $key = ($subject->getConnectionName() ?? 'default') . '.' . $membershipTable;
+
+        return self::$pivotIdColumnCache[$key] ??= $subject->getConnection()
+            ->getSchemaBuilder()
+            ->hasColumn($membershipTable, 'id');
     }
 
     private function membershipTable(Model $subject): string

@@ -115,7 +115,7 @@
                                 <x-filament::icon-button
                                     icon="heroicon-o-clipboard-document"
                                     size="sm"
-                                    x-on:click="navigator.clipboard.writeText('{{ $affiliate->code }}'); $tooltip('Copied!')"
+                                    x-on:click="navigator.clipboard.writeText(@js($affiliate->code)); $tooltip('Copied!')"
                                 />
                             </div>
                         </div>
@@ -248,7 +248,7 @@
                                                 <x-filament::icon-button
                                                     icon="heroicon-o-clipboard-document"
                                                     size="sm"
-                                                    x-on:click="navigator.clipboard.writeText('{{ $voucher->code }}'); $tooltip('Copied!')"
+                                                    x-on:click="navigator.clipboard.writeText(@js($voucher->code)); $tooltip('Copied!')"
                                                 />
                                             </div>
                                         </td>

@@ -64,11 +64,18 @@ final class DefaultEngagementManager implements EngagementManager
     {
         $this->assertModels($actor, $subject, Followable::class);
 
+        $notificationLevel = EngagementModelGuard::boundedString(
+            $options['notification_level'] ?? config('engagement.defaults.follow_notification_level', 'all'),
+            'notification_level',
+        );
+        $source = EngagementModelGuard::boundedString($options['source'] ?? null, 'source');
+        $metadata = EngagementModelGuard::optionalArray($options['metadata'] ?? null, 'metadata');
+
         $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
         $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
 
         try {
-            return DB::transaction(function () use ($actor, $subject, $options, $actorIdentity, $subjectIdentity): Follow {
+            return DB::transaction(function () use ($actor, $subject, $notificationLevel, $source, $metadata, $actorIdentity, $subjectIdentity): Follow {
                 $this->authorize(
                     $this->policy->canFollow($actor, $subject),
                     'Following this subject is not authorized.',
@@ -103,11 +110,10 @@ final class DefaultEngagementManager implements EngagementManager
                     'followable_type' => $subjectIdentity['type'],
                     'followable_id' => $subjectIdentity['id'],
                     'status' => 'active',
-                    'notification_level' => $options['notification_level']
-                        ?? config('engagement.defaults.follow_notification_level', 'all'),
+                    'notification_level' => $notificationLevel,
                     'followed_at' => CarbonImmutable::now(),
-                    'source' => $options['source'] ?? null,
-                    'metadata' => $options['metadata'] ?? null,
+                    'source' => $source,
+                    'metadata' => $metadata,
                 ]);
 
                 event(new FollowCreated($follow));
@@ -204,11 +210,15 @@ final class DefaultEngagementManager implements EngagementManager
     {
         $this->assertModels($actor, $subject, Bookmarkable::class);
 
+        $notes = EngagementModelGuard::boundedString($options['notes'] ?? null, 'notes', EngagementModelGuard::TEXT_MAX_LENGTH);
+        $source = EngagementModelGuard::boundedString($options['source'] ?? null, 'source');
+        $metadata = EngagementModelGuard::optionalArray($options['metadata'] ?? null, 'metadata');
+
         $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
         $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
 
         try {
-            return DB::transaction(function () use ($actor, $subject, $options, $actorIdentity, $subjectIdentity): Bookmark {
+            return DB::transaction(function () use ($actor, $subject, $notes, $source, $metadata, $actorIdentity, $subjectIdentity): Bookmark {
                 $this->authorize(
                     $this->policy->canBookmark($actor, $subject),
                     'Bookmarking this subject is not authorized.',
@@ -243,10 +253,10 @@ final class DefaultEngagementManager implements EngagementManager
                     'bookmarkable_type' => $subjectIdentity['type'],
                     'bookmarkable_id' => $subjectIdentity['id'],
                     'status' => 'active',
-                    'notes' => $options['notes'] ?? null,
+                    'notes' => $notes,
                     'bookmarked_at' => CarbonImmutable::now(),
-                    'source' => $options['source'] ?? null,
-                    'metadata' => $options['metadata'] ?? null,
+                    'source' => $source,
+                    'metadata' => $metadata,
                 ]);
 
                 event(new BookmarkCreated($bookmark));
@@ -321,11 +331,19 @@ final class DefaultEngagementManager implements EngagementManager
     {
         $this->assertModels($actor, $subject, Respondable::class);
 
+        $responseType = EngagementModelGuard::requiredString($responseType, 'response_type');
+        $visibility = EngagementModelGuard::boundedString(
+            $options['visibility'] ?? config('engagement.defaults.response_visibility', 'public'),
+            'visibility',
+        );
+        $source = EngagementModelGuard::boundedString($options['source'] ?? null, 'source');
+        $metadata = EngagementModelGuard::optionalArray($options['metadata'] ?? null, 'metadata');
+
         $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
         $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
 
         try {
-            return DB::transaction(function () use ($actor, $subject, $responseType, $options, $actorIdentity, $subjectIdentity): Response {
+            return DB::transaction(function () use ($actor, $subject, $responseType, $visibility, $source, $metadata, $actorIdentity, $subjectIdentity): Response {
                 $this->authorize(
                     $this->policy->canRespond($actor, $subject, $responseType),
                     'Responding to this subject is not authorized.',
@@ -339,7 +357,24 @@ final class DefaultEngagementManager implements EngagementManager
                     ->lockForUpdate()
                     ->first();
 
-                if ($existing) {
+                if ($existing instanceof Response && $existing->status !== ResponseStatus::Active) {
+                    $existing->update([
+                        'response_type' => $responseType,
+                        'status' => ResponseStatus::Active,
+                        'responded_at' => CarbonImmutable::now(),
+                        'changed_at' => null,
+                        'cancelled_at' => null,
+                    ]);
+                    event(new ResponseCreated($existing));
+
+                    return $existing;
+                }
+
+                if ($existing instanceof Response) {
+                    if ($existing->response_type === $responseType) {
+                        return $existing;
+                    }
+
                     $oldType = $existing->response_type;
                     $existing->update([
                         'response_type' => $responseType,
@@ -363,11 +398,10 @@ final class DefaultEngagementManager implements EngagementManager
                     'respondable_id' => $subjectIdentity['id'],
                     'response_type' => $responseType,
                     'status' => 'active',
-                    'visibility' => $options['visibility']
-                        ?? config('engagement.defaults.response_visibility', 'public'),
+                    'visibility' => $visibility,
                     'responded_at' => CarbonImmutable::now(),
-                    'source' => $options['source'] ?? null,
-                    'metadata' => $options['metadata'] ?? null,
+                    'source' => $source,
+                    'metadata' => $metadata,
                 ]);
 
                 event(new ResponseCreated($response));
@@ -420,11 +454,15 @@ final class DefaultEngagementManager implements EngagementManager
     {
         $this->assertModels($actor, $subject, Reactable::class);
 
+        $reactionType = EngagementModelGuard::requiredString($reactionType, 'reaction_type');
+        $source = EngagementModelGuard::boundedString($options['source'] ?? null, 'source');
+        $metadata = EngagementModelGuard::optionalArray($options['metadata'] ?? null, 'metadata');
+
         $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
         $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
 
         try {
-            return DB::transaction(function () use ($actor, $subject, $reactionType, $options, $actorIdentity, $subjectIdentity): Reaction {
+            return DB::transaction(function () use ($actor, $subject, $reactionType, $source, $metadata, $actorIdentity, $subjectIdentity): Reaction {
                 $this->authorize(
                     $this->policy->canReact($actor, $subject, $reactionType),
                     'Reacting to this subject is not authorized.',
@@ -462,8 +500,8 @@ final class DefaultEngagementManager implements EngagementManager
                     'reaction_type' => $reactionType,
                     'status' => 'active',
                     'reacted_at' => CarbonImmutable::now(),
-                    'source' => $options['source'] ?? null,
-                    'metadata' => $options['metadata'] ?? null,
+                    'source' => $source,
+                    'metadata' => $metadata,
                 ]);
 
                 event(new ReactionCreated($reaction));
@@ -527,7 +565,19 @@ final class DefaultEngagementManager implements EngagementManager
     {
         $this->assertModels($actor, $subject, Shareable::class);
 
-        return DB::transaction(function () use ($actor, $subject, $options): Share {
+        $channel = EngagementModelGuard::boundedString($options['channel'] ?? null, 'channel');
+        $destination = EngagementModelGuard::boundedString($options['destination'] ?? null, 'destination');
+        $message = EngagementModelGuard::boundedString($options['message'] ?? null, 'message', EngagementModelGuard::TEXT_MAX_LENGTH);
+        $metadata = EngagementModelGuard::optionalArray($options['metadata'] ?? null, 'metadata');
+        $explicitToken = EngagementModelGuard::boundedString($options['token'] ?? null, 'token');
+        $token = ($explicitToken === null || $explicitToken === '') ? Str::random(32) : $explicitToken;
+
+        return DB::transaction(function () use ($actor, $subject, $options, $channel, $destination, $message, $metadata, $token): Share {
+            $this->authorize(
+                $this->policy->canShare($actor, $subject),
+                'Sharing this subject is not authorized.',
+            );
+
             $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
             $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
             $share = Share::query()->create([
@@ -535,19 +585,19 @@ final class DefaultEngagementManager implements EngagementManager
                 'sharer_id' => $actorIdentity['id'],
                 'shareable_type' => $subjectIdentity['type'],
                 'shareable_id' => $subjectIdentity['id'],
-                'channel' => $options['channel'] ?? null,
-                'destination' => $options['destination'] ?? null,
-                'share_token' => $options['token'] ?? Str::random(16),
-                'message' => $options['message'] ?? null,
+                'channel' => $channel,
+                'destination' => $destination,
+                'share_token' => $token,
+                'message' => $message,
                 'status' => ShareStatus::Created,
                 'share_intent_at' => CarbonImmutable::now(),
-                'metadata' => $options['metadata'] ?? null,
+                'metadata' => $metadata,
             ]);
 
             event(new ShareCreated($share));
 
             if ($options['complete'] ?? true) {
-                $shareUrl = $this->shareUrlGenerator->generateShareUrl($subject, $options);
+                $shareUrl = $this->shareUrlGenerator->generateShareUrl($subject, array_merge($options, ['token' => $token]));
                 $share->update([
                     'share_url' => $shareUrl,
                     'status' => ShareStatus::Shared,
@@ -564,20 +614,58 @@ final class DefaultEngagementManager implements EngagementManager
     {
         EngagementModelGuard::assertContract($actor, CanInteract::class, 'actor');
 
-        DB::transaction(function () use ($bookmark, $collection, $options): void {
-            $bookmark = OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmark->getKey());
-            $collection = OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->getKey());
+        $notes = EngagementModelGuard::boundedString($options['notes'] ?? null, 'notes', EngagementModelGuard::TEXT_MAX_LENGTH);
+        $bookmarkId = $bookmark->getKey();
+        $collectionId = $collection->getKey();
 
-            BookmarkCollectionItem::query()->firstOrCreate([
-                'bookmark_collection_id' => $collection->getKey(),
-                'bookmark_id' => $bookmark->getKey(),
-            ], [
-                'added_at' => CarbonImmutable::now(),
-                'notes' => $options['notes'] ?? null,
-            ]);
+        try {
+            DB::transaction(function () use ($bookmarkId, $collectionId, $notes): void {
+                $bookmark = OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmarkId);
+                $collection = OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collectionId);
 
-            event(new BookmarkAddedToCollection($bookmark, $collection));
-        });
+                $item = BookmarkCollectionItem::query()
+                    ->where('bookmark_collection_id', $collection->getKey())
+                    ->where('bookmark_id', $bookmark->getKey())
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($item instanceof BookmarkCollectionItem) {
+                    if ($item->removed_at !== null) {
+                        $item->update([
+                            'removed_at' => null,
+                            'added_at' => CarbonImmutable::now(),
+                            'notes' => $notes ?? $item->notes,
+                        ]);
+                    }
+
+                    event(new BookmarkAddedToCollection($bookmark, $collection));
+
+                    return;
+                }
+
+                BookmarkCollectionItem::query()->create([
+                    'bookmark_collection_id' => $collection->getKey(),
+                    'bookmark_id' => $bookmark->getKey(),
+                    'added_at' => CarbonImmutable::now(),
+                    'notes' => $notes,
+                ]);
+
+                event(new BookmarkAddedToCollection($bookmark, $collection));
+            });
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueConstraintViolation($exception)) {
+                throw $exception;
+            }
+
+            $item = BookmarkCollectionItem::query()
+                ->where('bookmark_collection_id', $collectionId)
+                ->where('bookmark_id', $bookmarkId)
+                ->first();
+
+            if (! $item instanceof BookmarkCollectionItem) {
+                throw $exception;
+            }
+        }
     }
 
     public function removeBookmarkFromCollection(CanInteract $actor, Bookmark $bookmark, BookmarkCollection $collection, array $options = []): void

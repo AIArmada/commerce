@@ -9,19 +9,29 @@ use AIArmada\Seating\Models\SeatMap;
 
 final class SeatLayoutRenderer implements SeatLayoutInterface
 {
-    public function describe(SeatMap $map): array
+    public function describe(SeatMap $map, ?string $sectionId = null): array
     {
         $sections = [];
         $seats = [];
         $maxRows = 0;
         $maxCols = 0;
 
-        foreach ($map->sections()->orderBy('sort_order')->get() as $section) {
+        $loadedSections = $map->sections()
+            ->when($sectionId !== null, fn ($query) => $query->whereKey($sectionId))
+            ->orderBy('sort_order')
+            ->with(['seats' => fn ($query): mixed => $query->orderBy('row_number')->orderBy('column_number')])
+            ->get();
+
+        foreach ($loadedSections as $section) {
             $sectionSeats = [];
 
-            foreach ($section->seats()->orderBy('row_number')->orderBy('column_number')->get() as $seat) {
+            foreach ($section->seats as $seat) {
                 if ($seat->row_number > $maxRows) {
                     $maxRows = $seat->row_number;
+                }
+
+                if ($seat->column_number > $maxCols) {
+                    $maxCols = $seat->column_number;
                 }
 
                 $sectionSeats[] = [
@@ -42,11 +52,6 @@ final class SeatLayoutRenderer implements SeatLayoutInterface
                 'sort_order' => $section->sort_order,
                 'seats' => $sectionSeats,
             ];
-
-            $cols = (int) $section->seats()->max('column_number');
-            if ($cols > $maxCols) {
-                $maxCols = $cols;
-            }
         }
 
         return [

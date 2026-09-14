@@ -39,6 +39,26 @@ return [
         'max_attempts' => (int) env('COMMUNICATIONS_DEFAULT_MAX_ATTEMPTS', 3),
     ],
 
+    /* Planning */
+    'planning' => [
+        'max_deliveries' => (int) env('COMMUNICATIONS_PLANNING_MAX_DELIVERIES', 500),
+    ],
+
+    /* Tracking */
+    'tracking' => [
+        'allowed_hosts' => array_values(array_filter(array_map(
+            static fn (string $host): string => mb_trim($host),
+            explode(',', (string) env('COMMUNICATIONS_TRACKING_ALLOWED_HOSTS', '')),
+        ))),
+    ],
+
+    /* Attachments */
+    'attachments' => [
+        'allowed_disks' => null,
+        'allowed_mimes' => null,
+        'max_size_bytes' => (int) env('COMMUNICATIONS_ATTACHMENTS_MAX_SIZE_BYTES', 10485760),
+    ],
+
     /* Features / Behavior */
     'features' => [
         'owner' => [
@@ -74,6 +94,8 @@ return [
     'webhooks' => [
         'middleware' => ['api', 'throttle:communications-webhooks', VerifyWebhookSignature::class],
         'providers' => [],
+        'max_payload_bytes' => (int) env('COMMUNICATIONS_WEBHOOK_MAX_PAYLOAD_BYTES', 262144),
+        'max_payload_depth' => (int) env('COMMUNICATIONS_WEBHOOK_MAX_PAYLOAD_DEPTH', 32),
         'timestamp_header' => env('COMMUNICATIONS_WEBHOOK_TIMESTAMP_HEADER', 'X-Webhook-Timestamp'),
         'timestamp_tolerance_seconds' => (int) env('COMMUNICATIONS_WEBHOOK_TIMESTAMP_TOLERANCE', 300),
         'rate_limit' => [

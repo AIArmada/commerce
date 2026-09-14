@@ -39,6 +39,7 @@ return [
             'max_attempts' => 60,
             'decay_seconds' => 60,
         ],
+        'respondent_allowlist' => [],
     ],
 
     'analytics' => [

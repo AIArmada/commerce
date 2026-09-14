@@ -198,10 +198,56 @@ php artisan communications:prune-inboxes
 
 All tenant-owned queries are automatically scoped to the current owner when `communications.features.owner.enabled` is true. Use `OwnerContext::withOwner()` for scoped operations. Inbox records follow the same owner boundary as the rest of the communications data.
 
-Webhook payloads cannot select an owner. Bind `AIArmada\Communications\Contracts\WebhookOwnerResolver` to resolve a trusted owner model from provider-authenticated payload data. Returning `null` processes the event in explicit global context.
+Webhook payloads cannot select an owner. Bind `AIArmada\Communications\Contracts\WebhookOwnerResolver` to resolve a trusted owner model from provider-authenticated payload data. Returning `null` lets provider events derive the delivery's owner scope from the delivery itself.
+
+## Restricted attributes
+
+`status` and polymorphic `*_type` discriminators are intentionally absent from
+`$fillable` on communications models. Set them via direct assignment or
+`forceFill()` — passing them to `create()`/`update()` silently drops the keys.
 
 ## Eligibility contracts
 
 Eligibility resolves through the `AIArmada\Communications\Services\PermissiveEligibilityResolver` binding. Custom resolvers implement `resolveConsent()` (`ConsentResolver`) and `resolveSuppression()` (`SuppressionResolver`).
 
-Webhooks are allowlisted per provider (`communications.webhooks.providers`), HMAC-signed (`X-Webhook-Signature` over the raw body), timestamp-bound (`X-Webhook-Timestamp`, default 300s tolerance), and rate-limited (`throttle:communications-webhooks`). Unconfigured providers fail closed — see `03-configuration.md` (`communications.php:73-89`).
+Webhooks are allowlisted per provider (`communications.webhooks.providers`), HMAC-signed (configurable header and algorithm, default `X-Webhook-Signature` with SHA-256 over the raw body), timestamp-bound (`X-Webhook-Timestamp`, default 300s tolerance), and rate-limited (`throttle:communications-webhooks`). Unconfigured providers fail closed — see `03-configuration.md`.
+
+## Tracking tokens
+
+```php
+use AIArmada\Communications\Actions\CreateTrackingTokenAction;
+use AIArmada\Communications\Actions\RecordTrackingInteractionAction;
+use AIArmada\Communications\Enums\TrackingInteractionType;
+
+$created = app(CreateTrackingTokenAction::class)->handle(
+    deliveryId: $delivery->id,
+    kind: 'click',
+    targetUrl: 'https://example.com/welcome',
+);
+
+// Only the hash is persisted. Use the returned plaintext token when
+// building the tracking URL; it cannot be recovered afterwards.
+$url = 'https://example.com/t/' . $created->plaintextToken;
+
+app(RecordTrackingInteractionAction::class)->handle(
+    tokenId: $created->trackingToken->id,
+    interactionType: TrackingInteractionType::Click,
+);
+```
+
+Target URLs must be absolute `http(s)` URLs and are encrypted at rest via
+`DestinationProtector` (Laravel authenticated encryption). Expired or revoked
+tokens reject new interactions, and interaction types are constrained to
+`TrackingInteractionType` (`open`, `click`).
+
+## Delivery state machine
+
+`TransitionDeliveryAction` is the only legal way to move a delivery between
+statuses. Provider webhook events are applied through the same action:
+out-of-order provider updates jump forward explicitly and dispatch the usual
+`Delivery*` domain events, while late events for terminal deliveries
+(`failed`, `cancelled`, `expired`, `suppressed`, `unsubscribed`) are recorded
+without regressing the delivery status.
+
+Expiring a communication dispatches `CommunicationExpired` and expires its
+pending deliveries; the original `expires_at` deadline is preserved.

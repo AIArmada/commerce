@@ -6,12 +6,19 @@ namespace AIArmada\Contacting\Actions;
 
 use AIArmada\Contacting\Data\ContactLinksData;
 use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Support\NormalizesUrl;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 final class BuildContactLinksAction
 {
-    public function forContactable(Model $contactable): ContactLinksData
+    private const array TELEGRAM_HOSTS = ['t.me', 'telegram.me', 'telegram.dog'];
+
+    public function __construct(
+        private readonly NormalizesUrl $urlNormalizer = new NormalizesUrl,
+    ) {}
+
+    public function forContactable(Model $contactable, ?int $limit = null): ContactLinksData
     {
         if (! method_exists($contactable, 'contactMethods')) {
             return $this->execute([]);
@@ -21,6 +28,10 @@ final class BuildContactLinksAction
 
         if (! $contactMethods instanceof MorphMany) {
             return $this->execute([]);
+        }
+
+        if ($limit !== null) {
+            $contactMethods = $contactMethods->limit($limit);
         }
 
         return $this->execute($contactMethods->get());
@@ -73,7 +84,11 @@ final class BuildContactLinksAction
 
     private function buildMailto(string $email): ?string
     {
-        if ($email === '') {
+        if ($email === '' || preg_match('/\s/', $email) === 1) {
+            return null;
+        }
+
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             return null;
         }
 
@@ -82,7 +97,13 @@ final class BuildContactLinksAction
 
     private function buildTel(string $phone): ?string
     {
-        if ($phone === '') {
+        if ($phone === '' || preg_match('/[\r\n]/', $phone) === 1) {
+            return null;
+        }
+
+        $phone = str_replace(' ', '', $phone);
+
+        if ($phone === '' || preg_match('/^[+\d][\d().\-.]*$/', $phone) !== 1) {
             return null;
         }
 
@@ -91,14 +112,13 @@ final class BuildContactLinksAction
 
     private function buildWhatsapp(string $phone): ?string
     {
-        if ($phone === '') {
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        if ($digits === '') {
             return null;
         }
 
-        // Remove + for wa.me path
-        $cleaned = mb_ltrim($phone, '+');
-
-        return 'https://wa.me/' . rawurlencode($cleaned);
+        return 'https://wa.me/' . $digits;
     }
 
     private function buildWebsite(string $url): ?string
@@ -120,14 +140,24 @@ final class BuildContactLinksAction
             return null;
         }
 
-        // If it looks like a URL, use it directly
-        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_contains($value, '.')) {
-            return $value;
+        if (preg_match('/^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//', $value) === 1 || str_contains($value, '.')) {
+            $normalized = $this->urlNormalizer->normalize($value);
+
+            if ($normalized === null) {
+                return null;
+            }
+
+            $host = mb_strtolower((string) parse_url($normalized, PHP_URL_HOST));
+
+            if (! in_array($host, self::TELEGRAM_HOSTS, true)) {
+                return null;
+            }
+
+            return $normalized;
         }
 
-        // Otherwise treat as handle
-        $handle = mb_ltrim($value, '@');
+        $handle = rawurlencode(mb_ltrim($value, '@'));
 
-        return 'https://t.me/' . $handle;
+        return $handle === '' ? null : 'https://t.me/' . $handle;
     }
 }

@@ -88,9 +88,28 @@ class PaymentMethods extends Page
             }
 
             return $url;
-        } catch (Exception) {
+        } catch (Exception $exception) {
+            report($exception);
+
+            Notification::make()
+                ->title(__('Unable to start adding a payment method'))
+                ->body(__('Something went wrong. Please try again later.'))
+                ->danger()
+                ->send();
+
             return '#';
         }
+    }
+
+    public function redirectToAddPaymentMethod(): mixed
+    {
+        $url = $this->getAddPaymentMethodUrl();
+
+        if ($url === '' || $url === '#') {
+            return null;
+        }
+
+        return redirect()->away($url);
     }
 
     public function setAsDefault(string $paymentMethodId): void
@@ -123,9 +142,11 @@ class PaymentMethods extends Page
                 ->success()
                 ->send();
         } catch (Exception $e) {
+            report($e);
+
             Notification::make()
                 ->title(__('Failed to update default payment method'))
-                ->body($e->getMessage())
+                ->body(__('Something went wrong. Please try again later.'))
                 ->danger()
                 ->send();
         }
@@ -161,9 +182,11 @@ class PaymentMethods extends Page
                 ->success()
                 ->send();
         } catch (Exception $e) {
+            report($e);
+
             Notification::make()
                 ->title(__('Failed to delete payment method'))
-                ->body($e->getMessage())
+                ->body(__('Something went wrong. Please try again later.'))
                 ->danger()
                 ->send();
         }
@@ -194,8 +217,7 @@ class PaymentMethods extends Page
                 ->label(__('Add Payment Method'))
                 ->icon(Heroicon::OutlinedPlus)
                 ->color('primary')
-                ->url(fn () => $this->getAddPaymentMethodUrl())
-                ->openUrlInNewTab(false),
+                ->action(fn () => $this->redirectToAddPaymentMethod()),
         ];
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrganizations\Resources\OrganizationResource\Pages;
 
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\FilamentOrganizations\Resources\OrganizationResource;
 use AIArmada\Organizations\Actions\ArchiveOrganizationAction;
 use AIArmada\Organizations\Actions\MakeOrganizationPrivateAction;
@@ -97,14 +98,34 @@ final class ViewOrganization extends ViewRecord
                 ->form(fn (Organization $record): array => [
                     Select::make('user_id')
                         ->label('New owner')
-                        ->options(fn (): array => $record->members()
+                        ->required()
+                        ->searchable()
+                        ->getSearchResultsUsing(fn (string $search): array => $record->members()
                             ->whereKeyNot(Filament::auth()->id())
+                            ->where(function ($query) use ($search): void {
+                                $pattern = LikeSearch::contains($search);
+                                LikeSearch::whereLike($query, 'name', $pattern);
+                                LikeSearch::orWhereLike($query, 'email', $pattern);
+                            })
+                            ->limit(50)
                             ->get()
                             ->mapWithKeys(fn (Model $member): array => [
                                 (string) $member->getKey() => (string) ($member->getAttribute('name') ?? $member->getAttribute('email') ?? $member->getKey()),
                             ])
                             ->all())
-                        ->required(),
+                        ->getOptionLabelUsing(function (mixed $value) use ($record): ?string {
+                            if (! is_scalar($value)) {
+                                return null;
+                            }
+
+                            $member = $record->members()->whereKey($value)->first();
+
+                            if (! $member instanceof Model) {
+                                return null;
+                            }
+
+                            return (string) ($member->getAttribute('name') ?? $member->getAttribute('email') ?? $member->getKey());
+                        }),
                 ])
                 ->action(function (Organization $record, array $data): void {
                     $actor = Filament::auth()->user();

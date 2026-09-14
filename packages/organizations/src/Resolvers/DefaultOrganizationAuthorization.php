@@ -33,7 +33,7 @@ final class DefaultOrganizationAuthorization implements OrganizationAuthorizatio
             'organization.view' => true,
             'organization.update', 'organization.manage-members', 'organization.change-status', 'organization.change-visibility' => in_array($role, [MemberRole::Owner, MemberRole::Admin], true),
             'organization.transfer-ownership' => $role === MemberRole::Owner,
-            default => in_array($role, [MemberRole::Owner, MemberRole::Admin], true),
+            default => false,
         };
     }
 }

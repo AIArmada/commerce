@@ -129,6 +129,12 @@ final class TicketingOwnerGuard
     }
 
     /**
+     * Non-owner-scoped (global) models are intentionally skipped: they carry
+     * no owner tuple to compare. Untrusted morph input is rejected earlier at
+     * the entry points (see HolderAttributesValidator), which resolves the
+     * class, enforces the holder allow-list, and requires the row to exist
+     * within the current owner scope.
+     *
      * @param  class-string<Model>  $relatedClass
      */
     private static function isOwnerScopedModel(string $relatedClass): bool

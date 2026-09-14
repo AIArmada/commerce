@@ -345,6 +345,9 @@ class ChipSubscription implements SubscriptionContract
     /**
      * Convert to array.
      *
+     * The recurring token is a reusable payment credential: it is exposed
+     * only via recurringToken(), never via serialization.
+     *
      * @return array<string, mixed>
      */
     public function toArray(): array
@@ -364,7 +367,6 @@ class ChipSubscription implements SubscriptionContract
             'trial_ends_at' => $this->trialEndsAt()?->toIso8601String(),
             'ends_at' => $this->endsAt()?->toIso8601String(),
             'next_billing_at' => $this->nextBillingAt()?->toIso8601String(),
-            'recurring_token' => $this->recurringToken(),
         ];
     }
 

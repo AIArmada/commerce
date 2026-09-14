@@ -16,7 +16,9 @@ return new class extends Migration
             $table->{$jsonColumnType}($column)->nullable();
         };
 
-        Schema::create(config('feedback.database.tables.invitations', 'feedback_invitations'), function (Blueprint $table) use ($addJsonColumn): void {
+        $tableName = (string) config('feedback.database.table_prefix', '') . (string) config('feedback.database.tables.invitations', 'feedback_invitations');
+
+        Schema::create($tableName, function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 

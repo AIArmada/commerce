@@ -6,9 +6,7 @@ namespace AIArmada\Products\Concerns;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\UniqueConstraintViolationException;
 use InvalidArgumentException;
-use RuntimeException;
 
 trait EnforcesOwnerUniqueIdentity
 {
@@ -65,22 +63,8 @@ trait EnforcesOwnerUniqueIdentity
                     $existing = $query->first();
 
                     if ($existing !== null) {
-                        if (! $model->exists) {
-                            $exception = new UniqueConstraintViolationException(
-                                $model->getConnectionName(),
-                                "insert into {$model->getTable()} ({$column}) values (?)",
-                                [$value],
-                                new RuntimeException(sprintf(
-                                    'The %s "%s" is already used by another record for this owner.',
-                                    $column,
-                                    $value,
-                                )),
-                            );
-                            $exception->setColumns([$column]);
-
-                            throw $exception;
-                        }
-
+                        // Friendly pre-check only; the partial unique indexes
+                        // are the real enforcers under concurrency.
                         throw new InvalidArgumentException(sprintf(
                             'The %s "%s" is already used by another record for this owner.',
                             $column,

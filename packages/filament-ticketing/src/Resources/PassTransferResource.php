@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTicketing\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Ticketing\Models\PassTransfer;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class PassTransferResource extends Resource
@@ -18,6 +20,36 @@ final class PassTransferResource extends Resource
     protected static ?string $model = PassTransfer::class;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-arrow-path';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('pass-transfer.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('pass-transfer.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('pass-transfer.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('pass-transfer.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('pass-transfer.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {

@@ -164,6 +164,12 @@ class AttributeValue extends Model implements Auditable
     protected static function booted(): void
     {
         static::creating(function (AttributeValue $attributeValue): void {
+            $resolvedType = Relation::getMorphedModel($attributeValue->attributable_type) ?? $attributeValue->attributable_type;
+
+            if (! in_array($resolvedType, [Product::class, Variant::class], true)) {
+                throw new InvalidArgumentException('Invalid attributable: attribute values may only attach to products or variants.');
+            }
+
             if (! (bool) config('products.features.owner.enabled', true)) {
                 return;
             }

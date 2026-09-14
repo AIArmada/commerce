@@ -11,6 +11,11 @@ interface CheckoutServiceInterface
 {
     /**
      * Start a new checkout session from a cart.
+     *
+     * The package verifies that a caller-supplied customer id exists and is
+     * not owned by a different owner than the ambient context. Hosts must
+     * additionally ensure the cart belongs to the authenticated actor before
+     * calling; cart ownership lives in the cart package.
      */
     public function startCheckout(string $cartId, ?string $customerId = null): CheckoutSession;
 
@@ -36,6 +41,10 @@ interface CheckoutServiceInterface
 
     /**
      * Handle payment callback/webhook after gateway redirect/notification.
+     *
+     * Route callbacks through HandleCheckoutPaymentCallback: it locks the
+     * session row and wraps handling in a transaction. Direct callers must
+     * provide their own transaction when atomicity matters.
      *
      * @param  array<string, mixed>  $payload  Optional webhook payload
      */

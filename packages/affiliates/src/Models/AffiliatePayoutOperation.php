@@ -55,8 +55,6 @@ final class AffiliatePayoutOperation extends Model
         'lease_expires_at',
         'completed_at',
         'funds_released_at',
-        'owner_type',
-        'owner_id',
     ];
 
     protected $hidden = ['provider_reference'];

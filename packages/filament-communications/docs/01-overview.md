@@ -25,3 +25,22 @@ The `aiarmada/filament-communications` package provides a Filament v5 admin inte
 - No direct provider API calls from Livewire requests
 - Delivery retry delegates to the core `RetryCommunicationDeliveryAction` and revalidates ownership with `OwnerWriteGuard`
 - Sensitive destinations display masked hints by default
+
+## Relation managers
+
+- `CommunicationThreadResource` shows thread communications via `CommunicationsRelationManager`
+- `CommunicationResource` shows `DeliveriesRelationManager` and the event `CommunicationTimelineRelationManager` on the view page
+
+Both resolve through the owner-scoped parent record.
+
+## Delivery status widget
+
+`DeliveryStatusOverviewWidget` buckets all 19 `DeliveryStatus` cases into five
+stats (Pending, Sent, Delivered, Failed, Suppressed) so the buckets reconcile
+with the delivery total.
+
+## Authorization
+
+These resources are visible to any authenticated panel user; row-level
+isolation comes from owner scoping, not roles. If least-privilege access is
+required, gate panel access in the host app or add resource policies there.

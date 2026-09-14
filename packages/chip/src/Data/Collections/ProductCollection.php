@@ -54,7 +54,7 @@ final class ProductCollection extends DataCollection
     {
         return (int) array_reduce(
             iterator_to_array($this->items),
-            fn (int $carry, ProductData $product) => $carry + ($product->getPriceInCents() * (float) $product->quantity),
+            fn (int $carry, ProductData $product) => $carry + $product->getSubtotalInCents(),
             0
         );
     }
@@ -66,7 +66,7 @@ final class ProductCollection extends DataCollection
     {
         return (int) array_reduce(
             iterator_to_array($this->items),
-            fn (int $carry, ProductData $product) => $carry + ($product->getDiscountInCents() * (float) $product->quantity),
+            fn (int $carry, ProductData $product) => $carry + $product->getDiscountTotalInCents(),
             0
         );
     }

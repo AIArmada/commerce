@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Authz\Services;
 
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 /**
  * Builds permission keys with configurable case and separator.
@@ -44,6 +45,18 @@ class PermissionKeyBuilder
     }
 
     /**
+     * @var list<string>
+     */
+    public const array SUPPORTED_CASES = [
+        'snake',
+        'kebab',
+        'camel',
+        'pascal',
+        'upper_snake',
+        'lower',
+    ];
+
+    /**
      * Format a string according to the specified case.
      */
     public function formatCase(string $value, string $case): string
@@ -55,7 +68,7 @@ class PermissionKeyBuilder
             'pascal' => Str::studly($value),
             'upper_snake' => Str::upper(Str::snake($value)),
             'lower' => Str::lower($value),
-            default => Str::kebab($value),
+            default => throw new InvalidArgumentException("Unknown permission case [{$case}]. Supported: " . implode(', ', self::SUPPORTED_CASES) . '.'),
         };
     }
 }

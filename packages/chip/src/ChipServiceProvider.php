@@ -9,6 +9,7 @@ use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Clients\ChipSendClient;
 use AIArmada\Chip\Commands\ChipHealthCheckCommand;
 use AIArmada\Chip\Commands\CleanWebhooksCommand;
+use AIArmada\Chip\Commands\PruneIdempotencyStubsCommand;
 use AIArmada\Chip\Commands\RetryWebhooksCommand;
 use AIArmada\Chip\Commands\SyncChipRecordsFromApiCommand;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
@@ -26,6 +27,7 @@ use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use InvalidArgumentException;
@@ -50,6 +52,7 @@ final class ChipServiceProvider extends PackageServiceProvider
                 RetryWebhooksCommand::class,
                 CleanWebhooksCommand::class,
                 SyncChipRecordsFromApiCommand::class,
+                PruneIdempotencyStubsCommand::class,
             ]);
     }
 
@@ -141,6 +144,7 @@ final class ChipServiceProvider extends PackageServiceProvider
         ]);
 
         $this->validateWebhookBrandIdMap();
+        $this->validateSendWebhookOwner();
         $this->configureWebhookRoutes();
         $this->registerEventListeners();
     }
@@ -173,6 +177,11 @@ final class ChipServiceProvider extends PackageServiceProvider
                 $app->make(WebhookService::class)
             );
         });
+
+        // The package webhook route relies on the Spatie signature validator;
+        // hosts with custom webhook routes can opt into this middleware via
+        // the alias instead of duplicating verification logic.
+        $this->app->make(Router::class)->aliasMiddleware('chip.verify-webhook', VerifyWebhookSignature::class);
     }
 
     protected function registerEventListeners(): void
@@ -370,6 +379,40 @@ final class ChipServiceProvider extends PackageServiceProvider
                     )
                 );
             }
+        }
+    }
+
+    protected function validateSendWebhookOwner(): void
+    {
+        if (! config('chip.owner.enabled', false)) {
+            return;
+        }
+
+        $entry = config('chip.owner.send_webhook_owner', []);
+
+        if ($entry === []) {
+            return;
+        }
+
+        if (! is_array($entry)) {
+            throw new InvalidArgumentException(
+                'Configuration error: "chip.owner.send_webhook_owner" must be an array with "owner_type" and "owner_id" keys.'
+            );
+        }
+
+        $ownerType = $entry['owner_type'] ?? null;
+        $ownerId = $entry['owner_id'] ?? null;
+
+        if (! is_string($ownerType) || $ownerType === '') {
+            throw new InvalidArgumentException(
+                'Configuration error: "chip.owner.send_webhook_owner" must include a non-empty "owner_type" string.'
+            );
+        }
+
+        if (! is_string($ownerId) && ! is_int($ownerId)) {
+            throw new InvalidArgumentException(
+                'Configuration error: "chip.owner.send_webhook_owner" must include an "owner_id" string or integer.'
+            );
         }
     }
 }

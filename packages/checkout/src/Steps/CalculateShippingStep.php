@@ -86,12 +86,11 @@ final class CalculateShippingStep extends AbstractCheckoutStep
                 ? ($cartShipping['carrier'] . '_' . ($cartShipping['service'] ?? 'standard'))
                 : 'cart_condition';
 
-            $session->update([
+            $session->forceFill([
                 'shipping_data' => $shippingData,
                 'shipping_total' => $shippingTotal,
                 'selected_shipping_method' => $selectedMethod,
             ]);
-
             $session->calculateTotals();
             $session->save();
 
@@ -107,7 +106,7 @@ final class CalculateShippingStep extends AbstractCheckoutStep
 
         if (empty($rates)) {
             if ($this->isShippingNotRequired($session)) {
-                $session->update([
+                $session->persistState([
                     'shipping_total' => 0,
                     'shipping_data' => array_merge($shippingData, [
                         'not_required' => true,
@@ -147,12 +146,11 @@ final class CalculateShippingStep extends AbstractCheckoutStep
             $shippingData['jnt'] = $jntData;
         }
 
-        $session->update([
+        $session->forceFill([
             'shipping_data' => $shippingData,
             'shipping_total' => $shippingTotal,
             'selected_shipping_method' => $selectedMethod,
         ]);
-
         $session->calculateTotals();
         $session->save();
 

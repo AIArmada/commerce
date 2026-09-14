@@ -7,6 +7,7 @@ namespace AIArmada\FilamentTicketing\Resources\TicketTypeResource\RelationManage
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class TicketTypeComponentsRelationManager extends RelationManager
 {
@@ -17,6 +18,7 @@ final class TicketTypeComponentsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(static fn (Builder $query): Builder => $query->with('componentTicketType'))
             ->columns([
                 Tables\Columns\TextColumn::make('componentTicketType.name')->label('Component'),
                 Tables\Columns\TextColumn::make('quantity'),

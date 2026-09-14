@@ -18,6 +18,32 @@ Instead:
 
 That means you configure gateway webhooks in the underlying packages, then listen to unified events here.
 
+## Signature verification
+
+Inbound HTTP webhooks are verified against the **raw request body** before anything else runs:
+
+```php
+use AIArmada\Cashier\Actions\SyncWebhook;
+
+SyncWebhook::run(
+    gateway: 'stripe',
+    payload: $request->json()->all(),
+    headers: ['Stripe-Signature' => $request->header('Stripe-Signature')],
+    rawPayload: $request->getContent(),
+);
+```
+
+When the raw body is supplied, a failed verification throws
+`AIArmada\Cashier\Exceptions\Webhook\WebhookVerificationException` before `WebhookReceived` is
+dispatched. Omit the raw body only for trusted internal replays (events re-fetched from the
+gateway API), which carry no HTTP signature to verify.
+
+Replays go through the same verified path. Re-fetch a Stripe event and replay it with:
+
+```bash
+php artisan cashier:webhook:replay evt_123 --gateway=stripe
+```
+
 ## Configuration
 
 ### Environment Variables

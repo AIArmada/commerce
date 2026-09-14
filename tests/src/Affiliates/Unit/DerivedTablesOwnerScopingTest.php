@@ -36,61 +36,71 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
 
     $setOwner($ownerA);
 
-    $affiliateA = Affiliate::create([
+    $affiliateA = new Affiliate([
         'code' => 'AFF-OWN-A',
         'name' => 'Affiliate A',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
+    ]);
+    $affiliateA->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+    $affiliateA->save();
 
     $setOwner($ownerB);
 
-    $affiliateB = Affiliate::create([
+    $affiliateB = new Affiliate([
         'code' => 'AFF-OWN-B',
         'name' => 'Affiliate B',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
+    ]);
+    $affiliateB->forceFill([
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
+    $affiliateB->save();
 
     $setOwner($ownerA);
 
-    AffiliateTouchpoint::create([
+    $record = new AffiliateTouchpoint([
         'affiliate_attribution_id' => fake()->uuid(),
         'affiliate_id' => $affiliateA->getKey(),
         'affiliate_code' => $affiliateA->code,
-        'owner_type' => $affiliateA->owner_type,
-        'owner_id' => $affiliateA->owner_id,
         'source' => 'facebook',
         'touched_at' => now(),
     ]);
+    $record->forceFill([
+        'owner_type' => $affiliateA->owner_type,
+        'owner_id' => $affiliateA->owner_id,
+    ]);
+    $record->save();
 
     $setOwner($ownerB);
 
-    AffiliateTouchpoint::create([
+    $record = new AffiliateTouchpoint([
         'affiliate_attribution_id' => fake()->uuid(),
         'affiliate_id' => $affiliateB->getKey(),
         'affiliate_code' => $affiliateB->code,
-        'owner_type' => $affiliateB->owner_type,
-        'owner_id' => $affiliateB->owner_id,
         'source' => 'google',
         'touched_at' => now(),
     ]);
+    $record->forceFill([
+        'owner_type' => $affiliateB->owner_type,
+        'owner_id' => $affiliateB->owner_id,
+    ]);
+    $record->save();
 
     $setOwner($ownerA);
 
-    AffiliateDailyStat::create([
+    $record = new AffiliateDailyStat([
         'affiliate_id' => $affiliateA->getKey(),
         'date' => Carbon::parse('2025-01-01')->toDateString(),
-        'owner_type' => $affiliateA->owner_type,
-        'owner_id' => $affiliateA->owner_id,
         'clicks' => 1,
         'unique_clicks' => 1,
         'attributions' => 0,
@@ -102,14 +112,17 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
         'conversion_rate' => 0,
         'epc_cents' => 0,
     ]);
+    $record->forceFill([
+        'owner_type' => $affiliateA->owner_type,
+        'owner_id' => $affiliateA->owner_id,
+    ]);
+    $record->save();
 
     $setOwner($ownerB);
 
-    AffiliateDailyStat::create([
+    $record = new AffiliateDailyStat([
         'affiliate_id' => $affiliateB->getKey(),
         'date' => Carbon::parse('2025-01-01')->toDateString(),
-        'owner_type' => $affiliateB->owner_type,
-        'owner_id' => $affiliateB->owner_id,
         'clicks' => 1,
         'unique_clicks' => 1,
         'attributions' => 0,
@@ -121,6 +134,11 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
         'conversion_rate' => 0,
         'epc_cents' => 0,
     ]);
+    $record->forceFill([
+        'owner_type' => $affiliateB->owner_type,
+        'owner_id' => $affiliateB->owner_id,
+    ]);
+    $record->save();
 
     $setOwner($ownerA);
 

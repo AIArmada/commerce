@@ -4,34 +4,47 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackResponse;
-use Illuminate\Support\Facades\DB;
+use AIArmada\Feedback\Support\ScoreCalculator;
 
 final class CalculateFeedbackResponseScoreAction
 {
+    public function __construct(
+        private readonly ScoreCalculator $scores,
+    ) {}
+
     public function execute(FeedbackResponse $response): void
     {
         $response = OwnerWriteGuard::findOrFailForOwner(FeedbackResponse::class, $response->id);
-        $owner = OwnerContext::resolve();
 
-        OwnerContext::assertResolvedOrExplicitGlobal($owner);
-
-        $query = DB::table((new FeedbackAnswer)->getTable());
-        $query = OwnerQuery::applyToQueryBuilder($query, $owner);
-
-        $row = $query
+        $answers = FeedbackAnswer::query()
             ->where('feedback_response_id', $response->id)
             ->whereNotNull('score')
-            ->selectRaw('COALESCE(SUM(score), 0) as total_score, COALESCE(MAX(score), 0) as max_score_val')
-            ->first();
+            ->with('question.options')
+            ->get();
+
+        $totalScore = 0.0;
+        $maxScore = 0.0;
+        $seenQuestions = [];
+
+        foreach ($answers as $answer) {
+            $totalScore += (float) $answer->score;
+
+            $question = $answer->question;
+
+            if ($question === null || isset($seenQuestions[$question->id])) {
+                continue;
+            }
+
+            $seenQuestions[$question->id] = true;
+            $maxScore += $this->scores->calculateMaxScore($question) ?? 0.0;
+        }
 
         $response->forceFill([
-            'score' => $row !== null ? (float) $row->total_score : null,
-            'max_score' => $row !== null ? (float) $row->max_score_val : null,
+            'score' => $totalScore,
+            'max_score' => $maxScore,
         ])->save();
     }
 }

@@ -37,6 +37,20 @@ final class CommunicationPolicy
         return true;
     }
 
+    /**
+     * Communications are read-only records once created. The sanctioned
+     * mutation paths are the cancel/retry actions below, not generic edits.
+     */
+    public function update(User $user, Communication $communication): bool
+    {
+        return false;
+    }
+
+    public function delete(User $user, Communication $communication): bool
+    {
+        return false;
+    }
+
     public function cancel(User $user, Communication $communication): bool
     {
         return $this->view($user, $communication);

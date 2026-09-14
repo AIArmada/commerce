@@ -149,6 +149,12 @@ Controls auto-generated registration number format.
 
 ```php
 'lifecycle' => [
+    'event' => [
+        'registration_blocked_statuses' => ['cancelled', 'completed', 'archived', 'expired', 'voided'],
+    ],
+    'session' => [
+        'registration_accepting_statuses' => ['scheduled', 'published', 'live'],
+    ],
     'occurrence' => [
         'registration_accepting_statuses' => ['scheduled', 'published', 'live'],
         'check_in_accepting_statuses' => ['scheduled', 'published', 'live'],
@@ -156,14 +162,14 @@ Controls auto-generated registration number format.
     ],
     'registration' => [
         'check_in_allowed_statuses' => ['confirmed'],
-        'capacity_blocking_statuses' => ['pending', 'confirmed', 'checked_in', 'no_show'],
+        'capacity_blocking_statuses' => ['pending', 'confirmed', 'refund_pending', 'checked_in'],
         'terminal_statuses' => ['checked_in', 'cancelled', 'refunded', 'no_show'],
         'auto_promote_waitlist' => env('EVENTS_AUTO_PROMOTE_WAITLIST', false),
     ],
 ]
 ```
 
-Controls which statuses allow registration, check-in, and walk-in. `capacity_blocking_statuses` determines which registration statuses consume occurrence capacity. Statuses are managed through `spatie/laravel-model-states` — transitions are defined in each state base class's `config()` method under `States/`.
+Controls which statuses allow registration, check-in, and walk-in. Registrations are accepted only when the event is not in a blocked status and the occurrence and session (when present) are in an accepting status. `capacity_blocking_statuses` determines which registration statuses consume occurrence capacity. Statuses are managed through `spatie/laravel-model-states` — transitions are defined in each state base class's `config()` method under `States/`.
 
 ### Synchronization
 

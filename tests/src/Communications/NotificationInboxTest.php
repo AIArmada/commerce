@@ -20,17 +20,18 @@ beforeEach(function (): void {
         'password' => 'secret',
     ]);
 
-    $this->communication = Communication::create([
+    $this->communication = (new Communication)->forceFill([
         'direction' => 'internal',
         'category' => 'internal',
         'priority' => 'normal',
         'purpose' => 'notification-test',
         'status' => 'completed',
     ]);
+    $this->communication->save();
 });
 
 test('creates with minimal attributes', function (): void {
-    $inbox = NotificationInbox::create([
+    $inbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::EventReminder,
@@ -38,6 +39,7 @@ test('creates with minimal attributes', function (): void {
         'trigger' => NotificationTrigger::EventPublished,
         'title' => 'Test Notification',
     ]);
+    $inbox->save();
 
     expect($inbox->id)->toBeUuid();
     expect($inbox->title)->toBe('Test Notification');
@@ -45,7 +47,7 @@ test('creates with minimal attributes', function (): void {
 });
 
 test('has uuid primary key', function (): void {
-    $inbox = NotificationInbox::create([
+    $inbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::EventReminder,
@@ -53,13 +55,14 @@ test('has uuid primary key', function (): void {
         'trigger' => NotificationTrigger::EventPublished,
         'title' => 'UUID Test',
     ]);
+    $inbox->save();
 
     expect($inbox->id)->toBeUuid();
     expect($inbox->getKeyType())->toBe('string');
 });
 
 test('casts family enum correctly', function (): void {
-    $inbox = NotificationInbox::create([
+    $inbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::EventUpdate,
@@ -67,6 +70,7 @@ test('casts family enum correctly', function (): void {
         'trigger' => NotificationTrigger::EventPublished,
         'title' => 'Family Enum Cast',
     ]);
+    $inbox->save();
 
     $fresh = NotificationInbox::find($inbox->id);
     expect($fresh->family)->toBeInstanceOf(NotificationFamily::class);
@@ -74,7 +78,7 @@ test('casts family enum correctly', function (): void {
 });
 
 test('casts priority enum correctly', function (): void {
-    $inbox = NotificationInbox::create([
+    $inbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::EventReminder,
@@ -82,6 +86,7 @@ test('casts priority enum correctly', function (): void {
         'trigger' => NotificationTrigger::EventPublished,
         'title' => 'Priority Enum Cast',
     ]);
+    $inbox->save();
 
     $fresh = NotificationInbox::find($inbox->id);
     expect($fresh->priority)->toBeInstanceOf(NotificationPriority::class);
@@ -89,7 +94,7 @@ test('casts priority enum correctly', function (): void {
 });
 
 test('casts trigger enum correctly', function (): void {
-    $inbox = NotificationInbox::create([
+    $inbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::EventReminder,
@@ -97,6 +102,7 @@ test('casts trigger enum correctly', function (): void {
         'trigger' => NotificationTrigger::EventCancelled,
         'title' => 'Trigger Enum Cast',
     ]);
+    $inbox->save();
 
     $fresh = NotificationInbox::find($inbox->id);
     expect($fresh->trigger)->toBeInstanceOf(NotificationTrigger::class);
@@ -104,7 +110,7 @@ test('casts trigger enum correctly', function (): void {
 });
 
 test('has recipient morphTo relationship', function (): void {
-    $inbox = NotificationInbox::create([
+    $inbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::EventReminder,
@@ -112,13 +118,14 @@ test('has recipient morphTo relationship', function (): void {
         'trigger' => NotificationTrigger::EventPublished,
         'title' => 'Recipient Test',
     ]);
+    $inbox->save();
 
     expect($inbox->recipient)->toBeInstanceOf(User::class);
     expect($inbox->recipient->id)->toBe($this->user->id);
 });
 
 test('has communication belongsTo relationship', function (): void {
-    $inbox = NotificationInbox::create([
+    $inbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'communication_id' => $this->communication->id,
@@ -127,22 +134,23 @@ test('has communication belongsTo relationship', function (): void {
         'trigger' => NotificationTrigger::EventPublished,
         'title' => 'Communication Test',
     ]);
+    $inbox->save();
 
     expect($inbox->communication)->toBeInstanceOf(Communication::class);
     expect($inbox->communication->id)->toBe($this->communication->id);
 });
 
 test('scopeUnread returns only unread notifications', function (): void {
-    NotificationInbox::create([
+    (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::EventReminder,
         'priority' => NotificationPriority::Normal,
         'trigger' => NotificationTrigger::EventPublished,
         'title' => 'Unread',
-    ]);
+    ])->save();
 
-    NotificationInbox::create([
+    (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::SystemAnnouncement,
@@ -150,23 +158,23 @@ test('scopeUnread returns only unread notifications', function (): void {
         'trigger' => NotificationTrigger::SystemAlert,
         'title' => 'Read',
         'read_at' => now(),
-    ]);
+    ])->save();
 
     expect(NotificationInbox::unread()->count())->toBe(1);
     expect(NotificationInbox::unread()->first()->title)->toBe('Unread');
 });
 
 test('scopeArchived returns only archived notifications', function (): void {
-    NotificationInbox::create([
+    (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::EventReminder,
         'priority' => NotificationPriority::Normal,
         'trigger' => NotificationTrigger::EventPublished,
         'title' => 'Active',
-    ]);
+    ])->save();
 
-    NotificationInbox::create([
+    (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::SystemAnnouncement,
@@ -174,7 +182,7 @@ test('scopeArchived returns only archived notifications', function (): void {
         'trigger' => NotificationTrigger::SystemAlert,
         'title' => 'Archived',
         'archived_at' => now(),
-    ]);
+    ])->save();
 
     expect(NotificationInbox::archived()->count())->toBe(1);
     expect(NotificationInbox::archived()->first()->title)->toBe('Archived');
@@ -199,7 +207,7 @@ test('inbox component only reads and mutates the authenticated recipient notific
         'password' => 'secret',
     ]);
 
-    $ownInbox = NotificationInbox::create([
+    $ownInbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user->getMorphClass(),
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::EventReminder,
@@ -207,8 +215,9 @@ test('inbox component only reads and mutates the authenticated recipient notific
         'trigger' => NotificationTrigger::EventPublished,
         'title' => 'Own notification',
     ]);
+    $ownInbox->save();
 
-    $otherInbox = NotificationInbox::create([
+    $otherInbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $otherUser->getMorphClass(),
         'recipient_id' => $otherUser->id,
         'family' => NotificationFamily::EventReminder,
@@ -216,6 +225,7 @@ test('inbox component only reads and mutates the authenticated recipient notific
         'trigger' => NotificationTrigger::EventPublished,
         'title' => 'Other notification',
     ]);
+    $otherInbox->save();
 
     $this->actingAs($this->user);
 
@@ -234,7 +244,7 @@ test('inbox component only reads and mutates the authenticated recipient notific
 test('can be created with read_at and archived_at timestamps', function (): void {
     $now = now();
 
-    $inbox = NotificationInbox::create([
+    $inbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::EventReminder,
@@ -244,6 +254,7 @@ test('can be created with read_at and archived_at timestamps', function (): void
         'read_at' => $now,
         'archived_at' => $now,
     ]);
+    $inbox->save();
 
     $fresh = NotificationInbox::find($inbox->id);
     expect($fresh->read_at)->not->toBeNull();
@@ -253,7 +264,7 @@ test('can be created with read_at and archived_at timestamps', function (): void
 test('stores data JSON correctly', function (): void {
     $data = ['key' => 'value', 'nested' => ['foo' => 'bar'], 'count' => 42];
 
-    $inbox = NotificationInbox::create([
+    $inbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::EventReminder,
@@ -262,6 +273,7 @@ test('stores data JSON correctly', function (): void {
         'title' => 'Data JSON',
         'data' => $data,
     ]);
+    $inbox->save();
 
     $fresh = NotificationInbox::find($inbox->id);
     expect($fresh->data)->toBe($data);
@@ -271,7 +283,7 @@ test('stores data JSON correctly', function (): void {
 });
 
 test('can be created without communication_id', function (): void {
-    $inbox = NotificationInbox::create([
+    $inbox = (new NotificationInbox)->forceFill([
         'recipient_type' => $this->user::class,
         'recipient_id' => $this->user->id,
         'family' => NotificationFamily::WelcomeMessage,
@@ -279,6 +291,7 @@ test('can be created without communication_id', function (): void {
         'trigger' => NotificationTrigger::AccountCreated,
         'title' => 'No Communication',
     ]);
+    $inbox->save();
 
     expect($inbox->communication_id)->toBeNull();
     expect($inbox->communication)->toBeNull();

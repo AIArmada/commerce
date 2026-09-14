@@ -10,6 +10,7 @@ use AIArmada\Events\States\RegistrationStatus\Completed;
 use AIArmada\Events\States\RegistrationStatus\Pending;
 use AIArmada\Events\States\RegistrationStatus\RegistrationStatus as RegistrationStatusState;
 use AIArmada\Events\States\RegistrationStatus\Waitlisted;
+use AIArmada\Events\Support\EventDeleteCascade;
 use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Ticketing\Models\Pass;
 use Carbon\CarbonImmutable;
@@ -63,6 +64,7 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $parent_registration_id
  * @property bool $is_bundle_root
  * @property array<string, mixed>|null $pass_entitlements
+ * @property string|null $idempotency_key
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -88,6 +90,13 @@ class EventRegistration extends Model
     use Notifiable;
     use ScopesByEventOwner;
 
+    /**
+     * Registration statuses that reserve capacity.
+     *
+     * `interested` is deliberately excluded: optional free RSVPs must not
+     * consume seats. Seats are reserved when an interested registration is
+     * promoted to confirmed.
+     */
     public const array CAPACITY_BLOCKING_STATUSES = [
         'pending',
         'confirmed',
@@ -103,6 +112,7 @@ class EventRegistration extends Model
         'external_order_id', 'external_order_type', 'payment_status',
         'status_reason', 'notes',
         'parent_registration_id', 'is_bundle_root', 'pass_entitlements',
+        'idempotency_key',
         'metadata',
     ];
 
@@ -135,6 +145,10 @@ class EventRegistration extends Model
             if ($status instanceof RegistrationStatusState) {
                 $registration->applyTransitionTimestamp($status::class, $now);
             }
+        });
+
+        static::deleting(function (EventRegistration $registration): void {
+            EventDeleteCascade::deleteForRegistration($registration);
         });
     }
 

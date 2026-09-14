@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use Filament\Actions\BulkActionGroup;
@@ -38,7 +40,11 @@ final class PricesRelationManager extends RelationManager
             ->schema([
                 Select::make('price_list_id')
                     ->label('Price List')
-                    ->relationship('priceList', 'name')
+                    ->relationship(
+                        'priceList',
+                        'name',
+                        modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query),
+                    )
                     ->required()
                     ->searchable()
                     ->preload(),
@@ -155,7 +161,11 @@ final class PricesRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\SelectFilter::make('price_list_id')
                     ->label('Price List')
-                    ->relationship('priceList', 'name')
+                    ->relationship(
+                        'priceList',
+                        'name',
+                        modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query),
+                    )
                     ->preload(),
 
                 Tables\Filters\TernaryFilter::make('has_discount')
@@ -170,6 +180,10 @@ final class PricesRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
+                        if (isset($data['price_list_id'])) {
+                            $data['price_list_id'] = OwnerScopedIds::ensureAllowed('price_list_id', PriceList::class, [$data['price_list_id']])[0];
+                        }
+
                         $data['priceable_type'] = $this->getOwnerRecord()->getMorphClass();
                         $data['priceable_id'] = $this->getOwnerRecord()->getKey();
 
@@ -178,7 +192,14 @@ final class PricesRelationManager extends RelationManager
             ])
             ->actions([
                 ViewAction::make(),
-                EditAction::make(),
+                EditAction::make()
+                    ->mutateFormDataUsing(function (array $data): array {
+                        if (isset($data['price_list_id'])) {
+                            $data['price_list_id'] = OwnerScopedIds::ensureAllowed('price_list_id', PriceList::class, [$data['price_list_id']])[0];
+                        }
+
+                        return $data;
+                    }),
                 DeleteAction::make(),
             ])
             ->bulkActions([

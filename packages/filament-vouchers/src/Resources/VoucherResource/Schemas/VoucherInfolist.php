@@ -6,8 +6,7 @@ namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Cart\Conditions\ConditionTarget;
-use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
+use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\States\VoucherStatus;
@@ -75,14 +74,11 @@ final class VoucherInfolist
                                 ->label('Preset')
                                 ->state(static function ($record): string {
                                     $metadata = is_array($record->metadata ?? null) ? $record->metadata : [];
-                                    $definition = $record->target_definition
-                                        ?? ($metadata['target_definition'] ?? null);
-                                    $dsl = is_array($definition)
-                                        ? ConditionTarget::from($definition)->toDsl()
-                                        : ConditionTargetPreset::default()->dsl();
-                                    $preset = ConditionTargetPreset::detect($dsl);
 
-                                    return ($preset ?? ConditionTargetPreset::Custom)->label();
+                                    return ConditionTargetDisplay::presetLabel(
+                                        $record->target_definition
+                                            ?? ($metadata['target_definition'] ?? null)
+                                    );
                                 })
                                 ->badge(),
 
@@ -126,12 +122,11 @@ final class VoucherInfolist
                                 ->label('Target DSL')
                                 ->state(static function ($record): string {
                                     $metadata = is_array($record->metadata ?? null) ? $record->metadata : [];
-                                    $definition = $record->target_definition
-                                        ?? ($metadata['target_definition'] ?? null);
 
-                                    return $definition !== null
-                                        ? ConditionTarget::from($definition)->toDsl()
-                                        : ConditionTargetPreset::default()->dsl();
+                                    return ConditionTargetDisplay::dsl(
+                                        $record->target_definition
+                                            ?? ($metadata['target_definition'] ?? null)
+                                    );
                                 })
                                 ->copyable()
                                 ->formatStateUsing(static fn (string $state): string => $state)

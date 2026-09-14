@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Cart\Conditions\ConditionTarget;
-use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
+use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
@@ -37,6 +36,9 @@ final class VouchersTable
         return $table
             ->modifyQueryUsing(static function (Builder $query): Builder {
                 $query->withCount('usages');
+
+                // The owner column reads the morphTo relation per row.
+                $query->with('owner');
 
                 if (class_exists('AIArmada\\Promotions\\Models\\Promotion')) {
                     $query->with('promotion');
@@ -101,23 +103,19 @@ final class VouchersTable
                     ->label('Target')
                     ->state(static function (Voucher $record): string {
                         $metadata = $record->metadata ?? [];
-                        $definition = $record->target_definition
-                            ?? (is_array($metadata) ? ($metadata['target_definition'] ?? null) : null);
-                        $dsl = $definition !== null
-                            ? ConditionTarget::from($definition)->toDsl()
-                            : ConditionTargetPreset::default()->dsl();
-                        $preset = ConditionTargetPreset::detect($dsl);
 
-                        return ($preset ?? ConditionTargetPreset::Custom)->label();
+                        return ConditionTargetDisplay::presetLabel(
+                            $record->target_definition
+                                ?? (is_array($metadata) ? ($metadata['target_definition'] ?? null) : null)
+                        );
                     })
                     ->tooltip(static function (Voucher $record): ?string {
                         $metadata = $record->metadata ?? [];
-                        $definition = $record->target_definition
-                            ?? (is_array($metadata) ? ($metadata['target_definition'] ?? null) : null);
 
-                        return $definition !== null
-                            ? ConditionTarget::from($definition)->toDsl()
-                            : ConditionTargetPreset::default()->dsl();
+                        return ConditionTargetDisplay::dsl(
+                            $record->target_definition
+                                ?? (is_array($metadata) ? ($metadata['target_definition'] ?? null) : null)
+                        );
                     })
                     ->badge()
                     ->color('info')

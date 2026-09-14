@@ -41,7 +41,7 @@ keywords:
 
 ## Key surfaces
 - Resources: `AffiliateOfferApplicationResource`, `AffiliateOfferCategoryResource`, `AffiliateOfferResource`, `AffiliateSiteResource`
-- Actions/Services: `Support/AffiliateNetworkOptionsProvider`, `Support/NetworkAdminAccess`, `Support/NetworkStatsAggregator`
+- Actions/Services: `Support/NetworkAdminAccess`, `Support/NetworkStatsAggregator`
 - Config `filament-affiliate-network.php`: `navigation`, `group`, `sort`, `authorization`, `admin_ability`, `marketplace`, `show_commission_rates`, `show_cookie_duration`
 
 ## Docs map

@@ -8,6 +8,7 @@ use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\SingleAddressAreaSource;
+use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
@@ -216,6 +217,9 @@ class AddressAreaImporter extends Importer
 
     public static function getCompletedNotificationBody(Import $import): string
     {
+        // The import finished, so cached filter option lists may be stale.
+        AddressingFilterOptions::forgetAreaOptions();
+
         $body = 'Your area import has completed and '
             . number_format($import->successful_rows) . ' '
             . str('row')->plural($import->successful_rows) . ' imported.';

@@ -199,6 +199,14 @@ class InMemoryStorage implements StorageInterface
             return false;
         }
 
+        if ($oldKey === $newKey) {
+            return true;
+        }
+
+        if (isset($this->carts[$newKey])) {
+            return false;
+        }
+
         $this->carts[$newKey] = $this->carts[$oldKey];
         unset($this->carts[$oldKey]);
 

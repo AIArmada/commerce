@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTicketing\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Ticketing\Models\PassHolder;
 use BackedEnum;
 use Filament\Infolists\Components\TextEntry;
@@ -14,6 +15,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class PassHolderResource extends Resource
@@ -21,6 +23,36 @@ final class PassHolderResource extends Resource
     protected static ?string $model = PassHolder::class;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-users';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('pass-holder.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('pass-holder.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('pass-holder.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('pass-holder.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('pass-holder.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {

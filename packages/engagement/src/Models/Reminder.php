@@ -62,7 +62,6 @@ final class Reminder extends Model
         'anchor_type',
         'anchor_code',
         'channel',
-        'notification_class',
         'scheduled_at',
         'sent_at',
         'cancelled_at',

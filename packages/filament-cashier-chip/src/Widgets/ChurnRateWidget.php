@@ -10,12 +10,19 @@ use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Override;
 
 final class ChurnRateWidget extends BaseWidget
 {
     use InteractsWithCashierChipData;
 
     protected static ?int $sort = 3;
+
+    #[Override]
+    public static function canView(): bool
+    {
+        return static::hasWidgetOwnerContext();
+    }
 
     protected function getStats(): array
     {
@@ -38,9 +45,26 @@ final class ChurnRateWidget extends BaseWidget
 
     private function calculateChurnRate(): float
     {
-        $startOfMonth = CarbonImmutable::now()->startOfMonth();
-        $endOfMonth = CarbonImmutable::now()->endOfMonth();
+        return $this->rememberWidgetValue('churn.current', function (): float {
+            $startOfMonth = CarbonImmutable::now()->startOfMonth();
+            $endOfMonth = CarbonImmutable::now()->endOfMonth();
 
+            return $this->churnForMonth($startOfMonth, $endOfMonth);
+        });
+    }
+
+    private function calculatePreviousChurnRate(): float
+    {
+        return $this->rememberWidgetValue('churn.previous', function (): float {
+            $startOfMonth = CarbonImmutable::now()->subMonth()->startOfMonth();
+            $endOfMonth = CarbonImmutable::now()->subMonth()->endOfMonth();
+
+            return $this->churnForMonth($startOfMonth, $endOfMonth);
+        });
+    }
+
+    private function churnForMonth(CarbonImmutable $startOfMonth, CarbonImmutable $endOfMonth): float
+    {
         $startCount = $this->subscriptionQuery()
             ->where('created_at', '<', $startOfMonth)
             ->where(function ($query) use ($startOfMonth): void {
@@ -48,31 +72,6 @@ final class ChurnRateWidget extends BaseWidget
                     ->orWhere('ends_at', '>=', $startOfMonth);
             })
             ->whereIn('chip_status', [SubscriptionStatus::Active->value, SubscriptionStatus::Trialing->value])
-            ->count();
-
-        if ($startCount === 0) {
-            return 0.0;
-        }
-
-        $churned = $this->subscriptionQuery()
-            ->whereNotNull('ends_at')
-            ->whereBetween('ends_at', [$startOfMonth, $endOfMonth])
-            ->count();
-
-        return ($churned / $startCount) * 100;
-    }
-
-    private function calculatePreviousChurnRate(): float
-    {
-        $startOfMonth = CarbonImmutable::now()->subMonth()->startOfMonth();
-        $endOfMonth = CarbonImmutable::now()->subMonth()->endOfMonth();
-
-        $startCount = $this->subscriptionQuery()
-            ->where('created_at', '<', $startOfMonth)
-            ->where(function ($query) use ($startOfMonth): void {
-                $query->whereNull('ends_at')
-                    ->orWhere('ends_at', '>=', $startOfMonth);
-            })
             ->count();
 
         if ($startCount === 0) {
@@ -131,34 +130,17 @@ final class ChurnRateWidget extends BaseWidget
      */
     private function getChurnChart(): array
     {
-        $chart = [];
+        return $this->rememberWidgetValue('churn.chart', function (): array {
+            $chart = [];
 
-        for ($i = 5; $i >= 0; $i--) {
-            $startOfMonth = CarbonImmutable::now()->subMonths($i)->startOfMonth();
-            $endOfMonth = CarbonImmutable::now()->subMonths($i)->endOfMonth();
+            for ($i = 5; $i >= 0; $i--) {
+                $startOfMonth = CarbonImmutable::now()->subMonths($i)->startOfMonth();
+                $endOfMonth = CarbonImmutable::now()->subMonths($i)->endOfMonth();
 
-            $startCount = $this->subscriptionQuery()
-                ->where('created_at', '<', $startOfMonth)
-                ->where(function ($query) use ($startOfMonth): void {
-                    $query->whereNull('ends_at')
-                        ->orWhere('ends_at', '>=', $startOfMonth);
-                })
-                ->count();
-
-            if ($startCount === 0) {
-                $chart[] = 0;
-
-                continue;
+                $chart[] = round($this->churnForMonth($startOfMonth, $endOfMonth), 1);
             }
 
-            $churned = $this->subscriptionQuery()
-                ->whereNotNull('ends_at')
-                ->whereBetween('ends_at', [$startOfMonth, $endOfMonth])
-                ->count();
-
-            $chart[] = round(($churned / $startCount) * 100, 1);
-        }
-
-        return $chart;
+            return $chart;
+        });
     }
 }

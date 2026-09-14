@@ -45,6 +45,7 @@ class LocalAnalyticsService
     {
         $metrics = Purchase::query()
             ->forOwner()
+            ->withoutIdempotencyStubs()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->toBase()
             ->selectRaw('
@@ -67,6 +68,7 @@ class LocalAnalyticsService
 
         $previous = Purchase::query()
             ->forOwner()
+            ->withoutIdempotencyStubs()
             ->whereBetween('created_at', [$previousStart, $previousEnd])
             ->where(function ($query): void {
                 $query->whereIn('status', self::SUCCESSFUL_REVENUE_STATUSES)
@@ -99,6 +101,7 @@ class LocalAnalyticsService
     {
         $metrics = Purchase::query()
             ->forOwner()
+            ->withoutIdempotencyStubs()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->toBase()
             ->selectRaw('
@@ -136,6 +139,7 @@ class LocalAnalyticsService
     {
         return Purchase::query()
             ->forOwner()
+            ->withoutIdempotencyStubs()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->toBase()
             ->selectRaw("
@@ -172,6 +176,7 @@ class LocalAnalyticsService
     {
         return Purchase::query()
             ->forOwner()
+            ->withoutIdempotencyStubs()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereIn('status', ['error', 'blocked'])
             ->toBase()
@@ -200,9 +205,14 @@ class LocalAnalyticsService
      */
     public function getRevenueTrend(CarbonImmutable $startDate, CarbonImmutable $endDate, string $groupBy = 'day'): array
     {
-        // Fetch raw data and group in PHP for database portability
-        $purchases = Purchase::query()
+        // Group in PHP for database portability, but stream in chunks so a
+        // busy range never hydrates the whole table at once.
+        /** @var array<string, array{count: int, revenue: int}> $buckets */
+        $buckets = [];
+
+        Purchase::query()
             ->forOwner()
+            ->withoutIdempotencyStubs()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->where(function ($query): void {
                 $query->whereIn('status', self::SUCCESSFUL_REVENUE_STATUSES)
@@ -212,16 +222,25 @@ class LocalAnalyticsService
                     });
             })
             ->select(['created_at', 'total_minor'])
-            ->get();
+            ->orderBy('id')
+            ->chunk(1000, function ($purchases) use (&$buckets, $groupBy): void {
+                foreach ($purchases as $purchase) {
+                    $period = $this->formatPeriod($purchase->created_at, $groupBy);
 
-        return $purchases
-            ->groupBy(fn ($purchase): string => $this->formatPeriod($purchase->created_at, $groupBy))
-            ->map(fn ($group, string $period): array => [
+                    $buckets[$period] ??= ['count' => 0, 'revenue' => 0];
+                    $buckets[$period]['count']++;
+                    $buckets[$period]['revenue'] += (int) $purchase->total_minor;
+                }
+            });
+
+        ksort($buckets);
+
+        return collect($buckets)
+            ->map(fn (array $bucket, string $period): array => [
                 'period' => $period,
-                'count' => $group->count(),
-                'revenue' => (int) $group->sum('total_minor'),
+                'count' => $bucket['count'],
+                'revenue' => $bucket['revenue'],
             ])
-            ->sortKeys()
             ->values()
             ->toArray();
     }

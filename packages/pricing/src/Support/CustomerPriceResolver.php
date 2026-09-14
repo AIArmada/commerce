@@ -11,6 +11,7 @@ use Illuminate\Support\Arr;
 
 final class CustomerPriceResolver implements CustomerPriceResolverInterface
 {
+    use ResolvesCurrency;
     use ResolvesEffectiveAt;
 
     /**
@@ -25,10 +26,12 @@ final class CustomerPriceResolver implements CustomerPriceResolverInterface
         }
 
         $effectiveAt = $this->resolveEffectiveAt($context);
+        $currency = $this->resolveCurrency($context);
 
         $price = Price::query()
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
+            ->where('currency', $currency)
             ->whereNull('deactivated_at')
             ->forQuantity($quantity)
             ->where(function ($q) use ($effectiveAt): void {
@@ -42,6 +45,7 @@ final class CustomerPriceResolver implements CustomerPriceResolverInterface
                 PriceList::query()
                     ->where('is_active', true)
                     ->whereNull('deactivated_at')
+                    ->where('currency', $currency)
                     ->where(function ($q) use ($effectiveAt): void {
                         $q->whereNull('starts_at')->orWhere('starts_at', '<=', $effectiveAt);
                     })

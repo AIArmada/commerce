@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\SubscriptionFactory;
 use AIArmada\Engagement\Enums\SubscriptionStatus;
+use AIArmada\Engagement\Support\SubscriptionCriteria;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -26,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $subscription_type
  * @property string $status
  * @property array|null $criteria
+ * @property string|null $criteria_hash
  * @property string|null $notification_level
  * @property array|null $notification_preferences
  * @property CarbonImmutable|null $subscribed_at
@@ -63,6 +65,13 @@ final class Subscription extends Model
         'source',
         'metadata',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Subscription $subscription): void {
+            $subscription->criteria_hash = SubscriptionCriteria::hash($subscription->criteria);
+        });
+    }
 
     public function getTable(): string
     {

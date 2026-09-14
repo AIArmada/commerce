@@ -4,24 +4,20 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
 use AIArmada\Cart\Listeners\HandleUserLogin;
+use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Storage\StorageInterface;
-use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Container\Container;
 
 describe('HandleUserLogin', function (): void {
-    it('triggers migration action on login when cached session exists', function (): void {
-        $user = (object) ['email' => 'test@example.com'];
+    beforeEach(function (): void {
+        session()->forget(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY);
+        session()->forget('cart_migration');
+    });
 
-        $identifierResolver = Mockery::mock(new LoginMigrationIdentifierResolver);
-        $identifierResolver->shouldReceive('resolveFromUser')
-            ->with($user)
-            ->andReturn(['test@example.com'])
-            ->once();
-        $identifierResolver->shouldReceive('findCachedSessionId')
-            ->with(['test@example.com'])
-            ->andReturn('old-session-123')
-            ->once();
+    it('triggers migration action on login when a stashed session exists', function (): void {
+        $user = (object) ['email' => 'test@example.com'];
+        session()->put(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY, 'old-session-123');
 
         $migrationAction = Mockery::mock(MigrateCartOnLoginAction::class);
         $migrationAction->shouldReceive('execute')
@@ -40,7 +36,7 @@ describe('HandleUserLogin', function (): void {
         $container = Mockery::mock(Container::class);
         $container->shouldReceive('make')->with(StorageInterface::class)->andReturn($storage)->once();
 
-        $listener = new HandleUserLogin($migrationAction, $identifierResolver, $container);
+        $listener = new HandleUserLogin($migrationAction, $container);
 
         $listener->handle(new Login('web', $user, false));
 
@@ -49,60 +45,28 @@ describe('HandleUserLogin', function (): void {
             'has_conflicts' => false,
             'conflicts' => collect(),
             'message' => 'Cart migrated!',
-        ]);
+        ])->and(session(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY))->toBeNull();
     });
 
-    it('falls back to cached username when the user model also has an email', function (): void {
-        $user = (object) [
-            'email' => 'test@example.com',
-            'username' => 'testuser',
-        ];
-
-        $identifierResolver = Mockery::mock(new LoginMigrationIdentifierResolver);
-        $identifierResolver->shouldReceive('resolveFromUser')
-            ->with($user)
-            ->andReturn(['test@example.com', 'testuser'])
-            ->once();
-        $identifierResolver->shouldReceive('findCachedSessionId')
-            ->with(['test@example.com', 'testuser'])
-            ->andReturn('old-session-username')
-            ->once();
+    it('does nothing when no session was stashed', function (): void {
+        $user = (object) ['email' => 'test@example.com'];
 
         $migrationAction = Mockery::mock(MigrateCartOnLoginAction::class);
-        $migrationAction->shouldReceive('execute')
-            ->with($user, 'default', 'old-session-username')
-            ->andReturn([
-                'success' => true,
-                'itemsMerged' => 1,
-                'message' => 'Cart migrated by username!',
-            ])
-            ->once();
-
-        $storage = Mockery::mock(StorageInterface::class);
-        $storage->shouldReceive('getOwnerType')->andReturn(null)->once();
-        $storage->shouldReceive('getInstances')->with('old-session-username')->andReturn([])->once();
+        $migrationAction->shouldNotReceive('execute');
 
         $container = Mockery::mock(Container::class);
-        $container->shouldReceive('make')->with(StorageInterface::class)->andReturn($storage)->once();
+        $container->shouldNotReceive('make');
 
-        $listener = new HandleUserLogin($migrationAction, $identifierResolver, $container);
+        $listener = new HandleUserLogin($migrationAction, $container);
 
         $listener->handle(new Login('web', $user, false));
 
-        expect(session('cart_migration'))->toMatchArray([
-            'items_merged' => 1,
-            'has_conflicts' => false,
-            'conflicts' => collect(),
-            'message' => 'Cart migrated by username!',
-        ]);
+        expect(session('cart_migration'))->toBeNull();
     });
 
     it('migrates every discovered cart instance and aggregates item quantities', function (): void {
         $user = (object) ['email' => 'multi@example.com'];
-
-        $identifierResolver = Mockery::mock(new LoginMigrationIdentifierResolver);
-        $identifierResolver->shouldReceive('resolveFromUser')->with($user)->andReturn(['multi@example.com']);
-        $identifierResolver->shouldReceive('findCachedSessionId')->with(['multi@example.com'])->andReturn('multi-session');
+        session()->put(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY, 'multi-session');
 
         $migrationAction = Mockery::mock(MigrateCartOnLoginAction::class);
         $migrationAction->shouldReceive('execute')
@@ -129,7 +93,7 @@ describe('HandleUserLogin', function (): void {
         $container = Mockery::mock(Container::class);
         $container->shouldReceive('make')->with(StorageInterface::class)->andReturn($storage)->once();
 
-        $listener = new HandleUserLogin($migrationAction, $identifierResolver, $container);
+        $listener = new HandleUserLogin($migrationAction, $container);
 
         $listener->handle(new Login('web', $user, false));
 
@@ -149,7 +113,6 @@ describe('HandleUserLogin', function (): void {
 
         $listener = new HandleUserLogin(
             Mockery::mock(MigrateCartOnLoginAction::class),
-            Mockery::mock(LoginMigrationIdentifierResolver::class),
             $container,
         );
 

@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
 use AIArmada\Cart\Snapshots\CartSnapshot as SnapshotCart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
@@ -66,6 +67,31 @@ test('cart bridge resolves urls when integration enabled', function (): void {
         ->and($url)->not()->toBeNull();
 });
 
+/**
+ * Create a tenant-owned record: owner columns are force-filled before the
+ * initial save inside the matching owner context (mass-assignment of owner
+ * columns is rejected by the domain models).
+ *
+ * @param  class-string<Model>  $model
+ * @param  array<string, mixed>  $attributes
+ */
+function createBridgesOwnedRecord(string $model, array $attributes, Model $owner): Model
+{
+    return OwnerContext::withOwner($owner, function () use ($model, $attributes, $owner): Model {
+        unset($attributes['owner_type'], $attributes['owner_id']);
+
+        /** @var Model $record */
+        $record = new $model($attributes);
+        $record->forceFill([
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+        ]);
+        $record->save();
+
+        return $record;
+    });
+}
+
 test('cart bridge honours config toggle', function (): void {
     config(['filament-affiliates.integrations.filament_cart' => false]);
 
@@ -119,7 +145,7 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
         }
     });
 
-    $affiliateB = Affiliate::create([
+    $affiliateB = createBridgesOwnedRecord(Affiliate::class, [
         'code' => 'AFF-B-' . Str::uuid(),
         'name' => 'Affiliate B',
         'status' => AffiliateActive::class,
@@ -128,9 +154,9 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
         'currency' => 'USD',
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => (string) $ownerB->getKey(),
-    ]);
+    ], $ownerB);
 
-    AffiliateConversion::create([
+    createBridgesOwnedRecord(AffiliateConversion::class, [
         'affiliate_id' => $affiliateB->getKey(),
         'affiliate_code' => $affiliateB->code,
         'subject_key' => $cart->identifier,
@@ -143,7 +169,7 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
         'occurred_at' => now(),
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => (string) $ownerB->getKey(),
-    ]);
+    ], $ownerB);
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -157,7 +183,7 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
 
     expect(app(CartBridge::class)->resolveUrl($cart->identifier, $cart->instance))->toBeNull();
 
-    $affiliateA = Affiliate::create([
+    $affiliateA = createBridgesOwnedRecord(Affiliate::class, [
         'code' => 'AFF-A-' . Str::uuid(),
         'name' => 'Affiliate A',
         'status' => AffiliateActive::class,
@@ -166,9 +192,9 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
         'currency' => 'USD',
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => (string) $ownerA->getKey(),
-    ]);
+    ], $ownerA);
 
-    AffiliateConversion::create([
+    createBridgesOwnedRecord(AffiliateConversion::class, [
         'affiliate_id' => $affiliateA->getKey(),
         'affiliate_code' => $affiliateA->code,
         'subject_key' => $cart->identifier,
@@ -181,7 +207,7 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
         'occurred_at' => now(),
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => (string) $ownerA->getKey(),
-    ]);
+    ], $ownerA);
 
     expect(app(CartBridge::class)->resolveUrl($cart->identifier, $cart->instance))->not()->toBeNull();
 });

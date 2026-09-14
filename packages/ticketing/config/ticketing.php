@@ -28,6 +28,15 @@ return [
         'bulk_max_size' => env('TICKETING_BULK_TRANSFER_MAX', 100),
         'expiry_grace_period' => env('TICKETING_TRANSFER_EXPIRY_GRACE', 0),
     ],
+    'issuance' => [
+        'max_quantity' => env('TICKETING_MAX_ISSUE_QUANTITY', 500),
+    ],
+    'holders' => [
+        'allowed_types' => [],
+    ],
+    'cart' => [
+        'max_participants' => env('TICKETING_MAX_PARTICIPANTS', 100),
+    ],
     'notifications' => [
         'ticket' => [
             'enabled' => true,

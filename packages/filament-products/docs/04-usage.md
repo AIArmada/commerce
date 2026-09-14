@@ -209,6 +209,25 @@ Combine groups into sets for product types:
 - Header row required
 - Prices in cents
 
+**Import guards**: files larger than `import.max_rows` are rejected before any row is written. New rows require a name and a numeric price; invalid status, type, visibility, or currency cells are reported as row errors instead of silently defaulting. Updates match by SKU and leave blank cells unchanged. With "Skip Errors" off, the whole import runs in one transaction and rolls back on the first bad row. Exports stream row by row, so large catalogs do not exhaust memory.
+
+---
+
+## Authorization
+
+Every catalog resource gates access through `FilamentPermission` abilities:
+
+| Resource | Ability prefix |
+|----------|----------------|
+| Products | `product.*` |
+| Categories | `category.*` |
+| Collections | `collection.*` |
+| Attributes | `attribute.*` |
+| Attribute groups | `attribute-group.*` |
+| Attribute sets | `attribute-set.*` |
+
+Each prefix supports `viewAny`, `view`, `create`, `update`, and `delete`. Bulk actions require the matching `update` (or `delete`) ability. Category slugs must be unique per owner and parent, matching the domain rule; a category cannot be moved under itself or one of its descendants.
+
 ---
 
 ## Bulk Edit Page

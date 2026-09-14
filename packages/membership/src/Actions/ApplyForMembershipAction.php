@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use ValueError;
 
@@ -26,9 +27,17 @@ final class ApplyForMembershipAction
     {
         app(MembershipSubjectGuard::class)->validate($subject);
 
+        $justification = mb_trim($justification);
+
         if ($justification === '') {
             throw new ValueError('Justification cannot be empty.');
         }
+
+        if (mb_strlen($justification) > 5000) {
+            throw new ValueError('Justification must not exceed 5000 characters.');
+        }
+
+        $this->assertMetaWithinLimits($meta);
 
         $subjectType = $subject->getMorphClass();
         $subjectId = (string) $subject->getKey();
@@ -47,14 +56,18 @@ final class ApplyForMembershipAction
 
                 $created = true;
 
-                return MembershipApplication::query()->create([
+                $application = new MembershipApplication;
+                $application->fill([
                     'subject_type' => $subjectType,
                     'subject_id' => $subjectId,
                     'applicant_id' => $applicantId,
-                    'status' => ApplicationStatus::Pending,
                     'justification' => $justification,
                     'meta' => $meta,
                 ]);
+                $application->forceFill(['status' => ApplicationStatus::Pending]);
+                $application->save();
+
+                return $application;
             });
         } catch (QueryException $exception) {
             if (! $this->isApplicationUniquenessViolation($exception)) {
@@ -88,6 +101,22 @@ final class ApplyForMembershipAction
             ->where('subject_id', $subjectId)
             ->where('applicant_id', $applicantId)
             ->where('status', ApplicationStatus::Pending);
+    }
+
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    private function assertMetaWithinLimits(array $meta): void
+    {
+        if (count($meta) > 50) {
+            throw new InvalidArgumentException('Application metadata must not exceed 50 entries.');
+        }
+
+        $encoded = json_encode($meta);
+
+        if ($encoded === false || mb_strlen($encoded) > 65535) {
+            throw new InvalidArgumentException('Application metadata must not exceed 65535 bytes.');
+        }
     }
 
     private function isApplicationUniquenessViolation(QueryException $exception): bool

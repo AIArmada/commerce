@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSeating\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentSeating\Support\SeatingOwnerScope;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use BackedEnum;
 use Filament\Actions\EditAction;
@@ -19,6 +21,8 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
 final class SeatMapResource extends Resource
@@ -45,6 +49,36 @@ final class SeatMapResource extends Resource
             ->withCount('sections');
     }
 
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('seat-map.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('seat-map.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('seat-map.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('seat-map.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('seat-map.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
@@ -56,9 +90,13 @@ final class SeatMapResource extends Resource
                             ->required()
                             ->maxLength(255),
                         TextInput::make('slug')
-                            ->maxLength(255),
+                            ->required()
+                            ->maxLength(255)
+                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => SeatingOwnerScope::scopeUniqueRuleToOwner($rule)),
                         TextInput::make('version')
                             ->numeric()
+                            ->integer()
+                            ->minValue(1)
                             ->default(1),
                         Select::make('status')
                             ->options([

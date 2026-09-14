@@ -48,7 +48,8 @@ final class ConversionFunnelReport extends ReportPage
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-signals.features.conversion_funnel', true);
+        return (bool) config('filament-signals.features.conversion_funnel', true)
+            && static::canAccess();
     }
 
     /**

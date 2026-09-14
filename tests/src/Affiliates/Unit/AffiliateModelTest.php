@@ -44,16 +44,21 @@ describe('Affiliate Model - Owner Scopes', function (): void {
         };
 
         $affiliate1 = OwnerContext::withOwner($owner1, function (): Affiliate {
-            return Affiliate::create([
+            $model = new Affiliate([
                 'code' => 'AFF1',
                 'name' => 'Test Affiliate 1',
                 'status' => Active::class,
                 'commission_type' => 'percentage',
                 'commission_rate' => 500,
                 'currency' => 'USD',
+            ]);
+            $model->forceFill([
                 'owner_type' => 'User',
                 'owner_id' => 1,
             ]);
+            $model->save();
+
+            return $model;
         });
 
         $owner2 = new class extends Model
@@ -70,16 +75,21 @@ describe('Affiliate Model - Owner Scopes', function (): void {
         };
 
         $affiliate2 = OwnerContext::withOwner($owner2, function (): Affiliate {
-            return Affiliate::create([
+            $model = new Affiliate([
                 'code' => 'AFF2',
                 'name' => 'Test Affiliate 2',
                 'status' => Active::class,
                 'commission_type' => 'percentage',
                 'commission_rate' => 500,
                 'currency' => 'USD',
+            ]);
+            $model->forceFill([
                 'owner_type' => 'User',
                 'owner_id' => 2,
             ]);
+            $model->save();
+
+            return $model;
         });
 
         $results = Affiliate::forOwner($owner1)->pluck('id');

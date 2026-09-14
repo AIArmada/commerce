@@ -40,14 +40,14 @@ describe('Orders ↔ Docs Integration', function (): void {
                 'shipping_total' => 1500,
                 'tax_total' => 1200,
                 'discount_total' => 0,
-                'grand_total' => 21500,
+                'grand_total' => 22700,
                 'currency' => 'MYR',
             ],
             [
                 [
                     'name' => 'Invoice Widget',
                     'quantity' => 2,
-                    'unit_price' => 8000,
+                    'unit_price' => 10000,
                     'tax_amount' => 400,
                     'sku' => 'INV-WIDGET-001',
                 ],
@@ -63,7 +63,7 @@ describe('Orders ↔ Docs Integration', function (): void {
             ],
         );
 
-        $service->confirmPayment($order, 'txn_docs_123', 'stripe', 21500);
+        $service->confirmPayment($order, 'txn_docs_123', 'stripe', 22700);
 
         expect($eventFired)->toBeTrue();
 

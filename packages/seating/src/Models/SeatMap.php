@@ -41,7 +41,7 @@ class SeatMap extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $seatMap): void {
-            $seatMap->sections()->each(fn (SeatSection $section): mixed => $section->delete());
+            $seatMap->sections()->chunkById(500, fn ($sections): mixed => $sections->each->delete());
         });
     }
 

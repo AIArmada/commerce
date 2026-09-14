@@ -56,13 +56,13 @@ final class VerifyWebhookSignature
             abort(401, 'Webhook timestamp is outside the allowed tolerance.');
         }
 
-        $signature = $request->header('X-Webhook-Signature');
+        $signature = $request->header($this->registrar->getSignatureHeader($provider));
 
         if (! is_string($signature) || $signature === '') {
             abort(401, 'Missing webhook signature.');
         }
 
-        $expected = hash_hmac('sha256', $request->getContent(), $secret);
+        $expected = hash_hmac($this->registrar->getAlgorithm($provider), $request->getContent(), $secret);
 
         if (! hash_equals($expected, $signature)) {
             abort(401, 'Invalid webhook signature.');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources;
 
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource\Pages\ListVoucherWallets;
@@ -43,9 +44,14 @@ final class VoucherWalletResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = (int) self::getEloquentQuery()->whereNotNull('claimed_at')
-            ->whereNull('redeemed_at')
-            ->count();
+        $count = (int) OwnerCache::remember(
+            OwnerContext::resolve(),
+            'filament-vouchers.nav-badge.wallet-entries',
+            30,
+            static fn (): int => (int) self::getEloquentQuery()->whereNotNull('claimed_at')
+                ->whereNull('redeemed_at')
+                ->count(),
+        );
 
         return $count > 0 ? (string) $count : null;
     }

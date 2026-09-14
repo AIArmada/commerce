@@ -18,6 +18,10 @@ final class EloquentEventSearchEngine implements EventSearchEngine
         'updated_at',
     ];
 
+    private const int DEFAULT_LIMIT = 25;
+
+    private const int MAX_LIMIT = 100;
+
     public function search(array $criteria): Collection
     {
         $eventClass = ModelResolver::eventClass();
@@ -80,9 +84,8 @@ final class EloquentEventSearchEngine implements EventSearchEngine
 
         $query->orderBy($sortField, $sortDir);
 
-        if (! empty($criteria['limit'])) {
-            $query->limit((int) $criteria['limit']);
-        }
+        $limit = (int) ($criteria['limit'] ?? self::DEFAULT_LIMIT);
+        $query->limit(max(1, min($limit, self::MAX_LIMIT)));
 
         return $query->get();
     }

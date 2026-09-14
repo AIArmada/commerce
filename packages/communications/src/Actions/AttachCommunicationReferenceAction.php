@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Models\Communication;
@@ -26,6 +27,11 @@ final class AttachCommunicationReferenceAction
         ?array $metadata = null,
     ): CommunicationReference {
         $communication = Communication::query()->findOrFail($communicationId);
+
+        if (Communication::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
+        }
+
         $referenceValues = $this->normalizer->normalize($referenceType, $referenceId);
 
         $reference = $communication->references()

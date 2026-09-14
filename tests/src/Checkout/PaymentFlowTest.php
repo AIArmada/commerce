@@ -168,7 +168,7 @@ describe('PaymentCallbackController', function (): void {
 
     it('resolves session via session query parameter', function () use ($setConfig): void {
         $setConfig();
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-123',
             'selected_payment_gateway' => 'chip',
             'payment_data' => [
@@ -190,7 +190,7 @@ describe('PaymentCallbackController', function (): void {
 
     it('resolves session via checkout_session_id query parameter', function () use ($setConfig): void {
         $setConfig();
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-alt',
             'selected_payment_gateway' => 'chip',
             'payment_data' => [
@@ -211,7 +211,7 @@ describe('PaymentCallbackController', function (): void {
 
     it('includes session id in cancel redirect', function () use ($setConfig): void {
         $setConfig();
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-cancel',
             'selected_payment_gateway' => 'chip',
             'payment_data' => [
@@ -233,7 +233,7 @@ describe('PaymentCallbackController', function (): void {
 
     it('includes session id in failure redirect', function () use ($setConfig): void {
         $setConfig();
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-fail',
             'selected_payment_gateway' => 'chip',
             'payment_data' => [
@@ -257,7 +257,7 @@ describe('PaymentCallbackController', function (): void {
         $setConfig();
         $orderId = (string) Str::uuid();
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-completed-failure',
             'order_id' => $orderId,
             'status' => Completed::class,
@@ -284,7 +284,7 @@ describe('PaymentCallbackController', function (): void {
         $setConfig();
         $orderId = (string) Str::uuid();
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-completed-cancel',
             'order_id' => $orderId,
             'status' => Completed::class,
@@ -324,7 +324,7 @@ describe('PaymentCallbackController', function (): void {
             })
             ->andReturnUsing(function (CheckoutSession $session) use ($orderId): CheckoutResult {
                 $session->transitionStatus(Completed::class);
-                $session->update([
+                $session->persistState([
                     'order_id' => $orderId,
                     'payment_redirect_url' => null,
                 ]);
@@ -334,7 +334,7 @@ describe('PaymentCallbackController', function (): void {
 
         app()->instance(CheckoutServiceInterface::class, $checkoutService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-duplicate-success',
             'status' => AwaitingPayment::class,
             'selected_payment_gateway' => 'chip',
@@ -366,7 +366,7 @@ describe('PaymentCallbackController', function (): void {
 
     it('rejects callbacks without a valid token', function () use ($setConfig): void {
         $setConfig();
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-invalid-token',
             'selected_payment_gateway' => 'chip',
             'payment_data' => [
@@ -391,7 +391,7 @@ describe('PaymentCallbackController', function (): void {
         // Regression test for P0: callback controller must NOT pass $request->query() to
         // verifyAndCompletePayment, as attacker could append &status=paid to the success URL
         // (the callback_token is visible in their browser bar after the gateway redirect).
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-p0-exploit',
             'selected_payment_gateway' => 'chip',
             'grand_total' => 5000,
@@ -419,7 +419,7 @@ describe('PaymentCallbackController', function (): void {
 
 describe('ProcessPaymentStep', function (): void {
     it('handles free orders without redundant status transitions', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-free',
             'grand_total' => 0,
             'currency' => 'USD',
@@ -435,7 +435,7 @@ describe('ProcessPaymentStep', function (): void {
     });
 
     it('preserves the stored checkout actor reference in payment_data for free orders', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-free-actor',
             'grand_total' => 0,
             'currency' => 'USD',
@@ -474,7 +474,7 @@ describe('ProcessPaymentStep', function (): void {
 
         app()->instance(PaymentGatewayResolverInterface::class, $mockResolver);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-p1',
             'selected_payment_gateway' => 'chip',
             'grand_total' => 1000,
@@ -510,7 +510,7 @@ describe('CreateOrderStep', function (): void {
 
         app()->instance(OrderServiceInterface::class, $orderService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-create-order',
             'cart_snapshot' => [
                 'items' => [
@@ -554,7 +554,7 @@ describe('CreateOrderStep', function (): void {
         $orderService->shouldReceive('confirmPayment')->once()->andThrow(new RuntimeException('gateway unavailable'));
         app()->instance(OrderServiceInterface::class, $orderService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-payment-failed',
             'cart_snapshot' => ['items' => []],
             'payment_data' => [
@@ -605,7 +605,7 @@ describe('CreateOrderStep', function (): void {
 
         app()->instance(OrderServiceInterface::class, $orderService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-retry-safe',
             'cart_snapshot' => ['items' => []],
             'payment_data' => [
@@ -662,7 +662,7 @@ describe('CreateOrderStep', function (): void {
         $inventoryService->shouldReceive('commit')->never();
         app()->instance(CheckoutReservationServiceInterface::class, $inventoryService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-payment-failed-no-inv',
             'cart_snapshot' => ['items' => []],
             'payment_data' => [
@@ -704,7 +704,7 @@ describe('CreateOrderStep', function (): void {
         $inventoryService = mock(CheckoutReservationServiceInterface::class);
         app()->instance(CheckoutReservationServiceInterface::class, $inventoryService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-paid-inventory-order',
             'selected_payment_gateway' => 'chip',
             'payment_id' => 'pay_paid_inventory_123',
@@ -756,7 +756,7 @@ describe('CreateOrderStep', function (): void {
 
         app()->instance(OrderServiceInterface::class, $orderService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-paid-without-confirm',
             'selected_payment_gateway' => 'chip',
             'payment_id' => 'pay_without_confirm_123',
@@ -807,7 +807,7 @@ describe('CreateOrderStep', function (): void {
 
         app()->instance(OrderServiceInterface::class, $orderService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-free-inventory-order',
             'cart_snapshot' => [
                 'items' => [
@@ -883,7 +883,7 @@ describe('CreateOrderStep', function (): void {
 
         app()->instance(OrderServiceInterface::class, $orderService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-priced-order',
             'customer_id' => $customer->id,
             'cart_snapshot' => [
@@ -942,7 +942,7 @@ describe('CreateOrderStep', function (): void {
         $voucherService = mock(VoucherServiceInterface::class);
         app()->instance(VoucherServiceInterface::class, $voucherService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-voucher-order',
             'cart_snapshot' => [
                 'items' => [
@@ -995,7 +995,7 @@ describe('CreateOrderStep', function (): void {
 
         app()->instance(OrderServiceInterface::class, $orderService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-explicit-purchasable',
             'cart_snapshot' => [
                 'items' => [
@@ -1045,7 +1045,7 @@ describe('CreateOrderStep', function (): void {
 
         app()->instance(OrderServiceInterface::class, $orderService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-attribute-purchasable',
             'cart_snapshot' => [
                 'items' => [
@@ -1092,7 +1092,7 @@ describe('CreateOrderStep', function (): void {
 
         app()->instance(CheckoutReservationServiceInterface::class, $inventoryService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-reserve-reference',
             'cart_snapshot' => [
                 'items' => [
@@ -1121,7 +1121,7 @@ describe('CreateOrderStep', function (): void {
 
         app()->instance(CheckoutReservationServiceInterface::class, $inventoryService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-release-reference',
             'pricing_data' => [
                 'inventory_reservation' => [
@@ -1181,7 +1181,7 @@ describe('CreateOrderStep', function (): void {
 
         app()->instance(OrderServiceInterface::class, $orderService);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-free-failure',
             'cart_snapshot' => ['items' => [['name' => 'Free Item', 'quantity' => 1, 'price' => 0]]],
             'payment_data' => ['type' => 'free_order'],
@@ -1202,7 +1202,7 @@ describe('CreateOrderStep', function (): void {
 
 describe('CheckoutService', function (): void {
     it('bridges chip purchase paid events into checkout success callbacks', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-chip-paid',
             'status' => AwaitingPayment::class,
             'selected_payment_gateway' => 'chip',
@@ -1229,7 +1229,7 @@ describe('CheckoutService', function (): void {
     });
 
     it('bridges chip purchase payment failure events into checkout failure callbacks', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-chip-failure',
             'status' => AwaitingPayment::class,
             'selected_payment_gateway' => 'chip',
@@ -1256,7 +1256,7 @@ describe('CheckoutService', function (): void {
     });
 
     it('bridges chip purchase cancelled events into checkout cancel callbacks', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-chip-cancelled',
             'status' => AwaitingPayment::class,
             'selected_payment_gateway' => 'chip',
@@ -1283,7 +1283,7 @@ describe('CheckoutService', function (): void {
     });
 
     it('ignores duplicate chip purchase paid events for already completed sessions', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-chip-completed',
             'status' => Completed::class,
             'selected_payment_gateway' => 'chip',
@@ -1301,7 +1301,7 @@ describe('CheckoutService', function (): void {
     });
 
     it('ignores chip purchase events for checkout sessions using another gateway', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-chip-wrong-gateway',
             'status' => AwaitingPayment::class,
             'selected_payment_gateway' => 'cashier',
@@ -1370,7 +1370,7 @@ describe('CheckoutService', function (): void {
             paymentResolver: null,
         );
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-checkout-complete',
             'step_states' => [
                 'complete_order' => 'pending',
@@ -1403,7 +1403,7 @@ describe('CheckoutService', function (): void {
 
             public function handle(CheckoutSession $session): StepResult
             {
-                $session->update([
+                $session->persistState([
                     'payment_attempts' => $session->payment_attempts + 1,
                     'payment_redirect_url' => 'https://gateway.example.test/redirect',
                 ]);
@@ -1489,7 +1489,7 @@ describe('CheckoutService', function (): void {
             paymentResolver: null,
         );
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-retry-payment',
             'status' => PaymentFailed::class,
             'step_states' => [
@@ -1614,7 +1614,7 @@ describe('CheckoutService', function (): void {
             paymentResolver: null,
         );
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-post-payment-phase',
             'status' => AwaitingPayment::class,
             'selected_payment_gateway' => 'chip',
@@ -1641,7 +1641,7 @@ describe('CheckoutService', function (): void {
     it('dispatches CheckoutCompleted exactly once for a completed checkout', function (): void {
         Event::fake([CheckoutCompleted::class]);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-checkout-completed-once',
         ]);
 
@@ -1659,7 +1659,7 @@ describe('CheckoutService', function (): void {
 
         $finalizer = new CheckoutFinalizer(app(Dispatcher::class), $cartManager);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-clear',
         ]);
 
@@ -1668,7 +1668,7 @@ describe('CheckoutService', function (): void {
         expect($result->success)->toBeTrue()
             ->and($session->fresh()->status instanceof Completed)->toBeTrue();
 
-        $failSession = CheckoutSession::create([
+        $failSession = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-clear-fail',
             'step_states' => ['fail_step' => 'pending'],
             'current_step' => 'fail_step',

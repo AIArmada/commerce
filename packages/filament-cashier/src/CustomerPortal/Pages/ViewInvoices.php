@@ -20,6 +20,16 @@ final class ViewInvoices extends Page
     /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.view-invoices';
 
+    public int $limit = 50;
+
+    public bool $hasMoreInvoices = false;
+
+    private const int DEFAULT_LOAD_MORE_INCREMENT = 50;
+
+    private const int MAX_LOAD_MORE_INCREMENT = 50;
+
+    private const int MAX_LIMIT = 200;
+
     public static function getNavigationLabel(): string
     {
         return __('filament-cashier::portal.invoices.title');
@@ -33,6 +43,14 @@ final class ViewInvoices extends Page
     public function getTitle(): string
     {
         return __('filament-cashier::portal.invoices.title');
+    }
+
+    public function loadMoreInvoices(int $increment = self::DEFAULT_LOAD_MORE_INCREMENT): void
+    {
+        $this->limit = min(
+            self::MAX_LIMIT,
+            $this->limit + min(max(1, $increment), self::MAX_LOAD_MORE_INCREMENT),
+        );
     }
 
     /**
@@ -98,10 +116,13 @@ final class ViewInvoices extends Page
             }
         }
 
+        $limit = min(max(1, $this->limit), self::MAX_LIMIT);
+        $sorted = $invoices->sortByDesc('sort_timestamp')->values();
+        $this->hasMoreInvoices = $sorted->count() > $limit;
+
         /** @var Collection<int, array{id: string, gateway: string, number: string, amount: string, date: string, status: string, download_url: string|null}> $result */
-        $result = $invoices
-            ->sortByDesc('sort_timestamp')
-            ->values()
+        $result = $sorted
+            ->take($limit)
             ->map(function (array $invoice): array {
                 return [
                     'id' => (string) $invoice['id'],

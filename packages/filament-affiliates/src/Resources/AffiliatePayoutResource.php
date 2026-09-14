@@ -77,12 +77,25 @@ final class AffiliatePayoutResource extends Resource
                 ->schema([
                     Forms\Components\Select::make('affiliate_id')
                         ->label('Affiliate')
-                        ->options(fn (): array => Affiliate::query()
-                            ->orderBy('name')
-                            ->pluck('name', 'id')
-                            ->all())
+                        ->getSearchResultsUsing(function (string $search): array {
+                            $query = Affiliate::query();
+
+                            if ((bool) config('affiliates.owner.enabled', false)) {
+                                $query->forOwner();
+                            }
+
+                            return $query
+                                ->where(function ($nested) use ($search): void {
+                                    $nested->where('name', 'like', "%{$search}%")
+                                        ->orWhere('code', 'like', "%{$search}%");
+                                })
+                                ->orderBy('name')
+                                ->limit(50)
+                                ->pluck('name', 'id')
+                                ->toArray();
+                        })
+                        ->getOptionLabelUsing(fn ($value): ?string => Affiliate::query()->find($value)?->name)
                         ->searchable()
-                        ->preload()
                         ->required(),
 
                     Forms\Components\TextInput::make('total_minor')

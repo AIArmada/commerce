@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\CreateDocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\EditDocTemplate;
@@ -14,6 +14,7 @@ use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\ViewDocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Schemas\DocTemplateForm;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Schemas\DocTemplateInfolist;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Tables\DocTemplatesTable;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -41,27 +42,27 @@ final class DocTemplateResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return FilamentPermission::hasAbility('purchase.viewAny');
+        return DocPermissions::allows(DocPermissions::DOCUMENT_TEMPLATE, 'viewAny');
     }
 
     public static function canView(Model $record): bool
     {
-        return FilamentPermission::hasAbility('purchase.view');
+        return DocPermissions::allows(DocPermissions::DOCUMENT_TEMPLATE, 'view');
     }
 
     public static function canCreate(): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.create', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT_TEMPLATE, 'create');
     }
 
     public static function canEdit(Model $record): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.update', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT_TEMPLATE, 'update');
     }
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.delete', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT_TEMPLATE, 'delete');
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -101,7 +102,12 @@ final class DocTemplateResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getEloquentQuery()->count();
+        $count = (int) OwnerCache::remember(
+            OwnerUiScope::resolveOwner(DocTemplate::class),
+            'filament-docs.nav-badge.templates-count',
+            30,
+            static fn (): int => static::getEloquentQuery()->count(),
+        );
 
         return $count > 0 ? (string) $count : null;
     }

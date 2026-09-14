@@ -53,13 +53,17 @@ The package publishes a config file at `config/filament-contacting.php`.
 ],
 ```
 
-- `standalone_resources`: Enable central resource pages (disabled by default).
-- `relation_managers`: Enable relation managers for embedding in other resources.
-- `imports`: Enable CSV/Excel import actions (disabled by default — requires owner-safe resolver).
-- `exports`: Enable CSV/Excel export actions.
-- `snapshots`: Enable snapshot viewer (read-only).
-- `verification_badges`: Show verified/unverified badges in tables.
-- `open_url_actions`: Show "Open URL" actions for website/social links.
+- `standalone_resources`: Master switch for central resource pages (disabled by default). A resource registers only when this is `true` **and** its per-resource `enabled` flag is `true`.
+- `relation_managers`: Advisory flag for hosts embedding the relation managers (enabled by default). Host resources may consult it in `getRelations()`; this package does not register relation managers itself.
+- `imports`: Show the CSV import action on the contact method and social profile list pages (disabled by default). Every CSV parent reference is resolved through the core contacting owner guard.
+- `exports`: Enable CSV/Excel export bulk actions.
+- `verification_badges`: Show the verified/unverified badge column (in addition to `tables.show_verification_columns`).
+- `open_url_actions`: Render social profile URLs as clickable links in tables and infolists. Only `http`/`https` URLs are linked.
+
+The `ContactingFilamentConfig` navigation helpers and `ResolvesContactingModels`
+are a host extension API: resources intentionally read `config()` directly (which
+keeps runtime navigation overrides working), and hosts may use the config class or
+the model resolver in their own panels and relation-manager hosts.
 
 ## Resources
 
@@ -80,5 +84,5 @@ The package publishes a config file at `config/filament-contacting.php`.
 ],
 ```
 
-- `enabled`: Show this resource in the navigation.
-- `read_only`: Hide create/edit/delete actions. Snapshots are read-only by default.
+- `enabled`: Show this resource in the navigation (also requires `features.standalone_resources`).
+- `read_only`: Disable edit/delete actions and remove the edit page. Standalone creates are never available; snapshots are always read-only.

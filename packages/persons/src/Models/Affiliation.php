@@ -52,7 +52,9 @@ class Affiliation extends Model
         });
 
         static::deleting(function (Affiliation $affiliation): void {
-            $affiliation->roles()->get()->each->delete();
+            DB::transaction(static function () use ($affiliation): void {
+                $affiliation->roles()->chunkById(500, static fn (Collection $roles) => $roles->each->delete());
+            });
         });
 
     }

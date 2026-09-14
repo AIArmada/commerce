@@ -7,6 +7,7 @@ namespace AIArmada\Communications\Console\Commands;
 use AIArmada\Communications\Services\NotificationInboxService;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Throwable;
 
 final class PruneNotificationInboxesCommand extends Command
 {
@@ -24,9 +25,15 @@ final class PruneNotificationInboxesCommand extends Command
 
     public function handle(): int
     {
-        $before = $this->option('before')
-            ? CarbonImmutable::parse($this->option('before'))
-            : CarbonImmutable::now()->subDays(90);
+        try {
+            $before = $this->option('before')
+                ? CarbonImmutable::parse($this->option('before'))
+                : CarbonImmutable::now()->subDays(90);
+        } catch (Throwable) {
+            $this->error('Invalid --before date. Use a parseable date such as "2026-01-01".');
+
+            return self::FAILURE;
+        }
 
         $this->info("Pruning inboxes archived before: {$before->toDateTimeString()}");
 

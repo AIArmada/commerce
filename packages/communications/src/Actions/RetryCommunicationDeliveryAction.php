@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Models\CommunicationAttempt;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use RuntimeException;
@@ -17,6 +18,10 @@ final class RetryCommunicationDeliveryAction
     public function handle(string $deliveryId, array $requestPayload = []): CommunicationAttempt
     {
         $delivery = CommunicationDelivery::query()->findOrFail($deliveryId);
+
+        if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
+        }
 
         if ($delivery->status->value !== 'failed') {
             throw new RuntimeException("Cannot retry delivery {$deliveryId}: status is {$delivery->status->value}, expected 'failed'.");

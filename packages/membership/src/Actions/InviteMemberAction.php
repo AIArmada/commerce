@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class InviteMemberAction
@@ -30,6 +31,15 @@ final class InviteMemberAction
 
         $tokenLength = max(32, (int) config('membership.invitations.token_length', 64));
         $email = mb_strtolower(mb_trim($email));
+
+        if ($email === '' || mb_strlen($email) > 255 || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            throw new InvalidArgumentException('A valid invitation email address is required.');
+        }
+
+        if ($expiresAt !== null && CarbonImmutable::createFromInterface($expiresAt)->isPast()) {
+            throw new InvalidArgumentException('The invitation expiry must be in the future.');
+        }
+
         $token = null;
 
         try {
@@ -40,7 +50,7 @@ final class InviteMemberAction
                     ->lockForUpdate()
                     ->first();
 
-                if ($existing instanceof MembershipInvitation) {
+                if ($existing instanceof MembershipInvitation && ! $existing->expireIfDue()) {
                     return $existing;
                 }
 

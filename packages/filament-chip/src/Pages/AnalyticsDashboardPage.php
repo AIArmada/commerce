@@ -56,6 +56,12 @@ class AnalyticsDashboardPage extends Page
 
     public function loadMetrics(): void
     {
+        // Livewire-exposed period is user input: accept only the supported
+        // ranges so a tampered value cannot trigger unbounded scans.
+        if (! in_array($this->period, ['7', '30', '90'], true)) {
+            $this->period = '30';
+        }
+
         $service = app(LocalAnalyticsService::class);
         $endDate = CarbonImmutable::now();
         $startDate = $endDate->subDays((int) $this->period);

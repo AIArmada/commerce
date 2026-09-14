@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Support\IpHasher;
 use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\Tag;
 use Illuminate\Http\Request;
@@ -130,7 +131,7 @@ final class FraudDetectionService
     private function buildContext(Affiliate $affiliate, Request $request): array
     {
         return [
-            'ip_address' => $request->ip(),
+            'ip_address' => IpHasher::hash($request->ip()),
             'user_agent' => $request->userAgent(),
             'fingerprint' => $this->generateFingerprint($request),
             'referrer' => $request->header('Referer'),

@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Contracts\InvitationUrlGenerator;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Events\FeedbackInvitationCreated;
+use AIArmada\Feedback\Events\FeedbackInvitationSent;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackInvitation;
 use AIArmada\Feedback\Support\FeedbackModelReferenceGuard;
@@ -44,13 +45,15 @@ final class SendFeedbackInvitationAction
             'email' => $email,
             'phone' => $phone,
             'token_hash' => $tokenHash,
-            'status' => FeedbackInvitationStatus::Pending,
+            'status' => FeedbackInvitationStatus::Sent,
+            'sent_at' => CarbonImmutable::now(),
             'expires_at' => CarbonImmutable::now()->addDays($expiryDays ?? (int) config('feedback.defaults.invitation_expiry_days', 14)),
         ]);
 
         $url = $this->urlGenerator->generate($invitation, $rawToken);
 
         FeedbackInvitationCreated::dispatch($invitation);
+        FeedbackInvitationSent::dispatch($invitation);
 
         return [
             'invitation' => $invitation,

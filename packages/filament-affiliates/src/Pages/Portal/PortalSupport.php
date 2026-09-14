@@ -179,6 +179,7 @@ class PortalSupport extends PortalPage
             ->where('affiliate_id', $affiliate->getKey())
             ->with(['messages'])
             ->orderByDesc('created_at')
+            ->limit(100)
             ->get()
             ->map(function (AffiliateSupportTicket $ticket): array {
                 return [
@@ -202,6 +203,7 @@ class PortalSupport extends PortalPage
         $taxDocuments = AffiliateTaxDocument::query()
             ->where('affiliate_id', $affiliate->getKey())
             ->orderByDesc('generated_at')
+            ->limit(50)
             ->get()
             ->map(fn (AffiliateTaxDocument $document): array => [
                 'id' => (string) $document->getKey(),

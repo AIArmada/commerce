@@ -19,4 +19,13 @@ interface PriceCalculatorInterface
      * @param  array<string, mixed>  $context  Additional context (customer_id, effective_at, etc.)
      */
     public function calculate(Priceable $item, int $quantity = 1, array $context = []): PriceResultData;
+
+    /**
+     * Calculate prices for many lines sharing one context.
+     *
+     * @param  array<int, array{item: Priceable, quantity?: int}>  $lines
+     * @param  array<string, mixed>  $context
+     * @return array<int, PriceResultData>
+     */
+    public function calculateMany(array $lines, array $context = []): array;
 }

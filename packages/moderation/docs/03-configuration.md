@@ -46,3 +46,17 @@ title: Configuration
 ```
 
 - `defaults.block_duration_days` sets the fallback expiry for new blocks when no explicit expiry is passed
+
+## Actors
+
+```php
+'actors' => [
+    'allowed_types' => [
+        App\Models\Admin::class,
+    ],
+],
+```
+
+- `actors.allowed_types` restricts which model classes may be resolved as `blockedBy`/`actionedBy` actors from an ID plus class name
+- Empty (the default) allows any `Model` subclass; owner-scoped actors are still validated against the current owner
+- Listing classes rejects anything else with an `InvalidArgumentException`; morph-map aliases resolve to their mapped class before the check, so allowlisting the class also covers its alias

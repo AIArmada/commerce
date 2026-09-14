@@ -83,7 +83,6 @@ final class CommunicationDelivery extends Model
         'provider',
         'provider_account_key',
         'provider_message_id',
-        'status',
         'destination_ciphertext',
         'destination_hash',
         'destination_hint',
@@ -201,9 +200,9 @@ final class CommunicationDelivery extends Model
     protected static function booted(): void
     {
         static::deleting(function (CommunicationDelivery $delivery): void {
-            $delivery->attempts()->each(fn (CommunicationAttempt $a) => $a->delete());
-            $delivery->events()->each(fn (CommunicationEvent $e) => $e->delete());
-            $delivery->trackingTokens()->each(fn (CommunicationTrackingToken $t) => $t->delete());
+            $delivery->attempts()->chunkById(200, fn (Collection $attempts) => $attempts->each->delete());
+            $delivery->events()->chunkById(200, fn (Collection $events) => $events->each->delete());
+            $delivery->trackingTokens()->chunkById(200, fn (Collection $tokens) => $tokens->each->delete());
         });
     }
 }

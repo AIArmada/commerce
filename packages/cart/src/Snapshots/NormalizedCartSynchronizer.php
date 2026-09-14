@@ -15,7 +15,9 @@ use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -29,81 +31,117 @@ class NormalizedCartSynchronizer
 {
     public function syncFromCart(BaseCart $cart): void
     {
-        DB::transaction(function () use ($cart): void {
-            $identifier = $cart->getIdentifier();
-            $instance = $cart->instance();
-
-            $owner = CartSnapshot::resolveCurrentOwner();
-
-            $items = $cart->getItems();
-            $conditions = $cart->getStoredConditions();
-            $metadata = $cart->getAllMetadata();
-
-            $currency = $this->resolveCurrency();
-
-            if (CartSnapshot::ownerScopingEnabled()) {
-                OwnerContext::assertResolvedOrExplicitGlobal(
-                    $owner,
-                    CartSnapshot::class . ' requires an owner context or explicit global context.',
-                );
+        // Concurrent first-syncs race the snapshot unique key; the loser retries
+        // once in a fresh transaction, where firstOrNew() finds the winner's row.
+        try {
+            DB::transaction(fn () => $this->syncFromCartInTransaction($cart));
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueViolation($exception)) {
+                throw $exception;
             }
 
-            $cartModel = CartSnapshot::query()->forOwner($owner)->firstOrNew([
-                'identifier' => $identifier,
-                'instance' => $instance,
-            ]);
+            DB::transaction(fn () => $this->syncFromCartInTransaction($cart));
+        }
+    }
 
-            $previousTotal = $cartModel->exists ? (int) $cartModel->getOriginal('total') : 0;
+    private function syncFromCartInTransaction(BaseCart $cart): void
+    {
+        $identifier = $cart->getIdentifier();
+        $instance = $cart->instance();
 
-            if (CartSnapshot::ownerScopingEnabled() && $owner !== null) {
-                $cartModel->assignOwner($owner);
-            }
+        $owner = CartSnapshot::resolveCurrentOwner();
 
-            $cartModel->items = $items->isEmpty() ? null : $items->toArray();
-            $cartModel->conditions = $conditions->isEmpty() ? null : $conditions->toArray();
-            $cartModel->metadata = $metadata === [] ? null : $metadata;
-            $cartModel->items_count = $cart->countItems();
-            $cartModel->quantity = $cart->getTotalQuantity();
-            $cartModel->last_activity_at = $this->resolveLastActivityAt($cart, $metadata, $cartModel->last_activity_at);
-            $cartModel->checkout_started_at = $this->resolveMetadataTimestamp($metadata, 'checkout_started_at', $cartModel->checkout_started_at);
-            $cartModel->checkout_abandoned_at = $this->resolveMetadataTimestamp($metadata, 'checkout_abandoned_at', $cartModel->checkout_abandoned_at);
-            $pipeline = new ConditionPipeline;
-            $pipelineResult = $pipeline->process(new ConditionPipelineContext($cart, $conditions));
+        $items = $cart->getItems();
+        $conditions = $cart->getStoredConditions();
+        $metadata = $cart->getAllMetadata();
 
-            $subtotalWithoutConditions = (int) $cart->subtotalWithoutConditions()->getAmount();
-            $cartModel->subtotal = $subtotalWithoutConditions;
-            $cartModel->total = $pipelineResult->total();
-            $cartModel->savings = max(0, $subtotalWithoutConditions - $cartModel->total);
-            $cartModel->currency = $currency;
-            $hasMaterialChanges = ! $cartModel->exists || $cartModel->isDirty([
-                'items',
-                'conditions',
-                'metadata',
-                'items_count',
-                'quantity',
-                'subtotal',
-                'total',
-                'savings',
-                'currency',
-                'last_activity_at',
-                'checkout_started_at',
-                'checkout_abandoned_at',
-            ]);
-            $cartModel->save();
+        $currency = $this->resolveCurrency();
 
-            if ($hasMaterialChanges) {
-                event(CartSnapshotSynced::fromCart($cartModel));
-            }
+        if (CartSnapshot::ownerScopingEnabled()) {
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                CartSnapshot::class . ' requires an owner context or explicit global context.',
+            );
+        }
 
-            $highValueThreshold = (int) config('cart.snapshots.analytics.high_value_threshold_minor', 10000);
+        $cartModel = CartSnapshot::query()->forOwner($owner)->firstOrNew([
+            'identifier' => $identifier,
+            'instance' => $instance,
+        ]);
 
-            if ($highValueThreshold > 0 && $previousTotal < $highValueThreshold && $cartModel->total >= $highValueThreshold) {
-                event(HighValueCartDetected::fromCart($cartModel));
-            }
+        $previousTotal = $cartModel->exists ? (int) $cartModel->getOriginal('total') : 0;
 
-            $itemModels = $this->syncItems($cartModel, $items);
+        if (CartSnapshot::ownerScopingEnabled() && $owner !== null) {
+            $cartModel->assignOwner($owner);
+        }
+
+        $cartModel->items = $items->isEmpty() ? null : $items->toArray();
+        $cartModel->conditions = $conditions->isEmpty() ? null : $conditions->toArray();
+        $cartModel->metadata = $metadata === [] ? null : $metadata;
+        $cartModel->items_count = $cart->countItems();
+        $cartModel->quantity = $cart->getTotalQuantity();
+        $cartModel->last_activity_at = $this->resolveLastActivityAt($cart, $metadata, $cartModel->last_activity_at);
+        $cartModel->checkout_started_at = $this->resolveMetadataTimestamp($metadata, 'checkout_started_at', $cartModel->checkout_started_at);
+        $cartModel->checkout_abandoned_at = $this->resolveMetadataTimestamp($metadata, 'checkout_abandoned_at', $cartModel->checkout_abandoned_at);
+        $pipeline = new ConditionPipeline;
+        $pipelineResult = $pipeline->process(new ConditionPipelineContext($cart, $conditions));
+
+        $subtotalWithoutConditions = (int) $cart->subtotalWithoutConditions()->getAmount();
+        $cartModel->subtotal = $subtotalWithoutConditions;
+        $cartModel->total = $pipelineResult->total();
+        $cartModel->savings = max(0, $subtotalWithoutConditions - $cartModel->total);
+        $cartModel->currency = $currency;
+        $isNew = ! $cartModel->exists;
+        $itemsDirty = $isNew || $cartModel->isDirty(['items', 'items_count', 'quantity']);
+        $conditionsDirty = $isNew || $cartModel->isDirty(['conditions']);
+        $hasMaterialChanges = $isNew || $cartModel->isDirty([
+            'items',
+            'conditions',
+            'metadata',
+            'items_count',
+            'quantity',
+            'subtotal',
+            'total',
+            'savings',
+            'currency',
+            'last_activity_at',
+            'checkout_started_at',
+            'checkout_abandoned_at',
+        ]);
+        $cartModel->save();
+
+        if ($hasMaterialChanges) {
+            event(CartSnapshotSynced::fromCart($cartModel));
+        }
+
+        $highValueThreshold = (int) config('cart.snapshots.analytics.high_value_threshold_minor', 10000);
+
+        if ($highValueThreshold > 0 && $previousTotal < $highValueThreshold && $cartModel->total >= $highValueThreshold) {
+            event(HighValueCartDetected::fromCart($cartModel));
+        }
+
+        if (! $itemsDirty && ! $isNew && $items->isEmpty() && $this->hasChildRows(CartSnapshotItem::class, $cartModel)) {
+            $itemsDirty = true;
+        }
+
+        if (! $conditionsDirty && ! $isNew && $conditions->isEmpty() && $this->hasChildRows(CartSnapshotCondition::class, $cartModel)) {
+            $conditionsDirty = true;
+        }
+
+        if ($itemsDirty || $conditionsDirty) {
+            $itemModels = $itemsDirty
+                ? $this->syncItems($cartModel, $items)
+                : $this->existingItemModels($cartModel);
+
             $this->syncConditions($cartModel, $conditions, $itemModels, $items->all());
-        });
+        }
+    }
+
+    private function isUniqueViolation(QueryException $exception): bool
+    {
+        $code = (string) ($exception->errorInfo[0] ?? $exception->getCode());
+
+        return in_array($code, ['23000', '23505'], true);
     }
 
     /**
@@ -131,6 +169,8 @@ class NormalizedCartSynchronizer
             if (! $cartModel) {
                 return;
             }
+
+            $this->assertSnapshotScope($cartModel);
 
             CartSnapshotCondition::query()->where('cart_id', $cartModel->id)->delete();
             CartSnapshotItem::query()->where('cart_id', $cartModel->id)->delete();
@@ -164,11 +204,61 @@ class NormalizedCartSynchronizer
     }
 
     /**
+     * Child item/condition rows carry no owner tuple of their own; they are scoped
+     * exclusively through the owner-scoped parent snapshot. This assertion makes
+     * that invariant explicit so child writes fail loudly if the parent ever
+     * resolves outside the current owner context.
+     *
+     * @throws AuthorizationException
+     */
+    private function assertSnapshotScope(CartSnapshot $cartModel): void
+    {
+        if (! CartSnapshot::ownerScopingEnabled()) {
+            return;
+        }
+
+        $owner = OwnerContext::resolve();
+        $expectedType = $owner?->getMorphClass();
+        $expectedId = $owner !== null ? (string) $owner->getKey() : null;
+        $actualId = $cartModel->owner_id !== null ? (string) $cartModel->owner_id : null;
+
+        if ($cartModel->owner_type !== $expectedType || $actualId !== $expectedId) {
+            throw new AuthorizationException('Cart snapshot is not accessible in the current owner scope.');
+        }
+    }
+
+    /**
+     * @return array<string, CartSnapshotItem>
+     */
+    private function existingItemModels(CartSnapshot $cartModel): array
+    {
+        $this->assertSnapshotScope($cartModel);
+
+        return CartSnapshotItem::query()
+            ->where('cart_id', $cartModel->id)
+            ->get()
+            ->keyBy('item_id')
+            ->all();
+    }
+
+    /**
+     * @param  class-string<CartSnapshotItem|CartSnapshotCondition>  $model
+     */
+    private function hasChildRows(string $model, CartSnapshot $cartModel): bool
+    {
+        $this->assertSnapshotScope($cartModel);
+
+        return $model::query()->where('cart_id', $cartModel->id)->exists();
+    }
+
+    /**
      * @param  Collection<int, BaseCartItem>  $items
      * @return array<string, CartSnapshotItem>
      */
     private function syncItems(CartSnapshot $cartModel, Collection $items): array
     {
+        $this->assertSnapshotScope($cartModel);
+
         $existing = CartSnapshotItem::query()
             ->where('cart_id', $cartModel->id)
             ->get()
@@ -233,6 +323,8 @@ class NormalizedCartSynchronizer
      */
     private function syncConditions(CartSnapshot $cartModel, Collection $conditions, array $itemModels, array $originalItems): void
     {
+        $this->assertSnapshotScope($cartModel);
+
         $existing = CartSnapshotCondition::query()
             ->where('cart_id', $cartModel->id)
             ->get()

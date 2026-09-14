@@ -6,6 +6,8 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\DocApproval;
+use AIArmada\FilamentDocs\Support\DocPermissions;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -19,6 +21,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -61,6 +64,7 @@ final class ApprovalsRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('requested_by')
+            ->modifyQueryUsing(static fn (Builder $query): Builder => $query->with(['requestedBy', 'assignedTo']))
             ->columns([
                 TextColumn::make('status')
                     ->badge()
@@ -115,6 +119,8 @@ final class ApprovalsRelationManager extends RelationManager
                 CreateAction::make()
                     ->label('Request Approval')
                     ->mutateFormDataUsing(function (array $data): array {
+                        DocsOwnerScope::assertCanMutateRecord($this->getOwnerRecord(), 'Document not found.');
+
                         $data['requested_by'] = auth()->id() !== null ? (string) auth()->id() : null;
                         $data['status'] = 'pending';
 
@@ -150,6 +156,7 @@ final class ApprovalsRelationManager extends RelationManager
                     ])
                     ->action(function (DocApproval $record, array $data): void {
                         self::assertUserCanActOnApproval($record);
+                        DocsOwnerScope::assertCanMutateRecord($record, 'Approval not found.');
 
                         $record->approve($data['comments'] ?? null);
                     })
@@ -168,6 +175,7 @@ final class ApprovalsRelationManager extends RelationManager
                     ])
                     ->action(function (DocApproval $record, array $data): void {
                         self::assertUserCanActOnApproval($record);
+                        DocsOwnerScope::assertCanMutateRecord($record, 'Approval not found.');
 
                         $record->reject($data['comments']);
                     })
@@ -183,6 +191,7 @@ final class ApprovalsRelationManager extends RelationManager
                         ->action(function (Collection $records): void {
                             /** @var Collection<int|string, DocApproval> $records */
                             $records->each(function (DocApproval $record): void {
+                                DocsOwnerScope::assertCanMutateRecord($record, 'Approval not found.');
                                 $record->delete();
                             });
                         }),
@@ -246,7 +255,7 @@ final class ApprovalsRelationManager extends RelationManager
         }
 
         if ($approval->assigned_to === null) {
-            return true;
+            return DocPermissions::allows(DocPermissions::DOCUMENT_APPROVAL, 'approve');
         }
 
         return (string) $approval->assigned_to === (string) $userId;

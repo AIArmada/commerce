@@ -10,7 +10,10 @@ use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\Cashier\Events\PaymentFailed;
 use AIArmada\Cashier\Events\PaymentSucceeded;
 use AIArmada\Cashier\Exceptions\Payment\PaymentFailedException;
+use AIArmada\Cashier\Exceptions\PaymentOperationRateLimitedException;
 use AIArmada\Cashier\Facades\Cashier;
+use AIArmada\Cashier\Support\ActionGuard;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -23,7 +26,11 @@ final class CreatePayment
      */
     public function handle(BillableContract $billable, int $amount, string $paymentMethod, ?string $gateway = null, array $options = []): PaymentContract
     {
-        $gatewayName = $gateway ?? config('cashier.default', 'stripe');
+        ActionGuard::positiveAmount($amount);
+        ActionGuard::nonEmptyString($paymentMethod, 'payment method');
+        ActionGuard::assertBillableInScope($billable);
+
+        $gatewayName = ActionGuard::gatewayName($gateway);
         $gateway = $this->resolveGateway($gatewayName);
 
         try {
@@ -44,11 +51,19 @@ final class CreatePayment
             return $payment;
         } catch (PaymentFailedException $e) {
             throw $e;
+        } catch (PaymentOperationRateLimitedException $e) {
+            throw $e;
         } catch (Throwable $e) {
+            Log::error('Cashier payment failed.', [
+                'gateway' => $gatewayName,
+                'exception' => $e::class,
+                'error' => $e->getMessage(),
+            ]);
+
             throw PaymentFailedException::create(
                 gateway: $gatewayName,
-                message: $e->getMessage(),
-                details: ['error_code' => $e->getMessage()],
+                message: 'payment_failed',
+                details: ['error_code' => 'payment_failed'],
             );
         }
     }

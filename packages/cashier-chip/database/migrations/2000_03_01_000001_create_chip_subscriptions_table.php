@@ -28,7 +28,7 @@ return new class extends Migration
             $table->string('chip_status');
             $table->string('chip_price')->nullable();
             $table->integer('quantity')->nullable();
-            $table->string('recurring_token')->nullable();
+            $table->text('recurring_token')->nullable();
             $table->string('billing_interval')->default('month');
             $table->integer('billing_interval_count')->default(1);
             $table->timestampTz('trial_ends_at')->nullable();
@@ -47,7 +47,6 @@ return new class extends Migration
 
             $table->index(['billable_type', 'billable_id', 'chip_status']);
             $table->index('type');
-            $table->index('recurring_token');
             $table->index('trial_ends_at');
             $table->index('next_billing_at');
             $table->index('ends_at');

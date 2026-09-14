@@ -6,6 +6,8 @@ namespace AIArmada\Chip\Services;
 
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Exceptions\WebhookVerificationException;
+use Closure;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -89,9 +91,8 @@ class WebhookService
     {
         $cacheKey = config('chip.cache.prefix') . 'public_key' . ($webhookId ? ":{$webhookId}" : '');
 
-        return Cache::remember(
+        return $this->rememberPublicKey(
             $cacheKey,
-            config('chip.cache.ttl.public_key', 86400),
             function () use ($webhookId) {
                 try {
                     if ($webhookId !== null) {
@@ -160,9 +161,8 @@ class WebhookService
 
         $cacheKey = config('chip.cache.prefix') . "send_public_key:{$configuredWebhookId}";
 
-        return Cache::remember(
+        return $this->rememberPublicKey(
             $cacheKey,
-            config('chip.cache.ttl.public_key', 86400),
             function () use ($configuredWebhookId): string {
                 try {
                     $webhook = app(ChipSendService::class)->getSendWebhook($configuredWebhookId);
@@ -183,6 +183,25 @@ class WebhookService
                 }
             },
         );
+    }
+
+    /**
+     * Cache a fetched public key, serializing cold-cache fetches behind a
+     * lock when the store supports it so concurrent webhook deliveries do
+     * not stampede the CHIP API.
+     *
+     * @param  Closure(): string  $fetch
+     */
+    private function rememberPublicKey(string $cacheKey, Closure $fetch): string
+    {
+        $ttl = config('chip.cache.ttl.public_key', 86400);
+        $store = Cache::getStore();
+
+        if (! $store instanceof LockProvider) {
+            return Cache::remember($cacheKey, $ttl, $fetch);
+        }
+
+        return Cache::lock($cacheKey . ':lock', 10)->block(5, static fn (): string => Cache::remember($cacheKey, $ttl, $fetch));
     }
 
     public function parsePayload(string $payload): object

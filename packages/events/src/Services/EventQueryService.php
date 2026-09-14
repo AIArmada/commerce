@@ -14,11 +14,19 @@ use Illuminate\Database\Eloquent\Model;
 
 final class EventQueryService
 {
-    public function findPublished(): Collection
+    public const int DEFAULT_LIMIT = 100;
+
+    public const int MAX_LIMIT = 500;
+
+    public function findPublished(int $limit = self::DEFAULT_LIMIT): Collection
     {
         $eventClass = ModelResolver::eventClass();
 
-        return $eventClass::published()->get();
+        return $eventClass::published()
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit($this->clampLimit($limit))
+            ->get();
     }
 
     public function findUpcoming(int $limit = 10): Collection
@@ -37,21 +45,36 @@ final class EventQueryService
                 $query->where('starts_at', '>=', CarbonImmutable::now());
             })
             ->orderBy($nextOccurrenceSubquery)
-            ->limit($limit)
+            ->limit($this->clampLimit($limit))
             ->get();
     }
 
-    public function findByOwner(Model $owner): Collection
+    public function findByOwner(Model $owner, int $limit = self::DEFAULT_LIMIT): Collection
     {
         $eventClass = ModelResolver::eventClass();
 
-        return $eventClass::forOwner($owner)->get();
+        return $eventClass::forOwner($owner)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit($this->clampLimit($limit))
+            ->get();
     }
 
+    /**
+     * Event slugs are not unique, so the earliest created match wins.
+     */
     public function findBySlug(string $slug): ?Event
     {
         $eventClass = ModelResolver::eventClass();
 
-        return $eventClass::where('slug', $slug)->first();
+        return $eventClass::where('slug', $slug)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->first();
+    }
+
+    private function clampLimit(int $limit): int
+    {
+        return max(1, min($limit, self::MAX_LIMIT));
     }
 }

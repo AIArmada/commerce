@@ -48,9 +48,7 @@ final class ClaimRenewalAttempt
                     return null;
                 }
 
-                $periodKey = ($subscription->billing_interval ?? 'month') === 'month'
-                    ? $subscription->next_billing_at->format('Y-m')
-                    : $subscription->next_billing_at->toIso8601String();
+                $periodKey = self::periodKeyFor($subscription);
 
                 $existingClaim = RenewalAttempt::query()
                     ->where('subscription_id', $subscription->id)
@@ -63,7 +61,7 @@ final class ClaimRenewalAttempt
                     return null;
                 }
 
-                $amountMinor = $subscription->calculateSubscriptionAmount();
+                $amountMinor = $subscription->renewalAmount();
 
                 if ($amountMinor > Cashier::maximumAmount()) {
                     return null;
@@ -86,6 +84,13 @@ final class ClaimRenewalAttempt
 
             return null;
         }
+    }
+
+    public static function periodKeyFor(Subscription $subscription): string
+    {
+        return ($subscription->billing_interval ?? 'month') === 'month'
+            ? $subscription->next_billing_at->format('Y-m')
+            : $subscription->next_billing_at->toIso8601String();
     }
 
     private function isUniqueConstraintViolation(QueryException $exception): bool

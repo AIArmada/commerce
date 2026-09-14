@@ -16,12 +16,14 @@ return new class extends Migration
             $table->{$jsonColumnType}($column)->nullable();
         };
 
-        Schema::create(config('feedback.database.tables.forms', 'feedback_forms'), function (Blueprint $table) use ($addJsonColumn): void {
+        $tableName = (string) config('feedback.database.table_prefix', '') . (string) config('feedback.database.tables.forms', 'feedback_forms');
+
+        Schema::create($tableName, function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 
             $table->string('name');
-            $table->string('slug')->nullable();
+            $table->string('slug')->nullable()->index();
             $table->string('purpose')->index();
             $table->string('status')->index();
             $table->string('visibility')->index();

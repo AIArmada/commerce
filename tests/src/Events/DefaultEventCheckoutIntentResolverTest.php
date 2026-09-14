@@ -27,8 +27,8 @@ it('preserves the full participant payload when resolving an event checkout inte
             'last_name' => 'Lee',
             'email' => 'jordan@example.com',
             'phone' => '+60123456789',
-            'is_guest' => false,
         ]);
+        $customer->forceFill(['is_guest' => false])->save();
         $customer->addContactMethod(ContactMethodData::email('jordan@example.com'));
 
         $event = Event::factory()->create();
@@ -104,8 +104,8 @@ it('preserves the full participant payload when resolving a session checkout int
             'last_name' => 'Lee',
             'email' => 'jordan-session@example.com',
             'phone' => '+60123456789',
-            'is_guest' => false,
         ]);
+        $customer->forceFill(['is_guest' => false])->save();
         $customer->addContactMethod(ContactMethodData::email('jordan-session@example.com'));
 
         $event = Event::factory()->create();

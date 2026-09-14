@@ -7,7 +7,9 @@ namespace AIArmada\Filament\Communications\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Communications\Enums\ThreadStatus;
 use AIArmada\Communications\Models\CommunicationThread;
+use AIArmada\Filament\Communications\RelationManagers\CommunicationsRelationManager;
 use AIArmada\Filament\Communications\Resources\CommunicationThreadResource\Pages;
+use AIArmada\Filament\Communications\Support\CommunicationFilterOptions;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
@@ -31,7 +33,8 @@ final class CommunicationThreadResource extends Resource
 
     public static function getNavigationSort(): ?int
     {
-        return config('filament-communications.navigation.sort');
+        return config('filament-communications.navigation.sort')
+            + (int) config('filament-communications.navigation.offsets.threads', 0);
     }
 
     /**
@@ -63,12 +66,7 @@ final class CommunicationThreadResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(collect(ThreadStatus::cases())->pluck('value', 'value')),
                 Tables\Filters\SelectFilter::make('channel')
-                    ->options([
-                        'email' => 'Email',
-                        'sms' => 'SMS',
-                        'push' => 'Push',
-                        'in_app' => 'In-App',
-                    ]),
+                    ->options(CommunicationFilterOptions::channels()),
             ])
             ->actions([
                 ViewAction::make(),
@@ -96,6 +94,16 @@ final class CommunicationThreadResource extends Resource
                         TextEntry::make('created_at')->dateTime(),
                     ])->columns(3),
             ]);
+    }
+
+    /**
+     * @return array<int, class-string>
+     */
+    public static function getRelations(): array
+    {
+        return [
+            CommunicationsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

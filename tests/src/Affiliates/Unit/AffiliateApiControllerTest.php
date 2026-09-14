@@ -79,7 +79,7 @@ describe('AffiliateApiController', function (): void {
                 'password' => 'secret',
             ]);
 
-            $affiliateA = Affiliate::create([
+            $affiliateA = new Affiliate([
                 'code' => 'API-OWNER-A-' . uniqid(),
                 'name' => 'Affiliate A',
                 'contact_email' => 'a@example.com',
@@ -87,9 +87,12 @@ describe('AffiliateApiController', function (): void {
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
+            ]);
+            $affiliateA->forceFill([
                 'owner_type' => $ownerA->getMorphClass(),
                 'owner_id' => $ownerA->getKey(),
             ]);
+            $affiliateA->save();
 
             OwnerContext::setForRequest($ownerB);
 
@@ -111,6 +114,10 @@ describe('AffiliateApiController', function (): void {
     });
 
     describe('links', function (): void {
+        beforeEach(function (): void {
+            config()->set('affiliates.links.allowed_hosts', ['example.com']);
+        });
+
         test('generates affiliate link', function (): void {
             $request = Request::create('/api/affiliates/links', 'POST', [
                 'url' => 'https://example.com/products',
@@ -154,6 +161,9 @@ describe('AffiliateApiController', function (): void {
         });
 
         test('generates link with default URL', function (): void {
+            $appHost = (string) parse_url(url('/'), PHP_URL_HOST);
+            config()->set('affiliates.links.allowed_hosts', array_filter(['example.com', $appHost]));
+
             $request = Request::create('/api/affiliates/links', 'POST');
 
             $response = $this->controller->links($this->affiliate->code, $request);

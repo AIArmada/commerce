@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartResource\Schemas;
 
+use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Cart\Support\CartMoney;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -13,7 +16,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Unique;
 
 final class CartForm
 {
@@ -28,7 +33,13 @@ final class CartForm
                                 TextInput::make('identifier')
                                     ->label('Cart Identifier')
                                     ->required()
-                                    ->unique(ignoreRecord: true)
+                                    ->unique(
+                                        table: fn (): string => (new CartSnapshot)->getTable(),
+                                        modifyRuleUsing: fn (Unique $rule, Get $get): Unique => $rule
+                                            ->where('instance', (string) ($get('instance') ?? 'default'))
+                                            ->where('owner_scope', self::currentOwnerScopeKey()),
+                                        ignoreRecord: true,
+                                    )
                                     ->helperText('Unique identifier for this cart session'),
 
                                 Select::make('instance')
@@ -76,6 +87,7 @@ final class CartForm
                                         TextInput::make('price')
                                             ->label('Price')
                                             ->numeric()
+                                            ->minValue(0)
                                             ->prefix(self::resolveCurrencyPrefix())
                                             ->required(),
 
@@ -128,8 +140,15 @@ final class CartForm
 
                                         TextInput::make('value')
                                             ->label('Value')
-                                            ->numeric()
-                                            ->required(),
+                                            ->required()
+                                            ->placeholder('e.g., 20%, +15.00, -10')
+                                            ->helperText('Use % for percentage, +/- for fixed amounts')
+                                            ->rules([
+                                                'regex:/^[+\-]?(\d+\.?\d*\%?|\d*\.\d+\%?)$/',
+                                            ])
+                                            ->validationMessages([
+                                                'regex' => 'Value must be a number with optional +/- and % (e.g., 20%, +15.00, -10)',
+                                            ]),
                                     ]),
 
                                 Textarea::make('description')
@@ -162,5 +181,14 @@ final class CartForm
     private static function resolveCurrencyPrefix(): string
     {
         return CartMoney::currency();
+    }
+
+    private static function currentOwnerScopeKey(): string
+    {
+        if (! CartSnapshot::ownerScopingEnabled()) {
+            return OwnerScopeKey::forTypeAndId(null, null);
+        }
+
+        return OwnerScopeKey::forOwner(OwnerContext::resolve());
     }
 }

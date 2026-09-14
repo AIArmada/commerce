@@ -51,7 +51,7 @@ describe('Order Model', function (): void {
             expect($order1->order_number)->not->toBe($order2->order_number);
         });
 
-        it('defaults to processing for ecommerce flow', function (): void {
+        it('defaults to created so the payment flow runs', function (): void {
             $order = Order::create([
                 'order_number' => 'ORD-DEFAULT-' . uniqid(),
                 'currency' => 'MYR',
@@ -59,7 +59,7 @@ describe('Order Model', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            expect($order->status)->toBeInstanceOf(Processing::class);
+            expect($order->status)->toBeInstanceOf(Created::class);
         });
     });
 

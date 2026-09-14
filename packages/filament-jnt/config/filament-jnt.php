@@ -24,6 +24,11 @@ return [
         'datetime_format' => 'Y-m-d H:i:s',
     ],
 
+    'infolist' => [
+        'tracking_events_limit' => 50,
+        'items_limit' => 50,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Features

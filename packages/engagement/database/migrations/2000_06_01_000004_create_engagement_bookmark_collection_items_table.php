@@ -27,6 +27,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
+            $table->unique(['bookmark_collection_id', 'bookmark_id', 'owner_type', 'owner_id'], 'engagement_collection_items_unique');
         });
     }
 };

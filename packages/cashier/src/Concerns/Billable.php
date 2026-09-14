@@ -6,7 +6,11 @@ namespace AIArmada\Cashier\Concerns;
 
 use AIArmada\Cashier\Cashier;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
+use AIArmada\Cashier\Exceptions\Gateway\GatewayException;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -62,8 +66,16 @@ trait Billable // @phpstan-ignore trait.unused
             try {
                 $gatewaySubscriptions = $this->gateway($gateway)->subscriptions($this);
                 $subscriptions = $subscriptions->merge($gatewaySubscriptions);
-            } catch (Throwable) {
+            } catch (GatewayException) {
                 // Gateway not available, skip
+            } catch (Throwable $e) {
+                Log::warning('Cashier gateway subscription lookup failed.', [
+                    'gateway' => $gateway,
+                    'exception' => $e::class,
+                    'error' => $e->getMessage(),
+                ]);
+
+                throw $e;
             }
         }
 
@@ -81,8 +93,16 @@ trait Billable // @phpstan-ignore trait.unused
                 if ($subscription) {
                     return $subscription;
                 }
-            } catch (Throwable) {
+            } catch (GatewayException) {
                 // Gateway not available, skip
+            } catch (Throwable $e) {
+                Log::warning('Cashier gateway subscription lookup failed.', [
+                    'gateway' => $gateway,
+                    'exception' => $e::class,
+                    'error' => $e->getMessage(),
+                ]);
+
+                throw $e;
             }
         }
 
@@ -114,8 +134,16 @@ trait Billable // @phpstan-ignore trait.unused
                 if ($subscription && $subscription->onTrial()) {
                     return true;
                 }
-            } catch (Throwable) {
+            } catch (GatewayException) {
                 // Gateway not available, skip
+            } catch (Throwable $e) {
+                Log::warning('Cashier gateway subscription lookup failed.', [
+                    'gateway' => $gateway,
+                    'exception' => $e::class,
+                    'error' => $e->getMessage(),
+                ]);
+
+                throw $e;
             }
         }
 
@@ -127,6 +155,20 @@ trait Billable // @phpstan-ignore trait.unused
      */
     public function onGenericTrial(): bool
     {
-        return $this->trial_ends_at && $this->trial_ends_at->isFuture();
+        $trialEndsAt = $this->trial_ends_at;
+
+        if (! $trialEndsAt) {
+            return false;
+        }
+
+        if ($trialEndsAt instanceof CarbonInterface) {
+            return $trialEndsAt->isFuture();
+        }
+
+        try {
+            return CarbonImmutable::parse($trialEndsAt)->isFuture();
+        } catch (Throwable) {
+            return false;
+        }
     }
 }

@@ -27,14 +27,14 @@ it('isolates membership lifecycle records by owner', function (): void {
     ]);
     $subject = TestSubject::query()->create(['name' => 'Shared Subject']);
 
-    $applicationA = OwnerContext::withOwner($ownerA, fn (): MembershipApplication => MembershipApplication::query()->create([
+    $applicationA = OwnerContext::withOwner($ownerA, fn (): MembershipApplication => $this->createMembershipApplication([
         'subject_type' => $subject->getMorphClass(),
         'subject_id' => $subject->getKey(),
         'applicant_id' => $ownerA->getKey(),
         'status' => ApplicationStatus::Pending,
         'justification' => 'Owner A application.',
     ]));
-    $applicationB = OwnerContext::withOwner($ownerB, fn (): MembershipApplication => MembershipApplication::query()->create([
+    $applicationB = OwnerContext::withOwner($ownerB, fn (): MembershipApplication => $this->createMembershipApplication([
         'subject_type' => $subject->getMorphClass(),
         'subject_id' => $subject->getKey(),
         'applicant_id' => $ownerB->getKey(),

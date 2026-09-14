@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables;
 
+use AIArmada\AffiliateNetwork\Actions\UpdateOffer;
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
+use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use Carbon\CarbonImmutable;
 use Filament\Actions;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -103,12 +105,7 @@ final class AffiliateOffersTable
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status !== OfferStatus::Published)
                     ->action(function (AffiliateOffer $record): void {
-                        // Admin resource bypasses the belongs-to owner scope (network-wide admin view).
-                        $scopedRecord = OwnerContext::withOwner(null, fn (): AffiliateOffer => AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)
-                            ->whereKey($record->getKey())
-                            ->firstOrFail());
-
-                        $scopedRecord->update(['status' => OfferStatus::Published]);
+                        self::transitionOffer($record, OfferStatus::Published);
                     }),
                 Actions\Action::make('pause')
                     ->icon('heroicon-o-pause')
@@ -116,12 +113,7 @@ final class AffiliateOffersTable
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status === OfferStatus::Published)
                     ->action(function (AffiliateOffer $record): void {
-                        // Admin resource bypasses the belongs-to owner scope (network-wide admin view).
-                        $scopedRecord = OwnerContext::withOwner(null, fn (): AffiliateOffer => AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)
-                            ->whereKey($record->getKey())
-                            ->firstOrFail());
-
-                        $scopedRecord->update(['status' => OfferStatus::Archived]);
+                        self::transitionOffer($record, OfferStatus::Archived);
                     }),
             ])
             ->bulkActions([
@@ -129,5 +121,46 @@ final class AffiliateOffersTable
                     Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * Transition an offer through the domain update action inside the owning
+     * site's owner context.
+     *
+     * The admin table lists offers cross-tenant (scope bypassed), but
+     * UpdateOffer re-queries under ScopesByBelongsToOwner. Entering the
+     * site's own context makes that re-query match truthfully when
+     * affiliate-network.owner.enabled=true, keeps the update on the domain
+     * path (field allowlist, relocation guards, OfferUpdated event), and
+     * maintains the published/archived lifecycle timestamps.
+     */
+    private static function transitionOffer(AffiliateOffer $record, OfferStatus $status): void
+    {
+        $site = $record->getRelationValue('site');
+
+        if (! $site instanceof AffiliateSite) {
+            $site = OwnerContext::withOwner(null, fn (): AffiliateSite => AffiliateSite::query()
+                ->withoutOwnerScope()
+                ->whereKey($record->site_id)
+                ->firstOrFail());
+        }
+
+        /** @var string|null $ownerType */
+        $ownerType = $site->owner_type;
+        /** @var string|null $ownerId */
+        $ownerId = $site->owner_id;
+
+        OwnerContext::withOwner(OwnerContext::fromTypeAndId($ownerType, $ownerId), function () use ($record, $status): void {
+            app(UpdateOffer::class)->execute($record, $status === OfferStatus::Published
+                ? [
+                    'status' => OfferStatus::Published,
+                    'published_at' => CarbonImmutable::now(),
+                    'archived_at' => null,
+                ]
+                : [
+                    'status' => OfferStatus::Archived,
+                    'archived_at' => CarbonImmutable::now(),
+                ]);
+        });
     }
 }

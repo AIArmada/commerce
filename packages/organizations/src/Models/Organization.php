@@ -49,14 +49,6 @@ class Organization extends Model implements MembershipMutationGuard
         'name',
         'slug',
         'description',
-        'status',
-        'visibility',
-        'created_by',
-        'published_at',
-        'privatized_at',
-        'suspended_at',
-        'archived_at',
-        'last_state_change_at',
     ];
 
     public function getTable(): string
@@ -155,6 +147,7 @@ class Organization extends Model implements MembershipMutationGuard
             $this->privatized_at = null;
         } else {
             $this->privatized_at = $at;
+            $this->published_at = null;
         }
     }
 

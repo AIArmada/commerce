@@ -11,12 +11,19 @@ use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Override;
 
 final class MRRWidget extends BaseWidget
 {
     use InteractsWithCashierChipData;
 
     protected static ?int $sort = 1;
+
+    #[Override]
+    public static function canView(): bool
+    {
+        return static::hasWidgetOwnerContext();
+    }
 
     protected function getStats(): array
     {
@@ -40,39 +47,62 @@ final class MRRWidget extends BaseWidget
 
     private function calculateMRR(): int
     {
-        return $this->subscriptionQuery()
+        return $this->rememberWidgetValue('mrr.current', fn (): int => $this->subscriptionQuery()
             ->whereActive()
+            ->select($this->mrrColumns())
             ->withSum('items', 'unit_amount')
             ->get()
-            ->sum(function (Subscription $subscription): int {
-                $monthlyAmount = $this->normalizeToMonthly(
-                    (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
-                    $subscription->billing_interval ?? 'month',
-                    $subscription->billing_interval_count ?? 1
-                );
-
-                if ($subscription->hasDiscount()) {
-                    $monthlyAmount -= ($subscription->coupon_discount ?? 0);
-                }
-
-                return max(0, $monthlyAmount);
-            });
+            ->sum(fn (Subscription $subscription): int => $this->monthlyNetAmount($subscription)));
     }
 
     private function calculatePreviousMRR(): int
     {
-        return $this->subscriptionQuery()
+        return $this->rememberWidgetValue('mrr.previous', fn (): int => $this->subscriptionQuery()
             ->where('chip_status', SubscriptionStatus::Active->value)
             ->where('created_at', '<', CarbonImmutable::now()->subMonth())
+            ->select($this->mrrColumns())
             ->withSum('items', 'unit_amount')
             ->get()
-            ->sum(function (Subscription $subscription): int {
-                return $this->normalizeToMonthly(
-                    (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
-                    $subscription->billing_interval ?? 'month',
-                    $subscription->billing_interval_count ?? 1
-                );
-            });
+            ->sum(fn (Subscription $subscription): int => $this->monthlyNetAmount($subscription)));
+    }
+
+    private function monthlyNetAmount(Subscription $subscription): int
+    {
+        $interval = $subscription->billing_interval ?? 'month';
+        $count = $subscription->billing_interval_count ?? 1;
+
+        $monthlyAmount = $this->normalizeToMonthly(
+            (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
+            $interval,
+            $count,
+        );
+
+        if ($subscription->hasDiscount()) {
+            $monthlyAmount -= $this->normalizeToMonthly(
+                (int) ($subscription->coupon_discount ?? 0),
+                $interval,
+                $count,
+            );
+        }
+
+        return max(0, $monthlyAmount);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function mrrColumns(): array
+    {
+        return [
+            'id',
+            'billing_interval',
+            'billing_interval_count',
+            'quantity',
+            'coupon_id',
+            'coupon_discount',
+            'created_at',
+            'ends_at',
+        ];
     }
 
     /**
@@ -118,33 +148,30 @@ final class MRRWidget extends BaseWidget
      */
     private function getMRRChart(): array
     {
-        $chart = [];
+        return $this->rememberWidgetValue('mrr.chart', function (): array {
+            $chart = [];
 
-        for ($i = 5; $i >= 0; $i--) {
-            $date = CarbonImmutable::now()->subMonths($i);
-            $startOfMonth = $date->copy()->startOfMonth();
-            $endOfMonth = $date->copy()->endOfMonth();
+            for ($i = 5; $i >= 0; $i--) {
+                $date = CarbonImmutable::now()->subMonths($i);
+                $startOfMonth = $date->copy()->startOfMonth();
+                $endOfMonth = $date->copy()->endOfMonth();
 
-            $monthMrr = $this->subscriptionQuery()
-                ->where('chip_status', SubscriptionStatus::Active->value)
-                ->where('created_at', '<=', $endOfMonth)
-                ->where(function ($query) use ($startOfMonth): void {
-                    $query->whereNull('ends_at')
-                        ->orWhere('ends_at', '>=', $startOfMonth);
-                })
-                ->withSum('items', 'unit_amount')
-                ->get()
-                ->sum(function (Subscription $subscription): int {
-                    return $this->normalizeToMonthly(
-                        (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
-                        $subscription->billing_interval ?? 'month',
-                        $subscription->billing_interval_count ?? 1
-                    );
-                });
+                $monthMrr = $this->subscriptionQuery()
+                    ->where('chip_status', SubscriptionStatus::Active->value)
+                    ->where('created_at', '<=', $endOfMonth)
+                    ->where(function ($query) use ($startOfMonth): void {
+                        $query->whereNull('ends_at')
+                            ->orWhere('ends_at', '>=', $startOfMonth);
+                    })
+                    ->select($this->mrrColumns())
+                    ->withSum('items', 'unit_amount')
+                    ->get()
+                    ->sum(fn (Subscription $subscription): int => $this->monthlyNetAmount($subscription));
 
-            $chart[] = (int) ($monthMrr / 100);
-        }
+                $chart[] = (int) ($monthMrr / 100);
+            }
 
-        return $chart;
+            return $chart;
+        });
     }
 }

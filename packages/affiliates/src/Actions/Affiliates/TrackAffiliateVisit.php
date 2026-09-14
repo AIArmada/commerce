@@ -8,11 +8,15 @@ use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,6 +27,7 @@ final class TrackAffiliateVisit
 
     public function __construct(
         private readonly AffiliateLookup $affiliateLookup,
+        private readonly FraudDetectionService $fraud,
     ) {}
 
     public function handle(string $code, array $context = [], ?string $cookieValue = null): ?AffiliateAttributionData
@@ -45,6 +50,10 @@ final class TrackAffiliateVisit
             return null;
         }
 
+        if (! $this->fraud->analyzeClick($affiliate, $this->clickRequest($context))['allowed']) {
+            return null;
+        }
+
         $attribution = $this->storeCookieAttribution($affiliate, $context, $cookieValue);
 
         return AffiliateAttributionData::fromModel($attribution);
@@ -62,6 +71,12 @@ final class TrackAffiliateVisit
 
         $attribution = $this->affiliateLookup->findActiveAttributionByCookie($cookieValue);
 
+        if ($attribution && ! $this->fingerprintMatches($attribution, $payload['fingerprint'] ?? null)) {
+            $cookieValue = (string) Str::uuid();
+            $payload['cookie_value'] = $cookieValue;
+            $attribution = null;
+        }
+
         if ($attribution) {
             $this->fillAttribution($attribution, $payload);
         } else {
@@ -69,7 +84,8 @@ final class TrackAffiliateVisit
                 $payload['cart_instance'] = 'default';
             }
 
-            $attribution = new AffiliateAttribution($payload);
+            $attribution = new AffiliateAttribution(Arr::except($payload, ['owner_type', 'owner_id']));
+            $attribution->forceFill(Arr::only($payload, ['owner_type', 'owner_id']));
             $attribution->first_seen_at = CarbonImmutable::now();
         }
 
@@ -114,7 +130,7 @@ final class TrackAffiliateVisit
             'landing_url' => $context['landing_url'] ?? null,
             'referrer_url' => $context['referrer_url'] ?? null,
             'user_agent' => $context['user_agent'] ?? null,
-            'ip_address' => $context['ip_address'] ?? null,
+            'ip_address' => IpHasher::hash($context['ip_address'] ?? null),
             'user_id' => $context['user_id'] ?? $this->resolveUserId(),
             'visitor_key' => $context['visitor_key'] ?? null,
             'channel' => $context['channel'] ?? null,
@@ -206,13 +222,39 @@ final class TrackAffiliateVisit
 
         $key = sprintf('affiliates:ip-rate:%s:%s', $affiliate->code, $ip);
 
-        $hits = (int) Cache::store()->increment($key);
-
-        if ($hits === 1) {
-            Cache::store()->put($key, $hits, CarbonImmutable::now()->addMinutes($decay));
+        if (Cache::store()->add($key, 1, CarbonImmutable::now()->addMinutes($decay))) {
+            return false;
         }
 
-        return $hits > $max;
+        return (int) Cache::store()->increment($key) > $max;
+    }
+
+    private function fingerprintMatches(AffiliateAttribution $attribution, ?string $fingerprint): bool
+    {
+        if ($fingerprint === null || $attribution->fingerprint === null) {
+            return true;
+        }
+
+        return hash_equals($attribution->fingerprint, $fingerprint);
+    }
+
+    private function clickRequest(array $context): Request
+    {
+        $server = [];
+
+        if (isset($context['ip_address']) && is_string($context['ip_address'])) {
+            $server['REMOTE_ADDR'] = $context['ip_address'];
+        }
+
+        if (isset($context['user_agent']) && is_string($context['user_agent'])) {
+            $server['HTTP_USER_AGENT'] = $context['user_agent'];
+        }
+
+        if (isset($context['referrer_url']) && is_string($context['referrer_url'])) {
+            $server['HTTP_REFERER'] = $context['referrer_url'];
+        }
+
+        return Request::create('/', 'GET', [], [], [], $server);
     }
 
     private function isSelfReferral(Affiliate $affiliate): bool

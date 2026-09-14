@@ -15,8 +15,10 @@ class ViewTaxRate extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\EditAction::make()
+                ->authorize(fn (): bool => auth()->user()?->can('tax.rates.update') ?? false),
+            Actions\DeleteAction::make()
+                ->authorize(fn (): bool => auth()->user()?->can('tax.rates.delete') ?? false),
         ];
     }
 }

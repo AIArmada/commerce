@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Throwable;
 
 final class PaymentCallbackController extends Controller
@@ -110,7 +111,7 @@ final class PaymentCallbackController extends Controller
         $queryParam = config('checkout.defaults.session_query_param', 'session');
         $sessionId = $request->query($queryParam) ?? $request->query('checkout_session_id');
 
-        if ($sessionId === null) {
+        if (! is_string($sessionId) || ! Str::isUuid($sessionId)) {
             return null;
         }
 
@@ -126,7 +127,7 @@ final class PaymentCallbackController extends Controller
             return null;
         }
 
-        $rateLimitKey = $this->callbackRateLimitKey($session);
+        $rateLimitKey = $this->callbackRateLimitKey($request, $session);
         $maxAttempts = (int) config('checkout.payment.callback_rate_limit.max_attempts', 10);
         $decaySeconds = (int) config('checkout.payment.callback_rate_limit.decay_seconds', 60);
 
@@ -134,38 +135,54 @@ final class PaymentCallbackController extends Controller
             return null;
         }
 
-        RateLimiter::hit($rateLimitKey, $decaySeconds);
+        // Only failed token validations consume the budget. Counting every
+        // hit up front lets anyone holding a session id burn the budget and
+        // block legitimate gateway callbacks.
+        if (! $this->callbackTokenValid($request, $session)) {
+            RateLimiter::hit($rateLimitKey, $decaySeconds);
 
+            return null;
+        }
+
+        return $sessionId;
+    }
+
+    private function callbackTokenValid(Request $request, CheckoutSession $session): bool
+    {
         $providedToken = $request->query('checkout_callback_token')
             ?? $request->query('callback_token')
             ?? $request->query('token');
+
+        if (! is_string($providedToken)) {
+            return false;
+        }
+
         $paymentData = $session->payment_data ?? [];
         $expectedToken = $paymentData['callback_token'] ?? null;
         $createdAt = $paymentData['callback_token_created_at'] ?? null;
         $consumedAt = $paymentData['callback_token_consumed_at'] ?? null;
 
-        if (! is_string($providedToken)
-            || ! is_string($expectedToken)
+        if (! is_string($expectedToken)
             || $expectedToken === ''
             || ! is_string($createdAt)
             || $createdAt === ''
             || (is_string($consumedAt) && ! ($session->status instanceof Completed))
         ) {
-            return null;
+            return false;
         }
 
         try {
             $expiresAt = CarbonImmutable::parse($createdAt)
                 ->addSeconds((int) config('checkout.payment.callback_token_ttl', 0));
         } catch (Throwable) {
-            return null;
+            return false;
         }
 
         if ($expiresAt->isPast()) {
-            return null;
+            return false;
         }
 
-        return hash_equals($expectedToken, $providedToken) ? $sessionId : null;
+        return hash_equals($expectedToken, $providedToken);
     }
 
     private function callbackRouteMatchesGateway(Request $request, CheckoutSession $session): bool
@@ -184,8 +201,13 @@ final class PaymentCallbackController extends Controller
 
         $segments = explode('.', $routeName);
         $gateway = $segments[2] ?? null;
+        $callbackType = $segments[3] ?? null;
 
-        $configuredGateways = config('checkout.routes.callbacks.success', []);
+        if (! is_string($callbackType) || ! in_array($callbackType, ['success', 'failure', 'cancel'], true)) {
+            return false;
+        }
+
+        $configuredGateways = config("checkout.routes.callbacks.{$callbackType}", []);
 
         if (! is_array($configuredGateways)
             || ! is_string($gateway)
@@ -197,12 +219,13 @@ final class PaymentCallbackController extends Controller
         return (string) $session->selected_payment_gateway === $gateway;
     }
 
-    private function callbackRateLimitKey(CheckoutSession $session): string
+    private function callbackRateLimitKey(Request $request, CheckoutSession $session): string
     {
         return 'checkout:callback:' . hash('sha256', implode('|', [
             (string) ($session->owner_type ?? 'global'),
             (string) ($session->owner_id ?? 'global'),
             (string) $session->getKey(),
+            (string) $request->ip(),
         ]));
     }
 

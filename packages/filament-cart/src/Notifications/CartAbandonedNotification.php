@@ -33,7 +33,7 @@ final class CartAbandonedNotification extends Notification implements ShouldQueu
     public function toMail(object $notifiable): MailMessage
     {
         $brandName = (string) config('filament-cart.notifications.abandoned_cart.brand_name', config('app.name'));
-        $offerName = (string) ($this->recoveryData['offer_name'] ?? 'AI Awakening');
+        $offerName = str_replace(["\r", "\n"], '', (string) ($this->recoveryData['offer_name'] ?? 'AI Awakening'));
         $retryUrl = (string) ($this->recoveryData['retry_url'] ?? '#');
         $formattedTotal = (string) ($this->recoveryData['formatted_total'] ?? '');
 

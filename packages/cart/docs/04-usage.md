@@ -226,8 +226,7 @@ Use `Cart::content()` (or `Cart::getContent()`) to capture a normalized snapshot
             "conditions": [],
             "associated_model": {
                 "class": "App\\Models\\Product",
-                "id": "uuid",
-                "data": {"sku": "SKU-001"}
+                "id": "uuid"
             }
         }
     ],
@@ -251,6 +250,7 @@ Use `Cart::content()` (or `Cart::getContent()`) to capture a normalized snapshot
 
 Notes:
 - `price` and totals are stored in the smallest currency unit (cents).
+- String prices: integers are minor units (`'999'` is 999 minor); decimals are major units (`'9.99'` is 999 minor). Thousand separators always imply major units (`'1,000'` is 100000 minor, same as `'1,000.00'`).
 - `attributes.weight` is in grams when provided.
 - `item_count` reflects total quantity; `count` reflects unique line items.
 - `associated_model` is populated when cart items are linked to Eloquent models.

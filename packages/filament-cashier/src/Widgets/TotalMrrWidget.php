@@ -32,13 +32,12 @@ final class TotalMrrWidget extends StatsOverviewWidget
         $baseCurrency = config('filament-cashier.currency.base', 'USD');
         $primaryMrr = $mrrByCurrency->get($baseCurrency, 0);
 
-        // Convert other currencies if enabled
+        // Convert other currencies if enabled. Rates are quoted per USD, so a
+        // source amount converts via amount / rate[source] * rate[base].
         if (config('filament-cashier.currency.display_converted', false)) {
             $rates = config('filament-cashier.currency.conversion_rates', []);
             foreach ($mrrByCurrency as $currency => $amount) {
-                if ($currency !== $baseCurrency && isset($rates[$currency])) {
-                    $primaryMrr += (int) ($amount / $rates[$currency]);
-                }
+                $primaryMrr += $this->convertAmountToBase((int) $amount, (string) $currency, $baseCurrency, $rates);
             }
         }
 
@@ -57,16 +56,46 @@ final class TotalMrrWidget extends StatsOverviewWidget
     }
 
     /**
+     * Convert a source-currency amount into the base currency.
+     *
+     * @param  array<string, float|int>  $rates  Currency units per USD.
+     */
+    protected function convertAmountToBase(int $amount, string $currency, string $baseCurrency, array $rates): int
+    {
+        if ($currency === $baseCurrency) {
+            return 0;
+        }
+
+        $sourceRate = $rates[$currency] ?? null;
+        $baseRate = $rates[$baseCurrency] ?? null;
+
+        if (! is_numeric($sourceRate) || (float) $sourceRate <= 0) {
+            return 0;
+        }
+
+        if (! is_numeric($baseRate) || (float) $baseRate <= 0) {
+            return 0;
+        }
+
+        return (int) ($amount * ((float) $baseRate / (float) $sourceRate));
+    }
+
+    /**
+     * @var array{count: int, mrrByCurrency: array<string, int>}|null
+     */
+    protected ?array $subscriptionsSummary = null;
+
+    /**
      * Get active subscriptions across all gateways.
      *
-     * Uses once() to cache the result for the current request, avoiding
-     * redundant database queries during the widget render cycle.
+     * Memoized on the widget instance (request-bound) instead of once() so
+     * owner switches within a long-lived process never leak cached totals.
      *
      * @return array{count: int, mrrByCurrency: array<string, int>}
      */
     protected function getActiveSubscriptionsSummary(): array
     {
-        return once(function (): array {
+        if ($this->subscriptionsSummary === null) {
             $count = 0;
             $mrrByCurrency = [];
             $detector = app(GatewayDetector::class);
@@ -116,11 +145,13 @@ final class TotalMrrWidget extends StatsOverviewWidget
                 });
             }
 
-            return [
+            $this->subscriptionsSummary = [
                 'count' => $count,
                 'mrrByCurrency' => $mrrByCurrency,
             ];
-        });
+        }
+
+        return $this->subscriptionsSummary;
     }
 
     protected function formatCurrency(int $amountInCents, string $currency): string

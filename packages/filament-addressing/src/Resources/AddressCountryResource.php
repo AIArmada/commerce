@@ -136,11 +136,15 @@ class AddressCountryResource extends Resource
                         TextInput::make('iso2')
                             ->label('ISO2')
                             ->required()
+                            ->minLength(2)
                             ->maxLength(2)
+                            ->alpha()
                             ->disabled(fn (): bool => self::isReadOnly() || $country !== null),
                         TextInput::make('iso3')
                             ->label('ISO3')
+                            ->minLength(3)
                             ->maxLength(3)
+                            ->alpha()
                             ->disabled(fn (): bool => self::isReadOnly() || $country !== null),
                         TextInput::make('name')->required(),
                         TextInput::make('native')->label('Native Name'),

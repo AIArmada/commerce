@@ -13,6 +13,7 @@ use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -203,6 +204,8 @@ class SubscriptionBuilder
      */
     public function billingInterval(string $interval, int $count = 1)
     {
+        Subscription::assertValidBillingInterval($interval, $count);
+
         $this->billingInterval = $interval;
         $this->billingIntervalCount = $count;
 
@@ -545,7 +548,17 @@ class SubscriptionBuilder
             return $this->billingCycleAnchor->copy();
         }
 
-        return CarbonImmutable::now()->add($this->billingInterval, $this->billingIntervalCount);
+        return Subscription::advanceBillingDate(CarbonImmutable::now(), $this->billingInterval, $this->billingIntervalCount);
+    }
+
+    /**
+     * Validate that a coupon can be applied to the subscription being built.
+     *
+     * @throws InvalidCoupon
+     */
+    public function assertCouponValidForSubscription(string $couponId): void
+    {
+        $this->validateCouponForSubscriptionApplication($couponId);
     }
 
     /**

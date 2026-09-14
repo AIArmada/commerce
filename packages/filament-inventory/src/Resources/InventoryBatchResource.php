@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\CreateInventoryBatch;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\EditInventoryBatch;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\ListInventoryBatches;
@@ -117,7 +118,12 @@ final class InventoryBatchResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = self::getEloquentQuery()->allocatable()->expiringSoon(30)->count();
+        $count = OwnerCache::remember(
+            OwnerUiScope::resolveOwner(InventoryBatch::class),
+            'filament-inventory.nav-badge.batch-expiring',
+            30,
+            fn (): int => self::getEloquentQuery()->allocatable()->expiringSoon(30)->count()
+        );
 
         return $count > 0 ? (string) $count : null;
     }

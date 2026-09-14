@@ -7,6 +7,7 @@ namespace AIArmada\FilamentDocs\Resources\DocTemplateResource\Schemas;
 use AIArmada\Docs\Enums\DocMergeTag;
 use AIArmada\Docs\Support\DocRichContentStorage;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\Builder\Block;
 use Filament\Forms\Components\RichEditor;
@@ -18,6 +19,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 final class DocTemplateForm
 {
@@ -45,7 +47,7 @@ final class DocTemplateForm
                                 TextInput::make('slug')
                                     ->label('Slug')
                                     ->required()
-                                    ->unique(ignoreRecord: true)
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => DocsOwnerScope::scopeUniqueRuleToOwner($rule))
                                     ->maxLength(255)
                                     ->helperText('Used for selecting this template from documents'),
                             ]),

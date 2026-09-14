@@ -10,13 +10,14 @@ use Illuminate\Support\Str;
 test('communication destination address is ciphertext at rest and decrypts through the model', function (): void {
     $plaintext = 'destination-' . Str::uuid() . '@example.com';
 
-    $destination = CommunicationDestination::create([
+    $destination = (new CommunicationDestination)->forceFill([
         'recipient_type' => 'stream-a-recipient',
         'recipient_id' => (string) Str::uuid(),
         'channel' => 'mail',
         'address' => $plaintext,
         'status' => 'active',
     ]);
+    $destination->save();
 
     $rawAddress = DB::table($destination->getTable())
         ->where('id', $destination->id)

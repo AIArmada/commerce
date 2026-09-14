@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use RuntimeException;
 use Spatie\WebhookClient\Models\WebhookCall;
@@ -29,13 +30,13 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
 
         $executor = function () use ($eventType, $payload, $dispatchAction): void {
             $idempotencyKey = $this->generateIdempotencyKey($eventType, $payload);
+            $startTime = microtime(true);
 
-            if ($this->isDuplicateWebhook($idempotencyKey)) {
+            $webhook = $this->claimWebhookRecord($eventType, $payload, $idempotencyKey);
+
+            if ($webhook === null && $this->deduplicationActive()) {
                 return;
             }
-
-            $startTime = microtime(true);
-            $webhook = $this->storeWebhookRecord($eventType, $payload, $idempotencyKey);
 
             try {
                 $dispatchAction->execute($eventType, $payload);
@@ -74,6 +75,41 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
     }
 
     /**
+     * Owner-qualify the provider event id so the shared
+     * UNIQUE(name, event_id, event_type) claim does not collapse two owners'
+     * identical provider events into one delivery. The raw provider id stays
+     * in the stored payload; this column is the dedup key only.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    protected function extractEventId(array $payload): ?string
+    {
+        $eventId = parent::extractEventId($payload);
+
+        if ($eventId === null || ! (bool) config('chip.owner.enabled', false)) {
+            return $eventId;
+        }
+
+        $ownerType = Arr::get($payload, '__owner_type');
+        $ownerId = Arr::get($payload, '__owner_id');
+
+        if (! is_string($ownerType) || (! is_string($ownerId) && ! is_int($ownerId))) {
+            $ambient = OwnerContext::resolve();
+
+            if ($ambient instanceof Model) {
+                $ownerType = $ambient->getMorphClass();
+                $ownerId = $ambient->getKey();
+            }
+        }
+
+        if (! is_string($ownerType) || (! is_string($ownerId) && ! is_int($ownerId))) {
+            return $eventId;
+        }
+
+        return hash('sha256', 'owner:' . $ownerType . '|' . (string) $ownerId . '|' . $eventId);
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      */
     private function generateIdempotencyKey(string $eventType, array $payload): string
@@ -94,6 +130,12 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
         return hash('sha256', implode(':', $components));
     }
 
+    private function deduplicationActive(): bool
+    {
+        return (bool) config('chip.webhooks.store_webhooks', true)
+            && (bool) config('chip.webhooks.deduplication', true);
+    }
+
     private function isDuplicateWebhook(string $idempotencyKey): bool
     {
         if (! config('chip.webhooks.deduplication', true)) {
@@ -107,6 +149,65 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
 
         return $webhook !== null
             && ($webhook->processed || $webhook->status === 'processed');
+    }
+
+    /**
+     * Atomically claim the delivery before dispatching it.
+     *
+     * Returns null when another delivery already processed (or is currently
+     * processing) the same idempotency key. The UNIQUE(idempotency_key)
+     * constraint is the arbiter: the loser of a concurrent claim backs off
+     * instead of double-dispatching. A key held by a failed delivery is
+     * released so redelivery can proceed.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function claimWebhookRecord(string $eventType, array $payload, string $idempotencyKey): ?Webhook
+    {
+        if (! config('chip.webhooks.store_webhooks', true)) {
+            return null;
+        }
+
+        if ($this->isDuplicateWebhook($idempotencyKey)) {
+            return null;
+        }
+
+        try {
+            return $this->storeWebhookRecord($eventType, $payload, $idempotencyKey);
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueViolation($exception)) {
+                throw $exception;
+            }
+        }
+
+        $holder = Webhook::query()
+            ->withoutGlobalScope('chip_webhook_calls')
+            ->withoutOwnerScope()
+            ->where('idempotency_key', $idempotencyKey)
+            ->first();
+
+        if (! $holder instanceof Webhook || $holder->status !== 'failed') {
+            return null;
+        }
+
+        // The previous attempt failed: release its key and claim it, backing
+        // off if another worker claims it first.
+        $holder->forceFill(['idempotency_key' => null])->save();
+
+        try {
+            return $this->storeWebhookRecord($eventType, $payload, $idempotencyKey);
+        } catch (QueryException $exception) {
+            if ($this->isUniqueViolation($exception)) {
+                return null;
+            }
+
+            throw $exception;
+        }
+    }
+
+    private function isUniqueViolation(QueryException $exception): bool
+    {
+        return $exception->getCode() === '23000';
     }
 
     /**

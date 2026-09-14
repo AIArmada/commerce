@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 
 test('affiliate links are signed and verified', function (): void {
+    config()->set('affiliates.links.allowed_hosts', ['shop.test']);
+
     $generator = new AffiliateLinkGenerator;
 
     $url = $generator->generate(

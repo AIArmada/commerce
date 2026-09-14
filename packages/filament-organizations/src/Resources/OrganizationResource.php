@@ -75,7 +75,8 @@ final class OrganizationResource extends Resource
                 ->maxLength(255),
             TextInput::make('slug')
                 ->maxLength(255)
-                ->disabled(fn (string $operation): bool => $operation === 'create'),
+                ->disabled(fn (string $operation): bool => $operation === 'create')
+                ->unique(ignoreRecord: true),
             Textarea::make('description')
                 ->rows(5)
                 ->columnSpanFull(),

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
@@ -12,6 +13,8 @@ use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Support\AffiliateReportingContextResolver;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\Widget;
+use Illuminate\Database\Connection;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Lazy;
@@ -75,6 +78,7 @@ final class VoucherUsageTimelineWidget extends Widget
             ->where('voucher_id', $this->record->id)
             ->with(['voucher', 'redeemedBy'])
             ->orderBy('used_at', 'desc')
+            ->limit(50)
             ->get();
 
         return $usages->map(
@@ -119,22 +123,33 @@ final class VoucherUsageTimelineWidget extends Widget
             }
         }
 
-        $usages = VoucherUsage::query()
-            ->where('voucher_id', $this->record->id)
-            ->get();
+        $base = VoucherUsage::query()->where('voucher_id', $this->record->id);
 
-        $totalSavings = $usages->sum('discount_amount');
-        $currency = $usages->first()?->currency ?? 'MYR';
-        $uniqueCustomers = $usages->map(fn (VoucherUsage $u) => $u->user_identifier ?? $u->metadata['user_identifier'] ?? null)
-            ->filter()
-            ->unique()
-            ->count();
+        $totalRedemptions = (clone $base)->count();
+        $totalSavings = (int) (clone $base)->sum('discount_amount');
+        $currency = (clone $base)->latest('used_at')->value('currency')
+            ?? (string) config('filament-vouchers.default_currency', 'MYR');
 
         return [
-            'total_redemptions' => $usages->count(),
+            'total_redemptions' => $totalRedemptions,
             'total_savings' => MoneyHelper::formatMoney($totalSavings, (string) $currency),
-            'unique_customers' => $uniqueCustomers,
+            'unique_customers' => $this->distinctRedeemerCount($base),
         ];
+    }
+
+    private function distinctRedeemerCount(Builder $query): int
+    {
+        /** @var Connection $connection */
+        $connection = $query->getConnection();
+        $driver = ConnectionDriver::name($connection);
+        $concat = $driver === 'pgsql' || $driver === 'sqlite'
+            ? "redeemed_by_type || '-' || redeemed_by_id"
+            : "CONCAT(redeemed_by_type, '-', redeemed_by_id)";
+
+        return (int) $query
+            ->whereNotNull('redeemed_by_id')
+            ->selectRaw("COUNT(DISTINCT {$concat}) as aggregate")
+            ->value('aggregate');
     }
 
     /**

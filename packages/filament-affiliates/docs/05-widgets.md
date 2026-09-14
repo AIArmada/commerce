@@ -89,6 +89,8 @@ Network tree visualization widget (Blade-backed widget view).
 
 Provides network summary stats and nested node data for the widget view.
 
+Render depth is clamped server-side (maximum 5 levels) and each level is capped at 25 children; the average-children stat is computed as a SQL aggregate.
+
 ## Notes on customization
 
 - The plugin does not expose per-widget fluent registration methods.

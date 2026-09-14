@@ -257,13 +257,9 @@ protected function getStats(): array
 
 ## Owner Scoping
 
-All widgets automatically apply owner scoping:
-
-```php
-$subscriptions = CashierChipOwnerScope::apply(
-    Subscription::query()
-)->whereActive()->get();
-```
+All widgets automatically apply owner scoping and are hidden when owner
+scoping is enabled but no owner is resolved, so admin dashboards never
+render misleading global-only zeros.
 
 This ensures:
 - Multi-tenant data isolation
@@ -274,27 +270,18 @@ This ensures:
 
 ### Caching
 
-For large datasets, consider caching:
+Widget aggregates are cached per owner via `OwnerCache`. Tune the TTL:
 
 ```php
-private function calculateMRR(): int
-{
-    return cache()->remember('mrr_' . tenant()->id, 3600, function () {
-        return $this->computeMRR();
-    });
-}
+'widgets' => [
+    'cache_ttl' => 120, // seconds
+],
 ```
 
 ### Query Optimization
 
-Widgets use eager loading:
-
-```php
-$subscriptions = Subscription::query()
-    ->whereActive()
-    ->with('items') // Eager load items
-    ->get();
-```
+Widgets compute aggregates in SQL (grouped counts, conditional sums)
+and select only the columns they need instead of hydrating full models.
 
 ### Polling
 

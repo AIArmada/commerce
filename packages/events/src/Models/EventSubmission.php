@@ -58,6 +58,23 @@ class EventSubmission extends Model
         return config('events.database.tables.event_submissions', 'event_submissions');
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (EventSubmission $submission): void {
+            $submission->logs()->chunkById(200, function ($logs): void {
+                foreach ($logs as $log) {
+                    $log->delete();
+                }
+            });
+
+            $submission->attachments()->chunkById(200, function ($attachments): void {
+                foreach ($attachments as $attachment) {
+                    $attachment->delete();
+                }
+            });
+        });
+    }
+
     protected function casts(): array
     {
         return [

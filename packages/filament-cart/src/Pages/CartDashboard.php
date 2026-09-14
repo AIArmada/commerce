@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Pages;
 
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use BackedEnum;
@@ -41,6 +42,23 @@ class CartDashboard extends Page
     public static function getNavigationSort(): ?int
     {
         return (int) config('filament-cart.pages.navigation_sort.dashboard');
+    }
+
+    public static function canAccess(): bool
+    {
+        if (! config('filament-cart.features.dashboard', true)) {
+            return false;
+        }
+
+        $permission = config('filament-cart.features.monitoring_permission');
+
+        if (! is_string($permission) || $permission === '') {
+            return true;
+        }
+
+        $user = auth()->user();
+
+        return $user !== null && $user->can($permission);
     }
 
     public static function getNavigationBadge(): ?string
@@ -93,9 +111,14 @@ class CartDashboard extends Page
             return 0;
         }
 
-        return Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
-            ->whereNotNull('checkout_abandoned_at')
-            ->where('checkout_abandoned_at', '>=', CarbonImmutable::now()->subDay())
-            ->count();
+        return (int) OwnerCache::remember(
+            Cart::resolveCurrentOwner(),
+            'filament-cart.dashboard.abandoned-count',
+            30,
+            fn (): int => Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
+                ->whereNotNull('checkout_abandoned_at')
+                ->where('checkout_abandoned_at', '>=', CarbonImmutable::now()->subDay())
+                ->count(),
+        );
     }
 }

@@ -34,21 +34,18 @@ final class ApplyAttributeChanges
     }
 
     /**
+     * Unknown codes fail loudly via firstOrFail inside setCustomAttribute;
+     * values are serialized through the attribute type.
+     *
      * @param  array<string, mixed>  $attributes
      */
     private function applyToProduct(Product $product, array $attributes): Product
     {
         foreach ($attributes as $attributeCode => $value) {
-            $attribute = $product->attributeValues()
-                ->whereHas('attribute', fn ($q) => $q->where('code', $attributeCode))
-                ->first();
-
-            if ($attribute) {
-                $attribute->update(['value' => $value]);
-            }
+            $product->setCustomAttribute($attributeCode, $value);
         }
 
-        return $product->fresh();
+        return $product->fresh() ?? $product;
     }
 
     /**
@@ -57,15 +54,9 @@ final class ApplyAttributeChanges
     private function applyToVariant(Variant $variant, array $attributes): Variant
     {
         foreach ($attributes as $attributeCode => $value) {
-            $attribute = $variant->attributeValues()
-                ->whereHas('attribute', fn ($q) => $q->where('code', $attributeCode))
-                ->first();
-
-            if ($attribute) {
-                $attribute->update(['value' => $value]);
-            }
+            $variant->setCustomAttribute($attributeCode, $value);
         }
 
-        return $variant->fresh();
+        return $variant->fresh() ?? $variant;
     }
 }

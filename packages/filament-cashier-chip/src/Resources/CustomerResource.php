@@ -99,6 +99,8 @@ final class CustomerResource extends BaseCashierChipResource
             return false;
         }
 
-        return method_exists($modelClass, 'subscriptions') || method_exists($modelClass, 'chipSubscriptions');
+        // The relation manager is bound to the `subscriptions` relationship
+        // name; registering it for chipSubscriptions-only models crashes.
+        return method_exists($modelClass, 'subscriptions');
     }
 }

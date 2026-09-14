@@ -29,7 +29,7 @@ trait ManagesItems
         string | int | array $id,
         ?string $name = null,
         float | int | string | null $price = null,
-        int $quantity = 1,
+        mixed $quantity = 1,
         array $attributes = [],
         array | object | null $conditions = null,
         string | object | null $associatedModel = null
@@ -45,7 +45,7 @@ trait ManagesItems
                 /** @var float|int|string|null $price */
                 $price = $id['price'] ?? null;
                 /** @var int $quantity */
-                $quantity = isset($id['quantity']) && is_int($id['quantity']) ? $id['quantity'] : 1;
+                $quantity = $this->resolveIntQuantity($id['quantity'] ?? 1, 'add quantity');
                 /** @var array<string, mixed> $attributes */
                 $attributes = isset($id['attributes']) && is_array($id['attributes']) ? $id['attributes'] : [];
                 /** @var array<string, mixed>|object|null $conditions */
@@ -71,7 +71,15 @@ trait ManagesItems
             return $this->addMultiple($id);
         }
 
-        return $this->addItemInternal($id, $name, $price, $quantity, $attributes, $conditions, $associatedModel);
+        return $this->addItemInternal(
+            $id,
+            $name,
+            $price,
+            $this->resolveIntQuantity($quantity, 'add quantity'),
+            $attributes,
+            $conditions,
+            $associatedModel
+        );
     }
 
     /**
@@ -98,11 +106,13 @@ trait ManagesItems
             $quantity = $data['quantity'];
 
             if (is_array($quantity)) {
-                // Absolute quantity update
-                $newQuantity = $quantity['value'] ?? 0;
+                // Absolute quantity update; a missing value defaults to 0 (removal).
+                $newQuantity = array_key_exists('value', $quantity)
+                    ? $this->resolveIntQuantity($quantity['value'], 'update quantity')
+                    : 0;
             } else {
                 // Relative quantity update (default behavior)
-                $newQuantity = $item->quantity + $quantity;
+                $newQuantity = $item->quantity + $this->resolveIntQuantity($quantity, 'update quantity');
             }
 
             // Check for removal BEFORE creating new CartItem to avoid exceptions
@@ -304,29 +314,139 @@ trait ManagesItems
     }
 
     /**
-     * Add multiple items to cart
+     * Add multiple items to cart in one batch: every row is validated before
+     * anything is written (all-or-nothing), then the cart is loaded once,
+     * updated in memory, and saved once with a single sync downstream.
      *
      * @param  array<array<string, mixed>>  $items
      */
     private function addMultiple(array $items): CartCollection
     {
-        $cartItems = new CartCollection;
-
-        foreach ($items as $item) {
-            $cartItem = $this->addItemInternal(
-                $item['id'],
-                $item['name'] ?? null,
-                $item['price'] ?? null,
-                $item['quantity'] ?? 1,
-                $item['attributes'] ?? [],
-                $item['conditions'] ?? null,
-                $item['associated_model'] ?? null
-            );
-
-            $cartItems->put($cartItem->id, $cartItem);
+        if ($items === []) {
+            return new CartCollection;
         }
 
-        return $cartItems;
+        $rows = [];
+
+        foreach ($items as $index => $item) {
+            if (! is_array($item)) {
+                throw new InvalidCartItemException("Cart import row [{$index}] must be an array.");
+            }
+
+            $rows[] = $this->normalizeImportRow($item, $index);
+        }
+
+        $cartItems = $this->getItems();
+        $isFirstItem = $cartItems->isEmpty();
+
+        $limits = CartLimits::fromConfig();
+        $seenNew = [];
+        $newDistinct = 0;
+
+        foreach ($rows as $row) {
+            if (! $cartItems->has($row['id']) && ! isset($seenNew[$row['id']])) {
+                $seenNew[$row['id']] = true;
+                $newDistinct++;
+            }
+        }
+
+        if ($cartItems->count() + $newDistinct > $limits->maxItems) {
+            throw new InvalidCartItemException("Cart cannot contain more than {$limits->maxItems} items");
+        }
+
+        $added = new CartCollection;
+
+        foreach ($rows as $row) {
+            $item = $this->createCartItem([
+                'id' => $row['id'],
+                'name' => $row['name'],
+                'price' => $this->normalizePrice($row['price']),
+                'quantity' => $row['quantity'],
+                'attributes' => $row['attributes'],
+                'conditions' => $row['conditions'],
+                'associated_model' => $row['associated_model'],
+            ]);
+
+            if ($cartItems->has($row['id'])) {
+                $existingItem = $cartItems->get($row['id']);
+                assert($existingItem !== null, 'Item should exist since we checked has()');
+                $item = $item->setQuantity($existingItem->quantity + $row['quantity']);
+            }
+
+            $cartItems->put($row['id'], $item);
+            $added->put($item->id, $item);
+        }
+
+        $this->save($cartItems);
+
+        // Invalidate pipeline cache after cart modification
+        $this->invalidatePipelineCacheIfEnabled();
+
+        // Mark dynamic conditions dirty before dispatching events so
+        // listeners observe the latest cart state.
+        $this->markDynamicConditionsDirty();
+
+        // Dispatch CartCreated event only when adding the first item to an empty cart
+        if ($isFirstItem && ! $added->isEmpty()) {
+            $this->dispatchEvent(new CartCreated($this));
+        }
+
+        foreach ($added as $addedItem) {
+            $this->dispatchEvent(new ItemAdded($addedItem, $this));
+        }
+
+        return $added;
+    }
+
+    /**
+     * Validate one import row's id/quantity/attributes shape.
+     *
+     * @param  array<string, mixed>  $item
+     * @return array{id: string, name: string|null, price: float|int|string|null, quantity: int, attributes: array<string, mixed>, conditions: array<string, mixed>|object|null, associated_model: string|object|null}
+     */
+    private function normalizeImportRow(array $item, int | string $index): array
+    {
+        $id = $item['id'] ?? null;
+
+        if ((! is_string($id) && ! is_int($id)) || $id === '') {
+            throw new InvalidCartItemException("Cart import row [{$index}] requires a valid id.");
+        }
+
+        $attributes = $item['attributes'] ?? [];
+
+        if (! is_array($attributes)) {
+            throw new InvalidCartItemException("Cart import row [{$index}] attributes must be an array.");
+        }
+
+        return [
+            'id' => (string) $id,
+            'name' => $item['name'] ?? null,
+            'price' => $item['price'] ?? null,
+            'quantity' => $this->resolveIntQuantity($item['quantity'] ?? 1, "import row [{$index}] quantity"),
+            'attributes' => $attributes,
+            'conditions' => $item['conditions'] ?? null,
+            'associated_model' => $item['associated_model'] ?? null,
+        ];
+    }
+
+    /**
+     * Resolve a caller-supplied quantity to an integer.
+     *
+     * Integers pass through; validated integer numeric strings are cast. Floats,
+     * booleans, arrays, and non-numeric strings are rejected with a domain
+     * exception instead of failing later with a TypeError.
+     */
+    private function resolveIntQuantity(mixed $quantity, string $context): int
+    {
+        if (is_int($quantity)) {
+            return $quantity;
+        }
+
+        if (is_string($quantity) && preg_match('/^-?\d+$/', mb_trim($quantity)) === 1) {
+            return (int) $quantity;
+        }
+
+        throw new InvalidCartItemException("Cart item quantity for {$context} must be an integer.");
     }
 
     /**
@@ -395,6 +515,9 @@ trait ManagesItems
      *
      * Integer inputs are already minor units. Decimal float/string inputs are
      * major units and use explicit half-up rounding at this boundary.
+     * Thousand separators (`,` or digit-grouping spaces, US-style) always imply
+     * major units, so '1,000' and '1,000.00' both mean 100000 minor units.
+     * Decimal-comma locales are not supported.
      */
     private function normalizePrice(float | int | string | null $price): int
     {
@@ -411,7 +534,15 @@ trait ManagesItems
         }
 
         $normalized = mb_trim($price);
-        $normalized = str_replace(['$', '€', '£', '¥', '₹', 'RM', '₱', '₩', '฿', '₫', '₪', '₨', 'kr', 'zł', ',', ' '], '', $normalized);
+        $normalized = str_replace(['$', '€', '£', '¥', '₹', 'RM', '₱', '₩', '฿', '₫', '₪', '₨', 'kr', 'zł'], '', $normalized);
+
+        if ($normalized === '') {
+            return 0;
+        }
+
+        $hasThousandSeparator = str_contains($normalized, ',')
+            || preg_match('/\d \d/', $normalized) === 1;
+        $normalized = str_replace([',', ' '], '', $normalized);
 
         if ($normalized === '') {
             return 0;
@@ -421,7 +552,7 @@ trait ManagesItems
             throw new InvalidCartItemException('Cart item price must be a finite number');
         }
 
-        return str_contains($normalized, '.')
+        return str_contains($normalized, '.') || $hasThousandSeparator
             ? CartMoney::minorFromDecimal($normalized)
             : (int) $normalized;
     }

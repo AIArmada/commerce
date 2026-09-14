@@ -14,6 +14,8 @@ use AIArmada\Affiliates\Services\FraudDetectionService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\Support\IpHasher;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
@@ -58,7 +60,7 @@ describe('FraudDetectionService', function (): void {
             ]);
 
             // Set cache to simulate previous clicks
-            $cacheKey = "fraud:clicks:{$this->affiliate->id}:192.168.1.100";
+            $cacheKey = "fraud:clicks:{$this->affiliate->id}:" . IpHasher::hash('192.168.1.100');
             Cache::put($cacheKey, 5, now()->addHour());
 
             $result = $this->service->analyzeClick($this->affiliate, $request);
@@ -79,7 +81,7 @@ describe('FraudDetectionService', function (): void {
                 'HTTP_USER_AGENT' => 'Mozilla/5.0 Counter Test',
             ]);
 
-            $cacheKey = "fraud:clicks:{$this->affiliate->id}:192.168.1.200";
+            $cacheKey = "fraud:clicks:{$this->affiliate->id}:" . IpHasher::hash('192.168.1.200');
 
             $this->service->analyzeClick($this->affiliate, $request);
 
@@ -130,8 +132,9 @@ describe('FraudDetectionService', function (): void {
 
         test('detects self-referral when enabled', function (): void {
             config(['affiliates.tracking.block_self_referral' => true]);
+            config(['auth.providers.users.model' => User::class]);
 
-            $this->affiliate->update(['owner_id' => 'user-123', 'owner_type' => 'user']);
+            $this->affiliate->forceFill(['owner_id' => 'user-123', 'owner_type' => (new User)->getMorphClass()])->save();
 
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
@@ -142,8 +145,7 @@ describe('FraudDetectionService', function (): void {
                 'commission_minor' => 1000,
                 'status' => PendingConversion::class,
                 'occurred_at' => now(),
-                'owner_id' => 'user-123', // Same as affiliate owner
-                'owner_type' => 'user',
+                'actor_user_id' => 'user-123', // Same user as the affiliate owner
             ]);
 
             Event::fake([FraudSignalDetected::class]);

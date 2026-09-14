@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Resources\PurchaseResource;
 use AIArmada\FilamentChip\Widgets\ChipStatsWidget;
@@ -418,7 +419,7 @@ it('renders chip stats using explicit global context when no owner is resolved',
     $method = new ReflectionMethod(ChipStatsWidget::class, 'getStats');
 
     /** @var array<int, mixed> $stats */
-    $stats = $method->invoke($widget);
+    $stats = OwnerContext::withOwner(null, static fn (): array => $method->invoke($widget));
 
     expect($stats)->toHaveCount(4);
 });
@@ -439,7 +440,7 @@ it('renders revenue chart using explicit global context when no owner is resolve
     $method = new ReflectionMethod(RevenueChartWidget::class, 'getData');
 
     /** @var array{datasets: array<int, array{data: array<int>}>, labels: array<string>} $data */
-    $data = $method->invoke($widget);
+    $data = OwnerContext::withOwner(null, static fn (): array => $method->invoke($widget));
 
     expect($data['labels'])->toHaveCount(30)
         ->and($data['datasets'])->toHaveCount(1)
@@ -469,9 +470,78 @@ it('builds recent transactions query using explicit global context when no owner
     $widget = app(RecentTransactionsWidget::class);
     $method = new ReflectionMethod(RecentTransactionsWidget::class, 'getRecentTransactionsQuery');
 
+    /** @var array{0: int, 1: bool|null} $result */
+    $result = OwnerContext::withOwner(null, function () use ($widget, $method): array {
+        /** @var Builder<Purchase> $query */
+        $query = $method->invoke($widget);
+
+        return [$query->count(), $query->first()?->is_test];
+    });
+
+    expect($result[0])->toBe(1)
+        ->and($result[1])->toBeFalse();
+});
+
+it('renders zeroed chip stats without an owner context', function (): void {
+    Purchase::withoutEvents(function (): void {
+        forcePurchase([
+            'status' => 'paid',
+            'is_test' => false,
+            'created_on' => now()->getTimestamp(),
+            'purchase' => ['total' => 1000],
+        ]);
+    });
+
+    $widget = app(ChipStatsWidget::class);
+    $method = new ReflectionMethod(ChipStatsWidget::class, 'getStats');
+
+    /** @var array<int, mixed> $stats */
+    $stats = $method->invoke($widget);
+
+    $expectedZero = MoneyFormatter::formatMinor(0, config('filament-chip.default_currency', 'MYR'));
+
+    expect($stats)->toHaveCount(4)
+        ->and($stats[0]->getValue())->toBe($expectedZero)
+        ->and($stats[1]->getValue())->toBe($expectedZero)
+        ->and($stats[2]->getValue())->toBe($expectedZero)
+        ->and($stats[3]->getValue())->toBe('0%');
+});
+
+it('renders an empty revenue chart without an owner context', function (): void {
+    Purchase::withoutEvents(function (): void {
+        forcePurchase([
+            'status' => 'paid',
+            'is_test' => false,
+            'created_on' => now()->getTimestamp(),
+            'purchase' => ['total' => 1000],
+        ]);
+    });
+
+    $widget = app(RevenueChartWidget::class);
+    $method = new ReflectionMethod(RevenueChartWidget::class, 'getRevenueData');
+
+    /** @var array{labels: array<string>, amounts: array<int>} $data */
+    $data = $method->invoke($widget);
+
+    expect($data['labels'])->toBeEmpty()
+        ->and($data['amounts'])->toBeEmpty();
+});
+
+it('returns no recent transactions without an owner context', function (): void {
+    Purchase::withoutEvents(function (): void {
+        forcePurchase([
+            'status' => 'paid',
+            'is_test' => false,
+            'created_on' => now()->getTimestamp(),
+            'purchase' => ['total' => 1000],
+        ]);
+    });
+
+    $widget = app(RecentTransactionsWidget::class);
+    $method = new ReflectionMethod(RecentTransactionsWidget::class, 'getRecentTransactionsQuery');
+
     /** @var Builder<Purchase> $query */
     $query = $method->invoke($widget);
 
-    expect($query->count())->toBe(1)
-        ->and($query->first()?->is_test)->toBeFalse();
+    expect($query->count())->toBe(0);
 });

@@ -159,19 +159,38 @@ class OptionValue extends Model implements Auditable
     }
 
     /**
-     * Get the swatch style for CSS.
+     * Get the swatch style for CSS. Values that fail validation (legacy
+     * rows) yield no style rather than a CSS breakout.
      */
     public function getSwatchStyle(): ?string
     {
-        if ($this->hasColorSwatch()) {
+        if ($this->hasColorSwatch() && self::isValidSwatchColor($this->swatch_color)) {
             return "background-color: {$this->swatch_color}";
         }
 
-        if ($this->hasImageSwatch()) {
+        if ($this->hasImageSwatch() && self::isValidSwatchImage($this->swatch_image)) {
             return "background-image: url('{$this->swatch_image}')";
         }
 
         return null;
+    }
+
+    public static function isValidSwatchColor(?string $color): bool
+    {
+        if ($color === null || $color === '') {
+            return false;
+        }
+
+        return preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $color) === 1;
+    }
+
+    public static function isValidSwatchImage(?string $image): bool
+    {
+        if ($image === null || $image === '') {
+            return false;
+        }
+
+        return mb_strlen($image) <= 2048 && strpbrk($image, "'\"()<>\\") === false;
     }
 
     // =========================================================================
@@ -243,6 +262,20 @@ class OptionValue extends Model implements Auditable
             }
 
             $optionValue->assignOwner($ownerToAssign);
+        });
+
+        static::saving(function (OptionValue $optionValue): void {
+            $color = $optionValue->swatch_color;
+
+            if ($color !== null && $color !== '' && ! self::isValidSwatchColor($color)) {
+                throw new InvalidArgumentException('Invalid swatch_color: must be a hex color such as #FF0000.');
+            }
+
+            $image = $optionValue->swatch_image;
+
+            if ($image !== null && $image !== '' && ! self::isValidSwatchImage($image)) {
+                throw new InvalidArgumentException('Invalid swatch_image: must be a plain path or URL without quotes, brackets, or backslashes.');
+            }
         });
 
         static::deleting(function (OptionValue $optionValue): void {

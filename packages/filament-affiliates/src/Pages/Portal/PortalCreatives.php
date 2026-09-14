@@ -58,6 +58,7 @@ class PortalCreatives extends PortalPage
         $generalCreatives = AffiliateProgramCreative::query()
             ->general()
             ->orderByDesc('created_at')
+            ->limit(200)
             ->get();
 
         $programCreatives = $this->getProgramCreatives($affiliate);
@@ -95,14 +96,24 @@ class PortalCreatives extends PortalPage
             ->get()
             ->filter(fn (AffiliateProgram $program): bool => $program->getAttribute('pivot')->status === 'approved');
 
-        return $programs
-            ->flatMap(
-                fn (AffiliateProgram $program) => $program
-                    ->creatives()
-                    ->orderByDesc('created_at')
-                    ->get()
-                    ->each(fn (AffiliateProgramCreative $creative) => $creative->setRelation('program', $program))
-            );
+        if ($programs->isEmpty()) {
+            return new Collection;
+        }
+
+        $programsById = $programs->keyBy(fn (AffiliateProgram $program): string => (string) $program->getKey());
+
+        return AffiliateProgramCreative::query()
+            ->whereIn('program_id', $programsById->keys()->all())
+            ->orderByDesc('created_at')
+            ->limit(200)
+            ->get()
+            ->each(function (AffiliateProgramCreative $creative) use ($programsById): void {
+                $program = $programsById->get((string) $creative->program_id);
+
+                if ($program instanceof AffiliateProgram) {
+                    $creative->setRelation('program', $program);
+                }
+            });
     }
 
     /**

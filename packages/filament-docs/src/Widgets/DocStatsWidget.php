@@ -21,19 +21,30 @@ final class DocStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $docs = OwnerUiScope::apply(Doc::query(), includeGlobal: false);
+        $draft = DocStatus::normalize(Draft::class);
+        $pending = DocStatus::normalize(Pending::class);
+        $sent = DocStatus::normalize(Sent::class);
+        $paid = DocStatus::normalize(Paid::class);
+        $overdue = DocStatus::normalize(Overdue::class);
 
-        $totalDocs = (clone $docs)->count();
-        $draftCount = (clone $docs)->where('status', DocStatus::normalize(Draft::class))->count();
-        $pendingCount = (clone $docs)->whereIn('status', [DocStatus::normalize(Pending::class), DocStatus::normalize(Sent::class)])->count();
-        $paidCount = (clone $docs)->where('status', DocStatus::normalize(Paid::class))->count();
-        $overdueCount = (clone $docs)->where('status', DocStatus::normalize(Overdue::class))->count();
+        $row = OwnerUiScope::apply(Doc::query(), includeGlobal: false)
+            ->selectRaw('COUNT(*) as total_count')
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as draft_count', [$draft])
+            ->selectRaw('SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as pending_count', [$pending, $sent])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as paid_count', [$paid])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as overdue_count', [$overdue])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN total_minor ELSE 0 END) as paid_revenue', [$paid])
+            ->selectRaw('SUM(CASE WHEN status IN (?, ?, ?) THEN total_minor ELSE 0 END) as outstanding_revenue', [$pending, $sent, $overdue])
+            ->first();
 
-        $totalRevenue = (clone $docs)->where('status', DocStatus::normalize(Paid::class))->sum('total_minor');
+        $totalDocs = (int) ($row?->getAttribute('total_count') ?? 0);
+        $draftCount = (int) ($row?->getAttribute('draft_count') ?? 0);
+        $pendingCount = (int) ($row?->getAttribute('pending_count') ?? 0);
+        $paidCount = (int) ($row?->getAttribute('paid_count') ?? 0);
+        $overdueCount = (int) ($row?->getAttribute('overdue_count') ?? 0);
 
-        $pendingRevenue = (clone $docs)
-            ->whereIn('status', [DocStatus::normalize(Pending::class), DocStatus::normalize(Sent::class), DocStatus::normalize(Overdue::class)])
-            ->sum('total_minor');
+        $totalRevenue = (int) ($row?->getAttribute('paid_revenue') ?? 0);
+        $pendingRevenue = (int) ($row?->getAttribute('outstanding_revenue') ?? 0);
 
         return [
             Stat::make('Total Documents', $totalDocs)
@@ -68,7 +79,7 @@ final class DocStatsWidget extends BaseWidget
         return 5;
     }
 
-    private function formatCurrency(int|string $amountMinor): string
+    private function formatCurrency(int | string $amountMinor): string
     {
         return MoneyFormatter::formatMinor((int) $amountMinor, (string) config('docs.defaults.currency', 'MYR'));
     }

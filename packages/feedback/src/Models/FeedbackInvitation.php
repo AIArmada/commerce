@@ -45,6 +45,10 @@ final class FeedbackInvitation extends Model
 
     protected static string $ownerScopeConfigKey = 'feedback.owner';
 
+    protected $hidden = [
+        'token_hash',
+    ];
+
     protected $fillable = [
         'feedback_form_id',
         'recipient_type', 'recipient_id',

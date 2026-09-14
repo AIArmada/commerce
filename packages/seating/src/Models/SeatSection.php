@@ -40,8 +40,8 @@ class SeatSection extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $section): void {
-            $section->seats()->each(fn (Seat $seat): mixed => $seat->delete());
-            $section->allocations()->each(fn (SeatAllocation $allocation): mixed => $allocation->delete());
+            $section->seats()->chunkById(500, fn ($seats): mixed => $seats->each->delete());
+            $section->allocations()->chunkById(500, fn ($allocations): mixed => $allocations->each->delete());
         });
     }
 

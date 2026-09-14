@@ -9,9 +9,11 @@ use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
+use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
@@ -80,41 +82,25 @@ final class VoucherSuggestionsWidget extends Widget
                 ->withCount('usages')
                 ->live()
                 ->where('currency', $cartCurrency)
+                ->orderByDesc('updated_at')
+                ->limit(50)
                 ->get();
+
+            // Resolve the cart and its applied codes once instead of once
+            // per candidate voucher.
+            $appliedCodes = $this->appliedVoucherCodes();
 
             // Filter and calculate potential savings
             $suggestions = $vouchers
-                ->filter(function (Voucher $voucher) use ($cartTotal) {
+                ->filter(function (Voucher $voucher) use ($cartTotal, $appliedCodes) {
                     // Check minimum cart value
                     if ($voucher->min_cart_value && $cartTotal < $voucher->min_cart_value) {
                         return false;
                     }
 
                     // Check if already applied
-                    try {
-                        /** @var Cart $cartRecord */
-                        $cartRecord = $this->record;
-                        $cartInstance = app(CartInstanceManager::class)->resolve(
-                            $cartRecord->instance,
-                            $cartRecord->identifier
-                        );
-
-                        /** @phpstan-ignore-next-line */
-                        $appliedVouchers = $cartInstance->getAppliedVouchers();
-
-                        if (! is_iterable($appliedVouchers)) {
-                            return false;
-                        }
-
-                        /** @var Collection<int, mixed> $appliedCollection */
-                        $appliedCollection = collect($appliedVouchers);
-                        $appliedCodes = $appliedCollection->pluck('code')->toArray();
-
-                        if (in_array($voucher->code, $appliedCodes, true)) {
-                            return false;
-                        }
-                    } catch (Throwable $exception) {
-                        // If we can't check, assume it's not applied
+                    if (in_array($voucher->code, $appliedCodes, true)) {
+                        return false;
                     }
 
                     return true;
@@ -148,9 +134,13 @@ final class VoucherSuggestionsWidget extends Widget
     }
 
     /**
-     * Apply a suggested voucher
+     * Apply a suggested voucher.
+     *
+     * The blade passes the voucher record key (never the code) so quoted
+     * payloads cannot break out of the Livewire action argument; the code
+     * is resolved server-side inside the current owner scope.
      */
-    public function applySuggestion(string $voucherCode): void
+    public function applySuggestion(string $voucherId): void
     {
         if (! $this->record instanceof Cart) {
             return;
@@ -178,18 +168,30 @@ final class VoucherSuggestionsWidget extends Widget
         }
 
         try {
+            $voucher = $this->resolveVoucherForSuggestion($voucherId);
+
+            if ($voucher === null) {
+                Notification::make()
+                    ->danger()
+                    ->title('Cannot Apply Voucher')
+                    ->body('The selected voucher is no longer available.')
+                    ->send();
+
+                return;
+            }
+
             $cartInstance = app(CartInstanceManager::class)->resolve(
                 $this->record->instance,
                 $this->record->identifier
             );
 
             /** @phpstan-ignore-next-line */
-            $cartInstance->applyVoucher($voucherCode);
+            $cartInstance->applyVoucher($voucher->code);
 
             Notification::make()
                 ->success()
                 ->title('Voucher Applied!')
-                ->body("Voucher '{$voucherCode}' has been applied.")
+                ->body("Voucher '{$voucher->code}' has been applied.")
                 ->icon(Heroicon::OutlinedCheckCircle)
                 ->send();
 
@@ -210,7 +212,7 @@ final class VoucherSuggestionsWidget extends Widget
                 ->send();
 
             Log::error('Failed to apply suggested voucher', [
-                'code' => $voucherCode,
+                'voucher_id' => $voucherId,
                 'cart_id' => $this->record->id,
                 'error' => $exception->getMessage(),
             ]);
@@ -218,26 +220,81 @@ final class VoucherSuggestionsWidget extends Widget
     }
 
     /**
-     * Calculate potential savings for a voucher
+     * @return list<string>
+     */
+    private function appliedVoucherCodes(): array
+    {
+        try {
+            /** @var Cart $cartRecord */
+            $cartRecord = $this->record;
+            $cartInstance = app(CartInstanceManager::class)->resolve(
+                $cartRecord->instance,
+                $cartRecord->identifier
+            );
+
+            /** @phpstan-ignore-next-line */
+            $appliedVouchers = $cartInstance->getAppliedVouchers();
+
+            if (! is_iterable($appliedVouchers)) {
+                return [];
+            }
+
+            return collect($appliedVouchers)->pluck('code')->filter()->values()->all();
+        } catch (Throwable) {
+            // If we can't check, assume nothing is applied.
+            return [];
+        }
+    }
+
+    private function resolveVoucherForSuggestion(string $voucherId): ?Voucher
+    {
+        $voucherQuery = Voucher::query();
+
+        if (config('vouchers.owner.enabled', false)) {
+            $voucherQuery = OwnerQuery::applyToEloquentBuilder(
+                $voucherQuery,
+                OwnerContext::resolve(),
+                (bool) config('vouchers.owner.include_global', false),
+            );
+        }
+
+        /** @var Voucher|null $voucher */
+        $voucher = $voucherQuery->whereKey($voucherId)->first();
+
+        return $voucher;
+    }
+
+    /**
+     * Calculate potential savings for a voucher.
+     *
+     * Estimates delegate to the domain discount calculator so checkout math
+     * cannot drift from suggestions; unpersisted models fall back to the
+     * local simple-type estimate.
      */
     protected function calculatePotentialSavings(Voucher $voucher, int $cartTotal): int
     {
-        $savings = match ($voucher->type) {
-            VoucherType::Percentage => intdiv(($cartTotal * $voucher->value) + 5000, 10000), // value is in basis points (1000 = 10%)
-            VoucherType::Fixed => $voucher->value, // value is in cents
-            VoucherType::FreeShipping => 0, // Can't calculate shipping savings
-            VoucherType::Bundle,
-            VoucherType::BuyXGetY,
-            VoucherType::Cashback,
-            VoucherType::Tiered => 0,
-        };
+        try {
+            $savings = app(VoucherDiscountCalculator::class)
+                ->calculate(VoucherData::fromModel($voucher), $cartTotal);
+        } catch (Throwable) {
+            $savings = $this->simpleTypeEstimate($voucher, $cartTotal);
+        }
 
         // Apply max discount cap if set
         if ($voucher->max_discount && $savings > $voucher->max_discount) {
             $savings = $voucher->max_discount;
         }
 
-        return $savings;
+        return max(0, $savings);
+    }
+
+    private function simpleTypeEstimate(Voucher $voucher, int $cartTotal): int
+    {
+        return match ($voucher->type) {
+            VoucherType::Percentage => intdiv(($cartTotal * $voucher->value) + 5000, 10000), // value is in basis points (1000 = 10%)
+            VoucherType::Fixed => $voucher->value, // value is in cents
+            default => 0,
+        };
     }
 
     /**

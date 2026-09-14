@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Pages;
 
+use AIArmada\FilamentPricing\Support\PricingSettingsAccess;
 use AIArmada\Pricing\Settings\PricingSettings;
 use BackedEnum;
 use Error;
@@ -16,6 +17,8 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Spatie\LaravelSettings\Exceptions\MissingSettings;
 use UnitEnum;
 
@@ -38,6 +41,16 @@ final class ManagePricingSettings extends Page
         $sort = config('filament-pricing.pages.navigation_sort.settings');
 
         return is_numeric($sort) ? (int) $sort : null;
+    }
+
+    public static function canAccess(): bool
+    {
+        return parent::canAccess() && PricingSettingsAccess::allows();
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
     }
 
     /** @var view-string */
@@ -153,20 +166,37 @@ final class ManagePricingSettings extends Page
 
     public function save(): void
     {
+        // Access is enforced over HTTP through canAccess() (Filament checks it
+        // on mount, hydrate, and navigation); save() itself only validates.
         /** @var array<string, mixed> $state */
         $state = $this->data ?? [];
 
+        // Server-side validation mirroring the form rules: raw page state is
+        // enforced here because Livewire calls can bypass form validation.
+        /** @var array<string, mixed> $validated */
+        $validated = Validator::make($state, [
+            'defaultCurrency' => ['required', Rule::in(['MYR', 'USD', 'EUR', 'GBP', 'SGD', 'THB', 'IDR', 'PHP'])],
+            'decimalPlaces' => ['required', 'integer', 'min:0', 'max:4'],
+            'roundingMode' => ['required', Rule::in(['up', 'down', 'half_up', 'half_down'])],
+            'pricesIncludeTax' => ['required', 'boolean'],
+            'minimumOrderValue' => ['required', 'integer', 'min:0'],
+            'maximumOrderValue' => ['required', 'integer', 'min:0'],
+            'promotionalPricingEnabled' => ['required', 'boolean'],
+            'tieredPricingEnabled' => ['required', 'boolean'],
+            'customerGroupPricingEnabled' => ['required', 'boolean'],
+        ])->validate();
+
         $settings = $this->resolvePricingSettings();
 
-        $settings->defaultCurrency = (string) Arr::get($state, 'defaultCurrency', 'MYR');
-        $settings->decimalPlaces = (int) Arr::get($state, 'decimalPlaces', 2);
-        $settings->roundingMode = (string) Arr::get($state, 'roundingMode', 'half_up');
-        $settings->pricesIncludeTax = (bool) Arr::get($state, 'pricesIncludeTax', false);
-        $settings->minimumOrderValue = (int) Arr::get($state, 'minimumOrderValue', 0);
-        $settings->maximumOrderValue = (int) Arr::get($state, 'maximumOrderValue', 0);
-        $settings->promotionalPricingEnabled = (bool) Arr::get($state, 'promotionalPricingEnabled', true);
-        $settings->tieredPricingEnabled = (bool) Arr::get($state, 'tieredPricingEnabled', true);
-        $settings->customerGroupPricingEnabled = (bool) Arr::get($state, 'customerGroupPricingEnabled', false);
+        $settings->defaultCurrency = (string) Arr::get($validated, 'defaultCurrency', 'MYR');
+        $settings->decimalPlaces = (int) Arr::get($validated, 'decimalPlaces', 2);
+        $settings->roundingMode = (string) Arr::get($validated, 'roundingMode', 'half_up');
+        $settings->pricesIncludeTax = (bool) Arr::get($validated, 'pricesIncludeTax', false);
+        $settings->minimumOrderValue = (int) Arr::get($validated, 'minimumOrderValue', 0);
+        $settings->maximumOrderValue = (int) Arr::get($validated, 'maximumOrderValue', 0);
+        $settings->promotionalPricingEnabled = (bool) Arr::get($validated, 'promotionalPricingEnabled', true);
+        $settings->tieredPricingEnabled = (bool) Arr::get($validated, 'tieredPricingEnabled', true);
+        $settings->customerGroupPricingEnabled = (bool) Arr::get($validated, 'customerGroupPricingEnabled', false);
 
         $settings->save();
 

@@ -179,6 +179,7 @@ final class SocialProfile extends Model
             $profile->normalizeForSave();
             $profile->guardAllowedPlatform();
             $profile->guardSocialableOwner();
+            $profile->syncVerificationState();
         });
     }
 
@@ -248,6 +249,19 @@ final class SocialProfile extends Model
         }
 
         $this->normalized_url = $normalized['normalized_url'];
+    }
+
+    private function syncVerificationState(): void
+    {
+        if (! $this->isDirty('is_verified')) {
+            return;
+        }
+
+        if ($this->is_verified) {
+            $this->verified_at ??= CarbonImmutable::now();
+        } else {
+            $this->verified_at = null;
+        }
     }
 
     private function guardAllowedPlatform(): void

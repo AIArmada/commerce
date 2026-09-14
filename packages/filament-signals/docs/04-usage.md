@@ -91,3 +91,15 @@ Alert logs show matched metric values, threshold values, event/filter context, d
 ## Monetary mode
 
 When `signals.features.monetary.enabled` is false, monetary fields and metrics are hidden where applicable.
+
+## Report access
+
+Report pages and the Signals dashboard require the `signal-report.view` ability on top of their feature flags. Without it the pages return 403 and stay out of navigation.
+
+## Date filter validation
+
+The `dateFrom`/`dateTo` URL state accepts strict `Y-m-d` values only, is ordered automatically, and is clamped to a one-year span so forged values cannot 500 the page or trigger unbounded reports.
+
+## Scanner bounds
+
+Local source scans stop after 500 files, skip views larger than 256 KiB, and exclude back-office route prefixes (`admin`, `filament`, `livewire`, `horizon`, `telescope`, `pulse`, `_debugbar`, `_ignition`, `sanctum`, `api`, `up`) from the route datalist. Bulk scan actions require the interaction-rule create permission and create rules transactionally.

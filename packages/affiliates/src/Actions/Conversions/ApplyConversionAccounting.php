@@ -21,9 +21,19 @@ final class ApplyConversionAccounting
 {
     use AsAction;
 
+    /** @var array<string, bool> */
+    private static array $balancesTableMemo = [];
+
+    public static function balancesSyncEnabled(): bool
+    {
+        $table = (new AffiliateBalance)->getTable();
+
+        return self::$balancesTableMemo[$table] ??= Schema::hasTable($table);
+    }
+
     public function handle(AffiliateConversion $conversion, ?ConversionStatus $previousStatus = null): void
     {
-        if (! self::syncsAffiliateBalances()) {
+        if (! self::balancesSyncEnabled()) {
             return;
         }
 
@@ -39,7 +49,8 @@ final class ApplyConversionAccounting
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $balance = $lockedAffiliate->balance()->first() ?? self::createBalance($lockedAffiliate, $conversion);
+            $balance = $lockedAffiliate->balance()->lockForUpdate()->first()
+                ?? self::createBalance($lockedAffiliate, $conversion);
 
             if ($previousStatus === null) {
                 $this->applyCreationAccounting($conversion, $balance);
@@ -88,12 +99,15 @@ final class ApplyConversionAccounting
             }
 
             if ($newStatus->equals(RejectedConversion::class)) {
-                $balance->decrement('holding_minor', $conversion->commission_minor);
-                $balance->decrement('lifetime_earnings_minor', $conversion->commission_minor);
+                $balance->voidFromHolding($conversion->commission_minor);
             }
         }
 
-        if ($newStatus->equals(PaidConversion::class)) {
+        if ($previousStatus->equals(ApprovedConversion::class) && $newStatus->equals(RejectedConversion::class)) {
+            $balance->voidFromAvailable($conversion->commission_minor);
+        }
+
+        if ($newStatus->equals(PaidConversion::class) && $conversion->affiliate_payout_id === null) {
             $balance->deductFromAvailable($conversion->commission_minor);
         }
     }
@@ -113,10 +127,5 @@ final class ApplyConversionAccounting
             'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
             'currency' => $conversion->commission_currency ?: $affiliate->currency ?: 'MYR',
         ]);
-    }
-
-    private static function syncsAffiliateBalances(): bool
-    {
-        return Schema::hasTable((new AffiliateBalance)->getTable());
     }
 }

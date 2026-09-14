@@ -9,6 +9,29 @@ use AIArmada\Customers\Models\Segment;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createSegmentModelTestCustomer(array $attributes): Customer
+{
+    $restricted = [];
+
+    foreach (['user_id', 'status', 'is_guest', 'accepts_marketing', 'created_at', 'updated_at'] as $key) {
+        if (array_key_exists($key, $attributes)) {
+            $restricted[$key] = $attributes[$key];
+            unset($attributes[$key]);
+        }
+    }
+
+    $customer = Customer::query()->create($attributes);
+
+    if ($restricted !== []) {
+        $customer->forceFill($restricted)->save();
+    }
+
+    return $customer;
+}
+
 describe('Segment Model', function (): void {
     describe('Creation', function (): void {
         it('can create a segment', function (): void {
@@ -152,7 +175,7 @@ describe('Segment Model', function (): void {
                 ],
             ]);
 
-            Customer::create([
+            createSegmentModelTestCustomer([
                 'first_name' => 'Marketing',
                 'last_name' => 'Yes',
                 'email' => 'marketing-yes-' . uniqid() . '@example.com',
@@ -208,7 +231,7 @@ describe('Segment Model', function (): void {
                 ],
             ]);
 
-            Customer::create([
+            createSegmentModelTestCustomer([
                 'first_name' => 'Rebuild',
                 'last_name' => 'Test',
                 'email' => 'rebuild-test-' . uniqid() . '@example.com',

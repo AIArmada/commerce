@@ -43,8 +43,6 @@ class AffiliateDailyStat extends Model
     protected $fillable = [
         'affiliate_id',
         'date',
-        'owner_type',
-        'owner_id',
         'clicks',
         'unique_clicks',
         'attributions',

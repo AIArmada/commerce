@@ -15,8 +15,10 @@ class EditTaxRate extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\ViewAction::make()
+                ->authorize(fn (): bool => auth()->user()?->can('tax.rates.view') ?? false),
+            Actions\DeleteAction::make()
+                ->authorize(fn (): bool => auth()->user()?->can('tax.rates.delete') ?? false),
         ];
     }
 }

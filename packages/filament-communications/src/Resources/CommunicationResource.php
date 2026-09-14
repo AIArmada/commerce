@@ -9,6 +9,8 @@ use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Models\Communication;
+use AIArmada\Filament\Communications\RelationManagers\CommunicationTimelineRelationManager;
+use AIArmada\Filament\Communications\RelationManagers\DeliveriesRelationManager;
 use AIArmada\Filament\Communications\Resources\CommunicationResource\Pages;
 use BackedEnum;
 use Filament\Actions\ViewAction;
@@ -33,7 +35,8 @@ final class CommunicationResource extends Resource
 
     public static function getNavigationSort(): ?int
     {
-        return config('filament-communications.navigation.sort');
+        return config('filament-communications.navigation.sort')
+            + (int) config('filament-communications.navigation.offsets.communications', 0);
     }
 
     /**
@@ -91,6 +94,17 @@ final class CommunicationResource extends Resource
                         TextEntry::make('created_at')->dateTime(),
                     ])->columns(2),
             ]);
+    }
+
+    /**
+     * @return array<int, class-string>
+     */
+    public static function getRelations(): array
+    {
+        return [
+            DeliveriesRelationManager::class,
+            CommunicationTimelineRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

@@ -33,7 +33,19 @@ class LiveDashboardPage extends Page
 
     public static function canAccess(): bool
     {
-        return config('filament-cart.features.monitoring', true);
+        if (! config('filament-cart.features.monitoring', true)) {
+            return false;
+        }
+
+        $permission = config('filament-cart.features.monitoring_permission');
+
+        if (! is_string($permission) || $permission === '') {
+            return true;
+        }
+
+        $user = auth()->user();
+
+        return $user !== null && $user->can($permission);
     }
 
     public function getHeaderWidgetsColumns(): int | array

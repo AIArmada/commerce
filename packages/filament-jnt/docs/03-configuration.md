@@ -45,6 +45,11 @@ return [
         'datetime_format' => 'Y-m-d H:i:s',
     ],
 
+    'infolist' => [
+        'tracking_events_limit' => 50,
+        'items_limit' => 50,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Features
@@ -104,6 +109,21 @@ return [
 'polling_interval' => '60s',  // Less frequent updates
 'tables' => [
     'datetime_format' => 'd M Y, H:i',  // "25 Dec 2024, 14:30"
+],
+```
+
+### Infolist
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `infolist.tracking_events_limit` | `int` | `50` | Max tracking events rendered per order |
+| `infolist.items_limit` | `int` | `50` | Max order items rendered per order |
+
+**Example**:
+```php
+'infolist' => [
+    'tracking_events_limit' => 100,
+    'items_limit' => 100,
 ],
 ```
 

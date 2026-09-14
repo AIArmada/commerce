@@ -18,6 +18,7 @@ use AIArmada\Events\Actions\RecordWalkInAction;
 use AIArmada\Events\Actions\RegisterForFreeAction;
 use AIArmada\Events\Actions\SyncManagementAssignmentToAuthzAction;
 use AIArmada\Events\Checkout\EventsStepContributor;
+use AIArmada\Events\Console\Commands\FinalizeEventOrdersCommand;
 use AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver;
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
 use AIArmada\Events\Contracts\EventChangeNoticeWorkflow;
@@ -79,7 +80,11 @@ use AIArmada\Events\Observers\EventClassificationObserver;
 use AIArmada\Events\Observers\EventObserver;
 use AIArmada\Events\Observers\EventOccurrenceObserver;
 use AIArmada\Events\Observers\EventSessionObserver;
+use AIArmada\Events\Policies\EventOccurrencePolicy;
 use AIArmada\Events\Policies\EventPolicy;
+use AIArmada\Events\Policies\EventRegistrationPolicy;
+use AIArmada\Events\Policies\EventSessionPolicy;
+use AIArmada\Events\Policies\EventSubmissionPolicy;
 use AIArmada\Events\Resolvers\DefaultEventChangeNoticeAudienceResolver;
 use AIArmada\Events\Resolvers\DefaultEventCheckoutIntentResolver;
 use AIArmada\Events\Resolvers\DefaultEventClassificationResolver;
@@ -133,6 +138,7 @@ final class EventsServiceProvider extends PackageServiceProvider
             ->name('events')
             ->hasConfigFile()
             ->hasViews()
+            ->hasCommand(FinalizeEventOrdersCommand::class)
             ->runsMigrations()
             ->discoversMigrations();
     }
@@ -141,6 +147,10 @@ final class EventsServiceProvider extends PackageServiceProvider
     {
         $eventClass = ModelResolver::eventClass();
         Gate::policy($eventClass, EventPolicy::class);
+        Gate::policy(EventOccurrence::class, EventOccurrencePolicy::class);
+        Gate::policy(EventSession::class, EventSessionPolicy::class);
+        Gate::policy(ModelResolver::registrationClass(), EventRegistrationPolicy::class);
+        Gate::policy(ModelResolver::submissionClass(), EventSubmissionPolicy::class);
 
         $this->app->singleton(EventQueryService::class);
 

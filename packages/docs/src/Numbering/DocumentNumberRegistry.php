@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Numbering;
 
 use AIArmada\Docs\Numbering\Contracts\DocumentNumberStrategy;
 use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
+use AIArmada\Docs\Support\DocTypeKey;
 use Illuminate\Support\Str;
 
 /**
@@ -44,15 +45,19 @@ final class DocumentNumberRegistry
 
     private function resolveStrategy(string $docType): DocumentNumberStrategy
     {
-        /** @var array<string, mixed> $typeConfig */
-        $typeConfig = config("docs.types.{$docType}", []);
+        $typeKey = DocTypeKey::sanitize($docType);
 
-        $explicitStrategy = data_get($typeConfig, 'numbering.strategy');
+        if ($typeKey !== null) {
+            /** @var array<string, mixed> $typeConfig */
+            $typeConfig = config("docs.types.{$typeKey}", []);
 
-        if (is_string($explicitStrategy)
-            && class_exists($explicitStrategy)
-            && is_subclass_of($explicitStrategy, DocumentNumberStrategy::class)) {
-            return app($explicitStrategy);
+            $explicitStrategy = data_get($typeConfig, 'numbering.strategy');
+
+            if (is_string($explicitStrategy)
+                && class_exists($explicitStrategy)
+                && is_subclass_of($explicitStrategy, DocumentNumberStrategy::class)) {
+                return app($explicitStrategy);
+            }
         }
 
         $conventionClass = 'App\\Numbering\\' . Str::studly($docType) . 'NumberStrategy';

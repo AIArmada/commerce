@@ -17,7 +17,9 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\QueryException;
 use OwenIt\Auditing\Contracts\Auditable;
+use RuntimeException;
 
 /**
  * Document sequence configuration for generating unique document numbers.
@@ -97,12 +99,27 @@ final class DocSequence extends Model implements Auditable
                 ->first();
 
             if (! $sequenceNumber) {
-                $sequenceNumber = $this->numbers()->make([
-                    'period_key' => $periodKey,
-                    'last_number' => $this->start_number - $this->increment,
-                ]);
+                try {
+                    $sequenceNumber = $this->numbers()->make([
+                        'period_key' => $periodKey,
+                        'last_number' => $this->start_number - $this->increment,
+                    ]);
 
-                $sequenceNumber->save();
+                    $sequenceNumber->save();
+                } catch (QueryException $exception) {
+                    if (! in_array((string) $exception->getCode(), ['23000', '23505'], true)) {
+                        throw $exception;
+                    }
+
+                    $sequenceNumber = $this->numbers()
+                        ->where('period_key', $periodKey)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $sequenceNumber) {
+                        throw new RuntimeException('Unable to reserve a sequence number for the current period.');
+                    }
+                }
             }
 
             // Increment and save

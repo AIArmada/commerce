@@ -45,7 +45,8 @@ final class EventTemplateServiceImpl implements EventTemplateService
         return DB::transaction(function () use ($template, $overrides): Event {
             $payload = array_merge($template->payload ?? [], $overrides);
 
-            $event = Event::query()->create([
+            $event = new Event;
+            $event->forceFill([
                 'owner_type' => $template->owner_type,
                 'owner_id' => $template->owner_id,
                 'title' => $this->contentNormalizer->normalizeTitle((string) ($payload['title'] ?? $template->name)),
@@ -61,7 +62,7 @@ final class EventTemplateServiceImpl implements EventTemplateService
                 'registration_mode' => $payload['registration_mode'] ?? null,
                 'issue_passes_for_free' => $payload['issue_passes_for_free'] ?? false,
                 'metadata' => $payload['metadata'] ?? null,
-            ]);
+            ])->save();
 
             foreach ($template->items as $item) {
                 $this->materializeItem($item, $event);

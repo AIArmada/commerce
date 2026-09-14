@@ -8,6 +8,7 @@ use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem as ChipSubscriptionItem;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
+use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantRecord;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\ListSubscriptions;
@@ -53,7 +54,7 @@ beforeEach(function (): void {
     ]);
 });
 
-it('lists CHIP subscriptions as unified subscriptions and applies tabs and filters', function (): void {
+it('lists subscriptions across billables and applies tabs and filters', function (): void {
     if (! Schema::hasTable('cashier_chip_subscriptions')) {
         Schema::create('cashier_chip_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
@@ -88,6 +89,15 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
         });
     }
 
+    if (! Schema::hasTable('filament_cashier_tenant_records')) {
+        Schema::create('filament_cashier_tenant_records', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('user_id');
+            $table->string('name');
+            $table->timestamps();
+        });
+    }
+
     /** @var class-string<Model> $userModel */
     $userModel = ChipBillableUser::class;
     $user = $userModel::query()->create([
@@ -96,8 +106,19 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
         'password' => bcrypt('secret'),
     ]);
 
-    // Align owner context with the current customer.
-    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($user));
+    $otherUser = $userModel::query()->create([
+        'name' => 'Other Subscriptions',
+        'email' => 'other-subscriptions@example.com',
+        'password' => bcrypt('secret'),
+    ]);
+
+    $team = TenantRecord::query()->create([
+        'user_id' => $user->getKey(),
+        'name' => 'Team A',
+    ]);
+
+    // Align owner context with the shared team so both billables are in scope.
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($team));
 
     Auth::guard()->setUser($user);
 
@@ -108,8 +129,8 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
     $activeId = (string) Str::uuid();
     ChipSubscription::query()->create([
         'id' => $activeId,
-        'billable_type' => $user->getMorphClass(),
-        'billable_id' => (string) $user->getKey(),
+        'billable_type' => $otherUser->getMorphClass(),
+        'billable_id' => (string) $otherUser->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . $activeId,
         'chip_status' => SubscriptionStatus::Active,
@@ -150,6 +171,10 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
 
     $records = $page->getTableRecords();
     expect($records)->toHaveCount(2);
+    expect($records->pluck('userId')->all())->toContain(
+        (string) $user->getKey(),
+        (string) $otherUser->getKey(),
+    );
     expect($page->getTableRecordKey($records->first()))->toContain('chip-');
     expect($page->getTableRecordKey(['gateway' => 'chip', 'id' => 'abc']))->toBe('chip-abc');
 

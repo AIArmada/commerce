@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentProducts\Resources\AttributeGroupResource\Pages;
 use AIArmada\FilamentProducts\Resources\AttributeGroupResource\Schemas\AttributeGroupForm;
 use AIArmada\FilamentProducts\Resources\AttributeGroupResource\Tables\AttributeGroupsTable;
@@ -12,6 +13,7 @@ use BackedEnum;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 final class AttributeGroupResource extends BaseAttributeResource
 {
@@ -31,8 +33,7 @@ final class AttributeGroupResource extends BaseAttributeResource
      */
     public static function getEloquentQuery(): Builder
     {
-        return AttributeGroup::query()
-            ->forOwner();
+        return parent::getEloquentQuery();
     }
 
     public static function getNavigationLabel(): string
@@ -48,6 +49,36 @@ final class AttributeGroupResource extends BaseAttributeResource
     public static function getPluralModelLabel(): string
     {
         return __('filament-products::resources.attribute_groups.plural_model_label');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('attribute-group.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('attribute-group.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('attribute-group.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('attribute-group.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('attribute-group.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function form(Schema $schema): Schema

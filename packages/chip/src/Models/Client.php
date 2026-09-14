@@ -37,6 +37,38 @@ class Client extends ChipModel
 {
     public $timestamps = true;
 
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'id',
+        'type',
+        'created_on',
+        'updated_on',
+        'email',
+        'phone',
+        'full_name',
+        'personal_code',
+        'street_address',
+        'country',
+        'city',
+        'zip_code',
+        'state',
+        'shipping_street_address',
+        'shipping_country',
+        'shipping_city',
+        'shipping_zip_code',
+        'shipping_state',
+        'cc',
+        'bcc',
+        'legal_name',
+        'brand_name',
+        'registration_number',
+        'tax_number',
+        'bank_account',
+        'bank_code',
+    ];
+
     public function createdOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['created_on'] ?? null));

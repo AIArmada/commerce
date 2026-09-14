@@ -14,6 +14,7 @@ use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class RecordAgentTicketSaleAction
@@ -24,6 +25,7 @@ final class RecordAgentTicketSaleAction
         private readonly CreateEventComponentRegistrationsAction $expandComponents,
         private readonly InventoryService $inventory,
         private readonly IssueEventRegistrationPassesAction $issuePasses,
+        private readonly LockEventRegistrationScopeAction $lockScope,
     ) {}
 
     /**
@@ -58,44 +60,49 @@ final class RecordAgentTicketSaleAction
         $scope = $this->scopeResolver->resolve($target);
         $scopeData = $scope->toRegistrationData();
 
-        $this->enforceCapacity($quantity, $scope);
+        return DB::transaction(function () use ($agent, $customerData, $quantity, $scope, $scopeData, $ticketType): Collection {
+            $this->lockScope->handle($scope);
+            $this->enforceCapacity($quantity, $scope);
 
-        $this->inventory->shipFromDefault($ticketType, $quantity, 'agent_sale', 'agent:' . ($agent?->getKey() ?? 'unknown'));
+            $registrations = new Collection;
 
-        $registrations = new Collection;
+            for ($i = 0; $i < $quantity; $i++) {
+                $participants = $this->buildParticipantData($customerData, $i);
 
-        for ($i = 0; $i < $quantity; $i++) {
-            $participants = $this->buildParticipantData($customerData, $i);
-
-            $registration = $this->registrations->register(array_merge($scopeData, [
-                'registrant_type' => $agent?->getMorphClass(),
-                'registrant_id' => $agent?->getKey(),
-                'registration_type' => 'individual',
-                'status' => 'confirmed',
-                'source' => 'agent_sale',
-                'total_participants' => 1,
-                'total_amount' => $ticketType->price,
-                'currency' => $ticketType->currency,
-                'is_bundle_root' => true,
-                'items' => [[
-                    'ticket_type_id' => $ticketType->getKey(),
-                    'quantity' => 1,
-                    'unit_price' => $ticketType->price,
-                    'total_price' => $ticketType->price,
-                    'currency' => $ticketType->currency,
+                $registration = $this->registrations->register(array_merge($scopeData, [
+                    'registrant_type' => $agent?->getMorphClass(),
+                    'registrant_id' => $agent?->getKey(),
+                    'registration_type' => 'individual',
                     'status' => 'confirmed',
-                ]],
-                'participants' => [$participants],
-            ]));
+                    'source' => 'agent_sale',
+                    'total_participants' => 1,
+                    'total_amount' => $ticketType->price,
+                    'currency' => $ticketType->currency,
+                    'is_bundle_root' => true,
+                    'items' => [[
+                        'ticket_type_id' => $ticketType->getKey(),
+                        'quantity' => 1,
+                        'unit_price' => $ticketType->price,
+                        'total_price' => $ticketType->price,
+                        'currency' => $ticketType->currency,
+                        'status' => 'confirmed',
+                    ]],
+                    'participants' => [$participants],
+                ]));
 
-            $this->expandComponents->handle($registration);
+                $this->expandComponents->handle($registration);
 
-            $this->issuePasses->handle($registration);
+                $registrations->push($registration);
+            }
 
-            $registrations->push($registration);
-        }
+            $this->inventory->shipFromDefault($ticketType, $quantity, 'agent_sale', 'agent:' . ($agent?->getKey() ?? 'unknown'));
 
-        return $registrations;
+            foreach ($registrations as $registration) {
+                $this->issuePasses->handle($registration);
+            }
+
+            return $registrations;
+        });
     }
 
     /**

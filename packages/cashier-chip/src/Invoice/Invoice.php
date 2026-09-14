@@ -365,7 +365,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      */
     public function download(array $data = []): Response
     {
-        $filename = "invoice-{$this->number()}.pdf";
+        $filename = $this->safeFilename('invoice-' . ($this->number() ?? $this->id()));
 
         return new Response($this->pdf($data), 200, [
             'Content-Description' => 'File Transfer',
@@ -385,11 +385,28 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
     {
         return new Response($this->pdf($data), 200, [
             'Content-Description' => 'File Transfer',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Disposition' => 'attachment; filename="' . $this->safeFilename($filename) . '"',
             'Content-Transfer-Encoding' => 'binary',
             'Content-Type' => 'application/pdf',
             'X-Vapor-Base64-Encode' => 'True',
         ]);
+    }
+
+    /**
+     * Sanitize a download filename so attacker-influenced purchase
+     * references cannot break out of the Content-Disposition header.
+     */
+    private function safeFilename(string $name): string
+    {
+        $stripped = preg_replace('/\.pdf$/i', '', mb_trim($name));
+        $base = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $stripped) ?: 'invoice';
+        $base = mb_trim($base, '-_');
+
+        if ($base === '') {
+            $base = 'invoice';
+        }
+
+        return mb_substr($base, 0, 120) . '.pdf';
     }
 
     /**

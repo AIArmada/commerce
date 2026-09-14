@@ -101,6 +101,17 @@ the invitation under the current owner context. Confirm the accepting user's
 email only after the token-selected invitation is loaded, then call
 `AcceptInvitationAction`. A successful acceptance is single-use.
 
+```php
+use AIArmada\Membership\Actions\AcceptInvitationAction;
+
+AcceptInvitationAction::run($invitation, $user, $rawTokenFromRequest);
+```
+
+Pass the raw invitation credential as the third argument whenever the host
+resolves the invitation by id or route-model binding instead of by token-hash
+lookup. Acceptance is rejected when the credential does not match the
+invitation.
+
 When a member is added, `MembershipRoleSyncService` ensures the mapped Spatie role exists, syncs permissions from `membership.role_permissions` (prefixing non-wildcard names with the subject basename when possible), and assigns the role to the user under the current team context when team-scoped roles are enabled.
 
 The role-definition reconciliation is additive by default. Run
@@ -130,7 +141,58 @@ Pending invitations are unique per subject, normalized email, role, and
 status. Repeating the same invitation request returns the existing pending
 invitation without sending another `MembershipInvitationSent` event. A new
 invitation can be created after the previous invitation reaches a terminal
-status.
+status. Re-inviting after the expiry deadline transitions the stale row to
+`expired` and creates a fresh invitation with a new event.
+
+Past-due invitations stay `pending` until they are re-invited or swept. Run
+the sweep command from a scheduler when reporting or downstream jobs need the
+persisted `expired` status:
+
+```bash
+php artisan membership:expire-invitations
+```
+
+The package does not register a scheduler entry automatically. If the
+application wants a periodic sweep, schedule the command in its application
+scheduler:
+
+```php
+use Illuminate\Console\Scheduling\Schedule;
+
+protected function schedule(Schedule $schedule): void
+{
+    $schedule->command('membership:expire-invitations')->daily();
+}
+```
+
+The command processes each owner scope explicitly; it does not rely on ambient
+web authentication.
+
+## Host Authorization
+
+The package ships no routes, policies, or gates: the host application must
+authorize every invite, apply, approve, reject, cancel, revoke, and accept
+call on its own endpoints. `CancelMembershipApplicationAction` accepts an
+optional actor that is recorded as `cancelled_by` for audit, but the package
+cannot define who may cancel. Gate these actions with host policies before
+calling them.
+
+## Rate Limiting
+
+Invite and apply endpoints must be throttled by the host. Unique indexes only
+deduplicate identical subject/email/role or subject/applicant keys, so varying
+emails or justifications can otherwise create unbounded rows, and every new
+invitation emits a mail-driving `MembershipInvitationSent` event.
+
+## Deleting a Subject
+
+Deleting a `HasMembers` subject cancels its pending applications and revokes
+its pending invitations across all owner scopes in one transaction. Terminal
+history is preserved. The cleanup uses mass updates, so application and
+invitation model events do not fire, and the timestamps are recorded without
+actor attribution (`cancelled_by`/`revoked_by` stay null). Member pivot rows,
+member user records, and authorization roles are intentionally untouched; the
+host model owns that cleanup when its domain requires it.
 
 ## Apply for Membership
 

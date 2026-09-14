@@ -123,7 +123,7 @@ trait MembershipOwnerScopingContractTests
         $actor = $owner ?? $this->createOwner();
 
         return match ($this->getModelClass()) {
-            MembershipApplication::class => MembershipApplication::query()->create([
+            MembershipApplication::class => $this->createMembershipApplication([
                 'subject_type' => $subject->getMorphClass(),
                 'subject_id' => $subject->getKey(),
                 'applicant_id' => $actor->getKey(),

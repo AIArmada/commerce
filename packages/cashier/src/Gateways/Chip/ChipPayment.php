@@ -421,6 +421,9 @@ class ChipPayment implements PaymentContract
     /**
      * Convert to array.
      *
+     * The recurring token is a reusable payment credential: it is exposed
+     * only via recurringToken(), never via serialization.
+     *
      * @return array<string, mixed>
      */
     public function toArray(): array
@@ -436,7 +439,6 @@ class ChipPayment implements PaymentContract
             'is_pending' => $this->isPending(),
             'is_failed' => $this->isFailed(),
             'requires_redirect' => $this->requiresRedirect(),
-            'recurring_token' => $this->recurringToken(),
         ];
     }
 

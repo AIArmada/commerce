@@ -8,6 +8,7 @@ use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\ThreadStatus;
 use AIArmada\Communications\Models\CommunicationThread;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 
 final class ResolveCommunicationThreadAction
 {
@@ -30,13 +31,22 @@ final class ResolveCommunicationThreadAction
                 ->first();
 
             if ($thread !== null) {
-                if ($title !== null) {
-                    $thread->title = $title;
-                }
-                $thread->last_communication_at = CarbonImmutable::now();
-                $thread->save();
+                return $this->touch($thread, $title);
+            }
 
-                return $thread;
+            try {
+                return $this->create($channel, $externalThreadId, $title, $subjectType, $subjectId, $metadata);
+            } catch (QueryException $exception) {
+                if ($exception->getCode() !== '23000') {
+                    throw $exception;
+                }
+
+                $winner = CommunicationThread::query()
+                    ->where('channel', $channel)
+                    ->where('external_thread_id', $externalThreadId)
+                    ->firstOrFail();
+
+                return $this->touch($winner, $title);
             }
         }
 
@@ -49,13 +59,33 @@ final class ResolveCommunicationThreadAction
                 ->first();
 
             if ($thread !== null) {
-                $thread->last_communication_at = CarbonImmutable::now();
-                $thread->save();
-
-                return $thread;
+                return $this->touch($thread, null);
             }
         }
 
+        return $this->create($channel, null, $title, $subjectType, $subjectId, $metadata);
+    }
+
+    private function touch(CommunicationThread $thread, ?string $title): CommunicationThread
+    {
+        if ($title !== null) {
+            $thread->title = $title;
+        }
+
+        $thread->last_communication_at = CarbonImmutable::now();
+        $thread->save();
+
+        return $thread;
+    }
+
+    private function create(
+        string $channel,
+        ?string $externalThreadId,
+        ?string $title,
+        ?string $subjectType,
+        ?string $subjectId,
+        ?array $metadata,
+    ): CommunicationThread {
         $thread = new CommunicationThread;
         $thread->channel = $channel;
         $thread->external_thread_id = $externalThreadId;

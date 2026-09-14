@@ -88,7 +88,17 @@ final class SubscriptionInfolist
 
                             TextEntry::make('customer_chip_customer_id')
                                 ->label('Chip Customer ID')
-                                ->getStateUsing(fn (Subscription $record): ?string => method_exists($record->customer, 'chipId') ? $record->customer->chipId() : null)
+                                ->getStateUsing(function (Subscription $record): ?string {
+                                    $customer = $record->customer;
+
+                                    if (! is_object($customer) || ! method_exists($customer, 'chipId')) {
+                                        return null;
+                                    }
+
+                                    $chipId = $customer->chipId();
+
+                                    return is_string($chipId) && $chipId !== '' ? $chipId : null;
+                                })
                                 ->copyable()
                                 ->placeholder('Not linked'),
                         ]),
@@ -149,7 +159,7 @@ final class SubscriptionInfolist
                                 ->placeholder('—'),
                         ]),
                 ])
-                ->visible(fn (Subscription $record): bool => $record->hasDiscount())
+                ->visible(fn (?Subscription $record): bool => $record?->hasDiscount() ?? false)
                 ->collapsible(),
 
             Section::make('Timestamps')

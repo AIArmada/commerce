@@ -18,8 +18,8 @@ return new class extends Migration
             // Core API fields - exact match with CHIP API
             $table->uuid('id')->primary();
             $table->string('type')->default('purchase');
-            $table->integer('created_on'); // Unix timestamp as per API
-            $table->integer('updated_on'); // Unix timestamp as per API
+            $table->bigInteger('created_on'); // Unix timestamp as per API
+            $table->bigInteger('updated_on'); // Unix timestamp as per API
 
             // Client details - stored as JSON per API structure
             $jsonType = (string) commerce_json_column_type('chip', 'jsonb');
@@ -51,9 +51,9 @@ return new class extends Migration
             // Analytics denormalized columns for efficient querying
             $table->string('payment_method', 32)->nullable()
                 ->comment('Denormalized from transaction_data for analytics queries.');
-            $table->integer('total_minor')->default(0)
+            $table->unsignedBigInteger('total_minor')->default(0)
                 ->comment('Denormalized total amount in minor units for analytics.');
-            $table->integer('refund_amount_minor')->default(0)
+            $table->unsignedBigInteger('refund_amount_minor')->default(0)
                 ->comment('Tracks refund amount in minor units.');
             $table->string('failure_reason')->nullable()
                 ->comment('Stores payment failure reason for analytics.');
@@ -63,7 +63,7 @@ return new class extends Migration
                 ->comment('Timestamp when payment was refunded.');
 
             // Timestamps
-            $table->integer('viewed_on')->nullable();
+            $table->bigInteger('viewed_on')->nullable();
 
             // Configuration flags
             $table->boolean('send_receipt')->default(false);
@@ -78,13 +78,13 @@ return new class extends Migration
             $table->string('reference_generated')->nullable();
             $table->text('notes')->nullable();
             $table->string('issued')->nullable(); // ISO 8601 date format
-            $table->integer('due')->nullable(); // Unix timestamp
+            $table->bigInteger('due')->nullable(); // Unix timestamp
 
             // Refund information
             $table->string('refund_availability', 32)
                 ->default('all')
                 ->comment('Backed by CHIP refund availability values.');
-            $table->integer('refundable_amount')->default(0);
+            $table->unsignedBigInteger('refundable_amount')->default(0);
 
             // Currency conversion data
             $table->{$jsonType}('currency_conversion')->nullable();

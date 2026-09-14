@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('subscription_type')->index();
             $table->string('status')->index();
             $table->{$jsonType}('criteria')->nullable();
+            $table->string('criteria_hash', 64)->index();
             $table->string('notification_level')->nullable()->index();
             $table->{$jsonType}('notification_preferences')->nullable();
             $table->timestampTz('subscribed_at')->nullable()->index();
@@ -36,6 +37,8 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
+            $table->index(['status', 'subscribable_type', 'subscribable_id'], 'engagement_subscriptions_match_idx');
+            $table->unique(['subscriber_type', 'subscriber_id', 'subscribable_type', 'subscribable_id', 'subscription_type', 'criteria_hash', 'owner_type', 'owner_id'], 'engagement_subscriptions_identity_unique');
         });
     }
 };

@@ -47,4 +47,9 @@ final class DefaultEngagementPolicyResolver implements EngagementPolicyResolver
     {
         return true;
     }
+
+    public function canShare(mixed $actor, mixed $subject): bool
+    {
+        return true;
+    }
 }

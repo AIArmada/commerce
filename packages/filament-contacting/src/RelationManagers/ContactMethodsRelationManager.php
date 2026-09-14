@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\RelationManagers;
 
 use AIArmada\FilamentContacting\Schemas\ContactMethodFormSchema;
+use AIArmada\FilamentContacting\Support\ContactingRelationOwnerScope;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
 use AIArmada\FilamentContacting\Tables\ContactMethodTable;
 use Filament\Actions\CreateAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class ContactMethodsRelationManager extends RelationManager
 {
@@ -26,6 +28,7 @@ final class ContactMethodsRelationManager extends RelationManager
         $tableConfig = ContactMethodTable::table($table);
 
         $tableConfig
+            ->modifyQueryUsing(fn (Builder $query): Builder => ContactingRelationOwnerScope::scopeForParent($query, $this->getOwnerRecord()))
             ->headerActions([
                 CreateAction::make()
                     ->form(ContactMethodFormSchema::make())
@@ -36,7 +39,11 @@ final class ContactMethodsRelationManager extends RelationManager
 
                         return $data;
                     })
-                    ->visible(fn (): bool => ! $guard->contactMethodsReadOnly()),
+                    ->visible(fn (): bool => ! $guard->contactMethodsReadOnly())
+                    ->disabled(fn (): bool => $guard->contactMethodsReadOnly())
+                    ->before(function (): void {
+                        abort_unless(ContactingRelationOwnerScope::canAccessParent($this->getOwnerRecord()), 403);
+                    }),
             ]);
 
         return $tableConfig;

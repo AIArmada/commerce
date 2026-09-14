@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Models\Voucher;
@@ -20,25 +21,35 @@ final class VoucherWalletStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $wallets = $this->wallets();
+        /** @var array{total: int, claimed: int, redeemed: int, available: int, unique_vouchers: int, unique_holders: int} $counts */
+        $counts = OwnerCache::remember(
+            OwnerContext::resolve(),
+            'filament-vouchers.wallet-stats',
+            30,
+            function (): array {
+                $wallets = $this->wallets();
 
-        $total = (clone $wallets)->count();
-        $claimed = (clone $wallets)->whereNotNull('claimed_at')->count();
-        $redeemed = (clone $wallets)->whereNotNull('redeemed_at')->count();
-        $available = (clone $wallets)->whereNull('redeemed_at')->count();
+                return [
+                    'total' => (clone $wallets)->count(),
+                    'claimed' => (clone $wallets)->whereNotNull('claimed_at')->count(),
+                    'redeemed' => (clone $wallets)->whereNotNull('redeemed_at')->count(),
+                    'available' => (clone $wallets)->whereNull('redeemed_at')->count(),
+                    'unique_vouchers' => (clone $wallets)->distinct('voucher_id')->count('voucher_id'),
+                    'unique_holders' => $this->distinctHolderCount(clone $wallets),
+                ];
+            },
+        );
+
+        $total = $counts['total'];
+        $claimed = $counts['claimed'];
+        $redeemed = $counts['redeemed'];
+        $available = $counts['available'];
 
         // Calculate unique vouchers in wallets
-        $uniqueVouchers = (clone $wallets)->distinct('voucher_id')->count('voucher_id');
+        $uniqueVouchers = $counts['unique_vouchers'];
 
         // Calculate unique holders (users/stores/teams) who have vouchers in their wallets
-        /** @var Connection $connection */
-        $connection = VoucherWallet::query()->getConnection();
-        $driver = ConnectionDriver::name($connection);
-        $concat = $driver === 'pgsql' || $driver === 'sqlite'
-            ? "holder_type || '-' || holder_id"
-            : "CONCAT(holder_type, '-', holder_id)";
-        $uniqueOwners = (clone $wallets)->selectRaw("COUNT(DISTINCT {$concat}) as count")
-            ->value('count') ?? 0;
+        $uniqueOwners = $counts['unique_holders'];
 
         return [
             Stat::make('Total Wallet Entries', $total)
@@ -86,18 +97,47 @@ final class VoucherWalletStatsWidget extends BaseWidget
      */
     private function getWalletTrend(): array
     {
-        $data = [];
         $now = CarbonImmutable::now();
+        $startDate = $now->copy()->subDays(6)->startOfDay();
 
-        $wallets = $this->wallets();
+        /** @var Connection $connection */
+        $connection = VoucherWallet::query()->getConnection();
+        $driver = ConnectionDriver::name($connection);
+        $dateExpression = match ($driver) {
+            'sqlite' => 'date(created_at)',
+            default => 'DATE(created_at)',
+        };
+
+        /** @var array<string, int> $countsByDate */
+        $countsByDate = $this->wallets()
+            ->selectRaw("{$dateExpression} as date, COUNT(*) as count")
+            ->where('created_at', '>=', $startDate)
+            ->groupByRaw($dateExpression)
+            ->pluck('count', 'date')
+            ->map(static fn (mixed $count): int => (int) $count)
+            ->all();
+
+        $data = [];
 
         for ($i = 6; $i >= 0; $i--) {
-            $date = $now->copy()->subDays($i)->startOfDay();
-            $count = (clone $wallets)->whereDate('created_at', $date)->count();
-            $data[] = $count;
+            $date = $now->copy()->subDays($i)->format('Y-m-d');
+            $data[] = $countsByDate[$date] ?? 0;
         }
 
         return $data;
+    }
+
+    private function distinctHolderCount(Builder $wallets): int
+    {
+        /** @var Connection $connection */
+        $connection = VoucherWallet::query()->getConnection();
+        $driver = ConnectionDriver::name($connection);
+        $concat = $driver === 'pgsql' || $driver === 'sqlite'
+            ? "holder_type || '-' || holder_id"
+            : "CONCAT(holder_type, '-', holder_id)";
+
+        return (int) $wallets->selectRaw("COUNT(DISTINCT {$concat}) as count")
+            ->value('count');
     }
 
     /**

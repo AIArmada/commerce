@@ -21,22 +21,25 @@ class WebhookMonitor
     {
         $since ??= CarbonImmutable::now()->subDay();
 
-        $webhooks = Webhook::query()
+        $stats = Webhook::query()
             ->forOwner()
             ->where('created_at', '>=', $since)
-            ->select(['status', 'processing_time_ms'])
-            ->get();
-
-        $processingTimes = $webhooks
-            ->pluck('processing_time_ms')
-            ->filter(static fn (mixed $value): bool => $value !== null);
+            ->toBase()
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'processed' THEN 1 ELSE 0 END) as processed,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                AVG(processing_time_ms) as avg_processing_time_ms
+            ")
+            ->first();
 
         return WebhookHealth::fromStats(
-            total: $webhooks->count(),
-            processed: $webhooks->where('status', 'processed')->count(),
-            failed: $webhooks->where('status', 'failed')->count(),
-            pending: $webhooks->where('status', 'pending')->count(),
-            avgProcessingTimeMs: (float) ($processingTimes->avg() ?? 0),
+            total: (int) ($stats->total ?? 0),
+            processed: (int) ($stats->processed ?? 0),
+            failed: (int) ($stats->failed ?? 0),
+            pending: (int) ($stats->pending ?? 0),
+            avgProcessingTimeMs: (float) ($stats->avg_processing_time_ms ?? 0),
         );
     }
 
@@ -88,22 +91,34 @@ class WebhookMonitor
     {
         $since ??= CarbonImmutable::now()->subDay();
 
-        // Fetch raw data and group in PHP for database portability
-        $webhooks = Webhook::query()
+        // Group in PHP for database portability, but stream in chunks so a
+        // busy day never hydrates every webhook row at once.
+        /** @var array<string, array{total: int, processed: int, failed: int}> $buckets */
+        $buckets = [];
+
+        Webhook::query()
             ->forOwner()
             ->where('created_at', '>=', $since)
             ->select(['created_at', 'status'])
-            ->get();
+            ->orderBy('id')
+            ->chunk(1000, function ($webhooks) use (&$buckets): void {
+                foreach ($webhooks as $webhook) {
+                    $hour = CarbonImmutable::parse($webhook->created_at)->format('Y-m-d H:00:00');
 
-        return $webhooks
-            ->groupBy(fn ($webhook): string => CarbonImmutable::parse($webhook->created_at)->format('Y-m-d H:00:00'))
-            ->map(fn ($group): array => [
-                'total' => $group->count(),
-                'processed' => $group->where('status', 'processed')->count(),
-                'failed' => $group->where('status', 'failed')->count(),
-            ])
-            ->sortKeys()
-            ->toArray();
+                    $buckets[$hour] ??= ['total' => 0, 'processed' => 0, 'failed' => 0];
+                    $buckets[$hour]['total']++;
+
+                    if ($webhook->status === 'processed') {
+                        $buckets[$hour]['processed']++;
+                    } elseif ($webhook->status === 'failed') {
+                        $buckets[$hour]['failed']++;
+                    }
+                }
+            });
+
+        ksort($buckets);
+
+        return $buckets;
     }
 
     /**

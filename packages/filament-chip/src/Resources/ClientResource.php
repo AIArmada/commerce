@@ -6,6 +6,8 @@ namespace AIArmada\FilamentChip\Resources;
 
 use AIArmada\Chip\Models\Client;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ListClients;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ViewClient;
 use AIArmada\FilamentChip\Resources\ClientResource\Schemas\ClientInfolist;
@@ -125,20 +127,30 @@ final class ClientResource extends BaseChipResource
                 SelectFilter::make('country')
                     ->label('Country')
                     ->options(function (): array {
-                        $query = Client::query();
+                        /** @var array<string, string> $options */
+                        $options = OwnerCache::remember(
+                            OwnerContext::resolve(),
+                            'filament-chip.filter-options.clients.country',
+                            300,
+                            static function (): array {
+                                $query = Client::query();
 
-                        if (method_exists($query->getModel(), 'scopeForOwner')) {
-                            $query->forOwner();
-                        }
+                                if (method_exists($query->getModel(), 'scopeForOwner')) {
+                                    $query->forOwner();
+                                }
 
-                        return $query
-                            ->select('country')
-                            ->distinct()
-                            ->whereNotNull('country')
-                            ->orderBy('country')
-                            ->pluck('country', 'country')
-                            ->mapWithKeys(fn (string $country): array => [$country => mb_strtoupper($country)])
-                            ->all();
+                                return $query
+                                    ->select('country')
+                                    ->distinct()
+                                    ->whereNotNull('country')
+                                    ->orderBy('country')
+                                    ->pluck('country', 'country')
+                                    ->mapWithKeys(fn (string $country): array => [$country => mb_strtoupper($country)])
+                                    ->all();
+                            },
+                        );
+
+                        return $options;
                     })
                     ->searchable(),
                 Filter::make('has_phone')

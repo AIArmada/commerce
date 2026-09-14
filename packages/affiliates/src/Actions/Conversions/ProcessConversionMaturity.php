@@ -28,17 +28,17 @@ final class ProcessConversionMaturity
         $maturityDays = config('affiliates.payouts.maturity_days', 30);
         $matured = 0;
 
-        $conversions = AffiliateConversion::query()
+        AffiliateConversion::query()
             ->where('status', QualifiedConversion::value())
             ->where('occurred_at', '<=', CarbonImmutable::now()->subDays($maturityDays))
             ->with('affiliate')
-            ->get();
-
-        foreach ($conversions as $conversion) {
-            if ($this->matureConversion->handle($conversion)) {
-                $matured++;
-            }
-        }
+            ->chunkById(200, function ($conversions) use (&$matured): void {
+                foreach ($conversions as $conversion) {
+                    if ($this->matureConversion->handle($conversion)) {
+                        $matured++;
+                    }
+                }
+            });
 
         return $matured;
     }

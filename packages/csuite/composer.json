@@ -22,6 +22,8 @@
         "aiarmada/filament-docs": "self.version",
         "aiarmada/filament-jnt": "self.version",
         "aiarmada/filament-authz": "self.version",
+        "aiarmada/filament-cashier": "self.version",
+        "aiarmada/filament-cashier-chip": "self.version",
         "aiarmada/filament-vouchers": "self.version",
         "aiarmada/jnt": "self.version",
         "aiarmada/filament-inventory": "self.version",

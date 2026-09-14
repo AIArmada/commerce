@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentPersons\Resources\PersonResource\Pages\CreatePerson;
 use AIArmada\FilamentPersons\Resources\PersonResource\Pages\EditPerson;
 use AIArmada\FilamentPersons\Resources\PersonResource\Pages\ListPersons;
@@ -21,6 +22,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class PersonResource extends Resource
@@ -47,6 +49,36 @@ class PersonResource extends Resource
     {
         return parent::getEloquentQuery()
             ->with('titleAssignments.title.category');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('person.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('person.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('person.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('person.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('person.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function form(Schema $schema): Schema

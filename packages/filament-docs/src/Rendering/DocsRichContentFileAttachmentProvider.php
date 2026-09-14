@@ -43,7 +43,7 @@ final class DocsRichContentFileAttachmentProvider implements FileAttachmentProvi
             try {
                 return $storage->temporaryUrl(
                     $file,
-                    CarbonImmutable::now()->addMinutes(config('filament.temporary_file_url_expiry_minutes', 30))->endOfHour(),
+                    CarbonImmutable::now()->addMinutes(config('filament.temporary_file_url_expiry_minutes', 30)),
                 );
             } catch (Throwable) {
                 return null;

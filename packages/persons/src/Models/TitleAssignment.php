@@ -58,14 +58,18 @@ class TitleAssignment extends Model
     protected static function booted(): void
     {
         static::saving(function (TitleAssignment $assignment): void {
-            if (! Title::query()->whereKey($assignment->getAttribute('title_id'))->exists()) {
-                throw new InvalidArgumentException('The title assignment must reference a persisted title.');
+            if (! $assignment->exists || $assignment->isDirty('title_id')) {
+                if (! Title::query()->whereKey($assignment->getAttribute('title_id'))->exists()) {
+                    throw new InvalidArgumentException('The title assignment must reference a persisted title.');
+                }
             }
 
             $issuerId = $assignment->getAttribute('issuer_id');
 
-            if ($issuerId !== null && ! TitleIssuer::query()->whereKey($issuerId)->exists()) {
-                throw new InvalidArgumentException('The title assignment issuer must reference a persisted title issuer.');
+            if ($issuerId !== null && (! $assignment->exists || $assignment->isDirty('issuer_id'))) {
+                if (! TitleIssuer::query()->whereKey($issuerId)->exists()) {
+                    throw new InvalidArgumentException('The title assignment issuer must reference a persisted title issuer.');
+                }
             }
         });
     }

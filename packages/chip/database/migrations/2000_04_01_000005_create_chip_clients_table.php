@@ -16,8 +16,8 @@ return new class extends Migration
             // Core API fields - Client structure from CHIP Collect API
             $table->uuid('id')->primary();
             $table->string('type')->default('client');
-            $table->integer('created_on'); // Unix timestamp as per API
-            $table->integer('updated_on'); // Unix timestamp as per API
+            $table->bigInteger('created_on'); // Unix timestamp as per API
+            $table->bigInteger('updated_on'); // Unix timestamp as per API
 
             // Required field - email address (max 254 chars)
             $table->string('email', 254);

@@ -25,7 +25,7 @@ final class DueDocReminders
     /**
      * @return EloquentCollection<int, Doc>
      */
-    public function dueSoon(int $daysBeforeDue): EloquentCollection
+    public function dueSoon(int $daysBeforeDue, int $limit = 500): EloquentCollection
     {
         $dueDate = CarbonImmutable::now()->addDays($daysBeforeDue);
 
@@ -37,13 +37,15 @@ final class DueDocReminders
                 $query->where('metadata->reminder_type', 'due_soon');
             })
             ->whereJsonContainsKey('customer_data->email')
+            ->orderBy('due_date')
+            ->limit(max(1, $limit))
             ->get();
     }
 
     /**
      * @return EloquentCollection<int, Doc>
      */
-    public function overdue(int $daysAfterOverdue): EloquentCollection
+    public function overdue(int $daysAfterOverdue, int $limit = 500): EloquentCollection
     {
         $overdueDate = CarbonImmutable::now()->subDays($daysAfterOverdue);
 
@@ -55,6 +57,8 @@ final class DueDocReminders
                 $query->where('metadata->reminder_type', 'overdue');
             })
             ->whereJsonContainsKey('customer_data->email')
+            ->orderBy('due_date')
+            ->limit(max(1, $limit))
             ->get();
     }
 

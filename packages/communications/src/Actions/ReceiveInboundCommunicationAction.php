@@ -15,8 +15,10 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationContent;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
 
 final class ReceiveInboundCommunicationAction
 {
@@ -39,6 +41,10 @@ final class ReceiveInboundCommunicationAction
         ?string $senderId = null,
         ?array $metadata = null,
     ): Communication {
+        $this->validateMorph('from', $fromType, $fromId);
+        $this->validateOptionalMorph('subject', $subjectType, $subjectId);
+        $this->validateOptionalMorph('sender', $senderType, $senderId);
+
         return DB::transaction(function () use (
             $fromType,
             $fromId,
@@ -86,8 +92,9 @@ final class ReceiveInboundCommunicationAction
             $content = new CommunicationContent;
             $content->communication_id = $communication->id;
             $content->channel = $channel;
-            $content->subject = $subject;
-            $content->content_text = $body;
+            $content->subject = $this->redactor->redactText($subject);
+            $content->content_text = $this->redactor->redactText($body);
+            $content->rendered_at = CarbonImmutable::now();
             $content->save();
 
             Event::dispatch(new InboundCommunicationReceived(
@@ -98,5 +105,29 @@ final class ReceiveInboundCommunicationAction
 
             return $communication;
         });
+    }
+
+    private function validateMorph(string $name, string $type, string $id): void
+    {
+        if (mb_trim($type) === '' || mb_trim($id) === '') {
+            throw new InvalidArgumentException("Inbound {$name} type and id must not be empty.");
+        }
+
+        if (! class_exists($type) && Relation::getMorphedModel($type) === null) {
+            throw new InvalidArgumentException("Inbound {$name} type [{$type}] does not resolve to a model.");
+        }
+    }
+
+    private function validateOptionalMorph(string $name, ?string $type, ?string $id): void
+    {
+        if ($type === null && $id === null) {
+            return;
+        }
+
+        if ($type === null || $id === null) {
+            throw new InvalidArgumentException("Inbound {$name} type and id must both be present or both be null.");
+        }
+
+        $this->validateMorph($name, $type, $id);
     }
 }

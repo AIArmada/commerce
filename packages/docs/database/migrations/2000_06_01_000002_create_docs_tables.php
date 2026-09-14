@@ -42,7 +42,7 @@ return new class extends Migration
             $jsonType = (string) commerce_json_column_type('docs', 'jsonb');
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
-            $table->string('doc_number')->unique($docsTable . '_doc_number_unique');
+            $table->string('doc_number');
             $table->string('doc_type')->default('invoice');
             $table->foreignUuid('doc_template_id')->nullable();
             $table->nullableUuidMorphs('docable');
@@ -69,10 +69,12 @@ return new class extends Migration
             $table->string('pdf_path')->nullable();
             $table->timestampsTz();
 
+            $table->unique(['owner_type', 'owner_id', 'doc_number'], $docsTable . '_owner_doc_number_unique');
             $table->index('doc_type', $docsTable . '_doc_type_index');
             $table->index('status', $docsTable . '_status_index');
             $table->index('issue_date', $docsTable . '_issue_date_index');
             $table->index('due_date', $docsTable . '_due_date_index');
+            $table->index(['status', 'due_date'], $docsTable . '_status_due_date_index');
         });
 
         Schema::create($shareLinksTable, function (Blueprint $table) use ($shareLinksTable): void {

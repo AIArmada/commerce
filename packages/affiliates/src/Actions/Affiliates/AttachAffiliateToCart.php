@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Exceptions\AffiliateNotFoundException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -68,7 +69,8 @@ final class AttachAffiliateToCart
                 $payload['cart_instance'] = 'default';
             }
 
-            $attribution = new AffiliateAttribution($payload);
+            $attribution = new AffiliateAttribution(Arr::except($payload, ['owner_type', 'owner_id']));
+            $attribution->forceFill(Arr::only($payload, ['owner_type', 'owner_id']));
             $attribution->first_seen_at = CarbonImmutable::now();
         }
 
@@ -156,7 +158,7 @@ final class AttachAffiliateToCart
             'landing_url' => $context['landing_url'] ?? null,
             'referrer_url' => $context['referrer_url'] ?? null,
             'user_agent' => $context['user_agent'] ?? null,
-            'ip_address' => $context['ip_address'] ?? null,
+            'ip_address' => IpHasher::hash($context['ip_address'] ?? null),
             'user_id' => $context['user_id'] ?? $this->resolveUserId(),
             'metadata' => $this->mergeMetadata($context),
             'owner_type' => $affiliate->owner_type,
@@ -170,7 +172,7 @@ final class AttachAffiliateToCart
         Affiliate $affiliate,
         array $payload
     ): void {
-        AffiliateTouchpoint::create([
+        $touchpoint = new AffiliateTouchpoint([
             'affiliate_attribution_id' => $attribution->getKey(),
             'affiliate_id' => $affiliate->getKey(),
             'affiliate_code' => $affiliate->code,
@@ -188,8 +190,6 @@ final class AttachAffiliateToCart
             'campaign' => $payload['campaign'] ?? null,
             'term' => $payload['term'] ?? null,
             'content' => $payload['content'] ?? null,
-            'owner_type' => $attribution->owner_type ?? $affiliate->owner_type,
-            'owner_id' => $attribution->owner_id ?? $affiliate->owner_id,
             'metadata' => [
                 'utm' => [
                     'source' => $payload['source'] ?? null,
@@ -201,6 +201,11 @@ final class AttachAffiliateToCart
             ],
             'touched_at' => CarbonImmutable::now(),
         ]);
+        $touchpoint->forceFill([
+            'owner_type' => $attribution->owner_type ?? $affiliate->owner_type,
+            'owner_id' => $attribution->owner_id ?? $affiliate->owner_id,
+        ]);
+        $touchpoint->save();
     }
 
     private function fillAttribution(AffiliateAttribution $attribution, array $payload): void
@@ -274,8 +279,7 @@ final class AttachAffiliateToCart
             ->when($cartInstance, static fn (Builder $builder, string $instance): Builder => $builder->where(
                 'cart_instance',
                 $instance
-            ))
-            ->orderByDesc('last_seen_at');
+            ));
 
         if (config('affiliates.owner.enabled', false)) {
             if ($ownerType && $ownerId) {
@@ -285,18 +289,29 @@ final class AttachAffiliateToCart
             }
         }
 
-        $ids = $query->pluck('id');
+        $excess = (clone $query)->count() - $max;
 
-        if ($ids->count() <= $max) {
+        if ($excess <= 0) {
             return;
         }
 
-        $toDelete = $ids->slice($max)->all();
+        $toDelete = (clone $query)
+            ->reorder()
+            ->orderByRaw('CASE WHEN last_seen_at IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('last_seen_at')
+            ->orderBy('id')
+            ->limit($excess)
+            ->pluck('id')
+            ->all();
 
         if ($toDelete !== []) {
             AffiliateAttribution::query()
                 ->whereIn('id', $toDelete)
-                ->delete();
+                ->chunkById(100, function ($attributions): void {
+                    foreach ($attributions as $attribution) {
+                        $attribution->delete();
+                    }
+                });
         }
     }
 

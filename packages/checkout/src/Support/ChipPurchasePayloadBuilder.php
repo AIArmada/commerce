@@ -16,7 +16,16 @@ final readonly class ChipPurchasePayloadBuilder
             'checkout_session_id' => (string) $session->getKey(),
         ]);
 
-        return (string) $session->getKey();
+        // The first attempt keeps the bare session key. Retries must not
+        // reuse it: CHIP would return the original (possibly stale-amount)
+        // purchase instead of creating a fresh one.
+        $attempts = (int) ($session->payment_attempts ?? 0);
+
+        if ($attempts <= 0) {
+            return (string) $session->getKey();
+        }
+
+        return (string) $session->getKey() . ':attempt:' . $attempts;
     }
 
     /**

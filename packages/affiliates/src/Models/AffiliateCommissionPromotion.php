@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
+use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Carbon\CarbonImmutable;
@@ -131,6 +132,21 @@ class AffiliateCommissionPromotion extends Model implements Auditable
             'multiplier' => (int) round($baseCommissionMinor * ($this->bonus_value / 100 - 1)),
             default => 0,
         };
+    }
+
+    protected static function booted(): void
+    {
+        // The rule engine caches promotions per program in memory.
+        // Bust it on writes so long-lived workers never price off stale promotions.
+        // Usage increments bypass `saved`, so the request-scoped cache survives pricing.
+        $bust = static function (): void {
+            if (app()->bound(CommissionRuleEngine::class)) {
+                app(CommissionRuleEngine::class)->clearCache();
+            }
+        };
+
+        static::saved($bust);
+        static::deleted($bust);
     }
 
     protected function getActivityLogName(): string

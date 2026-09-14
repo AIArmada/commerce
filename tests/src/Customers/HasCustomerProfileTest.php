@@ -15,6 +15,29 @@ use Illuminate\Support\Facades\Schema;
 
 require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
 
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createHasProfileTestCustomer(array $attributes): Customer
+{
+    $restricted = [];
+
+    foreach (['user_id', 'status', 'is_guest', 'accepts_marketing', 'created_at', 'updated_at'] as $key) {
+        if (array_key_exists($key, $attributes)) {
+            $restricted[$key] = $attributes[$key];
+            unset($attributes[$key]);
+        }
+    }
+
+    $customer = Customer::query()->create($attributes);
+
+    if ($restricted !== []) {
+        $customer->forceFill($restricted)->save();
+    }
+
+    return $customer;
+}
+
 beforeEach(function (): void {
     Schema::dropIfExists('test_owners');
 
@@ -66,7 +89,7 @@ describe('HasCustomerProfile Trait', function (): void {
             ]);
 
             // Create customer profile for this user
-            Customer::create([
+            createHasProfileTestCustomer([
                 'user_id' => $user->id,
                 'first_name' => 'Has',
                 'last_name' => 'Profile',
@@ -86,7 +109,7 @@ describe('HasCustomerProfile Trait', function (): void {
                 'password' => 'password',
             ]);
 
-            $existingCustomer = Customer::create([
+            $existingCustomer = createHasProfileTestCustomer([
                 'user_id' => $user->id,
                 'first_name' => 'Existing',
                 'last_name' => 'Customer',
@@ -141,7 +164,7 @@ describe('HasCustomerProfile Trait', function (): void {
                 'password' => 'password',
             ]);
 
-            Customer::create([
+            createHasProfileTestCustomer([
                 'user_id' => $user->id,
                 'first_name' => 'Yes',
                 'last_name' => 'Marketing',
@@ -171,7 +194,7 @@ describe('HasCustomerProfile Trait', function (): void {
                 'email' => 'shipping-profile-' . uniqid() . '@example.com',
                 'password' => 'password',
             ]);
-            $customer = Customer::create([
+            $customer = createHasProfileTestCustomer([
                 'user_id' => $user->id,
                 'first_name' => 'Shipping',
                 'last_name' => 'Profile',
@@ -206,7 +229,7 @@ describe('HasCustomerProfile Trait', function (): void {
                 'email' => 'billing-profile-' . uniqid() . '@example.com',
                 'password' => 'password',
             ]);
-            $customer = Customer::create([
+            $customer = createHasProfileTestCustomer([
                 'user_id' => $user->id,
                 'first_name' => 'Billing',
                 'last_name' => 'Profile',

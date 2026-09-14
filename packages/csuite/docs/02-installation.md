@@ -17,9 +17,9 @@ Complete installation guide for AIArmada Commerce.
 | Filament | 5.0+ (for admin panels) |
 | PostgreSQL or MySQL | 8.0+ |
 
-## Full Suite Installation
+## Curated Bundle Installation
 
-Install all Commerce packages at once:
+Install the curated bundle:
 
 ```bash
 composer require aiarmada/commerce
@@ -90,13 +90,19 @@ Or manually add to `.env`:
 
 ```env
 # CHIP Payment Gateway
-CHIP_BRAND_ID=your-brand-id
-CHIP_SECRET_KEY=your-secret-key
-CHIP_MODE=sandbox
+CHIP_ENVIRONMENT=sandbox
+CHIP_COLLECT_API_KEY=your-collect-api-key
+CHIP_COLLECT_BRAND_ID=your-brand-id
+CHIP_COLLECT_PUBLIC_KEY=your-collect-public-key
+CHIP_SEND_API_KEY=your-send-api-key
+CHIP_SEND_API_SECRET=your-send-api-secret
 
 # J&T Express
-JNT_API_KEY=your-api-key
+JNT_ENVIRONMENT=testing
+JNT_API_ACCOUNT=your-api-account
+JNT_PRIVATE_KEY=your-private-key
 JNT_CUSTOMER_CODE=your-customer-code
+JNT_PASSWORD=your-password
 
 # Database (PostgreSQL users)
 COMMERCE_JSON_COLUMN_TYPE=jsonb
@@ -112,8 +118,11 @@ use AIArmada\FilamentCart\FilamentCartPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentChip\FilamentChipPlugin;
+use AIArmada\FilamentCashier\FilamentCashierPlugin;
+use AIArmada\FilamentCashierChip\FilamentCashierChipPlugin;
 use AIArmada\FilamentInventory\FilamentInventoryPlugin;
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
+use AIArmada\FilamentJnt\FilamentJntPlugin;
 
 public function panel(Panel $panel): Panel
 {
@@ -127,8 +136,11 @@ public function panel(Panel $panel): Panel
             FilamentVouchersPlugin::make(),
             FilamentDocsPlugin::make(),
             FilamentChipPlugin::make(),
+            FilamentCashierPlugin::make(),
+            FilamentCashierChipPlugin::make(),
             FilamentInventoryPlugin::make(),
             FilamentAuthzPlugin::make(),
+            FilamentJntPlugin::make(),
         ]);
 }
 ```

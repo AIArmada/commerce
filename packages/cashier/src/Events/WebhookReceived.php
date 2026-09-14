@@ -6,15 +6,16 @@ namespace AIArmada\Cashier\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Http\Request;
-use Illuminate\Queue\SerializesModels;
 
 /**
  * Dispatched when a webhook is received from a gateway.
+ *
+ * The HTTP request is sync-only context: it is never queued. Queued
+ * listeners receive the gateway name and payload only.
  */
 class WebhookReceived
 {
     use Dispatchable;
-    use SerializesModels;
 
     /**
      * Create a new event instance.
@@ -26,6 +27,27 @@ class WebhookReceived
         public readonly array $payload,
         public readonly ?Request $request = null,
     ) {}
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function __serialize(): array
+    {
+        return [
+            'gateway' => $this->gateway,
+            'payload' => $this->payload,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $values
+     */
+    public function __unserialize(array $values): void
+    {
+        $this->gateway = (string) ($values['gateway'] ?? '');
+        $this->payload = (array) ($values['payload'] ?? []);
+        $this->request = null;
+    }
 
     /**
      * Get the gateway name.

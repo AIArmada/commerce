@@ -33,7 +33,7 @@ describe('ResolveCustomerStep', function (): void {
 
         actingAs($user);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-actor-1',
             'selected_payment_gateway' => 'chip',
             'billing_data' => [
@@ -57,7 +57,7 @@ describe('ResolveCustomerStep', function (): void {
     });
 
     it('does not create a guest customer from billing and shipping data for direct-capable gateways', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-guest-1',
             'selected_payment_gateway' => 'chip',
             'billing_data' => [
@@ -92,7 +92,7 @@ describe('ResolveCustomerStep', function (): void {
     });
 
     it('still creates a guest customer before payment when the gateway requires a persisted billable model', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-cashier-guest-1',
             'selected_payment_gateway' => 'cashier',
             'billing_data' => [
@@ -144,20 +144,19 @@ describe('ResolveCustomerStep', function (): void {
 
         [$userCustomer, $guestCustomer] = OwnerContext::withOwner(null, function () use ($user): array {
             $userCustomer = Customer::create([
-                'user_id' => $user->id,
                 'first_name' => 'Registered',
                 'last_name' => 'User',
                 'email' => 'registered@example.com',
-                'is_guest' => false,
             ]);
+            $userCustomer->forceFill(['user_id' => $user->id, 'is_guest' => false])->save();
             $userCustomer->addContactMethod(ContactMethodData::email('registered@example.com'));
 
             $guestCustomer = Customer::create([
                 'first_name' => 'Guest',
                 'last_name' => 'Checkout',
                 'email' => 'guest@example.com',
-                'is_guest' => true,
             ]);
+            $guestCustomer->forceFill(['is_guest' => true])->save();
             $guestCustomer->addContactMethod(ContactMethodData::email('guest@example.com'));
 
             $mergeAddress = Address::create([
@@ -171,7 +170,7 @@ describe('ResolveCustomerStep', function (): void {
             return [$userCustomer, $guestCustomer];
         });
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-merge-1',
             'selected_payment_gateway' => 'cashier',
             'customer_id' => $guestCustomer->id,
@@ -245,7 +244,7 @@ describe('ResolveCustomerStep', function (): void {
             }
         });
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-billable-1',
             'billing_data' => [
                 'email' => 'billable@example.com',
@@ -270,9 +269,8 @@ describe('ResolveCustomerStep', function (): void {
                 'first_name' => 'Payment',
                 'last_name' => 'Country',
                 'email' => 'payment-country@example.com',
-                'status' => 'active',
-                'is_guest' => false,
             ]);
+            $customer->forceFill(['status' => 'active', 'is_guest' => false])->save();
             $customer->addContactMethod(ContactMethodData::email('payment-country-' . uniqid() . '@example.com'));
             $customer->addContactMethod(ContactMethodData::phone('+60123456789', countryCode: 'MY'));
 
@@ -317,9 +315,8 @@ describe('ResolveCustomerStep', function (): void {
             $customer = Customer::query()->create([
                 'first_name' => 'Payment',
                 'last_name' => 'Contacting',
-                'status' => 'active',
-                'is_guest' => false,
             ]);
+            $customer->forceFill(['status' => 'active', 'is_guest' => false])->save();
 
             $customer->addContactMethod(ContactMethodData::email('contacting@example.com'));
             $customer->addContactMethod(ContactMethodData::phone('+60987654321', countryCode: 'MY'));

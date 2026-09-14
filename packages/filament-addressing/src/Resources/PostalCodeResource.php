@@ -89,10 +89,12 @@ final class PostalCodeResource extends Resource
                         ->relationship('areas', 'name', function (Builder $query, callable $get): Builder {
                             $countryCode = $get('country_code');
 
-                            return $query->when(
-                                is_string($countryCode) && mb_trim($countryCode) !== '',
-                                fn (Builder $areas): Builder => $areas->where('country_code', mb_strtoupper($countryCode)),
-                            );
+                            return $query
+                                ->where('is_active', true)
+                                ->when(
+                                    is_string($countryCode) && mb_trim($countryCode) !== '',
+                                    fn (Builder $areas): Builder => $areas->where('country_code', mb_strtoupper($countryCode)),
+                                );
                         })
                         ->multiple()
                         ->searchable()

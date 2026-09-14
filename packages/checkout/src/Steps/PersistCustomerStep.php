@@ -62,7 +62,7 @@ final class PersistCustomerStep extends AbstractCheckoutStep
                 return $this->success('Proceeding without persisted customer');
             }
 
-            $session->update([
+            $session->persistState([
                 'customer_id' => $customer->id,
                 'billable_type' => $customer->getMorphClass(),
                 'billable_id' => (string) $customer->getKey(),
@@ -121,7 +121,84 @@ final class PersistCustomerStep extends AbstractCheckoutStep
         }
 
         /** @var class-string<Model> $actorModel */
-        return $actorModel::query()->whereKey((string) $actorId)->first();
+        if (! $this->actorModelAllowed($actorModel)) {
+            return null;
+        }
+
+        $actor = $actorModel::query()->whereKey((string) $actorId)->first();
+
+        if (! $actor instanceof Model) {
+            return null;
+        }
+
+        return $this->actorOwnerConsistent($session, $actor) ? $actor : null;
+    }
+
+    /**
+     * Only explicitly allowed actor models may be resolved from the stored
+     * reference. The stored type comes from session JSON, so resolving an
+     * arbitrary model class would let crafted input bind any user-like row
+     * as the checkout actor.
+     *
+     * @param  class-string<Model>  $actorModel
+     */
+    private function actorModelAllowed(string $actorModel): bool
+    {
+        $allowed = config('checkout.checkout_actor.allowed_types', []);
+        $allowed = is_array($allowed) ? array_values($allowed) : [];
+
+        $providers = config('auth.providers', []);
+
+        if (is_array($providers)) {
+            foreach ($providers as $provider) {
+                $model = is_array($provider) ? ($provider['model'] ?? null) : null;
+
+                if (is_string($model) && $model !== '') {
+                    $allowed[] = $model;
+                }
+            }
+        }
+
+        $customerModel = config('checkout.models.customer');
+
+        if (is_string($customerModel) && $customerModel !== '') {
+            $allowed[] = $customerModel;
+        }
+
+        foreach ($allowed as $allowedModel) {
+            if (! is_string($allowedModel) || $allowedModel === '') {
+                continue;
+            }
+
+            if ($actorModel === $allowedModel || is_subclass_of($actorModel, $allowedModel)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function actorOwnerConsistent(CheckoutSession $session, Model $actor): bool
+    {
+        $attributes = $actor->getAttributes();
+
+        if (! array_key_exists('owner_type', $attributes) || ! array_key_exists('owner_id', $attributes)) {
+            return true;
+        }
+
+        $actorOwnerType = $actor->getAttribute('owner_type');
+        $actorOwnerId = $actor->getAttribute('owner_id');
+
+        if ($actorOwnerType === null || $actorOwnerId === null) {
+            return true;
+        }
+
+        if ($session->owner_type === null || $session->owner_id === null) {
+            return true;
+        }
+
+        return $actorOwnerType === $session->owner_type
+            && (string) $actorOwnerId === (string) $session->owner_id;
     }
 
     /**

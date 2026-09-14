@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         $jsonColumnType = commerce_json_column_type('feedback', 'jsonb');
-        $tableName = config('feedback.database.tables.responses', 'feedback_responses');
+        $tableName = (string) config('feedback.database.table_prefix', '') . (string) config('feedback.database.tables.responses', 'feedback_responses');
         $indexName = str_replace(['.', '-', ' '], '_', (string) $tableName)
             . '_form_respondent_unique';
 
@@ -53,6 +53,7 @@ return new class extends Migration
 
             $table->index(['feedback_form_id', 'status']);
             $table->index(['submitted_at']);
+            $table->index(['feedback_form_id', 'respondent_type', 'respondent_id']);
         });
 
         $driver = DB::connection()->getDriverName();

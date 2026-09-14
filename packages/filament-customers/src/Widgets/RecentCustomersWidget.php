@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCustomers\Widgets;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\FilamentCustomers\Support\PrimaryEmailResolver;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -23,13 +24,14 @@ class RecentCustomersWidget extends BaseWidget
         return $table
             ->query(
                 OwnerUiScope::apply(Customer::query(), includeGlobal: false)
+                    ->with(['contactMethods', 'segments'])
                     ->orderByDesc('created_at')
                     ->limit(10)
             )
             ->columns([
                 Tables\Columns\TextColumn::make('full_name')
                     ->label('Customer')
-                    ->description(fn (Customer $record): ?string => $record->resolveEmail()),
+                    ->description(fn (Customer $record): ?string => PrimaryEmailResolver::resolve($record)),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')

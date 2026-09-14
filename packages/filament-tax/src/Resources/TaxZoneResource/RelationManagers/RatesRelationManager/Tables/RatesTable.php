@@ -48,11 +48,14 @@ final class RatesTable
                     ->boolean(),
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.rates.create') ?? false),
             ])
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.rates.update') ?? false),
+                DeleteAction::make()
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.rates.delete') ?? false),
             ])
             ->toolbarActions([
                 BulkAction::make('delete')

@@ -55,6 +55,12 @@ If queries return unexpected results:
 2. Check the `--before` date if you overrode it
 3. Run the command without `--dry-run` to perform the delete
 
+## Status or morph-type values silently dropped on create/update
+
+`status` and `*_type` discriminator keys are not mass-assignable. Assign them
+directly on the model (or via `forceFill()`) instead of passing them to
+`create()`/`update()`.
+
 ## PHPStan errors
 
 If you encounter PHPStan errors related to dynamic properties on the trait (`HasCommunicationContext`), ensure your notification class either uses the trait or extends `BaseCommunicationNotification`.

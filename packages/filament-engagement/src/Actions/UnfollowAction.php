@@ -6,6 +6,7 @@ namespace AIArmada\FilamentEngagement\Actions;
 
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
+use AIArmada\FilamentEngagement\Support\AuthenticatedUser;
 use Filament\Actions\Action;
 
 final class UnfollowAction
@@ -19,7 +20,7 @@ final class UnfollowAction
             ->requiresConfirmation()
             ->action(function ($livewire, $record): void {
                 $record = ActionRecordResolver::resolveOrFail($record);
-                app(EngagementManager::class)->unfollow(auth()->user(), $record);
+                app(EngagementManager::class)->unfollow(AuthenticatedUser::resolve(), $record);
             });
     }
 }

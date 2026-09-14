@@ -15,7 +15,8 @@ class ListTaxExemptions extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            CreateAction::make()
+                ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.create') ?? false),
         ];
     }
 }

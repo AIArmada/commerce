@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Pages;
 
-use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -110,13 +110,8 @@ final class PriceSimulator extends Page
                                     $owner,
                                     (bool) config('products.features.owner.include_global', false),
                                 );
-                                $operator = match (ConnectionDriver::name($query->getConnection())) {
-                                    'pgsql' => 'ilike',
-                                    default => 'like',
-                                };
 
-                                return $query
-                                    ->where('name', $operator, "%{$search}%")
+                                return LikeSearch::whereLike($query, 'name', LikeSearch::contains($search))
                                     ->limit(50)
                                     ->get()
                                     ->mapWithKeys(function (Product $product): array {
@@ -172,23 +167,24 @@ final class PriceSimulator extends Page
 
                                 $includeGlobal = (bool) config('products.features.owner.include_global', false);
                                 $variantQuery = Variant::query();
-                                $operator = match (ConnectionDriver::name($variantQuery->getConnection())) {
-                                    'pgsql' => 'ilike',
-                                    default => 'like',
-                                };
+
+                                $pattern = LikeSearch::contains($search);
 
                                 return $variantQuery
                                     ->with('product')
-                                    ->where(function ($query) use ($owner, $search, $includeGlobal, $operator): void {
-                                        $query->where('sku', $operator, "%{$search}%")
-                                            ->orWhereHas('product', function ($inner) use ($owner, $search, $includeGlobal, $operator): void {
+                                    ->where(function ($query) use ($owner, $pattern, $includeGlobal): void {
+                                        LikeSearch::whereLike($query, 'sku', $pattern);
+                                        $query->orWhereHas('product', function ($inner) use ($owner, $pattern, $includeGlobal): void {
+                                            LikeSearch::whereLike(
                                                 OwnerQuery::applyToEloquentBuilder(
                                                     $inner,
                                                     $owner,
                                                     $includeGlobal,
-                                                )
-                                                    ->where('name', $operator, "%{$search}%");
-                                            });
+                                                ),
+                                                'name',
+                                                $pattern,
+                                            );
+                                        });
                                     })
                                     ->whereHas('product', function ($query) use ($owner, $includeGlobal): void {
                                         OwnerQuery::applyToEloquentBuilder(
@@ -275,16 +271,14 @@ final class PriceSimulator extends Page
                                     $owner,
                                     $this->customerIncludesGlobal(),
                                 );
-                                $operator = match (ConnectionDriver::name($query->getConnection())) {
-                                    'pgsql' => 'ilike',
-                                    default => 'like',
-                                };
+
+                                $pattern = LikeSearch::contains($search);
 
                                 return $query
-                                    ->where(function (Builder $query) use ($search, $operator): void {
-                                        $query
-                                            ->where('full_name', $operator, "%{$search}%")
-                                            ->orWhere('email', $operator, "%{$search}%");
+                                    ->where(function (Builder $query) use ($pattern): void {
+                                        LikeSearch::whereLike($query, 'first_name', $pattern);
+                                        LikeSearch::orWhereLike($query, 'last_name', $pattern);
+                                        LikeSearch::orWhereLike($query, 'company', $pattern);
                                     })
                                     ->limit(50)
                                     ->get()
@@ -348,7 +342,12 @@ final class PriceSimulator extends Page
         /** @var array<string, mixed> $data */
         $data = $this->data ?? [];
 
-        if ($data === []) {
+        // Server-side validation: the form rules are bypassable through
+        // direct Livewire calls, so invalid input yields no result instead
+        // of reaching the calculator.
+        $input = self::validatedSimulationInput($data);
+
+        if ($input === null) {
             $this->result = null;
 
             return;
@@ -364,14 +363,14 @@ final class PriceSimulator extends Page
 
         // Get the priceable
         $priceable = null;
-        if ($data['product_type'] === 'product') {
+        if ($input['product_type'] === 'product') {
             $query = OwnerQuery::applyToEloquentBuilder(
                 Product::query(),
                 $owner,
                 (bool) config('products.features.owner.include_global', false),
             );
 
-            $priceable = $query->find($data['product_id']);
+            $priceable = $query->find($input['id']);
         } else {
             $includeGlobal = (bool) config('products.features.owner.include_global', false);
             $priceable = Variant::query()
@@ -382,7 +381,7 @@ final class PriceSimulator extends Page
                         $includeGlobal,
                     );
                 })
-                ->find($data['variant_id']);
+                ->find($input['id']);
         }
 
         if (! $priceable) {
@@ -410,13 +409,15 @@ final class PriceSimulator extends Page
 
         $effectiveAt = Arr::get($data, 'effective_date');
 
-        if ($effectiveAt instanceof DateTimeInterface || (is_string($effectiveAt) && $effectiveAt !== '')) {
+        if ($effectiveAt instanceof DateTimeInterface) {
+            $context['effective_at'] = $effectiveAt;
+        } elseif (is_string($effectiveAt) && $effectiveAt !== '' && strtotime($effectiveAt) !== false) {
             $context['effective_at'] = $effectiveAt;
         }
         /** @var Priceable $priceable */
         $priceResult = $pricingService->calculate(
             item: $priceable,
-            quantity: (int) $data['quantity'],
+            quantity: $input['quantity'],
             context: $context
         );
 
@@ -430,11 +431,50 @@ final class PriceSimulator extends Page
             'tier_description' => $priceResult->tierDescription,
             'promotion_name' => $priceResult->promotionName,
             'breakdown' => $priceResult->breakdown,
-            'quantity' => (int) $data['quantity'],
+            'quantity' => $input['quantity'],
             'currency' => $priceResult->currency,
             'unit_price' => $priceResult->finalPrice,
-            'total_price' => $priceResult->finalPrice * (int) $data['quantity'],
+            'total_price' => $priceResult->finalPrice * $input['quantity'],
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{product_type: string, id: string, quantity: int}|null
+     */
+    private static function validatedSimulationInput(array $data): ?array
+    {
+        if ($data === []) {
+            return null;
+        }
+
+        $productType = $data['product_type'] ?? null;
+
+        if (! in_array($productType, ['product', 'variant'], true)) {
+            return null;
+        }
+
+        $id = $productType === 'product' ? ($data['product_id'] ?? null) : ($data['variant_id'] ?? null);
+
+        if ((! is_string($id) && ! is_int($id)) || $id === '') {
+            return null;
+        }
+
+        $quantity = $data['quantity'] ?? null;
+
+        if (is_int($quantity)) {
+            $qty = $quantity;
+        } elseif (is_string($quantity) && preg_match('/^\d+$/', mb_trim($quantity)) === 1) {
+            $qty = (int) $quantity;
+        } else {
+            return null;
+        }
+
+        if ($qty < 1 || $qty > 1000000) {
+            return null;
+        }
+
+        return ['product_type' => $productType, 'id' => (string) $id, 'quantity' => $qty];
     }
 
     public function clear(): void

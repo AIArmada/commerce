@@ -80,12 +80,17 @@ final class ShippingStatsAggregator
      */
     public function getAllStats(): array
     {
+        $pending = $this->getPendingCount();
+        $inTransit = $this->getInTransitCount();
+        $deliveredToday = $this->getDeliveredTodayCount();
+        $exceptions = $this->getExceptionsCount();
+
         return [
-            'total' => $this->getPendingCount() + $this->getInTransitCount() + $this->getDeliveredTodayCount() + $this->getExceptionsCount(),
-            'pending' => $this->getPendingCount(),
-            'inTransit' => $this->getInTransitCount(),
-            'deliveredToday' => $this->getDeliveredTodayCount(),
-            'exceptions' => $this->getExceptionsCount(),
+            'total' => $pending + $inTransit + $deliveredToday + $exceptions,
+            'pending' => $pending,
+            'inTransit' => $inTransit,
+            'deliveredToday' => $deliveredToday,
+            'exceptions' => $exceptions,
             'pendingReturns' => $this->getPendingReturnsCount(),
         ];
     }

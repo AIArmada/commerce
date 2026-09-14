@@ -13,6 +13,8 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -79,9 +81,13 @@ class InvoicesTable
                 Action::make('download')
                     ->label(__('filament-cashier::invoices.actions.download'))
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn (UnifiedInvoice $record): ?string => $record->pdfUrl)
+                    ->url(function (UnifiedInvoice $record): ?string {
+                        self::assertInvoiceAccessible($record);
+
+                        return $record->pdfUrl;
+                    })
                     ->openUrlInNewTab()
-                    ->visible(fn (UnifiedInvoice $record): bool => $record->pdfUrl !== null),
+                    ->visible(fn (UnifiedInvoice $record): bool => $record->pdfUrl !== null && self::isInvoiceAccessible($record)),
 
                 Action::make('view_external')
                     ->label(fn (UnifiedInvoice $record): string => __('filament-cashier::invoices.actions.view_external', [
@@ -97,18 +103,24 @@ class InvoicesTable
                         ->label(__('filament-cashier::subscriptions.bulk.export'))
                         ->icon('heroicon-o-arrow-down-tray')
                         ->action(function (Collection $records): StreamedResponse {
+                            foreach ($records as $invoice) {
+                                if ($invoice instanceof UnifiedInvoice) {
+                                    self::assertInvoiceAccessible($invoice);
+                                }
+                            }
+
                             return response()->streamDownload(function () use ($records): void {
                                 $output = fopen('php://output', 'w');
                                 fputcsv($output, ['Invoice #', 'Gateway', 'Amount', 'Status', 'Date', 'Paid At']);
 
                                 foreach ($records as $invoice) {
                                     fputcsv($output, [
-                                        $invoice->number,
-                                        $invoice->gateway,
-                                        $invoice->formattedAmount(),
-                                        $invoice->status->value,
-                                        $invoice->date->format('Y-m-d'),
-                                        $invoice->paidAt?->format('Y-m-d') ?? '',
+                                        self::escapeCsvValue($invoice->number),
+                                        self::escapeCsvValue($invoice->gateway),
+                                        self::escapeCsvValue($invoice->formattedAmount()),
+                                        self::escapeCsvValue($invoice->status->value),
+                                        self::escapeCsvValue($invoice->date->format('Y-m-d')),
+                                        self::escapeCsvValue($invoice->paidAt?->format('Y-m-d') ?? ''),
                                     ]);
                                 }
 
@@ -122,5 +134,33 @@ class InvoicesTable
             ->emptyStateHeading(__('filament-cashier::invoices.empty.title'))
             ->emptyStateDescription(__('filament-cashier::invoices.empty.description'))
             ->emptyStateIcon('heroicon-o-document-text');
+    }
+
+    public static function isInvoiceAccessible(UnifiedInvoice $invoice): bool
+    {
+        $user = auth()->user();
+
+        return $user instanceof Model && (string) $user->getKey() === $invoice->userId;
+    }
+
+    public static function assertInvoiceAccessible(UnifiedInvoice $invoice): void
+    {
+        if (! self::isInvoiceAccessible($invoice)) {
+            throw new AuthorizationException('This invoice does not belong to the current user.');
+        }
+    }
+
+    /**
+     * Neutralize spreadsheet formula injection in exported cells.
+     */
+    public static function escapeCsvValue(mixed $value): string
+    {
+        $string = (string) $value;
+
+        if ($string !== '' && in_array($string[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            return "'" . $string;
+        }
+
+        return $string;
     }
 }

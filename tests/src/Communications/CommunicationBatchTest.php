@@ -10,7 +10,7 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationBatch;
 
 beforeEach(function (): void {
-    $this->batch = CommunicationBatch::create([
+    $this->batch = (new CommunicationBatch)->forceFill([
         'name' => 'Campaign Batch',
         'purpose' => 'marketing-campaign',
         'category' => 'marketing',
@@ -21,6 +21,7 @@ beforeEach(function (): void {
         'completed_count' => 0,
         'failed_count' => 0,
     ]);
+    $this->batch->save();
 });
 
 test('creates a batch with required attributes', function (): void {
@@ -37,27 +38,27 @@ test('creates a batch with required attributes', function (): void {
 });
 
 test('batch has communications', function (): void {
-    Communication::create([
+    (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'batch-test',
         'status' => CommunicationStatus::Draft,
         'batch_id' => $this->batch->id,
-    ]);
+    ])->save();
 
     expect($this->batch->communications)->toHaveCount(1);
 });
 
 test('cascade delete removes communications', function (): void {
-    Communication::create([
+    (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'cascade-test',
         'status' => CommunicationStatus::Draft,
         'batch_id' => $this->batch->id,
-    ]);
+    ])->save();
 
     expect(Communication::query()->count())->toBe(1);
 

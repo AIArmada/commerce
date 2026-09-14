@@ -63,7 +63,7 @@ it('uses the tax calculator contract for item and shipping tax', function (): vo
 
     app()->instance(TaxCalculatorInterface::class, $calculator);
 
-    $session = CheckoutSession::create([
+    $session = CheckoutSession::forceCreate([
         'cart_id' => 'tax-calculation-test-cart',
         'subtotal' => 1000,
         'discount_total' => 100,

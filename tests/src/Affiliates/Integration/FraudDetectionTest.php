@@ -12,6 +12,8 @@ use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Services\FraudDetectionService;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\Support\IpHasher;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
@@ -63,7 +65,7 @@ test('click velocity fraud is detected when threshold is exceeded', function ():
     $request->headers->set('User-Agent', 'Mozilla/5.0 Test Browser');
 
     // Prefill the cache to simulate previous clicks
-    $cacheKey = "fraud:clicks:{$this->affiliate->id}:192.168.1.100";
+    $cacheKey = "fraud:clicks:{$this->affiliate->id}:" . IpHasher::hash('192.168.1.100');
     Cache::put($cacheKey, 10, now()->addHour());
 
     $result = $fraudService->analyzeClick($this->affiliate, $request);
@@ -89,7 +91,7 @@ test('geo anomaly fraud is detected for rapid IP changes', function (): void {
         'affiliate_attribution_id' => $this->attribution->id,
         'affiliate_id' => $this->affiliate->id,
         'affiliate_code' => $this->affiliate->code,
-        'ip_address' => '10.0.0.1',
+        'ip_address' => IpHasher::hash('10.0.0.1'),
         'user_agent' => 'Mozilla/5.0',
         'touched_at' => now()->subMinutes(3),
     ]);
@@ -185,13 +187,14 @@ test('self referral fraud is detected', function (): void {
     // Get fresh service instance after event faking
     $fraudService = app(FraudDetectionService::class);
 
-    // Set affiliate owner
-    $this->affiliate->update([
-        'owner_type' => 'App\\Models\\User',
-        'owner_id' => 'user-123',
-    ]);
+    config(['auth.providers.users.model' => User::class]);
 
-    // Create conversion with same owner
+    // Affiliate owned by user-123, purchase acted by the same user
+    $this->affiliate->forceFill([
+        'owner_type' => (new User)->getMorphClass(),
+        'owner_id' => 'user-123',
+    ])->save();
+
     $conversion = AffiliateConversion::create([
         'affiliate_id' => $this->affiliate->id,
         'affiliate_code' => $this->affiliate->code,
@@ -201,8 +204,7 @@ test('self referral fraud is detected', function (): void {
         'commission_minor' => 500,
         'status' => 'pending',
         'occurred_at' => now(),
-        'owner_type' => 'App\\Models\\User',
-        'owner_id' => 'user-123',
+        'actor_user_id' => 'user-123',
     ]);
 
     $result = $fraudService->analyzeConversion($conversion);
@@ -386,13 +388,13 @@ test('multiple fraud signals accumulate to block traffic', function (): void {
         'affiliate_attribution_id' => $this->attribution->id,
         'affiliate_id' => $this->affiliate->id,
         'affiliate_code' => $this->affiliate->code,
-        'ip_address' => '10.0.0.1',
+        'ip_address' => IpHasher::hash('10.0.0.1'),
         'user_agent' => 'Mozilla/5.0',
         'touched_at' => now()->subMinutes(1),
     ]);
 
     // Prefill velocity cache
-    $cacheKey = "fraud:clicks:{$this->affiliate->id}:192.168.1.1";
+    $cacheKey = "fraud:clicks:{$this->affiliate->id}:" . IpHasher::hash('192.168.1.1');
     Cache::put($cacheKey, 10, now()->addHour());
 
     $request = Request::create('/landing', 'GET');

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Widgets;
 
-use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
+use AIArmada\FilamentFeedback\Support\FeedbackDashboardMemo;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -12,7 +12,7 @@ final class FeedbackOverviewWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $overview = app(FeedbackAnalyticsService::class)->dashboard()['overview'];
+        $overview = app(FeedbackDashboardMemo::class)->dashboard()['overview'];
 
         return [
             Stat::make('Total Forms', $overview['total_forms']),

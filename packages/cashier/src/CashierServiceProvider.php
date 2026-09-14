@@ -122,6 +122,7 @@ final class CashierServiceProvider extends PackageServiceProvider
             Cashier::restoreOctaneDefaults();
             app(GatewayManager::class)->forgetDrivers();
             CashierFacade::clearResolvedInstance(GatewayManager::class);
+            OwnerScopedQuery::flushColumnCache();
         });
     }
 }

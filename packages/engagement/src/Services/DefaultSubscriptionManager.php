@@ -17,10 +17,13 @@ use AIArmada\Engagement\Events\SubscriptionMuted;
 use AIArmada\Engagement\Events\SubscriptionUnmuted;
 use AIArmada\Engagement\Models\Subscription;
 use AIArmada\Engagement\Support\EngagementModelGuard;
+use AIArmada\Engagement\Support\SubscriptionCriteria;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 final class DefaultSubscriptionManager implements SubscriptionManager
 {
@@ -36,52 +39,73 @@ final class DefaultSubscriptionManager implements SubscriptionManager
             EngagementModelGuard::assertContract($subject, Subscribable::class, 'subject');
         }
 
+        $subscriptionType = EngagementModelGuard::requiredString($subscriptionType, 'subscription_type');
+        $criteria = SubscriptionCriteria::normalize(EngagementModelGuard::optionalArray($criteria, 'criteria') ?? []);
+        $notificationLevel = EngagementModelGuard::boundedString($options['notification_level'] ?? null, 'notification_level');
+        $source = EngagementModelGuard::boundedString($options['source'] ?? null, 'source');
+        $metadata = EngagementModelGuard::optionalArray($options['metadata'] ?? null, 'metadata');
+
         if (! $this->policy->canSubscribe($subscriber, $subject, $subscriptionType)) {
             throw new AuthorizationException('Subscribing to this subject is not authorized.');
         }
 
-        $criteria = $this->normalizeCriteria($criteria);
+        $subscriberIdentity = EngagementModelGuard::identity($subscriber, 'subscriber');
+        $subjectIdentity = $subject === null ? null : EngagementModelGuard::identity($subject, 'subject');
 
-        $existing = $this->findMatchingSubscription($subscriber, $subject, $subscriptionType, $criteria);
+        try {
+            return DB::transaction(function () use ($subscriber, $subject, $subscriptionType, $criteria, $notificationLevel, $source, $metadata, $subscriberIdentity, $subjectIdentity): Subscription {
+                $existing = $this->findMatchingSubscription($subscriber, $subject, $subscriptionType, $criteria, null, true);
 
-        if ($existing !== null) {
-            if ($existing->status === SubscriptionStatus::Active) {
+                if ($existing !== null) {
+                    if ($existing->status === SubscriptionStatus::Active) {
+                        return $existing;
+                    }
+
+                    $existing->update([
+                        'status' => SubscriptionStatus::Active,
+                        'criteria' => $criteria,
+                        'unsubscribed_at' => null,
+                        'muted_at' => null,
+                        'subscribed_at' => CarbonImmutable::now(),
+                        'source' => $source,
+                        'metadata' => $metadata,
+                    ]);
+                    event(new SubscriptionCreated($existing));
+
+                    return $existing;
+                }
+
+                $subscription = Subscription::query()->create([
+                    'subscriber_type' => $subscriberIdentity['type'],
+                    'subscriber_id' => $subscriberIdentity['id'],
+                    'subscribable_type' => $subjectIdentity['type'] ?? null,
+                    'subscribable_id' => $subjectIdentity['id'] ?? null,
+                    'subscription_type' => $subscriptionType,
+                    'criteria' => $criteria,
+                    'status' => SubscriptionStatus::Active,
+                    'notification_level' => $notificationLevel,
+                    'subscribed_at' => CarbonImmutable::now(),
+                    'source' => $source,
+                    'metadata' => $metadata,
+                ]);
+
+                event(new SubscriptionCreated($subscription));
+
+                return $subscription;
+            });
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueConstraintViolation($exception)) {
+                throw $exception;
+            }
+
+            $existing = $this->findMatchingSubscription($subscriber, $subject, $subscriptionType, $criteria);
+
+            if ($existing instanceof Subscription) {
                 return $existing;
             }
 
-            $existing->update([
-                'status' => SubscriptionStatus::Active,
-                'criteria' => $criteria,
-                'unsubscribed_at' => null,
-                'muted_at' => null,
-                'subscribed_at' => CarbonImmutable::now(),
-                'source' => $options['source'] ?? null,
-                'metadata' => $options['metadata'] ?? null,
-            ]);
-            event(new SubscriptionCreated($existing));
-
-            return $existing;
+            throw $exception;
         }
-
-        $subscriberIdentity = EngagementModelGuard::identity($subscriber, 'subscriber');
-        $subjectIdentity = $subject === null ? null : EngagementModelGuard::identity($subject, 'subject');
-        $subscription = Subscription::query()->create([
-            'subscriber_type' => $subscriberIdentity['type'],
-            'subscriber_id' => $subscriberIdentity['id'],
-            'subscribable_type' => $subjectIdentity['type'] ?? null,
-            'subscribable_id' => $subjectIdentity['id'] ?? null,
-            'subscription_type' => $subscriptionType,
-            'criteria' => $criteria,
-            'status' => SubscriptionStatus::Active,
-            'notification_level' => $options['notification_level'] ?? null,
-            'subscribed_at' => CarbonImmutable::now(),
-            'source' => $options['source'] ?? null,
-            'metadata' => $options['metadata'] ?? null,
-        ]);
-
-        event(new SubscriptionCreated($subscription));
-
-        return $subscription;
     }
 
     public function unsubscribe(CanInteract $subscriber, ?Subscribable $subject = null, string $subscriptionType = 'updates', array $criteria = []): void
@@ -92,11 +116,14 @@ final class DefaultSubscriptionManager implements SubscriptionManager
             EngagementModelGuard::assertContract($subject, Subscribable::class, 'subject');
         }
 
+        $subscriptionType = EngagementModelGuard::requiredString($subscriptionType, 'subscription_type');
+        $criteria = SubscriptionCriteria::normalize(EngagementModelGuard::optionalArray($criteria, 'criteria') ?? []);
+
         $subscription = $this->findMatchingSubscription(
             $subscriber,
             $subject,
             $subscriptionType,
-            $this->normalizeCriteria($criteria),
+            $criteria,
             SubscriptionStatus::Active->value,
         );
 
@@ -134,7 +161,7 @@ final class DefaultSubscriptionManager implements SubscriptionManager
         $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
         $subjectType = $subjectIdentity['type'];
         $subjectId = $subjectIdentity['id'];
-        $context = $this->normalizeCriteria($context);
+        $context = SubscriptionCriteria::normalize($context);
 
         $subscriptions = Subscription::query()
             ->where('status', 'active')
@@ -168,11 +195,13 @@ final class DefaultSubscriptionManager implements SubscriptionManager
         string $subscriptionType,
         array $criteria,
         ?string $status = null,
+        bool $lock = false,
     ): ?Subscription {
         $query = Subscription::query()
             ->where('subscriber_type', $this->morphClass($subscriber))
             ->where('subscriber_id', $this->morphKey($subscriber))
-            ->where('subscription_type', $subscriptionType);
+            ->where('subscription_type', $subscriptionType)
+            ->where('criteria_hash', SubscriptionCriteria::hash($criteria));
 
         if ($status !== null) {
             $query->where('status', $status);
@@ -185,6 +214,10 @@ final class DefaultSubscriptionManager implements SubscriptionManager
         } else {
             $query->whereNull('subscribable_type')
                 ->whereNull('subscribable_id');
+        }
+
+        if ($lock) {
+            $query->lockForUpdate();
         }
 
         foreach ($query->get() as $subscription) {
@@ -212,28 +245,9 @@ final class DefaultSubscriptionManager implements SubscriptionManager
         return (string) $model->getKey();
     }
 
-    /**
-     * @param  array<string|int, mixed>  $data
-     * @return array<string|int, mixed>
-     */
-    private function normalizeCriteria(array $data): array
-    {
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                $data[$key] = $this->normalizeCriteria($value);
-            }
-        }
-
-        if ($this->isAssociativeArray($data)) {
-            ksort($data);
-        }
-
-        return $data;
-    }
-
     private function criteriaEquals(array $left, array $right): bool
     {
-        return $this->normalizeCriteria($left) === $this->normalizeCriteria($right);
+        return SubscriptionCriteria::normalize($left) === SubscriptionCriteria::normalize($right);
     }
 
     /**
@@ -265,11 +279,8 @@ final class DefaultSubscriptionManager implements SubscriptionManager
         return true;
     }
 
-    /**
-     * @param  array<string|int, mixed>  $data
-     */
-    private function isAssociativeArray(array $data): bool
+    private function isUniqueConstraintViolation(QueryException $exception): bool
     {
-        return $data !== [] && array_keys($data) !== range(0, count($data) - 1);
+        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
     }
 }

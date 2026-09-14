@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Queue\SerializesModels;
 
 describe('OwnerContextJob', function (): void {
@@ -35,20 +37,11 @@ describe('OwnerContextJob', function (): void {
     });
 
     it('enters owner context from public model property', function (): void {
-        $owner = new class extends Model
-        {
-            public $timestamps = false;
-
-            public function getMorphClass(): string
-            {
-                return 'store';
-            }
-
-            public function getKey(): mixed
-            {
-                return 'ctx-123';
-            }
-        };
+        $owner = User::query()->create([
+            'name' => 'Job Owner',
+            'email' => 'job-owner@example.com',
+            'password' => 'secret',
+        ]);
 
         $contextInJob = null;
 
@@ -68,25 +61,16 @@ describe('OwnerContextJob', function (): void {
         $job->handle();
 
         expect($contextInJob)->not->toBeNull()
-            ->and($contextInJob->getMorphClass())->toBe('store')
-            ->and($contextInJob->getKey())->toBe('ctx-123');
+            ->and($contextInJob->getMorphClass())->toBe($owner->getMorphClass())
+            ->and($contextInJob->getKey())->toBe($owner->getKey());
     });
 
     it('restores previous context after job', function (): void {
-        $owner = new class extends Model
-        {
-            public $timestamps = false;
-
-            public function getMorphClass(): string
-            {
-                return 'store';
-            }
-
-            public function getKey(): mixed
-            {
-                return 'test';
-            }
-        };
+        $owner = User::query()->create([
+            'name' => 'Job Restore Owner',
+            'email' => 'job-restore-owner@example.com',
+            'password' => 'secret',
+        ]);
 
         $job = new class($owner)
         {
@@ -107,27 +91,26 @@ describe('OwnerContextJob', function (): void {
 
     it('resolves owner from explicit ownerType and ownerId payload fields', function (): void {
         $contextInJob = null;
-        $owner = new class extends Model
-        {
-            public $timestamps = false;
 
-            public $incrementing = false;
+        $owner = User::query()->create([
+            'name' => 'Explicit Payload Owner',
+            'email' => 'explicit-payload-owner@example.com',
+            'password' => 'secret',
+        ]);
 
-            protected $keyType = 'string';
-        };
-
-        $job = new class($contextInJob, $owner::class)
+        $job = new class($contextInJob, $owner)
         {
             use OwnerContextJob;
             use SerializesModels;
 
             public string $ownerType;
 
-            public string $ownerId = 'ctx-explicit';
+            public int | string $ownerId;
 
-            public function __construct(private &$ctx, string $ownerType)
+            public function __construct(private &$ctx, User $owner)
             {
-                $this->ownerType = $ownerType;
+                $this->ownerType = $owner::class;
+                $this->ownerId = $owner->getKey();
             }
 
             public function performJob(): void
@@ -140,7 +123,23 @@ describe('OwnerContextJob', function (): void {
 
         expect($contextInJob)->not->toBeNull()
             ->and($contextInJob)->toBeInstanceOf(Model::class)
-            ->and((string) $contextInJob->getKey())->toBe('ctx-explicit');
+            ->and($contextInJob->getKey())->toBe($owner->getKey());
+    });
+
+    it('fails when the job owner no longer exists', function (): void {
+        $job = new class
+        {
+            use OwnerContextJob;
+            use SerializesModels;
+
+            public string $ownerType = User::class;
+
+            public int $ownerId = 999999;
+
+            public function performJob(): void {}
+        };
+
+        expect(fn () => $job->handle())->toThrow(ModelNotFoundException::class);
     });
 
     it('throws when owner missing and owner mode enabled', function (): void {

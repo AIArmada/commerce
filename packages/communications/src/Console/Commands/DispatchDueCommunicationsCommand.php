@@ -9,6 +9,7 @@ use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Jobs\DispatchCommunicationDeliveriesJob;
 use AIArmada\Communications\Models\Communication;
+use AIArmada\Communications\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
@@ -83,34 +84,33 @@ final class DispatchDueCommunicationsCommand extends Command
         $bar = $this->output->createProgressBar($count);
         $bar->start();
 
-        $query->chunkById((int) $this->option('batch'), function (Collection $communications) use ($bar): void {
+        $batchSize = max(1, (int) $this->option('batch'));
+
+        $query->chunkById($batchSize, function (Collection $communications) use ($bar): void {
+            $now = CarbonImmutable::now();
+            $communicationIds = [];
+
             foreach ($communications as $communication) {
                 $communication->status = CommunicationStatus::Queued;
-                $communication->queued_at = CarbonImmutable::now();
+                $communication->queued_at = $now;
                 $communication->save();
 
-                $deliveries = $communication->deliveries()
-                    ->whereIn('status', [
-                        DeliveryStatus::Pending,
-                        DeliveryStatus::Scheduled,
-                        DeliveryStatus::Queued,
-                    ])
-                    ->where(function (Builder $query): void {
-                        $query->whereNull('scheduled_at')
-                            ->orWhere('scheduled_at', '<=', CarbonImmutable::now());
-                    })
-                    ->orderBy('created_at')
-                    ->orderBy('id')
-                    ->get();
+                $communicationIds[] = $communication->id;
+            }
 
-                foreach ($deliveries as $delivery) {
-                    if ($delivery->status !== DeliveryStatus::Queued) {
-                        $delivery->status = DeliveryStatus::Queued;
-                        $delivery->queued_at = CarbonImmutable::now();
-                        $delivery->save();
-                    }
-                }
+            CommunicationDelivery::query()
+                ->whereIn('communication_id', $communicationIds)
+                ->whereIn('status', [DeliveryStatus::Pending, DeliveryStatus::Scheduled])
+                ->where(function (Builder $query) use ($now): void {
+                    $query->whereNull('scheduled_at')
+                        ->orWhere('scheduled_at', '<=', $now);
+                })
+                ->update([
+                    'status' => DeliveryStatus::Queued->value,
+                    'queued_at' => $now,
+                ]);
 
+            foreach ($communications as $communication) {
                 DispatchCommunicationDeliveriesJob::dispatch(
                     communicationId: $communication->id,
                     ownerType: $communication->owner_type,

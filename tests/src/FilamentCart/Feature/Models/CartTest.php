@@ -213,19 +213,8 @@ describe('Cart Model', function (): void {
         expect(Cart::resolveCurrentOwner()?->id)->toBe($user->id);
     });
 
-    it('resolves associated user relation', function (): void {
-        $user = TestUser::create([
-            'name' => 'Customer',
-            'email' => 'customer@example.com',
-            'password' => 'secret',
-        ]);
-
-        $cart = Cart::create([
-            'instance' => 'default',
-            'identifier' => (string) $user->id,
-        ]);
-
-        expect($cart->user()->first()?->id)->toBe($user->id);
+    it('does not expose the removed unscoped user relation', function (): void {
+        expect(method_exists(Cart::class, 'user'))->toBeFalse();
     });
 
     it('auto-assigns the resolved owner when direct snapshot writes occur in owner mode', function (): void {

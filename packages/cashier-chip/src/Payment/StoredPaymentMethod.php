@@ -97,6 +97,7 @@ final class StoredPaymentMethod extends Model
     protected function casts(): array
     {
         return [
+            'recurring_token' => 'encrypted',
             'is_default' => 'boolean',
             'metadata' => 'array',
             'created_at' => 'immutable_datetime',

@@ -36,6 +36,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['ticketable_id', 'ticketable_type']);
+            $table->unique(['ticketable_type', 'ticketable_id', 'code'], 'ticket_types_ticketable_code_unique');
         });
     }
 

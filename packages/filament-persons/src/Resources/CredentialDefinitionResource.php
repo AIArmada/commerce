@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages\CreateCredentialDefinition;
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages\EditCredentialDefinition;
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages\ListCredentialDefinitions;
@@ -19,6 +20,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class CredentialDefinitionResource extends Resource
@@ -39,6 +41,36 @@ class CredentialDefinitionResource extends Resource
         $sort = config('filament-persons.resources.navigation_sort.credential_definition');
 
         return is_numeric($sort) ? (int) $sort : null;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('credential-definition.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('credential-definition.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('credential-definition.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('credential-definition.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('credential-definition.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function form(Schema $schema): Schema

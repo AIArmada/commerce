@@ -55,7 +55,7 @@ it('creates a checkout offer product with price list, price, and seeded inventor
         ->first());
     expect($product->slug)->toBe($offer->productSlug)
         ->and($product->sku)->toBe($offer->sku)
-        ->and($product->price)->toBe(12700)
+        ->and($product->price)->toBe(9700)
         ->and($product->compare_price)->toBe(12700)
         ->and($product->supportsVariants())->toBeTrue()
         ->and($product->tracksInventory())->toBeTrue()

@@ -66,8 +66,10 @@ final class TaxZonesTable
                     ->label('Active'),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.zones.view') ?? false),
+                EditAction::make()
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.zones.update') ?? false),
             ])
             ->toolbarActions([
                 BulkAction::make('delete')

@@ -96,11 +96,10 @@ return new class extends Migration
             ));
             $expression = sprintf(
                 'CASE WHEN %s = 1 AND %s IS NOT NULL AND %s IS NOT NULL '
-                . 'THEN CAST(CONCAT_WS(%s, %s) AS CHAR(512)) ELSE NULL END',
+                . 'THEN CAST(JSON_ARRAY(%s) AS CHAR(512)) ELSE NULL END',
                 $grammar->wrap('is_primary'),
                 $grammar->wrap($morphTypeColumn),
                 $grammar->wrap($morphIdColumn),
-                $connection->getPdo()->quote('|'),
                 $wrappedColumns,
             );
 

@@ -24,6 +24,8 @@ final class WebhooksApi extends CollectApi
      */
     public function find(string $webhookId): array
     {
+        $this->assertSafePathSegment($webhookId, 'Webhook id');
+
         return $this->attempt(
             fn () => $this->client->get("webhooks/{$webhookId}/"),
             'Failed to get CHIP webhook',
@@ -37,6 +39,8 @@ final class WebhooksApi extends CollectApi
      */
     public function update(string $webhookId, array $data): array
     {
+        $this->assertSafePathSegment($webhookId, 'Webhook id');
+
         return $this->attempt(
             fn () => $this->client->put("webhooks/{$webhookId}/", $data),
             'Failed to update CHIP webhook',
@@ -46,6 +50,8 @@ final class WebhooksApi extends CollectApi
 
     public function delete(string $webhookId): void
     {
+        $this->assertSafePathSegment($webhookId, 'Webhook id');
+
         $this->attempt(
             fn () => $this->client->delete("webhooks/{$webhookId}/"),
             'Failed to delete CHIP webhook',

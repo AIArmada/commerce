@@ -6,11 +6,26 @@ namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Collections\CartCollection;
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\CommerceSupport\Contracts\OwnerScopeConfigurable;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use Exception;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 
 trait ManagesStorage
 {
+    /**
+     * Per-cart resolved associated models, keyed by "class:id".
+     *
+     * The Cart object is request-scoped, so this cache never leaks across requests.
+     *
+     * @var array<string, object|string|null>
+     */
+    private array $associatedModelCache = [];
+
     /**
      * Get all cart items (with dynamic condition evaluation)
      */
@@ -32,6 +47,10 @@ trait ManagesStorage
     protected function getItemsFromStorage(): CartCollection
     {
         $items = $this->storage->getItems($this->getIdentifier(), $this->instance());
+
+        // Batch-resolve associated models: one query per model class instead of
+        // one unscoped query per item.
+        $this->warmAssociatedModelCache($items);
 
         // Convert array back to CartCollection
         $collection = new CartCollection;
@@ -133,14 +152,24 @@ trait ManagesStorage
 
         if (is_array($associatedData) && isset($associatedData['class'])) {
             $className = $associatedData['class'];
-            if (! class_exists($className)) {
+
+            if (! is_string($className) || ! class_exists($className)) {
                 return null;
             }
 
             // If we have an ID and the class is an Eloquent model, fetch it
-            if (isset($associatedData['id']) && is_subclass_of($className, Model::class)) {
+            if (isset($associatedData['id']) && is_scalar($associatedData['id']) && is_subclass_of($className, Model::class)) {
+                $cacheKey = $className . ':' . $associatedData['id'];
+
+                if (array_key_exists($cacheKey, $this->associatedModelCache)) {
+                    return $this->associatedModelCache[$cacheKey];
+                }
+
                 try {
-                    return $className::find($associatedData['id']);
+                    $model = $this->scopedAssociatedQuery($className, [$associatedData['id']])->first();
+                    $this->associatedModelCache[$cacheKey] = $model;
+
+                    return $model;
                 } catch (Exception) {
                     // If fetch fails, return just the class name
                     return $className;
@@ -152,5 +181,115 @@ trait ManagesStorage
         }
 
         return null;
+    }
+
+    /**
+     * Preload every associated model referenced by the given stored items with
+     * one query per model class.
+     *
+     * @param  array<string, mixed>  $items
+     */
+    private function warmAssociatedModelCache(array $items): void
+    {
+        /** @var array<string, array<string, string|int>> $idsByClass */
+        $idsByClass = [];
+
+        foreach ($items as $itemData) {
+            if (! is_array($itemData) || ! is_array($itemData['associated_model'] ?? null)) {
+                continue;
+            }
+
+            $associatedData = $itemData['associated_model'];
+            $className = $associatedData['class'] ?? null;
+            $id = $associatedData['id'] ?? null;
+
+            if (! is_string($className) || ! class_exists($className) || ! is_subclass_of($className, Model::class)) {
+                continue;
+            }
+
+            if (! is_scalar($id)) {
+                continue;
+            }
+
+            $cacheKey = $className . ':' . $id;
+
+            if (array_key_exists($cacheKey, $this->associatedModelCache)) {
+                continue;
+            }
+
+            $idsByClass[$className][$cacheKey] = $id;
+        }
+
+        foreach ($idsByClass as $className => $keyedIds) {
+            try {
+                $models = $this->scopedAssociatedQuery($className, array_values(array_unique($keyedIds)))->get();
+            } catch (Exception) {
+                continue;
+            }
+
+            $found = [];
+
+            foreach ($models as $model) {
+                $found[(string) $model->getKey()] = $model;
+            }
+
+            foreach ($keyedIds as $cacheKey => $id) {
+                $this->associatedModelCache[$cacheKey] = $found[(string) $id] ?? null;
+            }
+        }
+    }
+
+    /**
+     * Build an owner-scoped lookup for associated models of one class.
+     *
+     * Models using the shared HasOwner trait are constrained to the cart
+     * storage's owner tuple (or to global-only rows for global carts) so a
+     * stored class+id pair can never resolve another owner's row.
+     *
+     * @param  array<int, string|int>  $ids
+     * @return EloquentBuilder<Model>
+     */
+    private function scopedAssociatedQuery(string $className, array $ids): EloquentBuilder
+    {
+        /** @var Model $prototype */
+        $prototype = new $className;
+
+        $query = $prototype->newQuery()->whereIn($prototype->getKeyName(), $ids);
+
+        if (! (bool) config('cart.owner.enabled', false)) {
+            return $query;
+        }
+
+        if (! in_array(HasOwner::class, class_uses_recursive($className), true)) {
+            return $query;
+        }
+
+        $ownerTypeColumn = 'owner_type';
+        $ownerIdColumn = 'owner_id';
+
+        if (is_a($className, OwnerScopeConfigurable::class, true)) {
+            $scopeConfig = $className::ownerScopeConfig();
+
+            if (! $scopeConfig->enabled) {
+                return $query;
+            }
+
+            $ownerTypeColumn = $scopeConfig->ownerTypeColumn;
+            $ownerIdColumn = $scopeConfig->ownerIdColumn;
+        }
+
+        try {
+            $owner = OwnerContext::fromTypeAndId($this->storage->getOwnerType(), $this->storage->getOwnerId());
+        } catch (Exception) {
+            return $query;
+        }
+
+        return OwnerQuery::applyToEloquentBuilder(
+            $query->withoutGlobalScope(OwnerScope::class),
+            $owner,
+            (bool) config('cart.owner.include_global', false),
+            $ownerTypeColumn,
+            $ownerIdColumn,
+        );
     }
 }

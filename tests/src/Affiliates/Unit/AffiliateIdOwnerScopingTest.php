@@ -39,29 +39,35 @@ it('scopes affiliate-derived rows by affiliate_id through the affiliate owner sc
 
     $setOwner($ownerA);
 
-    $affiliateA = Affiliate::create([
+    $affiliateA = new Affiliate([
         'code' => 'AFF-REL-A',
         'name' => 'Affiliate A',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
+    ]);
+    $affiliateA->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+    $affiliateA->save();
 
     $setOwner($ownerB);
 
-    $affiliateB = Affiliate::create([
+    $affiliateB = new Affiliate([
         'code' => 'AFF-REL-B',
         'name' => 'Affiliate B',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
+    ]);
+    $affiliateB->forceFill([
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
+    $affiliateB->save();
 
     $setOwner($ownerA);
 

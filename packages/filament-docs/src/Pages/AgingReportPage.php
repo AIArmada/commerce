@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Overdue;
@@ -14,6 +14,7 @@ use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
 use AIArmada\FilamentDocs\Resources\DocResource;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -25,6 +26,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\LazyCollection;
 use UnitEnum;
 
 final class AgingReportPage extends Page implements HasTable
@@ -40,7 +42,7 @@ final class AgingReportPage extends Page implements HasTable
 
     public static function canAccess(): bool
     {
-        return FilamentPermission::hasAbility('purchase.viewAny');
+        return DocPermissions::allows(DocPermissions::DOCUMENT, 'viewAny');
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -148,7 +150,7 @@ final class AgingReportPage extends Page implements HasTable
 
                 TextColumn::make('total_minor')
                     ->label('Amount')
-                    ->formatStateUsing(fn (int|string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
+                    ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                     ->sortable(),
 
                 TextColumn::make('status')
@@ -198,43 +200,52 @@ final class AgingReportPage extends Page implements HasTable
      */
     public function getAgingSummary(): array
     {
-        /** @var \Illuminate\Database\Eloquent\Collection<int, \AIArmada\Docs\Models\Doc> $docs */
-        $docs = OwnerUiScope::apply(Doc::query(), includeGlobal: false)
-            ->select(['id', 'due_date', 'total_minor'])
-            ->whereIn('status', [
-                DocStatus::normalize(Pending::class),
-                DocStatus::normalize(Sent::class),
-                DocStatus::normalize(PartiallyPaid::class),
-                DocStatus::normalize(Overdue::class),
-            ])
-            ->whereNotNull('due_date')
-            ->get();
+        return OwnerCache::remember(
+            OwnerUiScope::resolveOwner(Doc::class),
+            'filament-docs.aging-summary',
+            CarbonImmutable::now()->addSeconds(60),
+            function (): array {
+                $now = CarbonImmutable::now();
 
-        $summary = [
-            'current' => ['count' => 0, 'amount_minor' => 0],
-            '1-30' => ['count' => 0, 'amount_minor' => 0],
-            '31-60' => ['count' => 0, 'amount_minor' => 0],
-            '61-90' => ['count' => 0, 'amount_minor' => 0],
-            '90+' => ['count' => 0, 'amount_minor' => 0],
-        ];
+                /** @var LazyCollection<int, Doc> $docs */
+                $docs = OwnerUiScope::apply(Doc::query(), includeGlobal: false)
+                    ->select(['id', 'due_date', 'total_minor'])
+                    ->whereIn('status', [
+                        DocStatus::normalize(Pending::class),
+                        DocStatus::normalize(Sent::class),
+                        DocStatus::normalize(PartiallyPaid::class),
+                        DocStatus::normalize(Overdue::class),
+                    ])
+                    ->whereNotNull('due_date')
+                    ->cursor();
 
-        foreach ($docs as $doc) {
-            $days = $doc->due_date->isPast()
-                ? $doc->due_date->diffInDays(CarbonImmutable::now())
-                : 0;
-            $bucket = match (true) {
-                $days === 0 => 'current',
-                $days <= 30 => '1-30',
-                $days <= 60 => '31-60',
-                $days <= 90 => '61-90',
-                default => '90+',
-            };
+                $summary = [
+                    'current' => ['count' => 0, 'amount_minor' => 0],
+                    '1-30' => ['count' => 0, 'amount_minor' => 0],
+                    '31-60' => ['count' => 0, 'amount_minor' => 0],
+                    '61-90' => ['count' => 0, 'amount_minor' => 0],
+                    '90+' => ['count' => 0, 'amount_minor' => 0],
+                ];
 
-            $summary[$bucket]['count']++;
-            $summary[$bucket]['amount_minor'] += $doc->total_minor;
-        }
+                foreach ($docs as $doc) {
+                    $days = $doc->due_date->isPast()
+                        ? $doc->due_date->diffInDays($now)
+                        : 0;
+                    $bucket = match (true) {
+                        $days === 0 => 'current',
+                        $days <= 30 => '1-30',
+                        $days <= 60 => '31-60',
+                        $days <= 90 => '61-90',
+                        default => '90+',
+                    };
 
-        return $summary;
+                    $summary[$bucket]['count']++;
+                    $summary[$bucket]['amount_minor'] += $doc->total_minor;
+                }
+
+                return $summary;
+            }
+        );
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

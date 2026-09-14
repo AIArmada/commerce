@@ -42,6 +42,11 @@ beforeEach(function (): void {
         {
             return false;
         }
+
+        public function canShare(mixed $actor, mixed $subject): bool
+        {
+            return false;
+        }
     });
 
     $this->actor = new EngagementActor;
@@ -64,5 +69,7 @@ it('enforces every engagement policy decision', function (): void {
         ->and(fn () => $subscriptions->subscribe($this->actor, $this->subject))
         ->toThrow(AuthorizationException::class)
         ->and(fn () => $reminders->setReminder($this->actor, $this->subject, 'follow_up'))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => $manager->share($this->actor, $this->subject))
         ->toThrow(AuthorizationException::class);
 });

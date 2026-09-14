@@ -14,6 +14,8 @@ use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\FilamentDocs\Actions\RecordPaymentAction;
 use AIArmada\FilamentDocs\Exports\DocExporter;
+use AIArmada\FilamentDocs\Support\DocBulkActions;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -47,6 +49,7 @@ final class DocsTable
             ->all();
 
         return $table
+            ->modifyQueryUsing(static fn (Builder $query): Builder => $query->with('template'))
             ->columns([
                 TextColumn::make('doc_number')
                     ->label('Number')
@@ -157,6 +160,7 @@ final class DocsTable
                         ->label('Generate PDF')
                         ->icon(Heroicon::OutlinedDocumentArrowDown)
                         ->action(function (Doc $record): void {
+                            DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
                             app(DocService::class)->generatePdf($record, save: true);
                             Notification::make()->title('PDF generated')->success()->send();
                         }),
@@ -168,6 +172,7 @@ final class DocsTable
                         ->icon(Heroicon::OutlinedPaperAirplane)
                         ->visible(fn (Doc $record): bool => self::canMarkAsSent($record))
                         ->action(function (Doc $record): void {
+                            DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
                             $record->markAsSent();
                             Notification::make()->title('Marked as sent')->success()->send();
                         }),
@@ -178,6 +183,7 @@ final class DocsTable
                         ->color('success')
                         ->visible(fn (Doc $record): bool => $record->canBePaid())
                         ->action(function (Doc $record): void {
+                            DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
                             $record->markAsPaid();
                             Notification::make()->title('Marked as paid')->success()->send();
                         }),
@@ -188,6 +194,7 @@ final class DocsTable
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function (Doc $record): void {
+                            DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
                             $record->delete();
                         }),
                 ])
@@ -198,25 +205,21 @@ final class DocsTable
                 BulkAction::make('generate_pdfs')
                     ->label('Generate PDFs')
                     ->icon(Heroicon::OutlinedDocumentArrowDown)
+                    ->requiresConfirmation()
                     ->action(function (Collection $records): void {
-                        $docService = app(DocService::class);
                         /** @var Collection<int|string, Doc> $records */
-                        $records->each(function (Doc $record) use ($docService): void {
-                            $docService->generatePdf($record, save: true);
-                        });
-                        Notification::make()->title('PDFs generated for ' . count($records) . ' documents')->success()->send();
-                    }),
+                        DocBulkActions::dispatchPdfJobs($records);
+                    })
+                    ->deselectRecordsAfterCompletion(),
 
                 BulkAction::make('mark_as_sent')
                     ->label('Mark as Sent')
                     ->icon(Heroicon::OutlinedPaperAirplane)
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Doc> $records */
-                        $records->each(function (Doc $record): void {
-                            $record->markAsSent();
-                        });
-                        Notification::make()->title('Documents marked as sent')->success()->send();
-                    }),
+                        DocBulkActions::markSelectedAsSent($records);
+                    })
+                    ->deselectRecordsAfterCompletion(),
 
                 BulkAction::make('delete_selected')
                     ->label('Delete Selected')
@@ -226,15 +229,17 @@ final class DocsTable
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Doc> $records */
                         $records->each(function (Doc $record): void {
+                            DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
                             $record->delete();
                         });
-                    }),
+                    })
+                    ->deselectRecordsAfterCompletion(),
             ])
             ->defaultSort('created_at', 'desc')
             ->striped();
     }
 
-    private static function canMarkAsSent(Doc $record): bool
+    public static function canMarkAsSent(Doc $record): bool
     {
         return $record->status->equals(Draft::class) || $record->status->equals(Pending::class);
     }

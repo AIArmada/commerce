@@ -30,7 +30,11 @@ trait AssociatedModelTrait
     }
 
     /**
-     * Get associated model as array representation
+     * Get associated model as array representation.
+     *
+     * Only the class+id reference is persisted: restore re-fetches the model
+     * from the database, so an embedded snapshot would only bloat stored JSON
+     * toward the size cap while going stale (and possibly leaking attributes).
      *
      * @return array<string, mixed>|string|null
      */
@@ -43,7 +47,6 @@ trait AssociatedModelTrait
             return [
                 'class' => get_class($this->associatedModel),
                 'id' => $this->associatedModel->id ?? null,
-                'data' => method_exists($this->associatedModel, 'toArray') ? $this->associatedModel->toArray() : (array) $this->associatedModel,
             ];
         }
 

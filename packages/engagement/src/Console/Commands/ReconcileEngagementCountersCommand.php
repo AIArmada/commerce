@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Console\Commands;
 
+use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Contracts\EngagementCounterService;
 use AIArmada\Engagement\Models\EngagementCounter;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
@@ -49,15 +50,31 @@ final class ReconcileEngagementCountersCommand extends Command
             return self::FAILURE;
         }
 
-        $subject = (new $modelClass)->newQuery()->find($subjectId);
+        $runner = $this->batchRunner();
 
-        if (! $subject) {
+        $reconciled = OwnerContext::withOwner(null, function () use ($runner, $modelClass, $subjectId, $type): bool {
+            $found = false;
+
+            $runner->forEach(function () use ($modelClass, $subjectId, $type, &$found): void {
+                $subject = (new $modelClass)->newQuery()->find($subjectId);
+
+                if (! $subject) {
+                    return;
+                }
+
+                $found = true;
+                $this->reconcileSubject($subject, $type);
+            });
+
+            return $found;
+        });
+
+        if (! $reconciled) {
             $this->error("Subject not found for type [{$subjectType}] with ID [{$subjectId}].");
 
             return self::FAILURE;
         }
 
-        $this->reconcileSubject($subject, $type);
         $this->info("Reconciled counters for [{$subjectType}:{$subjectId}].");
 
         return self::SUCCESS;
@@ -65,30 +82,48 @@ final class ReconcileEngagementCountersCommand extends Command
 
     private function reconcileAll(?string $type): int
     {
-        EngagementCounter::query()
-            ->select('subject_type', 'subject_id')
-            ->distinct()
-            ->chunk(100, function (Collection $rows) use ($type): void {
-                foreach ($rows as $row) {
-                    $modelClass = Relation::getMorphedModel($row->subject_type) ?? $row->subject_type;
+        $runner = $this->batchRunner();
 
-                    if (! class_exists($modelClass) || ! is_a($modelClass, Model::class, true)) {
-                        continue;
-                    }
+        OwnerContext::withOwner(null, function () use ($runner, $type): void {
+            $runner->forEach(function () use ($type): void {
+                EngagementCounter::query()
+                    ->select('subject_type', 'subject_id')
+                    ->distinct()
+                    ->orderBy('subject_type')
+                    ->orderBy('subject_id')
+                    ->cursor()
+                    ->each(function (EngagementCounter $row) use ($type): void {
+                        $modelClass = Relation::getMorphedModel($row->subject_type) ?? $row->subject_type;
 
-                    $subject = (new $modelClass)->newQuery()->find($row->subject_id);
+                        if (! class_exists($modelClass) || ! is_a($modelClass, Model::class, true)) {
+                            return;
+                        }
 
-                    if (! $subject) {
-                        continue;
-                    }
+                        $subject = (new $modelClass)->newQuery()->find($row->subject_id);
 
-                    $this->reconcileSubject($subject, $type);
-                }
+                        if (! $subject) {
+                            return;
+                        }
+
+                        $this->reconcileSubject($subject, $type);
+                    });
             });
+        });
 
         $this->info('Reconciled all engagement counters.');
 
         return self::SUCCESS;
+    }
+
+    private function batchRunner(): OwnerBatchRunner
+    {
+        return new OwnerBatchRunner(
+            EngagementCounter::class,
+            [
+                'enabled' => 'engagement.owner.enabled',
+                'include_global' => 'engagement.owner.include_global',
+            ],
+        );
     }
 
     private function reconcileSubject(mixed $subject, ?string $type): void

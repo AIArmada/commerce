@@ -6,6 +6,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Database\QueryException;
 
 describe('AffiliateOfferCategory Model', function (): void {
     describe('basic operations', function (): void {
@@ -115,5 +116,25 @@ describe('AffiliateOfferCategory Model', function (): void {
             expect($results)->toHaveCount(1);
             expect($results->first()->id)->toBe($cat1->id);
         });
+    });
+
+    describe('owner slug uniqueness', function (): void {
+        test('allows the same slug for different owners', function (): void {
+            $user1 = User::factory()->create();
+            $user2 = User::factory()->create();
+
+            $cat1 = AffiliateOfferCategory::factory()->forOwner($user1)->create(['slug' => 'shared-slug']);
+            $cat2 = AffiliateOfferCategory::factory()->forOwner($user2)->create(['slug' => 'shared-slug']);
+
+            expect($cat1->slug)->toBe('shared-slug');
+            expect($cat2->slug)->toBe('shared-slug');
+        });
+
+        test('rejects duplicate slugs for the same owner', function (): void {
+            $user = User::factory()->create();
+
+            AffiliateOfferCategory::factory()->forOwner($user)->create(['slug' => 'dup-slug']);
+            AffiliateOfferCategory::factory()->forOwner($user)->create(['slug' => 'dup-slug']);
+        })->throws(QueryException::class);
     });
 });

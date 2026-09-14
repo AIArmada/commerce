@@ -49,7 +49,6 @@ final class NotificationInbox extends Model
     use HasUuids;
 
     protected $fillable = [
-        'recipient_type',
         'recipient_id',
         'communication_id',
         'family',

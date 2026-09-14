@@ -44,13 +44,13 @@ Manage merchant sites/domains.
 
 **Site Details:**
 - Name
-- Domain (unique)
+- Domain (unique; normalized to lowercase and validated as a bare domain without scheme, path, or whitespace)
 - Description
 
 **Status:**
 - Status (pending, verified, suspended, rejected)
 - Verification method
-- Verified at (read-only)
+- Verified at (read-only; stamped when the status becomes verified and cleared when it leaves verified)
 
 **Settings:**
 - Settings (key-value)
@@ -61,7 +61,7 @@ Manage merchant sites/domains.
 | Action | Description |
 |--------|-------------|
 | Edit | Edit site details |
-| Verify | Manually verify a pending site |
+| Verify | Manually verify a pending site (runs inside the site's owner context) |
 | Delete | Delete site |
 
 ### Status Colors
@@ -94,18 +94,18 @@ Manage affiliate offers.
 ### Form Sections
 
 **Offer Details:**
-- Site (select from verified sites)
-- Category (optional)
+- Site (async search over verified sites)
+- Category (optional; async search over active categories)
 - Name (auto-generates slug)
-- Slug
+- Slug (unique per site)
 - Description
 - Terms & Conditions
 
 **Commission:**
 - Commission type (percentage/fixed)
-- Commission rate (basis points or cents)
-- Currency
-- Cookie duration (days)
+- Commission rate (whole-number basis points or minor units; negatives rejected)
+- Currency (three-letter code)
+- Cookie duration (whole days; negatives rejected)
 
 **Settings:**
 - Status
@@ -113,7 +113,7 @@ Manage affiliate offers.
 - Public toggle
 - Requires approval toggle
 - Landing page URL
-- Start/end dates
+- Start/end dates (end must be on or after start)
 
 **Advanced:**
 - Restrictions (key-value)
@@ -124,9 +124,11 @@ Manage affiliate offers.
 | Action | Description |
 |--------|-------------|
 | Edit | Edit offer |
-| Activate | Set status to active |
-| Pause | Set status to paused |
+| Activate | Publish via the domain update action (stamps published_at, clears archived_at) |
+| Pause | Archive via the domain update action (stamps archived_at) |
 | Delete | Delete offer |
+
+Activate and pause run inside the owning site's owner context and fire the domain `OfferUpdated` event.
 
 ### Filters
 
@@ -153,7 +155,7 @@ Manage offer categories.
 
 ### Form Fields
 
-- Parent category (optional)
+- Parent category (optional; async search; the record itself is excluded)
 - Name
 - Slug
 - Description
@@ -164,6 +166,7 @@ Manage offer categories.
 ### Features
 
 - Hierarchical categories (parent/child)
+- Cycle protection: a category cannot be assigned to itself or one of its descendants
 - Sort ordering
 - Soft re-parenting on delete
 
@@ -175,12 +178,15 @@ Review affiliate applications.
 
 ### Table Columns
 
-- Affiliate name
-- Offer name
+- Affiliate code (searchable, sortable)
+- Affiliate email (display-only; it is a virtual accessor, not a column)
+- Offer name (searchable, sortable)
 - Status (badge)
 - Reason (toggleable)
 - Submitted at
 - Reviewed at (toggleable)
+
+Approve, reject, revoke, and bulk-approve run each mutation inside the owning affiliate's owner context so cross-tenant review works when owner scoping is enabled.
 
 ### Form Sections
 

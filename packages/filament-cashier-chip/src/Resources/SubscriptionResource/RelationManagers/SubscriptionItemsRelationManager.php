@@ -105,6 +105,7 @@ final class SubscriptionItemsRelationManager extends RelationManager
                             ->numeric()
                             ->required()
                             ->minValue(1)
+                            ->maxValue(1000000)
                             ->default(fn (SubscriptionItem $record): int => $record->quantity ?? 1),
                     ])
                     ->action(function (SubscriptionItem $record, array $data): void {
@@ -124,12 +125,14 @@ final class SubscriptionItemsRelationManager extends RelationManager
                         TextInput::make('price')
                             ->label('New Price ID')
                             ->required()
+                            ->maxLength(255)
                             ->placeholder('price_xxx'),
 
                         TextInput::make('unit_amount')
                             ->label('Unit Amount (cents)')
                             ->numeric()
                             ->minValue(0)
+                            ->maxValue(99999999999)
                             ->placeholder('Optional'),
                     ])
                     ->action(function (SubscriptionItem $record, array $data): void {

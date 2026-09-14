@@ -6,17 +6,14 @@
                     <x-heroicon-o-credit-card class="mx-auto h-12 w-12 text-gray-400" />
                     <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No payment methods') }}</h3>
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('You have not added any payment methods yet.') }}</p>
-                    @if($this->getAddPaymentMethodUrl() !== '#')
-                        <div class="mt-4">
-                            <x-filament::button
-                                tag="a"
-                                :href="$this->getAddPaymentMethodUrl()"
-                                color="primary"
-                            >
-                                {{ __('Add Payment Method') }}
-                            </x-filament::button>
-                        </div>
-                    @endif
+                    <div class="mt-4">
+                        <x-filament::button
+                            color="primary"
+                            wire:click="redirectToAddPaymentMethod"
+                        >
+                            {{ __('Add Payment Method') }}
+                        </x-filament::button>
+                    </div>
                 </div>
             </x-filament::section>
         @else

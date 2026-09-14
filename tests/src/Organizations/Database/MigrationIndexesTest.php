@@ -30,18 +30,20 @@ it('uses the organizations membership table config as the single source of truth
 });
 
 it('enforces unique organization slugs at the database boundary', function (): void {
-    $attributes = [
-        'name' => 'First Organization',
-        'slug' => 'duplicate-organization',
-        'created_by' => (string) Str::uuid(),
-    ];
+    $makeRow = static function (string $name): Organization {
+        $organization = new Organization([
+            'name' => $name,
+            'slug' => 'duplicate-organization',
+        ]);
+        $organization->forceFill(['created_by' => (string) Str::uuid()]);
+        $organization->save();
 
-    Organization::query()->create($attributes);
+        return $organization;
+    };
 
-    expect(fn () => Organization::query()->create([
-        ...$attributes,
-        'name' => 'Second Organization',
-    ]))->toThrow(QueryException::class);
+    $makeRow('First Organization');
+
+    expect(fn () => $makeRow('Second Organization'))->toThrow(QueryException::class);
 });
 
 it('enforces one membership row per organization and user at the database boundary', function (): void {

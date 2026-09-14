@@ -33,23 +33,40 @@ final class SelfReferralRule implements FraudRule
 
         $affiliate = $conversion->affiliate;
 
-        if ($affiliate->owner_id && $conversion->owner_id === $affiliate->owner_id) {
-            return AffiliateFraudSignal::create([
-                'affiliate_id' => $affiliate->id,
-                'conversion_id' => $conversion->id,
-                'rule_code' => $this->ruleCode(),
-                'risk_points' => 100,
-                'severity' => FraudSeverity::Critical,
-                'description' => 'Self-referral detected',
-                'evidence' => [
-                    'affiliate_owner_id' => $affiliate->owner_id,
-                    'conversion_owner_id' => $conversion->owner_id,
-                ],
-                'status' => FraudSignalStatus::Detected,
-                'detected_at' => CarbonImmutable::now(),
-            ]);
+        if (! $affiliate?->owner_id || ! $conversion->actor_user_id) {
+            return null;
         }
 
-        return null;
+        if (! $this->ownerIsUser($affiliate->owner_type, (string) $affiliate->owner_id, (string) $conversion->actor_user_id)) {
+            return null;
+        }
+
+        return AffiliateFraudSignal::create([
+            'affiliate_id' => $affiliate->id,
+            'conversion_id' => $conversion->id,
+            'rule_code' => $this->ruleCode(),
+            'risk_points' => 100,
+            'severity' => FraudSeverity::Critical,
+            'description' => 'Self-referral detected',
+            'evidence' => [
+                'affiliate_owner_id' => $affiliate->owner_id,
+                'actor_user_id' => $conversion->actor_user_id,
+            ],
+            'status' => FraudSignalStatus::Detected,
+            'detected_at' => CarbonImmutable::now(),
+        ]);
+    }
+
+    private function ownerIsUser(?string $ownerType, string $ownerId, string $actorId): bool
+    {
+        $userModel = config('auth.providers.users.model');
+
+        if (! is_string($userModel) || $userModel === '' || ! class_exists($userModel)) {
+            return false;
+        }
+
+        $userMorphClass = (new $userModel)->getMorphClass();
+
+        return ($ownerType === $userMorphClass || $ownerType === $userModel) && $ownerId === $actorId;
     }
 }

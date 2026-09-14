@@ -54,6 +54,8 @@ Or install individual packages as needed (see below).
 | Package | Description |
 |---------|-------------|
 | [filament-cart](../filament-cart) | Cart management admin panel |
+| [filament-cashier](../filament-cashier) | Multi-gateway billing admin |
+| [filament-cashier-chip](../filament-cashier-chip) | CHIP subscription billing admin |
 | [filament-inventory](../filament-inventory) | Inventory management admin panel |
 | [filament-vouchers](../filament-vouchers) | Voucher management admin panel |
 | [filament-docs](../filament-docs) | Document management admin panel |
@@ -149,4 +151,4 @@ composer require aiarmada/jnt aiarmada/filament-jnt
 
 ## License
 
-The MIT License (MIT). See [LICENSE](LICENSE) for details.
+The MIT License (MIT). See [LICENSE](../../LICENSE) for details.

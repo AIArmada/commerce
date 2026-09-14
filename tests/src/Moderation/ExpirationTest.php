@@ -26,16 +26,16 @@ test('the expiry sweep transitions expired active blocks for every owner', funct
     ]);
     $now = CarbonImmutable::parse('2026-09-11 12:00:00');
 
-    $expired = OwnerContext::withOwner($ownerA, fn (): Block => Block::create([
+    $expired = OwnerContext::withOwner($ownerA, fn (): Block => Block::unguarded(fn (): Block => Block::create([
         'reason' => BlockReason::Spam,
         'status' => BlockStatus::Active,
         'expires_at' => $now->subMinute(),
-    ]));
-    $active = OwnerContext::withOwner($ownerB, fn (): Block => Block::create([
+    ])));
+    $active = OwnerContext::withOwner($ownerB, fn (): Block => Block::unguarded(fn (): Block => Block::create([
         'reason' => BlockReason::Spam,
         'status' => BlockStatus::Active,
         'expires_at' => $now->addMinute(),
-    ]));
+    ])));
 
     $processed = OwnerContext::withOwner(null, fn (): int => app(ExpireModerationBlocksAction::class)->execute($now));
 
@@ -47,11 +47,11 @@ test('the expiry sweep transitions expired active blocks for every owner', funct
 test('the expiry command invokes the owner-safe sweep', function (): void {
     config()->set('moderation.owner.enabled', true);
 
-    $block = Block::create([
+    $block = Block::unguarded(fn (): Block => Block::create([
         'reason' => BlockReason::Other,
         'status' => BlockStatus::Active,
         'expires_at' => CarbonImmutable::now()->subMinute(),
-    ]);
+    ]));
 
     OwnerContext::withOwner(null, function () use (&$exitCode): void {
         $exitCode = Artisan::call('moderation:expire-blocks');

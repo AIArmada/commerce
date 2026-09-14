@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCart\Resources;
 
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentCart\Resources\CartItemResource\Pages\ListCartItems;
 use AIArmada\FilamentCart\Resources\CartItemResource\Pages\ViewCartItem;
 use AIArmada\FilamentCart\Resources\CartItemResource\Schemas\CartItemForm;
@@ -60,7 +61,9 @@ final class CartItemResource extends Resource
         /** @var Builder<CartItem> $query */
         $query = parent::getEloquentQuery();
 
-        return $query->whereIn('cart_id', Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())->select('id'));
+        return $query
+            ->with('cart')
+            ->whereIn('cart_id', Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())->select('id'));
     }
 
     public static function getRelations(): array
@@ -80,7 +83,14 @@ final class CartItemResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) self::getEloquentQuery()->count();
+        $count = (int) OwnerCache::remember(
+            Cart::resolveCurrentOwner(),
+            'filament-cart.nav.cart-items-count',
+            30,
+            fn (): int => self::getEloquentQuery()->count(),
+        );
+
+        return $count > 0 ? (string) $count : null;
     }
 
     public static function getNavigationBadgeColor(): string

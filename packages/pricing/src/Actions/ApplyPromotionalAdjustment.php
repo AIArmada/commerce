@@ -8,7 +8,9 @@ use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\Promotions\Contracts\PromotionServiceInterface;
 use AIArmada\Promotions\Models\Promotion;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Throwable;
 
 final class ApplyPromotionalAdjustment
 {
@@ -72,16 +74,19 @@ final class ApplyPromotionalAdjustment
         CarbonImmutable $effectiveAt,
         array $context,
     ): TargetingContext {
-        $item = new class($promotionableId, $quantity)
+        $priceable = $this->resolvePriceable($promotionableType, $promotionableId);
+
+        $item = new class($promotionableId, $quantity, $priceable)
         {
             public function __construct(
                 public string $id,
                 public int $quantity,
+                public readonly ?Model $associatedModel = null,
             ) {}
 
             public function getAttribute(string $key): mixed
             {
-                return null;
+                return $this->associatedModel?->getAttribute($key);
             }
         };
 
@@ -114,5 +119,23 @@ final class ApplyPromotionalAdjustment
                 'currency' => $context['currency'] ?? config('pricing.defaults.currency', 'MYR'),
             ]),
         );
+    }
+
+    /**
+     * Best-effort priceable resolution so attribute/category targeting rules
+     * can match. Unresolvable references keep the previous id-only behavior.
+     */
+    private function resolvePriceable(string $type, string $id): ?Model
+    {
+        if (! class_exists($type) || ! is_a($type, Model::class, true)) {
+            return null;
+        }
+
+        try {
+            /** @var class-string<Model> $type */
+            return $type::query()->whereKey($id)->first();
+        } catch (Throwable) {
+            return null;
+        }
     }
 }

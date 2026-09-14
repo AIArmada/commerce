@@ -35,7 +35,8 @@ final class FeedbackInvitationResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false)
+            ->with(['form']);
     }
 
     public static function table(Table $table): Table

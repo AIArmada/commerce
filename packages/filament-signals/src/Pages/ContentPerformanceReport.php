@@ -54,7 +54,8 @@ final class ContentPerformanceReport extends ReportPage implements HasTable
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-signals.features.content_performance', true);
+        return (bool) config('filament-signals.features.content_performance', true)
+            && static::canAccess();
     }
 
     /**

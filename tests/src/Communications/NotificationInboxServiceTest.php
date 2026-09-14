@@ -24,13 +24,14 @@ beforeEach(function (): void {
         'password' => 'secret',
     ]);
 
-    $this->communication = Communication::create([
+    $this->communication = (new Communication)->forceFill([
         'direction' => 'internal',
         'category' => 'internal',
         'priority' => 'normal',
         'purpose' => 'inbox_service_test',
         'status' => 'completed',
     ]);
+    $this->communication->save();
 });
 
 test('can create inbox notification via the service', function (): void {
@@ -209,13 +210,14 @@ test('prune removes archived entries across owners', function (): void {
     ]);
 
     $currentOwnerInbox = OwnerContext::withOwner($currentOwner, function (): NotificationInbox {
-        $communication = Communication::create([
+        $communication = (new Communication)->forceFill([
             'direction' => 'internal',
             'category' => 'internal',
             'priority' => 'normal',
             'purpose' => 'current-owner-prune-test',
             'status' => 'completed',
         ]);
+        $communication->save();
 
         return $this->service->create(
             recipient: $this->user,
@@ -228,13 +230,14 @@ test('prune removes archived entries across owners', function (): void {
     });
 
     $otherOwnerInbox = OwnerContext::withOwner($otherOwner, function () use ($otherOwner): NotificationInbox {
-        $communication = Communication::create([
+        $communication = (new Communication)->forceFill([
             'direction' => 'internal',
             'category' => 'internal',
             'priority' => 'normal',
             'purpose' => 'other-owner-prune-test',
             'status' => 'completed',
         ]);
+        $communication->save();
 
         return $this->service->create(
             recipient: $otherOwner,

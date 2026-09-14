@@ -88,6 +88,7 @@ describe('ApplyToOffer', function (): void {
             ->forAffiliate($this->affiliate)
             ->rejected()
             ->create([
+                'rejected_at' => now()->subDays(10),
                 'updated_at' => now()->subDays(10),
             ]);
 
@@ -98,6 +99,24 @@ describe('ApplyToOffer', function (): void {
         expect($application->rejection_reason)->toBeNull();
     });
 
+    test('cooldown is measured from rejection not last touch', function (): void {
+        config(['affiliate-network.applications.cooldown_days' => 7]);
+
+        $existing = AffiliateOfferApplication::factory()
+            ->forOffer($this->offer)
+            ->forAffiliate($this->affiliate)
+            ->rejected()
+            ->create([
+                'rejected_at' => now()->subDays(10),
+                'updated_at' => now(),
+            ]);
+
+        $application = $this->action->execute($this->offer, $this->affiliate);
+
+        expect($application->id)->toBe($existing->id);
+        expect($application->status)->toBe(ApplicationStatus::Pending);
+    });
+
     test('throws exception when reapplying before cooldown', function (): void {
         config(['affiliate-network.applications.cooldown_days' => 7]);
 
@@ -106,6 +125,7 @@ describe('ApplyToOffer', function (): void {
             ->forAffiliate($this->affiliate)
             ->rejected()
             ->create([
+                'rejected_at' => now()->subDays(3),
                 'updated_at' => now()->subDays(3),
             ]);
 

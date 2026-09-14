@@ -38,11 +38,12 @@ final class ApplyConditionAction extends Action
             ->schema([
                 Select::make('condition_id')
                     ->label('Condition')
-                    ->placeholder('Select a condition...')
-                    ->options(fn (): array => self::getConditionOptions(forItems: false))
+                    ->placeholder('Search conditions...')
+                    ->getSearchResultsUsing(fn (string $search): array => self::searchConditionOptions($search, forItems: false))
+                    ->getOptionLabelUsing(fn ($value): ?string => self::resolveConditionLabel($value))
                     ->required()
                     ->searchable()
-                    ->helperText('Choose from available conditions'),
+                    ->helperText('Search available conditions'),
 
                 TextInput::make('custom_name')
                     ->label('Custom Name (Optional)')
@@ -50,10 +51,10 @@ final class ApplyConditionAction extends Action
                     ->helperText('Override the default condition name if needed'),
             ])
             ->action(function (array $data, $record, $livewire): void {
-                $cart = self::resolveCartRecord($record, $livewire);
                 $customName = ! empty($data['custom_name']) ? $data['custom_name'] : null;
 
                 try {
+                    $cart = self::resolveCartRecord($record, $livewire);
                     $action = app(ApplyStoredCondition::class);
                     $condition = $action->apply($cart, (string) $data['condition_id'], $customName);
 
@@ -90,8 +91,9 @@ final class ApplyConditionAction extends Action
             ->schema([
                 Select::make('condition_id')
                     ->label('Condition')
-                    ->placeholder('Select a condition...')
-                    ->options(fn (): array => self::getConditionOptions(forItems: true))
+                    ->placeholder('Search conditions...')
+                    ->getSearchResultsUsing(fn (string $search): array => self::searchConditionOptions($search, forItems: true))
+                    ->getOptionLabelUsing(fn ($value): ?string => self::resolveConditionLabel($value))
                     ->required()
                     ->searchable()
                     ->helperText('Only item-level conditions are shown'),
@@ -103,9 +105,9 @@ final class ApplyConditionAction extends Action
             ])
             ->action(function (array $data, $record): void {
                 $customName = ! empty($data['custom_name']) ? $data['custom_name'] : null;
-                $cart = self::resolveCartRecord($record->cart ?? null);
 
                 try {
+                    $cart = self::resolveCartRecord($record->cart ?? null);
                     $action = app(ApplyStoredCondition::class);
                     $condition = $action->applyToItem($cart, $record->item_id, (string) $data['condition_id'], $customName);
 
@@ -126,19 +128,41 @@ final class ApplyConditionAction extends Action
     }
 
     /**
-     * @return array<string, array<string, string>>
+     * Search active conditions for the async modal select, bounded to one page.
+     *
+     * @return array<string, string>
      */
-    private static function getConditionOptions(bool $forItems): array
+    private static function searchConditionOptions(string $search, bool $forItems): array
     {
-        $query = self::getScopedConditionQuery($forItems)
-            ->orderBy('type')
-            ->orderBy('name');
+        $needle = '%' . addcslashes(mb_trim($search), '%_\\') . '%';
 
-        return $query
-            ->get()
-            ->groupBy('type')
-            ->map(fn ($conditions) => $conditions->pluck('display_name', 'id'))
-            ->toArray();
+        return self::getScopedConditionQuery($forItems)
+            ->where(function (Builder $query) use ($needle): void {
+                $query->where('name', 'like', $needle)
+                    ->orWhere('display_name', 'like', $needle);
+            })
+            ->orderBy('type')
+            ->orderBy('name')
+            ->limit(50)
+            ->pluck('display_name', 'id')
+            ->all();
+    }
+
+    private static function resolveConditionLabel(mixed $value): ?string
+    {
+        if (! is_string($value) && ! is_int($value)) {
+            return null;
+        }
+
+        $condition = self::getScopedConditionQuery(forItems: false)->find($value);
+
+        if (! $condition instanceof Condition) {
+            return null;
+        }
+
+        $label = $condition->getAttribute('display_name') ?? $condition->getAttribute('name');
+
+        return is_string($label) ? $label : null;
     }
 
     /**
@@ -271,9 +295,8 @@ final class ApplyConditionAction extends Action
                     ->default([]),
             ])
             ->action(function (array $data, $record, $livewire): void {
-                $cart = self::resolveCartRecord($record, $livewire);
-
                 try {
+                    $cart = self::resolveCartRecord($record, $livewire);
                     $action = app(ApplyStoredCondition::class);
                     $condition = $action->applyCustom($cart, $data);
 

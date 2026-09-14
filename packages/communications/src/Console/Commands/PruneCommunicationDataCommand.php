@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use Throwable;
 
 final class PruneCommunicationDataCommand extends Command
 {
@@ -57,9 +58,16 @@ final class PruneCommunicationDataCommand extends Command
     private function process(): int
     {
         $retentionDays = config('communications.logging.payload_retention_days', 90);
-        $before = $this->option('before')
-            ? CarbonImmutable::parse($this->option('before'))
-            : CarbonImmutable::now()->subDays($retentionDays);
+
+        try {
+            $before = $this->option('before')
+                ? CarbonImmutable::parse($this->option('before'))
+                : CarbonImmutable::now()->subDays($retentionDays);
+        } catch (Throwable) {
+            $this->error('Invalid --before date. Use a parseable date such as "2026-01-01".');
+
+            return self::FAILURE;
+        }
 
         $this->info("Pruning data before: {$before->toDateTimeString()}");
 

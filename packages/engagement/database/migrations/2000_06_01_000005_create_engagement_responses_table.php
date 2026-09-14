@@ -36,6 +36,7 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
             $table->unique(['responder_type', 'responder_id', 'respondable_type', 'respondable_id', 'owner_type', 'owner_id'], 'engagement_responses_actor_subject_unique');
+            $table->index(['respondable_type', 'respondable_id', 'response_type', 'status'], 'engagement_responses_subject_type_status_idx');
         });
     }
 };

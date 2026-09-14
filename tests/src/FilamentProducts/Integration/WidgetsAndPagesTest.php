@@ -210,7 +210,7 @@ it('renders product stats in explicit global context when no owner is resolved',
 
     $statsWidget = app(ProductStatsWidget::class);
     $statsMethod = new ReflectionMethod(ProductStatsWidget::class, 'getStats');
-    $stats = $statsMethod->invoke($statsWidget);
+    $stats = OwnerContext::withOwner(null, fn (): array => $statsMethod->invoke($statsWidget));
 
     expect($stats)->toHaveCount(4)
         ->and($stats[0]->getValue())->toBe('1');
@@ -243,7 +243,7 @@ it('renders product type distribution in explicit global context when no owner i
 
     $widget = app(ProductTypeDistributionWidget::class);
     $method = new ReflectionMethod(ProductTypeDistributionWidget::class, 'getStats');
-    $stats = $method->invoke($widget);
+    $stats = OwnerContext::withOwner(null, fn (): array => $method->invoke($widget));
 
     expect($stats)->toHaveCount(4)
         ->and($stats[0]->getValue())->toBe(1)
@@ -281,7 +281,7 @@ it('builds top selling products query in explicit global context when no owner i
     $method = new ReflectionMethod(TopSellingProductsWidget::class, 'getRecentProductsQuery');
 
     /** @var Builder<Product> $query */
-    $query = $method->invoke($widget);
+    $query = OwnerContext::withOwner(null, fn (): Builder => $method->invoke($widget));
 
     expect($query->count())->toBe(1)
         ->and($query->first()?->name)->toBe('Global Active Product');
@@ -313,7 +313,9 @@ it('counts variants for top selling widget in explicit global context when no ow
     $widget = app(TopSellingProductsWidget::class);
     $method = new ReflectionMethod(TopSellingProductsWidget::class, 'getVariantsCount');
 
-    expect($method->invoke($widget, $product))->toBe(1);
+    $count = OwnerContext::withOwner(null, fn (): int => $method->invoke($widget, $product));
+
+    expect($count)->toBe(1);
 });
 
 it('renders category distribution chart in explicit global context when no owner is resolved', function (): void {
@@ -343,7 +345,7 @@ it('renders category distribution chart in explicit global context when no owner
     $method = new ReflectionMethod(CategoryDistributionChart::class, 'getData');
 
     /** @var array{datasets: array<int, array{data: array<int|string>}>, labels: array<string>} $data */
-    $data = $method->invoke($widget);
+    $data = OwnerContext::withOwner(null, fn (): array => $method->invoke($widget));
 
     expect($data['labels'])->toBe(['Global Chart Category'])
         ->and($data['datasets'])->toHaveCount(1)

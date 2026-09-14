@@ -12,8 +12,8 @@ final class DefaultShareUrlGenerator implements ShareUrlGenerator
     public function generateShareUrl(mixed $shareable, array $options = []): string
     {
         $base = method_exists($shareable, 'shareUrl') ? $shareable->shareUrl() : url('/');
-        $token = $options['token'] ?? Str::random(16);
+        $token = $options['token'] ?? Str::random(32);
 
-        return $base . (str_contains($base, '?') ? '&' : '?') . 'share=' . $token;
+        return $base . (str_contains($base, '?') ? '&' : '?') . 'share=' . rawurlencode((string) $token);
     }
 }

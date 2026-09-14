@@ -105,8 +105,10 @@ final class TaxRatesTable
                     ->label('Compound'),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.rates.view') ?? false),
+                EditAction::make()
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.rates.update') ?? false),
             ])
             ->toolbarActions([
                 BulkAction::make('activate')

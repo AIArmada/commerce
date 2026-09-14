@@ -17,14 +17,23 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 final class NetworkStatsAggregator
 {
     /**
+     * Network-wide totals for the admin dashboard.
+     *
+     * Multi-currency limitation: revenue is summed in minor units across all
+     * offers and formatted as USD. Per-offer currency formatting is used
+     * wherever a single offer is displayed (see TopOffersWidget); treat the
+     * network revenue total as indicative when offers span currencies.
+     *
      * @return array{activeSites: int, activeOffers: int, pendingApplications: int, totalClicks: int, totalConversions: int, totalRevenue: int, conversionRate: float, revenueFormatted: string}
      */
     public static function aggregate(): array
     {
         return OwnerContext::withOwner(null, function (): array {
-            $totalClicks = AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)->sum('clicks');
-            $totalConversions = AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)->sum('conversions');
-            $totalRevenue = AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)->sum('revenue');
+            // sum() returns int|string depending on the driver — cast to the
+            // documented int shape (strict_types would TypeError otherwise).
+            $totalClicks = (int) AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)->sum('clicks');
+            $totalConversions = (int) AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)->sum('conversions');
+            $totalRevenue = (int) AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)->sum('revenue');
             $activeSites = AffiliateSite::query()->withoutOwnerScope()->where('status', AffiliateSite::STATUS_VERIFIED)->count();
             $activeOffers = AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)->where('status', OfferStatus::Published)->count();
             $pendingApplications = AffiliateOfferApplication::withoutGlobalScope(ScopesByBelongsToOwner::class)->where('status', ApplicationStatus::Pending)->count();

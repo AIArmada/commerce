@@ -14,6 +14,12 @@ When a customer completes a checkout with `force_recurring = true`, CHIP returns
 - One-click payments
 - Automatic charges
 
+Recurring tokens are encrypted at rest (`encrypted` cast). Token lookups compare decrypted
+values in the application layer, and per-billable uniqueness is enforced there as well. Only
+an explicitly flagged method is returned as default; when nothing is marked default,
+`defaultPaymentMethod()` returns `null`. Stored metadata keeps only the purchase/token id,
+payment method, and description — never the full CHIP payload.
+
 ## Retrieving Payment Methods
 
 ### All Payment Methods
@@ -184,11 +190,11 @@ Payment methods are stored in `cashier_chip_payment_methods`:
 | `id` | uuid | Primary key |
 | `billable_id` | uuid | Foreign key to billable |
 | `billable_type` | string | Billable model class |
-| `recurring_token` | string | CHIP recurring token |
+| `recurring_token` | text | CHIP recurring token (encrypted at rest) |
 | `type` | string nullable | Payment-method type |
 | `brand` | string nullable | Card or payment-method brand |
 | `last_four` | string | Last 4 digits |
 | `is_default` | boolean | Default flag |
-| `metadata` | json nullable | Raw token payload and synced details |
+| `metadata` | json nullable | Minimal token identifiers (purchase/token id, method, description) |
 | `created_at` | timestamp | |
 | `updated_at` | timestamp | |

@@ -27,6 +27,7 @@ use AIArmada\Products\Events\ProductUpdated;
 use AIArmada\Products\Support\ProductMedia;
 use AIArmada\Products\Support\ProductPricing;
 use AIArmada\Products\Traits\HasAttributes;
+use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -37,6 +38,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -749,6 +751,24 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     protected static function booted(): void
     {
+        static::saving(function (Product $product): void {
+            $currency = $product->currency;
+
+            if ($currency === null || $currency === '') {
+                return;
+            }
+
+            // Fail at write time: an unknown code would throw from every
+            // Money formatting path at read time instead.
+            $code = mb_strtoupper(mb_trim((string) $currency));
+
+            if (! array_key_exists($code, Currency::getCurrencies())) {
+                throw new InvalidArgumentException(sprintf('Invalid currency [%s]: must be a supported ISO 4217 code.', $currency));
+            }
+
+            $product->currency = $code;
+        });
+
         static::creating(function (Product $product): void {
             $product->applyTypeDefaultsOnCreate();
 
@@ -811,12 +831,21 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::deleting(function (Product $product): void {
-            // Delete variants individually to trigger model events (for pivot cleanup)
-            $product->variants()->each(fn ($variant) => $variant->delete());
+            DB::transaction(function () use ($product): void {
+                // Delete variants individually to trigger model events (for pivot cleanup)
+                $product->variants()->chunkById(100, function ($variants): void {
+                    $variants->each(fn ($variant) => $variant->delete());
+                });
 
-            $product->options()->delete();
-            $product->categories()->detach();
-            $product->collections()->detach();
+                // Delete options individually so Option::deleting removes its
+                // values (and their variant pivots) instead of orphaning them.
+                $product->options()->chunkById(100, function ($options): void {
+                    $options->each(fn ($option) => $option->delete());
+                });
+
+                $product->categories()->detach();
+                $product->collections()->detach();
+            });
         });
 
         static::updated(function (Product $product): void {

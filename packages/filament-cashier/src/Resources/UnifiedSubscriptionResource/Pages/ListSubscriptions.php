@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
-use AIArmada\Cashier\Contracts\BillableContract;
-use AIArmada\Cashier\Contracts\SubscriptionContract;
-use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\SubscriptionStatus;
 use AIArmada\Cashier\Support\UnifiedSubscription;
+use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
@@ -19,6 +18,7 @@ use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Laravel\Cashier\Subscription;
 use Throwable;
 
 final class ListSubscriptions extends ListRecords
@@ -127,7 +127,11 @@ final class ListSubscriptions extends ListRecords
     }
 
     /**
-     * Get all subscriptions across all gateways through their gateway clients.
+     * Get all subscriptions across all gateways in the current owner scope.
+     *
+     * Owner-wide: queries the gateway subscription models directly instead of
+     * fanning out per-billable gateway calls as the authenticated user, so
+     * admins see every billable's subscriptions in scope.
      *
      * @return Collection<int, UnifiedSubscription>
      */
@@ -137,28 +141,38 @@ final class ListSubscriptions extends ListRecords
             return $this->allSubscriptions;
         }
 
-        $user = auth()->user();
-
-        if (! $user instanceof BillableContract || ! $user instanceof Model) {
-            $this->allSubscriptions = collect();
-
-            return $this->allSubscriptions;
-        }
-
         $subscriptions = collect();
         $detector = app(GatewayDetector::class);
 
-        foreach ($detector->availableGateways() as $gateway) {
+        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
             try {
-                $gatewaySubscriptions = Cashier::gateway($gateway)->subscriptions($user);
+                $models = OwnerScopedQuery::apply(Subscription::query())
+                    ->with('items')
+                    ->limit(100)
+                    ->get();
             } catch (Throwable) {
-                continue;
+                $models = collect();
             }
 
-            foreach ($gatewaySubscriptions->take(100) as $subscription) {
-                if ($subscription instanceof SubscriptionContract) {
-                    $subscriptions->push(UnifiedSubscription::fromGateway($subscription));
-                }
+            foreach ($models as $model) {
+                $subscriptions->push(UnifiedSubscription::fromStripe($model));
+            }
+        }
+
+        if ($detector->isAvailable('chip')) {
+            $subscriptionModel = CashierChip::$subscriptionModel;
+
+            try {
+                $models = OwnerScopedQuery::apply($subscriptionModel::query())
+                    ->with('items')
+                    ->limit(100)
+                    ->get();
+            } catch (Throwable) {
+                $models = collect();
+            }
+
+            foreach ($models as $model) {
+                $subscriptions->push(UnifiedSubscription::fromChip($model));
             }
         }
 

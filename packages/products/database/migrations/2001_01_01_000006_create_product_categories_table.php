@@ -49,10 +49,6 @@ return new class extends Migration
             $table->index('hidden_at');
         });
 
-        if (! app()->environment(['local', 'development', 'testing'])) {
-            return;
-        }
-
         ProductIdentityIndexes::categories($tableName);
     }
 

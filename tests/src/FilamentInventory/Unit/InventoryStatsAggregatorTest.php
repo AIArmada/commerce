@@ -35,18 +35,18 @@ beforeEach(function (): void {
         'inventoryable_id' => 'sku-1',
         'location_id' => $activeLocation->id,
         'quantity_on_hand' => 20,
-        'quantity_reserved' => 5,
         'reorder_point' => 10,
     ]);
+    $levelA->incrementReserved(5);
 
-    InventoryLevel::create([
+    $levelB = InventoryLevel::create([
         'inventoryable_type' => 'Product',
         'inventoryable_id' => 'sku-2',
         'location_id' => $activeLocation->id,
         'quantity_on_hand' => 3,
-        'quantity_reserved' => 1,
         'reorder_point' => 5,
     ]);
+    $levelB->incrementReserved(1);
 
     // Movement history within window
     InventoryMovement::create([

@@ -9,6 +9,7 @@ use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Models\Purchase;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -35,34 +36,43 @@ final class SyncPurchaseRefundState
             return $purchase;
         }
 
-        $purchaseTotal = $this->resolvePurchaseTotal($purchase);
-        $currentPaymentExists = $this->currentRefundPaymentExists($purchase, $refundPayment);
-        $existingRefundAmount = max(0, (int) ($purchase->refund_amount_minor ?? 0));
+        // Lock the row so concurrent refund webhooks cannot both read the
+        // same cumulative total and undercount.
+        return DB::transaction(function () use ($purchase, $refundPayment, $refundAmount): ?Purchase {
+            $locked = Purchase::query()->whereKey($purchase->getKey())->lockForUpdate()->first();
 
-        $persistedRefundAmount = (int) $purchase->payments()
-            ->where('payment_type', 'refund')
-            ->sum('amount');
+            if (! $locked instanceof Purchase) {
+                return null;
+            }
 
-        $cumulativeRefundAmount = max($persistedRefundAmount, $existingRefundAmount);
+            $purchaseTotal = $this->resolvePurchaseTotal($locked);
+            $existingRefundAmount = max(0, (int) ($locked->refund_amount_minor ?? 0));
 
-        if (! $currentPaymentExists) {
-            $cumulativeRefundAmount += $refundAmount;
-        }
+            $persistedRefundAmount = (int) $locked->payments()
+                ->where('payment_type', 'refund')
+                ->sum('amount');
 
-        if ($cumulativeRefundAmount <= 0) {
-            return $purchase;
-        }
+            $cumulativeRefundAmount = max($persistedRefundAmount, $existingRefundAmount);
 
-        $purchase->forceFill([
-            // CHIP uses refunded for both full and partial refunds. The
-            // local refund amount fields preserve the distinction.
-            'status' => PurchaseStatus::REFUNDED->value,
-            'refund_amount_minor' => $cumulativeRefundAmount,
-            'refundable_amount' => $purchaseTotal > 0 ? max(0, $purchaseTotal - $cumulativeRefundAmount) : 0,
-            'refunded_at' => CarbonImmutable::now(),
-        ])->save();
+            if (! $this->currentRefundPaymentExists($locked, $refundPayment)) {
+                $cumulativeRefundAmount += $refundAmount;
+            }
 
-        return $purchase->refresh();
+            if ($cumulativeRefundAmount <= 0) {
+                return $locked;
+            }
+
+            $locked->forceFill([
+                // CHIP uses refunded for both full and partial refunds. The
+                // local refund amount fields preserve the distinction.
+                'status' => PurchaseStatus::REFUNDED->value,
+                'refund_amount_minor' => $cumulativeRefundAmount,
+                'refundable_amount' => $purchaseTotal > 0 ? max(0, $purchaseTotal - $cumulativeRefundAmount) : 0,
+                'refunded_at' => CarbonImmutable::now(),
+            ])->save();
+
+            return $locked->refresh();
+        });
     }
 
     private function resolvePurchase(PaymentData $refundPayment): ?Purchase

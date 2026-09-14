@@ -16,7 +16,9 @@ return new class extends Migration
             $table->{$jsonColumnType}($column)->nullable();
         };
 
-        Schema::create(config('feedback.database.tables.questions', 'feedback_questions'), function (Blueprint $table) use ($addJsonColumn): void {
+        $tableName = (string) config('feedback.database.table_prefix', '') . (string) config('feedback.database.tables.questions', 'feedback_questions');
+
+        Schema::create($tableName, function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 
@@ -42,7 +44,7 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->index(['feedback_form_id', 'key']);
+            $table->unique(['feedback_form_id', 'key']);
             $table->index(['feedback_form_id', 'order_column']);
         });
     }

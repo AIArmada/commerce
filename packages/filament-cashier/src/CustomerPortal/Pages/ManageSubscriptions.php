@@ -31,6 +31,10 @@ final class ManageSubscriptions extends Page
 
     private const int DEFAULT_LOAD_MORE_INCREMENT = 50;
 
+    private const int MAX_LOAD_MORE_INCREMENT = 50;
+
+    private const int MAX_PER_GATEWAY_LIMIT = 200;
+
     /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.manage-subscriptions';
 
@@ -70,7 +74,10 @@ final class ManageSubscriptions extends Page
 
     public function loadMoreSubscriptions(int $increment = self::DEFAULT_LOAD_MORE_INCREMENT): void
     {
-        $this->perGatewayLimit += max(1, $increment);
+        $this->perGatewayLimit = min(
+            self::MAX_PER_GATEWAY_LIMIT,
+            $this->perGatewayLimit + min(max(1, $increment), self::MAX_LOAD_MORE_INCREMENT),
+        );
     }
 
     public function cancelSubscription(string $gateway, string $id): void

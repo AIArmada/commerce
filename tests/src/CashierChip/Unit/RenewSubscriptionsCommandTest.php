@@ -132,7 +132,7 @@ describe('RenewSubscriptionsCommand', function (): void {
         Event::assertNotDispatched(SubscriptionRenewed::class);
     });
 
-    it('command marks subscription past due when subscription amount is invalid', function (): void {
+    it('command completes a fully discounted renewal without charging', function (): void {
         Event::fake([
             SubscriptionRenewed::class,
             SubscriptionRenewalFailed::class,
@@ -140,9 +140,6 @@ describe('RenewSubscriptionsCommand', function (): void {
 
         /** @var User $user */
         $user = $this->createUser(['chip_id' => 'cli_123']);
-
-        $token = $this->fakeChip->getFakeClient()->addRecurringToken($user->chip_id);
-        $user->updateDefaultPaymentMethod($token['id']);
 
         $subscription = Subscription::factory()->for($user, 'billable')->create([
             'chip_status' => SubscriptionStatus::Active,
@@ -164,14 +161,74 @@ describe('RenewSubscriptionsCommand', function (): void {
         /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
         $result = $method->invoke($command, false, 0);
 
-        $this->assertSame(['renewed' => 0, 'failed' => 1, 'unknown' => 0, 'skipped' => 0], $result);
+        $this->assertSame(['renewed' => 1, 'failed' => 0, 'unknown' => 0, 'skipped' => 0], $result);
 
         $subscription->refresh();
 
-        $this->assertSame(SubscriptionStatus::PastDue, $subscription->chip_status);
+        $this->assertSame(SubscriptionStatus::Active, $subscription->chip_status);
+        $this->assertTrue($subscription->next_billing_at->isFuture());
 
-        Event::assertDispatched(SubscriptionRenewalFailed::class);
-        Event::assertNotDispatched(SubscriptionRenewed::class);
+        $attempt = RenewalAttempt::query()
+            ->where('subscription_id', $subscription->id)
+            ->first();
+
+        $this->assertSame('completed', $attempt->status);
+        $this->assertSame(0, $attempt->amount_minor);
+        $this->assertNull($attempt->purchase_id);
+
+        Event::assertDispatched(
+            SubscriptionRenewed::class,
+            fn (SubscriptionRenewed $event): bool => $event->payment === null
+        );
+        Event::assertNotDispatched(SubscriptionRenewalFailed::class);
+
+        $this->assertSame([], $this->fakeChip->getFakeClient()->getPurchases());
+    });
+
+    it('command charges a positive renewal amount through the gateway', function (): void {
+        Event::fake([
+            SubscriptionRenewed::class,
+            SubscriptionRenewalFailed::class,
+        ]);
+
+        /** @var User $user */
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+
+        $token = $this->fakeChip->getFakeClient()->addRecurringToken($user->chip_id);
+        $user->updateDefaultPaymentMethod($token['id']);
+
+        $subscription = Subscription::factory()->for($user, 'billable')->create([
+            'chip_status' => SubscriptionStatus::Active,
+            'next_billing_at' => Carbon::now()->subDay(),
+        ]);
+
+        SubscriptionItem::factory()->forSubscription($subscription)->create([
+            'unit_amount' => 1000,
+            'quantity' => 1,
+        ]);
+
+        $command = $this->app->make(RenewSubscriptionsCommand::class);
+        $command->setLaravel($this->app);
+        $command->setOutput(new OutputStyle(
+            new ArrayInput([]),
+            new BufferedOutput,
+        ));
+        $method = new ReflectionMethod($command, 'processRenewals');
+        /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
+        $result = $method->invoke($command, false, 0);
+
+        $this->assertSame(['renewed' => 1, 'failed' => 0, 'unknown' => 0, 'skipped' => 0], $result);
+
+        $purchases = array_values($this->fakeChip->getFakeClient()->getPurchases());
+
+        $this->assertCount(1, $purchases);
+        $this->assertSame(1000, data_get($purchases[0], 'purchase.total'));
+
+        Event::assertDispatched(
+            SubscriptionRenewed::class,
+            fn (SubscriptionRenewed $event): bool => $event->payment !== null
+        );
+        Event::assertNotDispatched(SubscriptionRenewalFailed::class);
     });
 
     it('uses distinct period keys for sub-monthly renewal periods', function (): void {

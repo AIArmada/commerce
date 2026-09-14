@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\ConditionResource\Pages;
 
-use AIArmada\Cart\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\FilamentCart\Jobs\RemoveConditionFromAllCartsJob;
 use AIArmada\FilamentCart\Resources\ConditionResource;
 use Filament\Actions;
 use Filament\Notifications\Notification;
@@ -30,21 +30,14 @@ final class EditCondition extends EditRecord
                 ->visible(fn (Condition $record) => $record->is_global && ConditionResource::canEdit($record))
                 ->action(function (Condition $record): void {
                     $record = self::authorizeCondition($record);
-                    $result = app(RemoveStoredConditions::class)->handle($record);
 
-                    if ($result['success']) {
-                        Notification::make()
-                            ->title('Condition Removed from All Carts')
-                            ->body("Processed {$result['carts_processed']} carts, updated {$result['carts_updated']} carts.")
-                            ->success()
-                            ->send();
-                    } else {
-                        Notification::make()
-                            ->title('Error Removing Condition')
-                            ->body('Failed to remove condition from all carts. Check logs for details.')
-                            ->danger()
-                            ->send();
-                    }
+                    dispatch(RemoveConditionFromAllCartsJob::forCondition($record));
+
+                    Notification::make()
+                        ->title('Removal Queued')
+                        ->body('The condition is being removed from all carts in the background.')
+                        ->success()
+                        ->send();
                 }),
 
             Actions\DeleteAction::make()

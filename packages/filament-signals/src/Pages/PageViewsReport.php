@@ -40,7 +40,8 @@ final class PageViewsReport extends ReportPage implements HasTable
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-signals.features.page_views', true);
+        return (bool) config('filament-signals.features.page_views', true)
+            && static::canAccess();
     }
 
     public function table(Table $table): Table

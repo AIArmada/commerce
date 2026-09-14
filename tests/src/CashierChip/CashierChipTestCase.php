@@ -109,7 +109,7 @@ abstract class CashierChipTestCase extends Orchestra
         $app['config']->set('cashier-chip.currency', 'MYR');
         $app['config']->set('cashier-chip.currency_locale', 'ms_MY');
         $app['config']->set('cashier-chip.webhooks.secret', 'test_webhook_secret');
-        $app['config']->set('cashier-chip.webhooks.verify_signature', false);
+        $app['config']->set('chip.webhooks.verify_signature', false);
         $app['config']->set('cashier-chip.features.owner.enabled', false);
         $app['config']->set('cashier-chip.features.owner.include_global', false);
         $app['config']->set('cashier-chip.features.owner.auto_assign_on_create', true);
@@ -131,6 +131,22 @@ abstract class CashierChipTestCase extends Orchestra
             $table->timestamp('trial_ends_at')->nullable();
             $table->timestamps();
         });
+
+        // Create activity_log table for spatie/laravel-activitylog (chip models
+        // log creates/updates through LogsCommerceActivity).
+        if (! Schema::hasTable('activity_log')) {
+            Schema::create('activity_log', function (Blueprint $table): void {
+                $table->id();
+                $table->string('log_name')->nullable()->index();
+                $table->text('description');
+                $table->nullableMorphs('subject', 'subject');
+                $table->string('event')->nullable();
+                $table->nullableMorphs('causer', 'causer');
+                $table->json('attribute_changes')->nullable();
+                $table->json('properties')->nullable();
+                $table->timestamps();
+            });
+        }
 
         // Create webhook_calls table for Spatie webhook-client
         if (! Schema::hasTable('webhook_calls')) {

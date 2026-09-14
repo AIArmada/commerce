@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages;
 
+use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\FailedPayout;
@@ -67,7 +68,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
             ->query(
                 AffiliatePayout::query()
                     ->where('status', PendingPayout::value())
-                    ->with(['payee'])
+                    ->with(['payee', 'payee.payoutMethods' => fn ($query) => $query->where('is_default', true)])
                     ->latest()
             )
             ->columns([
@@ -95,9 +96,9 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                             return '—';
                         }
 
-                        $method = $payee->payoutMethods()
-                            ->where('is_default', true)
-                            ->first();
+                        $method = $payee->relationLoaded('payoutMethods')
+                            ? $payee->payoutMethods->firstWhere('is_default', true)
+                            : $payee->payoutMethods()->where('is_default', true)->first();
 
                         return $method?->type?->value ?? '—';
                     }),
@@ -163,20 +164,18 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                             ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
                             : AffiliatePayout::findOrFail($record->getKey());
 
-                        $fromStatus = $payout->status;
+                        $payout = app(UpdatePayoutStatus::class)->handle(
+                            $payout,
+                            FailedPayout::value(),
+                            $data['reason'],
+                        );
 
-                        $payout->update([
-                            'status' => FailedPayout::class,
+                        // Fund release + conversion unlink are handled inside UpdatePayoutStatus.
+                        $payout->forceFill([
                             'metadata' => array_merge($payout->metadata ?? [], [
                                 'notes' => $data['reason'],
                             ]),
-                        ]);
-
-                        $payout->events()->create([
-                            'from_status' => $fromStatus?->getValue(),
-                            'to_status' => FailedPayout::value(),
-                            'notes' => $data['reason'],
-                        ]);
+                        ])->save();
 
                         Notification::make()
                             ->warning()
@@ -223,17 +222,16 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
 
     public function getViewData(): array
     {
-        $pending = AffiliatePayout::query()
-            ->where('status', PendingPayout::value());
+        $pendingByCurrency = AffiliatePayout::query()
+            ->where('status', PendingPayout::value())
+            ->selectRaw('currency, SUM(total_minor) as total, COUNT(*) as count')
+            ->groupBy('currency')
+            ->get();
 
         return [
-            'pendingCount' => $pending->count(),
-            'pendingTotal' => $pending->sum('total_minor'),
-            'pendingByCurrency' => AffiliatePayout::query()
-                ->where('status', PendingPayout::value())
-                ->selectRaw('currency, SUM(total_minor) as total, COUNT(*) as count')
-                ->groupBy('currency')
-                ->get(),
+            'pendingCount' => (int) $pendingByCurrency->sum(fn (AffiliatePayout $row): int => (int) $row->getAttribute('count')),
+            'pendingTotal' => (int) $pendingByCurrency->sum(fn (AffiliatePayout $row): int => (int) $row->getAttribute('total')),
+            'pendingByCurrency' => $pendingByCurrency,
         ];
     }
 }

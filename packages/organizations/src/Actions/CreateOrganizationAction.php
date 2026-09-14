@@ -28,27 +28,52 @@ final class CreateOrganizationAction
      */
     public function handle(Model $creator, array $attributes = []): Organization
     {
+        $name = $attributes['name'] ?? null;
+
+        if (! is_string($name) || mb_trim($name) === '') {
+            throw new InvalidArgumentException('An organization name is required.');
+        }
+
+        $name = mb_trim($name);
+
+        if (mb_strlen($name) > 255) {
+            throw new InvalidArgumentException('The organization name may not be longer than 255 characters.');
+        }
+
+        $slug = $attributes['slug'] ?? null;
+
+        if ($slug !== null && ! is_string($slug)) {
+            throw new InvalidArgumentException('The organization slug must be a string.');
+        }
+
+        if (is_string($slug) && mb_strlen($slug) > 255) {
+            throw new InvalidArgumentException('The organization slug may not be longer than 255 characters.');
+        }
+
+        $description = $attributes['description'] ?? null;
+
+        if ($description !== null && ! is_string($description)) {
+            throw new InvalidArgumentException('The organization description must be a string.');
+        }
+
         for ($attempt = 0; $attempt < 3; $attempt++) {
             try {
-                return DB::transaction(function () use ($attributes, $creator): Organization {
-                    $name = mb_trim((string) ($attributes['name'] ?? ''));
-
-                    if ($name === '') {
-                        throw new InvalidArgumentException('An organization name is required.');
-                    }
-
-                    $slug = $this->uniqueSlug((string) ($attributes['slug'] ?? Str::slug($name)));
+                return DB::transaction(function () use ($creator, $description, $name, $slug): Organization {
+                    $slug = $this->uniqueSlug($slug ?? Str::slug($name));
                     $now = CarbonImmutable::now();
 
-                    $organization = Organization::query()->create([
+                    $organization = new Organization([
                         'name' => $name,
                         'slug' => $slug,
-                        'description' => $attributes['description'] ?? null,
+                        'description' => $description,
+                    ]);
+                    $organization->forceFill([
                         'status' => OrganizationStatus::Active,
                         'visibility' => OrganizationVisibility::Private,
                         'created_by' => (string) $creator->getKey(),
                         'last_state_change_at' => $now,
                     ]);
+                    $organization->save();
 
                     app(AddMemberAction::class)->handle($organization, $creator, MemberRole::Owner);
                     app(OrganizationLifecycleHook::class)->created($organization, $creator);
@@ -68,6 +93,7 @@ final class CreateOrganizationAction
     private function uniqueSlug(string $slug): string
     {
         $base = mb_trim($slug) !== '' ? Str::slug($slug) : Str::lower((string) Str::uuid());
+        $base = mb_substr($base, 0, 250);
         $candidate = $base;
         $suffix = 2;
 

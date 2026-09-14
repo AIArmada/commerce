@@ -32,8 +32,8 @@ test('keeps the three owning reads below the one percent null/degraded rate thre
         $customer = Customer::query()->create([
             'first_name' => 'Null Rate',
             'last_name' => 'Ownership',
-            'status' => 'active',
         ]);
+        $customer->forceFill(['status' => 'active'])->save();
         $checkoutEmail = 'null-rate-checkout@example.com';
 
         $customer->addContactMethod(ContactMethodData::email($checkoutEmail));
@@ -54,14 +54,14 @@ test('keeps the three owning reads below the one percent null/degraded rate thre
         $resolver = mock(PaymentGatewayResolverInterface::class);
         $resolver->shouldReceive('resolve')->with('null-rate')->once()->andReturn($processor);
 
-        $checkoutSession = CheckoutSession::query()->create([
+        $checkoutSession = CheckoutSession::unguarded(fn (): CheckoutSession => CheckoutSession::query()->create([
             'cart_id' => 'null-rate-cart',
             'customer_id' => $customer->id,
             'status' => Processing::class,
             'selected_payment_gateway' => 'null-rate',
             'grand_total' => 1000,
             'currency' => 'MYR',
-        ]);
+        ]));
 
         (new ProcessPaymentStep($resolver))->handle($checkoutSession);
 

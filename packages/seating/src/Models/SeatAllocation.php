@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -41,6 +42,27 @@ class SeatAllocation extends Model
     protected static function newFactory(): SeatAllocationFactory
     {
         return SeatAllocationFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (SeatAllocation $allocation): void {
+            if ($allocation->seat_id === null && $allocation->seat_section_id === null) {
+                throw new InvalidArgumentException('An allocation requires a seat or a section.');
+            }
+
+            if (($allocation->allocated_to_type === null) !== ($allocation->allocated_to_id === null)) {
+                throw new InvalidArgumentException('Allocated-to type and id must both be present or both be null.');
+            }
+
+            if ($allocation->seat_id !== null && ! Seat::query()->whereKey($allocation->seat_id)->exists()) {
+                throw new InvalidArgumentException('The allocation references a seat that does not exist in the current scope.');
+            }
+
+            if ($allocation->seat_section_id !== null && ! SeatSection::query()->whereKey($allocation->seat_section_id)->exists()) {
+                throw new InvalidArgumentException('The allocation references a section that does not exist in the current scope.');
+            }
+        });
     }
 
     public $incrementing = false;

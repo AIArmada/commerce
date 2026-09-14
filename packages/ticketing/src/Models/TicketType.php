@@ -12,6 +12,7 @@ use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Ticketing\Database\Factories\TicketTypeFactory;
 use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Enums\TicketTypeStatus;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;
 use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Carbon\CarbonImmutable;
@@ -25,6 +26,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -82,6 +85,31 @@ class TicketType extends Model
             TicketingOwnerGuard::assertRelations($ticketType, [
                 ['relation' => 'ticketable', 'required' => true],
             ]);
+
+            $status = $ticketType->status instanceof TicketTypeStatus
+                ? $ticketType->status->value
+                : $ticketType->status;
+
+            if (! is_string($status) || TicketTypeStatus::tryFrom($status) === null) {
+                throw new InvalidArgumentException(sprintf(
+                    'Invalid ticket type status "%s".',
+                    is_scalar($status) ? (string) $status : get_debug_type($status),
+                ));
+            }
+        });
+
+        static::deleting(function (self $ticketType): void {
+            $key = (string) $ticketType->getKey();
+
+            $ticketType->passes()->update(['ticket_type_id' => null]);
+
+            TicketTypeComponent::query()
+                ->where('parent_ticket_type_id', $key)
+                ->orWhere('component_ticket_type_id', $key)
+                ->delete();
+
+            $ticketType->bundleProducts()->delete();
+            $ticketType->seatingOptions()->delete();
         });
     }
 
@@ -297,9 +325,10 @@ class TicketType extends Model
             return 0;
         }
 
-        return (int) $this->inventoryLevels()
-            ->get()
-            ->sum(static fn (InventoryLevel $level): int => $level->available);
+        // Mirrors InventoryLevel::getAvailableAttribute() (max(0, on_hand - reserved)).
+        return (int) $this->inventoryLevels()->sum(DB::raw(
+            'CASE WHEN quantity_on_hand > quantity_reserved THEN quantity_on_hand - quantity_reserved ELSE 0 END'
+        ));
     }
 
     public function hasInventory(int $quantity): bool

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -63,7 +64,13 @@ final class BookmarkCollection extends Model
     protected static function booted(): void
     {
         static::deleting(function (BookmarkCollection $collection): void {
-            $collection->items()->each(fn (BookmarkCollectionItem $item) => $item->delete());
+            DB::transaction(function () use ($collection): void {
+                $collection->items()->chunkById(200, function (Collection $items): void {
+                    foreach ($items as $item) {
+                        $item->delete();
+                    }
+                });
+            });
         });
     }
 

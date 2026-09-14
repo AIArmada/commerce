@@ -17,12 +17,22 @@ final class ResolveFeedbackInvitationTokenAction
     public function execute(string $rawToken): FeedbackInvitation
     {
         $tokenHash = hash('sha256', $rawToken);
+        $maxAttempts = (int) config('feedback.security.invitation_rate_limit.max_attempts', 60);
+        $decaySeconds = (int) config('feedback.security.invitation_rate_limit.decay_seconds', 60);
+
+        // The IP bucket throttles token enumeration; the token bucket throttles
+        // repeated re-resolution of one invitation.
+        $ipKey = 'feedback-invitation-token-ip:' . (request()->ip() ?? 'console');
+
+        if (! RateLimiter::attempt($ipKey, $maxAttempts, static fn (): bool => true, $decaySeconds)) {
+            throw new RuntimeException('Too many invitation token attempts.');
+        }
 
         $allowed = RateLimiter::attempt(
             "feedback-invitation-token:{$tokenHash}",
-            (int) config('feedback.security.invitation_rate_limit.max_attempts', 60),
+            $maxAttempts,
             static fn (): bool => true,
-            (int) config('feedback.security.invitation_rate_limit.decay_seconds', 60),
+            $decaySeconds,
         );
 
         if (! $allowed) {

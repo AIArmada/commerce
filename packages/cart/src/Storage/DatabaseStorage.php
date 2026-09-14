@@ -16,6 +16,7 @@ use DateTimeInterface;
 use Illuminate\Database\ConnectionInterface as Database;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use JsonException;
@@ -169,21 +170,16 @@ final readonly class DatabaseStorage implements StorageInterface
     public function flush(): void
     {
         // Only allow flush in testing environments to prevent accidental data loss
-        if (app()->environment(['testing', 'local'])) {
-            $query = $this->database->table($this->table);
-            $columns = $this->ownerTupleColumns();
-
-            // If owner scoped, only flush owner's carts
-            if ($this->ownerType !== null && $this->ownerId !== null) {
-                $query->where($columns->ownerTypeColumn, $this->ownerType)
-                    ->where($columns->ownerIdColumn, (string) $this->ownerId);
-                $query->delete();
-            } else {
-                $query->truncate();
-            }
-        } else {
+        if (! app()->environment(['testing', 'local'])) {
             throw new RuntimeException('Flush operation is only allowed in testing and local environments');
         }
+
+        // Always delete through the owner predicate (global-only rows when no
+        // owner is set). Never truncate: in a global context that would wipe
+        // every owner's carts.
+        $query = $this->database->table($this->table);
+        CartOwnerScope::applyForOwner($query, $this->ownerType, $this->ownerId);
+        $query->delete();
     }
 
     /**
@@ -347,22 +343,37 @@ final readonly class DatabaseStorage implements StorageInterface
     /**
      * Swap cart identifier by directly updating the identifier column.
      * This transfers cart ownership from old identifier to new identifier.
-     * The objective is to change ownership to ensure target has an active cart.
+     *
+     * The swap is refused (returns false, both carts untouched) when the target
+     * identifier already holds a cart: overwriting it would silently destroy the
+     * target's items, conditions, and metadata. Callers that need merge behavior
+     * must use MigrateGuestCartToUserAction instead.
      */
     public function swapIdentifier(string $oldIdentifier, string $newIdentifier, string $instance): bool
     {
-        // Check if source cart exists
-        if (! $this->has($oldIdentifier, $instance)) {
-            return false;
+        if ($oldIdentifier === $newIdentifier) {
+            return $this->has($oldIdentifier, $instance);
         }
 
-        // Use transaction to handle the swap safely
+        // Existence checks run inside the transaction with row locks so a
+        // concurrent swap into the same target cannot slip past the check.
         return $this->database->transaction(function () use ($oldIdentifier, $newIdentifier, $instance) {
-            // First, delete any existing cart with the target identifier
-            // This ensures the swap always succeeds by removing conflicts
-            $this->baseQuery($newIdentifier, $instance)->delete();
+            $source = $this->applyLockForUpdate(
+                $this->baseQuery($oldIdentifier, $instance)
+            )->first(['id']);
 
-            // Now update the source cart to use the new identifier
+            if ($source === null) {
+                return false;
+            }
+
+            $targetExists = $this->applyLockForUpdate(
+                $this->baseQuery($newIdentifier, $instance)
+            )->exists();
+
+            if ($targetExists) {
+                return false;
+            }
+
             $updated = $this->baseQuery($oldIdentifier, $instance)
                 ->update([
                     'identifier' => $newIdentifier,
@@ -533,6 +544,11 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
+     * Maximum nesting depth accepted in stored cart payloads.
+     */
+    private const MAX_NESTING_DEPTH = 32;
+
+    /**
      * Validate that all values in an array are JSON-serializable.
      *
      * Prevents storing closures, resources, or other non-serializable types
@@ -544,8 +560,14 @@ final readonly class DatabaseStorage implements StorageInterface
      *
      * @throws InvalidArgumentException When non-serializable values are found
      */
-    private function validateSerializable(array $data, string $type, string $path = ''): void
+    private function validateSerializable(array $data, string $type, string $path = '', int $depth = 0): void
     {
+        if ($depth > self::MAX_NESTING_DEPTH) {
+            throw new InvalidArgumentException(
+                "Cart {$type} exceeds the maximum nesting depth of " . self::MAX_NESTING_DEPTH . " at '{$path}'."
+            );
+        }
+
         foreach ($data as $key => $value) {
             $currentPath = $path === '' ? (string) $key : "{$path}.{$key}";
 
@@ -554,7 +576,7 @@ final readonly class DatabaseStorage implements StorageInterface
             }
 
             if (is_array($value)) {
-                $this->validateSerializable($value, $type, $currentPath);
+                $this->validateSerializable($value, $type, $currentPath, $depth + 1);
 
                 continue;
             }
@@ -676,54 +698,95 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
-     * Perform Compare-And-Swap update with optimistic locking
+     * Perform Compare-And-Swap update with optimistic locking.
+     *
+     * The attempt is retried once with backoff when it loses a race: either a
+     * concurrent first-write won the unique key (the retry then takes the
+     * version-checked update path) or a concurrent update moved the version.
      *
      * @param  array<string, mixed>  $data
      */
     private function performCasUpdate(string $identifier, string $instance, array $data, string $operationName): void
     {
-        $this->database->transaction(function () use ($identifier, $instance, $data, $operationName): void {
-            $ownerColumns = $this->ownerTupleColumns();
+        $attempts = 0;
 
-            /** @var stdClass|null $current */
-            $current = $this->applyLockForUpdate(
-                $this->baseQuery($identifier, $instance)
-            )->first(['id', 'version']);
+        while (true) {
+            $attempts++;
 
-            if ($current) {
-                $updateData = array_merge($data, [
-                    $ownerColumns->ownerTypeColumn => $this->ownerType,
-                    $ownerColumns->ownerIdColumn => $this->ownerId !== null ? (string) $this->ownerId : null,
-                    'owner_scope' => $this->resolveOwnerScope(),
-                    'version' => $current->version + 1,
-                    'updated_at' => CarbonImmutable::now(),
-                    'expires_at' => $this->calculateExpiresAt(),
-                ]);
+            try {
+                $this->database->transaction(function () use ($identifier, $instance, $data, $operationName): void {
+                    $ownerColumns = $this->ownerTupleColumns();
 
-                $updated = $this->baseQuery($identifier, $instance)
-                    ->where('version', $current->version)
-                    ->update($updateData);
+                    /** @var stdClass|null $current */
+                    $current = $this->applyLockForUpdate(
+                        $this->baseQuery($identifier, $instance)
+                    )->first(['id', 'version']);
 
-                if ($updated === 0) {
-                    $this->handleCasConflict($identifier, $instance, $current->version, $operationName);
+                    if ($current) {
+                        $updateData = array_merge($data, [
+                            $ownerColumns->ownerTypeColumn => $this->ownerType,
+                            $ownerColumns->ownerIdColumn => $this->ownerId !== null ? (string) $this->ownerId : null,
+                            'owner_scope' => $this->resolveOwnerScope(),
+                            'version' => $current->version + 1,
+                            'updated_at' => CarbonImmutable::now(),
+                            'expires_at' => $this->calculateExpiresAt(),
+                        ]);
+
+                        $updated = $this->baseQuery($identifier, $instance)
+                            ->where('version', $current->version)
+                            ->update($updateData);
+
+                        if ($updated === 0) {
+                            $this->handleCasConflict($identifier, $instance, $current->version, $operationName);
+                        }
+                    } else {
+                        $insertData = array_merge($data, [
+                            'id' => Str::uuid(),
+                            'identifier' => $identifier,
+                            'instance' => $instance,
+                            $ownerColumns->ownerTypeColumn => $this->ownerType,
+                            $ownerColumns->ownerIdColumn => $this->ownerId !== null ? (string) $this->ownerId : null,
+                            'owner_scope' => $this->resolveOwnerScope(),
+                            'version' => 1,
+                            'expires_at' => $this->calculateExpiresAt(),
+                            'created_at' => CarbonImmutable::now(),
+                            'updated_at' => CarbonImmutable::now(),
+                        ]);
+
+                        $this->database->table($this->table)->insert($insertData);
+                    }
+                });
+
+                return;
+            } catch (CartConflictException $exception) {
+                if ($attempts >= 2) {
+                    throw $exception;
                 }
-            } else {
-                $insertData = array_merge($data, [
-                    'id' => Str::uuid(),
-                    'identifier' => $identifier,
-                    'instance' => $instance,
-                    $ownerColumns->ownerTypeColumn => $this->ownerType,
-                    $ownerColumns->ownerIdColumn => $this->ownerId !== null ? (string) $this->ownerId : null,
-                    'owner_scope' => $this->resolveOwnerScope(),
-                    'version' => 1,
-                    'expires_at' => $this->calculateExpiresAt(),
-                    'created_at' => CarbonImmutable::now(),
-                    'updated_at' => CarbonImmutable::now(),
-                ]);
 
-                $this->database->table($this->table)->insert($insertData);
+                $this->backOffBeforeCasRetry($attempts);
+            } catch (QueryException $exception) {
+                if ($attempts >= 2 || ! $this->isUniqueViolation($exception)) {
+                    throw $exception;
+                }
+
+                $this->backOffBeforeCasRetry($attempts);
             }
-        });
+        }
+    }
+
+    /**
+     * Brief backoff before a CAS retry so racing writers do not spin in lockstep.
+     */
+    private function backOffBeforeCasRetry(int $attempt): void
+    {
+        usleep(25000 * $attempt);
+    }
+
+    private function isUniqueViolation(QueryException $exception): bool
+    {
+        $code = (string) ($exception->errorInfo[0] ?? $exception->getCode());
+
+        return in_array($code, ['23000', '23505'], true);
     }
 
     /**

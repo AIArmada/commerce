@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages\CreateInventoryLocation;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages\EditInventoryLocation;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages\ListInventoryLocations;
@@ -45,6 +46,14 @@ final class InventoryLocationResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return InventoryOwnerScope::applyToLocationQuery(parent::getEloquentQuery());
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return parent::getRecordRouteBindingEloquentQuery()
+            ->withCount('inventoryLevels')
+            ->withSum('inventoryLevels', 'quantity_on_hand')
+            ->withSum('inventoryLevels', 'quantity_reserved');
     }
 
     public static function canViewAny(): bool
@@ -115,7 +124,12 @@ final class InventoryLocationResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = self::getEloquentQuery()->active()->count();
+        $count = OwnerCache::remember(
+            OwnerUiScope::resolveOwner(InventoryLocation::class),
+            'filament-inventory.nav-badge.location-active',
+            30,
+            fn (): int => self::getEloquentQuery()->active()->count()
+        );
 
         return $count > 0 ? (string) $count : null;
     }

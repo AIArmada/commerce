@@ -9,7 +9,7 @@ title: Overview
 ## What this package owns
 
 - Block records with a reason, status, expiry, lift metadata, and optional notes
-- Moderation actions with a type, reason, and optional metadata
+- Moderation actions with a type, reason, optional notes, and optional metadata
 - Traits for models that can be blocked or recorded against
 - Actions that create the records in transactions
 - Configurable table names and JSON column type selection

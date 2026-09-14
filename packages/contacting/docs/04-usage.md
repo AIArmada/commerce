@@ -21,6 +21,11 @@ Primary status is scoped to the contactable/socialable, channel (`type` or
 siblings in a transaction. Invalid polymorphic references are rejected before
 that demotion path runs.
 
+Parentless (`null` contactable/socialable) primaries never demote each other:
+without a parent scope there is nothing to partition by, so each parentless
+primary persists as-is. Treat parentless rows as orphans to fix, not as a
+second primary scheme.
+
 ## Add Traits to Your Model
 
 ```php
@@ -155,6 +160,14 @@ $institution->addSocialProfile(new SocialProfileData(
 ));
 ```
 
+Create and update actions validate the data object: `type`/`platform` and
+`value` are required, lengths match the columns, `purpose` must be a
+configured purpose, and `email`-type values must be valid email addresses.
+Resolvers skip rows whose `normalized_value` is null, so invalid rows written
+directly to the model are never served. Updates are partial: omitted flags,
+metadata, and validity fields keep their existing values, while an explicitly
+supplied `display_value` wins over the normalized output.
+
 ## Using Helper Methods on Model
 
 ```php
@@ -203,6 +216,11 @@ Snapshot creation is transactional for bundles. Source and snapshotable owner
 tuples must match, and a disabled snapshot feature throws
 `ContactSnapshotsDisabledException`. The stable snapshot reason is a
 non-empty string such as `event_public_contact`.
+
+Snapshots are append-only history: updating or deleting a `ContactSnapshot`
+row throws, and `source_id`/`source_type` lineage is assigned by the snapshot
+action only. Setting `is_verified` on a contact method or social profile
+stamps `verified_at` automatically; clearing the flag clears the timestamp.
 
 `sort_order` is the canonical ordering column. The removed `order_column`
 compatibility alias is not accepted.

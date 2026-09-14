@@ -127,14 +127,22 @@ final class InMemoryStorage implements StorageInterface
 
     public function swapIdentifier(string $oldIdentifier, string $newIdentifier, string $instance): bool
     {
-        if (isset($this->data[$oldIdentifier][$instance])) {
-            $this->data[$newIdentifier][$instance] = $this->data[$oldIdentifier][$instance];
-            unset($this->data[$oldIdentifier][$instance]);
+        if (! isset($this->data[$oldIdentifier][$instance])) {
+            return false;
+        }
 
+        if ($oldIdentifier === $newIdentifier) {
             return true;
         }
 
-        return false;
+        if (isset($this->data[$newIdentifier][$instance])) {
+            return false;
+        }
+
+        $this->data[$newIdentifier][$instance] = $this->data[$oldIdentifier][$instance];
+        unset($this->data[$oldIdentifier][$instance]);
+
+        return true;
     }
 
     public function getVersion(string $identifier, string $instance): ?int

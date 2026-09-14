@@ -14,6 +14,10 @@ title: Troubleshooting
 
 Read paths use the `active()` scope, which excludes rows whose `expires_at` is in the past. Run `php artisan moderation:expire-blocks` to persist the `expired` status and lifecycle transition for reporting or downstream jobs.
 
+## Unknown block reason error
+
+`block()` only accepts known `BlockReason` values. A typo throws `InvalidArgumentException: Unknown block reason [...]` instead of recording the block as `other`; fix the caller string.
+
 ## Owner validation fails
 
 If the target model is tenant-owned, `block()` and `recordModerationAction()` expect a valid owner context.

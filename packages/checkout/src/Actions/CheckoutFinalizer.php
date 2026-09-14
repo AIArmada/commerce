@@ -27,10 +27,10 @@ final class CheckoutFinalizer
         }
 
         if (! $session->status->is(Processing::class)) {
-            $session->status->transitionTo(Processing::class);
+            $session->transitionStatus(Processing::class);
         }
 
-        $session->status->transitionTo(Completed::class);
+        $session->transitionStatus(Completed::class);
 
         $this->events->dispatch(new CheckoutCompleted($session));
 

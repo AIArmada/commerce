@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * @property string $id
@@ -51,8 +52,6 @@ final class ContactSnapshot extends Model
         'snapshotable_type',
         'snapshotable_id',
         'snapshot_type',
-        'source_id',
-        'source_type',
         'reason',
         'label',
         'channel',
@@ -128,6 +127,14 @@ final class ContactSnapshot extends Model
     {
         static::saving(function (ContactSnapshot $snapshot): void {
             $snapshot->guardSnapshotableOwner();
+        });
+
+        static::updating(function (): void {
+            throw new LogicException('Contact snapshots are append-only history and cannot be updated.');
+        });
+
+        static::deleting(function (): void {
+            throw new LogicException('Contact snapshots are append-only history and cannot be deleted.');
         });
     }
 

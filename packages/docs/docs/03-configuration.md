@@ -84,11 +84,12 @@ Bind `OwnerResolverInterface` in the host application and use `OwnerContext::wit
     'from_name' => env('DOCS_EMAIL_FROM_NAME'),
     'tracking' => [
         'enabled' => env('DOCS_EMAIL_TRACKING_ENABLED', true),
+        'ttl_days' => env('DOCS_EMAIL_TRACKING_TTL_DAYS', 180),
     ],
 ],
 ```
 
-This block controls queueing, sender identity, PDF attachment behavior, and email tracking.
+This block controls queueing, sender identity, PDF attachment behavior, and email tracking. Queued sends dispatch `SendDocEmailJob`, which marks the email `sent` (or `failed`) after delivery. Tracking tokens expire after `tracking.ttl_days` days, and the public tracking/share routes are throttled to 60 requests per minute.
 
 ## Integrations
 
@@ -130,7 +131,7 @@ Each type configures numbering only. Default templates are now resolved from `Do
 
 Use this block when you need to align document numbers with external finance or ERP expectations.
 
-`DocumentNumberRegistry` reads `docs.types.{type}.numbering.strategy` when a strategy is first resolved, not in its constructor. The service container binds it as a scoped service, so runtime configuration changes are observed before resolution without leaking strategies across long-lived requests.
+Document creation numbers come from the atomic per-owner `SequenceManager` (unique per owner tuple, so two owners may hold identically formatted numbers). `DocumentNumberRegistry` strategies only power the standalone `DocService::generateNumber()` helper. The registry reads `docs.types.{type}.numbering.strategy` when a strategy is first resolved, not in its constructor. The service container binds it as a scoped service, so runtime configuration changes are observed before resolution without leaking strategies across long-lived requests.
 
 ## Storage
 

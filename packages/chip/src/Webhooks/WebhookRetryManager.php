@@ -93,14 +93,31 @@ class WebhookRetryManager
     public function getRetryableWebhooks(): Collection
     {
         $now = CarbonImmutable::now();
+        $maxAttempts = count($this->backoffSchedule);
+        $backoffSchedule = $this->backoffSchedule;
 
         return Webhook::query()
             ->forOwner()
             ->where('status', 'failed')
-            ->where('retry_count', '<', count($this->backoffSchedule))
-            ->get()
-            ->filter(fn (Webhook $webhook): bool => $this->isEligibleForRetry($webhook, $now))
-            ->values();
+            ->where('retry_count', '<', $maxAttempts)
+            ->where(function ($query) use ($now, $maxAttempts, $backoffSchedule): void {
+                // Never retried: eligible immediately.
+                $query->whereNull('last_retry_at');
+
+                // Otherwise the backoff delay depends on the attempt count,
+                // so compare last_retry_at against one cutoff per count.
+                for ($retryCount = 0; $retryCount < $maxAttempts; $retryCount++) {
+                    $delay = $backoffSchedule[$retryCount + 1] ?? end($backoffSchedule);
+                    $cutoff = $now->subSeconds(max(0, (int) $delay));
+
+                    $query->orWhere(function ($query) use ($retryCount, $cutoff): void {
+                        $query->where('retry_count', $retryCount)
+                            ->where('last_retry_at', '<=', $cutoff);
+                    });
+                }
+            })
+            ->orderBy('id')
+            ->get();
     }
 
     /**

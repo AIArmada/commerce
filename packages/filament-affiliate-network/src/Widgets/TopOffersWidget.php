@@ -68,20 +68,21 @@ final class TopOffersWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('site.name')
                     ->label('Site'),
 
+                // Deliberately not sortable: the widget renders the cached
+                // top-10-by-clicks, so column sorting would only reorder that
+                // fixed set and mislead (e.g. "top by revenue" would exclude
+                // the true revenue leaders outside the clicks top 10).
                 Tables\Columns\TextColumn::make('links_sum_clicks')
                     ->label('Clicks')
-                    ->numeric()
-                    ->sortable(),
+                    ->numeric(),
 
                 Tables\Columns\TextColumn::make('links_sum_conversions')
                     ->label('Conversions')
-                    ->numeric()
-                    ->sortable(),
+                    ->numeric(),
 
                 Tables\Columns\TextColumn::make('links_sum_revenue')
                     ->label('Revenue')
-                    ->formatStateUsing(fn ($state, AffiliateOffer $record): string => MoneyFormatter::formatMinor((int) ($state ?? 0), $record->currency ?? 'USD'))
-                    ->sortable(),
+                    ->formatStateUsing(fn ($state, AffiliateOffer $record): string => MoneyFormatter::formatMinor((int) ($state ?? 0), $record->currency ?? 'USD')),
 
                 Tables\Columns\TextColumn::make('rate_base_bp')
                     ->label('Commission')

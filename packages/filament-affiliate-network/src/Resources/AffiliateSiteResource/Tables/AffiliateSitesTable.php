@@ -67,15 +67,21 @@ final class AffiliateSitesTable
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateSite $record): bool => $record->isPending())
                     ->action(function (AffiliateSite $record): void {
-                        // Admin table action: cross-tenant — bypass owner scope to verify any site network-wide.
-                        $scopedRecord = OwnerContext::withOwner(null, fn (): AffiliateSite => AffiliateSite::query()
-                            ->whereKey($record->getKey())
-                            ->firstOrFail());
+                        // Admin table action: run inside the site's own owner context so the
+                        // re-fetch matches under owner scoping and the HasOwner saving guard
+                        // accepts the write (explicit-global would 404/deny owned sites).
+                        $owner = OwnerContext::fromTypeAndId($record->owner_type, $record->owner_id);
 
-                        $scopedRecord->update([
-                            'status' => AffiliateSite::STATUS_VERIFIED,
-                            'verified_at' => CarbonImmutable::now(),
-                        ]);
+                        OwnerContext::withOwner($owner, function () use ($record): void {
+                            $scopedRecord = AffiliateSite::query()
+                                ->whereKey($record->getKey())
+                                ->firstOrFail();
+
+                            $scopedRecord->update([
+                                'status' => AffiliateSite::STATUS_VERIFIED,
+                                'verified_at' => CarbonImmutable::now(),
+                            ]);
+                        });
                     }),
             ])
             ->bulkActions([

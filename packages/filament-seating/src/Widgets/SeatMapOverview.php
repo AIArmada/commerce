@@ -14,9 +14,9 @@ class SeatMapOverview extends BaseWidget
 {
     protected function getStats(): array
     {
-        $mapCount = SeatMapModel::count();
-        $seatCount = Seat::count();
-        $blockedCount = Seat::where('status', SeatStatus::Blocked)->count();
+        $mapCount = SeatMapModel::query()->forOwner()->count();
+        $seatCount = Seat::query()->forOwner()->count();
+        $blockedCount = Seat::query()->forOwner()->where('status', SeatStatus::Blocked)->count();
 
         return [
             Stat::make('Seat Maps', $mapCount),

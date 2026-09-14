@@ -14,12 +14,15 @@ use AIArmada\Persons\Traits\HasAffiliations;
 use AIArmada\Persons\Traits\HasCredentials;
 use AIArmada\Persons\Traits\HasTitles;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -64,10 +67,8 @@ class Person extends Model
         'date_of_birth',
         'nationality_country_id',
         'slug',
-        'searchable_name',
         'bio',
         'status',
-        'published_at',
     ];
 
     protected static function booted(): void
@@ -80,10 +81,12 @@ class Person extends Model
         });
 
         static::deleting(function (Person $person): void {
-            $person->names()->get()->each->delete();
-            $person->titleAssignments()->get()->each->delete();
-            $person->credentialAssignments()->get()->each->delete();
-            $person->affiliations()->get()->each->delete();
+            DB::transaction(function () use ($person): void {
+                $person->names()->chunkById(500, static fn (EloquentCollection $names): mixed => $names->each->delete());
+                $person->titleAssignments()->chunkById(500, static fn (EloquentCollection $assignments): mixed => $assignments->each->delete());
+                $person->credentialAssignments()->chunkById(500, static fn (EloquentCollection $assignments): mixed => $assignments->each->delete());
+                $person->affiliations()->chunkById(500, static fn (EloquentCollection $affiliations): mixed => $affiliations->each->delete());
+            });
         });
     }
 
@@ -120,6 +123,43 @@ class Person extends Model
     public function names(): HasMany
     {
         return $this->hasMany(PersonName::class, 'person_id');
+    }
+
+    /**
+     * Retry slug-unique races once: the saving hook probes for a free slug,
+     * but a concurrent insert can still collide on `persons_slug_unique`.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function save(array $options = []): bool
+    {
+        try {
+            return parent::save($options);
+        } catch (QueryException $exception) {
+            if ($exception->getCode() !== '23000' || ! str_contains($exception->getMessage(), 'persons_slug_unique')) {
+                throw $exception;
+            }
+
+            $this->slug = null;
+            $this->normalizeIdentityValues();
+
+            return parent::save($options);
+        }
+    }
+
+    /**
+     * Eager-load the title graph consumed by `formatted_name` so list pages
+     * avoid one query per person. The accessor stays pure (it never populates
+     * relations itself); callers opt in via `Person::withFormattedName()->get()`.
+     *
+     * @param  Builder<Person>  $query
+     * @return Builder<Person>
+     */
+    public function scopeWithFormattedName(Builder $query): Builder
+    {
+        return $query->with(['titleAssignments' => fn ($assignments): mixed => $assignments
+            ->where('status', AssignmentStatus::Active)
+            ->with('title.category')]);
     }
 
     private function normalizeIdentityValues(): void
@@ -252,6 +292,10 @@ class Person extends Model
         return mb_trim($name);
     }
 
+    /**
+     * Mutate the status lifecycle in memory only; the caller must save.
+     * (Persisting here would recurse via the `saving` → `syncStatusLifecycle` path.)
+     */
     public function transitionStatus(PersonStatus $status, ?CarbonImmutable $at = null): void
     {
         $this->status = $status;

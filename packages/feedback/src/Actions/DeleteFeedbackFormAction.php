@@ -9,6 +9,7 @@ use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackQuestionOption;
 use AIArmada\Feedback\Models\FeedbackTestimonial;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 final class DeleteFeedbackFormAction
@@ -18,30 +19,31 @@ final class DeleteFeedbackFormAction
         $form = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
 
         DB::transaction(function () use ($form): void {
-            $questionIds = $form->questions()->pluck('id');
-            $responseIds = $form->responses()->pluck('id');
-            $answerIds = FeedbackAnswer::query()
-                ->whereIn('feedback_response_id', $responseIds)
-                ->pluck('id');
+            $formId = $form->id;
 
             FeedbackTestimonial::query()
-                ->where(function ($query) use ($responseIds, $answerIds): void {
-                    $query->whereIn('feedback_response_id', $responseIds)
-                        ->orWhereIn('feedback_answer_id', $answerIds);
+                ->where(function (Builder $query) use ($formId): void {
+                    $query->whereHas('response', function (Builder $responseQuery) use ($formId): void {
+                        $responseQuery->where('feedback_form_id', $formId);
+                    })->orWhereHas('answer.response', function (Builder $responseQuery) use ($formId): void {
+                        $responseQuery->where('feedback_form_id', $formId);
+                    });
                 })
-                ->get()
-                ->each
-                ->delete();
+                ->chunkById(200, fn ($testimonials): mixed => $testimonials->each->delete());
 
             FeedbackAnswer::query()
-                ->whereIn('feedback_response_id', $responseIds)
+                ->whereHas('response', function (Builder $query) use ($formId): void {
+                    $query->where('feedback_form_id', $formId);
+                })
                 ->delete();
 
-            $form->responses()->get()->each->delete();
+            $form->responses()->chunkById(200, fn ($responses): mixed => $responses->each->delete());
             $form->invitations()->delete();
 
             FeedbackQuestionOption::query()
-                ->whereIn('feedback_question_id', $questionIds)
+                ->whereHas('question', function (Builder $query) use ($formId): void {
+                    $query->where('feedback_form_id', $formId);
+                })
                 ->delete();
 
             $form->questions()->delete();

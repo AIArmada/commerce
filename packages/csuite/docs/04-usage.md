@@ -214,6 +214,36 @@ CHIP payment admin panel.
 composer require aiarmada/filament-chip
 ```
 
+### filament-cashier
+
+Unified billing admin across gateways.
+
+| Feature | Description |
+|---------|-------------|
+| Subscriptions | Manage subscriptions across gateways |
+| Invoices | Unified invoice list |
+| Dashboard | MRR and subscriber widgets |
+| Gateways | Gateway management pages |
+
+```bash
+composer require aiarmada/filament-cashier
+```
+
+### filament-cashier-chip
+
+CHIP subscription billing admin.
+
+| Feature | Description |
+|---------|-------------|
+| Subscriptions | Manage CHIP subscriptions |
+| Customers | Billing customer list |
+| Invoices | CHIP invoice list |
+| Billing Portal | Customer-facing billing pages |
+
+```bash
+composer require aiarmada/filament-cashier-chip
+```
+
 ### filament-jnt
 
 J&T Express admin panel.
@@ -265,7 +295,7 @@ composer require aiarmada/jnt
 composer require aiarmada/filament-jnt
 ```
 
-### Everything
+### Curated Bundle
 
 ```bash
 composer require aiarmada/commerce

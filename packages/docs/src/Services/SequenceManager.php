@@ -8,9 +8,13 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Models\DocSequence;
+use AIArmada\Docs\Support\DocTypeKey;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 /**
  * Manages document sequence number generation with atomic operations.
@@ -28,14 +32,18 @@ final class SequenceManager
         $type = $docType instanceof DocType ? $docType->value : $docType;
 
         return OwnerContext::withOwner($owner, function () use ($type, $owner): string {
-            return DB::transaction(function () use ($type, $owner): string {
-                $sequence = $this->getActiveSequence($type, $owner);
+            // Serialize first-use creation: the unique index cannot cover
+            // owner-less rows on all drivers, so the lock closes the race.
+            return Cache::lock($this->firstUseLockKey($type, $owner), 10)->block(5, function () use ($type, $owner): string {
+                return DB::transaction(function () use ($type, $owner): string {
+                    $sequence = $this->getActiveSequence($type, $owner);
 
-                if (! $sequence) {
-                    $sequence = $this->createDefaultSequence($type, $owner);
-                }
+                    if (! $sequence) {
+                        $sequence = $this->createDefaultSequenceResilient($type, $owner);
+                    }
 
-                return $sequence->generateNumber();
+                    return $sequence->generateNumber();
+                });
             });
         });
     }
@@ -43,16 +51,18 @@ final class SequenceManager
     /**
      * Get the active sequence for a document type.
      */
-    public function getActiveSequence(string $docType, ?Model $owner = null): ?DocSequence
+    public function getActiveSequence(string $docType, ?Model $owner = null, bool $forUpdate = true): ?DocSequence
     {
         $query = DocSequence::query()
             ->where('doc_type', $docType)
-            ->where('is_active', true);
+            ->where('is_active', true)
+            ->forOwner($owner, (bool) config('docs.owner.include_global', false));
 
-        return $query
-            ->forOwner($owner, (bool) config('docs.owner.include_global', false))
-            ->lockForUpdate()
-            ->first();
+        if ($forUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
     }
 
     /**
@@ -60,7 +70,8 @@ final class SequenceManager
      */
     public function createDefaultSequence(string $docType, ?Model $owner = null): DocSequence
     {
-        $typeConfig = config("docs.types.{$docType}", []);
+        $typeKey = DocTypeKey::sanitize($docType);
+        $typeConfig = $typeKey !== null ? config("docs.types.{$typeKey}", []) : [];
         $numberingConfig = $typeConfig['numbering'] ?? [];
 
         $prefix = $numberingConfig['prefix']
@@ -98,7 +109,7 @@ final class SequenceManager
     public function preview(DocType | string $docType, ?Model $owner = null): string
     {
         $type = $docType instanceof DocType ? $docType->value : $docType;
-        $sequence = $this->getActiveSequence($type, $owner);
+        $sequence = $this->getActiveSequence($type, $owner, false);
 
         if (! $sequence) {
             // Create a temporary preview
@@ -120,37 +131,87 @@ final class SequenceManager
         $type = $docType instanceof DocType ? $docType->value : $docType;
 
         return OwnerContext::withOwner($owner, function () use ($type, $number, $owner): bool {
-            return DB::transaction(function () use ($type, $number, $owner): bool {
-                $sequence = $this->getActiveSequence($type, $owner);
+            return Cache::lock($this->firstUseLockKey($type, $owner), 10)->block(5, function () use ($type, $number, $owner): bool {
+                return DB::transaction(function () use ($type, $number, $owner): bool {
+                    $sequence = $this->getActiveSequence($type, $owner);
 
-                if (! $sequence) {
-                    $sequence = $this->createDefaultSequence($type, $owner);
-                }
+                    if (! $sequence) {
+                        $sequence = $this->createDefaultSequenceResilient($type, $owner);
+                    }
 
-                $periodKey = $sequence->getCurrentPeriodKey();
+                    $periodKey = $sequence->getCurrentPeriodKey();
 
-                $sequenceNumber = $sequence->numbers()
-                    ->where('period_key', $periodKey)
-                    ->lockForUpdate()
-                    ->first();
+                    $sequenceNumber = $sequence->numbers()
+                        ->where('period_key', $periodKey)
+                        ->lockForUpdate()
+                        ->first();
 
-                if (! $sequenceNumber) {
-                    $sequence->numbers()->create([
-                        'period_key' => $periodKey,
-                        'last_number' => $number,
-                    ]);
+                    if (! $sequenceNumber) {
+                        try {
+                            $sequence->numbers()->create([
+                                'period_key' => $periodKey,
+                                'last_number' => $number,
+                            ]);
+                        } catch (QueryException $exception) {
+                            if (! self::isUniqueViolation($exception)) {
+                                throw $exception;
+                            }
+
+                            $sequenceNumber = $sequence->numbers()
+                                ->where('period_key', $periodKey)
+                                ->lockForUpdate()
+                                ->first();
+
+                            if ($sequenceNumber && $number > $sequenceNumber->last_number) {
+                                $sequenceNumber->update(['last_number' => $number]);
+                            }
+                        }
+
+                        return true;
+                    }
+
+                    // Only update if the reserved number is higher
+                    if ($number > $sequenceNumber->last_number) {
+                        $sequenceNumber->update(['last_number' => $number]);
+                    }
 
                     return true;
-                }
-
-                // Only update if the reserved number is higher
-                if ($number > $sequenceNumber->last_number) {
-                    $sequenceNumber->update(['last_number' => $number]);
-                }
-
-                return true;
+                });
             });
         });
+    }
+
+    private function createDefaultSequenceResilient(string $docType, ?Model $owner): DocSequence
+    {
+        try {
+            return $this->createDefaultSequence($docType, $owner);
+        } catch (QueryException $exception) {
+            if (! self::isUniqueViolation($exception)) {
+                throw $exception;
+            }
+
+            $sequence = $this->getActiveSequence($docType, $owner);
+
+            if (! $sequence instanceof DocSequence) {
+                throw new RuntimeException("Unable to resolve a document sequence for type [{$docType}].");
+            }
+
+            return $sequence;
+        }
+    }
+
+    private function firstUseLockKey(string $docType, ?Model $owner): string
+    {
+        $ownerKey = $owner === null
+            ? 'global'
+            : $owner->getMorphClass() . ':' . (string) $owner->getKey();
+
+        return "docs.sequence-first-use.{$docType}.{$ownerKey}";
+    }
+
+    private static function isUniqueViolation(QueryException $exception): bool
+    {
+        return in_array((string) $exception->getCode(), ['23000', '23505'], true);
     }
 
     /**

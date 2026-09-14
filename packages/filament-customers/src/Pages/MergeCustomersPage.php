@@ -9,9 +9,11 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Actions\MergeCustomersAction;
+use AIArmada\FilamentCustomers\Support\PrimaryEmailResolver;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -19,6 +21,9 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
+use InvalidArgumentException;
 use UnitEnum;
 
 /**
@@ -93,32 +98,39 @@ final class MergeCustomersPage extends Page implements HasForms
     protected function searchCustomers(string $search): array
     {
         $query = Customer::query()
-            ->tap(fn ($query) => OwnerUiScope::apply($query));
+            ->tap(fn ($query) => OwnerUiScope::apply($query))
+            ->with('contactMethods');
 
-        $operator = match (ConnectionDriver::name($query->getConnection())) {
-            'pgsql' => 'ilike',
-            default => 'like',
+        $keyword = match (ConnectionDriver::name($query->getConnection())) {
+            'pgsql' => 'ILIKE',
+            default => 'LIKE',
         };
 
+        // Escape LIKE wildcards so user input matches literally. The explicit
+        // ESCAPE clause keeps this portable across MySQL, Postgres, and SQLite.
+        $pattern = '%' . addcslashes($search, '\\\\%_') . '%';
+
         return $query
-            ->where(function ($query) use ($search, $operator): void {
-                $query->where('first_name', $operator, "%{$search}%")
-                    ->orWhere('last_name', $operator, "%{$search}%")
-                    ->orWhere('company', $operator, "%{$search}%")
-                    ->orWhereHas('contactMethods', function ($contactMethods) use ($search, $operator): void {
+            ->where(function ($query) use ($pattern, $keyword): void {
+                $query->whereRaw("first_name {$keyword} ? ESCAPE '\\'", [$pattern])
+                    ->orWhereRaw("last_name {$keyword} ? ESCAPE '\\'", [$pattern])
+                    ->orWhereRaw("company {$keyword} ? ESCAPE '\\'", [$pattern])
+                    ->orWhereHas('contactMethods', function ($contactMethods) use ($pattern, $keyword): void {
+                        $table = $contactMethods->getModel()->getTable();
+
                         $contactMethods
                             ->whereIn('type', ['email', 'phone', 'mobile', 'whatsapp'])
-                            ->where(function ($contactMethods) use ($search, $operator): void {
+                            ->where(function ($contactMethods) use ($pattern, $keyword, $table): void {
                                 $contactMethods
-                                    ->where('value', $operator, "%{$search}%")
-                                    ->orWhere('normalized_value', $operator, "%{$search}%");
+                                    ->whereRaw("{$table}.value {$keyword} ? ESCAPE '\\'", [$pattern])
+                                    ->orWhereRaw("{$table}.normalized_value {$keyword} ? ESCAPE '\\'", [$pattern]);
                             });
                     });
             })
             ->limit(20)
             ->get()
             ->mapWithKeys(fn (Customer $customer): array => [
-                $customer->id => $this->getCustomerLabel($customer->id),
+                $customer->id => self::labelForCustomer($customer),
             ])
             ->all();
     }
@@ -131,10 +143,15 @@ final class MergeCustomersPage extends Page implements HasForms
             return '';
         }
 
+        return self::labelForCustomer($customer);
+    }
+
+    private static function labelForCustomer(Customer $customer): string
+    {
         $parts = array_filter([
             $customer->first_name,
             $customer->last_name,
-            $customer->resolveEmail(),
+            PrimaryEmailResolver::resolve($customer),
             $customer->company,
         ]);
 
@@ -152,8 +169,31 @@ final class MergeCustomersPage extends Page implements HasForms
             return;
         }
 
-        $target = $this->resolveCustomer($targetId);
-        $source = $this->resolveCustomer($sourceId);
+        $this->mergeCustomers($targetId, $sourceId);
+    }
+
+    protected function mergeCustomers(string $targetId, string $sourceId): void
+    {
+        if ($targetId === $sourceId) {
+            Notification::make()
+                ->danger()
+                ->title('Target and source customer must be different.')
+                ->send();
+
+            return;
+        }
+
+        try {
+            $target = $this->resolveCustomer($targetId);
+            $source = $this->resolveCustomer($sourceId);
+        } catch (AuthorizationException) {
+            Notification::make()
+                ->danger()
+                ->title('Customer not found')
+                ->send();
+
+            return;
+        }
 
         if (! $target || ! $source) {
             Notification::make()
@@ -164,10 +204,27 @@ final class MergeCustomersPage extends Page implements HasForms
             return;
         }
 
-        app(MergeCustomersAction::class)->execute($target, $source);
+        $user = Filament::auth()->user();
+        abort_unless($user !== null, 403);
 
-        $sourceLabel = $source->resolveEmail() ?? $source->full_name;
-        $targetLabel = $target->resolveEmail() ?? $target->full_name;
+        Gate::forUser($user)->authorize('update', $target);
+        Gate::forUser($user)->authorize('update', $source);
+        Gate::forUser($user)->authorize('delete', $source);
+
+        try {
+            app(MergeCustomersAction::class)->execute($target, $source);
+        } catch (InvalidArgumentException $exception) {
+            Notification::make()
+                ->danger()
+                ->title('Customers could not be merged')
+                ->body($exception->getMessage())
+                ->send();
+
+            return;
+        }
+
+        $sourceLabel = PrimaryEmailResolver::resolve($source) ?? $source->full_name;
+        $targetLabel = PrimaryEmailResolver::resolve($target) ?? $target->full_name;
 
         Notification::make()
             ->success()

@@ -77,7 +77,7 @@ final class AffiliateSupportTicketResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<AffiliateSupportTicket> $query */
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->with(['affiliate']);
 
         /** @var Builder<Model> $modelQuery */
         $modelQuery = $query;
@@ -92,9 +92,8 @@ final class AffiliateSupportTicketResource extends Resource
                 ->schema([
                     Select::make('affiliate_id')
                         ->label('Affiliate')
-                        ->relationship('affiliate', 'name')
+                        ->relationship('affiliate', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
                         ->searchable()
-                        ->preload()
                         ->required(),
 
                     TextInput::make('subject')

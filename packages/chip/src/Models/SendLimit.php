@@ -21,6 +21,25 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  */
 class SendLimit extends ChipIntegerModel
 {
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'id',
+        'amount',
+        'fee',
+        'net_amount',
+        'currency',
+        'fee_type',
+        'transaction_type',
+        'status',
+        'approvals_required',
+        'approvals_received',
+        'from_settlement',
+        'created_at',
+        'updated_at',
+    ];
+
     public function amountMoney(): Attribute
     {
         return Attribute::get(fn (): ?Money => $this->toMoney(

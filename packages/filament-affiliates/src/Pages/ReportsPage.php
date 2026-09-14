@@ -15,6 +15,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Throwable;
 use UnitEnum;
 
 /**
@@ -107,13 +108,17 @@ final class ReportsPage extends Page implements HasForms
             'month' => CarbonImmutable::now()->subMonth(),
             'quarter' => CarbonImmutable::now()->subQuarter(),
             'year' => CarbonImmutable::now()->subYear(),
-            'custom' => $this->startDate ? CarbonImmutable::parse($this->startDate) : CarbonImmutable::now()->subMonth(),
+            'custom' => $this->parseCustomDate($this->startDate) ?? CarbonImmutable::now()->subMonth(),
             default => CarbonImmutable::now()->subMonth(),
         };
 
-        $endDate = $this->period === 'custom' && $this->endDate
-            ? CarbonImmutable::parse($this->endDate)
+        $endDate = $this->period === 'custom'
+            ? ($this->parseCustomDate($this->endDate) ?? CarbonImmutable::now())
             : CarbonImmutable::now();
+
+        if ($endDate->lt($startDate)) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
 
         $this->reportData = [
             'summary' => $service->getSummary($startDate, $endDate),
@@ -121,6 +126,19 @@ final class ReportsPage extends Page implements HasForms
             'conversion_trend' => $service->getConversionTrend($startDate, $endDate),
             'traffic_sources' => $service->getTrafficSources($startDate, $endDate),
         ];
+    }
+
+    private function parseCustomDate(?string $value): ?CarbonImmutable
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::parse($value);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     public function getViewData(): array

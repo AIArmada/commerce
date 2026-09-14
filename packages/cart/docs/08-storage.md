@@ -195,6 +195,12 @@ $result = $migrationService->migrateGuestCartForUser(
 // $result->itemsMerged is the sum of guest quantities migrated.
 ```
 
+> [!WARNING]
+> `swap()` transfers a cart only when the target identifier is empty. A swap
+> into an occupied target is refused (`false`, both carts untouched) instead of
+> overwriting the target. Use the guest-to-user migration when contents must be
+> merged rather than transferred.
+
 The service API is available for integrations that need identifier management. The dedicated Action classes below are the preferred orchestration path for application workflows.
 
 itemsMerged reports the sum of quantities from the guest instance captured

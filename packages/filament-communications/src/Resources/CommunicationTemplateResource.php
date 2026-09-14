@@ -32,7 +32,8 @@ final class CommunicationTemplateResource extends Resource
 
     public static function getNavigationSort(): ?int
     {
-        return config('filament-communications.navigation.sort');
+        return config('filament-communications.navigation.sort')
+            + (int) config('filament-communications.navigation.offsets.templates', 0);
     }
 
     /**

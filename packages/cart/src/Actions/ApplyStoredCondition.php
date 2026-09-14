@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Actions;
 
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
+use AIArmada\Cart\Exceptions\InvalidCartConditionException;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Support\CartLimits;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
+use InvalidArgumentException;
 
 final class ApplyStoredCondition
 {
@@ -57,6 +61,17 @@ final class ApplyStoredCondition
     }
 
     /**
+     * Apply an ad-hoc custom condition to a cart.
+     *
+     * Required keys in $data: name, type, target (condition-target DSL), value.
+     * Optional keys: order (int), attributes (array), is_dynamic (bool),
+     * dynamic_rules (factory_keys allowlist + context).
+     *
+     * Authorization contract: this action validates shape and value syntax but
+     * does NOT decide who may grant discounts or charges. Every caller must
+     * authorize first — the Filament caller enforces this through its resource
+     * policies and constrained form schema before invoking this action.
+     *
      * @param  array<string, mixed>  $data
      *
      * @throws Exception
@@ -64,6 +79,7 @@ final class ApplyStoredCondition
     public function applyCustom(CartSnapshot $cart, array $data): CartCondition
     {
         $cart = $this->authorizeCart($cart);
+        $validated = $this->validateCustomData($data);
         $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart);
 
         $rulesDefinition = Condition::normalizeRulesDefinition(
@@ -92,15 +108,19 @@ final class ApplyStoredCondition
             ['source' => 'custom'],
         );
 
-        $condition = new CartCondition(
-            name: (string) $data['name'],
-            type: (string) $data['type'],
-            target: (string) $data['target'],
-            value: $data['value'],
-            attributes: $attributes,
-            order: (int) ($data['order'] ?? 0),
-            rules: $rules,
-        );
+        try {
+            $condition = new CartCondition(
+                name: $validated['name'],
+                type: $validated['type'],
+                target: ConditionTarget::from($validated['target']),
+                value: $validated['value'],
+                attributes: $attributes,
+                order: $validated['order'],
+                rules: $rules,
+            );
+        } catch (InvalidCartConditionException | InvalidArgumentException $exception) {
+            throw new Exception($exception->getMessage(), previous: $exception);
+        }
 
         if ($rulesDefinition !== null) {
             $factoryKeys = $rulesDefinition['factory_keys'];
@@ -115,6 +135,60 @@ final class ApplyStoredCondition
         }
 
         return $condition;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{name: string, type: string, target: string, value: string|int|float, order: int}
+     *
+     * @throws Exception
+     */
+    private function validateCustomData(array $data): array
+    {
+        $limits = CartLimits::fromConfig();
+
+        $name = $data['name'] ?? null;
+        $type = $data['type'] ?? null;
+        $target = $data['target'] ?? null;
+        $value = $data['value'] ?? null;
+
+        if (! is_string($name) || mb_trim($name) === '') {
+            throw new Exception('Custom condition name is required.');
+        }
+
+        if (! is_string($type) || mb_trim($type) === '') {
+            throw new Exception('Custom condition type is required.');
+        }
+
+        if (! is_string($target) || mb_trim($target) === '') {
+            throw new Exception('Custom condition target is required.');
+        }
+
+        if (mb_strlen($name) > $limits->maxStringLength || mb_strlen($type) > $limits->maxStringLength) {
+            throw new Exception("Custom condition name and type cannot exceed {$limits->maxStringLength} characters.");
+        }
+
+        if (! is_string($value) && ! is_int($value) && ! is_float($value)) {
+            throw new Exception('Custom condition value must be a string, integer, or float.');
+        }
+
+        if (is_string($value) && mb_trim($value) === '') {
+            throw new Exception('Custom condition value cannot be empty.');
+        }
+
+        $order = $data['order'] ?? 0;
+
+        if (! is_int($order) && ! (is_string($order) && is_numeric($order))) {
+            throw new Exception('Custom condition order must be an integer.');
+        }
+
+        return [
+            'name' => $name,
+            'type' => $type,
+            'target' => $target,
+            'value' => $value,
+            'order' => (int) $order,
+        ];
     }
 
     private function authorizeCart(CartSnapshot $cart): CartSnapshot

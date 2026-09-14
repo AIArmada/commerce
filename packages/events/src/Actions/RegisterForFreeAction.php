@@ -110,11 +110,7 @@ final class RegisterForFreeAction
                     'total_amount' => null,
                     'currency' => null,
                     'payment_status' => null,
-                    'metadata' => $idempotencyKey === null ? null : [
-                        'registration' => [
-                            'idempotency_key' => $idempotencyKey,
-                        ],
-                    ],
+                    'idempotency_key' => $idempotencyKey,
                     'participants' => [$participant],
                 ])));
             }
@@ -157,12 +153,11 @@ final class RegisterForFreeAction
             $query->whereNull('event_session_id');
         }
 
-        $existing = $query->get()->filter(
-            static fn (EventRegistration $registration): bool => data_get(
-                $registration->metadata ?? [],
-                'registration.idempotency_key',
-            ) === $idempotencyKey,
-        )->values();
+        $existing = $query
+            ->where('idempotency_key', $idempotencyKey)
+            ->limit($expectedCount + 1)
+            ->get()
+            ->values();
 
         if ($existing->isEmpty()) {
             return null;

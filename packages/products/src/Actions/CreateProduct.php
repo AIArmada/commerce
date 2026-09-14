@@ -4,22 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Actions;
 
-use AIArmada\Products\Events\ProductCreated;
 use AIArmada\Products\Models\Product;
 use Illuminate\Support\Facades\DB;
 
 final class CreateProduct
 {
     /**
+     * ProductCreated fires once via the model's $dispatchesEvents mapping.
+     *
      * @param  array<string, mixed>  $attributes
      */
     public function execute(array $attributes): Product
     {
-        $product = DB::transaction(fn (): Product => Product::create($attributes));
-
-        ProductCreated::dispatch($product);
-
-        return $product;
+        return DB::transaction(fn (): Product => Product::create($attributes));
     }
 
     /**

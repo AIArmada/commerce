@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Tables;
 
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRole;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
+use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -18,6 +17,7 @@ class AddressAreaTable
     public static function make(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['names', 'roles', 'parent']))
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
@@ -73,21 +73,16 @@ class AddressAreaTable
             ->filters([
                 SelectFilter::make('country_code')
                     ->label('Country')
-                    ->options(
-                        config('filament-addressing.resources.countries.model', AddressCountry::class)::query()
-                            ->orderBy('name')
-                            ->pluck('name', 'iso2')
-                            ->toArray(),
-                    )
+                    ->options(fn (): array => AddressingFilterOptions::countryOptions())
                     ->searchable(),
                 SelectFilter::make('type')
-                    ->options(fn (): array => self::getTypeOptions()),
+                    ->options(fn (): array => AddressingFilterOptions::areaTypes()),
                 SelectFilter::make('level')
-                    ->options(fn (): array => self::getLevelOptions()),
+                    ->options(fn (): array => AddressingFilterOptions::areaLevels()),
                 SelectFilter::make('source')
-                    ->options(fn (): array => self::getSourceOptions()),
+                    ->options(fn (): array => AddressingFilterOptions::areaSources()),
                 SelectFilter::make('role')
-                    ->options(fn (): array => self::getRoleOptions())
+                    ->options(fn (): array => AddressingFilterOptions::areaRoles())
                     ->query(fn (Builder $query, array $data): Builder => $query->when(
                         $data['value'] ?? null,
                         fn (Builder $areas, string $role): Builder => $areas->whereHas('roles', fn (Builder $roles): Builder => $roles->where('role', $role)),
@@ -95,50 +90,5 @@ class AddressAreaTable
             ])
             ->defaultSort('country_code')
             ->paginated([10, 25, 50, 100]);
-    }
-
-    private static function getTypeOptions(): array
-    {
-        $areaClass = config('filament-addressing.resources.areas.model', AddressArea::class);
-
-        return $areaClass::query()
-            ->distinct()
-            ->orderBy('type')
-            ->pluck('type', 'type')
-            ->toArray();
-    }
-
-    private static function getLevelOptions(): array
-    {
-        $areaClass = config('filament-addressing.resources.areas.model', AddressArea::class);
-
-        return $areaClass::query()
-            ->whereNotNull('level')
-            ->distinct()
-            ->orderBy('level')
-            ->pluck('level', 'level')
-            ->map(static fn (mixed $level): string => (string) $level)
-            ->toArray();
-    }
-
-    private static function getSourceOptions(): array
-    {
-        $areaClass = config('filament-addressing.resources.areas.model', AddressArea::class);
-
-        return $areaClass::query()
-            ->distinct()
-            ->orderBy('source')
-            ->pluck('source', 'source')
-            ->toArray();
-    }
-
-    private static function getRoleOptions(): array
-    {
-        return AddressAreaRole::query()
-            ->distinct()
-            ->orderBy('role')
-            ->pluck('role', 'role')
-            ->mapWithKeys(static fn (string $role): array => [$role => str_replace('_', ' ', ucfirst($role))])
-            ->all();
     }
 }

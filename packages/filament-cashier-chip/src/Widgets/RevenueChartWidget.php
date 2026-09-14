@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
+use Override;
 
 final class RevenueChartWidget extends ChartWidget
 {
@@ -21,6 +22,12 @@ final class RevenueChartWidget extends ChartWidget
     protected int | string | array $columnSpan = 'full';
 
     protected ?string $pollingInterval = '120s';
+
+    #[Override]
+    public static function canView(): bool
+    {
+        return static::hasWidgetOwnerContext();
+    }
 
     protected function getData(): array
     {
@@ -54,7 +61,7 @@ final class RevenueChartWidget extends ChartWidget
 
     protected function getOptions(): array
     {
-        $currency = $this->currency();
+        $currency = $this->safeCurrencyCode();
 
         return [
             'plugins' => [
@@ -78,55 +85,71 @@ final class RevenueChartWidget extends ChartWidget
      */
     private function getRevenueData(): array
     {
-        $labels = [];
-        $mrr = [];
-        $newRevenue = [];
+        return $this->rememberWidgetValue('revenue.data', function (): array {
+            $labels = [];
+            $mrr = [];
+            $newRevenue = [];
 
-        for ($i = 11; $i >= 0; $i--) {
-            $date = CarbonImmutable::now()->subMonths($i);
-            $labels[] = $date->format('M Y');
+            for ($i = 11; $i >= 0; $i--) {
+                $date = CarbonImmutable::now()->subMonths($i);
+                $labels[] = $date->format('M Y');
 
-            $startOfMonth = $date->copy()->startOfMonth();
-            $endOfMonth = $date->copy()->endOfMonth();
+                $startOfMonth = $date->copy()->startOfMonth();
+                $endOfMonth = $date->copy()->endOfMonth();
 
-            $monthMrr = $this->subscriptionQuery()
-                ->where('chip_status', SubscriptionStatus::Active->value)
-                ->where('created_at', '<=', $endOfMonth)
-                ->where(function ($query) use ($startOfMonth): void {
-                    $query->whereNull('ends_at')
-                        ->orWhere('ends_at', '>=', $startOfMonth);
-                })
-                ->withSum('items', 'unit_amount')
-                ->get()
-                ->sum(function (Subscription $subscription): int {
-                    return $this->normalizeToMonthly(
-                        (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
-                        $subscription->billing_interval ?? 'month',
-                        $subscription->billing_interval_count ?? 1
-                    );
-                });
+                $monthMrr = $this->subscriptionQuery()
+                    ->where('chip_status', SubscriptionStatus::Active->value)
+                    ->where('created_at', '<=', $endOfMonth)
+                    ->where(function ($query) use ($startOfMonth): void {
+                        $query->whereNull('ends_at')
+                            ->orWhere('ends_at', '>=', $startOfMonth);
+                    })
+                    ->select($this->revenueColumns())
+                    ->withSum('items', 'unit_amount')
+                    ->get()
+                    ->sum(fn (Subscription $subscription): int => $this->monthlyGrossAmount($subscription));
 
-            $mrr[] = (int) ($monthMrr / 100);
+                $mrr[] = (int) ($monthMrr / 100);
 
-            $newSubscriptionsRevenue = $this->subscriptionQuery()
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->withSum('items', 'unit_amount')
-                ->get()
-                ->sum(function (Subscription $subscription): int {
-                    return $this->normalizeToMonthly(
-                        (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
-                        $subscription->billing_interval ?? 'month',
-                        $subscription->billing_interval_count ?? 1
-                    );
-                });
+                $newSubscriptionsRevenue = $this->subscriptionQuery()
+                    ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                    ->select($this->revenueColumns())
+                    ->withSum('items', 'unit_amount')
+                    ->get()
+                    ->sum(fn (Subscription $subscription): int => $this->monthlyGrossAmount($subscription));
 
-            $newRevenue[] = (int) ($newSubscriptionsRevenue / 100);
-        }
+                $newRevenue[] = (int) ($newSubscriptionsRevenue / 100);
+            }
 
+            return [
+                'labels' => $labels,
+                'mrr' => $mrr,
+                'new_revenue' => $newRevenue,
+            ];
+        });
+    }
+
+    private function monthlyGrossAmount(Subscription $subscription): int
+    {
+        return $this->normalizeToMonthly(
+            (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
+            $subscription->billing_interval ?? 'month',
+            $subscription->billing_interval_count ?? 1,
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function revenueColumns(): array
+    {
         return [
-            'labels' => $labels,
-            'mrr' => $mrr,
-            'new_revenue' => $newRevenue,
+            'id',
+            'billing_interval',
+            'billing_interval_count',
+            'quantity',
+            'created_at',
+            'ends_at',
         ];
     }
 }

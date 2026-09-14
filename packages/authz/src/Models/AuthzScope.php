@@ -44,7 +44,7 @@ final class AuthzScope extends Model
 
     protected static function booted(): void
     {
-        static::deleting(function (AuthzScope $authzScope): void {
+        static::deleted(function (AuthzScope $authzScope): void {
             $registrar = app(PermissionRegistrar::class);
 
             if (! $registrar->teams) {

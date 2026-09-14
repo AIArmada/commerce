@@ -64,20 +64,14 @@ it('scopes ApplyConditionAction condition options and lookups by resolved owner'
         'owner_id' => null,
     ]));
 
-    $optionsMethod = new ReflectionMethod(ApplyConditionAction::class, 'getConditionOptions');
+    $optionsMethod = new ReflectionMethod(ApplyConditionAction::class, 'searchConditionOptions');
 
-    /** @var array<string, array<string, string>> $options */
-    $options = $optionsMethod->invoke(null, false);
+    /** @var array<string, string> $options */
+    $options = $optionsMethod->invoke(null, 'discount', false);
 
-    $hasConditionA = false;
-    $hasConditionB = false;
-    $hasGlobal = false;
-
-    foreach ($options as $group) {
-        $hasConditionA = $hasConditionA || array_key_exists($conditionA->id, $group);
-        $hasConditionB = $hasConditionB || array_key_exists($conditionB->id, $group);
-        $hasGlobal = $hasGlobal || array_key_exists($globalCondition->id, $group);
-    }
+    $hasConditionA = array_key_exists($conditionA->id, $options);
+    $hasConditionB = array_key_exists($conditionB->id, $options);
+    $hasGlobal = array_key_exists($globalCondition->id, $options);
 
     expect($hasConditionA)->toBeTrue();
     expect($hasGlobal)->toBeTrue();
@@ -121,15 +115,13 @@ it('returns only item-level conditions for item actions', function (): void {
     ]);
     $cartCondition->assignOwner($owner)->save();
 
-    $optionsMethod = new ReflectionMethod(ApplyConditionAction::class, 'getConditionOptions');
+    $optionsMethod = new ReflectionMethod(ApplyConditionAction::class, 'searchConditionOptions');
 
-    /** @var array<string, array<string, string>> $options */
-    $options = $optionsMethod->invoke(null, true);
+    /** @var array<string, string> $options */
+    $options = $optionsMethod->invoke(null, 'discount', true);
 
-    $flattened = collect($options)->collapse()->all();
-
-    expect(array_key_exists($itemCondition->id, $flattened))->toBeTrue();
-    expect(array_key_exists($cartCondition->id, $flattened))->toBeFalse();
+    expect(array_key_exists($itemCondition->id, $options))->toBeTrue();
+    expect(array_key_exists($cartCondition->id, $options))->toBeFalse();
 
     $queryMethod = new ReflectionMethod(ApplyConditionAction::class, 'getScopedConditionQuery');
 

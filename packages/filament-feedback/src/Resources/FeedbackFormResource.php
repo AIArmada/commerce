@@ -41,8 +41,7 @@ final class FeedbackFormResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false)
-            ->withCount('responses');
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
     }
 
     public static function table(Table $table): Table

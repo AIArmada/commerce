@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
 use AIArmada\Products\Actions\GenerateVariants;
 use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
 use AIArmada\Products\Models\Product;
@@ -28,6 +29,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rules\Unique;
 
 final class VariantsRelationManager extends RelationManager
 {
@@ -47,7 +49,7 @@ final class VariantsRelationManager extends RelationManager
                 TextInput::make('sku')
                     ->label('SKU')
                     ->required()
-                    ->unique(ignoreRecord: true)
+                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => ProductsOwnerScope::scopeUniqueRuleToOwner($rule))
                     ->maxLength(100),
 
                 TextInput::make('barcode')

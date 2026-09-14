@@ -48,6 +48,7 @@ return [
     'features' => [
         'dashboard' => true,
         'monitoring' => true,
+        'monitoring_permission' => null,
     ],
 
     /*
@@ -71,6 +72,7 @@ return [
             'from_address' => env('FILAMENT_CART_ABANDONED_FROM', 'info@example.com'),
             'from_name' => env('FILAMENT_CART_ABANDONED_FROM_NAME'),
             'brand_name' => env('FILAMENT_CART_ABANDONED_BRAND_NAME', config('app.name')),
+            'allowed_retry_hosts' => [],
         ],
     ],
 ];

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Models\EventRegistrationParticipant;
 use BackedEnum;
 use Filament\Actions\ViewAction;
@@ -16,6 +18,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class EventRegistrationParticipantResource extends Resource
@@ -43,7 +46,14 @@ final class EventRegistrationParticipantResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getEloquentQuery()->count();
+        $owner = OwnerContext::resolve();
+
+        return (string) OwnerCache::remember(
+            $owner instanceof Model ? $owner : null,
+            'filament-events.participant-nav-badge',
+            30,
+            fn (): int => static::getEloquentQuery()->count()
+        );
     }
 
     /* @phpstan-ignore return.type */
@@ -52,7 +62,7 @@ final class EventRegistrationParticipantResource extends Resource
         $query = parent::getEloquentQuery();
 
         return $query
-            ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false))
+            ->whereHas('registration.event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false))
             ->with(['event', 'registration', 'contactMethods']);
     }
 

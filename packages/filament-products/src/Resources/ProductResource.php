@@ -6,6 +6,8 @@ namespace AIArmada\FilamentProducts\Resources;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentProducts\Resources\ProductResource\Pages;
 use AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 use AIArmada\FilamentProducts\Resources\ProductResource\Schemas\ProductForm;
@@ -17,6 +19,7 @@ use AIArmada\Pricing\Models\Price;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,13 +42,30 @@ final class ProductResource extends BaseProductResource
      */
     public static function getEloquentQuery(): Builder
     {
-        return Product::query()
-            ->forOwner();
+        $query = parent::getEloquentQuery()
+            ->withCount(['variants']);
+
+        if (class_exists(Price::class)) {
+            $query->withCount([
+                'prices',
+                'prices as active_prices_count' => fn (Builder $pricesQuery): Builder => $pricesQuery
+                    ->whereHas('priceList', fn (Builder $priceListQuery): Builder => $priceListQuery->where('is_active', true)),
+            ]);
+        }
+
+        return $query;
     }
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getEloquentQuery()->where('status', ProductStatus::Active)->count();
+        $count = (int) OwnerCache::remember(
+            OwnerContext::resolve(),
+            'filament-products.nav-badge.active-products',
+            CarbonImmutable::now()->addSeconds(30),
+            function (): int {
+                return (int) self::getEloquentQuery()->where('status', ProductStatus::Active)->count();
+            }
+        );
 
         return $count > 0 ? (string) $count : null;
     }

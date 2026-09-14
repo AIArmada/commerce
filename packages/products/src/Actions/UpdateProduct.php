@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Actions;
 
-use AIArmada\Products\Events\ProductUpdated;
 use AIArmada\Products\Models\Product;
 use Illuminate\Support\Facades\DB;
 
 final class UpdateProduct
 {
     /**
+     * ProductUpdated fires once via the model's $dispatchesEvents mapping.
+     *
      * @param  array<string, mixed>  $data
      */
     public function execute(Product $product, array $data): Product
@@ -19,15 +20,7 @@ final class UpdateProduct
             $product->update($data);
         });
 
-        $fresh = $product->fresh();
-
-        if ($fresh !== null) {
-            ProductUpdated::dispatch($fresh);
-
-            return $fresh;
-        }
-
-        return $product;
+        return $product->fresh() ?? $product;
     }
 
     /**

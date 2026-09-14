@@ -7,6 +7,9 @@ namespace AIArmada\Authz\Services;
 use AIArmada\Authz\Events\LeaveImpersonation;
 use AIArmada\Authz\Events\TakeImpersonation;
 use AIArmada\Authz\Guard\SessionGuard;
+use AIArmada\Authz\Support\BackToUrlSanitizer;
+use AIArmada\Authz\Support\ImpersonationScopeGuard;
+use AIArmada\Authz\Support\UserRoleChecker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Application;
 use InvalidArgumentException;
@@ -90,14 +93,23 @@ class ImpersonateManager
     /**
      * Take impersonation of a user.
      *
+     * Authorization is enforced by default: the impersonator must be allowed
+     * to impersonate, the target must allow it, self-impersonation is refused,
+     * and the tenant scope guard must pass. Pass $authorize: false only when
+     * the caller has already performed equivalent checks.
+     *
      * @param  Authenticatable  $from  The current user (impersonator)
      * @param  Authenticatable  $to  The user to impersonate
      * @param  string|null  $guardName  The guard to use for impersonation
      * @param  string|null  $backTo  URL to redirect back to when leaving
      */
-    public function take(Authenticatable $from, Authenticatable $to, ?string $guardName = null, ?string $backTo = null): bool
+    public function take(Authenticatable $from, Authenticatable $to, ?string $guardName = null, ?string $backTo = null, bool $authorize = true): bool
     {
         if ($this->isImpersonating()) {
+            return false;
+        }
+
+        if ($authorize && ! $this->isAuthorized($from, $to)) {
             return false;
         }
 
@@ -261,6 +273,31 @@ class ImpersonateManager
         }
     }
 
+    private function isAuthorized(Authenticatable $from, Authenticatable $to): bool
+    {
+        if ((string) $from->getAuthIdentifier() === (string) $to->getAuthIdentifier()) {
+            return false;
+        }
+
+        if (method_exists($from, 'canImpersonate')) {
+            if (! (bool) $from->canImpersonate()) {
+                return false;
+            }
+        } else {
+            $superAdminRole = (string) config('authz.super_admin_role', '');
+
+            if ($superAdminRole === '' || ! UserRoleChecker::hasGlobalRole($from, $superAdminRole)) {
+                return false;
+            }
+        }
+
+        if (method_exists($to, 'canBeImpersonated') && ! (bool) $to->canBeImpersonated()) {
+            return false;
+        }
+
+        return ImpersonationScopeGuard::canAccessTarget($to);
+    }
+
     private function switchIdentity(string $sourceGuardName, string $targetGuardName, Authenticatable $target): void
     {
         $this->getSessionGuard($sourceGuardName)->quietLogout();
@@ -278,29 +315,7 @@ class ImpersonateManager
 
     private function sanitizeBackToUrl(string $url): string
     {
-        if ($url === '') {
-            return '/';
-        }
-
-        // Relative path — always safe.
-        if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
-            return $url;
-        }
-
-        // Parse absolute URL and compare host against current request host.
-        $parsed = parse_url($url);
-
-        if (! is_array($parsed) || ! isset($parsed['host'])) {
-            return '/';
-        }
-
-        $requestHost = request()->getHost();
-
-        if (mb_strtolower($parsed['host']) !== mb_strtolower($requestHost)) {
-            return '/';
-        }
-
-        return $url;
+        return BackToUrlSanitizer::sanitize($url);
     }
 
     private function getSessionGuard(string $guardName): SessionGuard

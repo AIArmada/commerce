@@ -29,6 +29,15 @@ final class MerchantDashboardPage extends Page
 
     protected string $view = 'filament-affiliate-network::pages.merchant-dashboard';
 
+    /** @var Collection<int, AffiliateOfferApplication>|null */
+    private ?Collection $memoizedRecentApplications = null;
+
+    /** @var Collection<int, AffiliateOffer>|null */
+    private ?Collection $memoizedTopOffers = null;
+
+    /** @var array<string, int> */
+    private array $memoizedCounts = [];
+
     public static function canAccess(): bool
     {
         return parent::canAccess() && NetworkAdminAccess::allows();
@@ -90,7 +99,8 @@ final class MerchantDashboardPage extends Page
      */
     public function getRecentApplications(): Collection
     {
-        return AffiliateOfferApplication::query()
+        // Memoized: the blade calls this twice per render (isEmpty + foreach).
+        return $this->memoizedRecentApplications ??= AffiliateOfferApplication::query()
             ->with(['offer', 'affiliate'])
             ->where('status', ApplicationStatus::Pending)
             ->latest('created_at')
@@ -103,7 +113,8 @@ final class MerchantDashboardPage extends Page
      */
     public function getTopOffers(): Collection
     {
-        return AffiliateOffer::query()
+        // Memoized: the blade calls this twice per render (isEmpty + foreach).
+        return $this->memoizedTopOffers ??= AffiliateOffer::query()
             ->with('site')
             ->where('status', OfferStatus::Published)
             ->withCount('applications')
@@ -114,26 +125,26 @@ final class MerchantDashboardPage extends Page
 
     public function getSitesCount(): int
     {
-        return AffiliateSite::query()->count();
+        return $this->memoizedCounts['sites'] ??= AffiliateSite::query()->count();
     }
 
     public function getVerifiedSitesCount(): int
     {
-        return AffiliateSite::query()
+        return $this->memoizedCounts['verified_sites'] ??= AffiliateSite::query()
             ->where('status', AffiliateSite::STATUS_VERIFIED)
             ->count();
     }
 
     public function getActiveOffersCount(): int
     {
-        return AffiliateOffer::query()
+        return $this->memoizedCounts['active_offers'] ??= AffiliateOffer::query()
             ->where('status', OfferStatus::Published)
             ->count();
     }
 
     public function getPendingApplicationsCount(): int
     {
-        return AffiliateOfferApplication::query()
+        return $this->memoizedCounts['pending_applications'] ??= AffiliateOfferApplication::query()
             ->where('status', ApplicationStatus::Pending)
             ->count();
     }

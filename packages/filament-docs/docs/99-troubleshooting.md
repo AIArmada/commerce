@@ -58,7 +58,15 @@ All widgets use owner-aware queries. If everything is zero, inspect the current 
 
 ## Payment Action Rejects a Valid-Looking Amount
 
-`RecordPaymentAction` delegates to the core payment recorder. Confirm the amount is a positive integer minor-unit value, uses the document currency, and does not exceed the outstanding balance.
+`RecordPaymentAction` delegates to the core payment recorder. Confirm the amount is a positive integer minor-unit value, uses the document currency, and does not exceed the outstanding balance. Overpayments, race losses, and currency mismatches surface as validation errors on the amount field; unexpected failures show a "Payment Failed" notification and are logged.
+
+## Bulk PDF Jobs Never Finish
+
+`Generate PDFs` dispatches `GenerateDocPdfsJob` per 25-document chunk, so a queue worker must be running. With the `sync` driver the work runs inline. Each job re-checks owner scope per document and skips rows outside the dispatch scope; failures are reported and logged per job.
+
+## Resources Suddenly Inaccessible After Upgrade
+
+The documents UI moved from shared `purchase.*` abilities to dedicated `document*` abilities (see [Usage](04-usage.md#authorization)). Grant the new abilities; a user holding only legacy `purchase.viewAny` intentionally loses access.
 
 ## Need More Context
 

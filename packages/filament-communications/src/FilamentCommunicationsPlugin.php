@@ -41,9 +41,11 @@ final class FilamentCommunicationsPlugin implements Plugin
             $panel->resources($resources);
         }
 
-        $panel->widgets([
-            DeliveryStatusOverviewWidget::class,
-        ]);
+        if (config('filament-communications.widgets.delivery_overview.enabled', true)) {
+            $panel->widgets([
+                DeliveryStatusOverviewWidget::class,
+            ]);
+        }
     }
 
     public function boot(Panel $panel): void {}

@@ -94,6 +94,7 @@ final class MatrixVariantGenerator implements VariantGeneratorInterface
                     /** @var Variant|null $existing */
                     $existing = Variant::query()
                         ->forOwner($owner, false)
+                        ->where('product_id', $product->getKey())
                         ->where('sku', $sku)
                         ->first();
 

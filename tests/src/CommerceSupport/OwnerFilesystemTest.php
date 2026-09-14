@@ -50,6 +50,23 @@ describe('OwnerFilesystem', function (): void {
             ->toThrow(InvalidArgumentException::class, 'invalid traversal');
     });
 
+    it('rejects traversal evasions', function (string $evil): void {
+        expect(fn () => OwnerFilesystem::path(null, $evil))
+            ->toThrow(InvalidArgumentException::class);
+    })->with([
+        'encoded dots' => '..%2f..%2fetc%2fpasswd',
+        'double-encoded dots' => '..%252f..%252fetc%252fpasswd',
+        'encoded separators' => 'invoices%2f..%2f..%2fetc%2fpasswd',
+        'backslash traversal' => '..\\..\\secret.txt',
+        'mixed separators' => 'invoices\\..\\..\\secret.txt',
+        'windows drive path' => 'C:\\Windows\\secret.txt',
+        'windows drive relative' => 'C:secret.txt',
+        'dot segment' => 'invoices/./secret.txt',
+        'empty segment' => 'invoices//secret.txt',
+        'trailing slash' => 'invoices/',
+        'null byte' => "invoices\x00.txt",
+    ]);
+
     it('stores files for an owner', function (): void {
         $owner = new class implements OwnerScopeIdentifiable
         {

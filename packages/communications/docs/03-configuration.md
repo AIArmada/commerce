@@ -33,6 +33,55 @@ title: Configuration
 
 - `database.tables.destinations` stores per-recipient channel addresses used by `CommunicationDestinationResolver`
 
+## Defaults
+
+```php
+'defaults' => [
+    'priority' => 'normal',
+    'max_attempts' => 3,
+],
+```
+
+- `defaults.max_attempts` - delivery attempt budget used when a plan or notification does not specify one
+
+## Planning
+
+```php
+'planning' => [
+    'max_deliveries' => 500,
+],
+```
+
+- `planning.max_deliveries` - maximum deliveries accepted by one `PlanCommunicationDeliveriesAction` call
+
+## Tracking
+
+```php
+'tracking' => [
+    'allowed_hosts' => [],
+],
+```
+
+- `tracking.allowed_hosts` - when non-empty, tracking token target URLs must use one of these hosts; empty allows any `http(s)` host
+
+## Attachments
+
+```php
+'attachments' => [
+    'allowed_disks' => null,
+    'allowed_mimes' => null,
+    'max_size_bytes' => 10485760,
+],
+```
+
+- `attachments.allowed_disks` - when set, `storage_disk` must be one of these disks
+- `attachments.allowed_mimes` - when set, `mime_type` must be one of these values (case-insensitive)
+- `attachments.max_size_bytes` - `size_bytes` above this limit is rejected on save
+
+Attachment storage fields are validated server-side on every save:
+relative `storage_path` values without traversal, well-formed `type/subtype`
+mime values, and non-negative sizes within the configured maximum.
+
 ## Features
 
 ```php
@@ -142,8 +191,12 @@ use AIArmada\Communications\Http\Middleware\VerifyWebhookSignature;
         'provider-name' => [
             'enabled' => true,
             'secret' => env('PROVIDER_WEBHOOK_SECRET'),
+            'algorithm' => 'sha256',
+            'signature_header' => 'X-Webhook-Signature',
         ],
     ],
+    'max_payload_bytes' => 262144,
+    'max_payload_depth' => 32,
     'timestamp_header' => 'X-Webhook-Timestamp',
     'timestamp_tolerance_seconds' => 300,
     'rate_limit' => [
@@ -154,9 +207,19 @@ use AIArmada\Communications\Http\Middleware\VerifyWebhookSignature;
 ```
 
 The default middleware fails closed unless the provider is configured and sends
-`X-Webhook-Signature` as the SHA-256 HMAC of the raw request body plus a recent
-numeric `X-Webhook-Timestamp`. Replayed timestamps outside the configured
-tolerance are rejected before dispatch.
+the configured signature header as the HMAC of the raw request body plus a
+recent numeric `X-Webhook-Timestamp`. Replayed timestamps outside the
+configured tolerance are rejected before dispatch. Each provider entry accepts
+an optional `algorithm` (any `hash_hmac_algos()` value, default `sha256`) and
+an optional `signature_header` (default `X-Webhook-Signature`).
+
+Payloads larger than `max_payload_bytes` or nested deeper than
+`max_payload_depth` are rejected with `413` before a job is queued.
+
+The default `WebhookOwnerResolver` binding returns `null`. Provider events
+applied without a resolved owner derive the delivery's owner scope from the
+delivery itself; bind a custom resolver when webhooks must resolve ownership
+from provider-specific payload fields.
 
 ## Cache
 

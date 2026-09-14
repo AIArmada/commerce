@@ -12,16 +12,10 @@ final class EnsureApiAuthorized
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $mode = config('affiliates.api.auth', 'token');
-
-        if ($mode === 'none') {
-            return $next($request);
-        }
-
         $token = config('affiliates.api.token');
         $provided = $request->bearerToken();
 
-        if ($token && hash_equals($token, (string) $provided)) {
+        if (is_string($token) && $token !== '' && hash_equals($token, (string) $provided)) {
             return $next($request);
         }
 

@@ -10,9 +10,14 @@ use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 final class UplineVisualizationWidget extends Widget
 {
+    public const int MAX_DEPTH = 5;
+
+    public const int MAX_BREADTH = 25;
+
     public ?string $affiliateId = null;
 
     public int $depth = 3;
@@ -27,6 +32,17 @@ final class UplineVisualizationWidget extends Widget
     public function mount(?string $affiliateId = null): void
     {
         $this->affiliateId = $affiliateId;
+        $this->depth = $this->clampedDepth($this->depth);
+    }
+
+    public function updatedDepth(mixed $value): void
+    {
+        $this->depth = $this->clampedDepth(is_numeric($value) ? (int) $value : 3);
+    }
+
+    private function clampedDepth(int $depth): int
+    {
+        return max(1, min(self::MAX_DEPTH, $depth));
     }
 
     public function getUplineData(): array
@@ -100,11 +116,12 @@ final class UplineVisualizationWidget extends Widget
     {
         $children = [];
 
-        if ($currentDepth < $this->depth) {
+        if ($currentDepth < $this->clampedDepth($this->depth)) {
             $children = $affiliate->children()
                 ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
                 ->with(['rank'])
                 ->withCount(['children', 'conversions'])
+                ->limit(self::MAX_BREADTH)
                 ->get()
                 ->map(fn (Affiliate $child) => $this->buildNode($child, $currentDepth + 1))
                 ->all();
@@ -143,19 +160,16 @@ final class UplineVisualizationWidget extends Widget
             ? OwnerContext::resolve()
             : null;
 
-        $affiliatesWithChildren = Affiliate::query()
+        $counted = Affiliate::query()
             ->when(
                 (bool) config('affiliates.owner.enabled', false),
                 fn ($query) => $query->forOwner($owner),
             )
             ->whereHas('children')
-            ->withCount('children')
-            ->get();
+            ->withCount('children');
 
-        if ($affiliatesWithChildren->isEmpty()) {
-            return 0;
-        }
+        $average = DB::query()->fromSub($counted->getQuery(), 'counted')->avg('children_count');
 
-        return round($affiliatesWithChildren->avg('children_count'), 1);
+        return round((float) $average, 1);
     }
 }

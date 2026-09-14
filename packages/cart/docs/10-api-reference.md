@@ -713,17 +713,17 @@ interface CartMergeStrategyInterface
 
 ## Support
 
-### LoginMigrationIdentifierResolver
+### Login Migration Stash
 
-Resolves and caches session identifiers for login-based migration.
+Login-based migration keys off the guest's own session: the login-attempt
+listener stashes the pre-login session id under
+`HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY`, and the login listener pulls it
+from that same session. Migration state is never keyed by a login identifier,
+so one session cannot plant a migration into another account's login.
 
 ```php
-use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
+use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 
-$resolver = app(LoginMigrationIdentifierResolver::class);
-
-$identifiers = $resolver->resolveFromUser($user);
-$identifiers = $resolver->resolveFromCredentials($credentials);
-$sessionId = $resolver->findCachedSessionId($identifiers);
-$resolver->cacheSessionForIdentifiers($identifiers, session()->getId(), 5);
+session()->put(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY, session()->getId());
+$guestSessionId = session()->pull(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY);
 ```

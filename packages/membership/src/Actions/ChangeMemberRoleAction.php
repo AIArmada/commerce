@@ -9,6 +9,7 @@ use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 
@@ -27,14 +28,27 @@ final class ChangeMemberRoleAction
             throw new RuntimeException('Cannot change the role of a non-member.');
         }
 
-        if ($subject instanceof MembershipMutationGuard) {
-            $subject->assertMemberRoleCanChange($member, $role);
-        }
+        $oldRole = null;
 
-        /** @phpstan-ignore property.notFound */
-        $oldRole = MemberRole::fromSpatieRoleName((string) $member->pivot?->role);
+        DB::transaction(function () use ($role, $subject, $user, &$oldRole): void {
+            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->first();
 
-        AddMemberAction::make()->handleResolvedMember($subject, $user, $role, $member);
+            /** @phpstan-ignore method.notFound */
+            $freshMember = $subject->members()->whereKey($user->getKey())->first();
+
+            if ($freshMember === null) {
+                throw new RuntimeException('Cannot change the role of a non-member.');
+            }
+
+            if ($subject instanceof MembershipMutationGuard) {
+                $subject->assertMemberRoleCanChange($freshMember, $role);
+            }
+
+            /** @phpstan-ignore property.notFound */
+            $oldRole = MemberRole::fromSpatieRoleName((string) $freshMember->pivot?->role);
+
+            AddMemberAction::make()->handleResolvedMember($subject, $user, $role, $freshMember, false);
+        });
 
         if ($oldRole !== null && $oldRole !== $role && app()->bound(MembershipHook::class)) {
             app(MembershipHook::class)->onMemberRoleChanged(

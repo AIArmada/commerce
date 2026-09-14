@@ -211,6 +211,10 @@ interface StorageInterface
     /**
      * Swap cart identifier to transfer cart ownership.
      *
+     * The swap is refused when the target identifier already holds a cart;
+     * both carts are left untouched. Use the guest-to-user migration action
+     * when the contents must be merged instead of transferred.
+     *
      * @param  string  $oldIdentifier  The old identifier (e.g., guest session)
      * @param  string  $newIdentifier  The new identifier (e.g., user ID)
      * @param  string  $instance  Cart instance name

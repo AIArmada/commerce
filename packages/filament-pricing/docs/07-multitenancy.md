@@ -69,12 +69,14 @@ private function resolveOwner(): ?Model
     );
 
     return $query
-        ->where('name', 'like', "%{$search}%")
+        ->where('name', 'like', '%'.LikePattern::escape($search).'%')
         ->limit(50)
         ->pluck('name', 'id')
         ->toArray();
 })
 ```
+
+Submitted morph pairs are revalidated on save (`CatalogReference::validateFormData`): the type must be a product or variant and the row must exist inside the current owner scope. Record access is additionally gated by the `PriceListPolicy`, `PricePolicy`, and `PriceTierPolicy` registered by this package.
 
 ## Price Simulator Scoping
 

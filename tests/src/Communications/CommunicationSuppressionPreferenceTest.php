@@ -53,12 +53,13 @@ test('stores suppression metadata', function (): void {
 });
 
 test('creates communication preference', function (): void {
-    $preference = CommunicationPreference::create([
+    $preference = (new CommunicationPreference)->forceFill([
         'recipient_type' => 'user',
         'recipient_id' => 'usr-123',
         'channel' => 'mail',
         'category' => 'notification',
     ]);
+    $preference->save();
 
     expect($preference->id)->toBeUuid();
     expect($preference->recipient_type)->toBe('user');
@@ -67,13 +68,14 @@ test('creates communication preference', function (): void {
 });
 
 test('preference stores metadata', function (): void {
-    $preference = CommunicationPreference::create([
+    $preference = (new CommunicationPreference)->forceFill([
         'recipient_type' => 'user',
         'recipient_id' => 'usr-456',
         'channel' => 'mail',
         'category' => 'marketing',
         'metadata' => ['source' => 'registration', 'version' => 2],
     ]);
+    $preference->save();
 
     expect($preference->metadata['source'])->toBe('registration');
 });

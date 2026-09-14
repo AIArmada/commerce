@@ -717,7 +717,7 @@ describe('ShippingRate Model', function (): void {
         expect($rate->meetsConditions($heavyPackages, cartTotal: 15000))->toBeFalse();
     });
 
-    it('passes for unknown condition types', function (): void {
+    it('rejects unknown condition types', function (): void {
         $zone = ShippingZone::create([
             'owner_type' => 'TestOwner',
             'owner_id' => 'test-owner-123',
@@ -740,7 +740,7 @@ describe('ShippingRate Model', function (): void {
 
         $packages = [new PackageData(weight: 1000)];
 
-        expect($rate->meetsConditions($packages))->toBeTrue();
+        expect($rate->meetsConditions($packages))->toBeFalse();
     });
 
     it('sums weight across multiple packages for conditions', function (): void {

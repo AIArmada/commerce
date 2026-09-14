@@ -11,32 +11,42 @@ Environment and configuration options for AIArmada Commerce.
 ### CHIP Payment Gateway
 
 ```env
-CHIP_BRAND_ID=your-brand-id
-CHIP_SECRET_KEY=your-secret-key
-CHIP_MODE=sandbox
-CHIP_WEBHOOK_URL=https://your-domain.com/webhooks/chip
+CHIP_ENVIRONMENT=sandbox
+CHIP_COLLECT_API_KEY=your-collect-api-key
+CHIP_COLLECT_BRAND_ID=your-brand-id
+CHIP_COLLECT_PUBLIC_KEY=your-collect-public-key
+CHIP_SEND_API_KEY=your-send-api-key
+CHIP_SEND_API_SECRET=your-send-api-secret
 ```
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `CHIP_BRAND_ID` | Your CHIP brand ID | - |
-| `CHIP_SECRET_KEY` | Your CHIP secret key | - |
-| `CHIP_MODE` | `sandbox` or `production` | `sandbox` |
-| `CHIP_WEBHOOK_URL` | Webhook callback URL | - |
+| `CHIP_ENVIRONMENT` | `sandbox` or `production` | `sandbox` |
+| `CHIP_COLLECT_API_KEY` | CHIP Collect secret key | - |
+| `CHIP_COLLECT_BRAND_ID` | Your CHIP brand ID | - |
+| `CHIP_COLLECT_PUBLIC_KEY` | Collect public key for webhook verification | - |
+| `CHIP_SEND_API_KEY` | CHIP Send API key | - |
+| `CHIP_SEND_API_SECRET` | CHIP Send API secret | - |
 
 ### J&T Express
 
 ```env
-JNT_API_KEY=your-api-key
-JNT_API_URL=https://api.jtexpress.com.my
+JNT_ENVIRONMENT=testing
+JNT_API_ACCOUNT=your-api-account
+JNT_PRIVATE_KEY=your-private-key
 JNT_CUSTOMER_CODE=your-customer-code
+JNT_PASSWORD=your-password
 ```
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `JNT_API_KEY` | Your J&T API key | - |
-| `JNT_API_URL` | API endpoint URL | Production URL |
+| `JNT_ENVIRONMENT` | `testing` or `production` | `testing` |
+| `JNT_API_ACCOUNT` | Your J&T API account | - |
+| `JNT_PRIVATE_KEY` | Your J&T private key | - |
 | `JNT_CUSTOMER_CODE` | Your customer code | - |
+| `JNT_PASSWORD` | Your J&T API password | - |
+| `JNT_BASE_URL_TESTING` | Testing API endpoint override | Demo endpoint |
+| `JNT_BASE_URL_PRODUCTION` | Production API endpoint override | Production endpoint |
 
 ### Database
 
@@ -64,20 +74,27 @@ DOCS_JSON_COLUMN_TYPE=jsonb
 // config/cart.php
 return [
     'database' => [
+        'json_column_type' => env('CART_JSON_COLUMN_TYPE', 'jsonb'),
+        'table' => env('CART_DB_TABLE', 'carts'),
+        'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
         'tables' => [
-            'alert_rules' => null,
-            'alert_logs' => null,
-            'daily_metrics' => null,
-            'recovery_campaigns' => null,
-            'recovery_templates' => null,
-            'recovery_attempts' => null,
+            'snapshots' => env('CART_SNAPSHOTS_TABLE', 'cart_snapshots'),
+            'snapshot_items' => env('CART_SNAPSHOT_ITEMS_TABLE', 'cart_snapshot_items'),
+            'snapshot_conditions' => env('CART_SNAPSHOT_CONDITIONS_TABLE', 'cart_snapshot_conditions'),
         ],
-        'table_prefix' => 'cart_',
-        'conditions_table' => 'conditions',
-        'table' => 'carts',
     ],
     'money' => [
-        'default_currency' => 'MYR',
+        'default_currency' => env('CART_DEFAULT_CURRENCY', 'MYR'),
+        'rounding_mode' => env('CART_ROUNDING_MODE', 'half_up'),
+    ],
+    'owner' => [
+        'enabled' => env('CART_OWNER_ENABLED', false),
+        'include_global' => env('CART_OWNER_INCLUDE_GLOBAL', false),
+        'auto_assign_on_create' => env('CART_OWNER_AUTO_ASSIGN_ON_CREATE', true),
+    ],
+    'limits' => [
+        'max_items' => env('CART_MAX_ITEMS', 1000),
+        'max_item_quantity' => env('CART_MAX_QUANTITY', 10000),
     ],
 ];
 ```
@@ -88,14 +105,18 @@ return [
 // config/vouchers.php
 return [
     'database' => [
+        'table_prefix' => env('VOUCHERS_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', '')),
         'tables' => [
             'vouchers' => 'vouchers',
-            'voucher_usages' => 'voucher_usages',
+            'voucher_usage' => 'voucher_usage',
+            'voucher_wallets' => 'voucher_wallets',
         ],
+        'json_column_type' => env('VOUCHERS_JSON_COLUMN_TYPE', 'jsonb'),
     ],
     'code' => [
-        'length' => 8,
-        'prefix' => '',
+        'prefix' => env('VOUCHERS_CODE_PREFIX', ''),
+        'length' => (int) env('VOUCHERS_CODE_LENGTH', 8),
+        'auto_uppercase' => true,
     ],
 ];
 ```
@@ -105,10 +126,33 @@ return [
 ```php
 // config/chip.php
 return [
-    'brand_id' => env('CHIP_BRAND_ID'),
-    'secret_key' => env('CHIP_SECRET_KEY'),
-    'mode' => env('CHIP_MODE', 'sandbox'),
-    'webhook_url' => env('CHIP_WEBHOOK_URL'),
+    'environment' => env('CHIP_ENVIRONMENT', 'sandbox'),
+    'collect' => [
+        'base_url' => env('CHIP_COLLECT_BASE_URL', 'https://gate.chip-in.asia/api/v1/'),
+        'api_key' => env('CHIP_COLLECT_API_KEY'),
+        'brand_id' => env('CHIP_COLLECT_BRAND_ID'),
+        'public_key' => env('CHIP_COLLECT_PUBLIC_KEY'),
+    ],
+    'send' => [
+        'base_url' => [
+            'sandbox' => env('CHIP_SEND_SANDBOX_URL', 'https://staging-api.chip-in.asia/api'),
+            'production' => env('CHIP_SEND_PRODUCTION_URL', 'https://api.chip-in.asia/api'),
+        ],
+        'api_key' => env('CHIP_SEND_API_KEY'),
+        'api_secret' => env('CHIP_SEND_API_SECRET'),
+    ],
+    'owner' => [
+        'enabled' => env('CHIP_OWNER_ENABLED', false),
+        'include_global' => env('CHIP_OWNER_INCLUDE_GLOBAL', false),
+        'auto_assign_on_create' => env('CHIP_OWNER_AUTO_ASSIGN', true),
+    ],
+    'http' => [
+        'timeout' => env('CHIP_HTTP_TIMEOUT', 30),
+    ],
+    'webhooks' => [
+        'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
+        'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhooks'),
+    ],
 ];
 ```
 
@@ -118,25 +162,58 @@ return [
 // config/docs.php
 return [
     'database' => [
+        'table_prefix' => env('DOCS_TABLE_PREFIX', 'docs_'),
+        'json_column_type' => env('DOCS_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
-            'docs' => 'docs',
-            'doc_templates' => 'doc_templates',
-            'doc_status_histories' => 'doc_status_histories',
+            'docs' => env('DOCS_TABLE', 'docs_docs'),
+            'doc_templates' => env('DOC_TEMPLATES_TABLE', 'docs_doc_templates'),
+            'doc_share_links' => env('DOC_SHARE_LINKS_TABLE', 'docs_doc_share_links'),
+            'doc_status_histories' => env('DOC_STATUS_HISTORIES_TABLE', 'docs_doc_status_histories'),
+            'doc_payments' => env('DOC_PAYMENTS_TABLE', 'docs_payments'),
+            'doc_email_templates' => env('DOC_EMAIL_TEMPLATES_TABLE', 'docs_email_templates'),
+            'doc_emails' => env('DOC_EMAILS_TABLE', 'docs_emails'),
+            'doc_versions' => env('DOC_VERSIONS_TABLE', 'docs_versions'),
+            'doc_approvals' => env('DOC_APPROVALS_TABLE', 'docs_approvals'),
+            'doc_einvoice_submissions' => env('DOC_EINVOICE_SUBMISSIONS_TABLE', 'docs_einvoice_submissions'),
+            'doc_sequences' => env('DOC_SEQUENCES_TABLE', 'docs_sequences'),
+            'sequence_numbers' => env('DOC_SEQUENCE_NUMBERS_TABLE', 'docs_sequence_numbers'),
+            'workflows' => env('DOC_WORKFLOWS_TABLE', 'docs_workflows'),
+            'workflow_steps' => env('DOC_WORKFLOW_STEPS_TABLE', 'docs_workflow_steps'),
         ],
     ],
-    'company' => [
-        'name' => env('COMPANY_NAME'),
-        'address' => env('COMPANY_ADDRESS'),
-        'phone' => env('COMPANY_PHONE'),
-        'email' => env('COMPANY_EMAIL'),
+    'defaults' => [
+        'currency' => env('DOCS_CURRENCY', 'MYR'),
+        'tax_rate' => env('DOCS_TAX_RATE', 0),
+        'due_days' => env('DOCS_DUE_DAYS', 30),
     ],
-    'numbering' => [
-        'strategy' => 'sequential',
-        'prefix' => 'INV-',
+    'payment_methods' => [
+        'bank_transfer' => 'Bank Transfer',
+        'cash' => 'Cash',
+        'credit_card' => 'Credit Card',
+        'check' => 'Check',
+        'e_wallet' => 'E-Wallet',
+        'other' => 'Other',
     ],
-    'storage' => [
-        'disk' => 'local',
-        'path' => 'docs',
+    'owner' => [
+        'enabled' => env('DOCS_OWNER_ENABLED', false),
+        'include_global' => env('DOCS_OWNER_INCLUDE_GLOBAL', false),
+        'auto_assign_on_create' => env('DOCS_OWNER_AUTO_ASSIGN_ON_CREATE', true),
+    ],
+    'email' => [
+        'queue_enabled' => env('DOCS_EMAIL_QUEUE_ENABLED', true),
+        'queue' => env('DOCS_EMAIL_QUEUE', 'default'),
+        'attach_pdf' => env('DOCS_EMAIL_ATTACH_PDF', true),
+    ],
+    'einvoice' => [
+        'sandbox' => env('DOCS_EINVOICE_SANDBOX', true),
+    ],
+    'types' => [
+        'invoice' => ['numbering' => ['prefix' => 'INV']],
+        'quotation' => ['numbering' => ['prefix' => 'QUO']],
+        'receipt' => ['numbering' => ['prefix' => 'RCP']],
+        'credit_note' => ['numbering' => ['prefix' => 'CN']],
+        'delivery_note' => ['numbering' => ['prefix' => 'DN']],
+        'proforma_invoice' => ['numbering' => ['prefix' => 'PI']],
     ],
 ];
 ```
@@ -168,12 +245,12 @@ Then configure `config/commerce-support.php`:
             'Operations' => ['label' => 'Operations', 'sort' => 30, 'collapsed' => true],
         ],
         'packages' => [
-            'filament-products' => ['group' => 'Catalog'],
-            'filament-orders' => ['group' => 'Sales'],
-            'filament-shipping' => ['group' => 'Operations'],
+            'filament-cart' => ['group' => 'Sales'],
+            'filament-vouchers' => ['group' => 'Sales'],
+            'filament-docs' => ['group' => 'Operations'],
         ],
         'items' => [
-            AIArmada\FilamentProducts\Resources\AttributeResource::class => [
+            AIArmada\FilamentCart\Resources\CartResource::class => [
                 'visible' => false,
             ],
         ],
@@ -190,12 +267,20 @@ Each Filament package has its own configuration:
 ```php
 // config/filament-cart.php
 return [
-    'navigation_group' => 'Commerce',
+    'navigation' => [
+        'group' => 'E-Commerce',
+        'sort' => 30,
+    ],
     'resources' => [
         'navigation_sort' => [
-            'carts' => 10,
-            'conditions' => 20,
+            'carts' => 30,
+            'cart_items' => 31,
+            'conditions' => 33,
         ],
+    ],
+    'features' => [
+        'dashboard' => true,
+        'monitoring' => true,
     ],
 ];
 ```
@@ -205,10 +290,14 @@ return [
 ```php
 // config/filament-vouchers.php
 return [
-    'navigation_group' => 'Commerce',
+    'navigation' => [
+        'group' => 'Vouchers & Discounts',
+    ],
     'resources' => [
         'navigation_sort' => [
-            'vouchers' => 30,
+            'vouchers' => 10,
+            'voucher_usage' => 20,
+            'voucher_wallets' => 30,
         ],
     ],
 ];
@@ -219,14 +308,20 @@ return [
 ```php
 // config/filament-docs.php
 return [
-    'navigation_group' => 'Documents',
+    'navigation' => [
+        'group' => 'Documents',
+    ],
+    'features' => [
+        'auto_generate_pdf' => false,
+    ],
     'resources' => [
         'navigation_sort' => [
             'docs' => 10,
             'doc_templates' => 20,
+            'sequences' => 90,
+            'email_templates' => 91,
         ],
     ],
-    'auto_generate_pdf' => true,
 ];
 ```
 

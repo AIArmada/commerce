@@ -72,9 +72,9 @@ final class RemoveConditionAction extends Action
             ->modalDescription('Are you sure you want to remove all conditions from this cart? This action cannot be undone.')
             ->modalSubmitActionLabel('Clear All Conditions')
             ->action(function ($record, $livewire): void {
-                $cart = self::resolveCartRecord($record, $livewire);
-
                 try {
+                    $cart = self::resolveCartRecord($record, $livewire);
+
                     app(RemoveStoredConditions::class)->clearAll($cart);
 
                     Notification::make()
@@ -121,9 +121,9 @@ final class RemoveConditionAction extends Action
                     ->helperText('All conditions of this type will be removed'),
             ])
             ->action(function (array $data, $record, $livewire): void {
-                $cart = self::resolveCartRecord($record, $livewire);
-
                 try {
+                    $cart = self::resolveCartRecord($record, $livewire);
+
                     app(RemoveStoredConditions::class)->clearByType($cart, (string) $data['type']);
 
                     Notification::make()

@@ -18,6 +18,25 @@ use Illuminate\Contracts\Cache\Repository as CacheRepository;
 
 final class PurchasesApi extends CollectApi
 {
+    /**
+     * Mutation operations safe to replay from cache.
+     *
+     * Refunds and captures are intentionally absent: two genuine same-amount
+     * refunds (or captures) must both reach CHIP, so they are never served
+     * from the mutation cache. Charge stays cached: retry-after-crash
+     * deduplication for recurring-token charges is pinned by test coverage.
+     *
+     * @var array<int, string>
+     */
+    private const array CACHED_MUTATION_OPERATIONS = [
+        'cancel',
+        'charge',
+        'release',
+        'mark_as_paid',
+        'resend_invoice',
+        'delete_recurring_token',
+    ];
+
     protected ?CacheRepository $cache;
 
     private PurchaseIdempotencyLedger $purchaseIdempotencyLedger;
@@ -244,6 +263,10 @@ final class PurchasesApi extends CollectApi
         array $context,
         bool $sendEmptyPayload = false,
     ): array {
+        if (! in_array($operation, self::CACHED_MUTATION_OPERATIONS, true)) {
+            return $this->performMutation($endpoint, $payload, $message, $context, $sendEmptyPayload);
+        }
+
         $fingerprint = $this->payloadFingerprint([
             'operation' => $operation,
             'purchase_id' => $purchaseId,
@@ -412,6 +435,8 @@ final class PurchasesApi extends CollectApi
 
     public function find(string $purchaseId): PurchaseData
     {
+        $this->assertSafePathSegment($purchaseId, 'Purchase id');
+
         $response = $this->attempt(
             fn () => $this->client->get("purchases/{$purchaseId}/"),
             'Failed to retrieve CHIP purchase',
@@ -423,6 +448,8 @@ final class PurchasesApi extends CollectApi
 
     public function cancel(string $purchaseId): PurchaseData
     {
+        $this->assertSafePathSegment($purchaseId, 'Purchase id');
+
         $response = $this->postMutation(
             operation: 'cancel',
             purchaseId: $purchaseId,
@@ -437,6 +464,8 @@ final class PurchasesApi extends CollectApi
 
     public function refund(string $purchaseId, ?int $amount = null): PurchaseData | PaymentData
     {
+        $this->assertSafePathSegment($purchaseId, 'Purchase id');
+
         $payload = [];
         if ($amount !== null) {
             $payload['amount'] = $amount;
@@ -465,6 +494,8 @@ final class PurchasesApi extends CollectApi
 
     public function charge(string $purchaseId, string $recurringToken): PurchaseData
     {
+        $this->assertSafePathSegment($purchaseId, 'Purchase id');
+
         $response = $this->postMutation(
             operation: 'charge',
             purchaseId: $purchaseId,
@@ -481,6 +512,8 @@ final class PurchasesApi extends CollectApi
 
     public function capture(string $purchaseId, ?int $amount = null): PurchaseData
     {
+        $this->assertSafePathSegment($purchaseId, 'Purchase id');
+
         $payload = [];
         if ($amount !== null) {
             $payload['amount'] = $amount;
@@ -501,6 +534,8 @@ final class PurchasesApi extends CollectApi
 
     public function release(string $purchaseId): PurchaseData
     {
+        $this->assertSafePathSegment($purchaseId, 'Purchase id');
+
         $response = $this->postMutation(
             operation: 'release',
             purchaseId: $purchaseId,
@@ -515,6 +550,8 @@ final class PurchasesApi extends CollectApi
 
     public function markAsPaid(string $purchaseId, ?int $paidOn = null): PurchaseData
     {
+        $this->assertSafePathSegment($purchaseId, 'Purchase id');
+
         $payload = [];
         if ($paidOn !== null) {
             $payload['paid_on'] = $paidOn;
@@ -535,6 +572,8 @@ final class PurchasesApi extends CollectApi
 
     public function resendInvoice(string $purchaseId): PurchaseData
     {
+        $this->assertSafePathSegment($purchaseId, 'Purchase id');
+
         $response = $this->postMutation(
             operation: 'resend_invoice',
             purchaseId: $purchaseId,
@@ -549,6 +588,8 @@ final class PurchasesApi extends CollectApi
 
     public function deleteRecurringToken(string $purchaseId): PurchaseData
     {
+        $this->assertSafePathSegment($purchaseId, 'Purchase id');
+
         $response = $this->postMutation(
             operation: 'delete_recurring_token',
             purchaseId: $purchaseId,

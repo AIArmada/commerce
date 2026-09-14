@@ -54,6 +54,21 @@ describe('TrackNetworkLinkCookie middleware', function (): void {
             ->first(fn ($cookie): bool => $cookie->getName() === 'affiliate_network_link');
 
         expect($cookie)->not->toBeNull();
-        expect(urldecode((string) $cookie->getValue()))->toContain('cookie-link');
+        expect(decrypt(urldecode((string) $cookie->getValue())))->toContain('cookie-link');
+    });
+
+    test('rejects plaintext, tampered, and malformed cookie values', function (): void {
+        $valid = encrypt(json_encode([
+            'code' => 'real-link',
+            'affiliate_id' => 'aff-1',
+            'offer_id' => 'offer-1',
+            'clicked_at' => now()->toIso8601String(),
+        ], JSON_THROW_ON_ERROR));
+
+        expect(TrackNetworkLinkCookie::parseCookie($valid))->toMatchArray(['code' => 'real-link'])
+            ->and(TrackNetworkLinkCookie::parseCookie(json_encode(['code' => 'forged'])))->toBeNull()
+            ->and(TrackNetworkLinkCookie::parseCookie(mb_substr($valid, 0, -4) . 'abcd'))->toBeNull()
+            ->and(TrackNetworkLinkCookie::parseCookie(encrypt('not-json')))->toBeNull()
+            ->and(TrackNetworkLinkCookie::parseCookie('garbage'))->toBeNull();
     });
 });

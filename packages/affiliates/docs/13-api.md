@@ -11,8 +11,7 @@ title: Public API
     'enabled' => env('AFFILIATES_API_ENABLED', false),
     'prefix' => env('AFFILIATES_API_PREFIX', 'api/affiliates'),
     'middleware' => ['api', 'throttle:60,1'],
-    'auth' => env('AFFILIATES_API_AUTH', 'token'),
-    'token' => env('AFFILIATES_API_TOKEN'),
+    'token' => env('AFFILIATES_API_TOKEN'), // required Bearer [REDACTED]
 ],
 ```
 

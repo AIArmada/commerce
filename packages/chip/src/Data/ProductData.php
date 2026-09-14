@@ -7,6 +7,7 @@ namespace AIArmada\Chip\Data;
 use AIArmada\Chip\Data\Casts\MoneyCast;
 use AIArmada\Chip\Data\Transformers\MoneyTransformer;
 use Akaunting\Money\Money;
+use InvalidArgumentException;
 use Spatie\LaravelData\Attributes\WithCast;
 use Spatie\LaravelData\Attributes\WithTransformer;
 
@@ -94,15 +95,30 @@ final class ProductData extends ChipData
     }
 
     /**
+     * Get the line subtotal in cents: price × quantity with half-up rounding.
+     */
+    public function getSubtotalInCents(): int
+    {
+        return self::multiplyMinorUnits($this->getPriceInCents(), $this->quantity);
+    }
+
+    /**
+     * Get the line discount total in cents: discount × quantity, half-up.
+     */
+    public function getDiscountTotalInCents(): int
+    {
+        return self::multiplyMinorUnits($this->getDiscountInCents(), $this->quantity);
+    }
+
+    /**
      * Get the total price as Money (price - discount) × quantity.
      */
     public function getTotalPrice(): Money
     {
-        $unitPrice = $this->price->subtract($this->discount);
-        $quantity = (float) $this->quantity;
+        $netUnitMinor = $this->getPriceInCents() - $this->getDiscountInCents();
         $currency = $this->getCurrency();
 
-        return Money::{$currency}((int) ($unitPrice->getAmount() * $quantity));
+        return Money::{$currency}(self::multiplyMinorUnits($netUnitMinor, $this->quantity));
     }
 
     /**
@@ -111,6 +127,21 @@ final class ProductData extends ChipData
     public function getTotalPriceInCents(): int
     {
         return (int) $this->getTotalPrice()->getAmount();
+    }
+
+    /**
+     * Multiply integer minor units by a decimal quantity with explicit
+     * half-up rounding so fractional quantities never silently truncate.
+     */
+    private static function multiplyMinorUnits(int $minorUnits, string $quantity): int
+    {
+        $normalized = mb_trim($quantity);
+
+        if (! is_numeric($normalized)) {
+            throw new InvalidArgumentException('Product quantity must be numeric.');
+        }
+
+        return (int) round($minorUnits * (float) $normalized, 0, PHP_ROUND_HALF_UP);
     }
 
     /**

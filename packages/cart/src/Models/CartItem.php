@@ -168,6 +168,9 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
      *
      * Integer inputs are already minor units. Decimal float/string inputs are
      * major units and use explicit half-up rounding at this boundary.
+     * Thousand separators (`,` or digit-grouping spaces, US-style) always imply
+     * major units, so '1,000' and '1,000.00' both mean 100000 minor units.
+     * Decimal-comma locales are not supported.
      */
     private function normalizeToInt(int | float | string $price): int
     {
@@ -184,7 +187,15 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
         }
 
         $normalized = mb_trim($price);
-        $normalized = str_replace(['$', '€', '£', '¥', '₹', 'RM', '₱', '₩', '฿', '₫', '₪', '₨', 'kr', 'zł', ',', ' '], '', $normalized);
+        $normalized = str_replace(['$', '€', '£', '¥', '₹', 'RM', '₱', '₩', '฿', '₫', '₪', '₨', 'kr', 'zł'], '', $normalized);
+
+        if ($normalized === '') {
+            return 0;
+        }
+
+        $hasThousandSeparator = str_contains($normalized, ',')
+            || preg_match('/\d \d/', $normalized) === 1;
+        $normalized = str_replace([',', ' '], '', $normalized);
 
         if ($normalized === '') {
             return 0;
@@ -194,7 +205,7 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
             throw new InvalidCartItemException('Cart item price must be a finite number');
         }
 
-        return str_contains($normalized, '.')
+        return str_contains($normalized, '.') || $hasThousandSeparator
             ? CartMoney::minorFromDecimal($normalized)
             : (int) $normalized;
     }

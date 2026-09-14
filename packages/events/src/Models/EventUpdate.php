@@ -68,6 +68,17 @@ class EventUpdate extends Model
         return config('events.database.tables.event_updates', 'event_updates');
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (EventUpdate $update): void {
+            $update->items()->chunkById(200, function ($items): void {
+                foreach ($items as $item) {
+                    $item->delete();
+                }
+            });
+        });
+    }
+
     protected function casts(): array
     {
         return [

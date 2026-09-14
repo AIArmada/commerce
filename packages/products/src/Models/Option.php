@@ -216,7 +216,11 @@ class Option extends Model implements Auditable
         });
 
         static::deleting(function (Option $option): void {
-            $option->values()->delete();
+            // Delete values individually so OptionValue::deleting detaches
+            // variant pivots instead of leaving orphaned pivot rows.
+            $option->values()->reorder()->chunkById(100, function ($values): void {
+                $values->each(fn ($value) => $value->delete());
+            });
         });
     }
 }

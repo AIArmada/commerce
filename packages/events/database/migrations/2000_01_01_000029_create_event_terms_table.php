@@ -26,6 +26,10 @@ return new class extends Migration
                 ['event_taxonomy_id', 'parent_id', 'sort_order'],
                 'event_terms_taxonomy_parent_sort_index',
             );
+            $table->unique(
+                ['event_taxonomy_id', 'code'],
+                'event_terms_taxonomy_code_unique',
+            );
             $table->timestampsTz();
         });
     }

@@ -38,12 +38,20 @@ final class MembersRelationManager extends RelationManager
                         TextInput::make('email')->email()->required(),
                         Select::make('role')->options(collect(MemberRole::cases())->mapWithKeys(fn (MemberRole $role): array => [$role->value => $role->label()])->all())->default(MemberRole::Viewer->value)->required(),
                     ])
-                    ->action(function (Organization $organization, array $data): void {
+                    ->action(function (MembersRelationManager $livewire, array $data): void {
+                        $organization = self::ownerOrganization($livewire);
                         $actor = Filament::auth()->user();
                         abort_unless($actor instanceof Model, 403);
                         OrganizationResource::authorizeRecord($organization, 'organization.manage-members');
-                        $member = $organization->members()->getModel()->newQuery()->where('email', $data['email'])->first();
-                        abort_unless($member instanceof Model, 422, 'User not found.');
+
+                        // Normalized lookup with a generic failure so the
+                        // response never reveals whether an email exists.
+                        $email = mb_strtolower(mb_trim((string) ($data['email'] ?? '')));
+                        $member = $organization->members()->getModel()->newQuery()
+                            ->whereRaw('LOWER(email) = ?', [$email])
+                            ->first();
+
+                        abort_unless($member instanceof Model, 422, 'Unable to add this member.');
                         app(AddMemberAction::class)->handle($organization, $member, MemberRole::from($data['role']));
                     }),
             ])
@@ -53,18 +61,29 @@ final class MembersRelationManager extends RelationManager
                         Select::make('role')->options(collect(MemberRole::cases())->mapWithKeys(fn (MemberRole $role): array => [$role->value => $role->label()])->all())->required(),
                     ])
                     ->fillForm(fn (Model $record): array => ['role' => (string) data_get($record->getRelationValue('pivot'), 'role')])
-                    ->action(function (Organization $organization, Model $record, array $data): void {
+                    ->action(function (MembersRelationManager $livewire, Model $record, array $data): void {
+                        $organization = self::ownerOrganization($livewire);
                         OrganizationResource::authorizeRecord($organization, 'organization.manage-members');
                         app(ChangeMemberRoleAction::class)->handle($organization, $record, MemberRole::from($data['role']));
                     })
                     ->visible(fn (Model $record): bool => (string) data_get($record->getRelationValue('pivot'), 'role') !== MemberRole::Owner->spatieRoleName()),
                 Action::make('remove')
                     ->requiresConfirmation()
-                    ->action(function (Organization $organization, Model $record): void {
+                    ->action(function (MembersRelationManager $livewire, Model $record): void {
+                        $organization = self::ownerOrganization($livewire);
                         OrganizationResource::authorizeRecord($organization, 'organization.manage-members');
                         app(RemoveMemberAction::class)->handle($organization, $record);
                     })
                     ->visible(fn (Model $record): bool => (string) data_get($record->getRelationValue('pivot'), 'role') !== MemberRole::Owner->spatieRoleName()),
             ]);
+    }
+
+    private static function ownerOrganization(MembersRelationManager $livewire): Organization
+    {
+        $owner = $livewire->getOwnerRecord();
+
+        abort_unless($owner instanceof Organization, 404);
+
+        return $owner;
     }
 }

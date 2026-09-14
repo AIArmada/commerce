@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use BackedEnum;
 use Closure;
@@ -23,6 +24,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\User;
 
 final class AffiliateForm
@@ -38,6 +40,7 @@ final class AffiliateForm
                         TextInput::make('code')
                             ->label('Tracking Code')
                             ->required()
+                            ->alphaDash()
                             ->maxLength(64)
                             ->rule(fn (mixed $component): Closure => function (string $attribute, string $value, Closure $fail) use ($component): void {
                                 $query = Affiliate::query()
@@ -65,15 +68,13 @@ final class AffiliateForm
 
                         Select::make('parent_affiliate_id')
                             ->label('Parent Affiliate')
-                            ->relationship('parent', 'name')
-                            ->searchable()
-                            ->preload(),
+                            ->relationship('parent', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                            ->searchable(),
 
                         Select::make('rank_id')
                             ->label('Rank')
-                            ->relationship('rank', 'name')
-                            ->searchable()
-                            ->preload(),
+                            ->relationship('rank', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                            ->searchable(),
                     ]),
 
                     Textarea::make('description')
@@ -101,10 +102,15 @@ final class AffiliateForm
                         Select::make('apply_template')
                             ->label('Commission Template')
                             ->helperText('Select a template to auto-fill commission type and rate.')
-                            ->options(fn (): array => AffiliateCommissionTemplate::query()
-                                ->active()
+                            ->getSearchResultsUsing(fn (string $search): array => OwnerUiScope::apply(
+                                AffiliateCommissionTemplate::query()->active(),
+                                includeGlobal: false,
+                            )
+                                ->where('name', 'like', "%{$search}%")
+                                ->limit(50)
                                 ->pluck('name', 'id')
                                 ->toArray())
+                            ->getOptionLabelUsing(fn ($value): ?string => AffiliateCommissionTemplate::query()->find($value)?->name)
                             ->searchable()
                             ->afterStateUpdated(function (string $state, Set $set, Get $get): void {
                                 $template = AffiliateCommissionTemplate::query()->find($state);
@@ -193,8 +199,10 @@ final class AffiliateForm
             Section::make('Portal Access')
                 ->description('Link a user to this affiliate for self-service portal access.')
                 ->schema([
-                    Hidden::make('owner_type'),
-                    Hidden::make('owner_id'),
+                    Hidden::make('owner_type')
+                        ->dehydrated(false),
+                    Hidden::make('owner_id')
+                        ->dehydrated(false),
                     Grid::make(1)->schema([
                         Select::make('linked_user')
                             ->label('Linked User')
@@ -221,7 +229,6 @@ final class AffiliateForm
 
                                 return $userModel::find($value)?->email;
                             })
-                            ->dehydrated(false)
                             ->afterStateHydrated(function (Select $component): void {
                                 $record = $component->getRecord();
                                 $userModelClass = (string) config('auth.providers.users.model', User::class);

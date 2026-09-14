@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class EnsureSeatHoldAction
 {
@@ -35,6 +36,12 @@ class EnsureSeatHoldAction
             return new Collection;
         }
 
+        if (($heldByType === null) !== ($heldById === null)) {
+            throw new InvalidArgumentException('Held-by type and id must both be present or both be null.');
+        }
+
+        $this->assertOwnerContextForHoldCreation();
+
         return DB::transaction(function () use ($map, $quantity, $heldByType, $heldById, $reference, $categoryPreferences): Collection {
             $ttlMinutes = (int) config('seating.holds.ttl_minutes', 15);
             $expiresAt = CarbonImmutable::now()->addMinutes($ttlMinutes);
@@ -51,32 +58,65 @@ class EnsureSeatHoldAction
     }
 
     /**
+     * Select available seats with a locking re-check.
+     *
+     * The availability subquery reads from the transaction snapshot, so holds
+     * committed after our snapshot (or by a transaction we waited on for a
+     * seat lock) are invisible to it. The follow-up locking read sees the
+     * latest committed hold rows and serializes concurrent selectors, and a
+     * single retry fills from seats that were never contested.
+     *
      * @param  array<int, string>  $preferences
      * @return Collection<int, Seat>
      */
     private function selectSeats(SeatMap $map, int $quantity, array $preferences): Collection
     {
-        $preferred = new Collection;
+        $excludedSeatIds = [];
+        $verified = new Collection;
 
-        if ($preferences !== []) {
-            $preferred = $this->availableSeatsQuery($map)
-                ->whereIn('category', $preferences)
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $candidates = $this->availableSeatsQuery($map, $preferences)
+                ->when($excludedSeatIds !== [], fn (Builder $query): Builder => $query->whereNotIn('id', $excludedSeatIds))
                 ->limit($quantity)
                 ->get();
+
+            if ($candidates->isEmpty()) {
+                break;
+            }
+
+            $heldSeatIds = SeatHold::query()
+                ->whereIn('seat_id', $candidates->pluck('id')->all())
+                ->where('expires_at', '>', CarbonImmutable::now())
+                ->lockForUpdate()
+                ->pluck('seat_id')
+                ->all();
+
+            $fresh = $candidates->reject(fn (Seat $seat): bool => in_array($seat->id, $heldSeatIds, true))->values();
+            $verified = $verified->concat($fresh)->unique('id')->values();
+
+            if ($verified->count() >= $quantity) {
+                return $verified->take($quantity)->values();
+            }
+
+            $excludedSeatIds = array_values(array_unique([
+                ...$excludedSeatIds,
+                ...$candidates->pluck('id')->all(),
+            ]));
         }
 
-        $remaining = $quantity - $preferred->count();
+        return $verified;
+    }
 
-        if ($remaining <= 0) {
-            return $preferred;
+    private function assertOwnerContextForHoldCreation(): void
+    {
+        if (! SeatHold::ownerScopeConfig()->enabled) {
+            return;
         }
 
-        $fallback = $this->availableSeatsQuery($map)
-            ->when($preferred->isNotEmpty(), fn (Builder $query): Builder => $query->whereNotIn('id', $preferred->pluck('id')->all()))
-            ->limit($remaining)
-            ->get();
-
-        return $preferred->concat($fallback)->values();
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            OwnerContext::resolve(),
+            'Seat hold creation requires an owner context when seating owner mode is enabled. Use OwnerContext::withOwner($owner, ...) or OwnerContext::withOwner(null, ...) for explicit global holds.'
+        );
     }
 
     /**
@@ -131,18 +171,29 @@ class EnsureSeatHoldAction
     }
 
     /**
+     * @param  array<int, string>  $preferences
      * @return Builder<Seat>
      */
-    private function availableSeatsQuery(SeatMap $map): Builder
+    private function availableSeatsQuery(SeatMap $map, array $preferences = []): Builder
     {
-        return Seat::query()
+        $query = Seat::query()
             ->with('section')
             ->whereHas('section', fn (Builder $query): Builder => $query->where('seat_map_id', $map->id))
             ->available()
-            ->whereDoesntHave('holds', fn (Builder $query): Builder => $query->where('expires_at', '>', CarbonImmutable::now()))
+            ->whereDoesntHave('holds', fn (Builder $query): Builder => $query->where('expires_at', '>', CarbonImmutable::now()));
+
+        if ($preferences !== []) {
+            $placeholders = implode(',', array_fill(0, count($preferences), '?'));
+            $query->orderByRaw("CASE WHEN category IN ({$placeholders}) THEN 0 ELSE 1 END", array_values($preferences));
+        }
+
+        // Contended seat rows are skipped instead of blocking: the retry loop
+        // refills from seats that were never contested. The raw lock string
+        // passes through on MySQL/Postgres and is ignored on SQLite.
+        return $query
             ->orderBy('seat_section_id')
             ->orderBy('row_number')
             ->orderBy('column_number')
-            ->lockForUpdate();
+            ->lock('for update skip locked');
     }
 }

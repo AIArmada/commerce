@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Console\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Communications\Actions\TransitionDeliveryAction;
 use AIArmada\Communications\Enums\CommunicationStatus;
+use AIArmada\Communications\Enums\DeliveryStatus;
+use AIArmada\Communications\Events\CommunicationExpired;
 use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
 
 final class ExpireCommunicationsCommand extends Command
@@ -77,10 +83,43 @@ final class ExpireCommunicationsCommand extends Command
             return self::SUCCESS;
         }
 
-        $query->update([
-            'status' => CommunicationStatus::Expired->value,
-            'expires_at' => CarbonImmutable::now(),
-        ]);
+        $query->chunkById(100, function (Collection $communications): void {
+            foreach ($communications as $communication) {
+                DB::transaction(function () use ($communication): void {
+                    $communication->status = CommunicationStatus::Expired;
+                    $communication->save();
+
+                    Event::dispatch(new CommunicationExpired(
+                        communicationId: $communication->id,
+                    ));
+
+                    $communication->deliveries()
+                        ->whereNotIn('status', [
+                            DeliveryStatus::Delivered,
+                            DeliveryStatus::Opened,
+                            DeliveryStatus::Read,
+                            DeliveryStatus::Clicked,
+                            DeliveryStatus::Replied,
+                            DeliveryStatus::Bounced,
+                            DeliveryStatus::Complained,
+                            DeliveryStatus::Failed,
+                            DeliveryStatus::Cancelled,
+                            DeliveryStatus::Expired,
+                            DeliveryStatus::Suppressed,
+                            DeliveryStatus::Unsubscribed,
+                        ])
+                        ->chunkById(100, function (Collection $deliveries): void {
+                            foreach ($deliveries as $delivery) {
+                                app(TransitionDeliveryAction::class)->handle(
+                                    $delivery,
+                                    DeliveryStatus::Expired,
+                                    force: true,
+                                );
+                            }
+                        });
+                });
+            }
+        });
 
         $this->info("Expired {$count} communications.");
 

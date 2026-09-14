@@ -89,8 +89,6 @@ class AffiliateProgram extends Model implements Auditable
         'terms_url',
         'eligibility_rules',
         'metadata',
-        'owner_type',
-        'owner_id',
     ];
 
     protected $casts = [

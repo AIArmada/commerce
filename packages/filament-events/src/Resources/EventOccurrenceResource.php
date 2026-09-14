@@ -104,6 +104,9 @@ final class EventOccurrenceResource extends Resource
                 ExportAction::make()
                     ->exporter(EventOccurrenceExporter::class)
                     ->label('Export Occurrences'),
+            ])
+            ->actions([
+                ViewAction::make(),
                 Action::make('delay')
                     ->label('Delay')
                     ->icon('heroicon-o-clock')
@@ -150,9 +153,6 @@ final class EventOccurrenceResource extends Resource
                     })
                     ->visible(fn (?EventOccurrence $record) => (string) ($record?->status ?? '') === 'published')
                     ->requiresConfirmation(),
-            ])
-            ->actions([
-                ViewAction::make(),
                 Action::make('clone')
                     ->label('Clone')
                     ->icon('heroicon-o-document-duplicate')

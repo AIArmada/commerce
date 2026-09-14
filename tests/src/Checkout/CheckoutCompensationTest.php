@@ -87,7 +87,7 @@ describe('checkout compensation', function (): void {
         }
 
         $registry->setOrder($identifiers);
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'checkout-compensation-failure-' . $failAt,
             'step_states' => array_fill_keys($identifiers, StepStatus::Pending->value),
         ]);
@@ -196,7 +196,7 @@ describe('checkout compensation', function (): void {
         });
         $registry->setOrder(['step_1', 'step_2']);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'checkout-compensation-exception',
             'step_states' => [
                 'step_1' => StepStatus::Pending->value,
@@ -276,7 +276,7 @@ describe('checkout compensation', function (): void {
         $resolver->shouldReceive('resolve')->twice()->with('test')->andReturn($processor);
         $step = new ProcessPaymentStep($resolver);
 
-        $completed = CheckoutSession::create([
+        $completed = CheckoutSession::forceCreate([
             'cart_id' => 'checkout-compensation-refund',
             'selected_payment_gateway' => 'test',
             'payment_id' => 'payment-completed',
@@ -286,7 +286,7 @@ describe('checkout compensation', function (): void {
                 'status' => PaymentStatus::Completed->value,
             ],
         ]);
-        $pending = CheckoutSession::create([
+        $pending = CheckoutSession::forceCreate([
             'cart_id' => 'checkout-compensation-void',
             'selected_payment_gateway' => 'test',
             'payment_id' => 'payment-pending',

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Policies\OrderItemPolicy;
@@ -21,7 +22,9 @@ describe('Order Policies', function (): void {
             $policy = new OrderPolicy;
 
             expect($policy->viewAny($user))->toBeTrue();
-            expect($policy->view($user, new Order))->toBeTrue();
+            OwnerContext::withOwner(null, function () use ($policy, $user): void {
+                expect($policy->view($user, new Order))->toBeTrue();
+            });
         });
 
         it('denies viewing orders when user lacks permission', function (): void {
@@ -166,7 +169,9 @@ describe('Order Policies', function (): void {
 
             $policy = new OrderPolicy;
 
-            expect($policy->delete($user, new Order))->toBeTrue();
+            OwnerContext::withOwner(null, function () use ($policy, $user): void {
+                expect($policy->delete($user, new Order))->toBeTrue();
+            });
         });
 
         it('allows canceling cancellable orders when user has permission', function (): void {

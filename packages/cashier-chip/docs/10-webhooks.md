@@ -44,7 +44,7 @@ CHIP_WEBHOOK_SECRET=your-webhook-secret
 Enable/disable signature verification:
 
 ```php
-// config/cashier-chip.php
+// config/chip.php (the chip package owns signature verification)
 'webhooks' => [
     'secret' => env('CHIP_WEBHOOK_SECRET'),
     'verify_signature' => true,  // Set to false for testing
@@ -256,7 +256,7 @@ $response->assertOk();
 For testing:
 
 ```php
-// config/cashier-chip.php
+// config/chip.php
 'webhooks' => [
     'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
 ],

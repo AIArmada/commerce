@@ -20,11 +20,17 @@ final class NormalizesUrl
 
         // Reject non-http/https URLs explicitly
         if (preg_match('/^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//', $url)) {
-            if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
+            if (preg_match('#^https?://#i', $url) !== 1) {
                 return null;
             }
 
-            return $url;
+            $normalized = preg_replace_callback(
+                '#^(https?)://([^/]*)#i',
+                static fn (array $matches): string => mb_strtolower($matches[1]) . '://' . mb_strtolower($matches[2]),
+                $url,
+            );
+
+            return is_string($normalized) ? $normalized : null;
         }
 
         // If URL has no scheme and looks like a domain, prepend https://

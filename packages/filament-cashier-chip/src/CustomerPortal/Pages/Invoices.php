@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\CustomerPortal\Pages;
 
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithBillable;
 use BackedEnum;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
@@ -56,18 +57,22 @@ class Invoices extends Page
         ];
     }
 
-    public function downloadInvoice(string $invoiceId): Response
+    public function downloadInvoice(string $invoiceId): ?Response
     {
         $billable = $this->getBillable();
 
         if (! $billable || ! method_exists($billable, 'findInvoice')) {
-            abort(404);
+            $this->notifyInvoiceNotFound();
+
+            return null;
         }
 
         $invoice = $billable->findInvoice($invoiceId);
 
         if (! $invoice) {
-            abort(404);
+            $this->notifyInvoiceNotFound();
+
+            return null;
         }
 
         return $invoice->download([
@@ -110,6 +115,19 @@ class Invoices extends Page
             return collect();
         }
 
-        return $billable->invoices();
+        return $billable->invoices($this->invoiceLimit());
+    }
+
+    protected function invoiceLimit(): int
+    {
+        return max(1, (int) config('filament-cashier-chip.billing.invoices.limit', 25));
+    }
+
+    private function notifyInvoiceNotFound(): void
+    {
+        Notification::make()
+            ->title(__('Invoice not found'))
+            ->danger()
+            ->send();
     }
 }

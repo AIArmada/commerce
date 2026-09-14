@@ -8,8 +8,9 @@ use AIArmada\Cashier\Contracts\PaymentContract;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
+use Laravel\Cashier\Cashier;
 use Laravel\Cashier\Payment;
-use Stripe\StripeClient;
+use Stripe\Charge;
 
 /**
  * Wrapper for Stripe payment.
@@ -17,6 +18,10 @@ use Stripe\StripeClient;
 class StripePayment implements PaymentContract
 {
     protected Payment $payment;
+
+    private ?Charge $cachedCharge = null;
+
+    private bool $chargeResolved = false;
 
     /**
      * Create a new Stripe payment wrapper.
@@ -109,24 +114,9 @@ class StripePayment implements PaymentContract
      */
     public function isRefunded(): bool
     {
-        $paymentIntent = $this->payment->asStripePaymentIntent();
+        $charge = $this->latestCharge();
 
-        $latestCharge = $paymentIntent->latest_charge;
-
-        if (! is_string($latestCharge) || $latestCharge === '') {
-            return false;
-        }
-
-        $secret = config('cashier.gateways.stripe.secret');
-
-        if (! is_string($secret) || $secret === '') {
-            return false;
-        }
-
-        $stripe = new StripeClient($secret);
-        $charge = $stripe->charges->retrieve($latestCharge);
-
-        return ($charge->amount_refunded ?? 0) > 0;
+        return $charge !== null && ($charge->amount_refunded ?? 0) > 0;
     }
 
     /**
@@ -173,23 +163,34 @@ class StripePayment implements PaymentContract
      */
     public function receiptUrl(): ?string
     {
-        $paymentIntent = $this->payment->asStripePaymentIntent();
-        $latestCharge = $paymentIntent->latest_charge;
+        return $this->latestCharge()?->receipt_url;
+    }
 
-        if ($latestCharge && is_string($latestCharge)) {
-            $secret = config('cashier.gateways.stripe.secret');
-
-            if (! is_string($secret) || $secret === '') {
-                return null;
-            }
-
-            $stripe = new StripeClient($secret);
-            $charge = $stripe->charges->retrieve($latestCharge);
-
-            return $charge->receipt_url;
+    /**
+     * Resolve the latest charge once per wrapper instance.
+     *
+     * Uses the shared Cashier Stripe client and honors an already-expanded
+     * charge object so list rendering never issues one API call per row.
+     */
+    private function latestCharge(): ?Charge
+    {
+        if ($this->chargeResolved) {
+            return $this->cachedCharge;
         }
 
-        return null;
+        $this->chargeResolved = true;
+
+        $latestCharge = $this->payment->asStripePaymentIntent()->latest_charge;
+
+        if ($latestCharge instanceof Charge) {
+            return $this->cachedCharge = $latestCharge;
+        }
+
+        if (! is_string($latestCharge) || $latestCharge === '') {
+            return null;
+        }
+
+        return $this->cachedCharge = Cashier::stripe()->charges->retrieve($latestCharge);
     }
 
     /**

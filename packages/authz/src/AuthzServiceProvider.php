@@ -29,6 +29,7 @@ use Illuminate\View\Compilers\BladeCompiler;
 use InvalidArgumentException;
 use Laravel\Octane\Events\RequestReceived;
 use Spatie\Permission\Contracts\PermissionsTeamResolver;
+use Spatie\Permission\DefaultTeamResolver;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 use Spatie\Permission\Models\Role as SpatieRole;
 use Spatie\Permission\PermissionRegistrar;
@@ -67,6 +68,7 @@ final class AuthzServiceProvider extends ServiceProvider
         $this->assertConfiguration();
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
 
         $this->registerBladeDirectives();
         $this->registerImpersonationEventListeners();
@@ -87,6 +89,12 @@ final class AuthzServiceProvider extends ServiceProvider
             throw new InvalidArgumentException('authz.permissions.separator must be exactly one non-alphanumeric character.');
         }
 
+        $case = config('authz.permissions.case', 'camel');
+
+        if (! in_array($case, PermissionKeyBuilder::SUPPORTED_CASES, true)) {
+            throw new InvalidArgumentException('authz.permissions.case must be one of: ' . implode(', ', PermissionKeyBuilder::SUPPORTED_CASES) . '.');
+        }
+
         if (config('authz.scopes.enabled', false) && ! config('permission.teams', false)) {
             throw new InvalidArgumentException('Authz scopes require Spatie permission teams to be enabled.');
         }
@@ -102,7 +110,10 @@ final class AuthzServiceProvider extends ServiceProvider
                     return null;
                 }
 
-                return UserRoleChecker::hasGlobalRole($user, $superAdminRole) ? true : null;
+                $isSuperAdmin = app(WildcardPermissionCache::class)
+                    ->rememberSuperAdmin($user, $superAdminRole, static fn (): bool => UserRoleChecker::hasGlobalRole($user, $superAdminRole));
+
+                return $isSuperAdmin ? true : null;
             });
         }
 
@@ -139,6 +150,7 @@ final class AuthzServiceProvider extends ServiceProvider
     private function registerTeamResolver(): void
     {
         if (config('authz.scopes.enabled', false)) {
+            $this->setTeamResolverConfig(AuthzScopeTeamResolver::class);
             $this->app->singleton(PermissionsTeamResolver::class, AuthzScopeTeamResolver::class);
 
             return;
@@ -152,7 +164,24 @@ final class AuthzServiceProvider extends ServiceProvider
             return;
         }
 
+        $this->setTeamResolverConfig(OwnerContextTeamResolver::class);
         $this->app->singleton(PermissionsTeamResolver::class, OwnerContextTeamResolver::class);
+    }
+
+    /**
+     * Spatie's PermissionRegistrar news its team resolver from the
+     * `permission.team_resolver` config value, so the container binding alone
+     * is inert. Only fill in the default; an explicit host choice wins.
+     *
+     * @param  class-string  $resolver
+     */
+    private function setTeamResolverConfig(string $resolver): void
+    {
+        $configured = config('permission.team_resolver');
+
+        if ($configured === null || $configured === DefaultTeamResolver::class) {
+            config()->set('permission.team_resolver', $resolver);
+        }
     }
 
     private function configureSpatiePermissions(): void
@@ -237,7 +266,8 @@ final class AuthzServiceProvider extends ServiceProvider
 
     private function registerBladeDirectives(): void
     {
-        $this->app->afterResolving('blade.compiler', function (BladeCompiler $blade): void {
+        // callAfterResolving also fires when blade.compiler resolved before boot.
+        $this->callAfterResolving('blade.compiler', function (BladeCompiler $blade): void {
             $blade->directive('impersonating', function (): string {
                 return '<?php if (\\AIArmada\\Authz\\is_impersonating()) : ?>';
             });
@@ -255,10 +285,11 @@ final class AuthzServiceProvider extends ServiceProvider
             });
 
             $blade->directive('canBeImpersonated', function (string $expression): string {
-                $args = preg_split("/,(\s+)?/", $expression);
-                $guard = $args[1] ?? 'null';
+                if (mb_trim($expression) === '') {
+                    return '<?php if (false) : ?>';
+                }
 
-                return "<?php if (\\AIArmada\\Authz\\can_be_impersonated({$args[0]}, {$guard})) : ?>";
+                return "<?php if (\\AIArmada\\Authz\\can_be_impersonated({$expression})) : ?>";
             });
 
             $blade->directive('endCanBeImpersonated', function (): string {

@@ -103,6 +103,8 @@ class Price extends Model implements Auditable
         });
 
         static::saving(function (self $price): void {
+            self::validateMonetaryFields($price);
+
             if (! config('pricing.features.owner.enabled', false)) {
                 return;
             }
@@ -262,6 +264,25 @@ class Price extends Model implements Auditable
     public function getFormattedAmount(): string
     {
         return $this->formatMoney($this->amount, $this->currency);
+    }
+
+    private static function validateMonetaryFields(self $price): void
+    {
+        if ($price->amount === null || $price->amount < 0) {
+            throw new InvalidArgumentException('Price amount must be zero or greater.');
+        }
+
+        if ($price->compare_amount !== null && $price->compare_amount < 0) {
+            throw new InvalidArgumentException('Price compare amount must be zero or greater.');
+        }
+
+        if ($price->min_quantity === null || $price->min_quantity < 1) {
+            throw new InvalidArgumentException('Price min quantity must be at least 1.');
+        }
+
+        if ($price->starts_at !== null && $price->ends_at !== null && $price->starts_at > $price->ends_at) {
+            throw new InvalidArgumentException('Price starts_at must not be after ends_at.');
+        }
     }
 
     // =========================================================================

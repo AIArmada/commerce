@@ -47,7 +47,6 @@ final class CommunicationTemplate extends Model
         'description',
         'category',
         'default_locale',
-        'status',
         'published_at',
         'disabled_at',
         'metadata',

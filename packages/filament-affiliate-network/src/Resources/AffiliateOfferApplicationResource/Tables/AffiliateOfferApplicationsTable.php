@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Tables;
 
+use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Actions;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -14,6 +17,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 final class AffiliateOfferApplicationsTable
 {
@@ -31,9 +35,11 @@ final class AffiliateOfferApplicationsTable
                     ->searchable()
                     ->sortable(),
 
+                // affiliate.email is a virtual accessor over contact_methods (no email
+                // column exists), so it must stay display-only: searchable/sortable
+                // would generate SQL against a nonexistent column.
                 TextColumn::make('affiliate.email')
                     ->label('Email')
-                    ->searchable()
                     ->toggleable(),
 
                 TextColumn::make('status')
@@ -75,12 +81,12 @@ final class AffiliateOfferApplicationsTable
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->visible(fn ($record): bool => $record->isPending())
-                    ->action(function ($record): void {
-                        app(OfferManagementService::class)->approveApplication(
+                    ->visible(fn (AffiliateOfferApplication $record): bool => $record->isPending())
+                    ->action(function (AffiliateOfferApplication $record): void {
+                        self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => app(OfferManagementService::class)->approveApplication(
                             $record,
                             self::getReviewerName()
-                        );
+                        ));
 
                         Notification::make()
                             ->title('Application approved')
@@ -94,15 +100,16 @@ final class AffiliateOfferApplicationsTable
                     ->form([
                         Textarea::make('reason')
                             ->label('Rejection Reason')
-                            ->required(),
+                            ->required()
+                            ->maxLength(2000),
                     ])
-                    ->visible(fn ($record): bool => $record->isPending())
-                    ->action(function ($record, array $data): void {
-                        app(OfferManagementService::class)->rejectApplication(
+                    ->visible(fn (AffiliateOfferApplication $record): bool => $record->isPending())
+                    ->action(function (AffiliateOfferApplication $record, array $data): void {
+                        self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => app(OfferManagementService::class)->rejectApplication(
                             $record,
-                            $data['reason'],
+                            (string) $data['reason'],
                             self::getReviewerName()
-                        );
+                        ));
 
                         Notification::make()
                             ->title('Application rejected')
@@ -116,15 +123,16 @@ final class AffiliateOfferApplicationsTable
                     ->form([
                         Textarea::make('reason')
                             ->label('Revocation Reason')
-                            ->required(),
+                            ->required()
+                            ->maxLength(2000),
                     ])
-                    ->visible(fn ($record): bool => $record->isApproved())
-                    ->action(function ($record, array $data): void {
-                        app(OfferManagementService::class)->revokeApplication(
+                    ->visible(fn (AffiliateOfferApplication $record): bool => $record->isApproved())
+                    ->action(function (AffiliateOfferApplication $record, array $data): void {
+                        self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => app(OfferManagementService::class)->revokeApplication(
                             $record,
-                            $data['reason'],
+                            (string) $data['reason'],
                             self::getReviewerName()
-                        );
+                        ));
 
                         Notification::make()
                             ->title('Application revoked')
@@ -141,13 +149,16 @@ final class AffiliateOfferApplicationsTable
                         ->icon('heroicon-o-check')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->action(function ($records): void {
+                        ->action(function (Collection $records): void {
                             $service = app(OfferManagementService::class);
                             $reviewer = self::getReviewerName();
 
+                            /** @var AffiliateOfferApplication $record */
                             foreach ($records as $record) {
                                 if ($record->isPending()) {
-                                    $service->approveApplication($record, $reviewer);
+                                    $application = $record;
+
+                                    self::withApplicationOwnerContext($application, fn (): AffiliateOfferApplication => $service->approveApplication($application, $reviewer));
                                 }
                             }
 
@@ -161,6 +172,38 @@ final class AffiliateOfferApplicationsTable
             ->defaultSort('created_at', 'desc');
     }
 
+    /**
+     * Run an application mutation inside the owning affiliate's owner context.
+     *
+     * The admin table lists applications cross-tenant (scope bypassed), but the
+     * domain service re-queries under ScopesByBelongsToOwner. Entering the
+     * affiliate's own context makes those re-queries match truthfully when
+     * affiliates.owner.enabled=true, instead of 404ing on cross-owner rows.
+     *
+     * @template TResult
+     *
+     * @param  callable(): TResult  $callback
+     * @return TResult
+     */
+    private static function withApplicationOwnerContext(AffiliateOfferApplication $record, callable $callback): mixed
+    {
+        $affiliate = $record->getRelationValue('affiliate');
+
+        if (! $affiliate instanceof Affiliate) {
+            $affiliate = OwnerContext::withOwner(null, fn (): Affiliate => Affiliate::query()
+                ->withoutOwnerScope()
+                ->whereKey($record->affiliate_id)
+                ->firstOrFail());
+        }
+
+        /** @var string|null $ownerType */
+        $ownerType = $affiliate->owner_type;
+        /** @var string|null $ownerId */
+        $ownerId = $affiliate->owner_id;
+
+        return OwnerContext::withOwner(OwnerContext::fromTypeAndId($ownerType, $ownerId), $callback);
+    }
+
     private static function getReviewerName(): ?string
     {
         /** @var Authenticatable|null $user */
@@ -170,8 +213,10 @@ final class AffiliateOfferApplicationsTable
             return null;
         }
 
-        return method_exists($user, 'getName')
+        $name = method_exists($user, 'getName')
             ? $user->getName()
             : ($user->name ?? $user->getAuthIdentifier());
+
+        return $name === null ? null : (string) $name;
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Models\Communication;
@@ -11,6 +12,7 @@ use AIArmada\Communications\Models\CommunicationAttempt;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationEvent;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -49,11 +51,21 @@ final class RecordProviderEventAction
 
             if ($deliveryId !== null) {
                 $delivery = CommunicationDelivery::query()->findOrFail($deliveryId);
+
+                if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+                    OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
+                }
+
                 $resolvedCommunicationId = $delivery->communication_id;
             }
 
             if ($attemptId !== null) {
                 $attempt = CommunicationAttempt::query()->findOrFail($attemptId);
+
+                if (CommunicationAttempt::ownerScopeConfig()->enabled) {
+                    OwnerWriteGuard::findOrFailForOwner(CommunicationAttempt::class, $attemptId);
+                }
+
                 $attemptDelivery = $attempt->delivery()->firstOrFail();
 
                 if ($resolvedDeliveryId !== null && $resolvedDeliveryId !== $attemptDelivery->id) {
@@ -66,6 +78,10 @@ final class RecordProviderEventAction
 
             if ($communicationId !== null) {
                 $communication = Communication::query()->findOrFail($communicationId);
+
+                if (Communication::ownerScopeConfig()->enabled) {
+                    OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
+                }
 
                 if ($resolvedCommunicationId !== null && $resolvedCommunicationId !== $communication->id) {
                     throw new RuntimeException('Provider event references records from different communications.');
@@ -100,7 +116,16 @@ final class RecordProviderEventAction
             $eventRecord->received_at = CarbonImmutable::now();
             $eventRecord->payload = $this->redactor->redact($payload);
             $eventRecord->failure_message = $failureMessage;
-            $eventRecord->save();
+
+            try {
+                $eventRecord->save();
+            } catch (QueryException $exception) {
+                if ($exception->getCode() === '23000') {
+                    throw new RuntimeException("Duplicate provider event {$provider}/{$providerEventId}.");
+                }
+
+                throw $exception;
+            }
 
             return $eventRecord;
         });

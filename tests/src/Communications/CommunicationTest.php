@@ -20,13 +20,14 @@ use AIArmada\Communications\Models\CommunicationThread;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
-    $this->communication = Communication::create([
+    $this->communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'test-purpose',
         'status' => CommunicationStatus::Draft,
     ]);
+    $this->communication->save();
 });
 
 test('creates a communication with minimal attributes', function (): void {
@@ -51,25 +52,26 @@ test('casts enum attributes correctly', function (): void {
 test('casts lifecycle timestamps as CarbonImmutable', function (): void {
     $comm = Communication::find($this->communication->id);
 
-    $comm->update([
+    $comm->forceFill([
         'scheduled_at' => '2026-06-20 12:00:00',
         'status' => CommunicationStatus::Scheduled,
-    ]);
+    ])->save();
 
     $fresh = Communication::find($comm->id);
     expect($fresh->scheduled_at)->toBeInstanceOf(CarbonImmutable::class);
 });
 
 test('belongs to a batch', function (): void {
-    $batch = CommunicationBatch::create([
+    $batch = (new CommunicationBatch)->forceFill([
         'name' => 'Test Batch',
         'purpose' => 'testing',
         'category' => 'transactional',
         'status' => 'pending',
         'requested_count' => 0,
     ]);
+    $batch->save();
 
-    $comm = Communication::create([
+    $comm = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
@@ -77,19 +79,21 @@ test('belongs to a batch', function (): void {
         'status' => CommunicationStatus::Draft,
         'batch_id' => $batch->id,
     ]);
+    $comm->save();
 
     expect($comm->batch)->toBeInstanceOf(CommunicationBatch::class);
     expect($comm->batch->id)->toBe($batch->id);
 });
 
 test('belongs to a thread', function (): void {
-    $thread = CommunicationThread::create([
+    $thread = (new CommunicationThread)->forceFill([
         'title' => 'Test Thread',
         'status' => 'open',
         'opened_at' => CarbonImmutable::now(),
     ]);
+    $thread->save();
 
-    $comm = Communication::create([
+    $comm = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
@@ -97,13 +101,14 @@ test('belongs to a thread', function (): void {
         'status' => CommunicationStatus::Draft,
         'thread_id' => $thread->id,
     ]);
+    $comm->save();
 
     expect($comm->thread)->toBeInstanceOf(CommunicationThread::class);
     expect($comm->thread->id)->toBe($thread->id);
 });
 
 test('has polymorphic subject relationship', function (): void {
-    $comm = Communication::create([
+    $comm = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
@@ -112,6 +117,7 @@ test('has polymorphic subject relationship', function (): void {
         'subject_type' => Communication::class,
         'subject_id' => $this->communication->id,
     ]);
+    $comm->save();
 
     expect($comm->subject)->toBeInstanceOf(Communication::class);
     expect($comm->subject->id)->toBe($this->communication->id);
@@ -123,7 +129,7 @@ test('has many deliveries', function (): void {
         'role' => 'to',
     ]);
 
-    $delivery = CommunicationDelivery::create([
+    $delivery = (new CommunicationDelivery)->forceFill([
         'communication_id' => $this->communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
@@ -132,6 +138,7 @@ test('has many deliveries', function (): void {
         'attempt_count' => 0,
         'max_attempts' => 3,
     ]);
+    $delivery->save();
 
     expect($this->communication->deliveries)->toHaveCount(1);
     expect($this->communication->deliveries->first()->id)->toBe($delivery->id);
@@ -175,11 +182,12 @@ test('has many events', function (): void {
 });
 
 test('has many references', function (): void {
-    $reference = CommunicationReference::create([
+    $reference = (new CommunicationReference)->forceFill([
         'communication_id' => $this->communication->id,
         'reference_type' => 'order',
         'reference_id' => 'ORD-001',
     ]);
+    $reference->save();
 
     expect($this->communication->references)->toHaveCount(1);
     expect($this->communication->references->first()->id)->toBe($reference->id);
@@ -198,7 +206,7 @@ test('has many attachments', function (): void {
 });
 
 test('can have parent-child relationship', function (): void {
-    $child = Communication::create([
+    $child = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
@@ -206,6 +214,7 @@ test('can have parent-child relationship', function (): void {
         'status' => CommunicationStatus::Draft,
         'parent_id' => $this->communication->id,
     ]);
+    $child->save();
 
     expect($child->parent)->toBeInstanceOf(Communication::class);
     expect($child->parent->id)->toBe($this->communication->id);
@@ -216,17 +225,17 @@ test('can have parent-child relationship', function (): void {
 test('status transitions store timestamp', function (): void {
     $comm = Communication::find($this->communication->id);
 
-    $comm->update(['status' => CommunicationStatus::Completed, 'completed_at' => CarbonImmutable::now()]);
+    $comm->forceFill(['status' => CommunicationStatus::Completed, 'completed_at' => CarbonImmutable::now()])->save();
     $fresh = Communication::find($comm->id);
     expect($fresh->status->value)->toBe('completed');
     expect($fresh->completed_at)->toBeInstanceOf(CarbonImmutable::class);
 
-    $comm->update(['status' => CommunicationStatus::Failed, 'failed_at' => CarbonImmutable::now()]);
+    $comm->forceFill(['status' => CommunicationStatus::Failed, 'failed_at' => CarbonImmutable::now()])->save();
     $fresh = Communication::find($comm->id);
     expect($fresh->status->value)->toBe('failed');
     expect($fresh->failed_at)->toBeInstanceOf(CarbonImmutable::class);
 
-    $comm->update(['status' => CommunicationStatus::Cancelled, 'cancelled_at' => CarbonImmutable::now()]);
+    $comm->forceFill(['status' => CommunicationStatus::Cancelled, 'cancelled_at' => CarbonImmutable::now()])->save();
     $fresh = Communication::find($comm->id);
     expect($fresh->status->value)->toBe('cancelled');
     expect($fresh->cancelled_at)->toBeInstanceOf(CarbonImmutable::class);
@@ -238,7 +247,7 @@ test('cascade delete removes related deliveries', function (): void {
         'role' => 'to',
     ]);
 
-    CommunicationDelivery::create([
+    (new CommunicationDelivery)->forceFill([
         'communication_id' => $this->communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
@@ -246,7 +255,7 @@ test('cascade delete removes related deliveries', function (): void {
         'status' => DeliveryStatus::Pending,
         'attempt_count' => 0,
         'max_attempts' => 3,
-    ]);
+    ])->save();
 
     expect(CommunicationDelivery::query()->count())->toBe(1);
 

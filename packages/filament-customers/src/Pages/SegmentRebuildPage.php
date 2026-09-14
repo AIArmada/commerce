@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Segment;
 use BackedEnum;
@@ -13,6 +14,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
 class SegmentRebuildPage extends Page
@@ -56,18 +58,23 @@ class SegmentRebuildPage extends Page
             $query = OwnerUiScope::apply($query, includeGlobal: false);
         }
 
-        return $query->get()
+        return $query
+            ->withCount('customers')
+            ->orderBy('name')
+            ->limit(100)
+            ->get()
             ->map(fn (Segment $segment) => [
                 'id' => $segment->id,
                 'name' => $segment->name,
                 'type' => $segment->is_automatic ? 'Automatic' : 'Manual',
-                'customer_count' => $segment->customers()->count(),
+                'customer_count' => (int) $segment->customers_count,
             ])
             ->all();
     }
 
     public function rebuildSegment(string $segmentId): void
     {
+        /** @var Segment|null $segment */
         $segment = (bool) config('customers.features.owner.enabled', false)
             ? OwnerWriteGuard::findOrFailForOwner(Segment::class, $segmentId, includeGlobal: false)
             : Segment::find($segmentId);
@@ -90,7 +97,12 @@ class SegmentRebuildPage extends Page
             return;
         }
 
-        Artisan::call('customers:rebuild-segment', ['segment' => $segmentId]);
+        Gate::authorize('rebuild', $segment);
+
+        Artisan::queue('customers:rebuild-segments', [
+            '--segment' => $segment->getKey(),
+            ...$this->ownerCommandOptions(),
+        ]);
 
         Notification::make()
             ->title("Segment '{$segment->name}' rebuild initiated")
@@ -100,12 +112,49 @@ class SegmentRebuildPage extends Page
 
     public function rebuildAllSegments(): void
     {
-        Artisan::call('customers:rebuild-segments');
+        $query = Segment::query()->where('is_automatic', true);
+
+        if ((bool) config('customers.features.owner.enabled', false)) {
+            $query = OwnerUiScope::apply($query, includeGlobal: false);
+        }
+
+        $segments = $query->get();
+
+        foreach ($segments as $segment) {
+            Gate::authorize('rebuild', $segment);
+        }
+
+        Artisan::queue('customers:rebuild-segments', $this->ownerCommandOptions());
 
         Notification::make()
             ->title('All automatic segment rebuilds initiated')
             ->success()
             ->send();
+    }
+
+    /**
+     * Owner tuple options so the queued command rebuilds the same scope the
+     * admin user sees. Queued commands run outside the request, so the owner
+     * context does not propagate implicitly.
+     *
+     * @return array<string, string>
+     */
+    private function ownerCommandOptions(): array
+    {
+        if (! (bool) config('customers.features.owner.enabled', false)) {
+            return [];
+        }
+
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null) {
+            return [];
+        }
+
+        return [
+            '--owner-type' => $owner->getMorphClass(),
+            '--owner-id' => (string) $owner->getKey(),
+        ];
     }
 
     protected function getHeaderActions(): array

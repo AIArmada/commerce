@@ -6,6 +6,9 @@ namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentChip\Support\PurchaseRevenueExpressions;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -15,6 +18,8 @@ final class PaymentMethodsWidget extends BaseWidget
     protected static ?int $sort = 3;
 
     protected ?string $pollingInterval = '60s';
+
+    private const int BREAKDOWN_CACHE_TTL_SECONDS = 120;
 
     protected function getStats(): array
     {
@@ -49,27 +54,13 @@ final class PaymentMethodsWidget extends BaseWidget
      */
     private function getPaymentMethodBreakdown(): array
     {
-        $purchases = tap(Purchase::query(), function ($query): void {
-            if (method_exists($query->getModel(), 'scopeForOwner')) {
-                $query->forOwner();
-            }
-        })
-            ->whereIn('status', ['paid', 'cleared', 'settled'])
-            ->where('is_test', false)
-            ->get();
-
-        $breakdown = [];
-
-        foreach ($purchases as $purchase) {
-            $method = $this->extractPaymentMethod($purchase);
-
-            if (! isset($breakdown[$method])) {
-                $breakdown[$method] = ['count' => 0, 'amount' => 0];
-            }
-
-            $breakdown[$method]['count']++;
-            $breakdown[$method]['amount'] += $this->extractAmount($purchase);
-        }
+        /** @var array<string, array{count: int, amount: int}> $breakdown */
+        $breakdown = OwnerCache::remember(
+            OwnerContext::resolve(),
+            'filament-chip.payment-methods',
+            self::BREAKDOWN_CACHE_TTL_SECONDS,
+            fn (): array => $this->computeBreakdown(),
+        );
 
         uasort(
             $breakdown,
@@ -79,13 +70,50 @@ final class PaymentMethodsWidget extends BaseWidget
         return array_slice($breakdown, 0, 4, true);
     }
 
-    private function extractPaymentMethod(Purchase $purchase): string
+    /**
+     * Group and sum in SQL over the raw method key, then normalize labels in
+     * PHP — buckets that normalize equally (e.g. `card`, `credit_card`) merge
+     * with identical totals to the previous per-row computation.
+     *
+     * @return array<string, array{count: int, amount: int}>
+     */
+    private function computeBreakdown(): array
     {
-        $payment = $purchase->payment ?? [];
-        $transactionData = $purchase->transaction_data ?? [];
+        $query = tap(Purchase::query(), function ($query): void {
+            if (method_exists($query->getModel(), 'scopeForOwner')) {
+                $query->forOwner();
+            }
+        })
+            ->whereIn('status', ['paid', 'cleared', 'settled'])
+            ->where('is_test', false);
 
-        $method = $payment['payment_type'] ?? $transactionData['payment_method'] ?? 'unknown';
-        $methodValue = mb_trim((string) $method);
+        $methodSql = PurchaseRevenueExpressions::paymentMethodKey($query);
+        $totalSql = PurchaseRevenueExpressions::totalMinor($query);
+
+        $rows = $query
+            ->selectRaw("{$methodSql} AS method_key, COUNT(*) AS method_count, SUM({$totalSql}) AS method_amount")
+            ->groupByRaw($methodSql)
+            ->get();
+
+        $breakdown = [];
+
+        foreach ($rows as $row) {
+            $method = $this->normalizePaymentMethod($row->getAttribute('method_key'));
+
+            if (! isset($breakdown[$method])) {
+                $breakdown[$method] = ['count' => 0, 'amount' => 0];
+            }
+
+            $breakdown[$method]['count'] += (int) $row->getAttribute('method_count');
+            $breakdown[$method]['amount'] += (int) $row->getAttribute('method_amount');
+        }
+
+        return $breakdown;
+    }
+
+    private function normalizePaymentMethod(mixed $method): string
+    {
+        $methodValue = mb_trim((string) ($method ?? 'unknown'));
         $methodLower = mb_strtolower($methodValue);
 
         return match ($methodLower) {
@@ -96,11 +124,6 @@ final class PaymentMethodsWidget extends BaseWidget
             'bank_transfer' => 'Bank Transfer',
             default => $methodValue !== '' ? ucfirst($methodValue) : 'Unknown',
         };
-    }
-
-    private function extractAmount(Purchase $purchase): int
-    {
-        return (int) ($purchase->purchase['total'] ?? 0);
     }
 
     private function getMethodIcon(string $method): Heroicon

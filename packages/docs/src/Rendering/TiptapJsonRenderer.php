@@ -4,13 +4,25 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Rendering;
 
+use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\Docs\Contracts\RichContentRendererInterface;
 use Illuminate\Support\Arr;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final class TiptapJsonRenderer implements RichContentRendererInterface
 {
+    private const MAX_DEPTH = 32;
+
+    private const MAX_NODES = 2000;
+
+    private int $renderedNodes = 0;
+
+    public function __construct(
+        private readonly PublicHttpUrlGuard $urlGuard = new PublicHttpUrlGuard,
+    ) {}
+
     /**
      * @param  array<string, mixed>|null  $content
      * @param  array<string, mixed>  $mergeTags
@@ -21,6 +33,8 @@ final class TiptapJsonRenderer implements RichContentRendererInterface
             return new HtmlString('');
         }
 
+        $this->renderedNodes = 0;
+
         return new HtmlString($this->renderNode($content, $mergeTags));
     }
 
@@ -28,15 +42,25 @@ final class TiptapJsonRenderer implements RichContentRendererInterface
      * @param  array<string, mixed>  $node
      * @param  array<string, mixed>  $mergeTags
      */
-    private function renderNode(array $node, array $mergeTags): string
+    private function renderNode(array $node, array $mergeTags, int $depth = 0): string
     {
+        if ($depth > self::MAX_DEPTH) {
+            throw new InvalidArgumentException('Rich content exceeds the maximum nesting depth.');
+        }
+
+        $this->renderedNodes++;
+
+        if ($this->renderedNodes > self::MAX_NODES) {
+            throw new InvalidArgumentException('Rich content exceeds the maximum node count.');
+        }
+
         $type = (string) ($node['type'] ?? 'doc');
 
         if ($type === 'text') {
             return $this->renderText($node, $mergeTags);
         }
 
-        $children = $this->renderChildren($node, $mergeTags);
+        $children = $this->renderChildren($node, $mergeTags, $depth);
 
         return match ($type) {
             'doc' => $children,
@@ -62,13 +86,13 @@ final class TiptapJsonRenderer implements RichContentRendererInterface
      * @param  array<string, mixed>  $node
      * @param  array<string, mixed>  $mergeTags
      */
-    private function renderChildren(array $node, array $mergeTags): string
+    private function renderChildren(array $node, array $mergeTags, int $depth): string
     {
         $children = Arr::wrap($node['content'] ?? []);
 
         return collect($children)
             ->filter(static fn (mixed $child): bool => is_array($child))
-            ->map(fn (array $child): string => $this->renderNode($child, $mergeTags))
+            ->map(fn (array $child): string => $this->renderNode($child, $mergeTags, $depth + 1))
             ->implode('');
     }
 
@@ -193,6 +217,13 @@ final class TiptapJsonRenderer implements RichContentRendererInterface
             return true;
         }
 
-        return Str::startsWith(Str::lower($url), ['https://', 'http://']);
+        if (! Str::startsWith(Str::lower($url), ['https://', 'http://'])) {
+            return false;
+        }
+
+        // Rendered HTML is fetched server-side during PDF generation, so
+        // absolute embeds must resolve exclusively to public IPs (no
+        // link-local/cloud-metadata targets).
+        return $this->urlGuard->isAllowed($url);
     }
 }

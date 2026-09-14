@@ -149,11 +149,12 @@ final class CreateOrderStep extends AbstractCheckoutStep
     {
         $cartItems = array_values($session->cart_snapshot['items'] ?? []);
         $pricingItems = array_values($session->pricing_data['items'] ?? []);
+        $pricingByItemId = $this->pricingItemsById($pricingItems);
 
         $lineBases = [];
 
         foreach ($cartItems as $index => $cartItem) {
-            $pricingItem = $pricingItems[$index] ?? [];
+            $pricingItem = $this->pricingItemForCartItem($cartItem, $index, $pricingItems, $pricingByItemId);
             $quantity = max(1, (int) ($pricingItem['quantity'] ?? $cartItem['quantity'] ?? 1));
             $baseUnitPrice = (int) ($pricingItem['original_unit_price'] ?? $pricingItem['unit_price'] ?? $cartItem['price'] ?? $cartItem['unit_price'] ?? 0);
 
@@ -165,7 +166,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
         $taxBases = [];
 
         foreach ($cartItems as $index => $cartItem) {
-            $pricingItem = $pricingItems[$index] ?? [];
+            $pricingItem = $this->pricingItemForCartItem($cartItem, $index, $pricingItems, $pricingByItemId);
             $quantity = max(1, (int) ($pricingItem['quantity'] ?? $cartItem['quantity'] ?? 1));
             $baseUnitPrice = (int) ($pricingItem['original_unit_price'] ?? $pricingItem['unit_price'] ?? $cartItem['price'] ?? $cartItem['unit_price'] ?? 0);
             $finalUnitPrice = (int) ($pricingItem['unit_price'] ?? $cartItem['price'] ?? $cartItem['unit_price'] ?? $baseUnitPrice);
@@ -176,8 +177,8 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         $taxAllocations = $this->allocateAmount((int) $session->tax_total, $taxBases);
 
-        return array_map(function (array $cartItem, int $index) use ($pricingItems, $checkoutDiscountAllocations, $taxAllocations): array {
-            $pricingItem = $pricingItems[$index] ?? [];
+        return array_map(function (array $cartItem, int $index) use ($pricingItems, $pricingByItemId, $checkoutDiscountAllocations, $taxAllocations): array {
+            $pricingItem = $this->pricingItemForCartItem($cartItem, $index, $pricingItems, $pricingByItemId);
             $quantity = max(1, (int) ($pricingItem['quantity'] ?? $cartItem['quantity'] ?? 1));
             $baseUnitPrice = (int) ($pricingItem['original_unit_price'] ?? $pricingItem['unit_price'] ?? $cartItem['price'] ?? $cartItem['unit_price'] ?? 0);
             $finalUnitPrice = (int) ($pricingItem['unit_price'] ?? $cartItem['price'] ?? $cartItem['unit_price'] ?? $baseUnitPrice);
@@ -214,6 +215,57 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 ),
             ];
         }, $cartItems, array_keys($cartItems));
+    }
+
+    /**
+     * Join pricing rows to cart lines by item id so a reordered or filtered
+     * pricing set cannot misprice lines. Lines without ids keep the legacy
+     * positional join, which is the only option when no keys exist.
+     *
+     * @param  array<int, mixed>  $pricingItems
+     * @return array<string, array<string, mixed>>
+     */
+    private function pricingItemsById(array $pricingItems): array
+    {
+        $byId = [];
+
+        foreach ($pricingItems as $pricingItem) {
+            if (! is_array($pricingItem)) {
+                continue;
+            }
+
+            $itemId = $pricingItem['item_id'] ?? null;
+
+            if ((is_string($itemId) || is_int($itemId)) && (string) $itemId !== '') {
+                $byId[(string) $itemId] ??= $pricingItem;
+            }
+        }
+
+        return $byId;
+    }
+
+    /**
+     * @param  array<int, mixed>  $pricingItems
+     * @param  array<string, array<string, mixed>>  $pricingByItemId
+     * @return array<string, mixed>
+     */
+    private function pricingItemForCartItem(
+        mixed $cartItem,
+        int $index,
+        array $pricingItems,
+        array $pricingByItemId,
+    ): array {
+        $itemId = is_array($cartItem) ? ($cartItem['id'] ?? null) : null;
+
+        if ((is_string($itemId) || is_int($itemId)) && (string) $itemId !== ''
+            && isset($pricingByItemId[(string) $itemId])
+        ) {
+            return $pricingByItemId[(string) $itemId];
+        }
+
+        $fallback = $pricingItems[$index] ?? [];
+
+        return is_array($fallback) ? $fallback : [];
     }
 
     /**
@@ -323,17 +375,25 @@ final class CreateOrderStep extends AbstractCheckoutStep
         CheckoutSession $session,
         array $paymentData,
     ): bool {
-        $transactionId = $paymentData['transaction_id']
-            ?? $paymentData['payment_id']
-            ?? $session->payment_id
-            ?? 'unknown';
+        $transactionId = $this->paymentReferenceString(
+            $paymentData['transaction_id'] ?? $paymentData['payment_id'] ?? $session->payment_id
+        );
 
         // Persist the stable checkout processor in OrderPayment::gateway.
         // Wrapped processors (such as Cashier) keep the concrete provider in
         // metadata so refunds/status checks can route to the same provider.
-        $gateway = $paymentData['gateway']
-            ?? $session->selected_payment_gateway
-            ?? 'unknown';
+        $gateway = $this->paymentReferenceString(
+            $paymentData['gateway'] ?? $session->selected_payment_gateway
+        );
+
+        // The (order, gateway, transaction) triple is the payment
+        // idempotency key. Placeholder values would collapse distinct
+        // payments onto one key, so a missing reference fails closed.
+        if ($transactionId === null || $gateway === null) {
+            $this->recordIncompletePaymentReference($session, $transactionId, $gateway);
+
+            return false;
+        }
 
         $expectedAmount = (int) $session->grand_total;
         $amount = $this->minorAmount($paymentData['amount'] ?? null);
@@ -391,6 +451,42 @@ final class CreateOrderStep extends AbstractCheckoutStep
         }
     }
 
+    private function paymentReferenceString(mixed $value): ?string
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $value = mb_trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
+    private function recordIncompletePaymentReference(
+        CheckoutSession $session,
+        ?string $transactionId,
+        ?string $gateway,
+    ): void {
+        $paymentData = $session->payment_data ?? [];
+        $paymentData['reference_reconciliation'] = [
+            'status' => 'incomplete',
+            'transaction_present' => $transactionId !== null,
+            'gateway_present' => $gateway !== null,
+            'recorded_at' => CarbonImmutable::now()->toIso8601String(),
+        ];
+
+        $session->persistState([
+            'payment_data' => $paymentData,
+            'error_message' => 'Payment reference is incomplete and cannot be confirmed.',
+        ]);
+
+        Log::warning('Payment confirmation aborted because the payment reference is incomplete', [
+            'session_id' => $session->id,
+            'transaction_present' => $transactionId !== null,
+            'gateway_present' => $gateway !== null,
+        ]);
+    }
+
     /**
      * @param  array<string, mixed>  $paymentData
      */
@@ -423,7 +519,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
             'recorded_at' => CarbonImmutable::now()->toIso8601String(),
         ];
 
-        $session->update([
+        $session->persistState([
             'payment_data' => $paymentData,
             'error_message' => $amountMismatch
                 ? 'Payment amount does not match the checkout total.'

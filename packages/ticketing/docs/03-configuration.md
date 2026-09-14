@@ -84,6 +84,42 @@ registrations.
 | `bulk_max_size` | Maximum passes per bulk transfer operation |
 | `expiry_grace_period` | Additional seconds after transfer window closes during which transfers are still allowed |
 
+## Issuance Settings
+
+```php
+'issuance' => [
+    'max_quantity' => env('TICKETING_MAX_ISSUE_QUANTITY', 500),
+],
+```
+
+| Key | Description |
+|-----|-------------|
+| `max_quantity` | Maximum passes per issuance call; larger requests throw `IssuanceQuantityExceededException` |
+
+## Holder Settings
+
+```php
+'holders' => [
+    'allowed_types' => [],
+],
+```
+
+| Key | Description |
+|-----|-------------|
+| `allowed_types` | Optional allow-list of holder morph types. Empty allows any resolvable model; holder rows must still exist within the current owner scope |
+
+## Cart Settings
+
+```php
+'cart' => [
+    'max_participants' => env('TICKETING_MAX_PARTICIPANTS', 100),
+],
+```
+
+| Key | Description |
+|-----|-------------|
+| `max_participants` | Maximum participants stored on one cart line; larger sets throw `InvalidArgumentException` |
+
 ## Notifications
 
 ```php

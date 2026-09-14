@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
@@ -86,7 +87,7 @@ final class PerformanceBonusService
                         'external_reference' => 'BONUS-' . $period . '-' . mb_strtoupper(mb_substr(md5($performanceBonusKey), 0, 8)),
                         'performance_bonus_key' => $performanceBonusKey,
                         'subtotal_minor' => 0,
-                        'commission_minor' => $bonus['amount_minor'],
+                        'commission_minor' => CommissionCaps::clamp((int) $bonus['amount_minor']),
                         'status' => ApprovedConversion::class,
                         'occurred_at' => CarbonImmutable::now(),
                         'metadata' => [

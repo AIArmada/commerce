@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentContacting\RelationManagers\ContactMethodsRelationManager;
@@ -14,6 +15,7 @@ use AIArmada\FilamentCustomers\Resources\CustomerResource\Schemas\CustomerForm;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Schemas\CustomerInfolist;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Tables\CustomersTable;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -42,9 +44,16 @@ class CustomerResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = OwnerUiScope::apply(static::getModel()::query(), includeGlobal: false)
-            ->where('status', CustomerStatus::Active)
-            ->count();
+        $count = OwnerCache::remember(
+            OwnerUiScope::resolveOwner(Customer::class),
+            'filament-customers.nav-badge.active-customers',
+            CarbonImmutable::now()->addSeconds(30),
+            function (): int {
+                return OwnerUiScope::apply(static::getModel()::query(), includeGlobal: false)
+                    ->where('status', CustomerStatus::Active)
+                    ->count();
+            },
+        );
 
         return $count > 0 ? (string) $count : null;
     }
@@ -57,7 +66,8 @@ class CustomerResource extends Resource
         /** @var Builder<Customer> $query */
         $query = parent::getEloquentQuery();
 
-        return OwnerUiScope::apply($query, includeGlobal: false);
+        return OwnerUiScope::apply($query, includeGlobal: false)
+            ->with(['contactMethods', 'segments']);
     }
 
     public static function form(Schema $schema): Schema

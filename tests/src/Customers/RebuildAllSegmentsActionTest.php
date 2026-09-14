@@ -9,6 +9,29 @@ use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
 use Illuminate\Support\Facades\Event;
 
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createRebuildActionTestCustomer(array $attributes): Customer
+{
+    $restricted = [];
+
+    foreach (['user_id', 'status', 'is_guest', 'accepts_marketing', 'created_at', 'updated_at'] as $key) {
+        if (array_key_exists($key, $attributes)) {
+            $restricted[$key] = $attributes[$key];
+            unset($attributes[$key]);
+        }
+    }
+
+    $customer = Customer::query()->create($attributes);
+
+    if ($restricted !== []) {
+        $customer->forceFill($restricted)->save();
+    }
+
+    return $customer;
+}
+
 describe('RebuildAllSegments', function (): void {
     beforeEach(function (): void {
         $this->action = new RebuildAllSegments;
@@ -26,7 +49,7 @@ describe('RebuildAllSegments', function (): void {
                 ],
             ]);
 
-            Customer::create([
+            createRebuildActionTestCustomer([
                 'first_name' => 'For',
                 'last_name' => 'Owner',
                 'email' => 'for-owner-' . uniqid() . '@example.com',
@@ -51,7 +74,7 @@ describe('RebuildAllSegments', function (): void {
                 ],
             ]);
 
-            Customer::create([
+            createRebuildActionTestCustomer([
                 'first_name' => 'Action',
                 'last_name' => 'Test',
                 'email' => 'action-test-' . uniqid() . '@example.com',
@@ -88,7 +111,7 @@ describe('RebuildAllSegments', function (): void {
                 ],
             ]);
 
-            $customer = Customer::create([
+            $customer = createRebuildActionTestCustomer([
                 'first_name' => 'Event',
                 'last_name' => 'Add',
                 'email' => 'event-add-' . uniqid() . '@example.com',
@@ -146,7 +169,7 @@ describe('RebuildAllSegments', function (): void {
                 ],
             ]);
 
-            $matching = Customer::create([
+            $matching = createRebuildActionTestCustomer([
                 'first_name' => 'Sync',
                 'last_name' => 'Match',
                 'email' => 'sync-match-' . uniqid() . '@example.com',
@@ -185,7 +208,7 @@ describe('RebuildAllSegments', function (): void {
                 ],
             ]);
 
-            Customer::create([
+            createRebuildActionTestCustomer([
                 'first_name' => 'Owner',
                 'last_name' => 'Scoped',
                 'email' => 'owner-scoped-' . uniqid() . '@example.com',

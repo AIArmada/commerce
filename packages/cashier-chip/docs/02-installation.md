@@ -56,10 +56,9 @@ return [
     // Webhook route prefix
     'path' => env('CASHIER_CHIP_PATH', 'chip'),
 
-    // Webhook verification
+    // Webhook verification (signature switch lives in the chip package: chip.webhooks.verify_signature)
     'webhooks' => [
         'secret' => env('CHIP_WEBHOOK_SECRET'),
-        'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
     ],
 ];
 ```

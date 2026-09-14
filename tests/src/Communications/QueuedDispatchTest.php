@@ -131,7 +131,7 @@ test('managed notification job sends channels in persisted order', function (): 
 test('due communications queue eligible deliveries in creation order', function (): void {
     Queue::fake();
 
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => 'outbound',
         'category' => 'transactional',
         'priority' => 'normal',
@@ -139,6 +139,7 @@ test('due communications queue eligible deliveries in creation order', function 
         'status' => CommunicationStatus::Scheduled,
         'scheduled_at' => now()->subMinute(),
     ]);
+    $communication->save();
     $recipient = CommunicationRecipient::create([
         'communication_id' => $communication->id,
         'role' => RecipientRole::To,
@@ -146,7 +147,7 @@ test('due communications queue eligible deliveries in creation order', function 
     $firstCreatedAt = now()->subMinutes(2);
     $secondCreatedAt = now()->subMinute();
 
-    $first = CommunicationDelivery::create([
+    $first = (new CommunicationDelivery)->forceFill([
         'communication_id' => $communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
@@ -154,7 +155,8 @@ test('due communications queue eligible deliveries in creation order', function 
         'created_at' => $firstCreatedAt,
         'updated_at' => $firstCreatedAt,
     ]);
-    $second = CommunicationDelivery::create([
+    $first->save();
+    $second = (new CommunicationDelivery)->forceFill([
         'communication_id' => $communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
@@ -162,6 +164,7 @@ test('due communications queue eligible deliveries in creation order', function 
         'created_at' => $secondCreatedAt,
         'updated_at' => $secondCreatedAt,
     ]);
+    $second->save();
 
     $owner = OwnerContext::resolve();
 
@@ -180,31 +183,34 @@ test('due communications queue eligible deliveries in creation order', function 
 test('delivery dispatch transitions queued deliveries in their queue order', function (): void {
     Event::fake([DeliverySending::class]);
 
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => 'outbound',
         'category' => 'transactional',
         'priority' => 'normal',
         'purpose' => 'delivery-order-test',
         'status' => CommunicationStatus::Queued,
     ]);
+    $communication->save();
     $recipient = CommunicationRecipient::create([
         'communication_id' => $communication->id,
         'role' => RecipientRole::To,
     ]);
-    $first = CommunicationDelivery::create([
+    $first = (new CommunicationDelivery)->forceFill([
         'communication_id' => $communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
         'status' => DeliveryStatus::Queued,
         'queued_at' => now()->subMinute(),
     ]);
-    $second = CommunicationDelivery::create([
+    $first->save();
+    $second = (new CommunicationDelivery)->forceFill([
         'communication_id' => $communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'sms',
         'status' => DeliveryStatus::Queued,
         'queued_at' => now(),
     ]);
+    $second->save();
 
     (new DispatchCommunicationDeliveriesJob(
         communicationId: $communication->id,

@@ -33,15 +33,6 @@ final class FeedbackResponsesExport extends Exporter
                 ->label('Score'),
             ExportColumn::make('submitted_at')
                 ->label('Submitted At'),
-            ExportColumn::make('ip_address')
-                ->label('IP Address'),
-        ];
-    }
-
-    public static function getColumnsHiddenByDefault(): array
-    {
-        return [
-            'ip_address',
         ];
     }
 

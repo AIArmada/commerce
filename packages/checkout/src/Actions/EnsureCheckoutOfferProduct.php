@@ -14,6 +14,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
+use InvalidArgumentException;
 
 final class EnsureCheckoutOfferProduct
 {
@@ -25,10 +26,21 @@ final class EnsureCheckoutOfferProduct
             );
         }
 
-        $product = Product::query()->createOrFirst(
-            ['slug' => $offer->productSlug],
-            ['name' => $offer->name],
-        );
+        try {
+            $product = Product::query()->createOrFirst(
+                ['slug' => $offer->productSlug],
+                ['name' => $offer->name],
+            );
+        } catch (InvalidArgumentException $exception) {
+            // Products raises a friendly domain exception (instead of a DB
+            // unique violation) when the slug visibly exists. Stay idempotent
+            // only when the row is really there; anything else still throws.
+            $product = Product::query()->where('slug', $offer->productSlug)->first();
+
+            if ($product === null) {
+                throw $exception;
+            }
+        }
         $supportsVariants = $offer->supportsVariants ?? $offer->productType->supportsVariantsByDefault();
         $tracksInventory = $offer->tracksInventory ?? $offer->productType->tracksInventoryByDefault();
 
@@ -40,7 +52,7 @@ final class EnsureCheckoutOfferProduct
             'type' => $offer->productType,
             'status' => $offer->productStatus,
             'visibility' => $offer->productVisibility,
-            'price' => $this->basePriceForProduct($offer->priceAmount, $offer->compareAmount),
+            'price' => $offer->priceAmount,
             'compare_price' => $offer->compareAmount,
             'currency' => $offer->currency,
             'is_featured' => $offer->isFeatured,
@@ -107,13 +119,6 @@ final class EnsureCheckoutOfferProduct
         $this->ensureInventory($product, $offer);
 
         return $product->fresh() ?? $product;
-    }
-
-    private function basePriceForProduct(int $priceAmount, ?int $compareAmount): int
-    {
-        return $compareAmount !== null && $compareAmount > $priceAmount
-            ? $compareAmount
-            : $priceAmount;
     }
 
     private function ensureInventory(Product $product, CheckoutOfferProductData $offer): void

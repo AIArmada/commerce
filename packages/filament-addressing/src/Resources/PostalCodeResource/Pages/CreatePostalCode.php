@@ -10,4 +10,9 @@ use Filament\Resources\Pages\CreateRecord;
 final class CreatePostalCode extends CreateRecord
 {
     protected static string $resource = PostalCodeResource::class;
+
+    public static function canAccess(array $parameters = []): bool
+    {
+        return ! PostalCodeResource::isReadOnly();
+    }
 }

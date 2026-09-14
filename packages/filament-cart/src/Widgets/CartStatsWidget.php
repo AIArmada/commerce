@@ -11,6 +11,7 @@ use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Collection;
 
 final class CartStatsWidget extends BaseWidget
 {
@@ -45,7 +46,12 @@ final class CartStatsWidget extends BaseWidget
         $checkoutsInProgress = (clone $base)->whereNotNull('checkout_started_at')->whereNull('checkout_abandoned_at')->count();
         $recentAbandonments = (clone $base)->where('checkout_abandoned_at', '>=', $recentCutoff)->count();
 
-        $totalValue = (int) (clone $base)->where('items_count', '>', 0)->sum('total');
+        $totalsByCurrency = (clone $base)
+            ->where('items_count', '>', 0)
+            ->selectRaw('currency, SUM(total) as total_sum')
+            ->groupBy('currency')
+            ->orderByDesc('total_sum')
+            ->get();
         $highValueCarts = (clone $base)->where('total', '>=', $highValueThreshold)->count();
 
         $checkoutsStarted24h = (clone $base)
@@ -75,10 +81,7 @@ final class CartStatsWidget extends BaseWidget
                 ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
                 ->color($recentAbandonments > 0 ? 'warning' : 'gray'),
 
-            Stat::make('Total Value', $this->formatMoney($totalValue))
-                ->description("{$highValueCarts} high-value carts")
-                ->descriptionIcon(Heroicon::OutlinedCurrencyDollar)
-                ->color('info'),
+            $this->totalValueStat($totalsByCurrency, $highValueCarts),
         ];
     }
 
@@ -96,16 +99,81 @@ final class CartStatsWidget extends BaseWidget
         return number_format(($abandoned / $checkoutsStarted) * 100, 1);
     }
 
+    /**
+     * @param  Collection<int, Cart>  $totalsByCurrency
+     */
+    private function totalValueStat(Collection $totalsByCurrency, int $highValueCarts): Stat
+    {
+        return Stat::make('Total Value', $this->formatTotalValue($totalsByCurrency))
+            ->description($this->totalValueDescription($totalsByCurrency, $highValueCarts))
+            ->descriptionIcon(Heroicon::OutlinedCurrencyDollar)
+            ->color('info');
+    }
+
+    /**
+     * @param  Collection<int, Cart>  $totalsByCurrency
+     */
+    private function formatTotalValue(Collection $totalsByCurrency): string
+    {
+        $dominant = $totalsByCurrency->first();
+
+        if (! $dominant instanceof Cart) {
+            return $this->formatMoney(0);
+        }
+
+        $formatted = CartMoney::formatMinor((int) $dominant->getAttribute('total_sum'), $this->rowCurrency($dominant));
+        $extraCurrencies = $totalsByCurrency->count() - 1;
+
+        if ($extraCurrencies > 0) {
+            $formatted .= " (+{$extraCurrencies})";
+        }
+
+        return $formatted;
+    }
+
+    /**
+     * @param  Collection<int, Cart>  $totalsByCurrency
+     */
+    private function totalValueDescription(Collection $totalsByCurrency, int $highValueCarts): string
+    {
+        $description = "{$highValueCarts} high-value carts";
+
+        if ($totalsByCurrency->count() > 1) {
+            $breakdown = $totalsByCurrency
+                ->map(fn (Cart $row): string => CartMoney::formatMinor((int) $row->getAttribute('total_sum'), $this->rowCurrency($row)))
+                ->implode(' · ');
+
+            $description .= " · {$breakdown}";
+        }
+
+        return $description;
+    }
+
+    private function rowCurrency(Cart $row): ?string
+    {
+        $currency = $row->getAttribute('currency');
+
+        return is_string($currency) && $currency !== '' ? $currency : null;
+    }
+
+    /**
+     * @return array<int, int>
+     */
     private function getActiveCartsChart(): array
     {
+        $start = CarbonImmutable::now()->subDays(6)->startOfDay();
+
+        $countsByDay = Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
+            ->where('items_count', '>', 0)
+            ->where('updated_at', '>=', $start)
+            ->selectRaw('DATE(updated_at) as day, COUNT(*) as aggregate')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->pluck('aggregate', 'day');
+
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
-            $date = CarbonImmutable::now()->subDays($i);
-            $count = Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
-                ->where('items_count', '>', 0)
-                ->whereDate('updated_at', $date->toDateString())
-                ->count();
-            $data[] = $count;
+            $data[] = (int) ($countsByDay[CarbonImmutable::now()->subDays($i)->toDateString()] ?? 0);
         }
 
         return $data;

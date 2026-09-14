@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Resources;
 
 use AIArmada\Chip\Models\Payment;
+use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ListPayments;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ViewPayment;
 use AIArmada\FilamentChip\Resources\PaymentResource\Schemas\PaymentInfolist;
@@ -116,19 +118,29 @@ final class PaymentResource extends BaseChipResource
                 SelectFilter::make('currency')
                     ->label('Currency')
                     ->options(function (): array {
-                        $query = Payment::query();
+                        /** @var array<string, string> $options */
+                        $options = OwnerCache::remember(
+                            OwnerContext::resolve(),
+                            'filament-chip.filter-options.payments.currency',
+                            300,
+                            static function (): array {
+                                $query = Payment::query();
 
-                        if (method_exists($query->getModel(), 'scopeForOwner')) {
-                            $query->forOwner();
-                        }
+                                if (method_exists($query->getModel(), 'scopeForOwner')) {
+                                    $query->forOwner();
+                                }
 
-                        return $query
-                            ->select('currency')
-                            ->distinct()
-                            ->orderBy('currency')
-                            ->pluck('currency', 'currency')
-                            ->filter()
-                            ->all();
+                                return $query
+                                    ->select('currency')
+                                    ->distinct()
+                                    ->orderBy('currency')
+                                    ->pluck('currency', 'currency')
+                                    ->filter()
+                                    ->all();
+                            },
+                        );
+
+                        return $options;
                     }),
                 Filter::make('is_outgoing')
                     ->label('Outgoing Only')

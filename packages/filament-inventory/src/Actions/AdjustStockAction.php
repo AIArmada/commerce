@@ -34,10 +34,17 @@ final class AdjustStockAction
                     ->schema([
                         Select::make('location_id')
                             ->label('Location')
-                            ->options(fn () => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())->pluck('name', 'id'))
                             ->required()
                             ->searchable()
-                            ->preload(),
+                            ->getSearchResultsUsing(fn (string $search): array => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                                ->where('name', 'like', '%' . addcslashes($search, '\\%_') . '%')
+                                ->orderBy('name')
+                                ->limit(50)
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                                ->whereKey($value)
+                                ->value('name')),
 
                         TextInput::make('new_quantity')
                             ->label('New Quantity')

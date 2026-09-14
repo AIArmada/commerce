@@ -123,6 +123,9 @@ final class EventSessionResource extends Resource
                 ExportAction::make()
                     ->exporter(EventSessionExporter::class)
                     ->label('Export Sessions'),
+            ])
+            ->actions([
+                ViewAction::make(),
                 Action::make('delay')
                     ->label('Delay')
                     ->icon('heroicon-o-clock')
@@ -169,9 +172,6 @@ final class EventSessionResource extends Resource
                     })
                     ->visible(fn (?EventSession $record) => (string) ($record?->status ?? '') === 'published')
                     ->requiresConfirmation(),
-            ])
-            ->actions([
-                ViewAction::make(),
                 Action::make('clone')
                     ->label('Clone')
                     ->icon('heroicon-o-document-duplicate')

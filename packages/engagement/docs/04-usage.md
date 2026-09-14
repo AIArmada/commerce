@@ -201,6 +201,23 @@ $subscriptions = app(SubscriptionManager::class)->matchingSubscriptions(
 
 The `engagement:match-subscriptions` command processes subscriptions against matching subjects. Use this for content-based notification workflows.
 
+Subscribing is idempotent per subscriber, subject, type, and criteria: repeating the same call returns the existing row (reactivating it when it was muted or unsubscribed), while different criteria create separate rows. Criteria are matched by a normalized hash, so key order does not matter.
+
+The match command only exposes `subject_type` and `subject_id` to criteria matching. Subjects that want attribute-based criteria must opt in explicitly:
+
+```php
+use AIArmada\Engagement\Contracts\HasSubscriptionMatchContext;
+
+class Event extends Model implements HasSubscriptionMatchContext, Subscribable
+{
+    /** @return array<string, mixed> */
+    public function subscriptionMatchContext(): array
+    {
+        return ['delivery_mode' => $this->delivery_mode];
+    }
+}
+```
+
 ## Reminders
 
 ```php
@@ -213,14 +230,27 @@ use AIArmada\Engagement\Traits\HasReminders;
 class User extends Model implements CanInteract { use CanSetReminders; }
 class Occurrence extends Model implements Remindable { use HasReminders; }
 
-// Set a reminder
+// Set a reminder for an absolute time
+$reminder = app(ReminderManager::class)->setReminder(
+    recipient: $user,
+    subject: $occurrence,
+    reminderType: 'before_start',
+    options: [
+        'remind_at' => now()->addDay(),
+        'channel' => 'mail',
+    ],
+);
+
+// Or schedule it relative to a subject anchor (resolved immediately via
+// Remindable::reminderAnchorTime() minus the offset)
 $reminder = app(ReminderManager::class)->setReminder(
     recipient: $user,
     subject: $occurrence,
     reminderType: 'before_start',
     options: [
         'offset_minutes' => 60,
-        'channels' => ['mail', 'database'],
+        'anchor_type' => 'starts_at',
+        'channel' => 'mail',
     ],
 );
 
@@ -236,7 +266,19 @@ Schedule `engagement:send-due-reminders` in your console kernel. Engagement owns
 Each due reminder is reloaded with a row lock while `ReminderDue` is dispatched,
 so overlapping command runs skip reminders already claimed or completed. Direct
 `markSent` and `markFailed` calls only transition pending or scheduled reminders;
-terminal reminders are left unchanged.
+terminal reminders are left unchanged. A dispatch failure marks that reminder
+`failed` with the reason and the command continues with the next one.
+
+Setting the same pending reminder twice (same recipient, subject, type, channel,
+and instant) returns the existing row instead of creating a duplicate.
+
+Provide either `remind_at` or `offset_minutes` (with `anchor_type`), never both.
+An offset whose anchor does not resolve, or an offset without an anchor, throws
+an `InvalidArgumentException` instead of storing a reminder that could never fire.
+
+Per-reminder notification classes go through the `notifications.allowed`
+allowlist; unlisted classes are rejected at `setReminder` time and again if they
+ever reach the dispatch listener.
 
 ## Sharing
 
@@ -264,13 +306,16 @@ $share = app(EngagementManager::class)->share($user, $event, [
 
 Share channels are free-form. Common values: `whatsapp`, `telegram`, `email`, `twitter`, `facebook`, `copy_link`.
 
+Share creation is authorized through `EngagementPolicyResolver::canShare()`, like every other primitive. The stored `share_token` is the same token embedded in `share_url` (generated once per share); pass `token` explicitly to reuse an existing token.
+
 ## Concurrent engagement writes
 
-Follow, bookmark, response, and reaction identity writes run inside transactions
-and lock an existing identity before restoring or returning it. The package's
-owner-aware unique indexes are the final race guard; if two requests create the
-same identity concurrently, the losing request returns the committed record
-instead of emitting a second lifecycle event or counter update.
+Follow, bookmark, response, reaction, subscription, and collection-item identity
+writes run inside transactions and lock an existing identity before restoring or
+returning it. The package's owner-aware unique indexes are the final race guard;
+if two requests create the same identity concurrently, the losing request
+returns the committed record instead of emitting a second lifecycle event or
+counter update.
 
 ## Working with engagement counters
 
@@ -292,8 +337,11 @@ $counter->recalculate($event);
 
 Counters can be cached via the `EngagementCounter` model for performant display.
 All manager writes update the affected cached counters synchronously inside the
-same transaction. Direct model writes and imports bypass those lifecycle events;
-schedule `engagement:reconcile-counters` at least hourly as the repair cadence.
+same transaction, as atomic increments/decrements per lifecycle event (no
+per-write recounts). Direct model writes and imports bypass those lifecycle
+events; schedule `engagement:reconcile-counters` at least hourly as the repair
+cadence. The reconcile command iterates owners explicitly, so it runs correctly
+from console cron without an ambient owner.
 
 ## Working with the state resolver
 
@@ -346,3 +394,15 @@ app()->bind(EngagementPolicyResolver::class, MyPolicyResolver::class);
 
 Policy resolver methods are enforced. Returning `false` causes the corresponding
 operation to throw `AuthorizationException`.
+
+The default resolver is intentionally permissive: it is a host seam, not an
+authorization decision. Tenant isolation does not come from the resolver — it
+comes from the `commerce-support` owner boundary (`HasOwner`, `OwnerScope`,
+`OwnerWriteGuard`, `OwnerContext`) applied to every engagement row. Hosts that
+need per-actor authorization bind a strict `EngagementPolicyResolver`; hosts
+that rely on tenancy alone keep the default.
+
+Free-form inputs (types, channels, notes, messages, destinations, metadata) are
+length-validated at the manager boundaries: 255 characters for `string` columns,
+65,535 for `text` columns. Overlong or mistyped values throw
+`InvalidArgumentException` before any policy check or write.

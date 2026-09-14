@@ -295,9 +295,11 @@ describe('AffiliateAttribution Model', function (): void {
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
             'cart_instance' => 'default',
+        ]);
+        $attribution->forceFill([
             'owner_type' => 'App\\Models\\User',
             'owner_id' => 'user_123',
-        ]);
+        ])->save();
 
         expect($attribution->owner_type)->toBe('App\\Models\\User')
             ->and($attribution->owner_id)->toBe('user_123');

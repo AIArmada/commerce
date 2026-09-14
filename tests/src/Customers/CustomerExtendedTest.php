@@ -99,8 +99,8 @@ describe('Customer Model - Extended Coverage', function (): void {
 
     describe('Status Helpers', function (): void {
         it('checks canPlaceOrders', function (): void {
-            $active = new Customer(['status' => CustomerStatus::Active]);
-            $suspended = new Customer(['status' => CustomerStatus::Suspended]);
+            $active = (new Customer)->forceFill(['status' => CustomerStatus::Active]);
+            $suspended = (new Customer)->forceFill(['status' => CustomerStatus::Suspended]);
 
             expect($active->canPlaceOrders())->toBeTrue()
                 ->and($suspended->canPlaceOrders())->toBeFalse();
@@ -109,8 +109,8 @@ describe('Customer Model - Extended Coverage', function (): void {
 
     describe('Marketing Helpers', function (): void {
         it('checks acceptsMarketing', function (): void {
-            $optin = new Customer(['accepts_marketing' => true]);
-            $optout = new Customer(['accepts_marketing' => false]);
+            $optin = (new Customer)->forceFill(['accepts_marketing' => true]);
+            $optout = (new Customer)->forceFill(['accepts_marketing' => false]);
 
             expect($optin->acceptsMarketing())->toBeTrue()
                 ->and($optout->acceptsMarketing())->toBeFalse();

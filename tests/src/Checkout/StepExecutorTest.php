@@ -68,7 +68,7 @@ describe('StepExecutor', function (): void {
         $registry->register('a', makeStep('a'));
         $registry->register('b', makeStep('b'));
 
-        $session = CheckoutSession::create(['cart_id' => 'test-executor']);
+        $session = CheckoutSession::forceCreate(['cart_id' => 'test-executor']);
         $result = createExecutor($registry)->run($session);
 
         expect($result->success)->toBeTrue()
@@ -81,7 +81,7 @@ describe('StepExecutor', function (): void {
         $registry->register('a', makeStep('a'));
         $registry->register('b', makeStep('b'));
 
-        $session = CheckoutSession::create(['cart_id' => 'test-executor-from']);
+        $session = CheckoutSession::forceCreate(['cart_id' => 'test-executor-from']);
         $session->setStepState('a', StepStatus::Completed);
         $result = createExecutor($registry)->run($session, fromStep: 'a');
 
@@ -94,7 +94,7 @@ describe('StepExecutor', function (): void {
         $registry = new CheckoutStepRegistry;
         $registry->register('a', makeStep('a'));
 
-        $session = CheckoutSession::create(['cart_id' => 'test-executor-skip']);
+        $session = CheckoutSession::forceCreate(['cart_id' => 'test-executor-skip']);
         $session->setStepState('a', StepStatus::Completed);
         $result = createExecutor($registry)->run($session);
 
@@ -142,7 +142,7 @@ describe('StepExecutor', function (): void {
         };
         $registry->register('fail', $failStep);
 
-        $session = CheckoutSession::create(['cart_id' => 'test-executor-fail']);
+        $session = CheckoutSession::forceCreate(['cart_id' => 'test-executor-fail']);
         $result = createExecutor($registry)->run($session);
 
         expect($result->success)->toBeFalse()
@@ -153,7 +153,7 @@ describe('StepExecutor', function (): void {
         $registry = new CheckoutStepRegistry;
         $registry->register('b', makeStep('b', dependency: 'a'));
 
-        $session = CheckoutSession::create(['cart_id' => 'test-executor-dep']);
+        $session = CheckoutSession::forceCreate(['cart_id' => 'test-executor-dep']);
         $executor = createExecutor($registry);
 
         expect(fn () => $executor->run($session))
@@ -164,7 +164,7 @@ describe('StepExecutor', function (): void {
         $registry = new CheckoutStepRegistry;
         $registry->register('a', makeStep('a'));
 
-        $session = CheckoutSession::create(['cart_id' => 'test-executor-single']);
+        $session = CheckoutSession::forceCreate(['cart_id' => 'test-executor-single']);
         $step = $registry->get('a');
 
         $result = createExecutor($registry)->processStep($session, $step);

@@ -277,6 +277,58 @@ describe('OfferImportService', function (): void {
         expect($offer->fresh()->rate_source)->toBe('manual');
     });
 
+    test('counts failed subjects without aborting the sync', function (): void {
+        Http::fake([
+            '*' => Http::response([
+                'version' => 'v1',
+                'program_id' => 'mixed-1',
+                'currency' => 'MYR',
+                'cookie_days' => 30,
+                'base' => ['commission_type' => 'percentage', 'default_rate_bp' => 1000],
+                'subjects' => [
+                    [
+                        'subject_type' => 'product',
+                        'subject_key' => 'GOOD-1',
+                        'title' => 'Good Widget',
+                        'url' => 'https://merchant.test/x/good-1',
+                        'effective' => ['commission_type' => 'percentage', 'rate_bp' => 1500, 'applied_rule_ids' => []],
+                    ],
+                    [
+                        'subject_type' => 'product',
+                        'subject_key' => 'BAD-1',
+                        'title' => 'Bad Widget',
+                        'url' => 'https://merchant.test/x/bad-1',
+                        'effective' => ['commission_type' => 'percentage', 'rate_bp' => -5, 'applied_rule_ids' => []],
+                    ],
+                ],
+                'variable_extras' => ['volume_tiers' => [], 'promotions' => []],
+            ]),
+        ]);
+
+        $site = AffiliateSite::create([
+            'name' => 'Mixed Import Site',
+            'domain' => 'mixed-import-' . uniqid() . '.example.com',
+            'status' => AffiliateSite::STATUS_VERIFIED,
+            'verified_at' => now(),
+            'catalog_url' => 'https://merchant.test/api/affiliates',
+        ]);
+
+        $importer = new OfferImportService(
+            app(LocalProgramReader::class),
+            new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34'])),
+            app(CreateOffer::class),
+            app(UpdateOffer::class),
+        );
+
+        $result = $importer->sync($site, 'mixed-1');
+
+        expect($result['created'])->toBe(1);
+        expect($result['failed'])->toBe(1);
+        expect($site->fresh()->sync_status)->toBe('partial');
+        expect(AffiliateOffer::query()->where('site_id', $site->getKey())->where('subject_key', 'GOOD-1')->exists())->toBeTrue();
+        expect(AffiliateOffer::query()->where('site_id', $site->getKey())->where('subject_key', 'BAD-1')->exists())->toBeFalse();
+    });
+
     test('resolveField applies local and remote precedence with null fallback', function (): void {
         $method = new ReflectionMethod(OfferImportService::class, 'resolveField');
 

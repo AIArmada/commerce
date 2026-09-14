@@ -27,6 +27,7 @@ return new class extends Migration
             $table->text('reviewer_note')->nullable();
             $table->timestampTz('reviewed_at')->nullable();
             $table->timestampTz('cancelled_at')->nullable();
+            $table->foreignUuid('cancelled_by')->nullable();
             $table->{$jsonType}('meta')->nullable();
             $table->timestampsTz();
 
@@ -34,6 +35,7 @@ return new class extends Migration
             $table->index('applicant_id');
             $table->index('status');
             $table->index('reviewer_id');
+            $table->index('cancelled_by');
             $table->unique(
                 ['subject_type', 'subject_id', 'applicant_id', 'status'],
                 'membership_applications_subject_applicant_status_unique',

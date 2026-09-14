@@ -57,6 +57,7 @@ final class ExpiringExemptionsWidget extends BaseWidget
         $now = CarbonImmutable::now();
 
         return TaxExemption::query()
+            ->with('exemptable')
             ->whereNotNull('expires_at')
             ->where('expires_at', '<=', $now->addDays(30))
             ->where('expires_at', '>=', $now)

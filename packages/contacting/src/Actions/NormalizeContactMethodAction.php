@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Actions;
 
+use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Support\NormalizesEmailAddress;
 use AIArmada\Contacting\Support\NormalizesPhoneNumber;
 use AIArmada\Contacting\Support\NormalizesUrl;
 
-final class NormalizeContactMethodAction
+final class NormalizeContactMethodAction implements ContactMethodNormalizer
 {
     public function __construct(
         private readonly NormalizesEmailAddress $emailNormalizer,
         private readonly NormalizesPhoneNumber $phoneNormalizer,
         private readonly NormalizesUrl $urlNormalizer,
     ) {}
+
+    public function normalize(string $type, string $value, ?string $countryCode = null): array
+    {
+        return $this->execute($type, $value, $countryCode);
+    }
 
     /**
      * @return array{normalized_value: string|null, display_value: string|null}

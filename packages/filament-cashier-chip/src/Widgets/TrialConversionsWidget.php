@@ -10,12 +10,19 @@ use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Override;
 
 final class TrialConversionsWidget extends BaseWidget
 {
     use InteractsWithCashierChipData;
 
     protected static ?int $sort = 6;
+
+    #[Override]
+    public static function canView(): bool
+    {
+        return static::hasWidgetOwnerContext();
+    }
 
     protected function getStats(): array
     {
@@ -44,57 +51,49 @@ final class TrialConversionsWidget extends BaseWidget
 
     private function calculateConversionRate(): float
     {
-        $startOfMonth = CarbonImmutable::now()->startOfMonth();
-        $endOfMonth = CarbonImmutable::now()->endOfMonth();
+        return $this->rememberWidgetValue('trials.conversion', function (): float {
+            $startOfMonth = CarbonImmutable::now()->startOfMonth();
+            $endOfMonth = CarbonImmutable::now()->endOfMonth();
 
-        $trialsEnded = $this->subscriptionQuery()
-            ->whereNotNull('trial_ends_at')
-            ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
-            ->count();
-
-        if ($trialsEnded === 0) {
-            return 0.0;
-        }
-
-        $converted = $this->subscriptionQuery()
-            ->whereNotNull('trial_ends_at')
-            ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
-            ->where('chip_status', SubscriptionStatus::Active->value)
-            ->whereNull('ends_at')
-            ->count();
-
-        return ($converted / $trialsEnded) * 100;
+            return $this->conversionForMonth($startOfMonth, $endOfMonth);
+        });
     }
 
     private function calculatePreviousConversionRate(): float
     {
-        $startOfMonth = CarbonImmutable::now()->subMonth()->startOfMonth();
-        $endOfMonth = CarbonImmutable::now()->subMonth()->endOfMonth();
+        return $this->rememberWidgetValue('trials.previous', function (): float {
+            $startOfMonth = CarbonImmutable::now()->subMonth()->startOfMonth();
+            $endOfMonth = CarbonImmutable::now()->subMonth()->endOfMonth();
 
-        $trialsEnded = $this->subscriptionQuery()
+            return $this->conversionForMonth($startOfMonth, $endOfMonth);
+        });
+    }
+
+    private function conversionForMonth(CarbonImmutable $startOfMonth, CarbonImmutable $endOfMonth): float
+    {
+        $row = $this->subscriptionQuery()
+            ->selectRaw('COUNT(*) AS trials_ended, COUNT(CASE WHEN chip_status = ? AND ends_at IS NULL THEN 1 END) AS converted', [SubscriptionStatus::Active->value])
             ->whereNotNull('trial_ends_at')
             ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
-            ->count();
+            ->first();
+
+        $trialsEnded = (int) ($row?->getAttribute('trials_ended') ?? 0);
 
         if ($trialsEnded === 0) {
             return 0.0;
         }
 
-        $converted = $this->subscriptionQuery()
-            ->whereNotNull('trial_ends_at')
-            ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
-            ->where('chip_status', SubscriptionStatus::Active->value)
-            ->whereNull('ends_at')
-            ->count();
+        $converted = (int) ($row?->getAttribute('converted') ?? 0);
 
         return ($converted / $trialsEnded) * 100;
     }
 
     private function getActiveTrialsCount(): int
     {
-        return $this->subscriptionQuery()
-            ->whereOnTrial()
-            ->count();
+        return $this->rememberWidgetValue(
+            'trials.active',
+            fn (): int => $this->subscriptionQuery()->whereOnTrial()->count(),
+        );
     }
 
     private function getTrendDescription(float $current, float $previous): string
@@ -141,33 +140,17 @@ final class TrialConversionsWidget extends BaseWidget
      */
     private function getConversionChart(): array
     {
-        $chart = [];
+        return $this->rememberWidgetValue('trials.chart', function (): array {
+            $chart = [];
 
-        for ($i = 5; $i >= 0; $i--) {
-            $startOfMonth = CarbonImmutable::now()->subMonths($i)->startOfMonth();
-            $endOfMonth = CarbonImmutable::now()->subMonths($i)->endOfMonth();
+            for ($i = 5; $i >= 0; $i--) {
+                $startOfMonth = CarbonImmutable::now()->subMonths($i)->startOfMonth();
+                $endOfMonth = CarbonImmutable::now()->subMonths($i)->endOfMonth();
 
-            $trialsEnded = $this->subscriptionQuery()
-                ->whereNotNull('trial_ends_at')
-                ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
-                ->count();
-
-            if ($trialsEnded === 0) {
-                $chart[] = 0;
-
-                continue;
+                $chart[] = round($this->conversionForMonth($startOfMonth, $endOfMonth), 1);
             }
 
-            $converted = $this->subscriptionQuery()
-                ->whereNotNull('trial_ends_at')
-                ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
-                ->where('chip_status', SubscriptionStatus::Active->value)
-                ->whereNull('ends_at')
-                ->count();
-
-            $chart[] = round(($converted / $trialsEnded) * 100, 1);
-        }
-
-        return $chart;
+            return $chart;
+        });
     }
 }

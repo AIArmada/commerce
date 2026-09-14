@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource\Pages;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource\Schemas\TaxExemptionForm;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource\Tables\TaxExemptionsTable;
@@ -42,8 +43,10 @@ final class TaxExemptionResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
+        $query = OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+
         /** @phpstan-ignore return.type (template type not preserved through helper) */
-        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+        return $query->with(['exemptable', 'taxZone']);
     }
 
     public static function form(Schema $schema): Schema
@@ -68,13 +71,20 @@ final class TaxExemptionResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $now = CarbonImmutable::now();
+        $expiring = (int) OwnerCache::remember(
+            OwnerUiScope::resolveOwner(TaxExemption::class),
+            'filament-tax.nav-badge.expiring-exemptions',
+            CarbonImmutable::now()->addSeconds(30),
+            function (): int {
+                $now = CarbonImmutable::now();
 
-        $expiring = OwnerUiScope::apply(self::getModel()::query(), includeGlobal: false)
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '>=', $now)
-            ->where('expires_at', '<=', $now->addDays(30))
-            ->count();
+                return (int) OwnerUiScope::apply(self::getModel()::query(), includeGlobal: false)
+                    ->whereNotNull('expires_at')
+                    ->where('expires_at', '>=', $now)
+                    ->where('expires_at', '<=', $now->addDays(30))
+                    ->count();
+            }
+        );
 
         return $expiring > 0 ? (string) $expiring : null;
     }

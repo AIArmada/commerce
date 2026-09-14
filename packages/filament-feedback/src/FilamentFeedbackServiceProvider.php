@@ -13,11 +13,13 @@ final class FilamentFeedbackServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('filament-feedback')
-            ->hasConfigFile();
+            ->hasConfigFile()
+            ->hasViews('filament-feedback');
     }
 
     public function packageRegistered(): void
     {
         $this->app->singleton(FilamentFeedbackPlugin::class);
+        $this->app->scoped(Support\FeedbackDashboardMemo::class);
     }
 }

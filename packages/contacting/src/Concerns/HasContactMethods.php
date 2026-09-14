@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Concerns;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Actions\CreateContactMethodAction;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Models\ContactMethod;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -18,7 +20,19 @@ trait HasContactMethods
     {
         static::deleting(function (Model $model): void {
             /** @phpstan-ignore-next-line dynamic relationship from trait */
-            $model->contactMethods()->delete();
+            $model->contactMethods()->withoutOwnerScope()->chunkById(100, function (Collection $contactMethods): void {
+                foreach ($contactMethods as $contactMethod) {
+                    $owner = $contactMethod->getRelationValue('owner');
+
+                    if ($owner === null && $contactMethod->getAttribute('owner_type') !== null) {
+                        $owner = $contactMethod->owner;
+                    }
+
+                    OwnerContext::withOwner($owner instanceof Model ? $owner : null, function () use ($contactMethod): void {
+                        $contactMethod->delete();
+                    });
+                }
+            });
         });
     }
 
@@ -44,6 +58,7 @@ trait HasContactMethods
         $query = $this->contactMethods()
             ->when($type !== null, fn ($query) => $query->where('type', $type))
             ->when($purpose !== null, fn ($query) => $query->where('purpose', $purpose))
+            ->whereNotNull('normalized_value')
             ->where('is_primary', true)
             ->where(function (Builder $query) use ($now): void {
                 $query->whereNull('valid_from')->orWhere('valid_from', '<=', $now);
@@ -106,6 +121,7 @@ trait HasContactMethods
         $now = CarbonImmutable::now();
         $query = $this->contactMethods()
             ->where('type', $type)
+            ->whereNotNull('normalized_value')
             ->orderByDesc('is_primary')
             ->orderBy('sort_order')
             ->where(function (Builder $query) use ($now): void {
@@ -132,6 +148,7 @@ trait HasContactMethods
         $now = CarbonImmutable::now();
         $query = $this->contactMethods()
             ->where('type', $type)
+            ->whereNotNull('normalized_value')
             ->orderByDesc('is_primary')
             ->orderBy('sort_order')
             ->where(function (Builder $query) use ($now): void {

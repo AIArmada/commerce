@@ -85,22 +85,34 @@ it('redacts sensitive fields in audit transformation', function (): void {
     $data = [
         'old_values' => [
             'name' => 'Old Name',
+            'email' => 'old@example.com',
             'password' => 'secret123',
             'credit_card' => '4111111111111111',
         ],
         'new_values' => [
             'name' => 'New Name',
+            'email' => 'new@example.com',
             'password' => 'newsecret456',
         ],
     ];
 
     $transformed = $model->transformAudit($data);
 
-    expect($transformed['old_values']['name'])->toBe('Old Name');
+    expect($transformed['old_values']['name'])->toBe('[REDACTED]');
+    expect($transformed['old_values']['email'])->toBe('[REDACTED]');
     expect($transformed['old_values']['password'])->toBe('[REDACTED]');
     expect($transformed['old_values']['credit_card'])->toBe('[REDACTED]');
-    expect($transformed['new_values']['name'])->toBe('New Name');
+    expect($transformed['new_values']['name'])->toBe('[REDACTED]');
+    expect($transformed['new_values']['email'])->toBe('[REDACTED]');
     expect($transformed['new_values']['password'])->toBe('[REDACTED]');
+});
+
+it('excludes PII from auditable attributes by default', function (): void {
+    $model = createAuditableModel();
+
+    expect($model->getAuditExclude())->toContain('email', 'phone', 'name', 'postcode')
+        ->and($model->isAuditableAttribute('email'))->toBeFalse()
+        ->and($model->isAuditableAttribute('status'))->toBeTrue();
 });
 
 it('adds commerce tags to audit data', function (): void {
@@ -117,15 +129,16 @@ it('adds commerce tags to audit data', function (): void {
     expect($transformed['tags'])->toBe('commerce');
 });
 
-it('uses all fillable attributes when no include list specified', function (): void {
+it('uses non-sensitive attributes when no include list specified', function (): void {
     $model = createAuditableModel([]);
 
     // When auditInclude is empty, isAuditableAttribute checks exclude list
-    expect($model->isAuditableAttribute('name'))->toBeTrue();
-    expect($model->isAuditableAttribute('email'))->toBeTrue();
+    expect($model->isAuditableAttribute('status'))->toBeTrue();
 
-    // Sensitive fields should still be excluded
+    // Credentials and PII are excluded by default
     expect($model->isAuditableAttribute('password'))->toBeFalse();
+    expect($model->isAuditableAttribute('name'))->toBeFalse();
+    expect($model->isAuditableAttribute('email'))->toBeFalse();
 });
 
 it('includes default sensitive fields', function (): void {

@@ -7,10 +7,12 @@ namespace AIArmada\Authz\Console\Commands;
 use AIArmada\Authz\Console\Concerns\Prohibitable;
 use AIArmada\Authz\Models\Role;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use Filament\Facades\Filament;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -47,7 +49,7 @@ class SuperAdminCommand extends Command
 
         $superAdminRole = (string) config('authz.super_admin_role', 'super_admin');
         $guards = (array) config('authz.guards', ['web']);
-        $guard = $guards[0] ?? 'web';
+        $guard = $this->resolveGuard($guards);
 
         $user = $this->getOrCreateUser($guard);
 
@@ -133,8 +135,10 @@ class SuperAdminCommand extends Command
                     ? 'ILIKE'
                     : 'LIKE';
 
+                $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search);
+
                 return $query
-                    ->where($emailColumn, $likeOperator, "%{$search}%")
+                    ->where($emailColumn, $likeOperator, "%{$escaped}%")
                     ->limit(10)
                     ->get()
                     ->mapWithKeys(fn ($user): array => [
@@ -199,11 +203,62 @@ class SuperAdminCommand extends Command
         $user->{$nameColumn} = $name;
         $user->{$emailColumn} = $email;
         $user->setAttribute('password', Hash::make($password));
-        $user->save();
+
+        try {
+            $user->save();
+        } catch (QueryException $exception) {
+            /** @var (Authenticatable&Model)|null $racedUser */
+            $racedUser = $userModel::query()->where($emailColumn, $email)->first();
+
+            if ($racedUser !== null) {
+                warning("User with email '{$email}' already exists.");
+
+                return $racedUser;
+            }
+
+            throw $exception;
+        }
 
         info("✓ Created user: {$email}");
 
         return $user;
+    }
+
+    /**
+     * @param  list<string>  $guards
+     */
+    protected function resolveGuard(array $guards): string
+    {
+        $default = $guards[0] ?? 'web';
+        $panel = $this->option('panel');
+
+        if (! is_string($panel) || $panel === '') {
+            return $default;
+        }
+
+        if (! class_exists(Filament::class)) {
+            warning('Filament is not installed; ignoring --panel and using the default guard.');
+
+            return $default;
+        }
+
+        $panelInstance = Filament::getPanel($panel, false);
+
+        if ($panelInstance === null) {
+            warning("Panel [{$panel}] not found; using the default guard.");
+
+            return $default;
+        }
+
+        $panelGuard = $panelInstance->getAuthGuard();
+
+        if (config("auth.guards.{$panelGuard}") === null) {
+            warning("Panel [{$panel}] guard [{$panelGuard}] is not configured; using the default guard.");
+
+            return $default;
+        }
+
+        return $panelGuard;
     }
 
     /**
@@ -230,7 +285,7 @@ class SuperAdminCommand extends Command
      */
     protected function getNameColumn(string $userModel): string
     {
-        return 'name';
+        return (string) config('authz.users.name_column', 'name');
     }
 
     /**

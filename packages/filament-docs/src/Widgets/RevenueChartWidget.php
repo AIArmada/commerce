@@ -11,6 +11,7 @@ use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Paid;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Facades\DB;
 
 final class RevenueChartWidget extends ChartWidget
 {
@@ -36,7 +37,7 @@ final class RevenueChartWidget extends ChartWidget
             ->where('status', DocStatus::normalize(Paid::class))
             ->whereBetween('paid_at', [$startDate, $today->endOfDay()])
             ->selectRaw('DATE(paid_at) as paid_date, SUM(total_minor) as total_minor_sum')
-            ->groupBy('paid_date')
+            ->groupBy(DB::raw('DATE(paid_at)'))
             ->pluck('total_minor_sum', 'paid_date')
             ->map(fn (mixed $value): int => (int) $value)
             ->all();

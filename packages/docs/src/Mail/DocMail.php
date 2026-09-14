@@ -17,6 +17,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
@@ -77,10 +78,15 @@ final class DocMail extends Mailable
 
         try {
             $docService = app(DocService::class);
-            $owner = OwnerContext::fromTypeAndId($this->doc->owner_type, $this->doc->owner_id);
-
-            $pdfPath = OwnerContext::withOwner($owner, fn (): string => $docService->generatePdf($this->doc, save: true));
             $disk = $docService->resolveStorageDiskForDocType($this->doc->doc_type);
+
+            $pdfPath = $this->doc->pdf_path;
+
+            if ($pdfPath === null || ! Storage::disk($disk)->exists($pdfPath)) {
+                $owner = OwnerContext::fromTypeAndId($this->doc->owner_type, $this->doc->owner_id);
+
+                $pdfPath = OwnerContext::withOwner($owner, fn (): string => $docService->generatePdf($this->doc, save: true));
+            }
 
             $docType = ucfirst(str_replace('_', '-', $this->doc->doc_type));
 
@@ -128,10 +134,36 @@ final class DocMail extends Mailable
 
         $cc = $metadata['cc'] ?? null;
 
-        if (! is_string($cc) || $cc === '') {
-            return [];
+        $candidates = match (true) {
+            is_string($cc) => explode(',', $cc),
+            is_array($cc) => $cc,
+            default => [],
+        };
+
+        $addresses = [];
+
+        foreach ($candidates as $candidate) {
+            if (! is_string($candidate)) {
+                continue;
+            }
+
+            $candidate = mb_trim($candidate);
+
+            if ($candidate === '' || mb_strlen($candidate) > 320 || filter_var($candidate, FILTER_VALIDATE_EMAIL) === false) {
+                Log::warning('Ignoring invalid document email CC address.', [
+                    'doc_email_id' => $this->docEmail->getKey(),
+                ]);
+
+                continue;
+            }
+
+            $addresses[$candidate] = new Address($candidate);
+
+            if (count($addresses) >= 5) {
+                break;
+            }
         }
 
-        return [new Address($cc)];
+        return array_values($addresses);
     }
 }

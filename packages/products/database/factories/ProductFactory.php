@@ -20,6 +20,14 @@ class ProductFactory extends Factory
     protected $model = Product::class;
 
     /**
+     * Column listings per table. Schema is process-stable, so one lookup
+     * per table per process is enough.
+     *
+     * @var array<string, list<string>>
+     */
+    private static array $columnListingCache = [];
+
+    /**
      * @return array<string, mixed>
      */
     public function definition(): array
@@ -50,7 +58,7 @@ class ProductFactory extends Factory
             'meta_description' => null,
         ];
 
-        $tableColumns = Schema::getColumnListing((new Product)->getTable());
+        $tableColumns = self::columnListing((new Product)->getTable());
         if (in_array('length', $tableColumns)) {
             $data['length'] = $requiresShipping ? $this->faker->optional()->randomFloat(2, 1, 100) : null;
         }
@@ -62,6 +70,14 @@ class ProductFactory extends Factory
         }
 
         return $data;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function columnListing(string $table): array
+    {
+        return self::$columnListingCache[$table] ??= Schema::getColumnListing($table);
     }
 
     public function draft(): static

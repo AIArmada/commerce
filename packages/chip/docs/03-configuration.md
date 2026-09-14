@@ -80,6 +80,7 @@ Available methods: `fpx`, `visa`, `mastercard`, `maestro`, `duitnow`, `grabpay`,
     'include_global' => env('CHIP_OWNER_INCLUDE_GLOBAL', false),
     'auto_assign_on_create' => env('CHIP_OWNER_AUTO_ASSIGN', true),
     'webhook_brand_id_map' => [],
+    'send_webhook_owner' => [],
 ],
 ```
 
@@ -89,6 +90,7 @@ Available methods: `fpx`, `visa`, `mastercard`, `maestro`, `duitnow`, `grabpay`,
 | `include_global` | Include global records where `owner_type` and `owner_id` are `null` |
 | `auto_assign_on_create` | Automatically set owner on new records |
 | `webhook_brand_id_map` | Map brand IDs to owner models for incoming webhooks |
+| `send_webhook_owner` | Owner tuple for incoming CHIP Send webhooks (which carry no brand ID) |
 
 ### Webhook Brand ID Mapping
 
@@ -143,6 +145,19 @@ If webhooks are failing with "Owner resolution failed", check:
 2. Does the mapped `owner_id` exist in your database?
 3. Is `owner_type` the correct morph alias or class name?
 
+### Send Webhook Owner
+
+CHIP Send webhook payloads carry no brand attribution, so owner-enabled hosts configure a single owning tuple that all Send deliveries are attributed to:
+
+```php
+'send_webhook_owner' => [
+    'owner_type' => \App\Models\Tenant::class,
+    'owner_id' => 'tenant-uuid-1',
+],
+```
+
+When owner scoping is enabled, Send deliveries are dispatched inside this owner context. If the tuple is missing or unresolvable, the delivery is rejected with "Owner resolution failed". The entry is validated at boot time like the brand map.
+
 See [Webhooks](webhooks.md) for detailed webhook handling.
 
 ## Integration boundaries
@@ -172,7 +187,7 @@ CHIP does not configure or run document generation or checkout/customer linking.
 'webhooks' => [
     'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
     'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhooks'),
-    'middleware' => ['api'],
+    'middleware' => ['api', 'throttle:120,1'],
     'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
     'log_payloads' => env('CHIP_WEBHOOK_LOG_PAYLOADS', false),
     'store_webhooks' => env('CHIP_WEBHOOK_STORE', true),

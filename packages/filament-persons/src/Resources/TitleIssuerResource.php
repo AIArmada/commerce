@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\CreateTitleIssuer;
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\EditTitleIssuer;
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\ListTitleIssuers;
@@ -20,6 +21,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class TitleIssuerResource extends Resource
@@ -40,6 +42,36 @@ class TitleIssuerResource extends Resource
         $sort = config('filament-persons.resources.navigation_sort.title_issuer');
 
         return is_numeric($sort) ? (int) $sort : null;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('title-issuer.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('title-issuer.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('title-issuer.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('title-issuer.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('title-issuer.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function form(Schema $schema): Schema

@@ -12,15 +12,20 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
+use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Services\FraudDetectionService;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Stringable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -36,9 +41,15 @@ final class RecordAffiliateConversion
         private readonly AttributionModel $attributionModel,
         private readonly AllocateUplineCommissions $allocateUpline,
         private readonly ApplyConversionAccounting $accounting,
+        private readonly FraudDetectionService $fraud,
     ) {}
 
     public function handle(Cart $cart, array $payload = []): ?AffiliateConversionData
+    {
+        return DB::transaction(fn (): ?AffiliateConversionData => $this->record($cart, $payload));
+    }
+
+    private function record(Cart $cart, array $payload = []): ?AffiliateConversionData
     {
         $attribution = $this->resolveAttribution($cart, $payload);
         $affiliate = $this->resolveAffiliate($payload, $attribution);
@@ -131,25 +142,34 @@ final class RecordAffiliateConversion
                 $channel,
                 $ownerType,
                 $ownerId,
+                $cart,
+                $subtotalMinor,
+                $totalMinor,
+                $portionCommission,
             );
 
-            if ($idempotencyKey !== null) {
-                $conversionAttributes['idempotency_key'] = $idempotencyKey;
-                $conversion = AffiliateConversion::query()->createOrFirst(
-                    ['idempotency_key' => $idempotencyKey],
-                    $conversionAttributes,
-                );
-            } else {
-                $conversion = AffiliateConversion::create($conversionAttributes);
-            }
-
-            $firstConversion ??= AffiliateConversionData::fromModel($conversion);
+            $conversionAttributes['idempotency_key'] = $idempotencyKey;
+            $conversion = $this->createIdempotent($conversionAttributes);
 
             if (! $conversion->wasRecentlyCreated) {
+                $firstConversion ??= AffiliateConversionData::fromModel($conversion);
+
                 continue;
             }
 
+            if (! $this->fraud->analyzeConversion($conversion)['allowed']) {
+                $conversion->update(['status' => RejectedConversion::class]);
+            }
+
             $this->accounting->handle($conversion);
+
+            if ($conversion->status->equals(RejectedConversion::class)) {
+                $firstConversion ??= AffiliateConversionData::fromModel($conversion);
+
+                continue;
+            }
+
+            $firstConversion ??= AffiliateConversionData::fromModel($conversion);
 
             $conversionData = AffiliateConversionData::fromModel($conversion);
             $conversions[] = $conversionData;
@@ -170,6 +190,52 @@ final class RecordAffiliateConversion
         return $firstConversion;
     }
 
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function createIdempotent(array $attributes): AffiliateConversion
+    {
+        $existing = AffiliateConversion::query()
+            ->where('idempotency_key', $attributes['idempotency_key'])
+            ->first();
+
+        if ($existing) {
+            $existing->wasRecentlyCreated = false;
+
+            return $existing;
+        }
+
+        try {
+            $conversion = DB::transaction(function () use ($attributes): AffiliateConversion {
+                $model = new AffiliateConversion(Arr::except($attributes, ['owner_type', 'owner_id']));
+                $model->forceFill(Arr::only($attributes, ['owner_type', 'owner_id']));
+                $model->save();
+
+                return $model;
+            }, attempts: 1);
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueViolation($exception)) {
+                throw $exception;
+            }
+
+            $existing = AffiliateConversion::query()
+                ->where('idempotency_key', $attributes['idempotency_key'])
+                ->firstOrFail();
+            $existing->wasRecentlyCreated = false;
+
+            return $existing;
+        }
+
+        $conversion->wasRecentlyCreated = true;
+
+        return $conversion;
+    }
+
+    private function isUniqueViolation(QueryException $exception): bool
+    {
+        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
+    }
+
     private function resolveCommission(
         Affiliate $affiliate,
         int $baseAmount,
@@ -177,13 +243,13 @@ final class RecordAffiliateConversion
         ?AffiliateAttribution $attribution,
     ): int {
         if (isset($payload['commission'])) {
-            return $this->resolveMinorAmount($payload['commission'], fn () => 0);
+            return CommissionCaps::clamp($this->resolveMinorAmount($payload['commission'], fn () => 0) ?? 0);
         }
 
         $voucherOverride = $payload['commission_override'] ?? $attribution?->commission_override;
 
         if (is_array($voucherOverride) && isset($voucherOverride['type'], $voucherOverride['value'])) {
-            return $this->calculateVoucherCommission($voucherOverride, $baseAmount);
+            return CommissionCaps::clamp($this->calculateVoucherCommission($voucherOverride, $baseAmount));
         }
 
         $programId = $payload['affiliate_program_id'] ?? $attribution?->affiliate_program_id;
@@ -326,9 +392,22 @@ final class RecordAffiliateConversion
         mixed $channel,
         ?string $ownerType,
         ?string $ownerId,
-    ): ?string {
-        if (! is_string($externalReference) || mb_trim($externalReference) === '') {
-            return null;
+        Cart $cart,
+        ?int $subtotalMinor,
+        ?int $totalMinor,
+        int $commissionMinor,
+    ): string {
+        if (is_string($externalReference) && mb_trim($externalReference) !== '') {
+            $seed = 'ref:' . $externalReference;
+        } else {
+            $seed = implode(':', [
+                'cart',
+                $cart->getIdentifier(),
+                $cart->instance(),
+                $subtotalMinor ?? 0,
+                $totalMinor ?? 0,
+                $commissionMinor,
+            ]);
         }
 
         return hash('sha256', implode('|', [
@@ -337,7 +416,7 @@ final class RecordAffiliateConversion
             $affiliateId,
             $conversionType,
             is_string($channel) ? $channel : '',
-            $externalReference,
+            $seed,
         ]));
     }
 }

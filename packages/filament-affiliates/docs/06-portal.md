@@ -44,6 +44,8 @@ Pages are feature-gated through `filament-affiliates.portal.features`:
 
 If `filament-affiliates.portal.registration_enabled` is `true`, the panel uses `PortalRegistration` as the registration page.
 
+Custom link targets on `PortalLinks` are validated server-side: only `http(s)` URLs on the application host (including subdomains) are accepted, and the affiliate code is URL-encoded into the generated link.
+
 ## Panel behavior
 
 `AffiliatePanelProvider` configures:

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSeating\Pages;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
+use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use BackedEnum;
 use Filament\Pages\Page;
 use UnitEnum;
@@ -18,7 +20,17 @@ class SeatMapEditor extends Page
 
     public function mount(?string $seatMapId = null): void
     {
-        $this->seatMapId = $seatMapId;
+        if ($seatMapId === null || $seatMapId === '') {
+            $this->seatMapId = null;
+
+            return;
+        }
+
+        $allowed = OwnerScopedIds::allowedIds(SeatMapModel::class, [$seatMapId]);
+
+        abort_if($allowed === [], 404);
+
+        $this->seatMapId = $allowed[0];
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

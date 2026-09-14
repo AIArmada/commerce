@@ -14,6 +14,7 @@ use AIArmada\Communications\Support\EventReferenceNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 use RuntimeException;
+use Throwable;
 
 class CommunicationManagerService implements CommunicationManager
 {
@@ -31,29 +32,49 @@ class CommunicationManagerService implements CommunicationManager
     ): Communication {
         [$context, $eventReference] = $this->normalizeContext($context);
 
-        if ($context->idempotencyKey !== null) {
-            if ($this->idempotencyLock->exists($context->idempotencyKey)) {
-                throw new RuntimeException('Duplicate communication detected for idempotency key: ' . $context->idempotencyKey);
-            }
+        if ($context->idempotencyKey === null) {
+            $communication = $this->dispatcher->handle($notifiable, $notification, $context);
+            $this->attachEventReference($communication, $eventReference);
 
-            $this->idempotencyLock->acquire(
-                $context->idempotencyKey,
-                config('communications.cache.idempotency_ttl', 3600),
-            );
+            return $communication;
         }
 
-        $communication = $this->dispatcher->handle($notifiable, $notification, $context);
+        $acquired = $this->idempotencyLock->acquire(
+            $context->idempotencyKey,
+            (int) config('communications.cache.idempotency_ttl', 3600),
+        );
 
-        if ($eventReference !== null) {
-            $this->referenceAttacher->handle(
-                communicationId: $communication->id,
-                referenceType: $eventReference['type'],
-                referenceId: $eventReference['id'],
-                role: 'event',
-            );
+        if (! $acquired) {
+            throw new RuntimeException('Duplicate communication detected for idempotency key: ' . $context->idempotencyKey);
+        }
+
+        try {
+            $communication = $this->dispatcher->handle($notifiable, $notification, $context);
+            $this->attachEventReference($communication, $eventReference);
+        } catch (Throwable $exception) {
+            $this->idempotencyLock->release($context->idempotencyKey);
+
+            throw $exception;
         }
 
         return $communication;
+    }
+
+    /**
+     * @param  array{type: string, id: string}|null  $eventReference
+     */
+    private function attachEventReference(Communication $communication, ?array $eventReference): void
+    {
+        if ($eventReference === null) {
+            return;
+        }
+
+        $this->referenceAttacher->handle(
+            communicationId: $communication->id,
+            referenceType: $eventReference['type'],
+            referenceId: $eventReference['id'],
+            role: 'event',
+        );
     }
 
     /**

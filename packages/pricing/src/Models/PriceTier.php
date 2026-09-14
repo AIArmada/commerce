@@ -99,6 +99,8 @@ class PriceTier extends Model implements Auditable
         });
 
         static::saving(function (self $tier): void {
+            self::validateMonetaryFields($tier);
+
             if (! config('pricing.features.owner.enabled', false)) {
                 return;
             }
@@ -248,6 +250,25 @@ class PriceTier extends Model implements Auditable
         }
 
         return "{$this->min_quantity}-{$this->max_quantity} units";
+    }
+
+    private static function validateMonetaryFields(self $tier): void
+    {
+        if ($tier->amount === null || $tier->amount < 0) {
+            throw new InvalidArgumentException('Tier amount must be zero or greater.');
+        }
+
+        if ($tier->min_quantity === null || $tier->min_quantity < 1) {
+            throw new InvalidArgumentException('Tier min quantity must be at least 1.');
+        }
+
+        if ($tier->max_quantity !== null && $tier->max_quantity < $tier->min_quantity) {
+            throw new InvalidArgumentException('Tier max quantity must not be below min quantity.');
+        }
+
+        if ($tier->discount_value !== null && $tier->discount_value < 0) {
+            throw new InvalidArgumentException('Tier discount value must be zero or greater.');
+        }
     }
 
     /**

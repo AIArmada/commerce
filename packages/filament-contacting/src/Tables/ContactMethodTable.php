@@ -12,8 +12,10 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\TextInput;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class ContactMethodTable
 {
@@ -54,7 +56,17 @@ final class ContactMethodTable
                 Tables\Columns\IconColumn::make('is_verified')
                     ->boolean()
                     ->label('Verified')
-                    ->visible($config->showVerificationColumns()),
+                    ->visible($config->showVerificationColumns() && $config->verificationBadges()),
+
+                Tables\Columns\TextColumn::make('owner_type')
+                    ->label('Owner Type')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible($config->showOwnerColumns()),
+
+                Tables\Columns\TextColumn::make('owner_id')
+                    ->label('Owner ID')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible($config->showOwnerColumns()),
 
                 Tables\Columns\TextColumn::make('verified_at')
                     ->dateTime()
@@ -80,21 +92,35 @@ final class ContactMethodTable
 
                 Tables\Filters\TernaryFilter::make('is_verified'),
 
-                Tables\Filters\SelectFilter::make('country_code'),
+                Tables\Filters\Filter::make('country_code')
+                    ->form([
+                        TextInput::make('value')
+                            ->label('Country Code')
+                            ->maxLength(2),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        $data['value'] ?? null,
+                        fn (Builder $query, string $value): Builder => $query->where('country_code', mb_strtoupper($value)),
+                    )),
             ])
             ->defaultSort('created_at', 'desc')
+            ->paginationPageOptions($config->paginationPageOptions())
+            ->defaultPaginationPageOption($config->defaultPagination())
             ->actions([
                 ViewAction::make(),
 
                 EditAction::make()
-                    ->visible(fn (): bool => ! $guard->contactMethodsReadOnly()),
+                    ->visible(fn (): bool => ! $guard->contactMethodsReadOnly())
+                    ->disabled(fn (): bool => $guard->contactMethodsReadOnly()),
 
                 DeleteAction::make()
-                    ->visible(fn (): bool => ! $guard->contactMethodsReadOnly()),
+                    ->visible(fn (): bool => ! $guard->contactMethodsReadOnly())
+                    ->disabled(fn (): bool => $guard->contactMethodsReadOnly()),
             ])
             ->bulkActions([
                 DeleteBulkAction::make()
-                    ->visible(fn (): bool => ! $guard->contactMethodsReadOnly()),
+                    ->visible(fn (): bool => ! $guard->contactMethodsReadOnly())
+                    ->disabled(fn (): bool => $guard->contactMethodsReadOnly()),
 
                 ExportBulkAction::make()
                     ->visible(fn (): bool => $config->exportsEnabled()),

@@ -11,6 +11,7 @@ use AIArmada\Checkout\Data\PaymentRequest;
 use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
+use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\Events\CheckoutPaymentCompleted;
 use AIArmada\Checkout\Exceptions\PaymentException;
 use AIArmada\Checkout\Models\CheckoutSession;
@@ -80,7 +81,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
                 'processed_at' => CarbonImmutable::now()->toIso8601String(),
             ]);
 
-            $session->update([
+            $session->persistState([
                 'payment_data' => $paymentData,
             ]);
             if (! $session->status->is(Processing::class)) {
@@ -128,14 +129,14 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             'processed_at' => CarbonImmutable::now()->toIso8601String(),
         ]);
 
-        $session->update([
+        $session->persistState([
             'payment_id' => $result->paymentId,
             'payment_data' => $paymentData,
         ]);
 
         // Handle redirect-based payments
         if ($result->requiresRedirect()) {
-            $session->update(['payment_redirect_url' => $result->redirectUrl]);
+            $session->persistState(['payment_redirect_url' => $result->redirectUrl]);
             $session->transitionStatus(AwaitingPayment::class);
 
             return $this->success('Payment initiated - redirect required', [
@@ -197,6 +198,15 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             ]);
         }
 
+        if ($this->paymentAlreadyCompensated($session, $paymentId)) {
+            return $this->compensated('Payment compensation already recorded for this payment', [
+                'operation' => $operation,
+                'payment_id' => $paymentId,
+                'payment_status' => $paymentStatus->value,
+                'skipped' => true,
+            ]);
+        }
+
         try {
             $processor = $this->paymentResolver->resolve($session->selected_payment_gateway);
 
@@ -233,6 +243,35 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
                 'payment' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Check the persisted compensation log for a completed refund/void of
+     * this exact payment so repeated compensation runs do not hit the
+     * gateway twice. Scoped by payment id on purpose: a retry creates a new
+     * payment that must still be compensated.
+     */
+    private function paymentAlreadyCompensated(CheckoutSession $session, string $paymentId): bool
+    {
+        foreach ($session->getCompensationLog() as $entry) {
+            if (($entry['step_identifier'] ?? null) !== $this->getIdentifier()) {
+                continue;
+            }
+
+            if (($entry['status'] ?? null) !== StepStatus::RolledBack->value) {
+                continue;
+            }
+
+            if (($entry['data']['payment_id'] ?? null) !== $paymentId) {
+                continue;
+            }
+
+            if (in_array($entry['data']['operation'] ?? null, ['refund', 'void'], true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function refund(
@@ -346,10 +385,16 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             default => "checkout.payment.{$gateway}.success",
         };
 
+        $queryParam = (string) config('checkout.defaults.session_query_param', 'session');
+
+        if (mb_trim($queryParam) === '') {
+            $queryParam = 'session';
+        }
+
         // Use route if available, fall back to config path
         if (Route::has($routeName)) {
             return route($routeName, [
-                'session' => $session->id,
+                $queryParam => $session->id,
                 'checkout_callback_token' => $callbackToken,
             ]);
         }
@@ -360,7 +405,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         $separator = str_contains($path, '?') ? '&' : '?';
 
         return url($path . $separator . http_build_query([
-            'session' => $session->id,
+            $queryParam => $session->id,
             'checkout_callback_token' => $callbackToken,
         ]));
     }
@@ -439,7 +484,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         $paymentData['callback_token_created_at'] = CarbonImmutable::now()->toIso8601String();
         unset($paymentData['callback_token_consumed_at']);
 
-        $session->update(['payment_data' => $paymentData]);
+        $session->persistState(['payment_data' => $paymentData]);
 
         return $callbackToken;
     }

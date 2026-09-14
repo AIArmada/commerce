@@ -152,7 +152,7 @@ final class ManageTaxSettings extends Page
         }
 
         /** @var array<string, mixed> $state */
-        $state = $this->data ?? [];
+        $state = $this->getSchema('form')?->getState() ?? [];
 
         $settings = app(TaxSettings::class);
 
@@ -179,6 +179,7 @@ final class ManageTaxSettings extends Page
     {
         return [
             Action::make('save')
+                ->authorize(fn (): bool => auth()->user()?->can('tax.settings.manage') ?? false)
                 ->label(__('Save'))
                 ->icon('heroicon-o-check')
                 ->color('primary')

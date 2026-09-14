@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -55,7 +56,9 @@ class Title extends Model
         });
 
         static::deleting(function (Title $title): void {
-            $title->assignments()->get()->each->delete();
+            DB::transaction(static function () use ($title): void {
+                $title->assignments()->chunkById(500, static fn (Collection $assignments) => $assignments->each->delete());
+            });
         });
     }
 

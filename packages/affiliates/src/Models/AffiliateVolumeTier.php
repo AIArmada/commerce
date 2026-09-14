@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
+use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -78,6 +79,20 @@ class AffiliateVolumeTier extends Model implements Auditable
     public function getCommissionRatePercentage(): float
     {
         return $this->commission_rate_basis_points / 100;
+    }
+
+    protected static function booted(): void
+    {
+        // The rule engine caches tiers per program in memory.
+        // Bust it on writes so long-lived workers never price off stale tiers.
+        $bust = static function (): void {
+            if (app()->bound(CommissionRuleEngine::class)) {
+                app(CommissionRuleEngine::class)->clearCache();
+            }
+        };
+
+        static::saved($bust);
+        static::deleted($bust);
     }
 
     protected function getActivityLogName(): string

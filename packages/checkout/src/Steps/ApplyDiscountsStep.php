@@ -90,11 +90,10 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
         $discountData['total_discount'] = $totalDiscount;
         $discountData['applied_at'] = CarbonImmutable::now()->toIso8601String();
 
-        $session->update([
+        $session->forceFill([
             'discount_data' => $discountData,
             'discount_total' => $totalDiscount,
         ]);
-
         $session->calculateTotals();
         $session->save();
         $this->refreshCartSnapshot($session);
@@ -115,11 +114,10 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
             $this->activeCommitments = null;
         }
 
-        $session->update([
+        $session->forceFill([
             'discount_data' => [],
             'discount_total' => 0,
         ]);
-
         $session->calculateTotals();
         $session->save();
 
@@ -172,7 +170,7 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
         $subtotal = $cart->subtotal()->getAmount();
         $total = $cart->total()->getAmount();
 
-        $session->update([
+        $session->persistState([
             'cart_snapshot' => [
                 'items' => $cart->getItems()->toArray(),
                 'metadata' => $metadata,

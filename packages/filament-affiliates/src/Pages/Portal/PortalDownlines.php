@@ -49,6 +49,7 @@ class PortalDownlines extends PortalPage implements HasTable
             ->query(
                 Affiliate::query()
                     ->where('parent_affiliate_id', $affiliate->getKey())
+                    ->with(['rank'])
             )
             ->columns([
                 TextColumn::make('code')

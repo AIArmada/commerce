@@ -48,7 +48,7 @@ afterEach(function (): void {
     $connection->getSchemaBuilder()->dropIfExists('carts_swap_test');
 });
 
-it('transfers source cart to target identifier even when target exists', function (): void {
+it('refuses to swap when the target identifier already holds a cart', function (): void {
     $storage = $this->storage;
 
     // Add items to guest cart (the source cart to transfer)
@@ -94,27 +94,20 @@ it('transfers source cart to target identifier even when target exists', functio
     expect($storage->getItems('guest_session_123', 'default'))->toHaveCount(1);
     expect($storage->getItems('user_42', 'default'))->toHaveCount(1);
 
-    // Perform swap (transfer guest cart to user identifier)
+    // Perform swap into an occupied target: must be refused, nothing destroyed
     $result = $this->cartMigration->swap('guest_session_123', 'user_42', 'default');
-    expect($result)->toBeTrue();
+    expect($result)->toBeFalse();
 
-    // Verify results after swap:
-    // Guest cart should be gone (transferred)
+    // Guest cart must be untouched
     $guestItemsAfter = $storage->getItems('guest_session_123', 'default');
-    expect($guestItemsAfter)->toBeEmpty();
+    expect($guestItemsAfter)->toEqual($guestItems);
 
-    // User cart should now have the guest cart content (not the original user content)
+    // Target cart must be untouched (items and conditions preserved)
     $userItemsAfter = $storage->getItems('user_42', 'default');
     $userConditionsAfter = $storage->getConditions('user_42', 'default');
 
-    expect($userItemsAfter)->toHaveCount(1);
-    expect($userConditionsAfter)->toBeEmpty(); // Conditions were empty in guest cart
-
-    // Verify the guest content is now under user identifier
-    expect($userItemsAfter['guest-product-1'])->toEqual($guestItems['guest-product-1']);
-
-    // Original user content should NOT be present (it was overwritten)
-    expect($userItemsAfter)->not->toHaveKey('user-product-1');
+    expect($userItemsAfter)->toEqual($userItems);
+    expect($userConditionsAfter)->toEqual($userConditions);
 });
 
 it('transfers source cart when target cart does not exist', function (): void {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\FilamentShipping\Support\MoneyInput;
 use AIArmada\Shipping\Models\ShippingRate;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -62,33 +63,33 @@ class RatesRelationManager extends RelationManager
                     ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                     ->required()
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
-                    ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : 0),
+                    ->dehydrateStateUsing(fn ($state) => $state ? MoneyInput::toMinor($state) : 0),
 
                 Forms\Components\TextInput::make('per_unit_rate')
                     ->numeric()
                     ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
-                    ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : 0)
+                    ->dehydrateStateUsing(fn ($state) => $state ? MoneyInput::toMinor($state) : 0)
                     ->visible(fn (Get $get) => in_array($get('calculation_type'), ['per_kg', 'per_item', 'percentage'])),
 
                 Forms\Components\TextInput::make('min_charge')
                     ->numeric()
                     ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
-                    ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
+                    ->dehydrateStateUsing(fn ($state) => $state ? MoneyInput::toMinor($state) : null),
 
                 Forms\Components\TextInput::make('max_charge')
                     ->numeric()
                     ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
-                    ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
+                    ->dehydrateStateUsing(fn ($state) => $state ? MoneyInput::toMinor($state) : null),
 
                 Forms\Components\TextInput::make('free_shipping_threshold')
                     ->numeric()
                     ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                     ->helperText('Orders above this amount get free shipping')
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
-                    ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
+                    ->dehydrateStateUsing(fn ($state) => $state ? MoneyInput::toMinor($state) : null),
 
                 Forms\Components\Repeater::make('rate_table')
                     ->schema([
@@ -105,7 +106,7 @@ class RatesRelationManager extends RelationManager
                             ->prefix(fn (): string => MoneyFormatter::symbol(config('shipping.defaults.currency', 'MYR')))
                             ->required()
                             ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
-                            ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : 0),
+                            ->dehydrateStateUsing(fn ($state) => $state ? MoneyInput::toMinor($state) : 0),
                     ])
                     ->columns(3)
                     ->visible(fn (Get $get) => $get('calculation_type') === 'table'),
@@ -158,7 +159,7 @@ class RatesRelationManager extends RelationManager
                                         ? $state / 100
                                         : $state)
                                     ->dehydrateStateUsing(fn ($state, Get $get) => in_array($get('type'), ['min_order_total', 'max_order_total']) && $state
-                                        ? (int) ($state * 100)
+                                        ? MoneyInput::toMinor($state)
                                         : (int) $state),
                             ])
                             ->columns(2)

@@ -10,6 +10,7 @@ use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Bookmark;
 use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
+use AIArmada\FilamentEngagement\Support\BulkRecordProcessor;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -113,13 +114,15 @@ final class BookmarkResource extends Resource
             ->bulkActions([
                 BulkAction::make('remove')
                     ->action(function ($records): void {
-                        foreach ($records as $record) {
-                            if ($record instanceof Bookmark && $record->isActive()) {
-                                $record = ActionRecordResolver::resolve($record);
-                                app(EngagementManager::class)
-                                    ->removeBookmark($record->bookmarker, $record->bookmarkable);
+                        BulkRecordProcessor::eachInChunks($records, ModelResolver::bookmarkClass(), function (Bookmark $record): void {
+                            if (! $record->isActive()) {
+                                return;
                             }
-                        }
+
+                            $record = ActionRecordResolver::resolve($record);
+                            app(EngagementManager::class)
+                                ->removeBookmark($record->bookmarker, $record->bookmarkable);
+                        });
                     }),
             ])
             ->defaultSort('bookmarked_at', 'desc');

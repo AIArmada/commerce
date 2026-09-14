@@ -129,7 +129,7 @@ return [
         'ttl_minutes' => env('AFFILIATES_COOKIE_TTL_MINUTES', 60 * 24 * 30),
         'path' => env('AFFILIATES_COOKIE_PATH', '/'),
         'domain' => env('AFFILIATES_COOKIE_DOMAIN'),
-        'secure' => env('AFFILIATES_COOKIE_SECURE'),
+        'secure' => env('AFFILIATES_COOKIE_SECURE', true),
         'http_only' => env('AFFILIATES_COOKIE_HTTP_ONLY', true),
         'same_site' => env('AFFILIATES_COOKIE_SAME_SITE', 'lax'),
         'query_parameters' => ['aff', 'affiliate', 'ref', 'referral'],
@@ -230,7 +230,7 @@ return [
         ],
         'attribution_model' => env('AFFILIATES_ATTRIBUTION_MODEL', 'last_touch'), // last_touch, first_touch, linear
         'fingerprint' => [
-            'enabled' => env('AFFILIATES_FINGERPRINT_ENABLED', false),
+            'enabled' => env('AFFILIATES_FINGERPRINT_ENABLED', true),
             'block_duplicates' => env('AFFILIATES_FINGERPRINT_BLOCK_DUPLICATES', false),
             'threshold' => env('AFFILIATES_FINGERPRINT_THRESHOLD', 5),
         ],
@@ -277,6 +277,8 @@ return [
         'signing_key' => env('AFFILIATES_LINK_SIGNING_KEY', env('APP_KEY')),
         'default_ttl_minutes' => env('AFFILIATES_LINK_TTL', 60 * 24 * 7),
         'parameter' => env('AFFILIATES_LINK_PARAM', 'aff'),
+        // Hosts tracking links may point to. Empty falls back to the app.url
+        // host so signed links cannot be minted for arbitrary domains.
         'allowed_hosts' => array_filter(explode(',', (string) env('AFFILIATES_LINK_ALLOWED_HOSTS', ''))),
     ],
 
@@ -290,8 +292,7 @@ return [
         'enabled' => env('AFFILIATES_API_ENABLED', false),
         'prefix' => env('AFFILIATES_API_PREFIX', 'api/affiliates'),
         'middleware' => ['api', 'throttle:60,1'],
-        'auth' => env('AFFILIATES_API_AUTH', 'token'), // token | none
-        'token' => env('AFFILIATES_API_TOKEN'), // static token for simple setups
+        'token' => env('AFFILIATES_API_TOKEN'), // static bearer token, required
     ],
 
     /*

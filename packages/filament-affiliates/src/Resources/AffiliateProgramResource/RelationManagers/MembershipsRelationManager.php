@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Relatio
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -20,6 +21,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class MembershipsRelationManager extends RelationManager
 {
@@ -29,15 +31,13 @@ final class MembershipsRelationManager extends RelationManager
     {
         return $schema->schema([
             Select::make('affiliate_id')
-                ->relationship('affiliate', 'name')
+                ->relationship('affiliate', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
                 ->searchable()
-                ->preload()
                 ->required(),
 
             Select::make('tier_id')
                 ->relationship('tier', 'name')
                 ->searchable()
-                ->preload()
                 ->placeholder('No tiers configured'),
 
             Select::make('status')
@@ -85,6 +85,7 @@ final class MembershipsRelationManager extends RelationManager
                     ->dateTime()
                     ->placeholder('—'),
             ])
+            ->modifyQueryUsing(fn ($query) => $query->with(['affiliate', 'tier']))
             ->headerActions([
                 CreateAction::make(),
             ])

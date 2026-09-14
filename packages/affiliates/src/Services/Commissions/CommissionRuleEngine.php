@@ -31,6 +31,20 @@ final class CommissionRuleEngine
     private array $rulesCache = [];
 
     /**
+     * Program-keyed cache for volume tiers.
+     *
+     * @var array<string, Collection<int, AffiliateVolumeTier>>
+     */
+    private array $volumeTiersCache = [];
+
+    /**
+     * Program-keyed cache for active promotions.
+     *
+     * @var array<string, Collection<int, AffiliateCommissionPromotion>>
+     */
+    private array $promotionsCache = [];
+
+    /**
      * Calculate the commission for a conversion.
      *
      * @param  array<string, mixed>  $context
@@ -114,6 +128,8 @@ final class CommissionRuleEngine
     public function clearCache(): void
     {
         $this->rulesCache = [];
+        $this->volumeTiersCache = [];
+        $this->promotionsCache = [];
     }
 
     /**
@@ -154,6 +170,44 @@ final class CommissionRuleEngine
     }
 
     /**
+     * @return Collection<int, AffiliateVolumeTier>
+     */
+    private function volumeTiersForProgram(mixed $programId): Collection
+    {
+        $cacheKey = is_scalar($programId) ? (string) $programId : 'global';
+
+        return $this->volumeTiersCache[$cacheKey] ??= AffiliateVolumeTier::query()
+            ->when(
+                $programId,
+                fn (Builder $query) => $query->where(function (Builder $inner) use ($programId): void {
+                    $inner->whereNull('program_id')->orWhere('program_id', $programId);
+                }),
+                fn (Builder $query) => $query->whereNull('program_id')
+            )
+            ->orderBy('min_volume_minor')
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, AffiliateCommissionPromotion>
+     */
+    private function promotionsForProgram(mixed $programId): Collection
+    {
+        $cacheKey = is_scalar($programId) ? (string) $programId : 'global';
+
+        return $this->promotionsCache[$cacheKey] ??= AffiliateCommissionPromotion::query()
+            ->active()
+            ->when(
+                $programId,
+                fn (Builder $query) => $query->where(function (Builder $inner) use ($programId): void {
+                    $inner->whereNull('program_id')->orWhere('program_id', $programId);
+                }),
+                fn (Builder $query) => $query->whereNull('program_id')
+            )
+            ->get();
+    }
+
+    /**
      * @param  Collection<int, AffiliateCommissionRule>  $rules
      */
     private function calculateBaseCommission(Collection $rules, int $orderAmountMinor, array $context): int
@@ -191,20 +245,10 @@ final class CommissionRuleEngine
             ->sum(DB::raw('COALESCE(value_minor, 0)'));
 
         // Find applicable volume tier
-        $tier = AffiliateVolumeTier::query()
-            ->when(
-                $programId,
-                fn (Builder $query) => $query->where(function (Builder $inner) use ($programId): void {
-                    $inner->whereNull('program_id')->orWhere('program_id', $programId);
-                }),
-                fn (Builder $query) => $query->whereNull('program_id')
-            )
-            ->where('min_volume_minor', '<=', $periodVolume)
-            ->where(function ($q) use ($periodVolume): void {
-                $q->whereNull('max_volume_minor')
-                    ->orWhere('max_volume_minor', '>=', $periodVolume);
-            })
-            ->orderBy('min_volume_minor', 'desc')
+        $tier = $this->volumeTiersForProgram($programId)
+            ->filter(fn (AffiliateVolumeTier $candidate): bool => $candidate->min_volume_minor <= $periodVolume
+                && ($candidate->max_volume_minor === null || $candidate->max_volume_minor >= $periodVolume))
+            ->sortByDesc('min_volume_minor')
             ->first();
 
         if (! $tier) {
@@ -224,16 +268,7 @@ final class CommissionRuleEngine
     {
         $programId = $context['program_id'] ?? null;
 
-        $promotions = AffiliateCommissionPromotion::query()
-            ->active()
-            ->when(
-                $programId,
-                fn (Builder $query) => $query->where(function (Builder $inner) use ($programId): void {
-                    $inner->whereNull('program_id')->orWhere('program_id', $programId);
-                }),
-                fn (Builder $query) => $query->whereNull('program_id')
-            )
-            ->get()
+        $promotions = $this->promotionsForProgram($programId)
             ->filter(fn (AffiliateCommissionPromotion $promo) => $promo->appliesToAffiliate($affiliate));
 
         $totalBonus = 0;
@@ -554,17 +589,6 @@ final class CommissionRuleEngine
 
     private function applyCaps(int $commission, Affiliate $affiliate, array $context): int
     {
-        $minCommission = config('affiliates.commissions.minimum_minor', 0);
-        $maxCommission = config('affiliates.commissions.maximum_minor');
-
-        if ($commission < $minCommission) {
-            return $minCommission;
-        }
-
-        if ($maxCommission !== null && $commission > $maxCommission) {
-            return $maxCommission;
-        }
-
-        return $commission;
+        return CommissionCaps::clamp($commission);
     }
 }

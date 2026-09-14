@@ -10,6 +10,7 @@ use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Override;
 
 final class AttentionRequiredWidget extends BaseWidget
 {
@@ -17,44 +18,51 @@ final class AttentionRequiredWidget extends BaseWidget
 
     protected static ?int $sort = 7;
 
+    #[Override]
+    public static function canView(): bool
+    {
+        return static::hasWidgetOwnerContext();
+    }
+
     protected function getStats(): array
     {
-        $now = CarbonImmutable::now();
-        $inThreeDays = $now->copy()->addDays(3);
+        $counts = $this->getAttentionCounts();
 
-        $trialsEndingSoon = $this->subscriptionQuery()
-            ->whereNotNull('trial_ends_at')
-            ->where('trial_ends_at', '>=', $now)
-            ->where('trial_ends_at', '<=', $inThreeDays)
-            ->where('chip_status', SubscriptionStatus::Trialing->value)
-            ->count();
-
-        $pastDue = $this->subscriptionQuery()
-            ->where('chip_status', SubscriptionStatus::PastDue->value)
-            ->count();
-
-        $gracePeriodEnding = $this->subscriptionQuery()
-            ->whereNotNull('ends_at')
-            ->where('ends_at', '>=', $now)
-            ->where('ends_at', '<=', $inThreeDays)
-            ->count();
-
-        $incomplete = $this->subscriptionQuery()
-            ->where('chip_status', SubscriptionStatus::Incomplete->value)
-            ->count();
-
-        $unpaid = $this->subscriptionQuery()
-            ->where('chip_status', SubscriptionStatus::Unpaid->value)
-            ->count();
-
-        $totalAttention = $trialsEndingSoon + $pastDue + $gracePeriodEnding + $incomplete + $unpaid;
+        $totalAttention = $counts['trials'] + $counts['past_due'] + $counts['grace'] + $counts['incomplete'] + $counts['unpaid'];
 
         return [
             Stat::make('Attention Required', $totalAttention)
-                ->description($this->buildDescription($trialsEndingSoon, $pastDue, $gracePeriodEnding, $incomplete, $unpaid))
+                ->description($this->buildDescription($counts['trials'], $counts['past_due'], $counts['grace'], $counts['incomplete'], $counts['unpaid']))
                 ->descriptionIcon($totalAttention > 0 ? Heroicon::ExclamationTriangle : Heroicon::CheckCircle)
                 ->color($this->getColor($totalAttention)),
         ];
+    }
+
+    /**
+     * @return array{trials: int, past_due: int, grace: int, incomplete: int, unpaid: int}
+     */
+    private function getAttentionCounts(): array
+    {
+        return $this->rememberWidgetValue('attention.counts', function (): array {
+            $now = CarbonImmutable::now();
+            $inThreeDays = $now->copy()->addDays(3);
+
+            $row = $this->subscriptionQuery()
+                ->selectRaw('COUNT(CASE WHEN trial_ends_at >= ? AND trial_ends_at <= ? AND chip_status = ? THEN 1 END) AS trials_ending', [$now, $inThreeDays, SubscriptionStatus::Trialing->value])
+                ->selectRaw('COUNT(CASE WHEN chip_status = ? THEN 1 END) AS past_due', [SubscriptionStatus::PastDue->value])
+                ->selectRaw('COUNT(CASE WHEN ends_at >= ? AND ends_at <= ? THEN 1 END) AS grace_ending', [$now, $inThreeDays])
+                ->selectRaw('COUNT(CASE WHEN chip_status = ? THEN 1 END) AS incomplete', [SubscriptionStatus::Incomplete->value])
+                ->selectRaw('COUNT(CASE WHEN chip_status = ? THEN 1 END) AS unpaid', [SubscriptionStatus::Unpaid->value])
+                ->first();
+
+            return [
+                'trials' => (int) ($row?->getAttribute('trials_ending') ?? 0),
+                'past_due' => (int) ($row?->getAttribute('past_due') ?? 0),
+                'grace' => (int) ($row?->getAttribute('grace_ending') ?? 0),
+                'incomplete' => (int) ($row?->getAttribute('incomplete') ?? 0),
+                'unpaid' => (int) ($row?->getAttribute('unpaid') ?? 0),
+            ];
+        });
     }
 
     protected function getColumns(): int

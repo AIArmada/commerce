@@ -20,6 +20,8 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->nullableMorphs('owner');
             $table->timestampsTz();
+
+            $table->unique(['parent_ticket_type_id', 'component_ticket_type_id'], 'ticket_type_components_pair_unique');
         });
     }
 

@@ -21,7 +21,10 @@ use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventReference;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventTimeExpression;
+use AIArmada\Events\Support\EventWriteGuard;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Spatie\MediaLibrary\HasMedia;
 
 final class CloneEventContentsAction
@@ -64,57 +67,78 @@ final class CloneEventContentsAction
         array $relations = [],
     ): Collection {
         $relations = $relations !== [] ? $relations : self::BLUEPRINT_RELATIONS;
-        $cloned = new Collection;
 
         foreach ($relations as $relation) {
-            $modelClass = self::MODEL_MAP[$relation] ?? null;
-
-            if ($modelClass === null) {
-                continue;
-            }
-
-            $query = $modelClass::query()->where('event_id', $sourceEventId);
-
-            if ($sourceSessionId !== null) {
-                $query->where('event_session_id', $sourceSessionId);
-            } elseif ($sourceOccurrenceId !== null) {
-                $query->where('event_occurrence_id', $sourceOccurrenceId)
-                    ->whereNull('event_session_id');
-            } else {
-                $query->whereNull('event_occurrence_id')
-                    ->whereNull('event_session_id');
-            }
-
-            $children = $query->get();
-
-            foreach ($children as $child) {
-                $replica = $child->replicate(['id', 'created_at', 'updated_at']);
-                $replica->event_id = $targetEventId;
-
-                if ($targetOccurrenceId !== null) {
-                    $replica->event_occurrence_id = $targetOccurrenceId;
-                }
-
-                if ($targetSessionId !== null) {
-                    $replica->event_session_id = $targetSessionId;
-                }
-
-                $replica->save();
-
-                $cloned->push($replica);
+            if (! array_key_exists($relation, self::MODEL_MAP)) {
+                throw new InvalidArgumentException(sprintf('Unknown cloneable event relation [%s].', $relation));
             }
         }
 
-        $this->cloneSpatieMedia(
-            sourceEventId: $sourceEventId,
-            targetEventId: $targetEventId,
-            sourceOccurrenceId: $sourceOccurrenceId,
-            targetOccurrenceId: $targetOccurrenceId,
-            sourceSessionId: $sourceSessionId,
-            targetSessionId: $targetSessionId,
-        );
+        EventWriteGuard::findOrFail($sourceEventId);
+        EventWriteGuard::findOrFail($targetEventId);
 
-        return $cloned;
+        return DB::transaction(function () use (
+            $relations,
+            $sourceEventId,
+            $sourceOccurrenceId,
+            $sourceSessionId,
+            $targetEventId,
+            $targetOccurrenceId,
+            $targetSessionId,
+        ): Collection {
+            $cloned = new Collection;
+
+            foreach ($relations as $relation) {
+                $modelClass = self::MODEL_MAP[$relation];
+
+                $query = $modelClass::query()->where('event_id', $sourceEventId);
+
+                if ($sourceSessionId !== null) {
+                    $query->where('event_session_id', $sourceSessionId);
+                } elseif ($sourceOccurrenceId !== null) {
+                    $query->where('event_occurrence_id', $sourceOccurrenceId)
+                        ->whereNull('event_session_id');
+                } else {
+                    $query->whereNull('event_occurrence_id')
+                        ->whereNull('event_session_id');
+                }
+
+                $query->chunkById(200, function ($children) use (
+                    $cloned,
+                    $targetEventId,
+                    $targetOccurrenceId,
+                    $targetSessionId,
+                ): void {
+                    foreach ($children as $child) {
+                        $replica = $child->replicate(['id', 'created_at', 'updated_at']);
+                        $replica->event_id = $targetEventId;
+
+                        if ($targetOccurrenceId !== null) {
+                            $replica->event_occurrence_id = $targetOccurrenceId;
+                        }
+
+                        if ($targetSessionId !== null) {
+                            $replica->event_session_id = $targetSessionId;
+                        }
+
+                        $replica->save();
+
+                        $cloned->push($replica);
+                    }
+                });
+            }
+
+            $this->cloneSpatieMedia(
+                sourceEventId: $sourceEventId,
+                targetEventId: $targetEventId,
+                sourceOccurrenceId: $sourceOccurrenceId,
+                targetOccurrenceId: $targetOccurrenceId,
+                sourceSessionId: $sourceSessionId,
+                targetSessionId: $targetSessionId,
+            );
+
+            return $cloned;
+        });
     }
 
     private function cloneSpatieMedia(

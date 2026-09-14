@@ -34,24 +34,14 @@ class ChipCollectClient extends BaseHttpClient
     public function get(string $endpoint): array | string
     {
         if ($endpoint === 'public_key/' || $endpoint === '/public_key/') {
-            $url = $this->buildUrl($endpoint);
-            $response = Http::withHeaders([
-                'Authorization' => "Bearer {$this->apiKey}",
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-                'User-Agent' => config('chip.defaults.creator_agent', 'AIArmada/Chip Laravel Package'),
-            ])->timeout($this->timeout)->get($url);
-
-            if ($response->failed()) {
-                $this->handleFailedResponse($response);
-            }
+            $body = $this->requestRaw('GET', $endpoint);
 
             try {
-                $publicKey = json_decode($response->body(), true, flags: JSON_THROW_ON_ERROR);
+                $publicKey = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
             } catch (JsonException $exception) {
                 throw new ChipApiException(
                     'CHIP public key response was not a JSON-encoded string',
-                    $response->status(),
+                    0,
                     [],
                     $exception,
                 );
@@ -60,7 +50,6 @@ class ChipCollectClient extends BaseHttpClient
             if (! is_string($publicKey) || $publicKey === '') {
                 throw new ChipApiException(
                     'CHIP public key response did not contain a PEM string',
-                    $response->status(),
                 );
             }
 

@@ -15,13 +15,14 @@ use AIArmada\Communications\Models\CommunicationRecipient;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
-    $this->communication = Communication::create([
+    $this->communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'event-test',
         'status' => CommunicationStatus::Draft,
     ]);
+    $this->communication->save();
 });
 
 test('creates event with source type', function (): void {
@@ -45,7 +46,7 @@ test('event can be associated with a delivery', function (): void {
         'role' => 'to',
     ]);
 
-    $delivery = CommunicationDelivery::create([
+    $delivery = (new CommunicationDelivery)->forceFill([
         'communication_id' => $this->communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
@@ -54,6 +55,7 @@ test('event can be associated with a delivery', function (): void {
         'attempt_count' => 0,
         'max_attempts' => 3,
     ]);
+    $delivery->save();
 
     $event = CommunicationEvent::create([
         'communication_id' => $this->communication->id,

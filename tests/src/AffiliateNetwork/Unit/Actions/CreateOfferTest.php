@@ -8,6 +8,7 @@ use AIArmada\AffiliateNetwork\Events\OfferCreated;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
 
 describe('CreateOffer', function (): void {
     beforeEach(function (): void {
@@ -70,5 +71,21 @@ describe('CreateOffer', function (): void {
         ]);
 
         expect($offer->slug)->toBe('custom-slug');
+    });
+
+    test('requires a name', function (): void {
+        $this->action->execute($this->site, []);
+    })->throws(ValidationException::class);
+
+    test('rejects negative rates and invalid urls', function (): void {
+        expect(fn (): mixed => $this->action->execute($this->site, [
+            'name' => 'Bad Rate',
+            'rate_base_bp' => -5,
+        ]))->toThrow(ValidationException::class);
+
+        expect(fn (): mixed => $this->action->execute($this->site, [
+            'name' => 'Bad Url',
+            'landing_url' => 'not-a-url',
+        ]))->toThrow(ValidationException::class);
     });
 });

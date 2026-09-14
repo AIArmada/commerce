@@ -6,6 +6,8 @@ namespace AIArmada\Feedback\Support;
 
 use AIArmada\Feedback\Enums\FeedbackQuestionType;
 use AIArmada\Feedback\Models\FeedbackQuestion;
+use Closure;
+use Illuminate\Validation\Rule;
 
 final class ValidationRuleBuilder
 {
@@ -22,6 +24,12 @@ final class ValidationRuleBuilder
         }
 
         if ($type === null) {
+            return $rules;
+        }
+
+        if ($type->isDisabled()) {
+            $rules[] = $this->disabledTypeRule($type);
+
             return $rules;
         }
 
@@ -77,10 +85,30 @@ final class ValidationRuleBuilder
             if ($question->is_required) {
                 $rules[] = 'min:1';
             }
-        } elseif ($type === FeedbackQuestionType::Boolean || $type === FeedbackQuestionType::YesNo) {
+            $rules[] = $this->optionMembershipRule($question, true);
+
+            return $rules;
+        }
+
+        if ($type === FeedbackQuestionType::Boolean || $type === FeedbackQuestionType::YesNo) {
             $rules[] = 'boolean';
-        } else {
-            $rules[] = 'string';
+
+            return $rules;
+        }
+
+        if ($type === FeedbackQuestionType::Matrix || $type === FeedbackQuestionType::Likert) {
+            // Matrix/Likert payloads may be a single selected value or a per-row map.
+            $rules[] = $this->optionMembershipRule($question, false);
+
+            return $rules;
+        }
+
+        $rules[] = 'string';
+
+        $allowed = $this->allowedOptionValues($question);
+
+        if ($allowed !== []) {
+            $rules[] = Rule::in($allowed);
         }
 
         return $rules;
@@ -106,5 +134,52 @@ final class ValidationRuleBuilder
         $rules[] = "max:{$max}";
 
         return $rules;
+    }
+
+    private function disabledTypeRule(FeedbackQuestionType $type): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($type): void {
+            $fail("The {$type->value} question type is not available.");
+        };
+    }
+
+    private function optionMembershipRule(FeedbackQuestion $question, bool $requireArray): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($question, $requireArray): void {
+            $allowed = $this->allowedOptionValues($question);
+
+            if ($allowed === []) {
+                return;
+            }
+
+            if ($requireArray && ! is_array($value)) {
+                return;
+            }
+
+            $values = is_array($value) ? array_values($value) : [$value];
+
+            foreach ($values as $entry) {
+                if (! is_scalar($entry) || ! in_array((string) $entry, $allowed, true)) {
+                    $fail('The selected value is invalid.');
+
+                    return;
+                }
+            }
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function allowedOptionValues(FeedbackQuestion $question): array
+    {
+        $options = $question->relationLoaded('options')
+            ? $question->options
+            : $question->options()->get();
+
+        return $options
+            ->map(fn ($option): string => (string) $option->value)
+            ->values()
+            ->all();
     }
 }

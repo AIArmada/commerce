@@ -119,15 +119,15 @@ class CommunicationRecorderService implements CommunicationRecorder
             return;
         }
 
-        $allSent = $deliveries->every(fn ($d) => in_array($d->status, [
+        $allSent = $deliveries->every(fn (CommunicationDelivery $d) => in_array($d->status->value, [
             'sent', 'delivered', 'opened', 'read', 'clicked', 'replied',
         ], true));
 
-        $anyFailed = $deliveries->contains(fn ($d) => $d->status === 'failed');
+        $anyFailed = $deliveries->contains(fn (CommunicationDelivery $d) => $d->status->value === 'failed');
 
         $communication->status = match (true) {
             $allSent => CommunicationStatus::Completed,
-            $anyFailed && $deliveries->some(fn ($d) => $d->status === 'sent') => CommunicationStatus::PartiallyCompleted,
+            $anyFailed && $deliveries->some(fn (CommunicationDelivery $d) => $d->status->value === 'sent') => CommunicationStatus::PartiallyCompleted,
             $anyFailed => CommunicationStatus::Failed,
             default => CommunicationStatus::Processing,
         };

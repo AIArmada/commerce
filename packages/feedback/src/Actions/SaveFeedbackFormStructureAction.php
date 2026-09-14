@@ -9,6 +9,7 @@ use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackQuestion;
 use AIArmada\Feedback\Models\FeedbackQuestionOption;
 use AIArmada\Feedback\Models\FeedbackSection;
+use AIArmada\Feedback\Support\QuestionTypeRegistry;
 use InvalidArgumentException;
 
 final class SaveFeedbackFormStructureAction
@@ -55,6 +56,28 @@ final class SaveFeedbackFormStructureAction
             if ($question->feedback_form_id !== $formId) {
                 throw new InvalidArgumentException('The feedback question does not belong to the selected form.');
             }
+        }
+
+        $type = (string) ($data['type'] ?? '');
+
+        if (! QuestionTypeRegistry::isTypeAvailable($type)) {
+            throw new InvalidArgumentException("The '{$type}' question type is not available.");
+        }
+
+        $key = (string) ($data['key'] ?? '');
+
+        $keyQuery = FeedbackQuestion::query()
+            ->where('feedback_form_id', $formId)
+            ->where('key', $key);
+
+        if ($question !== null) {
+            $keyQuery->where('id', '!=', $question->id);
+        }
+
+        $duplicateKey = $keyQuery->exists();
+
+        if ($duplicateKey) {
+            throw new InvalidArgumentException("The '{$key}' question key is already used in this form.");
         }
 
         $sectionId = array_key_exists('feedback_section_id', $data)

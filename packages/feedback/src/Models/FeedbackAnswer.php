@@ -50,7 +50,7 @@ final class FeedbackAnswer extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $answer): void {
-            $answer->testimonials()->each(fn (FeedbackTestimonial $testimonial): mixed => $testimonial->delete());
+            $answer->testimonials()->chunkById(200, fn ($testimonials): mixed => $testimonials->each->delete());
         });
     }
 

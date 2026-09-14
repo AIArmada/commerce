@@ -48,8 +48,8 @@ test('primary contact methods remain unique per contactable type and purpose', f
         'first_name' => 'Primary',
         'last_name' => 'Contact',
         'email' => 'primary-contact-' . uniqid() . '@example.com',
-        'status' => 'active',
     ]);
+    $customer->forceFill(['status' => 'active'])->save();
 
     $first = $customer->addContactMethod(new ContactMethodData(
         type: 'email',
@@ -129,8 +129,8 @@ test('ContactMethod preserves an explicitly supplied display value while normali
         'first_name' => 'Display',
         'last_name' => 'Value',
         'email' => 'display-value-' . uniqid() . '@example.com',
-        'status' => 'active',
     ]);
+    $customer->forceFill(['status' => 'active'])->save();
 
     $contactMethod = ContactMethod::query()->create([
         'contactable_type' => $customer->getMorphClass(),

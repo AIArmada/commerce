@@ -81,10 +81,6 @@ return new class extends Migration
             $table->index('archived_at');
         });
 
-        if (! app()->environment(['local', 'development', 'testing'])) {
-            return;
-        }
-
         ProductIdentityIndexes::owner($tableName, 'slug');
         ProductIdentityIndexes::owner($tableName, 'sku');
     }

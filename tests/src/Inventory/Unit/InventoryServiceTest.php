@@ -70,7 +70,9 @@ describe('InventoryService', function (): void {
         $level = $this->inventoryService->getLevel($this->item, $this->locationA->id);
         expect($level)->not->toBeNull();
 
-        $level->update(['quantity_reserved' => 15]);
+        // Reserved stock is ledger-managed; the fixture bypasses mass
+        // assignment like the allocation service does internally.
+        $level->forceFill(['quantity_reserved' => 15])->save();
 
         $this->inventoryService->ship($this->item, $this->locationA->id, 10);
     })->throws(InsufficientInventoryException::class);
@@ -118,5 +120,26 @@ describe('InventoryService', function (): void {
         ]);
         expect($this->inventoryService->hasInventory($this->item, 10))->toBeTrue();
         expect($this->inventoryService->hasInventory($this->item, 20))->toBeFalse();
+    });
+
+    it('reports bulk availability for many models in one call', function (): void {
+        $other = InventoryItem::create(['name' => 'Other Inventory Item']);
+        $unstocked = InventoryItem::create(['name' => 'Unstocked Inventory Item']);
+
+        $this->inventoryService->receive($this->item, $this->locationA->id, 7);
+        $this->inventoryService->receive($this->item, $this->locationB->id, 5);
+        $this->inventoryService->receive($other, $this->locationA->id, 3);
+
+        $totals = $this->inventoryService->getAvailabilityForMany([$this->item, $other, $unstocked]);
+
+        expect($totals)->toMatchArray([
+            $this->item->getMorphClass() . ':' . $this->item->getKey() => 12,
+            $other->getMorphClass() . ':' . $other->getKey() => 3,
+            $unstocked->getMorphClass() . ':' . $unstocked->getKey() => 0,
+        ]);
+    });
+
+    it('returns an empty map for an empty bulk availability request', function (): void {
+        expect($this->inventoryService->getAvailabilityForMany([]))->toBe([]);
     });
 });

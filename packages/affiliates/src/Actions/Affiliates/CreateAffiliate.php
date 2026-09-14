@@ -8,13 +8,14 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Data\ContactMethodData;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -36,24 +37,28 @@ final class CreateAffiliate
      */
     public function handle(array $data, ?Model $owner = null): Affiliate
     {
+        $name = $this->resolveName($data);
+        $commissionType = $this->resolveCommissionType($data);
+        $commissionRate = $this->resolveCommissionRate($data, $commissionType);
+        $parentId = $this->resolveParentId($data);
+
         $codeProvided = array_key_exists('code', $data) && $data['code'] !== null;
         $attempts = $codeProvided ? 1 : 3;
 
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             try {
-                return DB::transaction(function () use ($data, $owner): Affiliate {
-                    $approvalMode = $this->getApprovalMode();
-                    $status = $this->determineStatus($data, $approvalMode);
+                return DB::transaction(function () use ($data, $owner, $name, $commissionType, $commissionRate, $parentId): Affiliate {
+                    $status = $this->getApprovalMode()->defaultStatus();
 
                     $affiliate = new Affiliate([
-                        'code' => $data['code'] ?? $this->generateCode->handle($data['name'] ?? ''),
-                        'name' => $data['name'],
+                        'code' => $data['code'] ?? $this->generateCode->handle($name),
+                        'name' => $name,
                         'description' => $data['description'] ?? null,
                         'status' => $status,
-                        'commission_type' => $data['commission_type'] ?? $this->getDefaultCommissionType(),
-                        'commission_rate' => $data['commission_rate'] ?? $this->getDefaultCommissionRate(),
+                        'commission_type' => $commissionType,
+                        'commission_rate' => $commissionRate,
                         'currency' => $data['currency'] ?? config('affiliates.currency.default', 'USD'),
-                        'parent_affiliate_id' => $data['parent_affiliate_id'] ?? null,
+                        'parent_affiliate_id' => $parentId,
                         'metadata' => $data['metadata'] ?? [],
                     ]);
 
@@ -102,22 +107,87 @@ final class CreateAffiliate
     /**
      * @param  array<string, mixed>  $data
      */
-    /**
-     * @return class-string<AffiliateStatus>
-     */
-    private function determineStatus(array $data, RegistrationApprovalMode $approvalMode): string
+    private function resolveName(array $data): string
     {
-        if (isset($data['status'])) {
-            if ($data['status'] instanceof AffiliateStatus) {
-                return $data['status']::class;
-            }
+        $name = $data['name'] ?? null;
 
-            if (is_string($data['status'])) {
-                return AffiliateStatus::resolveStateClassFor($data['status']);
-            }
+        if (! is_string($name) || mb_trim($name) === '') {
+            throw new InvalidArgumentException('Affiliate name is required.');
         }
 
-        return $approvalMode->defaultStatus();
+        return mb_trim($name);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveCommissionType(array $data): CommissionType
+    {
+        $type = $data['commission_type'] ?? $this->getDefaultCommissionType();
+
+        if ($type instanceof CommissionType) {
+            return $type;
+        }
+
+        if (is_string($type) && CommissionType::tryFrom($type) !== null) {
+            return CommissionType::from($type);
+        }
+
+        throw new InvalidArgumentException('Affiliate commission type is invalid.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveCommissionRate(array $data, CommissionType $type): int
+    {
+        $rate = $data['commission_rate'] ?? $this->getDefaultCommissionRate();
+
+        if (! is_numeric($rate) || (int) $rate < 0) {
+            throw new InvalidArgumentException('Affiliate commission rate must be zero or greater.');
+        }
+
+        $rate = (int) $rate;
+
+        if ($type === CommissionType::Percentage && $rate > 10000) {
+            throw new InvalidArgumentException('Affiliate percentage commission rate must not exceed 10000 basis points.');
+        }
+
+        return $rate;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveParentId(array $data): ?string
+    {
+        $parentId = $data['parent_affiliate_id'] ?? null;
+
+        if ($parentId === null || $parentId === '') {
+            return null;
+        }
+
+        if (! is_string($parentId) && ! is_int($parentId)) {
+            throw new InvalidArgumentException('Parent affiliate id is invalid.');
+        }
+
+        if (config('affiliates.owner.enabled', false)) {
+            $parent = OwnerWriteGuard::findOrFailForOwner(
+                Affiliate::class,
+                $parentId,
+                message: 'Parent affiliate is not accessible in the current owner scope.',
+            );
+
+            return (string) $parent->getKey();
+        }
+
+        $parent = Affiliate::query()->find($parentId);
+
+        if (! $parent instanceof Affiliate) {
+            throw new InvalidArgumentException('Parent affiliate does not exist.');
+        }
+
+        return (string) $parent->getKey();
     }
 
     private function getDefaultCommissionType(): CommissionType

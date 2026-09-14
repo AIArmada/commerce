@@ -6,6 +6,7 @@ namespace AIArmada\FilamentProducts\Resources\CollectionResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
 use AIArmada\Products\Enums\CatalogStatus;
 use AIArmada\Products\Models\Category;
 use Filament\Forms\Components\DateTimePicker;
@@ -24,6 +25,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 class CollectionForm
 {
@@ -48,7 +50,7 @@ class CollectionForm
                                     ->label('URL Slug')
                                     ->required()
                                     ->maxLength(100)
-                                    ->unique(ignoreRecord: true),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => ProductsOwnerScope::scopeUniqueRuleToOwner($rule)),
 
                                 MarkdownEditor::make('description')
                                     ->label('Description')

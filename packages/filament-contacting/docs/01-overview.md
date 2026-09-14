@@ -33,7 +33,7 @@ Relation managers are safer than standalone resources because they are automatic
 Standalone resources (`ContactMethodResource`, `SocialProfileResource`, `ContactSnapshotResource`) are **disabled by default** because:
 
 - A central list can accidentally expose cross-owner records in tenant-scoped apps.
-- Creating contacts without a parent entity (contactable/socialable) is usually an error.
+- Standalone forms cannot safely pick a parent entity (contactable/socialable), so standalone resources never offer creates; writes belong in the relation managers.
 - Snapshots are historical and should never be edited.
 
 Enable them only when you have safe owner/contactable context.

@@ -31,12 +31,14 @@ function makeEventOrganizer(string $suffix): EventOrganizer
 
 function makeCustomer(string $suffix): Customer
 {
-    return Customer::create([
+    $customer = Customer::create([
         'first_name' => 'Customer',
         'last_name' => $suffix,
         'email' => 'customer-' . $suffix . '-' . uniqid() . '@example.com',
-        'status' => 'active',
     ]);
+    $customer->forceFill(['status' => 'active'])->save();
+
+    return $customer;
 }
 
 test('assignment requests can be submitted only once while pending', function (): void {
@@ -110,7 +112,10 @@ test('approved assignments sync their configured role to the resolved authz scop
 
     expect($scopeId)->not->toBeNull();
 
-    $role = Role::create([
+    // Planted through the query builder so the fixture keeps its explicit
+    // team id: authz's Role::create() resolves the ambient permissions team
+    // instead of honoring a caller-supplied team id.
+    $role = Role::query()->create([
         'name' => 'lead',
         'guard_name' => 'web',
         'team_id' => $scopeId,

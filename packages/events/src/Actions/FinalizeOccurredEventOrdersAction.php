@@ -17,13 +17,13 @@ final class FinalizeOccurredEventOrdersAction
 
         $scopeColumn = $target instanceof EventOccurrence ? 'event_occurrence_id' : 'event_session_id';
 
-        $registrations = EventRegistration::query()
+        EventRegistration::query()
             ->where($scopeColumn, $target->id)
             ->whereNotNull('external_order_id')
-            ->get();
-
-        foreach ($registrations as $registration) {
-            app(FulfillEventOrderAction::class)->handle($registration);
-        }
+            ->chunkById(500, function ($registrations): void {
+                foreach ($registrations as $registration) {
+                    app(FulfillEventOrderAction::class)->handle($registration);
+                }
+            });
     }
 }

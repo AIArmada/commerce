@@ -19,15 +19,27 @@ use Filament\Pages\Page;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelSettings\Exceptions\MissingSettings;
+use Throwable;
 use UnitEnum;
 
 class ManageCommerceNavigation extends Page
 {
+    /**
+     * Reserved group key meaning "ungrouped". Never persisted as a group;
+     * sections carrying it (or an empty key) save their items with no group.
+     */
+    private const UNGROUPED_KEY = '__ungrouped__';
+
+    private const ICON_PATTERN = '/^(?:heroicon-[a-z]-[a-z0-9-]+)?$/';
+
     public ?array $data = [];
+
+    private bool $settingsFallbackWarned = false;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bars-3';
 
@@ -97,13 +109,28 @@ class ManageCommerceNavigation extends Page
         $unassigned = array_fill_keys(array_keys($mergedOverrides), true);
 
         foreach ($mergedGroups as $key => $config) {
+            $key = (string) $key;
+            if (! is_array($config)) {
+                $config = [];
+            }
+
             $groupItems = [];
             $groupOverrides = [];
 
-            // Collect items that belong to this group (by effective group)
+            // Collect items that belong to this group. Saved items carry the
+            // group *label* after a rename, so match by key or label —
+            // otherwise renamed groups mis-bucket into Ungrouped and a resave
+            // silently detaches them.
+            $groupLabel = $config['label'] ?? $key;
             foreach ($mergedOverrides as $class => $override) {
+                if (! is_string($class)) {
+                    continue;
+                }
+                if (! is_array($override)) {
+                    $override = [];
+                }
                 $itemGroup = $override['group'] ?? '';
-                if ($itemGroup === $key) {
+                if ($itemGroup === $key || ($groupLabel !== '' && $itemGroup === $groupLabel)) {
                     $groupOverrides[$class] = $override;
                 }
             }
@@ -116,8 +143,8 @@ class ManageCommerceNavigation extends Page
 
             $sections[] = [
                 'group_key' => $key,
-                'label' => $config['label'] ?? $key,
-                'icon' => $config['icon'] ?? '',
+                'label' => isset($config['label']) && is_string($config['label']) ? $config['label'] : $key,
+                'icon' => isset($config['icon']) && is_string($config['icon']) ? $config['icon'] : '',
                 'sort' => $config['sort'] ?? 0,
                 'collapsible' => $config['collapsible'] ?? true,
                 'collapsed' => $config['collapsed'] ?? false,
@@ -127,21 +154,25 @@ class ManageCommerceNavigation extends Page
         }
 
         // Add ungrouped items at the front — they appear first in the sidebar.
+        // Anything not bucketed above (no group, unknown group) lands here.
         $ungroupedItems = [];
         $sortIndex = 0;
         foreach ($mergedOverrides as $class => $override) {
-            $itemGroup = $override['group'] ?? '';
-            if ($itemGroup === '' || ! isset($mergedGroups[$itemGroup])) {
-                $ungroupedItems[] = $this->normalizeOverrideForSidebar($class, $override, $sortIndex++);
+            if (! is_string($class) || ! isset($unassigned[$class])) {
+                continue;
             }
+            if (! is_array($override)) {
+                $override = [];
+            }
+            $ungroupedItems[] = $this->normalizeOverrideForSidebar($class, $override, $sortIndex++);
         }
 
         if ($ungroupedItems !== []) {
             array_unshift($sections, [
-                'group_key' => '__ungrouped__',
+                'group_key' => '',
                 'label' => __('Ungrouped'),
                 'icon' => '',
-                'sort' => -1,
+                'sort' => 0,
                 'collapsible' => true,
                 'collapsed' => false,
                 'items' => $ungroupedItems,
@@ -157,10 +188,16 @@ class ManageCommerceNavigation extends Page
     private function normalizeOverrideForSidebar(string $class, array $override, int $sortIndex): array
     {
         $label = $override['label'] ?? '';
+        if (! is_string($label)) {
+            $label = '';
+        }
         if ($label === '') {
-            $label = class_exists($class) && method_exists($class, 'getNavigationLabel')
-                ? $class::getNavigationLabel()
-                : class_basename($class);
+            $label = $this->safeNavigationLabel($class);
+        }
+
+        $parentItem = $override['parent_item'] ?? '';
+        if (! is_string($parentItem)) {
+            $parentItem = '';
         }
 
         return [
@@ -169,8 +206,30 @@ class ManageCommerceNavigation extends Page
             'label' => $label,
             'display_label' => $label,
             'sort' => $override['sort'] ?? $sortIndex,
-            'parent_item' => $override['parent_item'] ?? '',
+            'parent_item' => $parentItem,
         ];
+    }
+
+    /**
+     * Resolve a component's navigation label without invoking static methods
+     * on unregistered classes. Override keys come from persisted settings,
+     * so only panel-registered components may have methods called on them.
+     */
+    private function safeNavigationLabel(string $class): string
+    {
+        if (
+            in_array($class, CommerceNavigation::registeredNavigationComponents(), true)
+            && class_exists($class)
+            && method_exists($class, 'getNavigationLabel')
+        ) {
+            $label = $class::getNavigationLabel();
+
+            if (is_string($label) && $label !== '') {
+                return $label;
+            }
+        }
+
+        return class_basename($class);
     }
 
     public function form(Schema $schema): Schema
@@ -179,46 +238,51 @@ class ManageCommerceNavigation extends Page
             ->schema([
                 Repeater::make('sidebar')
                     ->label(__('Sidebar Menu'))
+                    ->maxItems(100)
                     ->schema([
                         TextInput::make('group_key')
                             ->label(__('Group Key'))
                             ->placeholder(__('Select or type a group key, or leave empty for ungrouped items'))
                             ->datalist(fn (): array => array_keys($this->getGroupKeyOptions()))
-                            ->hidden(fn (?string $state): bool => ($state ?? '') === '__ungrouped__'),
+                            ->maxLength(255)
+                            ->notIn([self::UNGROUPED_KEY])
+                            ->live(),
 
                         TextInput::make('label')
                             ->label(__('Group Label'))
                             ->maxLength(255)
-                            ->hidden(fn (?string $state): bool => ($state ?? '') === '__ungrouped__'),
+                            ->hidden(fn (Get $get): bool => $this->isUngroupedSection($get)),
 
                         TextInput::make('icon')
                             ->label(__('Icon'))
                             ->helperText(__('Heroicon name, e.g. heroicon-o-shopping-bag'))
                             ->maxLength(255)
-                            ->hidden(fn (?string $state): bool => ($state ?? '') === '__ungrouped__'),
+                            ->regex(self::ICON_PATTERN)
+                            ->hidden(fn (Get $get): bool => $this->isUngroupedSection($get)),
 
                         TextInput::make('sort')
                             ->label(__('Sort Order'))
                             ->numeric()
                             ->minValue(0)
                             ->maxValue(9999)
-                            ->hidden(fn (?string $state): bool => ($state ?? '') === '__ungrouped__'),
+                            ->hidden(fn (Get $get): bool => $this->isUngroupedSection($get)),
 
                         Toggle::make('collapsible')
                             ->label(__('Collapsible'))
-                            ->hidden(fn (?string $state): bool => ($state ?? '') === '__ungrouped__'),
+                            ->hidden(fn (Get $get): bool => $this->isUngroupedSection($get)),
 
                         Toggle::make('collapsed')
                             ->label(__('Collapsed by Default'))
-                            ->hidden(fn (?string $state): bool => ($state ?? '') === '__ungrouped__'),
+                            ->hidden(fn (Get $get): bool => $this->isUngroupedSection($get)),
 
                         Toggle::make('hidden')
                             ->label(__('Hide Entire Group'))
                             ->helperText(__('Hide this group and all its items from the sidebar'))
-                            ->hidden(fn (?string $state): bool => ($state ?? '') === '__ungrouped__'),
+                            ->hidden(fn (Get $get): bool => $this->isUngroupedSection($get)),
 
                         Repeater::make('items')
                             ->label(__('Menu Items in this Group'))
+                            ->maxItems(200)
                             ->schema([
                                 Select::make('component')
                                     ->label(__('Component'))
@@ -250,14 +314,12 @@ class ManageCommerceNavigation extends Page
                             ->collapsed()
                             ->itemLabel(function (array $state): ?string {
                                 $class = $state['component'] ?? '';
-                                if ($class === '') {
+                                if ($class === '' || ! is_string($class)) {
                                     return null;
                                 }
                                 $label = $state['label'] ?? '';
-                                if ($label === '') {
-                                    $label = class_exists($class) && method_exists($class, 'getNavigationLabel')
-                                        ? $class::getNavigationLabel()
-                                        : class_basename($class);
+                                if ($label === '' || ! is_string($label)) {
+                                    $label = $this->safeNavigationLabel($class);
                                 }
                                 $hidden = ! empty($state['hidden']);
 
@@ -269,11 +331,9 @@ class ManageCommerceNavigation extends Page
                     ])
                     ->collapsible()
                     ->collapsed()
-                    ->itemLabel(fn (array $state): ?string => (($state['group_key'] ?? '') === '__ungrouped__')
+                    ->itemLabel(fn (array $state): ?string => in_array($state['group_key'] ?? '', ['', self::UNGROUPED_KEY], true)
                         ? '— ' . __('Ungrouped Items') . ' —'
-                        : (($state['group_key'] ?? '') === ''
-                            ? '— ' . __('Ungrouped Items') . ' —'
-                            : ($state['label'] ?? $state['group_key'] ?? $state['_index'] ?? '')))
+                        : ($state['label'] ?? $state['group_key'] ?? $state['_index'] ?? ''))
                     ->addActionLabel(__('Add Group'))
                     ->reorderable()
                     ->columns(2),
@@ -281,29 +341,53 @@ class ManageCommerceNavigation extends Page
             ->statePath('data');
     }
 
+    private function isUngroupedSection(Get $get): bool
+    {
+        return in_array($get('group_key') ?? '', ['', self::UNGROUPED_KEY], true);
+    }
+
     public function save(): void
     {
         $settings = $this->resolveSettings();
 
         // Denormalize the nested sidebar structure back into flat groups + overrides.
-        $sidebar = $this->data['sidebar'] ?? [];
+        // getState() runs the form validation rules; without it every rule
+        // above (required, allowlists, lengths, ranges) would be skipped.
+        $state = $this->getSchema('form')?->getState() ?? $this->data ?? [];
+        $sidebar = $state['sidebar'] ?? [];
 
         $submittedGroups = [];
         $submittedOverrides = [];
+        $duplicateComponents = [];
+
+        // Mounted sort values, used to tell typed sorts apart from untouched
+        // inputs (which follow drag position). Unavailable without a panel.
+        [$mountedGroupSorts, $mountedItemSorts] = $this->mountedSortMaps($settings);
 
         $groupSortIndex = 0;
         foreach ($sidebar as $section) {
+            if (! is_array($section)) {
+                continue;
+            }
             $groupKey = $section['group_key'] ?? '';
+            if (! is_string($groupKey)) {
+                $groupKey = '';
+            }
 
-            if ($groupKey === '' || $groupKey === '__ungrouped__') {
+            if ($groupKey === '' || $groupKey === self::UNGROUPED_KEY) {
                 // Items in the ungrouped section: save with empty group.
                 $itemIndex = 0;
                 foreach ($section['items'] ?? [] as $item) {
-                    $class = $item['component'] ?? '';
-                    if ($class === '') {
+                    if (! is_array($item)) {
                         continue;
                     }
-                    $config = $this->overrideFromSidebarItem($item, $itemIndex);
+                    $class = $item['component'] ?? '';
+                    if ($class === '' || ! is_string($class) || isset($submittedOverrides[$class])) {
+                        $this->trackDuplicate($class, $submittedOverrides, $duplicateComponents);
+
+                        continue;
+                    }
+                    $config = $this->overrideFromSidebarItem($item, $itemIndex, $mountedItemSorts[$class] ?? null);
                     $config['group'] = '';
                     $submittedOverrides[$class] = $config;
                     $itemIndex++;
@@ -315,13 +399,17 @@ class ManageCommerceNavigation extends Page
             // Save group config
             $groupConfig = [];
             $label = $section['label'] ?? $groupKey;
+            if (! is_string($label)) {
+                $label = $groupKey;
+            }
             if ($label !== '' && $label !== $groupKey) {
                 $groupConfig['label'] = $label;
             }
-            if (isset($section['icon']) && $section['icon'] !== '') {
-                $groupConfig['icon'] = $section['icon'];
+            $icon = $section['icon'] ?? '';
+            if (is_string($icon) && $icon !== '' && preg_match(self::ICON_PATTERN, $icon) === 1) {
+                $groupConfig['icon'] = $icon;
             }
-            $groupConfig['sort'] = $groupSortIndex;
+            $groupConfig['sort'] = $this->resolveSort($section['sort'] ?? null, $mountedGroupSorts[$groupKey] ?? null, $groupSortIndex);
             if (isset($section['collapsible'])) {
                 $groupConfig['collapsible'] = (bool) $section['collapsible'];
             }
@@ -337,22 +425,37 @@ class ManageCommerceNavigation extends Page
             // Save items in this group
             $itemIndex = 0;
             foreach ($section['items'] ?? [] as $item) {
-                $class = $item['component'] ?? '';
-                if ($class === '') {
+                if (! is_array($item)) {
                     continue;
                 }
-                $itemConfig = $this->overrideFromSidebarItem($item, $itemIndex);
+                $class = $item['component'] ?? '';
+                if ($class === '' || ! is_string($class) || isset($submittedOverrides[$class])) {
+                    $this->trackDuplicate($class, $submittedOverrides, $duplicateComponents);
+
+                    continue;
+                }
+                $itemConfig = $this->overrideFromSidebarItem($item, $itemIndex, $mountedItemSorts[$class] ?? null);
                 $itemConfig['group'] = $groupKey;
                 $submittedOverrides[$class] = $itemConfig;
                 $itemIndex++;
             }
         }
 
+        if ($duplicateComponents !== []) {
+            Notification::make()
+                ->title(__('Duplicate menu items were skipped (first occurrence kept).'))
+                ->body(implode(', ', array_map(class_basename(...), $duplicateComponents)))
+                ->warning()
+                ->send();
+        }
+
         // Build group rename map
         $groupRenames = [];
         foreach ($submittedGroups as $key => $config) {
+            // Labels are stored only when non-empty and differ from the key,
+            // so a label present here always renames.
             $newLabel = $config['label'] ?? $key;
-            if ($newLabel !== $key && $newLabel !== '') {
+            if ($newLabel !== $key) {
                 $groupRenames[$key] = $newLabel;
             }
         }
@@ -401,7 +504,16 @@ class ManageCommerceNavigation extends Page
         $settings->groups = $groupsToSave;
         $settings->overrides = $overridesToSave;
 
-        $settings->save();
+        try {
+            $settings->save();
+        } catch (QueryException | MissingSettings) {
+            Notification::make()
+                ->title(__('Navigation settings could not be saved. The settings storage is unavailable.'))
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         NavigationConfigurator::apply();
 
@@ -415,7 +527,7 @@ class ManageCommerceNavigation extends Page
      * @param  array<string, mixed>  $item
      * @return array<string, mixed>
      */
-    private function overrideFromSidebarItem(array $item, int $index): array
+    private function overrideFromSidebarItem(array $item, int $index, mixed $mountedSort = null): array
     {
         $config = [];
 
@@ -423,19 +535,85 @@ class ManageCommerceNavigation extends Page
             $config['hidden'] = (bool) $item['hidden'];
         }
 
-        if (isset($item['label']) && $item['label'] !== '') {
+        if (isset($item['label']) && is_string($item['label']) && $item['label'] !== '') {
             $config['label'] = $item['label'];
         }
 
-        $config['sort'] = $index + 1;
+        $config['sort'] = $this->resolveSort($item['sort'] ?? null, $mountedSort, $index + 1);
 
-        if (isset($item['parent_item']) && $item['parent_item'] !== '') {
+        if (isset($item['parent_item']) && is_string($item['parent_item']) && $item['parent_item'] !== '') {
             $config['parent_item'] = $item['parent_item'];
         }
 
         // Always include group when it differs from the item's component default.
         // When not set here, it's added by the caller for grouped items.
         return $config;
+    }
+
+    /**
+     * Resolve a submitted sort input: a typed value that differs from the
+     * mounted value wins (explicit user edit); untouched inputs follow drag
+     * position so reordering keeps working. Values are clamped to the form's
+     * 0–9999 range.
+     */
+    private function resolveSort(mixed $submitted, mixed $mounted, int $positional): int
+    {
+        if (is_numeric($submitted) && ($mounted === null || (int) $submitted !== (int) $mounted)) {
+            return max(0, min(9999, (int) $submitted));
+        }
+
+        return $positional;
+    }
+
+    /**
+     * Rebuild the sort values the form was mounted with, keyed by group key
+     * and component class. Falls back to empty maps when no panel is
+     * available (then every numeric submitted sort is honored).
+     *
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
+     */
+    private function mountedSortMaps(CommerceNavigationSettings $settings): array
+    {
+        try {
+            $mergedGroups = array_replace_recursive($this->getDefaultGroups(), $settings->groups);
+            $mergedOverrides = array_replace_recursive($this->getDefaultOverrides($mergedGroups), $settings->overrides);
+            $mounted = $this->buildSidebarForForm($mergedGroups, $mergedOverrides);
+        } catch (Throwable) {
+            return [[], []];
+        }
+
+        $groupSorts = [];
+        $itemSorts = [];
+
+        foreach ($mounted as $section) {
+            $groupKey = $section['group_key'] ?? '';
+            if (is_string($groupKey) && $groupKey !== '' && $groupKey !== self::UNGROUPED_KEY) {
+                $groupSorts[$groupKey] = $section['sort'] ?? 0;
+            }
+            foreach ($section['items'] ?? [] as $item) {
+                $class = $item['component'] ?? '';
+                if (is_string($class) && $class !== '') {
+                    $itemSorts[$class] = $item['sort'] ?? 0;
+                }
+            }
+        }
+
+        return [$groupSorts, $itemSorts];
+    }
+
+    /**
+     * @param  array<string, mixed>  $submittedOverrides
+     * @param  list<string>  $duplicateComponents
+     */
+    private function trackDuplicate(mixed $class, array $submittedOverrides, array &$duplicateComponents): void
+    {
+        if (! is_string($class) || $class === '' || ! isset($submittedOverrides[$class])) {
+            return;
+        }
+
+        if (! in_array($class, $duplicateComponents, true)) {
+            $duplicateComponents[] = $class;
+        }
     }
 
     /**
@@ -524,29 +702,25 @@ class ManageCommerceNavigation extends Page
 
     protected function resolveSettings(): CommerceNavigationSettings
     {
-        try {
-            return app(CommerceNavigationSettings::class);
-        } catch (MissingSettings) {
-            // Seed the missing rows so spatie/laravel-settings can load/save.
-            $group = 'commerce-navigation';
-            $table = config('settings.repositories.database.table') ?: 'settings';
-            $connection = config('settings.repositories.database.connection');
+        $settings = NavigationConfigurator::resolveSettings();
 
-            foreach (['groups', 'overrides'] as $name) {
-                DB::connection(is_string($connection) ? $connection : null)
-                    ->table((string) $table)
-                    ->insertOrIgnore([
-                        'group' => $group,
-                        'name' => $name,
-                        'locked' => false,
-                        'payload' => '[]',
-                    ]);
-            }
-
-            app()->forgetInstance(CommerceNavigationSettings::class);
-
-            return app(CommerceNavigationSettings::class);
+        if ($settings !== null) {
+            return $settings;
         }
+
+        // Settings storage is unavailable (missing table or rows): degrade to
+        // an empty in-memory instance instead of 500ing, and never write
+        // during reads. A later save() upserts the rows when the table exists.
+        if (! $this->settingsFallbackWarned) {
+            $this->settingsFallbackWarned = true;
+
+            Notification::make()
+                ->title(__('Navigation settings storage is unavailable; showing defaults.'))
+                ->warning()
+                ->send();
+        }
+
+        return new CommerceNavigationSettings(['groups' => [], 'overrides' => []]);
     }
 
     /**
@@ -563,9 +737,22 @@ class ManageCommerceNavigation extends Page
             $group = method_exists($class, 'getNavigationGroup')
                 ? $class::getNavigationGroup()
                 : null;
+            if ($group instanceof UnitEnum) {
+                $group = $group->name;
+            }
             $groupPrefix = $group ? "[{$group}] " : '';
             $type = is_subclass_of($class, Resource::class) ? 'Resource' : 'Page';
             $options[$class] = "{$groupPrefix}[{$type}] {$label} — {$class}";
+        }
+
+        // Keep previously stored (now unregistered) components selectable so
+        // their entries keep round-tripping instead of failing validation and
+        // blocking every save. Their labels never invoke methods on them.
+        foreach (array_keys($this->resolveSettings()->overrides) as $class) {
+            if (! is_string($class) || $class === '' || isset($options[$class])) {
+                continue;
+            }
+            $options[$class] = "[Unregistered] {$class}";
         }
 
         ksort($options);
@@ -613,8 +800,11 @@ class ManageCommerceNavigation extends Page
         $settings = $this->resolveSettings();
 
         foreach ($settings->groups as $key => $config) {
-            $label = $config['label'] ?? $key;
-            $keys[$key] = $label;
+            if (! is_string($key) && ! is_int($key)) {
+                continue;
+            }
+            $label = is_array($config) ? ($config['label'] ?? $key) : $key;
+            $keys[$key] = is_string($label) ? $label : (string) $key;
         }
 
         $keys = array_merge($defaultKeys, $keys);

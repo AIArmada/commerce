@@ -92,11 +92,9 @@ final class PurchaseDetailsData extends ChipData
      */
     public function getSubtotal(): Money
     {
-        $subtotalCents = array_reduce($this->products, function ($carry, ProductData $product) {
-            return $carry + $product->getPriceInCents() * (float) $product->quantity;
-        }, 0);
+        $subtotalCents = array_reduce($this->products, static fn (int $carry, ProductData $product): int => $carry + $product->getSubtotalInCents(), 0);
 
-        return Money::{$this->currency}((int) $subtotalCents);
+        return Money::{$this->currency}($subtotalCents);
     }
 
     /**

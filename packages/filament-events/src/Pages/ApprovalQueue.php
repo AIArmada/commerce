@@ -6,12 +6,14 @@ namespace AIArmada\FilamentEvents\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventApprovalRequest;
 use AIArmada\Events\Models\EventSubmission;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Textarea;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\EmbeddedTable;
@@ -24,8 +26,10 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 use UnitEnum;
 
 final class ApprovalQueue extends Page implements HasTable
@@ -78,8 +82,13 @@ final class ApprovalQueue extends Page implements HasTable
                     ->form([
                         Textarea::make('notes')->label('Approval Notes'),
                     ])
+                    ->authorize(fn (EventApprovalRequest $record): bool => $this->canModerateSubmission($record))
                     ->action(function (array $data, EventApprovalRequest $record): void {
-                        $this->resolveSubmission($record);
+                        $submission = $this->resolveSubmission($record);
+
+                        Gate::authorize('update', $submission);
+
+                        app(EventModerationWorkflow::class)->approve($submission, Filament::auth()->user(), $data['notes'] ?? null);
 
                         $record->update([
                             'status' => 'approved',
@@ -96,8 +105,13 @@ final class ApprovalQueue extends Page implements HasTable
                         Textarea::make('reason')->label('Rejection Reason')->required(),
                         Textarea::make('notes')->label('Internal Notes'),
                     ])
+                    ->authorize(fn (EventApprovalRequest $record): bool => $this->canModerateSubmission($record))
                     ->action(function (array $data, EventApprovalRequest $record): void {
-                        $this->resolveSubmission($record);
+                        $submission = $this->resolveSubmission($record);
+
+                        Gate::authorize('update', $submission);
+
+                        app(EventModerationWorkflow::class)->reject($submission, Filament::auth()->user(), $data['reason'], $data['notes'] ?? null);
 
                         $record->update([
                             'status' => 'rejected',
@@ -111,8 +125,11 @@ final class ApprovalQueue extends Page implements HasTable
                     ->label('Assign to Me')
                     ->icon('heroicon-o-user')
                     ->color('info')
+                    ->authorize(fn (EventApprovalRequest $record): bool => $this->canModerateSubmission($record))
                     ->action(function (EventApprovalRequest $record): void {
-                        $this->resolveSubmission($record);
+                        $submission = $this->resolveSubmission($record);
+
+                        Gate::authorize('update', $submission);
 
                         $user = Auth::user();
 
@@ -150,6 +167,23 @@ final class ApprovalQueue extends Page implements HasTable
         OwnerWriteGuard::findOrFailForOwner(Event::class, $submission->event_id);
 
         return $submission;
+    }
+
+    private function canModerateSubmission(EventApprovalRequest $record): bool
+    {
+        try {
+            $submission = $this->resolveSubmission($record);
+        } catch (Throwable) {
+            return false;
+        }
+
+        $user = Filament::auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return Gate::forUser($user)->allows('update', $submission);
     }
 
     public function content(Schema $schema): Schema

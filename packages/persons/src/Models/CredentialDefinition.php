@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -37,7 +38,9 @@ class CredentialDefinition extends Model
     protected static function booted(): void
     {
         static::deleting(function (CredentialDefinition $definition): void {
-            $definition->assignments()->get()->each->delete();
+            DB::transaction(static function () use ($definition): void {
+                $definition->assignments()->chunkById(500, static fn (Collection $assignments) => $assignments->each->delete());
+            });
         });
     }
 

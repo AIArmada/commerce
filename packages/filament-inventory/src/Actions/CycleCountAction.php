@@ -34,10 +34,17 @@ final class CycleCountAction
                     ->schema([
                         Select::make('location_id')
                             ->label('Location')
-                            ->options(fn () => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())->pluck('name', 'id'))
                             ->required()
                             ->searchable()
-                            ->preload()
+                            ->getSearchResultsUsing(fn (string $search): array => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                                ->where('name', 'like', '%' . addcslashes($search, '\\%_') . '%')
+                                ->orderBy('name')
+                                ->limit(50)
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                                ->whereKey($value)
+                                ->value('name'))
                             ->live()
                             ->afterStateUpdated(function ($state, callable $set, Model $record): void {
                                 if ($state === null) {
@@ -99,7 +106,11 @@ final class CycleCountAction
                 }
 
                 $countedQuantity = (int) $data['counted_quantity'];
-                $systemQuantity = (int) $data['system_quantity'];
+                $systemQuantity = (int) InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+                    ->where('inventoryable_type', $record->getMorphClass())
+                    ->where('inventoryable_id', $record->getKey())
+                    ->where('location_id', $locationId)
+                    ->value('quantity_on_hand');
                 $variance = $countedQuantity - $systemQuantity;
 
                 if ($variance === 0) {

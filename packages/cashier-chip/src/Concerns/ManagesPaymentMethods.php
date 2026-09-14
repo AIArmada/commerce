@@ -7,6 +7,8 @@ namespace AIArmada\CashierChip\Concerns;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\CashierChip\Payment\StoredPaymentMethod;
+use AIArmada\CashierChip\Support\PaymentMethodMetadata;
+use AIArmada\CashierChip\Support\RedirectUrlValidator;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
@@ -157,8 +159,12 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function deletePaymentMethods(): void
     {
-        foreach ($this->paymentMethods() as $paymentMethod) {
-            $paymentMethod->delete();
+        $tokens = Cashier::paymentMethodStore()->allForBillable($this);
+
+        if ($this->hasChipId()) {
+            foreach ($tokens as $token) {
+                Cashier::chip()->deleteClientRecurringToken($this->chipId(), $token->recurringToken());
+            }
         }
 
         Cashier::paymentMethodStore()->deleteAllForBillable($this);
@@ -198,6 +204,28 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
             $this->createAsChipCustomer();
         }
 
+        RedirectUrlValidator::assertValid($options['success_url'] ?? null, 'success_url');
+        RedirectUrlValidator::assertValid($options['failure_url'] ?? null, 'failure_url');
+        RedirectUrlValidator::assertValid($options['cancel_url'] ?? null, 'cancel_url');
+        RedirectUrlValidator::assertValid($options['success_callback'] ?? null, 'success_callback');
+
+        $chipOverrides = is_array($options['chip'] ?? null) ? $options['chip'] : [];
+        $chipOverrides = array_intersect_key($chipOverrides, array_flip([
+            'success_redirect',
+            'failure_redirect',
+            'cancel_redirect',
+            'success_callback',
+            'send_receipt',
+            'skip_capture',
+            'force_recurring',
+        ]));
+
+        foreach (['success_redirect', 'failure_redirect', 'cancel_redirect', 'success_callback'] as $key) {
+            if (is_string($chipOverrides[$key] ?? null)) {
+                RedirectUrlValidator::assertValid($chipOverrides[$key], 'chip.' . $key);
+            }
+        }
+
         $purchaseData = array_merge([
             'client_id' => $this->chipId(),
             'send_receipt' => false,
@@ -219,7 +247,7 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
             'failure_redirect' => $options['failure_url'] ?? null,
             'cancel_redirect' => $options['cancel_url'] ?? null,
             'success_callback' => $options['success_callback'] ?? null,
-        ], $options['chip'] ?? []);
+        ], $chipOverrides);
 
         foreach (['success_redirect', 'failure_redirect', 'cancel_redirect', 'success_callback'] as $key) {
             if ($purchaseData[$key] === null) {
@@ -309,7 +337,7 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
             'type' => $token['payment_method'] ?? null,
             'brand' => null,
             'last_four' => null,
-            'metadata' => $token,
+            'metadata' => PaymentMethodMetadata::fromToken($token),
         ];
     }
 }

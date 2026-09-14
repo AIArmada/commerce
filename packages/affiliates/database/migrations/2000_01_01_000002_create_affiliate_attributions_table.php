@@ -43,6 +43,7 @@ return new class extends Migration
             $table->string('landing_url')->nullable();
             $table->string('referrer_url')->nullable();
             $table->string('user_agent')->nullable();
+            // Stores a SHA-256 pseudonymised hash (64 chars), never a raw address.
             $table->string('ip_address', 64)->nullable();
             $table->uuid('user_id')->nullable()->index();
             $table->string('fingerprint', 128)->nullable()->index();

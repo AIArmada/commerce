@@ -10,6 +10,7 @@ use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventTemplate;
 use AIArmada\Events\Models\EventTemplateItem;
 use AIArmada\Events\Support\EventWriteGuard;
+use Illuminate\Support\Arr;
 
 final class SaveEventTemplateAction
 {
@@ -116,7 +117,17 @@ final class SaveEventTemplateAction
         $data['status'] ??= 'draft';
         $data['visibility'] ??= 'private';
 
-        return EventTemplate::query()->create($data);
+        $template = new EventTemplate;
+        $template->forceFill(Arr::only($data, [
+            'owner_type', 'owner_id',
+            'templateable_type', 'templateable_id',
+            'code', 'name', 'description',
+            'template_type', 'status', 'visibility',
+            'payload', 'default_scope',
+            'metadata',
+        ]))->save();
+
+        return $template;
     }
 
     /**

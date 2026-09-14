@@ -6,6 +6,7 @@ namespace AIArmada\FilamentContacting\Tables;
 
 use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
+use AIArmada\FilamentContacting\Support\ContactingLinks;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -36,6 +37,7 @@ final class SocialProfileTable
 
                 Tables\Columns\TextColumn::make('url')
                     ->limit(40)
+                    ->url(fn (?string $state): ?string => $config->openUrlActions() ? ContactingLinks::safeHttpUrl($state) : null, shouldOpenInNewTab: true)
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('display_name')
@@ -53,7 +55,17 @@ final class SocialProfileTable
                 Tables\Columns\IconColumn::make('is_verified')
                     ->boolean()
                     ->label('Verified')
-                    ->visible($config->showVerificationColumns()),
+                    ->visible($config->showVerificationColumns() && $config->verificationBadges()),
+
+                Tables\Columns\TextColumn::make('owner_type')
+                    ->label('Owner Type')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible($config->showOwnerColumns()),
+
+                Tables\Columns\TextColumn::make('owner_id')
+                    ->label('Owner ID')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible($config->showOwnerColumns()),
 
                 Tables\Columns\TextColumn::make('verified_at')
                     ->dateTime()
@@ -80,18 +92,23 @@ final class SocialProfileTable
                 Tables\Filters\TernaryFilter::make('is_verified'),
             ])
             ->defaultSort('created_at', 'desc')
+            ->paginationPageOptions($config->paginationPageOptions())
+            ->defaultPaginationPageOption($config->defaultPagination())
             ->actions([
                 ViewAction::make(),
 
                 EditAction::make()
-                    ->visible(fn (): bool => ! $guard->socialProfilesReadOnly()),
+                    ->visible(fn (): bool => ! $guard->socialProfilesReadOnly())
+                    ->disabled(fn (): bool => $guard->socialProfilesReadOnly()),
 
                 DeleteAction::make()
-                    ->visible(fn (): bool => ! $guard->socialProfilesReadOnly()),
+                    ->visible(fn (): bool => ! $guard->socialProfilesReadOnly())
+                    ->disabled(fn (): bool => $guard->socialProfilesReadOnly()),
             ])
             ->bulkActions([
                 DeleteBulkAction::make()
-                    ->visible(fn (): bool => ! $guard->socialProfilesReadOnly()),
+                    ->visible(fn (): bool => ! $guard->socialProfilesReadOnly())
+                    ->disabled(fn (): bool => $guard->socialProfilesReadOnly()),
 
                 ExportBulkAction::make()
                     ->visible(fn (): bool => $config->exportsEnabled()),

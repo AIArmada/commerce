@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -47,7 +48,6 @@ final class CommunicationAttachment extends Model
     protected $fillable = [
         'communication_id',
         'content_id',
-        'attachable_type',
         'attachable_id',
         'storage_disk',
         'storage_path',
@@ -96,5 +96,75 @@ final class CommunicationAttachment extends Model
     public function attachable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (CommunicationAttachment $attachment): void {
+            self::validateStorage($attachment);
+        });
+    }
+
+    private static function validateStorage(CommunicationAttachment $attachment): void
+    {
+        if (! is_string($attachment->filename) || mb_trim($attachment->filename) === '') {
+            throw new InvalidArgumentException('Attachment filename must not be empty.');
+        }
+
+        if ($attachment->storage_disk !== null) {
+            if (! is_string($attachment->storage_disk) || mb_trim($attachment->storage_disk) === '') {
+                throw new InvalidArgumentException('Attachment storage disk must not be empty.');
+            }
+
+            $allowedDisks = config('communications.attachments.allowed_disks');
+
+            if (is_array($allowedDisks) && $allowedDisks !== [] && ! in_array($attachment->storage_disk, $allowedDisks, true)) {
+                throw new InvalidArgumentException(
+                    "Attachment storage disk [{$attachment->storage_disk}] is not allowed.",
+                );
+            }
+        }
+
+        if ($attachment->storage_path !== null) {
+            if (! is_string($attachment->storage_path) || mb_trim($attachment->storage_path) === '') {
+                throw new InvalidArgumentException('Attachment storage path must not be empty.');
+            }
+
+            if (
+                str_contains($attachment->storage_path, '..')
+                || str_starts_with($attachment->storage_path, '/')
+                || (bool) preg_match('/^[A-Za-z]:[\\\\\/]/', $attachment->storage_path)
+                || str_contains($attachment->storage_path, '://')
+            ) {
+                throw new InvalidArgumentException('Attachment storage path must be a relative path without traversal.');
+            }
+        }
+
+        if ($attachment->mime_type !== null) {
+            if (! is_string($attachment->mime_type) || preg_match('/^[\w.+-]+\/[\w.+-]+$/', $attachment->mime_type) !== 1) {
+                throw new InvalidArgumentException('Attachment mime type must be a valid type/subtype value.');
+            }
+
+            $allowedMimes = config('communications.attachments.allowed_mimes');
+
+            if (
+                is_array($allowedMimes) && $allowedMimes !== []
+                && ! in_array(mb_strtolower($attachment->mime_type), array_map(static fn (mixed $mime): string => mb_strtolower((string) $mime), $allowedMimes), true)
+            ) {
+                throw new InvalidArgumentException(
+                    "Attachment mime type [{$attachment->mime_type}] is not allowed.",
+                );
+            }
+        }
+
+        if ($attachment->size_bytes !== null) {
+            $maxSize = max(0, (int) config('communications.attachments.max_size_bytes', 10485760));
+
+            if ($attachment->size_bytes < 0 || $attachment->size_bytes > $maxSize) {
+                throw new InvalidArgumentException(
+                    "Attachment size must be between 0 and {$maxSize} bytes.",
+                );
+            }
+        }
     }
 }

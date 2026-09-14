@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Support;
 
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Guard;
 use Spatie\Permission\PermissionRegistrar;
@@ -14,6 +15,11 @@ final class WildcardPermissionCache
      * @var array<string, list<string>>
      */
     private array $permissions = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    private array $superAdminVerdicts = [];
 
     /**
      * @return list<string>
@@ -43,9 +49,37 @@ final class WildcardPermissionCache
         return $this->permissions[$key] = $wildcardPermissions;
     }
 
+    /**
+     * Memoize a global super-admin verdict per user+role for the request.
+     *
+     * The check always runs with a null team id, so the team is not part of
+     * the key.
+     *
+     * @param  Closure():bool  $check
+     */
+    public function rememberSuperAdmin(object $user, string $role, Closure $check): bool
+    {
+        $identifier = method_exists($user, 'getAuthIdentifier')
+            ? $user->getAuthIdentifier()
+            : null;
+
+        if ($identifier === null) {
+            $identifier = spl_object_id($user);
+        }
+
+        $key = implode('|', [$user::class, (string) $identifier, $role]);
+
+        if (! array_key_exists($key, $this->superAdminVerdicts)) {
+            $this->superAdminVerdicts[$key] = (bool) $check();
+        }
+
+        return $this->superAdminVerdicts[$key];
+    }
+
     public function clear(): void
     {
         $this->permissions = [];
+        $this->superAdminVerdicts = [];
     }
 
     private function getCacheKey(object $user): string

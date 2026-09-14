@@ -11,6 +11,7 @@ use AIArmada\Moderation\Enums\BlockReason;
 use AIArmada\Moderation\Enums\BlockStatus;
 use AIArmada\Moderation\Models\Block;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -36,6 +37,27 @@ final class BlockEntityAction implements BlocksEntity
         }
 
         return DB::transaction(function () use ($blockable, $blockedBy, $reason, $notes, $expiresAt, $metadata): Block {
+            $blockable->newQuery()->whereKey($blockable->getKey())->lockForUpdate()->first();
+
+            $existing = Block::query()
+                ->where('blockable_type', $blockable->getMorphClass())
+                ->where('blockable_id', $blockable->getKey())
+                ->where('status', BlockStatus::Active)
+                ->where(function (Builder $query): void {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', CarbonImmutable::now());
+                })
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing instanceof Block) {
+                if ($existing->expires_at !== null && $expiresAt->greaterThan($existing->expires_at)) {
+                    $existing->forceFill(['expires_at' => $expiresAt])->save();
+                }
+
+                return $existing;
+            }
+
             $block = new Block([
                 'blockable_type' => $blockable->getMorphClass(),
                 'blockable_id' => $blockable->getKey(),
@@ -43,9 +65,9 @@ final class BlockEntityAction implements BlocksEntity
                 'blocked_by_id' => $blockedBy?->getKey(),
                 'reason' => $reason,
                 'notes' => $notes,
-                'expires_at' => $expiresAt,
                 'metadata' => $metadata,
             ]);
+            $block->forceFill(['expires_at' => $expiresAt]);
 
             $block->transitionTo(BlockStatus::Active);
             $block->save();
@@ -64,6 +86,8 @@ final class BlockEntityAction implements BlocksEntity
             return;
         }
 
+        // Non-owner-scoped models are intentionally blockable from any owner
+        // scope: a tenant blocks a shared identity without owning it.
         if (! $model instanceof OwnerScopeConfigurable && ! method_exists($model::class, 'ownerScopeConfig')) {
             return;
         }

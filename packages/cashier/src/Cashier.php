@@ -166,6 +166,11 @@ class Cashier
         $currency = mb_strtoupper($currency ?? config('cashier.currency', 'USD'));
         $locale = $locale ?? config('cashier.locale', config('app.locale', 'en'));
 
+        // Default formatting is currency-driven, so the locale is threaded
+        // into Money's ambient locale (honored by its locale-aware APIs)
+        // instead of changing the pinned default output shape.
+        Money::setLocale($locale);
+
         return (new Money($amount, new Currency($currency), false))->format();
     }
 

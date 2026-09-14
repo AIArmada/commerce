@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\StaleSeatHoldException;
 use AIArmada\Seating\Models\Seat;
@@ -60,7 +61,7 @@ class ConvertHoldsToAllocationsAction
 
                 try {
                     $allocation = DB::transaction(function () use ($lockedHold, $mode, $allocToType, $allocToId, $reference, $seat): SeatAllocation {
-                        return SeatAllocation::query()->create([
+                        $allocation = new SeatAllocation([
                             'seat_id' => $lockedHold->seat_id,
                             'seat_section_id' => $mode === SeatingMode::GeneralAdmission ? null : $seat->seat_section_id,
                             'allocated_to_type' => $allocToType,
@@ -69,6 +70,25 @@ class ConvertHoldsToAllocationsAction
                             'allocated_at' => CarbonImmutable::now(),
                             'status' => 'active',
                         ]);
+
+                        // The allocation inherits the hold owner exactly instead
+                        // of the ambient context, so batch conversions cannot
+                        // misattribute ownership across owners. A global hold
+                        // converts inside explicit global scope to stay global.
+                        if ($lockedHold->owner_type !== null && $lockedHold->owner_id !== null) {
+                            $allocation->owner_type = $lockedHold->owner_type;
+                            $allocation->owner_id = $lockedHold->owner_id;
+                            $allocation->save();
+                        } else {
+                            OwnerContext::withOwner(null, fn (): bool => $allocation->save());
+                        }
+
+                        // Mark the hold converted atomically with the
+                        // allocation so a privileged-write refusal rolls the
+                        // allocation back instead of leaving it orphaned.
+                        $lockedHold->markConverted();
+
+                        return $allocation;
                     });
                 } catch (QueryException $exception) {
                     if (! $this->isUniqueConstraintViolation($exception)) {
@@ -77,8 +97,6 @@ class ConvertHoldsToAllocationsAction
 
                     continue;
                 }
-
-                $lockedHold->markConverted();
 
                 $allocations->push($allocation);
             }

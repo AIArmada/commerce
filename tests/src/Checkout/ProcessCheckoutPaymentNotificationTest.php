@@ -20,7 +20,7 @@ use function Pest\Laravel\mock;
 
 describe('ProcessCheckoutPaymentNotification', function (): void {
     it('is idempotent for already completed sessions', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-notification-completed',
             'status' => Completed::class,
             'completed_at' => now(),
@@ -40,7 +40,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
     });
 
     it('skips sessions using a different payment gateway', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-notification-gateway-filter',
             'status' => AwaitingPayment::class,
             'selected_payment_gateway' => 'cashier',
@@ -59,7 +59,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
     });
 
     it('processes success callbacks for sessions in awaiting payment state', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-notification-awaiting-success',
             'status' => AwaitingPayment::class,
             'selected_payment_gateway' => 'chip',
@@ -81,7 +81,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
     });
 
     it('skips success callbacks for sessions in pending state', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-notification-pending-skip-success',
             'status' => Pending::class,
             'selected_payment_gateway' => 'chip',
@@ -100,7 +100,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
     });
 
     it('processes failure callbacks for sessions in pending state', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-notification-pending-failure',
             'status' => Pending::class,
             'selected_payment_gateway' => 'chip',
@@ -122,7 +122,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
     });
 
     it('processes cancel callbacks for sessions in pending state', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-notification-pending-cancel',
             'status' => Pending::class,
             'selected_payment_gateway' => 'chip',
@@ -170,7 +170,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
     });
 
     it('processes through sessions in payment processing state', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-notification-payment-processing',
             'selected_payment_gateway' => 'chip',
         ]);
@@ -194,7 +194,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
     });
 
     it('skips callbacks for sessions in cancelled state', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-notification-cancelled',
             'status' => Pending::class,
             'selected_payment_gateway' => 'chip',
@@ -214,7 +214,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
     });
 
     it('processes success callbacks for sessions in payment failed state', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-notification-payment-failed-process',
             'status' => Pending::class,
             'selected_payment_gateway' => 'chip',
@@ -237,7 +237,7 @@ describe('ProcessCheckoutPaymentNotification', function (): void {
     });
 
     it('resolves session reference from metadata.checkout_session_id', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-notification-metadata-ref',
             'status' => AwaitingPayment::class,
             'selected_payment_gateway' => 'cashier',

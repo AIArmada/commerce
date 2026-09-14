@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Pages;
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
@@ -14,6 +15,8 @@ use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -23,11 +26,22 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\RateLimiter;
 use UnitEnum;
 
+/**
+ * Public offer marketplace.
+ *
+ * Intentionally visible to every authenticated panel user without the network
+ * admin gate: listed offers are published + public only, and every mutation
+ * (apply, link generation) resolves the caller's own affiliate and runs
+ * inside that affiliate's owner context. State-changing actions are
+ * rate-limited per user (see hitMarketplaceThrottle()).
+ */
 final class AffiliateMarketplacePage extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBuildingStorefront;
@@ -49,6 +63,12 @@ final class AffiliateMarketplacePage extends Page
     private ?Affiliate $resolvedAffiliate = null;
 
     private bool $affiliateResolved = false;
+
+    /** @var Collection<int, AffiliateOffer>|null */
+    private ?Collection $memoizedOffers = null;
+
+    /** @var array<string, ?string>|null offer id => status value (null when never applied) */
+    private ?array $applicationStatusMap = null;
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
@@ -85,8 +105,12 @@ final class AffiliateMarketplacePage extends Page
      */
     public function getOffers(): Collection
     {
+        if ($this->memoizedOffers !== null) {
+            return $this->memoizedOffers;
+        }
+
         // Public marketplace: intentionally shows offers from all tenants — explicit global context.
-        return OwnerContext::withOwner(null, function (): Collection {
+        return $this->memoizedOffers = OwnerContext::withOwner(null, function (): Collection {
             $search = $this->search;
 
             return AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)
@@ -141,6 +165,13 @@ final class AffiliateMarketplacePage extends Page
             return null;
         }
 
+        // Affiliate identity is resolved by email match: refuse to resolve for
+        // users whose email is not verified so a changed-but-unverified email
+        // cannot claim another affiliate's identity.
+        if (! self::hasVerifiedEmail($user)) {
+            return null;
+        }
+
         // Public marketplace: find the user's affiliate regardless of owner — explicit global scope bypass.
         // contact_email is a virtual attribute stored in contact_methods, not a DB column.
         $this->resolvedAffiliate = OwnerContext::withOwner(null, fn (): ?Affiliate => Affiliate::query()
@@ -172,18 +203,143 @@ final class AffiliateMarketplacePage extends Page
 
     public function getApplicationStatus(AffiliateOffer $offer): ?string
     {
+        $map = $this->getApplicationStatusMap();
+        $offerId = (string) $offer->getKey();
+
+        if (array_key_exists($offerId, $map)) {
+            return $map[$offerId];
+        }
+
+        // Offer outside the rendered page: resolve through the same batched
+        // builder instead of OfferManagementService::applicationStatusForOffer(),
+        // whose application-table path returns the enum (not ?string) and
+        // TypeErrors. See the cross-package follow-up on affiliate-network.
         $affiliate = $this->getAffiliate();
 
         if ($affiliate === null) {
             return null;
         }
 
-        return $this->withAffiliateOwnerContext($affiliate, fn (): ?string => app(OfferManagementService::class)
-            ->applicationStatusForOffer($offer, $affiliate));
+        $single = $this->withAffiliateOwnerContext(
+            $affiliate,
+            fn (): array => $this->buildApplicationStatusMap($affiliate, new Collection([$offer]))
+        );
+
+        return $single[(string) $offer->getKey()] ?? null;
+    }
+
+    /**
+     * Batch the per-card application statuses for the rendered page into a
+     * fixed handful of queries (programs + memberships + applications) instead
+     * of 1–3 queries per card.
+     *
+     * @return array<string, ?string> offer id => status value (null when never applied)
+     */
+    public function getApplicationStatusMap(): array
+    {
+        if ($this->applicationStatusMap !== null) {
+            return $this->applicationStatusMap;
+        }
+
+        $map = [];
+        $affiliate = $this->getAffiliate();
+        $offers = $this->getOffers();
+
+        if ($affiliate !== null && $offers->isNotEmpty()) {
+            $map = $this->withAffiliateOwnerContext($affiliate, fn (): array => $this->buildApplicationStatusMap($affiliate, $offers));
+        }
+
+        return $this->applicationStatusMap = $map;
+    }
+
+    /**
+     * @param  Collection<int, AffiliateOffer>  $offers
+     * @return array<string, ?string>
+     */
+    private function buildApplicationStatusMap(Affiliate $affiliate, Collection $offers): array
+    {
+        $management = app(OfferManagementService::class);
+
+        /** @var array<string, array<int, string>> $programOfferIds program id => offer ids */
+        $programOfferIds = [];
+        /** @var array<int, string> $networkOfferIds */
+        $networkOfferIds = [];
+
+        /** @var array<string, ?string> $map */
+        $map = [];
+
+        foreach ($offers as $offer) {
+            $offerId = (string) $offer->getKey();
+            $map[$offerId] = null;
+
+            if ($management->isLocalProgramOffer($offer)) {
+                $programOfferIds[(string) $offer->external_program_id][] = $offerId;
+            } else {
+                $networkOfferIds[] = $offerId;
+            }
+        }
+
+        if ($programOfferIds !== []) {
+            /** @var array<int, string> $existingIds */
+            $existingIds = AffiliateProgram::query()
+                ->whereIn('id', array_keys($programOfferIds))
+                ->pluck('id')
+                ->map(fn (mixed $id): string => (string) $id)
+                ->all();
+
+            $existing = array_fill_keys($existingIds, true);
+
+            /** @var array<string, ?string> $statusByProgram */
+            $statusByProgram = [];
+
+            foreach (AffiliateProgramMembership::query()
+                ->where('affiliate_id', $affiliate->getKey())
+                ->whereIn('program_id', $existingIds)
+                ->pluck('status', 'program_id') as $programId => $status) {
+                $statusByProgram[(string) $programId] = $status instanceof BackedEnum ? $status->value : (string) $status;
+            }
+
+            foreach ($programOfferIds as $programId => $offerIds) {
+                if (! isset($existing[$programId])) {
+                    // Missing local program: same fallback as the domain service —
+                    // resolve through the network application flow instead.
+                    array_push($networkOfferIds, ...$offerIds);
+
+                    continue;
+                }
+
+                foreach ($offerIds as $offerId) {
+                    $map[$offerId] = $statusByProgram[$programId] ?? null;
+                }
+            }
+        }
+
+        if ($networkOfferIds !== []) {
+            foreach (AffiliateOfferApplication::query()
+                ->where('affiliate_id', $affiliate->getKey())
+                ->whereIn('offer_id', $networkOfferIds)
+                ->pluck('status', 'offer_id') as $offerId => $status) {
+                $map[(string) $offerId] = $status instanceof BackedEnum ? $status->value : (string) $status;
+            }
+        }
+
+        return $map;
     }
 
     public function applyForOffer(string $offerId, string $reason = ''): void
     {
+        $reason = mb_substr(mb_trim($reason), 0, 2000);
+
+        if (! $this->hitMarketplaceThrottle('apply')) {
+            Notification::make()
+                ->title('Too many requests')
+                ->body('Please wait a moment and try again.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         $management = app(OfferManagementService::class);
         $offer = $management->resolvePublicOfferOrFail($offerId);
 
@@ -257,6 +413,16 @@ final class AffiliateMarketplacePage extends Page
 
     public function generateLink(string $offerId): void
     {
+        if (! $this->hitMarketplaceThrottle('link')) {
+            Notification::make()
+                ->title('Too many requests')
+                ->body('Please wait a moment and try again.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         $offer = app(OfferManagementService::class)->resolvePublicOfferOrFail($offerId);
         $affiliate = $this->getAffiliate();
 
@@ -311,5 +477,47 @@ final class AffiliateMarketplacePage extends Page
         $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
 
         return OwnerContext::withOwner($owner, $callback);
+    }
+
+    /**
+     * Per-user throttle for the public state-changing actions (10 applies and
+     * 30 link generations per minute). Falls back to the request IP for
+     * guests, who are rejected downstream anyway.
+     */
+    private function hitMarketplaceThrottle(string $action): bool
+    {
+        $user = auth()->user();
+        $identifier = $user?->getAuthIdentifier() ?? request()->ip();
+        $key = sprintf('filament-affiliate-network.marketplace.%s.%s', $action, (string) $identifier);
+        $maxAttempts = $action === 'apply' ? 10 : 30;
+
+        if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
+            return false;
+        }
+
+        RateLimiter::hit($key, 60);
+
+        return true;
+    }
+
+    /**
+     * Whether the host user counts as email-verified.
+     *
+     * Hosts implementing MustVerifyEmail (or tracking email_verified_at) are
+     * enforced; hosts with no verification concept cannot be gated here and
+     * must verify emails before user-controlled changes or bind affiliates
+     * to user ids instead of email matches.
+     */
+    private static function hasVerifiedEmail(Authenticatable $user): bool
+    {
+        if ($user instanceof MustVerifyEmail) {
+            return $user->hasVerifiedEmail();
+        }
+
+        if ($user instanceof Model && array_key_exists('email_verified_at', $user->getAttributes())) {
+            return $user->getAttribute('email_verified_at') !== null;
+        }
+
+        return true;
     }
 }

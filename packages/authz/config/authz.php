@@ -18,6 +18,7 @@ return [
     'guards' => ['web'],
     'users' => [
         'email_column' => 'email',
+        'name_column' => 'name',
     ],
     'wildcard_permissions' => env('AUTHZ_WILDCARD_PERMISSIONS', true),
     'permissions' => [

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Widgets;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -55,12 +56,12 @@ final class RealTimeActivityWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('value_minor')
                     ->label('Value')
-                    ->money(fn ($record) => $record->currency, divideBy: 100)
+                    ->formatStateUsing(fn (AffiliateConversion $record): string => MoneyFormatter::formatMinor((int) $record->value_minor, $record->commission_currency))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('commission_minor')
                     ->label('Commission')
-                    ->money(fn ($record) => $record->currency, divideBy: 100)
+                    ->formatStateUsing(fn (AffiliateConversion $record): string => MoneyFormatter::formatMinor((int) $record->commission_minor, $record->commission_currency))
                     ->color('success'),
 
                 Tables\Columns\BadgeColumn::make('status')

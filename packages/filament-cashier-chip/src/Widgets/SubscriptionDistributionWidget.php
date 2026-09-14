@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Widgets\ChartWidget;
+use Override;
 
 final class SubscriptionDistributionWidget extends ChartWidget
 {
@@ -19,6 +20,12 @@ final class SubscriptionDistributionWidget extends ChartWidget
     protected int | string | array $columnSpan = 1;
 
     protected ?string $pollingInterval = '120s';
+
+    #[Override]
+    public static function canView(): bool
+    {
+        return static::hasWidgetOwnerContext();
+    }
 
     protected function getData(): array
     {
@@ -63,32 +70,39 @@ final class SubscriptionDistributionWidget extends ChartWidget
      */
     private function getDistributionData(): array
     {
-        $statuses = [
-            SubscriptionStatus::Active->value => 'Active',
-            SubscriptionStatus::Trialing->value => 'Trialing',
-            SubscriptionStatus::Canceled->value => 'Canceled',
-            SubscriptionStatus::PastDue->value => 'Past Due',
-            SubscriptionStatus::Paused->value => 'Paused',
-            SubscriptionStatus::Incomplete->value => 'Incomplete',
-        ];
+        return $this->rememberWidgetValue('distribution.data', function (): array {
+            $statuses = [
+                SubscriptionStatus::Active->value => 'Active',
+                SubscriptionStatus::Trialing->value => 'Trialing',
+                SubscriptionStatus::Canceled->value => 'Canceled',
+                SubscriptionStatus::PastDue->value => 'Past Due',
+                SubscriptionStatus::Paused->value => 'Paused',
+                SubscriptionStatus::Incomplete->value => 'Incomplete',
+            ];
 
-        $labels = [];
-        $counts = [];
+            $grouped = $this->subscriptionQuery()
+                ->whereIn('chip_status', array_keys($statuses))
+                ->toBase()
+                ->selectRaw('chip_status, COUNT(*) AS aggregate')
+                ->groupBy('chip_status')
+                ->pluck('aggregate', 'chip_status');
 
-        foreach ($statuses as $status => $label) {
-            $count = $this->subscriptionQuery()
-                ->where('chip_status', $status)
-                ->count();
+            $labels = [];
+            $counts = [];
 
-            if ($count > 0) {
-                $labels[] = $label;
-                $counts[] = $count;
+            foreach ($statuses as $status => $label) {
+                $count = (int) ($grouped[$status] ?? 0);
+
+                if ($count > 0) {
+                    $labels[] = $label;
+                    $counts[] = $count;
+                }
             }
-        }
 
-        return [
-            'labels' => $labels,
-            'counts' => $counts,
-        ];
+            return [
+                'labels' => $labels,
+                'counts' => $counts,
+            ];
+        });
     }
 }

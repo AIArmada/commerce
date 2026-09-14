@@ -94,9 +94,11 @@ class Subscriptions extends Page
                 ->success()
                 ->send();
         } catch (Exception $e) {
+            report($e);
+
             Notification::make()
                 ->title(__('Failed to cancel subscription'))
-                ->body($e->getMessage())
+                ->body(__('Something went wrong. Please try again later.'))
                 ->danger()
                 ->send();
         }
@@ -135,9 +137,11 @@ class Subscriptions extends Page
                 ->success()
                 ->send();
         } catch (Exception $e) {
+            report($e);
+
             Notification::make()
                 ->title(__('Failed to resume subscription'))
-                ->body($e->getMessage())
+                ->body(__('Something went wrong. Please try again later.'))
                 ->danger()
                 ->send();
         }

@@ -51,6 +51,10 @@ the core package:
 'features' => [
     'dashboard' => true,
     'monitoring' => true,
+    // Optional Laravel permission required to view the dashboards, checked
+    // against the default auth guard user. Null (default) allows any
+    // authenticated panel user.
+    'monitoring_permission' => null,
 ],
 ```
 
@@ -127,8 +131,14 @@ notification dispatch belong to Signals.
         'from_address' => env('FILAMENT_CART_ABANDONED_FROM', 'info@example.com'),
         'from_name' => env('FILAMENT_CART_ABANDONED_FROM_NAME'),
         'brand_name' => env('FILAMENT_CART_ABANDONED_BRAND_NAME', config('app.name')),
+        // Optional allowlist for the recovery-link host. Only http(s) URLs
+        // are ever used; other values fall back to config('app.url').
+        'allowed_retry_hosts' => [],
     ],
 ],
 ```
 
 This notification is dispatched when an abandoned cart is marked on the `CartAbandoned` event.
+The listener requires `aiarmada/checkout` at runtime; without it, no session
+lookup is possible and the listener returns early. Purchaser emails are
+validated with `FILTER_VALIDATE_EMAIL` before dispatch.

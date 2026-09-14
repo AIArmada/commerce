@@ -68,7 +68,15 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
     public function handleCallback(array $payload): PaymentResult
     {
         try {
-            $paymentId = $payload['id'] ?? $payload['payment_id'] ?? null;
+            // Stripe event payloads carry the event id (`evt_*`) at the top
+            // level; the payment object id lives under `data.object.id`.
+            // Storing the event id would break refunds, voids, and status
+            // checks, so prefer the nested payment id and only fall back to
+            // top-level ids for non-Stripe payload shapes.
+            $paymentId = data_get($payload, 'data.object.id')
+                ?? $payload['id']
+                ?? $payload['payment_id']
+                ?? null;
             $paymentId = is_string($paymentId) && mb_trim($paymentId) !== ''
                 ? mb_trim($paymentId)
                 : null;

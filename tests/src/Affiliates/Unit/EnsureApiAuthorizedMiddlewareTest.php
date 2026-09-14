@@ -10,17 +10,17 @@ beforeEach(function (): void {
     $this->middleware = new EnsureApiAuthorized;
 });
 
-test('middleware passes when auth mode is none', function (): void {
-    Config::set('affiliates.api.auth', 'none');
+test('middleware fails closed without a configured token', function (): void {
+    Config::set('affiliates.api.token', null);
 
     $request = new Request;
+    $request->headers->set('Authorization', 'Bearer [REDACTED]');
     $response = $this->middleware->handle($request, fn ($req) => response('ok'));
 
-    expect($response->getContent())->toBe('ok');
+    expect($response->getStatusCode())->toBe(401);
 });
 
 test('middleware passes with correct token', function (): void {
-    Config::set('affiliates.api.auth', 'token');
     Config::set('affiliates.api.token', 'secret123');
 
     $request = new Request;
@@ -31,7 +31,6 @@ test('middleware passes with correct token', function (): void {
 });
 
 test('middleware fails with incorrect token', function (): void {
-    Config::set('affiliates.api.auth', 'token');
     Config::set('affiliates.api.token', 'secret123');
 
     $request = new Request;
@@ -43,7 +42,6 @@ test('middleware fails with incorrect token', function (): void {
 });
 
 test('middleware fails without token', function (): void {
-    Config::set('affiliates.api.auth', 'token');
     Config::set('affiliates.api.token', 'secret123');
 
     $request = new Request;

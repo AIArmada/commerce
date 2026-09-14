@@ -28,8 +28,10 @@ final class GenerateVariantsJob implements ShouldQueue
 
     protected function performJob(): void
     {
+        // Resolved through the job's owner context (established by
+        // OwnerContextJob), so a tampered product id yields nothing instead
+        // of generating variants for another owner's product.
         $product = Product::query()
-            ->withoutOwnerScope()
             ->whereKey($this->productId)
             ->first();
 

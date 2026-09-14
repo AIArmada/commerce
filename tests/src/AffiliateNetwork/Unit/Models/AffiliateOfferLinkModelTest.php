@@ -85,7 +85,8 @@ describe('AffiliateOfferLink Model', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliate($this->affiliate)
-                ->create(['clicks' => 10]);
+                ->withStats(10, 0, 0)
+                ->create();
 
             $link->incrementClicks();
 
@@ -96,7 +97,7 @@ describe('AffiliateOfferLink Model', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliate($this->affiliate)
-                ->create(['clicks' => 0]);
+                ->create();
 
             $link->incrementClicks();
 

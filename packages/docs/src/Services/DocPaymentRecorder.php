@@ -6,13 +6,16 @@ namespace AIArmada\Docs\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\States\PartiallyPaid;
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * Records document payments and owns the payment-balance transition.
@@ -59,18 +62,48 @@ final class DocPaymentRecorder
                     throw new InvalidArgumentException('Payment amount_minor must be a positive integer.');
                 }
 
-                $totalPaidBefore = (int) $lockedDoc->payments()->sum('amount_minor');
+                $paymentMethod = $paymentData['payment_method'] ?? null;
+
+                if (! is_string($paymentMethod) || ! array_key_exists($paymentMethod, config('docs.payment_methods', []))) {
+                    throw new InvalidArgumentException('Payment payment_method is not supported.');
+                }
+
+                $totalPaidBefore = (int) $lockedDoc->payments()
+                    ->where('status', DocPaymentStatus::Paid->value)
+                    ->sum('amount_minor');
                 $remainingMinor = $lockedDoc->total_minor - $totalPaidBefore;
 
                 if ($paymentData['amount_minor'] > $remainingMinor) {
                     throw new InvalidArgumentException('Payment amount_minor cannot exceed the outstanding document balance.');
                 }
 
-                $paymentAttributes = array_diff_key($paymentData, ['doc_id' => true]);
-                $payment = $lockedDoc->payments()->make(array_merge($paymentAttributes, [
-                    'paid_at' => $paymentData['paid_at'] ?? CarbonImmutable::now(),
+                $paymentAttributes = [
+                    'amount_minor' => $paymentData['amount_minor'],
                     'currency' => $paymentCurrency,
-                ]));
+                    'payment_method' => $paymentMethod,
+                    'status' => DocPaymentStatus::Paid,
+                    'paid_at' => self::resolvePaidAt($paymentData['paid_at'] ?? null),
+                ];
+
+                foreach (['reference', 'transaction_id', 'notes'] as $textKey) {
+                    if (array_key_exists($textKey, $paymentData)) {
+                        if ($paymentData[$textKey] !== null && ! is_string($paymentData[$textKey])) {
+                            throw new InvalidArgumentException("Payment field `{$textKey}` must be a string.");
+                        }
+
+                        $paymentAttributes[$textKey] = $paymentData[$textKey];
+                    }
+                }
+
+                if (array_key_exists('metadata', $paymentData)) {
+                    if ($paymentData['metadata'] !== null && ! is_array($paymentData['metadata'])) {
+                        throw new InvalidArgumentException('Payment field `metadata` must be an array.');
+                    }
+
+                    $paymentAttributes['metadata'] = $paymentData['metadata'];
+                }
+
+                $payment = $lockedDoc->payments()->make($paymentAttributes);
                 $payment->save();
 
                 $totalPaid = $totalPaidBefore + $payment->amount_minor;
@@ -87,5 +120,30 @@ final class DocPaymentRecorder
                 return $payment;
             });
         });
+    }
+
+    private static function resolvePaidAt(mixed $value): CarbonImmutable
+    {
+        if ($value === null || $value === '') {
+            return CarbonImmutable::now();
+        }
+
+        if ($value instanceof CarbonImmutable) {
+            return $value;
+        }
+
+        if ($value instanceof DateTimeInterface) {
+            return CarbonImmutable::parse($value->format(DateTimeInterface::ATOM));
+        }
+
+        if (is_string($value)) {
+            try {
+                return CarbonImmutable::parse($value);
+            } catch (Throwable) {
+                // Fall through to the invalid-argument throw below.
+            }
+        }
+
+        throw new InvalidArgumentException('Payment paid_at must be a valid date.');
     }
 }

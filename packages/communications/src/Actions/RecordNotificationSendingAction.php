@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\DeliverySending;
 use AIArmada\Communications\Models\CommunicationDelivery;
@@ -16,6 +17,10 @@ final class RecordNotificationSendingAction
     public function handle(string $communicationId, string $deliveryId): CommunicationDelivery
     {
         $delivery = CommunicationDelivery::query()->findOrFail($deliveryId);
+
+        if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
+        }
 
         if ($delivery->communication_id !== $communicationId) {
             throw new RuntimeException('Delivery does not belong to the supplied communication.');

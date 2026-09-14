@@ -23,7 +23,7 @@ final class CompletionRateCalculator
             return 0.0;
         }
 
-        $submittedQuery = FeedbackResponse::query()->where('status', 'submitted');
+        $submittedQuery = FeedbackResponse::query()->whereIn('status', ['submitted', 'reviewed']);
 
         if ($form !== null) {
             $submittedQuery->where('feedback_form_id', $form->id);

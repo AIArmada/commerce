@@ -23,7 +23,10 @@ class SessionGuard extends BaseSessionGuard
     public function quietLogin(Authenticatable $user): void
     {
         $this->updateSession($user->getAuthIdentifier());
-        $this->setUser($user);
+
+        // Assign directly: setUser() fires the Authenticated event.
+        $this->user = $user;
+        $this->loggedOut = false;
     }
 
     /**

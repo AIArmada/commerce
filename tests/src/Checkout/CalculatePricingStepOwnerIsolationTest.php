@@ -36,7 +36,7 @@ it('rejects cross-tenant associated models when resolving checkout pricing', fun
     app()->instance(PriceCalculatorInterface::class, $calculator);
 
     $session = OwnerContext::withOwner($ownerA, static function () use ($productOwnedByB): CheckoutSession {
-        return CheckoutSession::query()->create([
+        return CheckoutSession::query()->forceCreate([
             'cart_id' => 'cross-tenant-pricing-cart',
             'currency' => 'MYR',
             'cart_snapshot' => [

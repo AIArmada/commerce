@@ -274,17 +274,15 @@ it('portal pages return scoped view data when affiliate exists', function (): vo
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $user->getMorphClass(),
-        'owner_id' => (string) $user->getKey(),
     ]);
+    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
 
-    AffiliateAttribution::create([
+    $attribution = AffiliateAttribution::create([
         'affiliate_id' => $affiliate->getKey(),
         'affiliate_code' => $affiliate->code,
         'cart_instance' => 'default',
-        'owner_type' => $user->getMorphClass(),
-        'owner_id' => (string) $user->getKey(),
     ]);
+    $attribution->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
 
     AffiliateConversion::create([
         'affiliate_id' => $affiliate->getKey(),
@@ -393,9 +391,8 @@ it('PortalConversions configures its table', function (): void {
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $user->getMorphClass(),
-        'owner_id' => (string) $user->getKey(),
     ]);
+    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
 
     $this->actingAs($user);
 
@@ -468,9 +465,8 @@ it('PortalLinks generates links when affiliate exists', function (): void {
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $user->getMorphClass(),
-        'owner_id' => (string) $user->getKey(),
     ]);
+    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
 
     $this->actingAs($user);
 
@@ -506,16 +502,15 @@ it('PortalLinks falls back when link generator rejects the default URL', functio
         'password' => 'secret',
     ]);
 
-    Affiliate::create([
+    $affiliate = Affiliate::create([
         'code' => 'FALLBACK-' . Str::uuid(),
         'name' => 'Fallback Affiliate',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $user->getMorphClass(),
-        'owner_id' => (string) $user->getKey(),
     ]);
+    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
 
     $this->actingAs($user);
 
@@ -578,9 +573,8 @@ it('PortalProfile updates affiliate profile and default payout method', function
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $user->getMorphClass(),
-        'owner_id' => (string) $user->getKey(),
     ]);
+    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
 
     $this->actingAs($user);
 
@@ -626,9 +620,8 @@ it('PortalPrograms returns joined programs and creative assets for the current a
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $user->getMorphClass(),
-        'owner_id' => (string) $user->getKey(),
     ]);
+    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
 
     $program = AffiliateProgram::create([
         'name' => 'Starter Program',
@@ -686,9 +679,8 @@ it('PortalPrograms can join available programs and expose accessible creative as
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $user->getMorphClass(),
-        'owner_id' => (string) $user->getKey(),
     ]);
+    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
 
     $program = AffiliateProgram::create([
         'name' => 'Joinable Program',
@@ -753,9 +745,8 @@ it('PortalPrograms marks approval-required programs as pending requests', functi
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $user->getMorphClass(),
-        'owner_id' => (string) $user->getKey(),
     ]);
+    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
 
     $program = AffiliateProgram::create([
         'name' => 'Approval Program',
@@ -796,9 +787,8 @@ it('PortalSupport can create tickets, reply to them, and track compliance docume
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $user->getMorphClass(),
-        'owner_id' => (string) $user->getKey(),
     ]);
+    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
 
     $this->actingAs($user);
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources;
 
 use AIArmada\Cart\Models\Condition;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Resources\ConditionResource\Pages\CreateCondition;
 use AIArmada\FilamentCart\Resources\ConditionResource\Pages\EditCondition;
@@ -97,7 +98,12 @@ final class ConditionResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = self::getEloquentQuery()->where('is_active', true)->count();
+        $count = (int) OwnerCache::remember(
+            Condition::resolveCurrentOwner(),
+            'filament-cart.nav.conditions-count',
+            30,
+            fn (): int => self::getEloquentQuery()->where('is_active', true)->count(),
+        );
 
         return $count > 0 ? (string) $count : null;
     }

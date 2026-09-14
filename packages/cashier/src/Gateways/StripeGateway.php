@@ -14,6 +14,7 @@ use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
+use AIArmada\Cashier\Exceptions\Webhook\WebhookVerificationException;
 use AIArmada\Cashier\Gateways\Stripe\StripeCheckoutBuilder;
 use AIArmada\Cashier\Gateways\Stripe\StripeCustomer;
 use AIArmada\Cashier\Gateways\Stripe\StripeInvoice;
@@ -22,14 +23,19 @@ use AIArmada\Cashier\Gateways\Stripe\StripePaymentMethod;
 use AIArmada\Cashier\Gateways\Stripe\StripeSubscription;
 use AIArmada\Cashier\Gateways\Stripe\StripeSubscriptionBuilder;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 use Laravel\Cashier\Cashier;
 use Laravel\Cashier\Http\Controllers\WebhookController;
+use Laravel\Cashier\Invoice as CashierInvoice;
 use Laravel\Cashier\Payment;
 use SensitiveParameter;
 use Stripe\Exception\InvalidRequestException;
+use Stripe\Service\EventService;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 use Throwable;
@@ -139,15 +145,22 @@ class StripeGateway extends AbstractGateway
      */
     public function refund(string $paymentId, ?int $amount = null): mixed
     {
+        if ($amount !== null && $amount <= 0) {
+            throw new InvalidArgumentException('Refund amount must be a positive integer in minor units.');
+        }
+
         return PaymentOperationLimiter::run(
             $this->name(),
             'refund',
             'payment:' . $paymentId,
             function () use ($paymentId, $amount): StripePayment {
-                $this->client()->refunds->create([
-                    'payment_intent' => $paymentId,
-                    'amount' => $amount,
-                ]);
+                $parameters = ['payment_intent' => $paymentId];
+
+                if ($amount !== null) {
+                    $parameters['amount'] = $amount;
+                }
+
+                $this->client()->refunds->create($parameters);
 
                 $payment = $this->client()->paymentIntents->retrieve($paymentId);
 
@@ -180,6 +193,12 @@ class StripeGateway extends AbstractGateway
         try {
             $session = $this->client()->checkout->sessions->retrieve($sessionId);
 
+            if (! $this->stripeCustomerBelongsToCurrentOwner($session->customer ?? null)) {
+                $this->logCrossOwnerBlocked('checkout session', $sessionId);
+
+                return null;
+            }
+
             return new Stripe\StripeCheckout($session);
         } catch (InvalidRequestException $e) {
             if ($e->getHttpStatus() === 404) {
@@ -199,6 +218,12 @@ class StripeGateway extends AbstractGateway
     {
         try {
             $subscription = $this->client()->subscriptions->retrieve($subscriptionId);
+
+            if (! $this->stripeCustomerBelongsToCurrentOwner($subscription->customer ?? null)) {
+                $this->logCrossOwnerBlocked('subscription', $subscriptionId);
+
+                return null;
+            }
 
             return new StripeSubscription($subscription);
         } catch (InvalidRequestException $e) {
@@ -221,6 +246,8 @@ class StripeGateway extends AbstractGateway
             $paymentIntent = $this->client()->paymentIntents->retrieve($paymentId);
 
             if (! $this->stripeCustomerBelongsToCurrentOwner($paymentIntent->customer ?? null)) {
+                $this->logCrossOwnerBlocked('payment', $paymentId);
+
                 return null;
             }
 
@@ -245,6 +272,8 @@ class StripeGateway extends AbstractGateway
             $invoice = $this->client()->invoices->retrieve($invoiceId);
 
             if (! $this->stripeCustomerBelongsToCurrentOwner($invoice->customer ?? null)) {
+                $this->logCrossOwnerBlocked('invoice', $invoiceId);
+
                 return null;
             }
 
@@ -258,6 +287,21 @@ class StripeGateway extends AbstractGateway
         } catch (Throwable $e) {
             throw GatewayRetrievalException::create('stripe', 'invoice', $invoiceId, $e);
         }
+    }
+
+    /**
+     * Record an ownership denial so it is distinguishable from a 404.
+     *
+     * The null return contract is preserved; the distinction lives in the
+     * security log, not the return value.
+     */
+    private function logCrossOwnerBlocked(string $resource, string $identifier): void
+    {
+        Log::warning('Cashier blocked a cross-owner gateway retrieval.', [
+            'gateway' => $this->name(),
+            'resource' => $resource,
+            'identifier' => $identifier,
+        ]);
     }
 
     private function stripeCustomerBelongsToCurrentOwner(mixed $customer): bool
@@ -279,6 +323,12 @@ class StripeGateway extends AbstractGateway
     public function subscriptions(BillableContract $billable): Collection
     {
         $subscriptionsRelation = $this->callBillableMethod($billable, 'subscriptions');
+
+        if ($subscriptionsRelation instanceof Relation) {
+            $subscriptionsRelation = $subscriptionsRelation
+                ->with('items')
+                ->limit(self::DEFAULT_LIST_LIMIT);
+        }
 
         $subscriptions = $subscriptionsRelation->get()
             ->map(fn ($subscription) => new StripeSubscription($subscription))
@@ -307,7 +357,7 @@ class StripeGateway extends AbstractGateway
 
         /** @var iterable<int, mixed> $rawInvoices */
         $invoices = collect($rawInvoices)
-            ->map(fn ($invoice) => new StripeInvoice($invoice->asStripeInvoice()))
+            ->map(fn ($invoice) => new StripeInvoice($invoice instanceof CashierInvoice ? $invoice : $invoice->asStripeInvoice()))
             ->values();
 
         /** @var Collection<int, InvoiceContract> $invoices */
@@ -407,19 +457,47 @@ class StripeGateway extends AbstractGateway
     /**
      * Handle a webhook event.
      *
+     * When the raw request body is supplied, the signature is verified
+     * against it before the Cashier webhook controller runs.
+     *
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $headers
      */
-    public function handleWebhook(array $payload, array $headers = []): mixed
+    public function handleWebhook(array $payload, array $headers = [], ?string $rawPayload = null): mixed
     {
+        if ($rawPayload !== null && ! $this->verifyWebhookSignature($rawPayload, $headers)) {
+            throw WebhookVerificationException::invalidSignature($this->name());
+        }
+
         $signature = $headers['Stripe-Signature'] ?? $headers['stripe-signature'] ?? null;
         $server = is_string($signature) && $signature !== ''
             ? ['HTTP_STRIPE_SIGNATURE' => $signature]
             : [];
 
-        $request = Request::create('/', 'POST', [], [], [], $server, json_encode($payload, JSON_THROW_ON_ERROR));
+        $body = $rawPayload ?? json_encode($payload, JSON_THROW_ON_ERROR);
+
+        $request = Request::create('/', 'POST', [], [], [], $server, $body);
 
         return app(WebhookController::class)->handleWebhook($request);
+    }
+
+    /**
+     * Re-fetch a webhook event from the Stripe API for trusted replay.
+     *
+     * @return array<string, mixed>
+     */
+    public function fetchWebhookEvent(string $eventId): array
+    {
+        try {
+            $event = (new EventService($this->client()))->retrieve($eventId);
+        } catch (InvalidRequestException $e) {
+            throw GatewayRetrievalException::create('stripe', 'webhook event', $eventId, $e);
+        }
+
+        /** @var array<string, mixed> $payload */
+        $payload = $event->toArray();
+
+        return $payload;
     }
 
     /**

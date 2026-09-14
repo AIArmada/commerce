@@ -33,6 +33,7 @@ return [
         'address_export' => false,
         'show_provider_payload' => false,
         'show_source_payload' => false,
+        'postal_code_import' => false,
         'postal_code_export' => false,
     ],
 

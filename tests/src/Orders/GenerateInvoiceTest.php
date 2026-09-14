@@ -5,9 +5,19 @@ declare(strict_types=1);
 use AIArmada\Orders\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Completed;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Spatie\LaravelPdf\Facades\Pdf;
 use Spatie\LaravelPdf\PdfBuilder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+
+beforeEach(function (): void {
+    if (! Schema::hasColumn('orders', 'invoice_number')) {
+        Schema::table('orders', function (Blueprint $table): void {
+            $table->string('invoice_number')->nullable()->unique();
+        });
+    }
+});
 
 describe('GenerateInvoice Action', function (): void {
     describe('Invoice Generation', function (): void {

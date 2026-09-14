@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Actions;
 
 use AIArmada\Cart\Contracts\CartMergeStrategyInterface;
-use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,7 +14,6 @@ class MigrateCartOnLoginAction
 
     public function __construct(
         private readonly MigrateGuestCartToUserAction $migrationAction,
-        private readonly LoginMigrationIdentifierResolver $identifierResolver,
     ) {}
 
     public function withMergeStrategy(CartMergeStrategyInterface $strategy): static
@@ -30,12 +28,7 @@ class MigrateCartOnLoginAction
      */
     public function execute(mixed $user, ?string $instance = 'default', ?string $sessionId = null): array
     {
-        if ($sessionId === null) {
-            $identifiers = $this->identifierResolver->resolveFromUser($user);
-            $sessionId = $this->identifierResolver->findCachedSessionId($identifiers);
-        }
-
-        if ($sessionId === null) {
+        if ($sessionId === null || $sessionId === '') {
             return [
                 'success' => false,
                 'itemsMerged' => 0,

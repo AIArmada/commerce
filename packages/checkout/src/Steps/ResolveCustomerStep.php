@@ -89,7 +89,7 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
                     $updates['customer_id'] = $resolved->subject->id;
                 }
 
-                $session->update($updates);
+                $session->persistState($updates);
                 $session->unsetRelation('customer');
                 $session->unsetRelation('billable');
 
@@ -105,7 +105,7 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
             }
 
             if ($customer !== null) {
-                $session->update([
+                $session->persistState([
                     'customer_id' => $customer->id,
                     'billable_type' => $customer->getMorphClass(),
                     'billable_id' => (string) $customer->getKey(),
@@ -153,7 +153,7 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
 
         $paymentData['checkout_actor'] = $actorReference;
 
-        $session->update(['payment_data' => $paymentData]);
+        $session->persistState(['payment_data' => $paymentData]);
     }
 
     private function loadCustomerDefaults(CheckoutSession $session): void
@@ -187,7 +187,7 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
             }
         }
 
-        $session->update([
+        $session->persistState([
             'billing_data' => $billingData,
             'shipping_data' => $shippingData,
         ]);

@@ -13,6 +13,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
+use Spatie\ModelStates\Exceptions\TransitionNotFound;
 
 beforeEach(function (): void {
     AffiliateConversion::query()->delete();
@@ -143,7 +144,7 @@ it('updates conversion status when user has affiliate.approve permission', funct
         ->and($conversion->approved_at)->not->toBeNull();
 });
 
-it('clears approved_at when conversion is reset from approved to pending', function (): void {
+it('refuses to reset an approved conversion back to pending', function (): void {
     Permission::create(['name' => 'affiliate_conversion.update', 'guard_name' => 'web']);
 
     $user = User::create([
@@ -183,14 +184,15 @@ it('clears approved_at when conversion is reset from approved to pending', funct
 
     expect($conversion->approved_at)->not->toBeNull();
 
-    AffiliateConversionsTable::updateStatus($conversion, PendingConversion::class);
+    expect(fn (): bool => AffiliateConversionsTable::updateStatus($conversion, PendingConversion::class))
+        ->toThrow(TransitionNotFound::class);
     $conversion->refresh();
 
-    expect($conversion->status->equals(PendingConversion::class))->toBeTrue()
-        ->and($conversion->approved_at)->toBeNull();
+    expect($conversion->status->equals(ApprovedConversion::class))->toBeTrue()
+        ->and($conversion->approved_at)->not->toBeNull();
 });
 
-it('marks conversion as paid and retains approval timestamp semantics', function (): void {
+it('requires approval before a conversion can be marked as paid', function (): void {
     Permission::create(['name' => 'affiliate_conversion.update', 'guard_name' => 'web']);
 
     $user = User::create([
@@ -225,6 +227,14 @@ it('marks conversion as paid and retains approval timestamp semantics', function
         'commission_currency' => 'USD',
     ]);
 
+    expect(fn (): bool => AffiliateConversionsTable::updateStatus($conversion, PaidConversion::class))
+        ->toThrow(TransitionNotFound::class);
+    $conversion->refresh();
+
+    expect($conversion->status->equals(PendingConversion::class))->toBeTrue()
+        ->and($conversion->approved_at)->toBeNull();
+
+    AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class);
     $updated = AffiliateConversionsTable::updateStatus($conversion, PaidConversion::class);
     $conversion->refresh();
 

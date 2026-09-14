@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\Schemas;
 
-use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentProducts\Resources\ProductResource;
+use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
@@ -30,6 +31,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 class ProductForm
 {
@@ -54,7 +56,7 @@ class ProductForm
                                     ->label('URL Slug')
                                     ->required()
                                     ->maxLength(100)
-                                    ->unique(ignoreRecord: true),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => ProductsOwnerScope::scopeUniqueRuleToOwner($rule)),
 
                                 MarkdownEditor::make('description')
                                     ->label('Description')
@@ -105,7 +107,7 @@ class ProductForm
                             ->schema([
                                 TextInput::make('sku')
                                     ->label('SKU')
-                                    ->unique(ignoreRecord: true)
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => ProductsOwnerScope::scopeUniqueRuleToOwner($rule))
                                     ->maxLength(100),
 
                                 TextInput::make('barcode')
@@ -239,16 +241,14 @@ class ProductForm
                                         $query = Customer::query();
 
                                         $query = OwnerQuery::applyToEloquentBuilder($query, $owner, (bool) config('customers.features.owner.include_global', false));
-                                        $operator = match (ConnectionDriver::name($query->getConnection())) {
-                                            'pgsql' => 'ilike',
-                                            default => 'like',
-                                        };
+
+                                        $pattern = LikeSearch::contains($search);
 
                                         return $query
-                                            ->where(function (Builder $query) use ($search, $operator): void {
-                                                $query
-                                                    ->where('full_name', $operator, "%{$search}%")
-                                                    ->orWhere('email', $operator, "%{$search}%");
+                                            ->where(function (Builder $query) use ($pattern): void {
+                                                LikeSearch::whereLike($query, 'first_name', $pattern);
+                                                LikeSearch::orWhereLike($query, 'last_name', $pattern);
+                                                LikeSearch::orWhereLike($query, 'company', $pattern);
                                             })
                                             ->limit(50)
                                             ->get()

@@ -373,6 +373,61 @@ test('voucher service redeem records the allocated checkout discount and voucher
         ->and($usage?->currency)->toBe('USD');
 });
 
+test('voucher service redeem derives the percentage discount from the order subtotal', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'REDEEMPCT',
+        'name' => 'Redeem Percentage',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+    $order = Order::factory()->create([
+        'order_number' => 'ORD-REDEEM-PCT',
+        'subtotal' => 10000,
+        'discount_total' => 1000,
+        'grand_total' => 9000,
+        'currency' => 'MYR',
+    ]);
+
+    $service->redeem('redeempct', (string) $order->id);
+
+    $usage = VoucherUsage::where('voucher_id', $voucher->id)->first();
+
+    expect($usage)->not->toBeNull()
+        ->and($usage?->discount_amount)->toBe(1000)
+        ->and($usage?->currency)->toBe('MYR');
+});
+
+test('voucher service redeem prefers the supplied amount for percentage vouchers', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'REDEEMPCTALLOC',
+        'name' => 'Redeem Percentage Allocated',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+    $order = Order::factory()->create([
+        'order_number' => 'ORD-REDEEM-PCT-ALLOC',
+        'subtotal' => 10000,
+        'discount_total' => 250,
+        'grand_total' => 9750,
+        'currency' => 'MYR',
+    ]);
+
+    $service->redeem('redeempctalloc', (string) $order->id, 250, 'MYR');
+
+    $usage = VoucherUsage::where('voucher_id', $voucher->id)->first();
+
+    expect($usage)->not->toBeNull()
+        ->and($usage?->discount_amount)->toBe(250);
+});
+
 test('voucher service get remaining uses', function (): void {
     $voucher = Voucher::create([
         'code' => 'REMAIN',

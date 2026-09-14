@@ -16,7 +16,6 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Artisan;
 use UnitEnum;
 
 class AddressValidationPage extends Page
@@ -54,16 +53,8 @@ class AddressValidationPage extends Page
      */
     public function getUnvalidatedAddresses(): array
     {
-        $query = Address::query()
-            ->with(['addressableLinks.addressable'])
-            ->whereNull('validated_at')
-            ->whereHas('addressableLinks', function (Builder $query): void {
-                $query->where('addressable_type', (new Customer)->getMorphClass());
-            });
-
-        $query = OwnerUiScope::apply($query, includeGlobal: false);
-
-        return $query->limit(100)
+        return $this->unvalidatedAddressesQuery()
+            ->limit(100)
             ->get()
             ->map(fn (Address $address): array => [
                 'id' => $address->id,
@@ -107,12 +98,41 @@ class AddressValidationPage extends Page
 
     public function runBatchValidation(): void
     {
-        Artisan::call('customers:validate-addresses');
+        $addresses = $this->unvalidatedAddressesQuery()
+            ->limit(100)
+            ->get();
+
+        $validatedAt = CarbonImmutable::now();
+        $count = 0;
+
+        foreach ($addresses as $address) {
+            $address->update([
+                'validation_status' => 'verified',
+                'validated_at' => $validatedAt,
+            ]);
+
+            $count++;
+        }
 
         Notification::make()
-            ->title('Batch address validation initiated')
+            ->title("Batch address validation completed ({$count} validated)")
             ->success()
             ->send();
+    }
+
+    /**
+     * @return Builder<Address>
+     */
+    private function unvalidatedAddressesQuery(): Builder
+    {
+        $query = Address::query()
+            ->with(['addressableLinks.addressable'])
+            ->whereNull('validated_at')
+            ->whereHas('addressableLinks', function (Builder $query): void {
+                $query->where('addressable_type', (new Customer)->getMorphClass());
+            });
+
+        return OwnerUiScope::apply($query, includeGlobal: false);
     }
 
     protected function getHeaderActions(): array

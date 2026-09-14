@@ -16,8 +16,8 @@ The form includes:
 - **Code** — Unique short code (e.g., `GA`, `VIP`)
 - **Ticketable Type** — Polymorphic type (select the model, e.g., Workshop)
 - **Ticketable** — Specific record (select the workshop/course/event)
-- **Price** — Price in minor units (e.g., 50000 for RM500.00)
-- **Currency** — ISO 4217 currency code
+- **Price** — Ticket price in major units (e.g., `500.00` for RM500.00); stored as integer minor units
+- **Currency** — ISO 4217 currency code (uppercased automatically, defaults to MYR)
 - **Max Quantity** — Max per purchase (optional)
 - **Capacity** — Total capacity for this type (optional)
 - **Sales Window** — Start and end dates for sales
@@ -169,6 +169,14 @@ Or via config:
     \App\Models\CourseSession::class,
 ],
 ```
+
+## Validation rules
+
+The ticket type form enforces ticket-code uniqueness per ticketable, `admits_quantity` of at least 1, minimum quantity not exceeding maximum quantity, and sales end on or after sales start. Submitted ticketable references are revalidated server-side against the registered types and the current owner scope.
+
+## Resource permissions
+
+Each resource checks its own ability set (`ticket-type.*`, `pass.*`, `pass-holder.*`, `pass-transfer.*` with `viewAny`, `view`, `create`, `update`, `delete`). Panels must grant these permissions or non-super-admin users lose access.
 
 ## Read next
 

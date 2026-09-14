@@ -58,12 +58,18 @@ title: Configuration
         'max_attempts' => 60,
         'decay_seconds' => 60,
     ],
+    'respondent_allowlist' => [],
 ],
 ```
 
 Invitation tokens are generated with cryptographically secure random bytes. Only
-their SHA-256 hashes are persisted, and token resolution is rate limited by the
-hashed token.
+their SHA-256 hashes are persisted, and token resolution is rate limited per
+client IP plus per hashed token.
+
+`respondent_allowlist` optionally restricts which model classes may be used as
+response respondents (morph alias or fully-qualified class name). An empty list
+allows any existing model. HTTP callers must still bind the respondent to the
+authenticated user; the package verifies existence and owner scope, not identity.
 
 ## Analytics
 

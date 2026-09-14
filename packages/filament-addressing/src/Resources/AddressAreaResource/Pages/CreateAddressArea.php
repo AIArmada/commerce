@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAddressing\Resources\AddressAreaResource\Pages;
 use AIArmada\Addressing\Actions\SaveAddressAreaAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
+use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use Filament\Resources\Pages\CreateRecord;
 
 final class CreateAddressArea extends CreateRecord
@@ -20,6 +21,10 @@ final class CreateAddressArea extends CreateRecord
 
     protected function handleRecordCreation(array $data): AddressArea
     {
-        return app(SaveAddressAreaAction::class)->handle($data);
+        $area = app(SaveAddressAreaAction::class)->handle($data);
+
+        AddressingFilterOptions::forgetAreaOptions();
+
+        return $area;
     }
 }

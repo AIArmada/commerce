@@ -6,6 +6,7 @@ namespace AIArmada\Events\Actions;
 
 use AIArmada\Events\Events\EventSessionUpdated;
 use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\Events\Support\EventWriteGuard;
 use AIArmada\Events\Support\Normalization\EventContentNormalizer;
 use Carbon\CarbonImmutable;
@@ -57,24 +58,20 @@ final class UpdateEventSessionAction
             $allowed['description'] = $this->contentNormalizer->normalizeDescription($allowed['description'] !== null ? (string) $allowed['description'] : null);
         }
 
-        if (array_key_exists('status', $allowed)) {
-            $timestampField = match ((string) $allowed['status']) {
-                'published' => 'published_at',
-                'delayed' => 'delayed_at',
-                'postponed' => 'postponed_at',
-                'rescheduled' => 'rescheduled_at',
-                'cancelled' => 'cancelled_at',
-                'completed' => 'completed_at',
-                'archived' => 'archived_at',
-                default => null,
-            };
+        $statusValue = $allowed['status'] ?? null;
+        unset($allowed['status']);
 
-            if ($timestampField !== null && ! array_key_exists($timestampField, $allowed)) {
-                $allowed[$timestampField] = CarbonImmutable::now();
-            }
+        if ($statusValue !== null && ! is_string($statusValue)) {
+            throw new InvalidArgumentException('Session status must be a state name.');
         }
 
         $session->update($allowed);
+
+        if ($statusValue !== null) {
+            $this->transitionStatus($session, $statusValue);
+        }
+
+        $session->refresh();
 
         $current = $session->getAttributes();
 
@@ -86,6 +83,10 @@ final class UpdateEventSessionAction
             if ($oldValue !== $normalizedNewValue) {
                 $changes[$key] = ['old' => $oldValue, 'new' => $normalizedNewValue];
             }
+        }
+
+        if ($statusValue !== null && ($original['status'] ?? null) !== ($current['status'] ?? null)) {
+            $changes['status'] = ['old' => $original['status'] ?? null, 'new' => $current['status'] ?? null];
         }
 
         if ($changes !== []) {
@@ -121,5 +122,35 @@ final class UpdateEventSessionAction
             'changes' => $changes,
             'session' => $session->fresh(),
         ];
+    }
+
+    private function transitionStatus(EventSession $session, string $statusValue): void
+    {
+        if ($session->status->getValue() === $statusValue) {
+            return;
+        }
+
+        $stateClass = OccurrenceStatusState::resolveStateClass($statusValue);
+
+        if (! is_string($stateClass) || ! is_a($stateClass, OccurrenceStatusState::class, true)) {
+            throw new InvalidArgumentException(sprintf('Unknown session status [%s].', $statusValue));
+        }
+
+        $timestampField = match ($statusValue) {
+            'published' => 'published_at',
+            'delayed' => 'delayed_at',
+            'postponed' => 'postponed_at',
+            'rescheduled' => 'rescheduled_at',
+            'cancelled' => 'cancelled_at',
+            'completed' => 'completed_at',
+            'archived' => 'archived_at',
+            default => null,
+        };
+
+        if ($timestampField !== null) {
+            $session->{$timestampField} = CarbonImmutable::now();
+        }
+
+        $session->status->transitionTo($stateClass);
     }
 }

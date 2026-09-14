@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentProducts\Resources\AttributeResource\Pages;
 use AIArmada\FilamentProducts\Resources\AttributeResource\Schemas\AttributeForm;
 use AIArmada\FilamentProducts\Resources\AttributeResource\Tables\AttributesTable;
@@ -12,6 +13,7 @@ use BackedEnum;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 final class AttributeResource extends BaseAttributeResource
 {
@@ -46,6 +48,36 @@ final class AttributeResource extends BaseAttributeResource
     public static function getPluralModelLabel(): string
     {
         return __('filament-products::resources.attributes.plural_model_label');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('attribute.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('attribute.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('attribute.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('attribute.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('attribute.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function form(Schema $schema): Schema

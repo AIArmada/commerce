@@ -144,5 +144,31 @@ it('threads the checkout attempt key through the Cashier CHIP processor', functi
     expect($result->paymentId)->not->toBeNull();
 
     expect($this->fakeChip->getFakeClient()->getPurchase($result->paymentId)['idempotency_key'])
-        ->toBe('checkout-session-1');
+        ->toBe('checkout-session-1:attempt:4');
+});
+
+it('threads the bare session key on the first checkout attempt', function (): void {
+    $session = new CheckoutSession;
+    $session->setAttribute('id', 'checkout-session-2');
+    $session->setAttribute('payment_attempts', 0);
+    $session->setRelation('billable', $this->user);
+    $session->setRelation('customer', null);
+
+    $result = app(CashierChipProcessor::class)->createPayment(
+        $session,
+        new PaymentRequest(
+            amount: 1000,
+            currency: 'MYR',
+            gateway: 'cashier-chip',
+            description: 'Checkout payment',
+            successUrl: 'https://example.test/success',
+            failureUrl: 'https://example.test/failure',
+            cancelUrl: 'https://example.test/cancel',
+        ),
+    );
+
+    expect($result->paymentId)->not->toBeNull();
+
+    expect($this->fakeChip->getFakeClient()->getPurchase($result->paymentId)['idempotency_key'])
+        ->toBe('checkout-session-2');
 });

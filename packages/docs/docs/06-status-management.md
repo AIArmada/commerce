@@ -40,7 +40,7 @@ app(DocService::class)->updateStatus(
 );
 ```
 
-All model helpers and service payment transitions delegate to the same state machine and status-history path.
+All model helpers and service payment transitions delegate to the same state machine and status-history path. Unknown status strings throw `InvalidArgumentException` instead of resolving to draft. `DocService::update()` also accepts a `status` key and routes it through the same machine (unreachable transitions throw; unchanged values are a no-op).
 
 ## Checking Status
 

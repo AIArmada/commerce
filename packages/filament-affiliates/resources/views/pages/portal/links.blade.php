@@ -23,7 +23,7 @@
 
                             <x-filament::icon-button
                                 icon="heroicon-o-clipboard-document"
-                                x-on:click="navigator.clipboard.writeText('{{ $affiliateCode }}'); $tooltip('Copied!')"
+                                x-on:click="navigator.clipboard.writeText(@js($affiliateCode)); $tooltip('Copied!')"
                             />
                         </div>
                     </div>
@@ -37,7 +37,7 @@
 
                                 <x-filament::icon-button
                                     icon="heroicon-o-clipboard-document"
-                                    x-on:click="navigator.clipboard.writeText('{{ $defaultLink }}'); $tooltip('Copied!')"
+                                    x-on:click="navigator.clipboard.writeText(@js($defaultLink)); $tooltip('Copied!')"
                                 />
                             </div>
                         </div>
@@ -53,7 +53,7 @@
                                 <x-filament::icon-button
                                     icon="heroicon-o-clipboard-document"
                                     color="primary"
-                                    x-on:click="navigator.clipboard.writeText('{{ $shortLink }}'); $tooltip('Copied!')"
+                                    x-on:click="navigator.clipboard.writeText(@js($shortLink)); $tooltip('Copied!')"
                                 />
                             </div>
                         </div>
@@ -102,7 +102,7 @@
                                 <x-filament::icon-button
                                     icon="heroicon-o-clipboard-document"
                                     color="success"
-                                    x-on:click="navigator.clipboard.writeText('{{ $generatedLink }}'); $tooltip('Copied!')"
+                                    x-on:click="navigator.clipboard.writeText(@js($generatedLink)); $tooltip('Copied!')"
                                 />
                             </div>
                         </div>
@@ -117,7 +117,7 @@
                                     <x-filament::icon-button
                                         icon="heroicon-o-clipboard-document"
                                         color="success"
-                                        x-on:click="navigator.clipboard.writeText('{{ $generatedShortLink }}'); $tooltip('Copied!')"
+                                        x-on:click="navigator.clipboard.writeText(@js($generatedShortLink)); $tooltip('Copied!')"
                                     />
                                 </div>
                             </div>

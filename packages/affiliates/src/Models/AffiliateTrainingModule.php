@@ -62,8 +62,6 @@ class AffiliateTrainingModule extends Model implements Auditable
         'sort_order',
         'is_required',
         'is_active',
-        'owner_type',
-        'owner_id',
     ];
 
     public function getAuditInclude(): array

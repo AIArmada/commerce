@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Listeners;
 
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Support\PaymentMethodMetadata;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
@@ -70,7 +71,7 @@ class HandlePurchasePreauthorized
                 'type' => $paymentMethod,
                 'brand' => $paymentMethod,
                 'last_four' => $this->lastFourFromMaskedPan($extra['masked_pan'] ?? null),
-                'metadata' => $purchase,
+                'metadata' => PaymentMethodMetadata::fromPurchase($purchase, $paymentMethod),
             ],
             makeDefault: ! $billable->hasDefaultPaymentMethod(),
         );

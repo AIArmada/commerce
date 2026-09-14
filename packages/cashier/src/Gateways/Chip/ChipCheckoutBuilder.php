@@ -9,6 +9,7 @@ use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Gateways\ChipGateway;
 use Illuminate\Http\RedirectResponse;
+use InvalidArgumentException;
 
 /**
  * Builder for CHIP checkout sessions (purchases).
@@ -89,18 +90,23 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
 
     /**
      * Add a price/product to the checkout.
+     *
+     * Accepts "name:amountInMinorUnits"; anything else must go through
+     * product() so a checkout can never silently post a zero amount.
      */
     public function price(string $price, int $quantity = 1): static
     {
-        // For CHIP, price should contain amount in format "name:amount"
-        // or just use the price as product name with a default amount
-        $this->products[] = [
-            'name' => $price,
-            'quantity' => $quantity,
-            'price' => 0, // Should be set via product() method
-        ];
+        if (str_contains($price, ':')) {
+            [$name, $amount] = array_map(mb_trim(...), explode(':', $price, 2));
 
-        return $this;
+            if ($name !== '' && is_numeric($amount) && (int) $amount > 0) {
+                return $this->product($name, (int) $amount, $quantity);
+            }
+        }
+
+        throw new InvalidArgumentException(
+            'CHIP checkout requires explicit product amounts: use product($name, $priceInCents, $quantity) or price("name:amountInCents", $quantity).'
+        );
     }
 
     /**

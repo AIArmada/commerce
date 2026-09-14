@@ -6,13 +6,14 @@ namespace AIArmada\Feedback\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
-use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
+use AIArmada\Feedback\Exceptions\FeedbackInvitationExpiredException;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackInvitation;
 use AIArmada\Feedback\Models\FeedbackResponse;
+use AIArmada\Feedback\Support\FeedbackSubmissionGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\DeadlockException;
 use Illuminate\Database\QueryException;
@@ -29,16 +30,23 @@ final class SubmitFeedbackResponseAction
         private readonly CalculateFeedbackAnswerScoreAction $calculateAnswerScore,
         private readonly CalculateFeedbackResponseScoreAction $calculateResponseScore,
         private readonly ExtractFeedbackTestimonialAction $extractTestimonial,
+        private readonly FeedbackSubmissionGuard $submissionGuard,
     ) {}
 
     public function execute(SubmitFeedbackResponseData $data): FeedbackResponse
     {
-        return retry(
-            5,
-            fn (): FeedbackResponse => $this->executeWithinTransaction($data),
-            50,
-            fn (Throwable $exception): bool => $exception instanceof DeadlockException,
-        );
+        try {
+            return retry(
+                5,
+                fn (): FeedbackResponse => $this->executeWithinTransaction($data),
+                50,
+                fn (Throwable $exception): bool => $exception instanceof DeadlockException,
+            );
+        } catch (FeedbackInvitationExpiredException $exception) {
+            $this->markInvitationExpired($exception->invitationId);
+
+            throw $exception;
+        }
     }
 
     private function executeWithinTransaction(SubmitFeedbackResponseData $data): FeedbackResponse
@@ -50,7 +58,12 @@ final class SubmitFeedbackResponseAction
                 ->whereKey($guardedForm->getKey())
                 ->firstOrFail();
 
-            $this->assertFormAcceptingSubmissions($form, $data);
+            $this->submissionGuard->assertFormAcceptingSubmissions(
+                $form,
+                $data->isAnonymous,
+                $data->respondentType,
+                $data->respondentId,
+            );
             $this->assertSubmittedQuestionsBelongToForm($form, $data);
 
             $existingResponse = $this->findExistingSubmittedResponse($form, $data);
@@ -69,7 +82,7 @@ final class SubmitFeedbackResponseAction
                     ->lockForUpdate()
                     ->whereKey($guardedInvitation->getKey())
                     ->firstOrFail();
-                $this->assertInvitationValid($invitation, $form);
+                $this->submissionGuard->assertInvitationValid($invitation, $form);
             }
 
             try {
@@ -80,6 +93,7 @@ final class SubmitFeedbackResponseAction
                         respondentId: $data->respondentId,
                         invitation: $invitation,
                         isAnonymous: $data->isAnonymous,
+                        metadata: $data->metadata,
                     );
 
                     $submittedValues = [];
@@ -113,8 +127,11 @@ final class SubmitFeedbackResponseAction
                         'status' => FeedbackResponseStatus::Submitted,
                         'enforce_respondent_uniqueness' => $form->is_one_response_per_respondent,
                         'submitted_at' => CarbonImmutable::now(),
-                        'ip_address' => $data->ipAddress,
+                        'ip_address' => $data->ipAddress !== null
+                            ? mb_substr($data->ipAddress, 0, 255)
+                            : null,
                         'user_agent' => $data->userAgent,
+                        'metadata' => $data->metadata,
                     ])->save();
 
                     if (isset($invitation)) {
@@ -150,29 +167,6 @@ final class SubmitFeedbackResponseAction
         }, 5);
     }
 
-    private function assertFormAcceptingSubmissions(FeedbackForm $form, SubmitFeedbackResponseData $data): void
-    {
-        if ($form->status !== FeedbackFormStatus::Published) {
-            throw new RuntimeException('This form is not accepting submissions.');
-        }
-
-        if ($form->opens_at !== null && CarbonImmutable::now()->isBefore($form->opens_at)) {
-            throw new RuntimeException('This form has not opened yet.');
-        }
-
-        if ($form->closes_at !== null && CarbonImmutable::now()->isAfter($form->closes_at)) {
-            throw new RuntimeException('This form has closed.');
-        }
-
-        if ($data->isAnonymous && ! $form->is_anonymous_allowed) {
-            throw new RuntimeException('Anonymous submissions are not allowed for this form.');
-        }
-
-        if ($form->is_login_required && ($data->respondentType === null || $data->respondentId === null)) {
-            throw new RuntimeException('You must be logged in to submit this form.');
-        }
-    }
-
     private function findExistingSubmittedResponse(
         FeedbackForm $form,
         SubmitFeedbackResponseData $data,
@@ -183,12 +177,14 @@ final class SubmitFeedbackResponseAction
             return null;
         }
 
+        // Submitted and reviewed responses both satisfy one-response-per-respondent.
+        // Rejected and spam responses do not: the respondent may correct and resubmit.
         return FeedbackResponse::query()
             ->lockForUpdate()
             ->where('feedback_form_id', $form->id)
             ->where('respondent_type', $data->respondentType)
             ->where('respondent_id', $data->respondentId)
-            ->where('status', FeedbackResponseStatus::Submitted)
+            ->whereIn('status', [FeedbackResponseStatus::Submitted, FeedbackResponseStatus::Reviewed])
             ->first();
     }
 
@@ -201,29 +197,22 @@ final class SubmitFeedbackResponseAction
         );
     }
 
-    private function assertInvitationValid(FeedbackInvitation $invitation, FeedbackForm $form): void
+    private function markInvitationExpired(string $invitationId): void
     {
-        if ($invitation->feedback_form_id !== $form->id) {
-            throw new RuntimeException('This invitation does not belong to the selected form.');
-        }
+        DB::transaction(function () use ($invitationId): void {
+            $invitation = FeedbackInvitation::query()
+                ->lockForUpdate()
+                ->whereKey($invitationId)
+                ->first();
 
-        if ($invitation->status === FeedbackInvitationStatus::Expired) {
-            throw new RuntimeException('This invitation has expired.');
-        }
+            if ($invitation === null) {
+                return;
+            }
 
-        if ($invitation->status === FeedbackInvitationStatus::Cancelled) {
-            throw new RuntimeException('This invitation has been cancelled.');
-        }
+            $guarded = OwnerWriteGuard::findOrFailForOwner(FeedbackInvitation::class, $invitation->id);
 
-        if ($invitation->status === FeedbackInvitationStatus::Submitted) {
-            throw new RuntimeException('This invitation has already been used.');
-        }
-
-        if ($invitation->expires_at !== null && CarbonImmutable::now()->isAfter($invitation->expires_at)) {
-            $invitation->forceFill(['status' => FeedbackInvitationStatus::Expired])->save();
-
-            throw new RuntimeException('This invitation has expired.');
-        }
+            $guarded->forceFill(['status' => FeedbackInvitationStatus::Expired])->save();
+        });
     }
 
     private function assertSubmittedQuestionsBelongToForm(

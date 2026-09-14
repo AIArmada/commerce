@@ -6,6 +6,7 @@ namespace AIArmada\FilamentEngagement\Actions;
 
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
+use AIArmada\FilamentEngagement\Support\AuthenticatedUser;
 use Filament\Actions\Action;
 use Filament\Forms;
 
@@ -23,7 +24,7 @@ final class ReactAction
             ])
             ->action(function (array $data, $record): void {
                 $record = ActionRecordResolver::resolveOrFail($record);
-                app(EngagementManager::class)->react(auth()->user(), $record, $data['reaction_type']);
+                app(EngagementManager::class)->react(AuthenticatedUser::resolve(), $record, $data['reaction_type']);
             });
     }
 }

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages;
 
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\FilamentCashierChip\Jobs\SyncCustomersToChipJob;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource;
-use Exception;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
@@ -38,32 +40,43 @@ final class ListCustomers extends ListRecords
                 ->color('primary')
                 ->requiresConfirmation()
                 ->modalHeading('Sync All Customers to Chip')
-                ->modalDescription('This will create or update all customers in Chip that are not yet linked. This may take some time.')
+                ->modalDescription('This will queue a background job to create or update all customers in Chip that are not yet linked.')
                 ->action(function (): void {
                     $model = Cashier::$customerModel;
-                    $customers = $model::query()
-                        ->whereDoesntHave('chipCustomerLink')
-                        ->get();
-                    $synced = 0;
-                    $failed = 0;
 
-                    foreach ($customers as $customer) {
-                        try {
-                            if (method_exists($customer, 'createAsChipCustomer')) {
-                                $customer->createAsChipCustomer();
-                                $synced++;
-                            }
-                        } catch (Exception $e) {
-                            $failed++;
-                        }
+                    if (! method_exists($model, 'chipCustomerLink') || ! method_exists($model, 'createAsChipCustomer')) {
+                        Notification::make()
+                            ->title('Sync Unavailable')
+                            ->body('The configured customer model does not support CHIP syncing.')
+                            ->danger()
+                            ->send();
+
+                        return;
                     }
 
+                    SyncCustomersToChipJob::dispatch(self::ownerJobContext());
+
                     Notification::make()
-                        ->title('Customers Synced')
-                        ->body("Synced: {$synced}, Failed: {$failed}")
+                        ->title('Customer Sync Queued')
+                        ->body('Unlinked customers will be synced to Chip in the background.')
                         ->success()
                         ->send();
                 }),
         ];
+    }
+
+    private static function ownerJobContext(): ?OwnerJobContext
+    {
+        $owner = OwnerContext::resolve();
+
+        if ($owner !== null) {
+            return OwnerJobContext::fromOwnerModel($owner);
+        }
+
+        if (OwnerContext::isExplicitGlobal()) {
+            return OwnerJobContext::explicitGlobal();
+        }
+
+        return null;
     }
 }

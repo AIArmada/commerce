@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Models\CommunicationAttempt;
 use AIArmada\Communications\Models\CommunicationContent;
@@ -20,6 +21,10 @@ final class RedactCommunicationPayloadAction
     {
         $content = CommunicationContent::query()->findOrFail($contentId);
 
+        if (CommunicationContent::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationContent::class, $contentId);
+        }
+
         if ($content->payload !== null) {
             $content->payload = $this->redactor->redact($content->payload);
         }
@@ -33,6 +38,10 @@ final class RedactCommunicationPayloadAction
     {
         $delivery = CommunicationDelivery::query()->findOrFail($deliveryId);
 
+        if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
+        }
+
         if ($delivery->metadata !== null) {
             $delivery->metadata = $this->redactor->redact($delivery->metadata);
         }
@@ -45,6 +54,10 @@ final class RedactCommunicationPayloadAction
     public function handleAttempt(string $attemptId): CommunicationAttempt
     {
         $attempt = CommunicationAttempt::query()->findOrFail($attemptId);
+
+        if (CommunicationAttempt::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationAttempt::class, $attemptId);
+        }
 
         if ($attempt->request_payload !== null) {
             $attempt->request_payload = $this->redactor->redactRequest($attempt->request_payload);
@@ -62,6 +75,10 @@ final class RedactCommunicationPayloadAction
     public function handleEvent(string $eventId): CommunicationEvent
     {
         $event = CommunicationEvent::query()->findOrFail($eventId);
+
+        if (CommunicationEvent::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationEvent::class, $eventId);
+        }
 
         if ($event->payload !== null) {
             $event->payload = $this->redactor->redact($event->payload);

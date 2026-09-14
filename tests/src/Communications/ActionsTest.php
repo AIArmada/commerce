@@ -60,13 +60,14 @@ test('CreateCommunicationAction creates communication and dispatches event', fun
 });
 
 test('AddCommunicationRecipientAction adds recipient to communication', function (): void {
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'recipient-test',
         'status' => CommunicationStatus::Draft,
     ]);
+    $communication->save();
 
     $action = app(AddCommunicationRecipientAction::class);
     $recipient = $action->handle(
@@ -113,13 +114,14 @@ test('LiftSuppressionAction lifts a suppression', function (): void {
 });
 
 test('RedactCommunicationPayloadAction redacts content payload', function (): void {
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'redact-test',
         'status' => CommunicationStatus::Draft,
     ]);
+    $communication->save();
 
     $content = CommunicationContent::create([
         'communication_id' => $communication->id,
@@ -140,20 +142,21 @@ test('RedactCommunicationPayloadAction redacts content payload', function (): vo
 });
 
 test('delivery attempt payloads are redacted before persistence', function (): void {
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'attempt-redaction-test',
         'status' => CommunicationStatus::Draft,
     ]);
+    $communication->save();
 
     $recipient = CommunicationRecipient::create([
         'communication_id' => $communication->id,
         'role' => RecipientRole::To,
     ]);
 
-    $delivery = CommunicationDelivery::create([
+    $delivery = (new CommunicationDelivery)->forceFill([
         'communication_id' => $communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
@@ -162,6 +165,7 @@ test('delivery attempt payloads are redacted before persistence', function (): v
         'attempt_count' => 0,
         'max_attempts' => 3,
     ]);
+    $delivery->save();
 
     $attempt = app(StartDeliveryAttemptAction::class)->handle(
         deliveryId: $delivery->id,
@@ -184,20 +188,21 @@ test('delivery attempt payloads are redacted before persistence', function (): v
 
 test('CommunicationRecorderService marks sending and sent', function (): void {
     $recorder = app(CommunicationRecorder::class);
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'recorder-test',
         'status' => CommunicationStatus::Draft,
     ]);
+    $communication->save();
 
     $recipient = CommunicationRecipient::create([
         'communication_id' => $communication->id,
         'role' => 'to',
     ]);
 
-    $delivery = CommunicationDelivery::create([
+    $delivery = (new CommunicationDelivery)->forceFill([
         'communication_id' => $communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
@@ -206,6 +211,7 @@ test('CommunicationRecorderService marks sending and sent', function (): void {
         'attempt_count' => 0,
         'max_attempts' => 3,
     ]);
+    $delivery->save();
 
     $recorder->markSending($communication->id, $delivery->id);
     expect($delivery->fresh()->status->value)->toBe('sending');
@@ -218,20 +224,21 @@ test('CommunicationRecorderService marks sending and sent', function (): void {
 
 test('CommunicationRecorderService records failure', function (): void {
     $recorder = app(CommunicationRecorder::class);
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'failure-test',
         'status' => CommunicationStatus::Draft,
     ]);
+    $communication->save();
 
     $recipient = CommunicationRecipient::create([
         'communication_id' => $communication->id,
         'role' => 'to',
     ]);
 
-    $delivery = CommunicationDelivery::create([
+    $delivery = (new CommunicationDelivery)->forceFill([
         'communication_id' => $communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
@@ -240,6 +247,7 @@ test('CommunicationRecorderService records failure', function (): void {
         'attempt_count' => 0,
         'max_attempts' => 3,
     ]);
+    $delivery->save();
 
     $recorder->markFailed($communication->id, $delivery->id, 'Connection timeout');
     $freshDelivery = $delivery->fresh();
@@ -248,25 +256,27 @@ test('CommunicationRecorderService records failure', function (): void {
 });
 
 test('notification delivery transitions reject mismatched communication ids', function (): void {
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'delivery-owner',
         'status' => CommunicationStatus::Draft,
     ]);
-    $otherCommunication = Communication::create([
+    $communication->save();
+    $otherCommunication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'other-delivery-owner',
         'status' => CommunicationStatus::Draft,
     ]);
+    $otherCommunication->save();
     $recipient = CommunicationRecipient::create([
         'communication_id' => $communication->id,
         'role' => 'to',
     ]);
-    $delivery = CommunicationDelivery::create([
+    $delivery = (new CommunicationDelivery)->forceFill([
         'communication_id' => $communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
@@ -275,6 +285,7 @@ test('notification delivery transitions reject mismatched communication ids', fu
         'attempt_count' => 0,
         'max_attempts' => 3,
     ]);
+    $delivery->save();
 
     expect(fn () => app(RecordNotificationSendingAction::class)->handle(
         $otherCommunication->id,
@@ -285,20 +296,22 @@ test('notification delivery transitions reject mismatched communication ids', fu
 });
 
 test('planned deliveries require recipients and content from the same communication', function (): void {
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'planned-delivery-owner',
         'status' => CommunicationStatus::Draft,
     ]);
-    $otherCommunication = Communication::create([
+    $communication->save();
+    $otherCommunication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'planned-delivery-other',
         'status' => CommunicationStatus::Draft,
     ]);
+    $otherCommunication->save();
     $otherRecipient = CommunicationRecipient::create([
         'communication_id' => $otherCommunication->id,
         'role' => 'to',
@@ -323,18 +336,19 @@ test('planned deliveries require recipients and content from the same communicat
 });
 
 test('provider events derive and validate their communication links', function (): void {
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'provider-link-owner',
         'status' => CommunicationStatus::Draft,
     ]);
+    $communication->save();
     $recipient = CommunicationRecipient::create([
         'communication_id' => $communication->id,
         'role' => 'to',
     ]);
-    $delivery = CommunicationDelivery::create([
+    $delivery = (new CommunicationDelivery)->forceFill([
         'communication_id' => $communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
@@ -343,6 +357,7 @@ test('provider events derive and validate their communication links', function (
         'attempt_count' => 0,
         'max_attempts' => 3,
     ]);
+    $delivery->save();
 
     $event = app(RecordProviderEventAction::class)->handle(
         provider: 'test',
@@ -357,13 +372,14 @@ test('provider events derive and validate their communication links', function (
 
 test('CommunicationRecorderService cancels communication', function (): void {
     $recorder = app(CommunicationRecorder::class);
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'cancel-test',
         'status' => CommunicationStatus::Draft,
     ]);
+    $communication->save();
 
     $recorder->cancelCommunication($communication->id);
     $fresh = $communication->fresh();
@@ -374,12 +390,13 @@ test('CommunicationRecorderService cancels communication', function (): void {
 
 test('RenderCommunicationContentAction works with null renderer', function (): void {
     $action = app(RenderCommunicationContentAction::class);
-    $template = CommunicationTemplate::create([
+    $template = (new CommunicationTemplate)->forceFill([
         'key' => 'test-template',
         'name' => 'Test Template',
         'category' => 'mail',
         'status' => TemplateStatus::Draft,
     ]);
+    $template->save();
 
     $content = $action->handle($template, 'mail', 'en', []);
 
@@ -390,20 +407,21 @@ test('RenderCommunicationContentAction works with null renderer', function (): v
 test('ApplyProviderEventAction allows events without provider ids', function (): void {
     $action = app(ApplyProviderEventAction::class);
 
-    $communicationOne = Communication::create([
+    $communicationOne = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'provider-event-one',
         'status' => CommunicationStatus::Draft,
     ]);
+    $communicationOne->save();
 
     $recipientOne = CommunicationRecipient::create([
         'communication_id' => $communicationOne->id,
         'role' => 'to',
     ]);
 
-    $deliveryOne = CommunicationDelivery::create([
+    $deliveryOne = (new CommunicationDelivery)->forceFill([
         'communication_id' => $communicationOne->id,
         'recipient_id' => $recipientOne->id,
         'channel' => 'mail',
@@ -412,21 +430,23 @@ test('ApplyProviderEventAction allows events without provider ids', function ():
         'attempt_count' => 0,
         'max_attempts' => 3,
     ]);
+    $deliveryOne->save();
 
-    $communicationTwo = Communication::create([
+    $communicationTwo = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'provider-event-two',
         'status' => CommunicationStatus::Draft,
     ]);
+    $communicationTwo->save();
 
     $recipientTwo = CommunicationRecipient::create([
         'communication_id' => $communicationTwo->id,
         'role' => 'to',
     ]);
 
-    $deliveryTwo = CommunicationDelivery::create([
+    $deliveryTwo = (new CommunicationDelivery)->forceFill([
         'communication_id' => $communicationTwo->id,
         'recipient_id' => $recipientTwo->id,
         'channel' => 'mail',
@@ -435,6 +455,7 @@ test('ApplyProviderEventAction allows events without provider ids', function ():
         'attempt_count' => 0,
         'max_attempts' => 3,
     ]);
+    $deliveryTwo->save();
 
     $action->handle(new ProviderEventData(
         provider: 'sendgrid',

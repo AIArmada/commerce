@@ -7,6 +7,8 @@ namespace AIArmada\Chip\Clients\Http;
 use AIArmada\Chip\Exceptions\ChipApiException;
 use AIArmada\Chip\Exceptions\ChipRateLimitException;
 use AIArmada\Chip\Exceptions\ChipValidationException;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -52,6 +54,29 @@ abstract class BaseHttpClient
      */
     final public function request(string $method, string $endpoint, array $data = [], array $headers = []): array
     {
+        $response = $this->performRequest($method, $endpoint, $data, $headers);
+
+        return $response->json() ?? [];
+    }
+
+    /**
+     * Perform an HTTP request through the shared pipeline (rate limiting,
+     * retries, logging) and return the raw response body.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, string>  $headers
+     */
+    final public function requestRaw(string $method, string $endpoint, array $data = [], array $headers = []): string
+    {
+        return $this->performRequest($method, $endpoint, $data, $headers)->body();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, string>  $headers
+     */
+    private function performRequest(string $method, string $endpoint, array $data = [], array $headers = []): Response
+    {
         $this->checkRateLimit();
 
         $url = $this->buildUrl($endpoint);
@@ -90,7 +115,11 @@ abstract class BaseHttpClient
 
             $this->logResponse($response);
 
-            return $response->json() ?? [];
+            if (! $response instanceof Response) {
+                throw new ChipApiException('API request failed: no response was received.');
+            }
+
+            return $response;
         } catch (Exception $exception) {
             $this->handleException($exception);
         }
@@ -127,7 +156,13 @@ abstract class BaseHttpClient
 
     protected function rateLimitKey(): string
     {
-        return 'chip_api:' . static::class;
+        $key = 'chip_api:' . static::class;
+
+        if (! (bool) config('chip.owner.enabled', false)) {
+            return $key;
+        }
+
+        return $key . ':' . OwnerScopeKey::forOwner(OwnerContext::resolve());
     }
 
     protected function rateLimitMaxAttempts(): int
@@ -208,10 +243,12 @@ abstract class BaseHttpClient
             return;
         }
 
+        $body = $response->json();
+
         Log::channel($this->logChannel())
             ->info($this->responseLogMessage(), [
                 'status' => $response->status(),
-                'data' => $this->maskSensitiveData($response->json() ?? []),
+                'data' => $this->maskSensitiveData(is_array($body) ? $body : []),
             ]);
     }
 

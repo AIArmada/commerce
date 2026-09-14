@@ -34,6 +34,11 @@ use RuntimeException;
 abstract class AbstractGateway implements GatewayContract
 {
     /**
+     * Default cap for unbounded gateway listings.
+     */
+    public const DEFAULT_LIST_LIMIT = 100;
+
+    /**
      * The gateway configuration.
      *
      * @var array<string, mixed>
@@ -65,10 +70,13 @@ abstract class AbstractGateway implements GatewayContract
     /**
      * Handle a webhook event.
      *
+     * When the raw request body is supplied, the signature must be verified
+     * against it before handling.
+     *
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $headers
      */
-    abstract public function handleWebhook(array $payload, array $headers = []): mixed;
+    abstract public function handleWebhook(array $payload, array $headers = [], ?string $rawPayload = null): mixed;
 
     /**
      * Create a new subscription builder (alias).
@@ -248,25 +256,22 @@ abstract class AbstractGateway implements GatewayContract
         /** @var Builder<Model> $query */
         $query = $model::query();
 
-        if (method_exists($model, 'ownerScopeConfig')) {
-            /** @var OwnerScopeConfig $ownerScopeConfig */
-            $ownerScopeConfig = $model::ownerScopeConfig();
+        $ownerScopeConfig = $this->cashierOwnerScopeConfig();
 
-            if ($ownerScopeConfig->enabled) {
-                $owner = OwnerContext::resolve();
+        if ($ownerScopeConfig !== null) {
+            $owner = OwnerContext::resolve();
 
-                if ($owner === null) {
-                    return null;
-                }
-
-                $query = OwnerQuery::applyToEloquentBuilder(
-                    $query->withoutGlobalScope(OwnerScope::class),
-                    $owner,
-                    false,
-                    $ownerScopeConfig->ownerTypeColumn,
-                    $ownerScopeConfig->ownerIdColumn,
-                );
+            if ($owner === null) {
+                return null;
             }
+
+            $query = OwnerQuery::applyToEloquentBuilder(
+                $query->withoutGlobalScope(OwnerScope::class),
+                $owner,
+                false,
+                $ownerScopeConfig->ownerTypeColumn,
+                $ownerScopeConfig->ownerIdColumn,
+            );
         }
 
         $billable = $query->where($this->gatewayIdColumn(), $gatewayId)->first();
@@ -276,6 +281,35 @@ abstract class AbstractGateway implements GatewayContract
         }
 
         return $billable;
+    }
+
+    /**
+     * The cashier-side owner scope config when owner scoping is enabled.
+     *
+     * This is the single source of truth for owner-mode detection across
+     * gateway implementations; gateway-native flags (e.g. cashier-chip's
+     * owner flag) must not override it.
+     */
+    protected function cashierOwnerScopeConfig(): ?OwnerScopeConfig
+    {
+        $model = $this->billableModel();
+
+        if (! method_exists($model, 'ownerScopeConfig')) {
+            return null;
+        }
+
+        /** @var OwnerScopeConfig $ownerScopeConfig */
+        $ownerScopeConfig = $model::ownerScopeConfig();
+
+        return $ownerScopeConfig->enabled ? $ownerScopeConfig : null;
+    }
+
+    /**
+     * Determine whether cashier-side owner scoping is enabled.
+     */
+    protected function cashierOwnerScopingEnabled(): bool
+    {
+        return $this->cashierOwnerScopeConfig() !== null;
     }
 
     /**

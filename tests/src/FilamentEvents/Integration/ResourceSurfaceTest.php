@@ -217,6 +217,7 @@ it('builds the current event resources and relation managers', function (): void
     $sessionColumns = array_map(static fn ($column): string => $column->getName(), $sessionTable->getColumns());
     $sessionFilters = array_map(static fn ($filter): string => $filter->getName(), $sessionTable->getFilters());
     $sessionHeaderActions = array_map(static fn ($action): string => $action->getName(), $sessionTable->getHeaderActions());
+    $sessionRowActions = array_map(static fn ($action): string => $action->getName(), $sessionTable->getActions());
     $sessionStatusFilter = collect($sessionTable->getFilters())->first(
         static fn ($filter): bool => $filter->getName() === 'status',
     );
@@ -236,7 +237,9 @@ it('builds the current event resources and relation managers', function (): void
     );
     expect($sessionFilters)->toContain('status', 'visibility', 'event_id', 'event_occurrence_id');
     expect($sessionStatusFilter?->getOptions())->toHaveKey('rescheduled');
-    expect($sessionHeaderActions)->toContain('import', 'export', 'delay', 'postpone', 'cancel', 'complete');
+    expect($sessionHeaderActions)->toContain('import', 'export')
+        ->and($sessionHeaderActions)->not->toContain('delay', 'postpone', 'cancel', 'complete')
+        ->and($sessionRowActions)->toContain('delay', 'postpone', 'cancel', 'complete');
 });
 
 it('keeps the current event resources owner scoped', function (): void {

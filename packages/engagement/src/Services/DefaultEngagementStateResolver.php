@@ -76,7 +76,7 @@ final class DefaultEngagementStateResolver implements EngagementStateResolver
                 ->where('subscribable_id', $subject->getKey());
         }
 
-        return $query->cursor();
+        return $query->orderBy('id')->limit($this->resultLimit())->get();
     }
 
     public function remindersFor(mixed $recipient, mixed $subject): iterable
@@ -87,6 +87,13 @@ final class DefaultEngagementStateResolver implements EngagementStateResolver
             ->where('remindable_type', $subject->getMorphClass())
             ->where('remindable_id', $subject->getKey())
             ->whereIn('status', ['pending', 'scheduled'])
-            ->cursor();
+            ->orderBy('id')
+            ->limit($this->resultLimit())
+            ->get();
+    }
+
+    private function resultLimit(): int
+    {
+        return max(1, (int) config('engagement.state.result_limit', 100));
     }
 }

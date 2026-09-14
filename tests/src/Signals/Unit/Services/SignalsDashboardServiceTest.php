@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Models\SignalAlertLog;
@@ -264,7 +265,7 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
         ->and($trend[0]['revenue_minor'])->toBe(129900);
 });
 
-it('falls back to explicit global context when no owner can be resolved', function (): void {
+it('requires an owner context or explicit global context for dashboard metrics', function (): void {
     app()->forgetInstance(OwnerResolverInterface::class);
 
     $property = OwnerContext::withOwner(null, function (): TrackedProperty {
@@ -292,17 +293,29 @@ it('falls back to explicit global context when no owner can be resolved', functi
 
     $service = app(SignalsDashboardService::class);
 
-    $summary = $service->summary(
+    expect(fn (): array => $service->summary(
         null,
         CarbonImmutable::parse('2026-03-10 00:00:00'),
         CarbonImmutable::parse('2026-03-10 23:59:59'),
-    );
+    ))->toThrow(NoCurrentOwnerException::class);
 
-    $trend = $service->trend(
+    expect(fn (): array => $service->trend(
         null,
         CarbonImmutable::parse('2026-03-10 00:00:00'),
         CarbonImmutable::parse('2026-03-10 23:59:59'),
-    );
+    ))->toThrow(NoCurrentOwnerException::class);
+
+    $summary = OwnerContext::withOwner(null, fn (): array => $service->summary(
+        null,
+        CarbonImmutable::parse('2026-03-10 00:00:00'),
+        CarbonImmutable::parse('2026-03-10 23:59:59'),
+    ));
+
+    $trend = OwnerContext::withOwner(null, fn (): array => $service->trend(
+        null,
+        CarbonImmutable::parse('2026-03-10 00:00:00'),
+        CarbonImmutable::parse('2026-03-10 23:59:59'),
+    ));
 
     expect($summary['tracked_properties'])->toBe(1)
         ->and($summary['sessions'])->toBe(5)

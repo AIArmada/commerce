@@ -21,9 +21,11 @@ use AIArmada\Communications\Models\CommunicationContent;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
 
 final class DispatchManagedNotificationAction
 {
@@ -40,7 +42,15 @@ final class DispatchManagedNotificationAction
         Notification $notification,
         CommunicationContextData $context,
     ): Communication {
-        [$communication, $deliveryIdsByChannel] = DB::transaction(function () use ($notifiable, $notification, $context): array {
+        if (! is_object($notifiable) || ! method_exists($notifiable, 'getKey')) {
+            throw new InvalidArgumentException('Notifiable must be an object exposing getKey().');
+        }
+
+        $notifiableType = $notifiable instanceof Model
+            ? $notifiable->getMorphClass()
+            : $notifiable::class;
+
+        [$communication, $deliveryIdsByChannel] = DB::transaction(function () use ($notifiable, $notifiableType, $notification, $context): array {
             $communication = new Communication;
             $communication->direction = $context->direction;
             $communication->category = $context->category;
@@ -76,7 +86,7 @@ final class DispatchManagedNotificationAction
 
             $recipient = new CommunicationRecipient;
             $recipient->communication_id = $communication->id;
-            $recipient->recipient_type = $notifiable::class;
+            $recipient->recipient_type = $notifiableType;
             $recipient->recipient_id = $notifiable->getKey();
             $recipient->role = RecipientRole::To;
             $recipient->display_name = $snapshot->displayName;
@@ -88,14 +98,27 @@ final class DispatchManagedNotificationAction
             $channels = method_exists($notification, 'via')
                 ? $notification->via($notifiable)
                 : ['mail'];
+
+            if (is_string($channels)) {
+                $channels = [$channels];
+            }
+
+            if (! is_array($channels)) {
+                throw new InvalidArgumentException('Notification channels must be a string or an array of strings.');
+            }
+
             $deliveryIdsByChannel = [];
 
             foreach ($channels as $channel) {
+                if (! is_string($channel) || mb_trim($channel) === '') {
+                    throw new InvalidArgumentException('Notification channels must be non-empty strings.');
+                }
+
                 $destination = $this->destinationResolver->resolve($notifiable, $channel);
                 $destinationHash = $destination?->hash;
 
                 $eligibility = $this->eligibility->handle(
-                    recipientType: $notifiable::class,
+                    recipientType: $notifiableType,
                     recipientId: $notifiable->getKey(),
                     destinationHash: $destinationHash,
                     channel: $channel,
@@ -113,9 +136,9 @@ final class DispatchManagedNotificationAction
                 $content->recipient_id = $recipient->id;
                 $content->channel = $channel;
                 $content->locale = $rendered->locale;
-                $content->subject = $rendered->subject;
-                $content->content_text = $rendered->contentText;
-                $content->content_html = $rendered->contentHtml;
+                $content->subject = $this->redactor->redactText($rendered->subject);
+                $content->content_text = $this->redactor->redactText($rendered->contentText);
+                $content->content_html = $this->redactor->redactText($rendered->contentHtml);
                 $content->payload = $this->redactor->redact($rendered->payload);
                 $content->checksum = $rendered->checksum;
                 $content->rendered_at = CarbonImmutable::now();
@@ -133,7 +156,7 @@ final class DispatchManagedNotificationAction
                     $delivery->destination_hint = $destination->hint;
                     $delivery->status = DeliveryStatus::Queued;
                     $delivery->attempt_count = 0;
-                    $delivery->max_attempts = 3;
+                    $delivery->max_attempts = (int) config('communications.defaults.max_attempts', 3);
                     $delivery->queued_at = CarbonImmutable::now();
                     $delivery->save();
                     $deliveryIdsByChannel[$channel] = $delivery->id;

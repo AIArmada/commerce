@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Traits;
 
+use AIArmada\Feedback\Actions\CreateFeedbackFormFromTemplateAction;
+use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Models\FeedbackTemplate;
@@ -44,32 +46,39 @@ trait ReceivesFeedback
             $template = FeedbackTemplate::where('slug', $template)->firstOrFail();
         }
 
-        return FeedbackForm::create(array_merge(
-            [
-                'name' => $template->name,
-                'purpose' => $template->purpose,
-                'status' => 'draft',
+        return app(CreateFeedbackFormFromTemplateAction::class)->execute(
+            $template,
+            array_merge($overrides, [
                 'subject_type' => $this->getMorphClass(),
                 'subject_id' => $this->getKey(),
-            ],
-            $overrides,
-        ));
+            ]),
+        );
     }
 
     public function averageFeedbackScore(?string $questionKey = null): ?float
     {
-        $query = $this->feedbackResponses()
-            ->where('status', 'submitted');
-
         if ($questionKey !== null) {
-            return $query->whereHas('answers', function ($q) use ($questionKey): void {
-                $q->whereHas('question', function ($qq) use ($questionKey): void {
-                    $qq->where('key', $questionKey);
-                })->whereNotNull('score');
-            })->avg('score');
+            $avg = FeedbackAnswer::query()
+                ->whereHas('response', function ($q): void {
+                    $q->where('subject_type', $this->getMorphClass())
+                        ->where('subject_id', $this->getKey())
+                        ->where('status', 'submitted');
+                })
+                ->whereHas('question', function ($q) use ($questionKey): void {
+                    $q->where('key', $questionKey);
+                })
+                ->whereNotNull('score')
+                ->avg('score');
+
+            return $avg !== null ? (float) $avg : null;
         }
 
-        return $query->whereNotNull('score')->avg('score');
+        $avg = $this->feedbackResponses()
+            ->where('status', 'submitted')
+            ->whereNotNull('score')
+            ->avg('score');
+
+        return $avg !== null ? (float) $avg : null;
     }
 
     public function npsScore(?FeedbackForm $form = null): ?int

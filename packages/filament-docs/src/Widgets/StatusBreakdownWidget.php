@@ -25,7 +25,13 @@ final class StatusBreakdownWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $docs = OwnerUiScope::apply(Doc::query(), includeGlobal: false);
+        /** @var array<string, int> $counts */
+        $counts = OwnerUiScope::apply(Doc::query(), includeGlobal: false)
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status')
+            ->map(static fn (mixed $value): int => (int) $value)
+            ->all();
 
         /** @var array<int, class-string<DocStatus>> $statuses */
         $statuses = [
@@ -44,7 +50,7 @@ final class StatusBreakdownWidget extends ChartWidget
         $colors = [];
 
         foreach ($statuses as $status) {
-            $count = (clone $docs)->where('status', DocStatus::normalize($status))->count();
+            $count = $counts[DocStatus::normalize($status)] ?? 0;
             if ($count > 0) {
                 $labels[] = DocStatus::labelFor($status);
                 $data[] = $count;

@@ -41,7 +41,6 @@ class EventSeries extends Model
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 
     protected $fillable = [
-        'owner_type', 'owner_id',
         'title', 'slug', 'description',
         'series_type', 'status', 'visibility',
         'is_dynamic', 'dynamic_rule_json',

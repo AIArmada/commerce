@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
@@ -28,6 +29,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property bool $is_active
  * @property string|null $owner_type
  * @property string|null $owner_id
+ * @property string $owner_scope
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  */
@@ -56,6 +58,15 @@ final class DocEmailTemplate extends Model implements Auditable
     public function getTable(): string
     {
         return config('docs.database.tables.doc_email_templates', 'docs_email_templates');
+    }
+
+    protected static function booted(): void
+    {
+        // creating (not saving): runs after HasOwner's auto-assign (trait boots
+        // register first). Owner tuples are immutable afterwards.
+        self::creating(function (DocEmailTemplate $template): void {
+            $template->owner_scope = OwnerScopeKey::forAttributes($template->getAttributes());
+        });
     }
 
     /**

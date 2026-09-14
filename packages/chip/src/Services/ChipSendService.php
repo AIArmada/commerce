@@ -131,6 +131,8 @@ class ChipSendService
         string $accountHolderName,
         string $reference,
     ): BankAccountData {
+        $this->validateBankAccount($bankCode, $accountNumber, $accountHolderName, $reference);
+
         $data = [
             'bank_code' => $bankCode,
             'account_number' => $accountNumber,
@@ -342,6 +344,40 @@ class ChipSendService
 
         if (! empty($errors)) {
             throw new ChipValidationException('Send instruction validation failed', $errors);
+        }
+    }
+
+    /**
+     * Validate bank account parameters.
+     *
+     * @throws ChipValidationException If validation fails
+     */
+    private function validateBankAccount(
+        string $bankCode,
+        string $accountNumber,
+        string $accountHolderName,
+        string $reference
+    ): void {
+        $errors = [];
+
+        if (empty(mb_trim($bankCode))) {
+            $errors['bank_code'] = ['Bank code is required'];
+        }
+
+        if (empty(mb_trim($accountNumber))) {
+            $errors['account_number'] = ['Account number is required'];
+        }
+
+        if (empty(mb_trim($accountHolderName))) {
+            $errors['name'] = ['Account holder name is required'];
+        }
+
+        if (empty(mb_trim($reference))) {
+            $errors['reference'] = ['Reference is required'];
+        }
+
+        if (! empty($errors)) {
+            throw new ChipValidationException('Bank account validation failed', $errors);
         }
     }
 }

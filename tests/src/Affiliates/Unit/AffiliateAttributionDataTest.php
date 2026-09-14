@@ -79,11 +79,13 @@ test('AffiliateAttributionData fromModel creates data from attribution', functio
         'source' => 'google',
         'medium' => 'cpc',
         'campaign' => 'summer',
-        'owner_type' => 'users',
-        'owner_id' => 'owner-1',
         'expires_at' => Carbon::tomorrow(),
         'metadata' => ['key' => 'value'],
     ]);
+    $attribution->forceFill([
+        'owner_type' => 'users',
+        'owner_id' => 'owner-1',
+    ])->save();
 
     $data = AffiliateAttributionData::fromModel($attribution);
 

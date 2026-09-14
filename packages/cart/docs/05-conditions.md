@@ -167,6 +167,20 @@ $condition = new CartCondition(
 );
 ```
 
+## Fixed-Value Syntax
+
+Fixed (non-percentage) values follow one contract with no exceptions:
+
+- Integer strings are already minor units: `'+5'` is 5 minor, `'-500'` is 500 minor.
+- Decimal strings are major units with half-up rounding: `'+5.00'` is 500 minor.
+- Percentage strings (`'-10%'`, `'+8%'`) are rates, not money.
+
+> [!WARNING]
+> Whole numbers are exact minor units, so `'+5'` (5 minor) and `'+5.00'`
+> (500 minor) differ by 100x. This cliff is intentional: it keeps whole-number
+> money exact instead of routing it through float parsing. Always write the
+> decimal form when you mean major units.
+
 ## Condition Scopes
 
 ### Cart Scope

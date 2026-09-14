@@ -39,8 +39,8 @@ final class ObserveEventTicketTypePricingConsistency
             return;
         }
 
-        $isPaid = (float) $ticketType->price > 0;
-        $isFree = (float) $ticketType->price === 0.0;
+        $isPaid = (int) $ticketType->price > 0;
+        $isFree = (int) $ticketType->price === 0;
 
         if ($pricingMode->isFreeOnly() && $isPaid) {
             throw new InconsistentTicketTypePricingException(

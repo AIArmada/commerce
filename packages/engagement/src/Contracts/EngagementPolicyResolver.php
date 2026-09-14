@@ -17,4 +17,6 @@ interface EngagementPolicyResolver
     public function canSubscribe(mixed $actor, mixed $subject = null, string $subscriptionType = 'updates'): bool;
 
     public function canSetReminder(mixed $actor, mixed $subject, string $reminderType): bool;
+
+    public function canShare(mixed $actor, mixed $subject): bool;
 }

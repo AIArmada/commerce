@@ -11,7 +11,8 @@ title: Usage
 The form is template-aware:
 
 - `doc_type` selection resets the chosen template,
-- the template dropdown is filtered to the current document type,
+- the template dropdown is filtered to the current document type and searched server-side (50 results max),
+- on edit, the status dropdown lists only the current status and its valid state-machine transitions,
 - rich body, line items, totals, and notes/terms sections only appear when the selected template layout includes those blocks,
 - rich-editor attachments use the package storage configuration (`docs.storage.disk`, rich-content path, and visibility).
 
@@ -41,8 +42,8 @@ The form is template-aware:
 ### Toolbar Actions
 
 - `Export` using the built-in Filament exporter
-- `Generate PDFs` in bulk
-- `Mark as Sent` in bulk
+- `Generate PDFs` in bulk (queued via `GenerateDocPdfsJob` in chunks of 25; selections over 500 are refused)
+- `Mark as Sent` in bulk (only eligible documents transition; the notification reports marked/skipped counts)
 - `Delete Selected`
 
 ### Record Actions From the List
@@ -75,10 +76,26 @@ The Filament actions keep form presentation and notifications in the adapter. Pa
 ### Relation Managers
 
 - `StatusHistoriesRelationManager`
-- `PaymentsRelationManager`
+- `PaymentsRelationManager` (creates route through `DocPaymentRecorder`, so balance caps, locks, and status transitions apply; recorded amounts are immutable and payments cannot be deleted from the UI)
 - `EmailsRelationManager`
 - `VersionsRelationManager`
-- `ApprovalsRelationManager`
+- `ApprovalsRelationManager` (unassigned approvals additionally require the `document_approval.approve` ability)
+
+## Authorization
+
+Each resource gates every action on its own dedicated ability via `DocPermissions` (see `src/Support/DocPermissions.php`):
+
+| Surface | Abilities |
+|---------|-----------|
+| Documents | `document.viewAny`, `document.view`, `document.create`, `document.update`, `document.delete` |
+| Templates | `document_template.viewAny`, `document_template.view`, `document_template.create`, `document_template.update`, `document_template.delete` |
+| Sequences | `document_sequence.viewAny`, `document_sequence.view`, `document_sequence.create`, `document_sequence.update`, `document_sequence.delete` |
+| Email templates | `document_email_template.viewAny`, `document_email_template.view`, `document_email_template.create`, `document_email_template.update`, `document_email_template.delete` |
+| Aging report | `document.viewAny` |
+| Pending approvals | `document_approval.viewAny`, plus `document_approval.approve` to act on unassigned approvals |
+
+> [!WARNING]
+> Breaking change: these replace the former shared `purchase.*` abilities. Hosts must grant the new `document*` abilities; legacy `purchase.*` grants no longer unlock any documents UI.
 
 ---
 

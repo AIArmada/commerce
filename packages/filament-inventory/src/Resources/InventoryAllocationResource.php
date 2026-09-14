@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Pages\ListInventoryAllocations;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Pages\ViewInventoryAllocation;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Schemas\InventoryAllocationInfolist;
@@ -73,9 +75,14 @@ final class InventoryAllocationResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $expiredCount = self::getEloquentQuery()
-            ->where('expires_at', '<', CarbonImmutable::now())
-            ->count();
+        $expiredCount = OwnerCache::remember(
+            OwnerUiScope::resolveOwner(InventoryAllocation::class),
+            'filament-inventory.nav-badge.allocation-expired',
+            30,
+            fn (): int => self::getEloquentQuery()
+                ->where('expires_at', '<', CarbonImmutable::now())
+                ->count()
+        );
 
         return $expiredCount > 0 ? (string) $expiredCount : null;
     }

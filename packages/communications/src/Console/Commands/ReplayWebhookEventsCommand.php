@@ -6,6 +6,7 @@ namespace AIArmada\Communications\Console\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Actions\TransitionDeliveryAction;
 use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationEvent;
@@ -143,15 +144,14 @@ final class ReplayWebhookEventsCommand extends Command
         }
 
         try {
-            $delivery->status = ApplyProviderEventAction::EVENT_STATUS_MAP[$event->event];
+            $target = ApplyProviderEventAction::EVENT_STATUS_MAP[$event->event];
+            $transitions = app(TransitionDeliveryAction::class);
 
-            $timestampColumn = ApplyProviderEventAction::EVENT_TIMESTAMP_MAP[$event->event];
-
-            if ($delivery->{$timestampColumn} === null || $this->option('force')) {
-                $delivery->{$timestampColumn} = CarbonImmutable::now();
+            if ($this->option('force')) {
+                $transitions->handle($delivery, $target, force: true);
+            } else {
+                $transitions->applyProviderStatus($delivery, $target);
             }
-
-            $delivery->save();
 
             $event->processed_at = CarbonImmutable::now();
             $event->save();

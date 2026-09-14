@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\CommunicationCancelled;
@@ -17,6 +18,10 @@ final class CancelCommunicationAction
     public function handle(string $communicationId, ?string $reason = null): Communication
     {
         $communication = Communication::query()->findOrFail($communicationId);
+
+        if (Communication::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
+        }
 
         $communication->status = CommunicationStatus::Cancelled;
         $communication->cancelled_at = CarbonImmutable::now();

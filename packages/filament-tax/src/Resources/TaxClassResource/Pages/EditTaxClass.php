@@ -15,7 +15,8 @@ class EditTaxClass extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->authorize(fn (): bool => auth()->user()?->can('tax.classes.delete') ?? false),
         ];
     }
 }

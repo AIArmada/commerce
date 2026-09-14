@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Actions;
 
+use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
 use AIArmada\Contacting\Support\NormalizesSocialHandle;
 use AIArmada\Contacting\Support\NormalizesUrl;
 use AIArmada\Contacting\Support\SocialProfileConfig;
 
-final class NormalizeSocialProfileAction
+final class NormalizeSocialProfileAction implements SocialProfileNormalizer
 {
     public function __construct(
         private readonly SocialProfileConfig $profileConfig,
         private readonly NormalizesSocialHandle $handleNormalizer,
         private readonly NormalizesUrl $urlNormalizer,
     ) {}
+
+    public function normalize(string $platform, ?string $handle, ?string $url): array
+    {
+        return $this->execute($platform, $handle, $url);
+    }
 
     /**
      * @return array{normalized_url: string|null, handle: string|null}

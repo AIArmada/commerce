@@ -6,9 +6,11 @@ namespace AIArmada\Cart\Actions;
 
 use AIArmada\Cart\Contracts\CartMergeStrategyInterface;
 use AIArmada\Cart\Events\CartMerged;
+use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Cart\Support\CartLimits;
 use AIArmada\Cart\Support\CartOwnerScope;
 use Carbon\CarbonImmutable;
 use Exception;
@@ -85,7 +87,7 @@ final class MigrateGuestCartToUserAction
         $guestMetadata = $guestStorage->getAllMetadata($guestIdentifier, $instance);
 
         if (empty($userItems)) {
-            $this->swapIdentifierWithStorage($guestIdentifier, $userIdentifier, $instance, $guestStorage, $this->resolveStorage());
+            DB::transaction(fn (): bool => $this->swapIdentifierWithStorage($guestIdentifier, $userIdentifier, $instance, $guestStorage, $this->resolveStorage()));
 
             if (config('cart.events', true)) {
                 $this->dispatchCartMergedEvent(
@@ -104,25 +106,52 @@ final class MigrateGuestCartToUserAction
             return true;
         }
 
-        // Merge the cart data
+        // Merge the cart data. All writes run in one transaction so a mid-merge
+        // failure rolls everything back and a retry re-runs cleanly instead of
+        // duplicating items; a retry after success is a no-op (guest is gone).
         $mergedItems = $this->mergeItems($guestItems, $userItems, $mergeStrategy);
-        $this->resolveStorage()->putItems($userIdentifier, $instance, $mergedItems);
 
         $guestConditions = $guestStorage->getConditions($guestIdentifier, $instance);
-        if (! empty($guestConditions)) {
-            $userConditions = $this->resolveStorage()->getConditions($userIdentifier, $instance);
-            $mergedConditions = $this->mergeConditions($guestConditions, $userConditions);
-            $this->resolveStorage()->putConditions($userIdentifier, $instance, $mergedConditions);
-        }
+        $userConditions = $guestConditions === []
+            ? []
+            : $this->resolveStorage()->getConditions($userIdentifier, $instance);
 
-        if ($guestMetadata !== []) {
-            $userMetadata = $this->resolveStorage()->getAllMetadata($userIdentifier, $instance);
-            $this->resolveStorage()->putMetadataBatch($userIdentifier, $instance, array_merge($guestMetadata, $userMetadata));
-        }
+        $userMetadata = $guestMetadata === []
+            ? []
+            : $this->resolveStorage()->getAllMetadata($userIdentifier, $instance);
 
-        $this->markSourceCartAsMerged($guestIdentifier, $instance, $userIdentifier, $guestStorage, $this->resolveStorage());
+        $targetStorage = $this->resolveStorage();
 
-        $guestStorage->forget($guestIdentifier, $instance);
+        DB::transaction(function () use (
+            $targetStorage,
+            $guestStorage,
+            $userIdentifier,
+            $guestIdentifier,
+            $instance,
+            $mergedItems,
+            $guestConditions,
+            $userConditions,
+            $guestMetadata,
+            $userMetadata,
+        ): void {
+            $targetStorage->putItems($userIdentifier, $instance, $mergedItems);
+
+            if ($guestConditions !== []) {
+                $targetStorage->putConditions(
+                    $userIdentifier,
+                    $instance,
+                    $this->mergeConditions($guestConditions, $userConditions)
+                );
+            }
+
+            if ($guestMetadata !== []) {
+                $targetStorage->putMetadataBatch($userIdentifier, $instance, array_merge($guestMetadata, $userMetadata));
+            }
+
+            $this->markSourceCartAsMerged($guestIdentifier, $instance, $userIdentifier, $guestStorage, $targetStorage);
+
+            $this->tombstoneSourceCart($guestIdentifier, $instance, $guestStorage);
+        });
 
         if (config('cart.events', true)) {
             $this->dispatchCartMergedEvent(
@@ -197,8 +226,6 @@ final class MigrateGuestCartToUserAction
         $conditions = $sourceStorage->getConditions($oldIdentifier, $instance);
         $metadata = $sourceStorage->getAllMetadata($oldIdentifier, $instance);
 
-        $this->markSourceCartAsMerged($oldIdentifier, $instance, $newIdentifier, $sourceStorage, $targetStorage);
-
         $targetStorage->putItems($newIdentifier, $instance, $items);
 
         if (! empty($conditions)) {
@@ -209,7 +236,10 @@ final class MigrateGuestCartToUserAction
             $targetStorage->putMetadataBatch($newIdentifier, $instance, $metadata);
         }
 
-        $sourceStorage->forget($oldIdentifier, $instance);
+        // Mark only after the target exists so merged_into_id attribution sticks.
+        $this->markSourceCartAsMerged($oldIdentifier, $instance, $newIdentifier, $sourceStorage, $targetStorage);
+
+        $this->tombstoneSourceCart($oldIdentifier, $instance, $sourceStorage);
 
         return true;
     }
@@ -248,30 +278,76 @@ final class MigrateGuestCartToUserAction
     }
 
     /**
+     * Convert the migrated-from cart into a tombstone: content cleared and
+     * expired, but the row (and its merged_into_id attribution) kept.
+     */
+    private function tombstoneSourceCart(
+        string $sourceIdentifier,
+        string $instance,
+        StorageInterface $sourceStorage,
+    ): void {
+        $sourceStorage->clearAll($sourceIdentifier, $instance);
+
+        $table = config('cart.database.table', 'carts');
+
+        $sourceQuery = DB::table($table)
+            ->where('identifier', $sourceIdentifier)
+            ->where('instance', $instance);
+
+        CartOwnerScope::apply($sourceQuery, $sourceStorage);
+
+        $sourceQuery->update([
+            'expired_at' => CarbonImmutable::now(),
+            'updated_at' => CarbonImmutable::now(),
+        ]);
+    }
+
+    /**
      * @param  array<string, mixed>  $guestItems
      * @param  array<string, mixed>  $userItems
      * @return array<string, mixed>
      */
     private function mergeItems(array $guestItems, array $userItems, CartMergeStrategyInterface $mergeStrategy): array
     {
+        $limits = CartLimits::fromConfig();
         $mergedItems = $userItems;
 
         foreach ($guestItems as $itemId => $guestItemData) {
+            if (! is_array($guestItemData)) {
+                throw new InvalidCartItemException("Cannot merge corrupt cart item [{$itemId}]: row is not an array.");
+            }
+
             $existingItem = $userItems[$itemId] ?? null;
 
-            if ($existingItem) {
+            if (is_array($existingItem)) {
                 $newQuantity = $mergeStrategy->resolveConflict(
-                    $existingItem['quantity'] ?? 0,
-                    $guestItemData['quantity'] ?? 0,
+                    $this->coerceMergeQuantity($existingItem['quantity'] ?? 0),
+                    $this->coerceMergeQuantity($guestItemData['quantity'] ?? 0),
                 );
 
-                $mergedItems[$itemId]['quantity'] = $newQuantity;
+                $mergedItems[$itemId]['quantity'] = max(1, min($newQuantity, $limits->maxItemQuantity));
             } else {
+                $guestItemData['quantity'] = max(1, min(
+                    $this->coerceMergeQuantity($guestItemData['quantity'] ?? 0),
+                    $limits->maxItemQuantity
+                ));
+
                 $mergedItems[$itemId] = $guestItemData;
             }
         }
 
+        if (count($mergedItems) > $limits->maxItems) {
+            throw new InvalidCartItemException(
+                "Merged cart would contain more than {$limits->maxItems} items."
+            );
+        }
+
         return $mergedItems;
+    }
+
+    private function coerceMergeQuantity(mixed $quantity): int
+    {
+        return is_numeric($quantity) ? (int) $quantity : 0;
     }
 
     /**
@@ -302,11 +378,18 @@ final class MigrateGuestCartToUserAction
      */
     private function sumItemQuantities(array $items): int
     {
-        return array_reduce(
-            $items,
-            static fn (int $sum, array $item) => $sum + ($item['quantity'] ?? 0),
-            0
-        );
+        $sum = 0;
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $quantity = $item['quantity'] ?? 0;
+            $sum += is_numeric($quantity) ? (int) $quantity : 0;
+        }
+
+        return $sum;
     }
 
     /**

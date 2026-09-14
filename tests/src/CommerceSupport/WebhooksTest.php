@@ -2,13 +2,17 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Actions\ProcessWebhookCallAction;
 use AIArmada\CommerceSupport\Webhooks\CommerceSignatureValidator;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProfile;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use PDOException;
+use ReflectionMethod;
 use Spatie\WebhookClient\Models\WebhookCall;
 use Spatie\WebhookClient\WebhookConfig;
 
@@ -26,6 +30,8 @@ beforeEach(function (): void {
         $table->string('status', 50)->default('pending');
         $table->timestamp('processed_at')->nullable();
         $table->timestampTz('failed_at')->nullable();
+        $table->string('event_id', 191)->nullable();
+        $table->string('event_type', 191)->nullable();
         $table->timestamps();
     });
 });
@@ -206,6 +212,81 @@ it('processes all commerce webhooks by default', function (): void {
     expect((new CommerceWebhookProfile)->shouldProcess(Request::create('/webhooks/test', 'POST')))->toBeTrue();
 });
 
+it('deduplicates concurrent same-event deliveries through the unique claim', function (): void {
+    Schema::dropIfExists('webhook_calls');
+
+    commerceSupportMigration('1970_01_01_000004_create_webhook_calls_table.php.stub')->up();
+
+    $payload = ['event_type' => 'payment.completed', 'id' => 'evt_race_1'];
+
+    $first = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => $payload,
+        'exception' => null,
+    ]);
+
+    $second = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => $payload,
+        'exception' => null,
+    ]);
+
+    (new SupportWebhookProcessor($first))->handle();
+    (new SupportWebhookProcessor($second))->handle();
+
+    expect(SupportWebhookProcessor::$processed)->toHaveCount(1)
+        ->and($first->fresh()?->processed_at)->not->toBeNull()
+        ->and($second->fresh()?->processed_at)->not->toBeNull()
+        ->and($second->fresh()?->status)->toBe('processed');
+});
+
+it('treats unique violations from any driver as duplicates', function (): void {
+    // SQLite can only produce 23000 end to end (covered above); Postgres
+    // reports 23505 for the same constraint, so pin the classifier directly.
+    $classify = function (array $errorInfo): bool {
+        $previous = new PDOException('duplicate key value violates unique constraint');
+        $previous->errorInfo = $errorInfo;
+        $exception = new QueryException('testing', 'update "webhook_calls" set status = ?', [], $previous);
+
+        return (bool) (new ReflectionMethod(ProcessWebhookCallAction::class, 'isUniqueViolation'))
+            ->invoke(new ProcessWebhookCallAction, $exception);
+    };
+
+    expect($classify(['23505', 0, 'duplicate key value violates unique constraint']))->toBeTrue()
+        ->and($classify(['23000', 19, 'UNIQUE constraint failed']))->toBeTrue()
+        ->and($classify(['HY000', 5, 'database is locked']))->toBeFalse();
+});
+
+it('stores only the exception class and truncated message on failure', function (): void {
+    $webhookCall = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => ['event_type' => 'payment.completed', 'id' => 'evt_fail_1'],
+        'exception' => null,
+    ]);
+
+    try {
+        (new SupportFailingWebhookProcessor($webhookCall))->handle();
+        $this->fail('Expected the webhook processor to rethrow.');
+    } catch (RuntimeException $e) {
+        expect($e->getMessage())->toBe('boom with a very long message that should be truncated when persisted to the database column');
+    }
+
+    $stored = $webhookCall->fresh()?->exception;
+
+    expect($webhookCall->fresh()?->status)->toBe('failed')
+        ->and($stored)->toBeArray()
+        ->and($stored['class'] ?? null)->toBe(RuntimeException::class)
+        ->and($stored['message'] ?? null)->toBeString()
+        ->and($stored['message'] ?? '')->not->toContain('#0 ')
+        ->and($stored['message'] ?? '')->not->toContain('Stack trace');
+});
+
 function supportWebhookConfig(string $secret): WebhookConfig
 {
     return new WebhookConfig([
@@ -245,6 +326,17 @@ final class SupportWebhookProcessor extends CommerceWebhookProcessor
     protected function processEvent(string $eventType, array $payload): void
     {
         self::$processed[] = [$eventType, $payload];
+    }
+}
+
+final class SupportFailingWebhookProcessor extends CommerceWebhookProcessor
+{
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    protected function processEvent(string $eventType, array $payload): void
+    {
+        throw new RuntimeException('boom with a very long message that should be truncated when persisted to the database column');
     }
 }
 

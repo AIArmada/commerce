@@ -7,6 +7,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
 it('resolves the current owner from the resolver and supports overrides', function (): void {
@@ -79,6 +80,29 @@ it('throws when the owner id is an empty string', function (): void {
 
 it('throws when owner type cannot be resolved', function (): void {
     OwnerContext::fromTypeAndId('MissingOwnerType', '123');
+})->throws(InvalidArgumentException::class);
+
+it('resolves persisted owners from type and id or fails', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Owner OrFail',
+        'email' => 'owner-orfail@example.com',
+        'password' => 'secret',
+    ]);
+
+    $resolved = OwnerContext::fromTypeAndIdOrFail($owner->getMorphClass(), $owner->getKey());
+
+    expect($resolved)->toBeInstanceOf(User::class)
+        ->and($resolved?->getKey())->toBe($owner->getKey())
+        ->and($resolved?->exists)->toBeTrue()
+        ->and(OwnerContext::fromTypeAndIdOrFail(null, null))->toBeNull();
+});
+
+it('fails for orphaned owner tuples', function (): void {
+    OwnerContext::fromTypeAndIdOrFail(User::class, 999999);
+})->throws(ModelNotFoundException::class);
+
+it('fails for half-null owner tuples', function (): void {
+    OwnerContext::fromTypeAndIdOrFail(User::class, null);
 })->throws(InvalidArgumentException::class);
 
 it('bridges spatie team resolution to the owner context', function (): void {

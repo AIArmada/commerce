@@ -14,3 +14,5 @@ Commit the lockfile produced by the intended dependency operation. Do not bypass
 ## Verification
 
 Use PHP 8.4. Run affected package tests with Pest in parallel, then package-scoped Pint, Rector dry-run, and PHPStan level 6.
+
+Test-harness note: Eloquent boots models once per worker with owner-enabled snapshots, so test-time `config()->set(….enabled, false)` is half-effective (global scopes still act on ambient context). Prefer the explicit `OwnerContext::withOwner(...)` convention in tests.

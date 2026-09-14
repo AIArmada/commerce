@@ -374,6 +374,12 @@ $service->createFromOrderItem([
 ]);
 ```
 
+### Registration input validation
+
+`register()` validates its payload before writing: the occurrence and session must belong to the event, every item's ticket type must exist in the owner scope and belong to the same event, money stays non-negative integer minor units, registrant and participant morphs must resolve to existing models, participant emails must be valid, and bundle parents must belong to the same event. Forged `id` and scope columns on items, participants, and answers are stripped. Each collection (items, participants, answers) is capped at 1000 entries per registration.
+
+Free registrations accept an `idempotency_key` option; retries with the same key and participant count return the original batch instead of creating duplicates.
+
 ## Managing Ticket Types
 
 ```php
@@ -408,6 +414,8 @@ app(EventCheckInService::class)->checkIn([
     'check_in_source' => 'qr',
 ]);
 ```
+
+Attendee morphs must resolve to an existing model record, `verified_by_user_id` must be a UUID, notes are capped at 5000 characters, and metadata must be an array.
 
 ## Managing Involvements
 
@@ -670,6 +678,20 @@ $dispatcher->dispatch($batch);
 
 Dispatch is idempotent for the tuple `(batch, recipient type, recipient id, channel)`. A manual retry resets only terminal failed deliveries; already-sent deliveries are never resent.
 
+## Deleting events
+
+Deleting an event cascades through the owned subtree in application logic: occurrences, sessions, registrations (with participants, answers, items, attendances, and passes), locations, media, classifications, updates, submissions, and the remaining event-scoped records, plus the event's ticket types and seat maps. Deleting an occurrence or session cascades through its own scope the same way. Cross-owner deletes are blocked by the owner write guards before the cascade runs.
+
+## Finalizing event orders
+
+```bash
+php artisan events:finalize-orders --global --dry-run
+php artisan events:finalize-orders --owner-type="App\Models\Team" --owner-id=<uuid>
+php artisan events:finalize-orders --global --occurrence=<uuid>
+```
+
+The finalize command processes completed occurrences in chunks. It runs under `--owner-type`/`--owner-id`, `--global`, or an already resolved owner context, and refuses to run when none is available.
+
 ## Ownership model
 
 7 models use `HasOwner` directly (`Event`, `EventSeries`, `EventTemplate`, `EventOrganizer`, `EventItinerary`, `EventHeadcountLog`, `EventWalkIn`). 44 models inherit the event boundary via `ScopesByEventOwner` (`event_owner` scope). 11 stay unscoped: catalog/pivot/submission exceptions (`EventRole`, `EventTaxonomy`, `EventTerm`, `EventTermPolicy`, `EventSeriesItemPivot`, `EventSubmission`) plus venue catalog (`Venue`, `VenueSpace`, `VenueSpaceType`, `FacilityType`, `VenueFacility`).
@@ -682,15 +704,20 @@ $event = EventWriteGuard::findOrFail($eventId);
 
 Write paths resolve the event first via `EventWriteGuard::findOrFail()`, which enforces the owner scope before mutating children.
 
+The venue and taxonomy catalogs (`Venue`, `VenueSpace`, `VenueSpaceType`, `FacilityType`, `VenueFacility`, `EventTaxonomy`, `EventTerm`, `EventTermPolicy`, `EventRole`) are intentional global vocabularies shared across owners. Writes to them from tenant flows run in explicit global context; the admin surface owns write authorization for these tables.
+
+Authorization beyond the query layer lives in domain policies: `EventPolicy` plus `EventOccurrencePolicy`, `EventSessionPolicy`, `EventRegistrationPolicy`, and `EventSubmissionPolicy`, all registered in the service provider. Management abilities resolve through the event owner; public events stay viewable.
+
 ## Owner query notes
 
 ```php
 use AIArmada\Events\Services\EventQueryService;
 
 $events = app(EventQueryService::class)->findByOwner($owner);
+$events = app(EventQueryService::class)->findByOwner($owner, 50);
 ```
 
-`EventQueryService::findByOwner()` is unbounded by design (`forOwner($owner)->get()`) with no in-repo caller. Paginate in the application when the owner has many events; service-level pagination is deferred.
+`EventQueryService::findPublished()` and `findByOwner()` default to 100 rows and clamp to 500. The search engine defaults to 25 rows and clamps to 100. `findBySlug()` resolves duplicate slugs to the earliest created event.
 
 ## Order to registration to pass sequence
 

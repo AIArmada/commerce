@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
@@ -23,6 +22,7 @@ use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\VersionsRelatio
 use AIArmada\FilamentDocs\Resources\DocResource\Schemas\DocForm;
 use AIArmada\FilamentDocs\Resources\DocResource\Schemas\DocInfolist;
 use AIArmada\FilamentDocs\Resources\DocResource\Tables\DocsTable;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Resources\Resource;
@@ -49,27 +49,27 @@ final class DocResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return FilamentPermission::hasAbility('purchase.viewAny');
+        return DocPermissions::allows(DocPermissions::DOCUMENT, 'viewAny');
     }
 
     public static function canView(Model $record): bool
     {
-        return FilamentPermission::hasAbility('purchase.view');
+        return DocPermissions::allows(DocPermissions::DOCUMENT, 'view');
     }
 
     public static function canCreate(): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.create', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT, 'create');
     }
 
     public static function canEdit(Model $record): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.update', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT, 'update');
     }
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.delete', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT, 'delete');
     }
 
     public static function shouldRegisterNavigation(): bool

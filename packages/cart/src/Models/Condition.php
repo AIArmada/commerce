@@ -397,9 +397,16 @@ class Condition extends Model implements Auditable
     }
 
     /**
-     * Convert the condition's decimal major-unit display syntax to minor units.
-     * Integer strings already represent minor units; decimal strings use
-     * explicit half-up rounding.
+     * Convert the condition's fixed-value syntax to minor units.
+     *
+     * Fixed-value syntax contract (no exceptions):
+     * - Integer strings are already minor units: '+5' = 5 minor, '-250' = -250 minor.
+     * - Decimal strings are major units with half-up rounding: '+5.00' = 500 minor.
+     * - Percentage strings ('-10%', '+8%') are rates, not money.
+     *
+     * The '+5' (5 minor) versus '+5.00' (500 minor) cliff is intentional: whole
+     * numbers are exact minor units to avoid float ambiguity. Authors who mean
+     * major units must write the decimal form.
      */
     private function fixedValueToMinor(string $value): int
     {
@@ -730,10 +737,30 @@ class Condition extends Model implements Auditable
         return is_array($rules) ? $rules : null;
     }
 
-    private static function normalizeContextValue(mixed $value): mixed
+    /**
+     * Maximum nesting depth accepted in rule-context values.
+     */
+    private const MAX_CONTEXT_DEPTH = 32;
+
+    /**
+     * Normalize one rule-context value.
+     *
+     * Strings are trimmed and coerced: 'true'/'false' to booleans, JSON
+     * documents to arrays, comma-separated lists to arrays, and numeric
+     * strings to int/float. The comma-splitting is intentional (the admin UI
+     * documents comma-separated lists for multi-value parameters), so values
+     * that legitimately contain commas must be passed as arrays or JSON.
+     */
+    private static function normalizeContextValue(mixed $value, int $depth = 0): mixed
     {
+        if ($depth > self::MAX_CONTEXT_DEPTH) {
+            throw new InvalidArgumentException(
+                'Condition rule context exceeds the maximum nesting depth of ' . self::MAX_CONTEXT_DEPTH . '.'
+            );
+        }
+
         if (is_array($value)) {
-            return array_map(static fn (mixed $item): mixed => self::normalizeContextValue($item), $value);
+            return array_map(static fn (mixed $item): mixed => self::normalizeContextValue($item, $depth + 1), $value);
         }
 
         if (is_bool($value) || (is_numeric($value) && ! is_string($value))) {
@@ -768,7 +795,7 @@ class Condition extends Model implements Auditable
 
         if (str_contains($trimmed, ',')) {
             return array_values(array_filter(
-                array_map(static fn (string $segment): mixed => self::normalizeContextValue($segment), explode(',', $trimmed)),
+                array_map(static fn (string $segment): mixed => self::normalizeContextValue($segment, $depth + 1), explode(',', $trimmed)),
                 static fn (mixed $segment): bool => ! (is_string($segment) && $segment === ''),
             ));
         }

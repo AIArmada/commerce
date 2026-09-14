@@ -58,9 +58,7 @@ final class AutoCaptureNotificationListener
         $this->state->enterRecursion();
 
         try {
-            $key = spl_object_id($event->notification);
-
-            $existing = $this->state->get($key);
+            $existing = $this->state->get($event->notification);
 
             if ($existing !== null) {
                 $this->captureAdditionalChannel(
@@ -68,7 +66,6 @@ final class AutoCaptureNotificationListener
                     notifiable: $event->notifiable,
                     notification: $event->notification,
                     channel: $event->channel,
-                    key: $key,
                 );
 
                 return;
@@ -78,7 +75,6 @@ final class AutoCaptureNotificationListener
                 notifiable: $event->notifiable,
                 notification: $event->notification,
                 channel: $event->channel,
-                key: $key,
             );
         } finally {
             $this->state->leaveRecursion();
@@ -91,8 +87,7 @@ final class AutoCaptureNotificationListener
             return;
         }
 
-        $key = spl_object_id($event->notification);
-        $state = $this->state->get($key);
+        $state = $this->state->get($event->notification);
 
         if ($state === null) {
             return;
@@ -116,6 +111,7 @@ final class AutoCaptureNotificationListener
         }
 
         $this->recorder->markSent($state['communicationId'], $deliveryId, $result);
+        $this->state->removeDelivery($event->notification, $event->channel);
     }
 
     private function isAllowedNotification(mixed $notification): bool
@@ -178,9 +174,8 @@ final class AutoCaptureNotificationListener
 
     private function captureFirstChannel(
         mixed $notifiable,
-        mixed $notification,
+        object $notification,
         string $channel,
-        int $key,
     ): void {
         $communication = $this->recorder->createCommunication(
             CommunicationContextData::from([
@@ -207,15 +202,14 @@ final class AutoCaptureNotificationListener
 
         $delivery = $this->createDelivery($communication->id, $recipient->id, $content->id, $notifiable, $channel);
 
-        $this->state->register($key, $communication->id, [$channel => $delivery->id]);
+        $this->state->register($notification, $communication->id, [$channel => $delivery->id]);
     }
 
     private function captureAdditionalChannel(
         string $communicationId,
         mixed $notifiable,
-        mixed $notification,
+        object $notification,
         string $channel,
-        int $key,
     ): void {
         $recipient = CommunicationRecipient::query()
             ->where('communication_id', $communicationId)
@@ -229,7 +223,7 @@ final class AutoCaptureNotificationListener
 
         $delivery = $this->createDelivery($communicationId, $recipient->id, $content->id, $notifiable, $channel);
 
-        $this->state->addDelivery($key, $channel, $delivery->id);
+        $this->state->addDelivery($notification, $channel, $delivery->id);
     }
 
     private function createContent(
@@ -246,9 +240,9 @@ final class AutoCaptureNotificationListener
         $content->recipient_id = $recipientId;
         $content->channel = $channel;
         $content->locale = $rendered->locale;
-        $content->subject = $rendered->subject;
-        $content->content_text = $rendered->contentText;
-        $content->content_html = $rendered->contentHtml;
+        $content->subject = $this->redactor->redactText($rendered->subject);
+        $content->content_text = $this->redactor->redactText($rendered->contentText);
+        $content->content_html = $this->redactor->redactText($rendered->contentHtml);
         $content->payload = $this->redactor->redact($rendered->payload);
         $content->checksum = $rendered->checksum;
         $content->rendered_at = CarbonImmutable::now();

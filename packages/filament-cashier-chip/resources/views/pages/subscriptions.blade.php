@@ -107,5 +107,46 @@
                 </x-filament::section>
             @endforeach
         @endif
+
+        @if($cancelledSubscriptions->isNotEmpty())
+            <x-filament::section>
+                <x-slot name="heading">
+                    {{ __('Ending Soon') }}
+                </x-slot>
+
+                <x-slot name="description">
+                    {{ __('These subscriptions are cancelled but remain active until the end of the billing period. Resume any time before then.') }}
+                </x-slot>
+
+                <div class="space-y-4">
+                    @foreach($cancelledSubscriptions as $subscription)
+                        <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {{ $subscription->type ?? __('Subscription') }}
+                                </p>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    @if($subscription->ends_at)
+                                        {{ __('Access until :date', ['date' => $subscription->ends_at->format('M d, Y')]) }}
+                                    @else
+                                        {{ __('Grace period') }}
+                                    @endif
+                                </p>
+                            </div>
+                            <x-filament::badge color="warning" size="sm">
+                                {{ __('Ending Soon') }}
+                            </x-filament::badge>
+                            <x-filament::button
+                                color="success"
+                                size="sm"
+                                wire:click="resumeSubscription('{{ $subscription->id }}')"
+                            >
+                                {{ __('Resume Subscription') }}
+                            </x-filament::button>
+                        </div>
+                    @endforeach
+                </div>
+            </x-filament::section>
+        @endif
     </div>
 </x-filament-panels::page>

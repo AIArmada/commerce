@@ -16,3 +16,9 @@ Enable Spatie teams before migrating when scoped roles are required.
 // config/permission.php
 'teams' => true,
 ```
+
+## Requirements
+
+Authz uses UUID key columns for roles, permissions, pivots, and scopes. Host
+user models must use UUID (string) primary keys; integer-keyed models are not
+supported.

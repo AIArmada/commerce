@@ -33,6 +33,7 @@ class NotesRelationManager extends RelationManager
                 Forms\Components\Textarea::make('content')
                     ->label('Note')
                     ->required()
+                    ->maxLength(5000)
                     ->rows(4)
                     ->columnSpanFull(),
 
@@ -51,6 +52,7 @@ class NotesRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('content')
+            ->modifyQueryUsing(fn ($query) => $query->with('createdBy'))
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\IconColumn::make('is_pinned')

@@ -13,6 +13,8 @@ use AIArmada\Engagement\Models\Reminder;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Throwable;
 
 final class SendDueRemindersCommand extends Command
 {
@@ -53,7 +55,6 @@ final class SendDueRemindersCommand extends Command
                             ->orWhere('expires_at', '>', $now);
                     })
                     ->orderBy('remind_at')
-                    ->limit($remaining)
                     ->chunkById(100, function ($reminders) use (&$remaining, &$count): bool {
                         foreach ($reminders as $reminder) {
                             if ($remaining === 0) {
@@ -82,21 +83,32 @@ final class SendDueRemindersCommand extends Command
 
     private function sendReminder(Reminder $reminder): bool
     {
-        return DB::transaction(function () use ($reminder): bool {
-            $lockedReminder = Reminder::query()
-                ->pending()
-                ->whereKey($reminder->getKey())
-                ->lockForUpdate()
-                ->first();
+        try {
+            return DB::transaction(function () use ($reminder): bool {
+                $lockedReminder = Reminder::query()
+                    ->pending()
+                    ->whereKey($reminder->getKey())
+                    ->lockForUpdate()
+                    ->first();
 
-            if (! $lockedReminder instanceof Reminder) {
-                return false;
+                if (! $lockedReminder instanceof Reminder) {
+                    return false;
+                }
+
+                event(new ReminderDue($lockedReminder));
+                $this->reminderManager->markSent($lockedReminder);
+
+                return true;
+            });
+        } catch (Throwable $exception) {
+            try {
+                $this->reminderManager->markFailed($reminder, Str::limit($exception->getMessage(), 1000) ?: 'Reminder dispatch failed.');
+            } catch (Throwable) {
+                // The reminder left the pending window (or its owner scope)
+                // while failing; there is nothing left to record.
             }
 
-            event(new ReminderDue($lockedReminder));
-            $this->reminderManager->markSent($lockedReminder);
-
-            return true;
-        });
+            return false;
+        }
     }
 }

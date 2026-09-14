@@ -36,7 +36,6 @@ class OrderTimelinePage extends ListRecords
     public function table(Table $table): Table
     {
         return OrderResource::table($table)
-            ->defaultSort('created_at', 'desc')
-            ->paginated(false);
+            ->defaultSort('created_at', 'desc');
     }
 }

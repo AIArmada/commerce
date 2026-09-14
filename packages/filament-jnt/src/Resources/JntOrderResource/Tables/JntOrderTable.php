@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentJnt\Actions\PrintAwbTableAction;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Services\JntStatusMapper;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\TextColumn;
@@ -59,9 +58,9 @@ final class JntOrderTable
                 TextColumn::make('last_status_code')
                     ->label('Status')
                     ->badge()
-                    ->icon(fn (JntOrder $record): string => self::getNormalizedStatus($record)->icon())
-                    ->color(fn (JntOrder $record): string => self::getNormalizedStatus($record)->color())
-                    ->formatStateUsing(fn (JntOrder $record): string => self::getNormalizedStatus($record)->label())
+                    ->icon(fn (JntOrder $record): string => $record->getNormalizedStatus()->icon())
+                    ->color(fn (JntOrder $record): string => $record->getNormalizedStatus()->color())
+                    ->formatStateUsing(fn (JntOrder $record): string => $record->getNormalizedStatus()->label())
                     ->sortable(),
                 TextColumn::make('problem_at')
                     ->label('Problem')
@@ -171,13 +170,6 @@ final class JntOrderTable
 
     private static function getNormalizedStatus(JntOrder $order): TrackingStatus
     {
-        if ($order->last_status_code === null && $order->last_status === null) {
-            return TrackingStatus::Pending;
-        }
-
-        return app(JntStatusMapper::class)->resolve(
-            scanTypeCode: $order->last_status_code,
-            statusDescription: $order->last_status,
-        );
+        return $order->getNormalizedStatus();
     }
 }

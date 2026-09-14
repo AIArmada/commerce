@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 final class SocialProfileResource extends Resource
 {
@@ -62,6 +63,26 @@ final class SocialProfileResource extends Resource
         return [];
     }
 
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return ! app(GuardsContactingUi::class)->socialProfilesReadOnly() && parent::canEdit($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return ! app(GuardsContactingUi::class)->socialProfilesReadOnly() && parent::canDelete($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return ! app(GuardsContactingUi::class)->socialProfilesReadOnly() && parent::canDeleteAny();
+    }
+
     public static function getPages(): array
     {
         $guard = app(GuardsContactingUi::class);
@@ -71,7 +92,6 @@ final class SocialProfileResource extends Resource
         ];
 
         if (! $guard->socialProfilesReadOnly()) {
-            $pages['create'] = SocialProfileResource\Pages\CreateSocialProfile::route('/create');
             $pages['edit'] = SocialProfileResource\Pages\EditSocialProfile::route('/{record}/edit');
         }
 

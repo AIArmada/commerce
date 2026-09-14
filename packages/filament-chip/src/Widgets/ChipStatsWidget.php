@@ -6,47 +6,60 @@ namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentChip\Support\PurchaseRevenueExpressions;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\DB;
 
 final class ChipStatsWidget extends BaseWidget
 {
     protected static ?int $sort = 1;
 
+    private const int STATS_CACHE_TTL_SECONDS = 120;
+
     protected function getStats(): array
     {
-        return $this->withResolvedOwnerOrExplicitGlobal(function (): array {
-            $todayRevenue = $this->getTodayRevenue();
-            $weekRevenue = $this->getWeekRevenue();
-            $monthRevenue = $this->getMonthRevenue();
-            $successRate = $this->getSuccessRate();
+        /** @var array{today: int, week: int, month: int, successRate: float} $numbers */
+        $numbers = OwnerCache::remember(
+            OwnerContext::resolve(),
+            'filament-chip.chip-stats',
+            self::STATS_CACHE_TTL_SECONDS,
+            fn (): array => $this->withResolvedOwnerOrExplicitGlobal(fn (): array => [
+                'today' => $this->getTodayRevenue(),
+                'week' => $this->getWeekRevenue(),
+                'month' => $this->getMonthRevenue(),
+                'successRate' => $this->getSuccessRate(),
+            ], ['today' => 0, 'week' => 0, 'month' => 0, 'successRate' => 0.0]),
+        );
 
-            return [
-                Stat::make('Today\'s Revenue', $this->formatCurrency($todayRevenue))
-                    ->description('Paid purchases today')
-                    ->descriptionIcon(Heroicon::Banknotes)
-                    ->color('success'),
+        $successRate = $numbers['successRate'];
 
-                Stat::make('This Week', $this->formatCurrency($weekRevenue))
-                    ->description('Last 7 days')
-                    ->descriptionIcon(Heroicon::CalendarDays)
-                    ->color('primary'),
+        return [
+            Stat::make('Today\'s Revenue', $this->formatCurrency($numbers['today']))
+                ->description('Paid purchases today')
+                ->descriptionIcon(Heroicon::Banknotes)
+                ->color('success'),
 
-                Stat::make('This Month', $this->formatCurrency($monthRevenue))
-                    ->description('Current month')
-                    ->descriptionIcon(Heroicon::Calendar)
-                    ->color('info'),
+            Stat::make('This Week', $this->formatCurrency($numbers['week']))
+                ->description('Last 7 days')
+                ->descriptionIcon(Heroicon::CalendarDays)
+                ->color('primary'),
 
-                Stat::make('Success Rate', "{$successRate}%")
-                    ->description('Paid vs failed')
-                    ->descriptionIcon(Heroicon::ChartBar)
-                    ->color($successRate >= 90 ? 'success' : ($successRate >= 70 ? 'warning' : 'danger')),
-            ];
-        });
+            Stat::make('This Month', $this->formatCurrency($numbers['month']))
+                ->description('Current month')
+                ->descriptionIcon(Heroicon::Calendar)
+                ->color('info'),
+
+            Stat::make('Success Rate', "{$successRate}%")
+                ->description('Paid vs failed')
+                ->descriptionIcon(Heroicon::ChartBar)
+                ->color($successRate >= 90 ? 'success' : ($successRate >= 70 ? 'warning' : 'danger')),
+        ];
     }
 
     protected function getColumns(): int
@@ -81,11 +94,7 @@ final class ChipStatsWidget extends BaseWidget
             ->where('is_test', false)
             ->where('created_on', '>=', $sinceTimestamp);
 
-        $purchases = $query->get();
-
-        return $purchases->sum(function (Purchase $purchase): int {
-            return (int) ($purchase->purchase['total'] ?? 0);
-        });
+        return (int) $query->sum(DB::raw(PurchaseRevenueExpressions::totalMinor($query)));
     }
 
     private function getSuccessRate(): float
@@ -125,10 +134,14 @@ final class ChipStatsWidget extends BaseWidget
         return MoneyFormatter::formatMinor($amountInCents, config('filament-chip.default_currency', 'MYR'));
     }
 
-    private function withResolvedOwnerOrExplicitGlobal(callable $callback): mixed
+    private function withResolvedOwnerOrExplicitGlobal(callable $callback, mixed $empty = null): mixed
     {
-        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
+        if (OwnerContext::resolve() !== null) {
             return $callback();
+        }
+
+        if (! OwnerContext::isExplicitGlobal()) {
+            return $empty;
         }
 
         return OwnerContext::withOwner(null, static fn (): mixed => $callback());

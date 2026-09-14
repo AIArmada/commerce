@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Billing;
 
 use AIArmada\CashierChip\Payment\Payment;
+use AIArmada\CashierChip\Support\RedirectUrlValidator;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -80,6 +81,18 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      */
     public static function create($owner, int $amount, array $options = []): self
     {
+        Cashier::assertAmountWithinBounds($amount);
+
+        $currency = $options['currency'] ?? config('cashier-chip.currency', 'MYR');
+        $currency = is_string($currency) && $currency !== ''
+            ? mb_strtoupper($currency)
+            : config('cashier-chip.currency', 'MYR');
+
+        RedirectUrlValidator::assertValid($options['success_url'] ?? null, 'success_url');
+        RedirectUrlValidator::assertValid($options['failure_url'] ?? null, 'failure_url');
+        RedirectUrlValidator::assertValid($options['cancel_url'] ?? null, 'cancel_url');
+        RedirectUrlValidator::assertValid($options['webhook_url'] ?? null, 'webhook_url');
+
         $metadata = isset($options['metadata']) && is_array($options['metadata'])
             ? $options['metadata']
             : [];
@@ -92,7 +105,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
         }
 
         $builder = Cashier::chip()->purchase()
-            ->currency($options['currency'] ?? config('cashier-chip.currency', 'MYR'));
+            ->currency($currency);
 
         // Add products
         if (isset($options['products'])) {

@@ -62,15 +62,19 @@ class CredentialAssignment extends Model
     protected static function booted(): void
     {
         static::saving(function (CredentialAssignment $assignment): void {
-            if (! CredentialDefinition::query()->whereKey($assignment->getAttribute('credential_id'))->exists()) {
-                throw new InvalidArgumentException('The credential assignment must reference a persisted credential.');
+            if (! $assignment->exists || $assignment->isDirty('credential_id')) {
+                if (! CredentialDefinition::query()->whereKey($assignment->getAttribute('credential_id'))->exists()) {
+                    throw new InvalidArgumentException('The credential assignment must reference a persisted credential.');
+                }
             }
 
-            app(PersonsModelReferenceGuard::class)->resolve(
-                ModelResolver::institutionClass(),
-                $assignment->getAttribute('issuing_institution_id'),
-                'credential issuing institution',
-            );
+            if (! $assignment->exists || $assignment->isDirty('issuing_institution_id')) {
+                app(PersonsModelReferenceGuard::class)->resolve(
+                    ModelResolver::institutionClass(),
+                    $assignment->getAttribute('issuing_institution_id'),
+                    'credential issuing institution',
+                );
+            }
         });
     }
 

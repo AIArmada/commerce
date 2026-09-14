@@ -24,7 +24,7 @@ beforeEach(function (): void {
         'email' => 'applicant@app.com',
         'password' => 'secret',
     ]);
-    $this->application = $this->withMembershipOwner(fn (): MembershipApplication => MembershipApplication::query()->create([
+    $this->application = $this->withMembershipOwner(fn (): MembershipApplication => $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),
@@ -48,7 +48,7 @@ it('dispatches MembershipApplicationCancelled event', function (): void {
 });
 
 it('rejects cancelling an approved application', function (): void {
-    $this->application->update(['status' => ApplicationStatus::Approved]);
+    $this->application->forceFill(['status' => ApplicationStatus::Approved])->save();
 
     expect(fn () => CancelMembershipApplicationAction::make()->handle(application: $this->application))
         ->toThrow(RuntimeException::class, 'Only pending membership applications can be cancelled.');

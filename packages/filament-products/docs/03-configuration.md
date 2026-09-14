@@ -12,6 +12,10 @@ return [
         'collections' => true,
         'attributes' => true,
     ],
+    'import' => [
+        'max_rows' => 1000,
+        'max_file_kb' => 10240,
+    ],
 ];
 ```
 
@@ -42,6 +46,16 @@ Controls whether `CollectionResource` is registered.
 ### `features.attributes`
 
 Controls whether `AttributeResource` is registered.
+
+## Import limits
+
+### `import.max_rows`
+
+Maximum CSV rows accepted per product import. Larger files are rejected before any row is written.
+
+### `import.max_file_kb`
+
+Maximum upload size (kilobytes) for the product CSV import file.
 
 ## What is not configurable here
 

@@ -11,6 +11,7 @@ use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class PortalProfile extends PortalPage
@@ -104,27 +105,31 @@ class PortalProfile extends PortalPage
             'payout_method_account_ref' => ['required', 'string', 'max:255'],
         ])->validate();
 
-        $affiliate->update([
-            'name' => $validated['name'],
-            'contact_email' => $validated['contact_email'] !== '' ? $validated['contact_email'] : null,
-            'website_url' => $validated['website_url'] !== '' ? $validated['website_url'] : null,
-        ]);
-
-        $defaultMethod = $affiliate->payoutMethods()->where('is_default', true)->first();
-
-        if ($defaultMethod === null) {
-            AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->getKey())->update(['is_default' => false]);
-
-            AffiliatePayoutMethod::create([
-                'affiliate_id' => $affiliate->getKey(),
-                'type' => $validated['payout_method_type'],
-                'details' => [
-                    'label' => $validated['payout_method_label'],
-                    'account_ref' => $validated['payout_method_account_ref'],
-                ],
-                'is_default' => true,
+        DB::transaction(function () use ($affiliate, $validated): void {
+            $affiliate->update([
+                'name' => $validated['name'],
+                'contact_email' => $validated['contact_email'] !== '' ? $validated['contact_email'] : null,
+                'website_url' => $validated['website_url'] !== '' ? $validated['website_url'] : null,
             ]);
-        } else {
+
+            $defaultMethod = $affiliate->payoutMethods()->where('is_default', true)->first();
+
+            if ($defaultMethod === null) {
+                AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->getKey())->update(['is_default' => false]);
+
+                AffiliatePayoutMethod::create([
+                    'affiliate_id' => $affiliate->getKey(),
+                    'type' => $validated['payout_method_type'],
+                    'details' => [
+                        'label' => $validated['payout_method_label'],
+                        'account_ref' => $validated['payout_method_account_ref'],
+                    ],
+                    'is_default' => true,
+                ]);
+
+                return;
+            }
+
             $defaultMethod->update([
                 'type' => $validated['payout_method_type'],
                 'details' => [
@@ -133,7 +138,7 @@ class PortalProfile extends PortalPage
                 ],
                 'is_default' => true,
             ]);
-        }
+        });
 
         Notification::make()
             ->title(__('Profile updated'))

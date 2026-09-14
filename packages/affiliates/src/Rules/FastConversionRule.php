@@ -32,7 +32,7 @@ final class FastConversionRule implements FraudRule
 
         $attribution = $conversion->attribution;
 
-        if (! $attribution) {
+        if (! $attribution || $attribution->first_seen_at === null || $conversion->occurred_at === null) {
             return null;
         }
 

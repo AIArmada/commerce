@@ -5,19 +5,28 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Services;
 
 use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
+use JsonException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class CartDownloadService
 {
+    /**
+     * Stream the cart export. Callers must authorize first; the cart is
+     * revalidated against the current owner scope as defense in depth.
+     *
+     * @throws JsonException
+     */
     public function download(CartSnapshot $cart): StreamedResponse
     {
-        $payload = $this->payload($cart);
+        $cart = $this->authorizeCart($cart);
+        $json = json_encode($this->payload($cart), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
         return response()->streamDownload(
-            static function () use ($payload): void {
-                echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '{}';
+            static function () use ($json): void {
+                echo $json;
             },
             $this->filename($cart),
             ['Content-Type' => 'application/json'],
@@ -48,6 +57,23 @@ final class CartDownloadService
         $identifier = $this->normalizeFileComponent($cart->identifier, 'cart');
 
         return sprintf('cart-%s-%s-%s.json', $instance, $identifier, $cart->id);
+    }
+
+    private function authorizeCart(CartSnapshot $cart): CartSnapshot
+    {
+        if (! CartSnapshot::ownerScopingEnabled()) {
+            return $cart;
+        }
+
+        /** @var CartSnapshot $validated */
+        $validated = OwnerWriteGuard::findOrFailForOwner(
+            CartSnapshot::class,
+            (string) $cart->getKey(),
+            includeGlobal: false,
+            message: 'Cart is not accessible in the current owner scope.',
+        );
+
+        return $validated;
     }
 
     private function normalizeFileComponent(string $value, string $fallback): string

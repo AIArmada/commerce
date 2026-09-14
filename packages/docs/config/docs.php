@@ -62,6 +62,7 @@ return [
         'from_name' => env('DOCS_EMAIL_FROM_NAME'),
         'tracking' => [
             'enabled' => env('DOCS_EMAIL_TRACKING_ENABLED', true),
+            'ttl_days' => env('DOCS_EMAIL_TRACKING_TTL_DAYS', 180),
         ],
     ],
 

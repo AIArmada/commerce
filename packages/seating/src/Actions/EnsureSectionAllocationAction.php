@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
 use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Seating\Models\SeatSection;
@@ -34,7 +35,7 @@ class EnsureSectionAllocationAction
                 );
             }
 
-            return SeatAllocation::query()->create([
+            $allocation = new SeatAllocation([
                 'seat_section_id' => $lockedSection->getKey(),
                 'allocated_to_type' => $allocToType,
                 'allocated_to_id' => $allocToId,
@@ -42,6 +43,22 @@ class EnsureSectionAllocationAction
                 'allocated_at' => CarbonImmutable::now(),
                 'status' => 'active',
             ]);
+
+            // The allocation inherits the section owner exactly instead of
+            // the ambient context, so conversions cannot misattribute
+            // ownership across owners. A global section allocates inside
+            // explicit global scope to stay global.
+            if ($lockedSection->owner_type !== null && $lockedSection->owner_id !== null) {
+                $allocation->owner_type = $lockedSection->owner_type;
+                $allocation->owner_id = $lockedSection->owner_id;
+                $allocation->save();
+
+                return $allocation;
+            }
+
+            OwnerContext::withOwner(null, fn (): bool => $allocation->save());
+
+            return $allocation;
         });
     }
 }

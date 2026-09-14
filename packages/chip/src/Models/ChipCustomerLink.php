@@ -25,6 +25,16 @@ class ChipCustomerLink extends ChipModel
     public $timestamps = true;
 
     /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'subject_type',
+        'subject_id',
+        'chip_customer_id',
+        'metadata',
+    ];
+
+    /**
      * @return MorphTo<Model, $this>
      */
     public function subject(): MorphTo

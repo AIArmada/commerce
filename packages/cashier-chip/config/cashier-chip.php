@@ -83,7 +83,15 @@ return [
      */
     'webhooks' => [
         'secret' => env('CHIP_WEBHOOK_SECRET'),
-        'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Redirects
+    |--------------------------------------------------------------------------
+    */
+    'redirects' => [
+        'allowed_hosts' => [],
     ],
 
     /*

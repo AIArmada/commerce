@@ -22,7 +22,7 @@ The plugin registers these components automatically:
 Comprehensive analytics dashboard with revenue metrics and charts.
 
 **Features:**
-- Period filtering (today, 7d, 30d, 90d, custom)
+- Period filtering (7d, 30d, 90d; any other value falls back to 30d)
 - Revenue totals and growth comparison
 - Transaction count and average value
 - Payment method distribution
@@ -84,11 +84,17 @@ class ChipStatsWidget extends BaseWidget
 
 ### RevenueChartWidget
 
-Line/area chart showing revenue over time.
+Line/area chart showing revenue over the last 30 days.
 
-- Period selection (7d, 30d, 90d, 1y)
-- Comparison with previous period
+- Daily buckets aggregated in SQL
 - Currency formatting
+
+## Caching
+
+Revenue numbers, payment-method breakdowns, navigation badges, and
+distinct filter options are cached per owner (60–300 seconds), so
+dashboard renders stay constant-time as purchase volume grows.
+Purchase exports are owner-scoped and exclude the signed checkout URL.
 
 ### RecentTransactionsWidget
 

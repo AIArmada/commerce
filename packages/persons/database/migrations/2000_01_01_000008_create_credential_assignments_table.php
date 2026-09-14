@@ -24,6 +24,7 @@ return new class extends Migration
 
             $table->index(['credentialable_type', 'credentialable_id']);
             $table->index(['credentialable_type', 'credentialable_id', 'status'], 'credential_assignments_target_status_index');
+            $table->unique(['credentialable_type', 'credentialable_id', 'credential_id'], 'credential_assignments_target_credential_unique');
         });
     }
 };

@@ -59,6 +59,7 @@ return [
         'unknown' => 'Tidak Diketahui',
         'not_configured' => 'Tidak Dikonfigurasi',
         'sdk_missing' => 'SDK tidak dipasang',
+        'connection_error' => 'Sambungan gagal. Sila semak konfigurasi anda.',
         'last_checked' => 'Terakhir disemak',
     ],
 

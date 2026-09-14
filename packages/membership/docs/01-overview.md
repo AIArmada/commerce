@@ -16,7 +16,7 @@ title: Membership Overview
 ## What this package owns
 
 - Models `MembershipApplication`, `MembershipInvitation` (both `HasOwner`-scoped), and the host-extensible `MembershipPivot`
-- Actions `ApplyForMembership`, `Approve/Reject/CancelMembershipApplication`, `InviteMember`, `AcceptInvitation`, `RevokeInvitation`, `AddMember`, `RemoveMember`, `ChangeMemberRole`
+- Actions `ApplyForMembership`, `Approve/Reject/CancelMembershipApplication`, `InviteMember`, `AcceptInvitation`, `RevokeInvitation`, `AddMember`, `RemoveMember`, `ChangeMemberRole`, `ExpireMembershipInvitations`
 - `Services\MembershipRoleSyncService` — pivot → Spatie team-role sync
 - Config `membership.php`: `database`, `invitations` (token length and expiry), `pivot`, `role_mapping`, `role_permissions`, `owner`, `features`
 

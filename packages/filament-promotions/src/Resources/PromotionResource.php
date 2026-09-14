@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPromotions\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\CreatePromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\EditPromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\ListPromotions;
@@ -16,6 +17,7 @@ use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionInf
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Tables\PromotionsTable;
 use AIArmada\Promotions\Models\Promotion;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -112,11 +114,21 @@ final class PromotionResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = (int) self::getEloquentQuery()
-            ->where('is_active', true)
-            ->count();
+        $count = self::cachedActiveCount();
 
         return $count > 0 ? (string) $count : null;
+    }
+
+    private static function cachedActiveCount(): int
+    {
+        return (int) OwnerCache::remember(
+            OwnerUiScope::resolveOwner(Promotion::class),
+            'filament-promotions.nav-badge.active-count',
+            CarbonImmutable::now()->addSeconds(30),
+            static fn (): int => (int) self::getEloquentQuery()
+                ->where('is_active', true)
+                ->count(),
+        );
     }
 
     /**

@@ -15,6 +15,7 @@ use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
+use AIArmada\CashierChip\Exceptions\InvalidCustomer;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
 use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\CashierChip\Payment\Payment;
@@ -103,6 +104,13 @@ class Subscription extends Model
     protected static string $ownerScopeConfigKey = 'cashier-chip.features.owner';
 
     /**
+     * Billing intervals accepted by Carbon date math across renewal paths.
+     *
+     * @var list<string>
+     */
+    public const BILLING_INTERVALS = ['day', 'week', 'month', 'year'];
+
+    /**
      * @var list<string>
      */
     protected $fillable = [
@@ -113,7 +121,6 @@ class Subscription extends Model
         'chip_status',
         'chip_price',
         'quantity',
-        'recurring_token',
         'billing_interval',
         'billing_interval_count',
         'trial_ends_at',
@@ -692,12 +699,24 @@ class Subscription extends Model
                 : array_keys($prices)[0];
 
             $existingItemIds = $this->items()->pluck('id')->all();
+            $existingByPrice = $this->items()->get()->keyBy('chip_price');
             $createdItems = [];
 
             foreach ($prices as $priceKey => $priceValue) {
                 $price = is_string($priceValue) ? $priceValue : $priceKey;
                 $quantity = is_array($priceValue) ? ($priceValue['quantity'] ?? 1) : 1;
                 $quantity = max(1, (int) $quantity);
+
+                $unitAmount = is_array($priceValue) ? ($priceValue['unit_amount'] ?? null) : null;
+                $unitAmount ??= $options['unit_amounts'][$price] ?? $options['unit_amount'] ?? null;
+
+                if ($unitAmount === null) {
+                    $unitAmount = $existingByPrice->get($price)?->unit_amount;
+                }
+
+                if ($unitAmount !== null && (int) $unitAmount < 0) {
+                    throw new InvalidArgumentException('Subscription item unit amount must be a non-negative integer.');
+                }
 
                 $createdItems[] = $this->createTrustedSubscriptionItem([
                     'owner_type' => $this->owner_type,
@@ -706,6 +725,7 @@ class Subscription extends Model
                     'chip_product' => $options['product'] ?? null,
                     'chip_price' => $price,
                     'quantity' => $quantity,
+                    'unit_amount' => $unitAmount !== null ? (int) $unitAmount : null,
                 ]);
             }
 
@@ -833,6 +853,7 @@ class Subscription extends Model
         // Calculate the period start based on billing interval
         $interval = $this->billing_interval ?? 'month';
         $intervalCount = $this->billing_interval_count > 0 ? $this->billing_interval_count : 1;
+        self::assertValidBillingInterval($interval, $intervalCount);
         $start = $this->next_billing_at->copy()->sub($interval, $intervalCount);
 
         return $timezone ? $start->setTimezone($timezone) : $start;
@@ -857,12 +878,18 @@ class Subscription extends Model
      */
     public function charge(?int $amount = null)
     {
-        $amount = $amount ?? $this->calculateSubscriptionAmount();
+        $customer = $this->customer;
+
+        if (! $customer instanceof BillableContract) {
+            throw InvalidCustomer::missingBillable($this);
+        }
+
+        $amount = $amount ?? $this->renewalAmount();
         Cashier::assertAmountWithinBounds($amount);
 
-        $recurringTokenId = $this->customer->defaultPaymentMethod()?->id();
+        $recurringTokenId = $customer->defaultPaymentMethod()?->id();
 
-        return $this->customer->chargeWithRecurringToken(
+        return $customer->chargeWithRecurringToken(
             $amount,
             $recurringTokenId,
             [
@@ -1144,7 +1171,7 @@ class Subscription extends Model
         }
 
         $currency = $billable->preferredCurrency();
-        $total = $this->calculateSubscriptionAmount() - (int) ($this->coupon_discount ?? 0);
+        $total = $this->renewalAmount();
 
         $purchase = PurchaseData::from([
             'id' => "upcoming-{$this->id}",
@@ -1183,9 +1210,12 @@ class Subscription extends Model
     /**
      * Get a collection of the subscription's invoices.
      *
+     * Each invoice resolves one live CHIP purchase, so results are bounded;
+     * pass null to explicitly opt out of the limit.
+     *
      * @return Collection<int, Invoice>
      */
-    public function invoices(): Collection
+    public function invoices(?int $limit = 25): Collection
     {
         $billable = $this->billableModel();
 
@@ -1195,11 +1225,16 @@ class Subscription extends Model
 
         $seenPurchaseIds = [];
 
-        return $this->renewalAttempts()
+        $query = $this->renewalAttempts()
             ->whereNotNull('purchase_id')
             ->orderByDesc('completed_at')
-            ->orderByDesc('created_at')
-            ->get()
+            ->orderByDesc('created_at');
+
+        if ($limit !== null) {
+            $query->limit(max(1, $limit));
+        }
+
+        return $query->get()
             ->map(function (RenewalAttempt $attempt) use ($billable, &$seenPurchaseIds): ?Invoice {
                 $purchase = $this->purchaseForAttempt($attempt);
 
@@ -1300,6 +1335,96 @@ class Subscription extends Model
     }
 
     /**
+     * Calculate the amount due for the next renewal (items minus any
+     * coupon discount that is still within its duration window).
+     */
+    public function renewalAmount(): int
+    {
+        return max(0, $this->calculateSubscriptionAmount() - $this->applicableCouponDiscount());
+    }
+
+    /**
+     * Resolve the stored coupon discount honoring its duration window.
+     */
+    public function applicableCouponDiscount(): int
+    {
+        $discount = (int) ($this->coupon_discount ?? 0);
+
+        if ($discount <= 0 || ! is_string($this->coupon_id) || $this->coupon_id === '') {
+            return 0;
+        }
+
+        $duration = $this->coupon_duration;
+
+        if ($duration === null || $duration === 'forever') {
+            return $discount;
+        }
+
+        if ($duration === 'once') {
+            if (! $this->coupon_applied_at instanceof CarbonInterface) {
+                return $discount;
+            }
+
+            $consumed = $this->renewalAttempts()
+                ->where('created_at', '>', $this->coupon_applied_at)
+                ->whereIn('status', ['claimed', 'unknown', 'completed'])
+                ->exists();
+
+            return $consumed ? 0 : $discount;
+        }
+
+        if ($duration === 'repeating') {
+            try {
+                $end = $this->calculateDiscountEnd();
+            } catch (Throwable) {
+                return $discount;
+            }
+
+            if ($end === null) {
+                return $discount;
+            }
+
+            return CarbonImmutable::now()->lessThan($end) ? $discount : 0;
+        }
+
+        return $discount;
+    }
+
+    /**
+     * Validate a billing interval/count pair before Carbon date math.
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function assertValidBillingInterval(?string $interval, mixed $count = 1): void
+    {
+        $resolved = $interval ?? 'month';
+
+        if (! in_array($resolved, self::BILLING_INTERVALS, true)) {
+            throw new InvalidArgumentException(
+                'Billing interval must be one of: ' . implode(', ', self::BILLING_INTERVALS) . '.'
+            );
+        }
+
+        if ((int) $count < 1) {
+            throw new InvalidArgumentException('Billing interval count must be a positive integer.');
+        }
+    }
+
+    /**
+     * Advance a date by a validated billing interval/count pair.
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function advanceBillingDate(CarbonInterface $date, ?string $interval, mixed $count = 1): CarbonImmutable
+    {
+        $resolved = $interval ?? 'month';
+
+        self::assertValidBillingInterval($resolved, $count);
+
+        return CarbonImmutable::instance($date)->add($resolved, max(1, (int) $count));
+    }
+
+    /**
      * The "booted" method of the model.
      */
     protected static function booted(): void
@@ -1370,6 +1495,13 @@ class Subscription extends Model
             }
         });
 
+        static::saving(function (self $subscription): void {
+            self::assertValidBillingInterval(
+                $subscription->billing_interval ?? 'month',
+                $subscription->billing_interval_count ?? 1
+            );
+        });
+
         static::deleting(function (Subscription $subscription): void {
             $subscription->items()->delete();
         });
@@ -1392,17 +1524,28 @@ class Subscription extends Model
         return $billable;
     }
 
+    /**
+     * Memoized CHIP purchases for this model instance only.
+     *
+     * @var array<string, PurchaseData|null>
+     */
+    private array $purchaseCache = [];
+
     private function purchaseForAttempt(RenewalAttempt $attempt): ?PurchaseData
     {
         if (! is_string($attempt->purchase_id) || $attempt->purchase_id === '') {
             return null;
         }
 
-        try {
-            return Cashier::chip()->getPurchase($attempt->purchase_id);
-        } catch (Throwable) {
-            return null;
+        if (! array_key_exists($attempt->purchase_id, $this->purchaseCache)) {
+            try {
+                $this->purchaseCache[$attempt->purchase_id] = Cashier::chip()->getPurchase($attempt->purchase_id);
+            } catch (Throwable) {
+                $this->purchaseCache[$attempt->purchase_id] = null;
+            }
         }
+
+        return $this->purchaseCache[$attempt->purchase_id];
     }
 
     /**
@@ -1435,6 +1578,7 @@ class Subscription extends Model
     {
         return [
             'chip_status' => SubscriptionStatus::class,
+            'recurring_token' => 'encrypted',
             'ends_at' => 'immutable_datetime',
             'canceled_at' => 'immutable_datetime',
             'paused_at' => 'immutable_datetime',

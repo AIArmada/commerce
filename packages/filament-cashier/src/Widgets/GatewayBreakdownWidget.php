@@ -75,16 +75,21 @@ final class GatewayBreakdownWidget extends ChartWidget
     }
 
     /**
+     * @var array<string, int>|null
+     */
+    protected ?array $revenueByGateway = null;
+
+    /**
      * Get revenue by gateway.
      *
-     * Uses once() to cache the result for the current request, avoiding
-     * redundant database queries during the widget render cycle.
+     * Memoized on the widget instance (request-bound) instead of once() so
+     * owner switches within a long-lived process never leak cached totals.
      *
      * @return array<string, int>
      */
     protected function getRevenueByGateway(): array
     {
-        return once(function (): array {
+        if ($this->revenueByGateway === null) {
             $detector = app(GatewayDetector::class);
             $revenue = [];
 
@@ -150,8 +155,10 @@ final class GatewayBreakdownWidget extends ChartWidget
                 }
             }
 
-            return $revenue;
-        });
+            $this->revenueByGateway = $revenue;
+        }
+
+        return $this->revenueByGateway;
     }
 
     protected function getColorValue(string $color): string

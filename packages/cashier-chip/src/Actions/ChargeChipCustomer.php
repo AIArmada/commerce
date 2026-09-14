@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Support\IdempotencyKey;
+use AIArmada\CashierChip\Support\RedirectUrlValidator;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\RateLimiter;
@@ -54,6 +55,10 @@ final class ChargeChipCustomer
         $currency = is_string($currency) && $currency !== ''
             ? mb_strtoupper($currency)
             : $billable->preferredCurrency();
+
+        RedirectUrlValidator::assertValid($options['success_url'] ?? null, 'success_url');
+        RedirectUrlValidator::assertValid($options['failure_url'] ?? null, 'failure_url');
+        RedirectUrlValidator::assertValid($options['cancel_url'] ?? null, 'cancel_url');
 
         $builder = Cashier::chip()->purchase()
             ->currency($currency);

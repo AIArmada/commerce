@@ -55,8 +55,6 @@ class AffiliateCommissionTemplate extends Model implements Auditable
         'is_active',
         'rules',
         'metadata',
-        'owner_type',
-        'owner_id',
     ];
 
     protected function getActivityLogName(): string

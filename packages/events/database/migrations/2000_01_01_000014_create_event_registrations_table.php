@@ -48,6 +48,15 @@ return new class extends Migration
             $table->foreignUuid('parent_registration_id')->nullable()->index();
             $table->boolean('is_bundle_root')->default(false)->index();
             $table->{$jsonType}('pass_entitlements')->nullable();
+            $table->string('idempotency_key')->nullable()->index();
+            $table->index(
+                ['event_occurrence_id', 'status'],
+                'event_registrations_occurrence_status_index',
+            );
+            $table->index(
+                ['event_session_id', 'status'],
+                'event_registrations_session_status_index',
+            );
         });
     }
 };

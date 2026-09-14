@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Models\Voucher;
@@ -15,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 final class ManualRedeemVoucherAction extends Action
 {
@@ -30,11 +32,14 @@ final class ManualRedeemVoucherAction extends Action
 
         $this->visible(fn (Voucher $record): bool => $record->allows_manual_redemption && $record->hasUsageLimitRemaining());
 
+        $this->authorize(fn (): bool => FilamentPermission::hasAbility('voucher.update'));
+
         $this->form(fn (Voucher $record): array => [
             TextInput::make('discount_amount')
                 ->label('Discount Amount')
                 ->numeric()
                 ->required()
+                ->minValue(0.01)
                 ->suffix($record->currency)
                 ->helperText('The discount amount applied'),
 
@@ -55,10 +60,25 @@ final class ManualRedeemVoucherAction extends Action
                 $record = OwnerWriteGuard::findOrFailForOwner(Voucher::class, $record->getKey());
             }
 
+            // Revalidate the visibility preconditions server-side: the form
+            // state may be stale or forged by the time the action runs.
+            if (! $record->allows_manual_redemption || ! $record->hasUsageLimitRemaining()) {
+                throw ValidationException::withMessages([
+                    'discount_amount' => 'This voucher can no longer be redeemed manually.',
+                ]);
+            }
+
             /** @var VoucherService $service */
             $service = app(VoucherService::class);
 
-            $discountCents = MoneyHelper::displayToCents((string) $data['discount_amount']) ?? 0;
+            $discountCents = MoneyHelper::displayToCents((string) ($data['discount_amount'] ?? ''));
+
+            if ($discountCents === null || $discountCents < 1) {
+                throw ValidationException::withMessages([
+                    'discount_amount' => 'Enter a discount amount of at least 0.01.',
+                ]);
+            }
+
             $discount = Money::{$record->currency}($discountCents);
 
             $user = Auth::user();

@@ -70,11 +70,10 @@ final class CalculatePricingStep extends AbstractCheckoutStep
         $pricingData['subtotal'] = $subtotal;
         $pricingData['calculated_at'] = CarbonImmutable::now()->toIso8601String();
 
-        $session->update([
+        $session->forceFill([
             'pricing_data' => $pricingData,
             'subtotal' => $subtotal,
         ]);
-
         $session->calculateTotals();
         $session->save();
 
@@ -108,8 +107,9 @@ final class CalculatePricingStep extends AbstractCheckoutStep
 
         $updatedItems = [];
         $newSubtotal = 0;
+        $priceables = $this->preloadPriceables($items, $session);
 
-        foreach ($items as $item) {
+        foreach ($items as $index => $item) {
             $quantity = (int) ($item['quantity'] ?? 1);
             $unitPrice = (int) ($item['price'] ?? 0);
             $productId = $item['product_id'] ?? data_get($item, 'attributes.product_id');
@@ -122,7 +122,7 @@ final class CalculatePricingStep extends AbstractCheckoutStep
             $promotionName = null;
             $pricingBreakdown = [];
 
-            $priceable = $this->resolvePriceable($item, $session);
+            $priceable = $priceables[$index] ?? null;
             if ($priceable !== null) {
                 $result = $calculator->calculate($priceable, $quantity, [
                     'customer_id' => $session->customer_id,
@@ -165,67 +165,122 @@ final class CalculatePricingStep extends AbstractCheckoutStep
     }
 
     /**
-     * @param  array<string, mixed>  $item
+     * Batch-load priceable models — one query per associated class instead
+     * of one per cart line — and validate every resolved model against the
+     * session owner boundary.
+     *
+     * @param  array<int, mixed>  $items
+     * @return array<int, Priceable|null>
      */
-    private function resolvePriceable(array $item, CheckoutSession $session): ?Priceable
+    private function preloadPriceables(array $items, CheckoutSession $session): array
     {
-        $associated = $item['associated_model'] ?? null;
+        $priceables = [];
 
-        if ($associated instanceof Priceable) {
-            return $associated;
+        /** @var array<string, array{ids: array<int, string>, indexes: array<int, int>}> $grouped */
+        $grouped = [];
+
+        foreach ($items as $index => $item) {
+            $priceables[$index] = null;
+
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $associated = $item['associated_model'] ?? null;
+
+            if ($associated instanceof Priceable) {
+                $priceables[$index] = $associated;
+
+                continue;
+            }
+
+            if (! is_array($associated)) {
+                continue;
+            }
+
+            $class = $associated['class'] ?? null;
+            $id = $associated['id'] ?? null;
+
+            if (! is_string($class) || $class === ''
+                || (! is_string($id) && ! is_int($id))
+                || ! class_exists($class)
+                || ! is_subclass_of($class, Model::class)
+            ) {
+                continue;
+            }
+
+            $grouped[$class]['ids'][] = (string) $id;
+            $grouped[$class]['indexes'][] = $index;
         }
 
-        if (! is_array($associated)) {
-            return null;
-        }
+        foreach ($grouped as $class => $group) {
+            /** @var class-string<Model> $class */
+            $models = $class::query()
+                ->whereIn((new $class)->getKeyName(), array_values(array_unique($group['ids'])))
+                ->get()
+                ->keyBy(static fn (Model $model): string => (string) $model->getKey());
 
-        $class = $associated['class'] ?? null;
-        $id = $associated['id'] ?? null;
+            foreach ($group['indexes'] as $position => $index) {
+                $model = $models->get((string) $group['ids'][$position]);
 
-        if (! is_string($class) || $class === '' || $id === null || ! class_exists($class)) {
-            return null;
-        }
-
-        if (! is_subclass_of($class, Model::class)) {
-            return null;
-        }
-
-        /** @var Model|null $model */
-        $model = $class::query()->find((string) $id);
-
-        if ($model === null) {
-            return null;
-        }
-
-        // Defense-in-depth: when checkout owner mode is enabled, reject any model whose
-        // owner tuple does not exactly match the checkout session owner tuple. This blocks
-        // crafted associated_model.class/id payloads from resolving cross-tenant records.
-        if (config('checkout.owner.enabled', false)) {
-            $attributes = $model->getAttributes();
-
-            if (array_key_exists('owner_type', $attributes) && array_key_exists('owner_id', $attributes)) {
-                $modelOwnerType = $model->getAttribute('owner_type');
-                $modelOwnerId = $model->getAttribute('owner_id');
-                $sessionOwnerType = $session->owner_type;
-                $sessionOwnerId = $session->owner_id;
-
-                if (($modelOwnerType === null) !== ($modelOwnerId === null)) {
-                    return null;
+                if (! $model instanceof Model) {
+                    continue;
                 }
 
-                if (($sessionOwnerType === null) !== ($sessionOwnerId === null)) {
-                    return null;
+                if (! $this->priceableOwnerConsistent($model, $session)) {
+                    continue;
                 }
 
-                if (
-                    $modelOwnerType !== $sessionOwnerType
-                    || (string) ($modelOwnerId ?? '') !== (string) ($sessionOwnerId ?? '')
-                ) {
-                    return null;
-                }
+                $priceables[$index] = $model instanceof Priceable ? $model : null;
             }
         }
 
-        return $model instanceof Priceable ? $model : null;
+        return $priceables;
+    }
+
+    /**
+     * Defense-in-depth: reject models whose owner tuple is inconsistent
+     * with the checkout session. This blocks crafted
+     * associated_model.class/id payloads from resolving cross-tenant
+     * records, whether or not owner mode is enabled.
+     */
+    private function priceableOwnerConsistent(Model $model, CheckoutSession $session): bool
+    {
+        $attributes = $model->getAttributes();
+
+        if (! array_key_exists('owner_type', $attributes) || ! array_key_exists('owner_id', $attributes)) {
+            return true;
+        }
+
+        $modelOwnerType = $model->getAttribute('owner_type');
+        $modelOwnerId = $model->getAttribute('owner_id');
+
+        if (($modelOwnerType === null) !== ($modelOwnerId === null)) {
+            return false;
+        }
+
+        $sessionOwnerType = $session->owner_type;
+        $sessionOwnerId = $session->owner_id;
+
+        if (($sessionOwnerType === null) !== ($sessionOwnerId === null)) {
+            return false;
+        }
+
+        if ($modelOwnerType === $sessionOwnerType
+            && (string) ($modelOwnerId ?? '') === (string) ($sessionOwnerId ?? '')
+        ) {
+            return true;
+        }
+
+        $modelIsGlobal = $modelOwnerType === null && $modelOwnerId === null;
+
+        if (! config('checkout.owner.enabled', false)) {
+            // No tenant boundary is configured, so only a definite
+            // cross-tenant pair (both sides owned, and different) is
+            // rejected. Global catalog models stay usable either way.
+            return $modelIsGlobal || ($sessionOwnerType === null && $sessionOwnerId === null);
+        }
+
+        return $modelIsGlobal && (bool) config('checkout.owner.include_global', false);
     }
 }

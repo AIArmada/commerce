@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\DataObjects;
 
+use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\States\DocStatus;
 use DateTimeInterface;
 use InvalidArgumentException;
@@ -65,9 +66,15 @@ final class DocData
             }
         }
 
+        $docType = $data['doc_type'] ?? 'invoice';
+
+        if (! is_string($docType) || DocType::tryFrom($docType) === null) {
+            throw new InvalidArgumentException(sprintf('Unknown document type [%s].', is_scalar($docType) ? (string) $docType : gettype($docType)));
+        }
+
         return new self(
             docNumber: $data['doc_number'] ?? null,
-            docType: $data['doc_type'] ?? 'invoice',
+            docType: $docType,
             docTemplateId: $data['doc_template_id'] ?? null,
             templateSlug: $data['template_slug'] ?? null,
             docableType: $data['docable_type'] ?? null,

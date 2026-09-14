@@ -9,7 +9,7 @@ title: Filament Contacting Installation
 - PHP 8.4+
 - Laravel 10+
 - `aiarmada/contacting` (with migrations run)
-- `filament/filament` ^5.6.7
+- `filament/filament` ^5.7.0
 
 ## Install via Composer
 
@@ -40,7 +40,7 @@ php artisan vendor:publish --tag=filament-contacting-config
 Add the plugin to your Panel provider:
 
 ```php
-use AiArmada\FilamentContacting\FilamentContactingPlugin;
+use AIArmada\FilamentContacting\FilamentContactingPlugin;
 
 public function panel(Panel $panel): Panel
 {

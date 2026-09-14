@@ -24,12 +24,15 @@ return [
 
     'resources' => [
         'currencies' => [
+            'enabled' => true,
             'read_only' => true,
         ],
         'languages' => [
+            'enabled' => true,
             'read_only' => true,
         ],
         'timezones' => [
+            'enabled' => true,
             'read_only' => true,
         ],
     ],

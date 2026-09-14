@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Pages;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
 use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSignalsDateRange;
 use Filament\Pages\Page;
@@ -29,6 +30,11 @@ abstract class ReportPage extends Page
     public function mount(): void
     {
         $this->initializeDefaultDateRange();
+    }
+
+    public static function canAccess(): bool
+    {
+        return FilamentPermission::hasAbility('signal-report.view');
     }
 
     public static function getNavigationGroup(): ?string

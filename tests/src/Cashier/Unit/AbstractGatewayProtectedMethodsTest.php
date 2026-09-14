@@ -36,7 +36,7 @@ class TestableGateway extends AbstractGateway
         return true;
     }
 
-    public function handleWebhook(array $payload, array $headers = []): mixed
+    public function handleWebhook(array $payload, array $headers = [], ?string $rawPayload = null): mixed
     {
         return ['handled' => true];
     }

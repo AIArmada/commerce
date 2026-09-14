@@ -23,6 +23,7 @@ return new class extends Migration
 
             $table->index(['titleable_type', 'titleable_id']);
             $table->index(['titleable_type', 'titleable_id', 'status'], 'title_assignments_target_status_index');
+            $table->unique(['titleable_type', 'titleable_id', 'title_id'], 'title_assignments_target_title_unique');
         });
     }
 };

@@ -60,11 +60,10 @@ final class CalculateTaxStep extends AbstractCheckoutStep
 
         $taxTotal = $taxResult['total'] ?? 0;
 
-        $session->update([
+        $session->forceFill([
             'tax_data' => $taxData,
             'tax_total' => $taxTotal,
         ]);
-
         $session->calculateTotals();
         $session->save();
 

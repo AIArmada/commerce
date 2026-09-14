@@ -39,7 +39,6 @@ use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
 use AIArmada\Cart\Snapshots\SyncCartOnEvent;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\StorageInterface;
-use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
@@ -255,11 +254,8 @@ final class CartServiceProvider extends PackageServiceProvider
             strategyRegistry: $app->make(CartMergeStrategyRegistry::class),
         ));
 
-        $this->app->singleton(LoginMigrationIdentifierResolver::class);
-
         $this->app->bind(MigrateCartOnLoginAction::class, fn ($app) => new MigrateCartOnLoginAction(
             migrationAction: $app->make(MigrateGuestCartToUserAction::class),
-            identifierResolver: $app->make(LoginMigrationIdentifierResolver::class),
         ));
     }
 

@@ -30,11 +30,14 @@ final class ProgramsRelationManager extends RelationManager
     {
         return $schema->schema([
             Select::make('tier_id')
-                ->options(fn (): array => AffiliateProgramTier::query()
+                ->getSearchResultsUsing(fn (string $search): array => AffiliateProgramTier::query()
+                    ->where('name', 'like', "%{$search}%")
+                    ->orderBy('name')
+                    ->limit(50)
                     ->pluck('name', 'id')
                     ->toArray())
+                ->getOptionLabelUsing(fn ($value): ?string => AffiliateProgramTier::query()->find($value)?->name)
                 ->searchable()
-                ->preload()
                 ->placeholder('No tiers configured'),
 
             Select::make('status')

@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentJnt\Resources\JntOrderResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntOrderItem;
 use AIArmada\Jnt\Models\JntTrackingEvent;
-use AIArmada\Jnt\Services\JntStatusMapper;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;
@@ -42,9 +40,9 @@ final class JntOrderInfolist
                             TextEntry::make('last_status_code')
                                 ->label('Status')
                                 ->badge()
-                                ->icon(fn (JntOrder $record): string => self::getNormalizedStatus($record)->icon())
-                                ->color(fn (JntOrder $record): string => self::getNormalizedStatus($record)->color())
-                                ->formatStateUsing(fn (JntOrder $record): string => self::getNormalizedStatus($record)->label()),
+                                ->icon(fn (JntOrder $record): string => $record->getNormalizedStatus()->icon())
+                                ->color(fn (JntOrder $record): string => $record->getNormalizedStatus()->color())
+                                ->formatStateUsing(fn (JntOrder $record): string => $record->getNormalizedStatus()->label()),
                         ]),
                     Grid::make(4)
                         ->schema([
@@ -253,6 +251,10 @@ final class JntOrderInfolist
                 ->schema([
                     RepeatableEntry::make('trackingEvents')
                         ->label('')
+                        ->getStateUsing(fn (JntOrder $record): mixed => $record->trackingEvents()
+                            ->latest('scan_time')
+                            ->limit((int) config('filament-jnt.infolist.tracking_events_limit', 50))
+                            ->get())
                         ->schema([
                             TextEntry::make('scan_time')
                                 ->label('Time')
@@ -280,6 +282,10 @@ final class JntOrderInfolist
                 ->schema([
                     RepeatableEntry::make('items')
                         ->label('')
+                        ->getStateUsing(fn (JntOrder $record): mixed => $record->items()
+                            ->oldest('created_at')
+                            ->limit((int) config('filament-jnt.infolist.items_limit', 50))
+                            ->get())
                         ->schema([
                             TextEntry::make('name')
                                 ->label('Name')
@@ -337,17 +343,5 @@ final class JntOrderInfolist
                 ->visible(fn (JntOrder $record): bool => (bool) config('filament-jnt.features.show_raw_payloads', false)
                     && (filled($record->request_payload) || filled($record->response_payload) || filled($record->metadata))),
         ]);
-    }
-
-    private static function getNormalizedStatus(JntOrder $order): TrackingStatus
-    {
-        if ($order->last_status_code === null && $order->last_status === null) {
-            return TrackingStatus::Pending;
-        }
-
-        return app(JntStatusMapper::class)->resolve(
-            scanTypeCode: $order->last_status_code,
-            statusDescription: $order->last_status,
-        );
     }
 }

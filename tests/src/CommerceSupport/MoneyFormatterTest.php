@@ -41,4 +41,16 @@ describe('MoneyFormatter major-unit APIs', function (): void {
         expect(fn (): string => MoneyFormatter::decimalFromMajor(19.99, 'USD'))
             ->toThrow(TypeError::class);
     });
+
+    it('formats large minor-unit values without float drift', function (): void {
+        expect(MoneyFormatter::decimalFromMinor(123456789012345678, 'USD'))->toBe('1,234,567,890,123,456.78')
+            ->and(MoneyFormatter::formatMinorWithCode(123456789012345678, 'USD'))->toBe('1,234,567,890,123,456.78 USD');
+    });
+
+    it('rounds half away from zero when display precision is lower', function (): void {
+        expect(MoneyFormatter::decimalFromMinor(1999, 'USD', 0))->toBe('20')
+            ->and(MoneyFormatter::decimalFromMinor(1234, 'USD', 0))->toBe('12')
+            ->and(MoneyFormatter::decimalFromMinor(1250, 'USD', 1))->toBe('12.5')
+            ->and(MoneyFormatter::decimalFromMinor(-1999, 'USD', 0))->toBe('-20');
+    });
 });

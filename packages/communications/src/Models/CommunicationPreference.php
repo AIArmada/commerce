@@ -49,11 +49,9 @@ final class CommunicationPreference extends Model
     use HasUuids;
 
     protected $fillable = [
-        'recipient_type',
         'recipient_id',
         'channel',
         'category',
-        'scope_type',
         'scope_key',
         'locale',
         'timezone',

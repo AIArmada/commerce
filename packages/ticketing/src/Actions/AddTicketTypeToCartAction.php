@@ -7,7 +7,9 @@ namespace AIArmada\Ticketing\Actions;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Ticketing\Enums\TicketTypeStatus;
 use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Support\HolderAttributesValidator;
 use AIArmada\Ticketing\Support\Integration\TicketingIntegration;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
@@ -16,6 +18,15 @@ use Lorisleiva\Actions\Concerns\AsAction;
 final class AddTicketTypeToCartAction
 {
     use AsAction;
+
+    private const array RESERVED_ATTRIBUTE_KEYS = [
+        'purchasable_type',
+        'purchasable_id',
+        'code',
+        'participants',
+        'inventoryable_type',
+        'inventoryable_id',
+    ];
 
     /** @param array<int, array<string, mixed>> $participants */
     public function handle(
@@ -30,7 +41,11 @@ final class AddTicketTypeToCartAction
             throw new InvalidArgumentException('Quantity must be at least 1.');
         }
 
-        if ($ticketType->status !== 'active' || $ticketType->isHidden()) {
+        $status = $ticketType->status instanceof TicketTypeStatus
+            ? $ticketType->status->value
+            : $ticketType->status;
+
+        if ($status !== TicketTypeStatus::Active->value || $ticketType->isHidden()) {
             throw new InvalidArgumentException(sprintf(
                 'Ticket type "%s" is not available for purchase.',
                 $ticketType->name,
@@ -110,6 +125,15 @@ final class AddTicketTypeToCartAction
         ?CartItem $existingItem,
         bool $inventoryConfigured,
     ): array {
+        $collisions = array_intersect(array_keys($extraAttributes), self::RESERVED_ATTRIBUTE_KEYS);
+
+        if ($collisions !== []) {
+            throw new InvalidArgumentException(sprintf(
+                'Extra attributes must not override reserved keys: %s.',
+                implode(', ', $collisions),
+            ));
+        }
+
         $mergedParticipants = $participants;
 
         if ($existingItem !== null) {
@@ -118,6 +142,8 @@ final class AddTicketTypeToCartAction
                 $mergedParticipants = array_merge($existingParticipants, $participants);
             }
         }
+
+        $this->validateParticipants($mergedParticipants);
 
         $attributes = [
             'purchasable_type' => TicketType::class,
@@ -135,6 +161,28 @@ final class AddTicketTypeToCartAction
         }
 
         return array_merge($attributes, $extraAttributes);
+    }
+
+    /** @param array<int, mixed> $participants */
+    private function validateParticipants(array $participants): void
+    {
+        $maxParticipants = (int) config('ticketing.cart.max_participants', 100);
+
+        if (count($participants) > $maxParticipants) {
+            throw new InvalidArgumentException(sprintf(
+                'Too many participants: %d exceeds the maximum of %d.',
+                count($participants),
+                $maxParticipants,
+            ));
+        }
+
+        foreach ($participants as $participant) {
+            if (! is_array($participant)) {
+                throw new InvalidArgumentException('Each participant must be an array of holder attributes.');
+            }
+
+            HolderAttributesValidator::validateAttributes($participant);
+        }
     }
 
     private function inventoryConfigured(TicketType $ticketType): bool

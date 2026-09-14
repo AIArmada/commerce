@@ -28,6 +28,14 @@ final class AffiliateSiteForm
                         TextInput::make('domain')
                             ->required()
                             ->maxLength(255)
+                            // Normalize before validation so the format and unique rules
+                            // see the canonical lowercase form (also persisted as such by
+                            // the Create/Edit pages).
+                            ->mutateStateForValidationUsing(fn (mixed $state): mixed => is_string($state) ? mb_strtolower(mb_trim($state)) : $state)
+                            ->regex('/^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$/')
+                            ->validationMessages([
+                                'regex' => 'Enter a bare domain name without a scheme, path, or whitespace (e.g. example.com).',
+                            ])
                             ->unique(ignoreRecord: true)
                             ->helperText('Enter the domain without http:// or https://'),
 

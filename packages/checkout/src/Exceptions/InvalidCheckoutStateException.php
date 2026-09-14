@@ -53,4 +53,12 @@ final class InvalidCheckoutStateException extends CheckoutException
             ['cart_id' => $cartId],
         );
     }
+
+    public static function customerNotFound(string $customerId): self
+    {
+        return new self(
+            "Customer '{$customerId}' was not found for checkout",
+            ['customer_id' => $customerId],
+        );
+    }
 }

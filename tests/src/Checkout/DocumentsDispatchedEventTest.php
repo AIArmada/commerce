@@ -33,7 +33,7 @@ describe('DocumentsDispatched event', function (): void {
         app()->instance(DocServiceInterface::class, $docService);
 
         $order = checkoutDocumentGenerationOrder('action-routing');
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-docs-action-routing',
             'order_id' => $order->id,
             'payment_id' => 'pay_checkout_docs_routing',
@@ -60,7 +60,7 @@ describe('DocumentsDispatched event', function (): void {
     it('skips document dispatch when checkout document generation remains at its defaults', function (): void {
         Bus::fake();
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-docs-defaults',
             'order_id' => 'order-docs-defaults',
             'selected_payment_gateway' => 'chip',
@@ -85,7 +85,7 @@ describe('DocumentsDispatched event', function (): void {
         config()->set('checkout.documents.generate_receipt', false);
         config()->set('checkout.documents.queue', 'documents');
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-docs-1',
             'order_id' => 'order-123',
             'selected_payment_gateway' => 'chip',
@@ -118,7 +118,7 @@ describe('DocumentsDispatched event', function (): void {
 
         $order = checkoutDocumentGenerationOrder('job-runs');
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-docs-job',
             'order_id' => $order->id,
             'payment_id' => 'pay_checkout_docs',

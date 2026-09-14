@@ -71,7 +71,7 @@
 
                             <div class="flex-shrink-0">
                                 <x-filament::button
-                                    wire:click="applySuggestion('{{ $voucher->code }}')"
+                                    wire:click="applySuggestion('{{ $voucher->getKey() }}')"
                                     color="success"
                                     icon="heroicon-o-plus-circle"
                                     size="sm"

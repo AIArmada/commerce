@@ -82,6 +82,12 @@ trait ScopesByEventOwner
             $eventClass = ModelResolver::eventClass();
             $event = new $eventClass;
 
+            // Only morph-targeted models set an event id column, and their
+            // whereHasMorph clause above already restricts rows to
+            // owner-visible targets. The whereNull branch therefore only
+            // admits rows whose morph target the current owner can see;
+            // models scoped through whereHas(event) never reach this branch
+            // with a null event id.
             $builder->where(function (Builder $eventQuery) use ($model, $event, $eventClass, $eventIdColumn): void {
                 $eventQuery
                     ->whereNull($model->qualifyColumn($eventIdColumn))

@@ -54,8 +54,6 @@ final class AffiliateWebhookDelivery extends Model
         'dead_at',
         'response_status',
         'last_error_code',
-        'owner_type',
-        'owner_id',
     ];
 
     protected $hidden = ['endpoint', 'headers', 'body_json', 'signature'];

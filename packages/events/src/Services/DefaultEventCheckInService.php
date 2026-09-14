@@ -22,6 +22,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class DefaultEventCheckInService implements EventCheckInService
@@ -33,7 +34,12 @@ final class DefaultEventCheckInService implements EventCheckInService
 
     public function checkInWithResult(array $data): EventCheckInResult
     {
+        if (($data['event_id'] ?? null) === null || $data['event_id'] === '') {
+            throw new InvalidArgumentException('An event_id is required for check-in.');
+        }
+
         $event = EventWriteGuard::findOrFail($data['event_id']);
+        $this->validateCheckInData($data);
         $registration = $this->resolveRegistration($event, $data['event_registration_id'] ?? null);
         $participant = $this->resolveParticipant($event, $data['event_registration_participant_id'] ?? null, $registration?->id);
 
@@ -139,6 +145,110 @@ final class DefaultEventCheckInService implements EventCheckInService
         }
 
         return new EventCheckInResult($attendance, $wasCreated);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function validateCheckInData(array $data): void
+    {
+        $attendeeType = $data['attendee_type'] ?? null;
+        $attendeeId = $data['attendee_id'] ?? null;
+
+        if ($attendeeType === null xor $attendeeId === null) {
+            throw new InvalidArgumentException('The attendee type and id must both be present or both be null.');
+        }
+
+        if ($attendeeType !== null) {
+            $attendeeClass = $this->resolveModelClass($attendeeType, 'attendee_type');
+
+            if (! is_string($attendeeId) || $attendeeId === '') {
+                throw new InvalidArgumentException('The attendee id must be a non-empty string.');
+            }
+
+            if (! $attendeeClass::query()->whereKey($attendeeId)->exists()) {
+                throw new InvalidArgumentException('The selected attendee does not exist.');
+            }
+        }
+
+        $this->assertNullOrNonEmptyString($data['attendance_type'] ?? null, 'attendance_type', 64);
+        $this->assertNullOrNonEmptyString($data['check_in_source'] ?? null, 'check_in_source', 64);
+
+        $verifiedBy = $data['verified_by_user_id'] ?? null;
+
+        if ($verifiedBy !== null && (! is_string($verifiedBy) || ! Str::isUuid($verifiedBy))) {
+            throw new InvalidArgumentException('The verified_by_user_id must be a valid UUID.');
+        }
+
+        if (array_key_exists('notes', $data) && $data['notes'] !== null) {
+            if (! is_string($data['notes'])) {
+                throw new InvalidArgumentException('Check-in notes must be a string.');
+            }
+
+            if (mb_strlen($data['notes']) > 5000) {
+                throw new InvalidArgumentException('Check-in notes may not exceed 5000 characters.');
+            }
+        }
+
+        if (array_key_exists('metadata', $data) && $data['metadata'] !== null && ! is_array($data['metadata'])) {
+            throw new InvalidArgumentException('Check-in metadata must be an array.');
+        }
+
+        $performerType = $data['performed_by_type'] ?? null;
+        $performerId = $data['performed_by_id'] ?? null;
+
+        if ($performerType === null xor $performerId === null) {
+            throw new InvalidArgumentException('The performed_by type and id must both be present or both be null.');
+        }
+
+        // Performer types stay opaque strings: hosts record staff actors under
+        // short morph aliases that this package cannot resolve.
+        if ($performerType !== null && (! is_string($performerType) || mb_trim($performerType) === '' || mb_strlen($performerType) > 255)) {
+            throw new InvalidArgumentException('The performed_by type must be a non-empty string.');
+        }
+
+        if ($performerType !== null) {
+            if (! is_string($performerId) && ! is_int($performerId)) {
+                throw new InvalidArgumentException('The performed_by id must be a string or integer.');
+            }
+
+            if ((string) $performerId === '') {
+                throw new InvalidArgumentException('The performed_by id must not be empty.');
+            }
+        }
+    }
+
+    /**
+     * @return class-string<Model>
+     */
+    private function resolveModelClass(mixed $type, string $field): string
+    {
+        if (! is_string($type) || $type === '') {
+            throw new InvalidArgumentException(sprintf('The %s must be a model class name.', $field));
+        }
+
+        $class = Relation::getMorphedModel($type) ?? $type;
+
+        if (! is_string($class) || ! is_a($class, Model::class, true)) {
+            throw new InvalidArgumentException(sprintf('The %s must reference an Eloquent model.', $field));
+        }
+
+        return $class;
+    }
+
+    private function assertNullOrNonEmptyString(mixed $value, string $field, int $maxLength): void
+    {
+        if ($value === null) {
+            return;
+        }
+
+        if (! is_string($value) || mb_trim($value) === '') {
+            throw new InvalidArgumentException(sprintf('The %s must be a non-empty string.', $field));
+        }
+
+        if (mb_strlen($value) > $maxLength) {
+            throw new InvalidArgumentException(sprintf('The %s may not exceed %d characters.', $field, $maxLength));
+        }
     }
 
     private function lockCheckInIdentity(

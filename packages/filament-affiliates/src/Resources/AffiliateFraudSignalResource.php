@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -164,7 +165,7 @@ final class AffiliateFraudSignalResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<AffiliateFraudSignal> $query */
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->with(['affiliate']);
 
         if (! (bool) config('affiliates.owner.enabled', false)) {
             return $query;
@@ -195,20 +196,32 @@ final class AffiliateFraudSignalResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $query = self::getModel()::query()->where('status', FraudSignalStatus::Detected);
+        /** @var Model|null $owner */
+        $owner = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerContext::resolve()
+            : null;
 
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            /** @var Model|null $owner */
-            $owner = OwnerContext::resolve();
-            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+        $count = (int) OwnerCache::remember(
+            $owner,
+            'filament-affiliates.fraud-signals.detected-count',
+            30,
+            static function (): int {
+                $query = self::getModel()::query()->where('status', FraudSignalStatus::Detected);
 
-            $query->whereHas('affiliate', function (Builder $affiliateQuery) use ($owner, $includeGlobal): void {
-                $scoped = $affiliateQuery->withoutGlobalScope(OwnerScope::class);
-                OwnerQuery::applyToEloquentBuilder($scoped, $owner, $includeGlobal);
-            });
-        }
+                if ((bool) config('affiliates.owner.enabled', false)) {
+                    /** @var Model|null $scopedOwner */
+                    $scopedOwner = OwnerContext::resolve();
+                    $includeGlobal = (bool) config('affiliates.owner.include_global', false);
 
-        $count = $query->count();
+                    $query->whereHas('affiliate', function (Builder $affiliateQuery) use ($scopedOwner, $includeGlobal): void {
+                        $scoped = $affiliateQuery->withoutGlobalScope(OwnerScope::class);
+                        OwnerQuery::applyToEloquentBuilder($scoped, $scopedOwner, $includeGlobal);
+                    });
+                }
+
+                return $query->count();
+            },
+        );
 
         return $count > 0 ? (string) $count : null;
     }

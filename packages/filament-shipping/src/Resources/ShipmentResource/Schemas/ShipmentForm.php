@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ShipmentResource\Schemas;
 
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
+use AIArmada\FilamentShipping\Support\MoneyInput;
 use AIArmada\Shipping\States\ShipmentStatus;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
@@ -81,13 +82,13 @@ final class ShipmentForm
                             ->numeric()
                             ->prefix($currency)
                             ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
-                            ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
+                            ->dehydrateStateUsing(fn ($state) => $state ? MoneyInput::toMinor($state) : null),
 
                         TextInput::make('shipping_cost')
                             ->numeric()
                             ->prefix($currency)
                             ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
-                            ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
+                            ->dehydrateStateUsing(fn ($state) => $state ? MoneyInput::toMinor($state) : null),
                     ])
                     ->columns(2),
             ]);

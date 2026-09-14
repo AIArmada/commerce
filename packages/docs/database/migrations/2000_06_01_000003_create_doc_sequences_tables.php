@@ -31,6 +31,10 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
 
+            $table->unique(
+                ['doc_type', 'name', 'owner_type', 'owner_id'],
+                $sequencesTable . '_type_name_owner_unique'
+            );
             $table->index(['doc_type', 'is_active'], $sequencesTable . '_type_active_index');
             $table->index('owner_type', $sequencesTable . '_owner_type_index');
         });

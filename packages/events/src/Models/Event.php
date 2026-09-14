@@ -14,6 +14,7 @@ use AIArmada\Events\Enums\ScheduleKind;
 use AIArmada\Events\Models\Concerns\RegistersEventMedia;
 use AIArmada\Events\States\EventStatus\EventStatus as EventStatusState;
 use AIArmada\Events\States\EventStatus\Published;
+use AIArmada\Events\Support\EventDeleteCascade;
 use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Ticketing\Contracts\TicketableInterface;
@@ -160,13 +161,10 @@ class Event extends Model implements HasMedia, TicketableInterface
     public const DELIVERY_HYBRID = 'hybrid';
 
     protected $fillable = [
-        'owner_type', 'owner_id',
-        'created_by_type', 'created_by_id',
         'title', 'slug', 'summary', 'description',
         'type', 'schedule_kind', 'status', 'visibility', 'delivery_mode',
         'timezone', 'default_venue_id',
         'pricing_mode', 'registration_mode', 'issue_passes_for_free',
-        'published_at', 'cancelled_at', 'postponed_at', 'archived_at', 'completed_at',
         'status_reason', 'status_message',
         'metadata',
     ];
@@ -174,6 +172,13 @@ class Event extends Model implements HasMedia, TicketableInterface
     public function getTable(): string
     {
         return config('events.database.tables.events', 'events');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Event $event): void {
+            EventDeleteCascade::deleteForEvent($event);
+        });
     }
 
     protected function casts(): array
@@ -557,8 +562,8 @@ class Event extends Model implements HasMedia, TicketableInterface
             return PricingMode::Free;
         }
 
-        $hasPaid = $ticketTypes->contains(fn ($t): bool => (float) $t->price > 0);
-        $hasFree = $ticketTypes->contains(fn ($t): bool => (float) $t->price === 0.0);
+        $hasPaid = $ticketTypes->contains(fn ($t): bool => (int) $t->price > 0);
+        $hasFree = $ticketTypes->contains(fn ($t): bool => (int) $t->price === 0);
 
         return match (true) {
             $hasPaid && $hasFree => PricingMode::Mixed,

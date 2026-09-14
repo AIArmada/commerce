@@ -7,10 +7,9 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
+use AIArmada\Docs\Services\DocPaymentRecorder;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
-use Filament\Actions\Action;
-use Filament\Actions\BulkAction;
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
@@ -21,8 +20,9 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 final class PaymentsRelationManager extends RelationManager
 {
@@ -99,64 +99,70 @@ final class PaymentsRelationManager extends RelationManager
             ->filters([])
             ->headerActions([
                 CreateAction::make()
-                    ->mutateFormDataUsing(function (array $data): array {
-                        return $this->mutatePaymentData($data);
-                    }),
+                    ->using(fn (array $data): DocPayment => static::recordPaymentForDoc($this->getOwnerDoc(), $data)),
             ])
             ->recordActions([
                 EditAction::make()
-                    ->mutateFormDataUsing(function (array $data, DocPayment $record): array {
-                        return $this->mutatePaymentData($data, $record);
-                    }),
-                Action::make('delete')
-                    ->label('Delete')
-                    ->icon('heroicon-o-trash')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->action(function (DocPayment $record): void {
-                        $record->delete();
-                    }),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    BulkAction::make('delete_selected')
-                        ->label('Delete Selected')
-                        ->icon('heroicon-o-trash')
-                        ->color('danger')
-                        ->requiresConfirmation()
-                        ->action(function (Collection $records): void {
-                            /** @var Collection<int|string, DocPayment> $records */
-                            $records->each(function (DocPayment $record): void {
-                                $record->delete();
-                            });
-                        }),
-                ]),
+                    ->using(fn (DocPayment $record, array $data): DocPayment => static::updatePaymentForDoc($this->getOwnerDoc(), $record, $data)),
             ])
             ->defaultSort('paid_at', 'desc');
     }
 
     /**
+     * Record a payment through the domain recorder so row locks, currency
+     * matching, remaining-balance caps, and status transitions all apply.
+     *
+     * Payments have no domain reversal: deletes are intentionally unavailable
+     * and recorded amounts are immutable once persisted.
+     *
      * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
      */
-    private function mutatePaymentData(array $data, ?DocPayment $existing = null): array
+    public static function recordPaymentForDoc(Doc $doc, array $data): DocPayment
     {
-        $doc = $this->getOwnerDoc();
+        DocsOwnerScope::assertCanMutateRecord($doc, 'Document not found.');
 
-        if (! array_key_exists('amount_minor', $data) || ! is_int($data['amount_minor']) || $data['amount_minor'] <= 0) {
+        try {
+            return app(DocPaymentRecorder::class)->record($doc, array_merge($data, [
+                'currency' => $doc->currency,
+            ]));
+        } catch (InvalidArgumentException | ModelNotFoundException $exception) {
             throw ValidationException::withMessages([
-                'amount_minor' => __('Payment amount is required.'),
+                'amount_minor' => $exception->getMessage(),
             ]);
         }
+    }
 
-        $data['currency'] = $doc->currency;
-        if ($existing !== null && (string) $existing->doc_id !== (string) $doc->getKey()) {
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function updatePaymentForDoc(Doc $doc, DocPayment $payment, array $data): DocPayment
+    {
+        DocsOwnerScope::assertCanMutateRecord($doc, 'Document not found.');
+        DocsOwnerScope::assertCanMutateRecord($payment, 'Payment not found.');
+
+        if ((string) $payment->doc_id !== (string) $doc->getKey()) {
             throw ValidationException::withMessages([
                 'doc_id' => __('Invalid payment record.'),
             ]);
         }
 
-        return $data;
+        foreach (['amount_minor', 'currency', 'payment_method'] as $immutable) {
+            if (array_key_exists($immutable, $data)
+                && (string) $data[$immutable] !== (string) $payment->getAttribute($immutable)) {
+                throw ValidationException::withMessages([
+                    $immutable => __('This field cannot be changed after recording.'),
+                ]);
+            }
+        }
+
+        $payment->update(array_intersect_key($data, array_flip([
+            'reference',
+            'transaction_id',
+            'notes',
+            'paid_at',
+        ])));
+
+        return $payment;
     }
 
     private function getOwnerDoc(): Doc

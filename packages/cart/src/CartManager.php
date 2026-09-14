@@ -229,9 +229,7 @@ class CartManager implements CartManagerInterface
      */
     public function swap(string $oldIdentifier, string $newIdentifier, string $instance = 'default'): bool
     {
-        $storage = $this->storage->withOwner(null);
-
-        $swapped = $storage->swapIdentifier($oldIdentifier, $newIdentifier, $instance);
+        $swapped = $this->storage->swapIdentifier($oldIdentifier, $newIdentifier, $instance);
 
         if ($swapped) {
             $this->cartCache = [];

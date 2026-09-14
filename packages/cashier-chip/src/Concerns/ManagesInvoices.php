@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Invoice\Invoice;
+use AIArmada\CashierChip\Support\RedirectUrlValidator;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Support\Collection;
 use RuntimeException;
@@ -23,9 +24,12 @@ trait ManagesInvoices // @phpstan-ignore trait.unused
     /**
      * Get all of the invoices for the Billable model.
      *
+     * Each invoice resolves one live CHIP purchase, so results are bounded;
+     * pass null to explicitly opt out of the limit.
+     *
      * @return Collection<int, Invoice>
      */
-    public function invoices(): Collection
+    public function invoices(?int $limit = 25): Collection
     {
         if (! $this->hasChipId()) {
             return collect();
@@ -36,11 +40,15 @@ trait ManagesInvoices // @phpstan-ignore trait.unused
         $invoices = collect();
 
         foreach ($this->subscriptions as $subscription) {
-            $subscriptionInvoices = $subscription->invoices();
+            $subscriptionInvoices = $subscription->invoices($limit);
             $invoices = $invoices->merge($subscriptionInvoices);
         }
 
-        return $invoices->sortByDesc('created_at');
+        $sorted = $invoices->sortByDesc(
+            fn (Invoice $invoice): int => $invoice->date()?->getTimestamp() ?? 0
+        )->values();
+
+        return $limit === null ? $sorted : $sorted->take($limit)->values();
     }
 
     /**
@@ -48,9 +56,9 @@ trait ManagesInvoices // @phpstan-ignore trait.unused
      *
      * @return Collection<int, Invoice>
      */
-    public function invoicesIncludingPending(): Collection
+    public function invoicesIncludingPending(?int $limit = 25): Collection
     {
-        return $this->invoices();
+        return $this->invoices($limit);
     }
 
     /**
@@ -129,11 +137,17 @@ trait ManagesInvoices // @phpstan-ignore trait.unused
             throw new RuntimeException('No items to invoice.');
         }
 
+        $total = collect($tabs)->sum(fn (array $tab): int => $tab['price'] * $tab['quantity']);
+        Cashier::assertAmountWithinBounds($total);
+
+        RedirectUrlValidator::assertValid($options['success_url'] ?? null, 'success_url');
+        RedirectUrlValidator::assertValid($options['failure_url'] ?? null, 'failure_url');
+
         $builder = Cashier::chip()->purchase()
             ->currency($this->preferredCurrency());
 
         foreach ($tabs as $tab) {
-            $builder->addProduct($tab['name'], $tab['price'], $tab['quantity']);
+            $builder->addProductCents($tab['name'], $tab['price'], $tab['quantity']);
         }
 
         if ($this->hasChipId()) {

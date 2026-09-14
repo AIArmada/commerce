@@ -26,8 +26,10 @@ final readonly class StepExecutor
     public function run(
         CheckoutSession $session,
         ?string $fromStep = null,
+        ?string $untilStep = null,
     ): CheckoutResult {
         $startProcessing = $fromStep === null;
+        $stoppedEarly = false;
 
         foreach ($this->stepRegistry->getOrderedSteps() as $step) {
             if (! $startProcessing && $step->getIdentifier() === $fromStep) {
@@ -38,6 +40,12 @@ final readonly class StepExecutor
 
             if (! $startProcessing) {
                 continue;
+            }
+
+            if ($untilStep !== null && $step->getIdentifier() === $untilStep) {
+                $stoppedEarly = true;
+
+                break;
             }
 
             $stepState = $session->getStepState($step->getIdentifier());
@@ -72,7 +80,7 @@ final readonly class StepExecutor
             orderId: $session->order_id,
             paymentId: $session->payment_id,
             redirectUrl: $session->payment_redirect_url,
-            message: 'Pipeline completed',
+            message: $stoppedEarly ? "Pipeline paused before {$untilStep}" : 'Pipeline completed',
         );
     }
 
@@ -95,8 +103,7 @@ final readonly class StepExecutor
             return StepResult::failed($identifier, 'Validation failed', $errors);
         }
 
-        $session->setStepState($identifier, StepStatus::Processing);
-        $session->update(['current_step' => $identifier]);
+        $session->beginStep($identifier);
 
         try {
             $result = $step->handle($session);

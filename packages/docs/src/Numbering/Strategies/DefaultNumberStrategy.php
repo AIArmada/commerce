@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Numbering\Strategies;
 
 use AIArmada\Docs\Numbering\Contracts\DocumentNumberStrategy;
+use AIArmada\Docs\Support\DocTypeKey;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Str;
 
 /**
  * Configurable uniqid-based number strategy.
@@ -22,7 +22,8 @@ final class DefaultNumberStrategy implements DocumentNumberStrategy
     public function generate(string $docType): string
     {
         $globalFormat = config('docs.numbering.format', []);
-        $typeConfig = config("docs.types.{$docType}.numbering", []);
+        $typeKey = DocTypeKey::sanitize($docType);
+        $typeConfig = $typeKey !== null ? config("docs.types.{$typeKey}.numbering", []) : [];
 
         $format = array_replace($globalFormat, $typeConfig['format'] ?? []);
 
@@ -48,9 +49,6 @@ final class DefaultNumberStrategy implements DocumentNumberStrategy
     {
         $length = max(1, min($length, 12));
 
-        // uniqid ensures unique base, substr for deterministic length
-        $random = Str::upper(Str::substr(uniqid('', true) . Str::random(8), -$length));
-
-        return $random;
+        return mb_strtoupper(mb_substr(bin2hex(random_bytes(8)), 0, $length));
     }
 }

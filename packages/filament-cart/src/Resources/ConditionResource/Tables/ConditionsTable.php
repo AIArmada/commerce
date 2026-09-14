@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCart\Resources\ConditionResource\Tables;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentCart\Resources\ConditionResource;
+use AIArmada\FilamentCart\Support\ConditionTargetLabels;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -51,12 +52,7 @@ final class ConditionsTable
 
                 TextColumn::make('target')
                     ->label('Target')
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'subtotal' => 'Cart Subtotal',
-                        'total' => 'Cart Total',
-                        'item' => 'Individual Items',
-                        default => ucfirst($state),
-                    })
+                    ->formatStateUsing(fn (?string $state): string => ConditionTargetLabels::label($state))
                     ->badge()
                     ->color('gray')
                     ->searchable()
@@ -155,11 +151,7 @@ final class ConditionsTable
                     ]),
 
                 SelectFilter::make('target')
-                    ->options([
-                        'cart@cart_subtotal/aggregate' => 'Cart Subtotal',
-                        'cart@grand_total/aggregate' => 'Cart Total',
-                        'items@item_discount/per-item' => 'Individual Items',
-                    ]),
+                    ->options(ConditionTargetLabels::options()),
 
                 SelectFilter::make('is_active')
                     ->label('Status')
@@ -203,7 +195,7 @@ final class ConditionsTable
                         0 => 'Non-Global Only',
                     ]),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make()
                     ->visible(fn (Condition $record): bool => ConditionResource::canEdit($record)),
                 DeleteAction::make()
@@ -212,7 +204,7 @@ final class ConditionsTable
                         self::authorizeCondition($record)->delete();
                     }),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     BulkAction::make('deleteSelected')
                         ->label('Delete Selected')

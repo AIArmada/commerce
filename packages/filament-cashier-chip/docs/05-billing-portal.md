@@ -61,7 +61,7 @@ Overview page showing:
 Manage active subscriptions:
 - View subscription details
 - Cancel subscriptions (grace period applies)
-- Resume canceled subscriptions
+- Resume canceled subscriptions from the Ending Soon section
 
 **Customer Actions:**
 
@@ -84,8 +84,8 @@ Manage saved payment methods:
 **Customer Actions:**
 
 ```php
-// Add payment method (redirects to CHIP)
-$this->getAddPaymentMethodUrl();
+// Add payment method (creates the CHIP setup purchase on click, then redirects)
+$this->redirectToAddPaymentMethod();
 
 // Set as default
 $this->setAsDefault($paymentMethodId);
@@ -111,7 +111,7 @@ Generate a new key only when starting a genuinely new setup attempt.
 ### Invoices
 
 View and download invoice history:
-- List all invoices
+- List recent invoices (capped by `billing.invoices.limit`)
 - View invoice details
 - Download PDF (if renderer configured)
 

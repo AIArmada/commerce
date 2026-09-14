@@ -54,6 +54,8 @@ final class AccountApi extends CollectApi
      */
     public function companyStatement(string $statementId): array
     {
+        $this->assertSafePathSegment($statementId, 'Statement id');
+
         return $this->attempt(
             fn () => $this->client->get("company_statements/{$statementId}/"),
             'Failed to get CHIP company statement',
@@ -66,6 +68,8 @@ final class AccountApi extends CollectApi
      */
     public function cancelCompanyStatement(string $statementId): array
     {
+        $this->assertSafePathSegment($statementId, 'Statement id');
+
         return $this->attempt(
             fn () => $this->client->post("company_statements/{$statementId}/cancel/"),
             'Failed to cancel CHIP company statement',

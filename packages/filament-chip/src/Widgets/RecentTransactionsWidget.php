@@ -6,6 +6,7 @@ namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
@@ -76,7 +77,7 @@ final class RecentTransactionsWidget extends BaseWidget
                 ->where('is_test', false)
                 ->orderBy('created_on', 'desc')
                 ->limit(10);
-        });
+        }, Purchase::query()->withoutGlobalScope(OwnerScope::class)->whereRaw('1 = 0'));
 
         return $query;
     }
@@ -88,10 +89,14 @@ final class RecentTransactionsWidget extends BaseWidget
         return route("filament.{$panelId}.resources.purchases.view", ['record' => $record]);
     }
 
-    private function withResolvedOwnerOrExplicitGlobal(callable $callback): mixed
+    private function withResolvedOwnerOrExplicitGlobal(callable $callback, mixed $empty = null): mixed
     {
-        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
+        if (OwnerContext::resolve() !== null) {
             return $callback();
+        }
+
+        if (! OwnerContext::isExplicitGlobal()) {
+            return $empty;
         }
 
         return OwnerContext::withOwner(null, static fn (): mixed => $callback());

@@ -41,19 +41,23 @@ final class DispatchCommunicationDeliveriesJob implements OwnerScopedJob, Should
 
     protected function performJob(): void
     {
-        $deliveries = CommunicationDelivery::query()
+        $transitioned = 0;
+
+        CommunicationDelivery::query()
             ->where('communication_id', $this->communicationId)
             ->where('status', DeliveryStatus::Queued)
             ->orderBy('queued_at')
             ->orderBy('created_at')
             ->orderBy('id')
-            ->get();
+            ->lock('for update skip locked')
+            ->chunkById(200, function ($deliveries) use (&$transitioned): void {
+                foreach ($deliveries as $delivery) {
+                    app(TransitionDeliveryAction::class)->handle($delivery, DeliveryStatus::Sending);
+                    $transitioned++;
+                }
+            });
 
-        foreach ($deliveries as $delivery) {
-            app(TransitionDeliveryAction::class)->handle($delivery, DeliveryStatus::Sending);
-        }
-
-        if ($deliveries->isNotEmpty()) {
+        if ($transitioned > 0) {
             app(RecalculateCommunicationStatusAction::class)->handle($this->communicationId);
         }
     }

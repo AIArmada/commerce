@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Enums\ApplicationStatus;
-use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
 
@@ -22,7 +21,7 @@ beforeEach(function (): void {
 });
 
 it('creates a membership application', function (): void {
-    $application = MembershipApplication::query()->create([
+    $application = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),
@@ -37,7 +36,7 @@ it('creates a membership application', function (): void {
 });
 
 it('casts status to enum', function (): void {
-    $application = MembershipApplication::query()->create([
+    $application = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),
@@ -50,7 +49,7 @@ it('casts status to enum', function (): void {
 
 it('casts meta to array', function (): void {
     $meta = ['evidence' => ['file1.pdf'], 'notes' => 'Additional info'];
-    $application = MembershipApplication::query()->create([
+    $application = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),
@@ -63,7 +62,7 @@ it('casts meta to array', function (): void {
 });
 
 it('has polymorphic subject relationship', function (): void {
-    $application = MembershipApplication::query()->create([
+    $application = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),
@@ -75,7 +74,7 @@ it('has polymorphic subject relationship', function (): void {
 });
 
 it('has applicant relationship', function (): void {
-    $application = MembershipApplication::query()->create([
+    $application = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),
@@ -87,7 +86,7 @@ it('has applicant relationship', function (): void {
 });
 
 it('can be approved', function (): void {
-    $application = MembershipApplication::query()->create([
+    $application = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),
@@ -95,11 +94,11 @@ it('can be approved', function (): void {
         'justification' => 'Testing approval.',
     ]);
 
-    $application->update([
+    $application->forceFill([
         'status' => ApplicationStatus::Approved,
         'granted_role' => 'admin',
         'reviewed_at' => now(),
-    ]);
+    ])->save();
 
     expect($application->fresh())
         ->status->toBe(ApplicationStatus::Approved)
@@ -107,7 +106,7 @@ it('can be approved', function (): void {
 });
 
 it('can be rejected', function (): void {
-    $application = MembershipApplication::query()->create([
+    $application = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),
@@ -115,11 +114,11 @@ it('can be rejected', function (): void {
         'justification' => 'Testing rejection.',
     ]);
 
-    $application->update([
+    $application->forceFill([
         'status' => ApplicationStatus::Rejected,
         'reviewer_note' => 'Insufficient evidence.',
         'reviewed_at' => now(),
-    ]);
+    ])->save();
 
     expect($application->fresh())
         ->status->toBe(ApplicationStatus::Rejected)
@@ -127,7 +126,7 @@ it('can be rejected', function (): void {
 });
 
 it('can be cancelled', function (): void {
-    $application = MembershipApplication::query()->create([
+    $application = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),
@@ -135,17 +134,17 @@ it('can be cancelled', function (): void {
         'justification' => 'Testing cancellation.',
     ]);
 
-    $application->update([
+    $application->forceFill([
         'status' => ApplicationStatus::Cancelled,
         'cancelled_at' => now(),
-    ]);
+    ])->save();
 
     expect($application->fresh())
         ->status->toBe(ApplicationStatus::Cancelled);
 });
 
 it('rejects invalid status transitions', function (): void {
-    $application = MembershipApplication::query()->create([
+    $application = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),

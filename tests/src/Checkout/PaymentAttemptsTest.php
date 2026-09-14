@@ -25,7 +25,7 @@ it('increments payment attempts atomically and enforces the retry limit', functi
     $resolver = mock(PaymentGatewayResolverInterface::class);
     $resolver->shouldReceive('resolve')->with('chip')->andReturn($processor);
 
-    $session = CheckoutSession::create([
+    $session = CheckoutSession::forceCreate([
         'cart_id' => 'payment-attempt-race',
         'status' => Processing::class,
         'selected_payment_gateway' => 'chip',

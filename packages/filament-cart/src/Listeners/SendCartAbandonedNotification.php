@@ -9,12 +9,18 @@ use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Notifications\CartAbandonedNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Notification;
 
-final class SendCartAbandonedNotification
+final class SendCartAbandonedNotification implements ShouldQueue
 {
     public function handle(CartAbandoned $event): void
     {
+        if (! class_exists(CheckoutSession::class)) {
+            return;
+        }
+
         $owner = OwnerContext::fromTypeAndId($event->ownerType, $event->ownerId);
 
         $cart = OwnerContext::withOwner($owner, function () use ($event): ?CartSnapshot {
@@ -25,28 +31,23 @@ final class SendCartAbandonedNotification
             return;
         }
 
-        $session = OwnerContext::withOwner($owner, function () use ($cart): ?CheckoutSession {
-            return CheckoutSession::query()
-                ->where('cart_id', $cart->getKey())
-                ->latest()
-                ->first();
-        });
+        $session = $this->findLatestSession($cart, $owner);
 
         if ($session === null) {
             return;
         }
 
-        $billingData = $session->billing_data ?? [];
+        $billingData = is_array($session->billing_data) ? $session->billing_data : [];
         $purchaserEmail = $billingData['email'] ?? null;
 
-        if (! is_string($purchaserEmail) || $purchaserEmail === '') {
+        if (! is_string($purchaserEmail) || filter_var($purchaserEmail, FILTER_VALIDATE_EMAIL) === false) {
             return;
         }
 
         $items = is_array($cart->items) ? array_values($cart->items) : [];
         $firstItem = $items[0] ?? [];
-        $itemAttributes = $firstItem['attributes'] ?? [];
-        $offerName = $firstItem['name'] ?? 'Event';
+        $itemAttributes = is_array($firstItem['attributes'] ?? null) ? $firstItem['attributes'] : [];
+        $offerName = is_string($firstItem['name'] ?? null) ? $firstItem['name'] : 'Event';
         $preferredDate = $itemAttributes['preferred_date'] ?? null;
         $formattedTotal = $cart->formatMoney($cart->total);
         $retryUrl = $this->resolveRetryUrl($session);
@@ -59,12 +60,46 @@ final class SendCartAbandonedNotification
         ]));
     }
 
+    private function findLatestSession(CartSnapshot $cart, ?Model $owner): ?CheckoutSession
+    {
+        return OwnerContext::withOwner($owner, function () use ($cart): ?CheckoutSession {
+            return CheckoutSession::query()
+                ->where('cart_id', $cart->getKey())
+                ->latest()
+                ->first();
+        });
+    }
+
     private function resolveRetryUrl(CheckoutSession $session): string
     {
-        if (is_string($session->payment_redirect_url) && $session->payment_redirect_url !== '') {
-            return $session->payment_redirect_url;
+        $fallback = (string) config('app.url');
+        $candidate = $session->payment_redirect_url;
+
+        if (! is_string($candidate) || $candidate === '') {
+            return $fallback;
         }
 
-        return (string) config('app.url');
+        if (filter_var($candidate, FILTER_VALIDATE_URL) === false) {
+            return $fallback;
+        }
+
+        $scheme = mb_strtolower((string) parse_url($candidate, PHP_URL_SCHEME));
+
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return $fallback;
+        }
+
+        $allowedHosts = config('filament-cart.notifications.abandoned_cart.allowed_retry_hosts', []);
+
+        if (is_array($allowedHosts) && $allowedHosts !== []) {
+            $host = mb_strtolower((string) parse_url($candidate, PHP_URL_HOST));
+            $allowed = array_map(static fn (mixed $value): string => mb_strtolower((string) $value), $allowedHosts);
+
+            if (! in_array($host, $allowed, true)) {
+                return $fallback;
+            }
+        }
+
+        return $candidate;
     }
 }

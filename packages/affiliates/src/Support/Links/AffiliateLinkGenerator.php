@@ -17,15 +17,29 @@ final class AffiliateLinkGenerator
     {
         $this->assertHostAllowed($url);
 
+        foreach ($params as $key => $value) {
+            if (! is_scalar($value) && $value !== null) {
+                throw new InvalidArgumentException(sprintf('Link parameter [%s] must be a scalar value.', $key));
+            }
+        }
+
         $parameter = (string) config('affiliates.links.parameter', 'aff');
         $expires = $ttlSeconds === null
             ? (int) CarbonImmutable::now()->addMinutes((int) config('affiliates.links.default_ttl_minutes', 60 * 24 * 7))->timestamp
             : (int) CarbonImmutable::now()->addSeconds($ttlSeconds)->timestamp;
 
-        $query = array_merge($params, [
+        $existing = [];
+        $parts = parse_url($url) ?: [];
+
+        if (isset($parts['query']) && is_string($parts['query'])) {
+            parse_str($parts['query'], $existing);
+        }
+
+        $query = array_merge($existing, $params, [
             $parameter => $affiliateCode,
             'aff_exp' => $expires,
         ]);
+        $query = array_filter($query, static fn (mixed $value): bool => $value !== null);
 
         $signature = $this->sign($url, $query);
         $query['aff_sig'] = $signature;
@@ -38,12 +52,28 @@ final class AffiliateLinkGenerator
         $parts = parse_url($url) ?: [];
         parse_str($parts['query'] ?? '', $query);
 
+        if (! is_array($query)) {
+            return false;
+        }
+
         $signature = Arr::pull($query, 'aff_sig');
-        $expires = (int) ($query['aff_exp'] ?? 0);
+        $expires = $query['aff_exp'] ?? 0;
+
+        if (! is_string($signature) || $signature === '' || ! is_numeric($expires)) {
+            return false;
+        }
+
+        $expires = (int) $expires;
         $query['aff_exp'] = $expires;
 
-        if (! $signature || $expires < CarbonImmutable::now()->timestamp) {
+        if ($expires < CarbonImmutable::now()->timestamp) {
             return false;
+        }
+
+        foreach ($query as $value) {
+            if (is_array($value)) {
+                return false;
+            }
         }
 
         $baseUrl = $this->stripQuery($url);
@@ -76,12 +106,20 @@ final class AffiliateLinkGenerator
     private function sign(string $url, array $query): string
     {
         $key = (string) config('affiliates.links.signing_key', config('app.key'));
-        $parameter = (string) config('affiliates.links.parameter', 'aff');
+
+        $normalized = [];
+
+        foreach ($query as $name => $value) {
+            $normalized[(string) $name] = is_scalar($value) || $value === null
+                ? (string) $value
+                : json_encode($value, JSON_THROW_ON_ERROR);
+        }
+
+        ksort($normalized);
 
         $payload = [
             'url' => $this->stripQuery($url),
-            'aff' => $query[$parameter] ?? '',
-            'exp' => $query['aff_exp'] ?? 0,
+            'query' => $normalized,
         ];
 
         return hash_hmac('sha256', json_encode($payload, JSON_THROW_ON_ERROR), $key);
@@ -102,7 +140,12 @@ final class AffiliateLinkGenerator
 
         $allowed = config('affiliates.links.allowed_hosts', []);
 
-        if ($allowed === [] || ! is_array($allowed)) {
+        if (! is_array($allowed) || $allowed === []) {
+            $appHost = parse_url((string) config('app.url', ''), PHP_URL_HOST);
+            $allowed = is_string($appHost) && $appHost !== '' ? [$appHost] : [];
+        }
+
+        if ($allowed === []) {
             return;
         }
 

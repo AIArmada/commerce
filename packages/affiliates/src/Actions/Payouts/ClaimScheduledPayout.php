@@ -117,7 +117,7 @@ final class ClaimScheduledPayout
             }
 
             $sequence = $balance->payout_sequence + 1;
-            $operation = AffiliatePayoutOperation::query()->create([
+            $operation = new AffiliatePayoutOperation([
                 'affiliate_id' => $affiliate->id,
                 'operation_key' => sprintf('scheduled:%s:%d', $affiliate->id, $sequence),
                 'status' => 'claimed',
@@ -126,23 +126,29 @@ final class ClaimScheduledPayout
                 'payout_sequence' => $sequence,
                 'claimed_at' => CarbonImmutable::now(),
                 'lease_expires_at' => CarbonImmutable::now()->addMinutes(5),
+            ]);
+            $operation->forceFill([
                 'owner_type' => $affiliate->owner_type,
                 'owner_id' => $affiliate->owner_id,
             ]);
+            $operation->save();
 
-            $payout = AffiliatePayout::query()->create([
+            $payout = new AffiliatePayout([
                 'affiliate_payout_operation_id' => $operation->id,
                 'reference' => 'PAY-' . mb_strtoupper(str_replace('-', '', $operation->id)),
                 'payee_type' => $affiliate->getMorphClass(),
                 'payee_id' => $affiliate->id,
-                'owner_type' => $affiliate->owner_type,
-                'owner_id' => $affiliate->owner_id,
                 'total_minor' => $amountMinor,
                 'conversion_count' => count($conversionIds),
                 'currency' => mb_strtoupper($balance->currency),
                 'status' => PendingPayout::value(),
                 'scheduled_at' => CarbonImmutable::now(),
             ]);
+            $payout->forceFill([
+                'owner_type' => $affiliate->owner_type,
+                'owner_id' => $affiliate->owner_id,
+            ]);
+            $payout->save();
 
             $balance->forceFill([
                 'available_minor' => $balance->available_minor - $amountMinor,

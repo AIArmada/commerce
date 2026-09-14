@@ -40,6 +40,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
+            $table->index(['status', 'remind_at'], 'engagement_reminders_status_remind_at_idx');
         });
     }
 };

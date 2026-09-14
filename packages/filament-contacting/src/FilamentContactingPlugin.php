@@ -30,6 +30,10 @@ final class FilamentContactingPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
+        if (! config('filament-contacting.features.standalone_resources', false)) {
+            return;
+        }
+
         $resources = [];
 
         if (config('filament-contacting.resources.contact_methods.enabled', false)) {

@@ -206,7 +206,7 @@ class PrintLabelAction extends Action
                         $errors[] = "{$record->tracking_number}: no label content";
                     } catch (Throwable $e) {
                         report($e);
-                        $errors[] = "{$record->tracking_number}: " . $e->getMessage();
+                        $errors[] = "{$record->tracking_number}: label generation failed. Please try again or check logs.";
                     }
                 }
 

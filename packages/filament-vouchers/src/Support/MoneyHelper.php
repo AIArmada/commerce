@@ -113,7 +113,7 @@ final class MoneyHelper
         return $sign . intdiv($absolute, 100) . '.' . mb_str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
     }
 
-    private static function decimalToInteger(string $value): int
+    private static function decimalToInteger(string $value): ?int
     {
         $value = mb_trim($value);
 
@@ -121,7 +121,7 @@ final class MoneyHelper
         $pattern = '/^([+-]?)(\d+)(?:\.(\d+))?$/';
 
         if (! preg_match($pattern, $value, $matches)) {
-            return 0;
+            return null;
         }
 
         $sign = ($matches[1] ?? '') === '-' ? -1 : 1;

@@ -329,6 +329,52 @@ describe('SerialLookupService', function (): void {
         expect($results->total())->toBe(1);
     });
 
+    it('matches wildcard characters literally in criteria searches', function (): void {
+        InventorySerial::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'batch_id' => $this->batch->id,
+            'serial_number' => 'LITERAL-100%PCT',
+        ]);
+
+        InventorySerial::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'batch_id' => $this->batch->id,
+            'serial_number' => 'LITERAL-100XPCT',
+        ]);
+
+        $results = $this->service->search(['serial_number' => '100%']);
+
+        expect($results->total())->toBe(1);
+        expect($results->first()->serial_number)->toBe('LITERAL-100%PCT');
+    });
+
+    it('matches wildcard characters literally in partial searches', function (): void {
+        InventorySerial::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'batch_id' => $this->batch->id,
+            'serial_number' => 'WILD_UNDERSCORE',
+        ]);
+
+        InventorySerial::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'batch_id' => $this->batch->id,
+            'serial_number' => 'WILDXUNDERSCORE',
+        ]);
+
+        $results = $this->service->searchBySerialNumber('WILD_');
+
+        expect($results)->toHaveCount(1);
+        expect($results->first()->serial_number)->toBe('WILD_UNDERSCORE');
+    });
+
     it('counts serials by status for model', function (): void {
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -425,11 +471,11 @@ describe('SerialLookupService', function (): void {
             'serial_number' => 'USED-001',
         ]);
 
-        $result = $this->service->validateSerialNumbers(['USED-001', 'NEW-001', 'NEW-002']);
+        $result = $this->service->validateSerialNumbers(['USED-001', 'FRESH-001', 'FRESH-002']);
 
         expect($result['USED-001'])->toBeFalse(); // Not available
-        expect($result['NEW-001'])->toBeTrue(); // Available
-        expect($result['NEW-002'])->toBeTrue(); // Available
+        expect($result['FRESH-001'])->toBeTrue(); // Available
+        expect($result['FRESH-002'])->toBeTrue(); // Available
     });
 
     it('searches with array of statuses', function (): void {

@@ -75,7 +75,7 @@ final class AffiliateResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder $query */
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->with(['parent']);
 
         return OwnerUiScope::apply($query, includeGlobal: false);
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Events\FeedbackFormPublished;
 use AIArmada\Feedback\Models\FeedbackForm;
@@ -13,6 +14,8 @@ final class PublishFeedbackFormAction
 {
     public function execute(FeedbackForm $form): FeedbackForm
     {
+        $form = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
+
         if ($form->status === FeedbackFormStatus::Published) {
             return $form;
         }

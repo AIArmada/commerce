@@ -8,6 +8,8 @@ use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
 
 final class PurchaseIdempotencyLedger
 {
@@ -26,6 +28,12 @@ final class PurchaseIdempotencyLedger
 
         $response = $entry['response'] ?? null;
         if ($response === null) {
+            if ($this->isExpiredReservation($ledger, $entry)) {
+                $this->deleteLedger($ledger);
+
+                return null;
+            }
+
             throw new ChipValidationException(
                 'Purchase idempotency key is already reserved and requires reconciliation.'
             );
@@ -50,10 +58,20 @@ final class PurchaseIdempotencyLedger
     ): Purchase {
         $this->assertOwnerContext();
 
-        if ($this->findLedger($brandId, $idempotencyKey) !== null) {
-            throw new ChipValidationException(
-                'Purchase idempotency key is already reserved and requires reconciliation.'
-            );
+        $existing = $this->findLedger($brandId, $idempotencyKey);
+
+        if ($existing !== null) {
+            $existingEntry = $this->entry($existing);
+
+            if (($existingEntry['response'] ?? null) !== null || ! $this->isExpiredReservation($existing, $existingEntry)) {
+                throw new ChipValidationException(
+                    'Purchase idempotency key is already reserved and requires reconciliation.'
+                );
+            }
+
+            // A crashed reservation left a stub behind; the key expired, so
+            // release it instead of bricking the key forever.
+            $this->deleteLedger($existing);
         }
 
         $timestamp = time();
@@ -83,6 +101,7 @@ final class PurchaseIdempotencyLedger
                     'idempotency_key' => $idempotencyKey,
                     'fingerprint' => $fingerprint,
                     'response' => null,
+                    'reserved_at' => $timestamp,
                 ],
             ],
         ]);
@@ -131,7 +150,100 @@ final class PurchaseIdempotencyLedger
     }
 
     /**
-     * @return array{ idempotency_key: string, fingerprint: string, response: mixed }
+     * Delete unrecorded reservations older than the idempotency TTL.
+     */
+    public function pruneExpiredReservations(int $limit = 1000): int
+    {
+        $this->assertOwnerContext();
+
+        $pruned = 0;
+
+        $this->eachExpiredStub(function (Purchase $stub) use (&$pruned, $limit): bool {
+            if ($pruned >= $limit) {
+                return false;
+            }
+
+            $this->deleteLedger($stub);
+            $pruned++;
+
+            return true;
+        });
+
+        return $pruned;
+    }
+
+    public function countExpiredReservations(int $limit = 1000): int
+    {
+        $this->assertOwnerContext();
+
+        $count = 0;
+
+        $this->eachExpiredStub(function () use (&$count, $limit): bool {
+            $count++;
+
+            return $count < $limit;
+        });
+
+        return $count;
+    }
+
+    /**
+     * @param  callable(Purchase): bool  $callback
+     */
+    private function eachExpiredStub(callable $callback): void
+    {
+        Purchase::query()
+            ->whereNotNull('metadata->chip_idempotency->idempotency_key')
+            ->whereNull('metadata->chip_idempotency->response')
+            ->chunkById(200, function ($stubs) use ($callback): bool {
+                foreach ($stubs as $stub) {
+                    if (! $this->isExpiredReservation($stub, $this->entry($stub))) {
+                        continue;
+                    }
+
+                    if ($callback($stub) === false) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }, 'id');
+    }
+
+    /**
+     * @param  array{idempotency_key: string, fingerprint: string, response: mixed, reserved_at?: mixed}  $entry
+     */
+    private function isExpiredReservation(Purchase $ledger, array $entry): bool
+    {
+        $reservedAt = $entry['reserved_at'] ?? null;
+
+        if (is_numeric($reservedAt)) {
+            return (time() - (int) $reservedAt) >= $this->reservationTtl();
+        }
+
+        $createdAt = $ledger->getAttribute('created_at');
+
+        if ($createdAt instanceof CarbonImmutable || $createdAt instanceof DateTimeInterface) {
+            return $createdAt->getTimestamp() <= time() - $this->reservationTtl();
+        }
+
+        return false;
+    }
+
+    private function reservationTtl(): int
+    {
+        return max(1, (int) (config('chip.cache.ttl.purchase_idempotency') ?? config('chip.cache.default_ttl', 86400)));
+    }
+
+    private function deleteLedger(Purchase $ledger): void
+    {
+        Purchase::withoutEvents(function () use ($ledger): void {
+            $ledger->delete();
+        });
+    }
+
+    /**
+     * @return array{idempotency_key: string, fingerprint: string, response: mixed, reserved_at?: mixed}
      */
     private function entry(Purchase $ledger): array
     {
@@ -145,12 +257,12 @@ final class PurchaseIdempotencyLedger
             throw new ChipValidationException('Stored purchase idempotency ledger entry is invalid.');
         }
 
-        /** @var array{idempotency_key: string, fingerprint: string, response: mixed} $entry */
+        /** @var array{idempotency_key: string, fingerprint: string, response: mixed, reserved_at?: mixed} $entry */
         return $entry;
     }
 
     /**
-     * @param  array{idempotency_key: string, fingerprint: string, response: mixed}  $entry
+     * @param  array{idempotency_key: string, fingerprint: string, response: mixed, reserved_at?: mixed}  $entry
      */
     private function assertFingerprint(array $entry, string $fingerprint): void
     {

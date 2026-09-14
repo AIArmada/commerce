@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 
 use AIArmada\Addressing\Models\Address;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
 use AIArmada\Customers\Models\Customer;
 use Filament\Actions\Action;
@@ -19,6 +20,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use LogicException;
 
@@ -39,7 +41,9 @@ class AddressesRelationManager extends RelationManager
                 Forms\Components\TextInput::make('country_code')
                     ->label('Country')
                     ->required()
-                    ->maxLength(2),
+                    ->minLength(2)
+                    ->maxLength(2)
+                    ->rule('alpha:ascii'),
 
                 Forms\Components\TextInput::make('line1')
                     ->label('Address Line 1')
@@ -99,7 +103,10 @@ class AddressesRelationManager extends RelationManager
             ->headerActions([
                 AttachAction::make()
                     ->label('Add Address')
-                    ->preloadRecordSelect(),
+                    ->preloadRecordSelect()
+                    ->recordSelectOptionsQuery(
+                        fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false)
+                    ),
             ])
             ->actions([
                 EditAction::make(),

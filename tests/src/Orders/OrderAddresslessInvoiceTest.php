@@ -9,7 +9,17 @@ use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
 use AIArmada\Orders\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+
+beforeEach(function (): void {
+    if (! Schema::hasColumn('orders', 'invoice_number')) {
+        Schema::table('orders', function (Blueprint $table): void {
+            $table->string('invoice_number')->nullable()->unique();
+        });
+    }
+});
 
 it('keeps a digital order addressless through persistence snapshot and invoice rendering', function (): void {
     config()->set('orders.owner.enabled', false);
@@ -74,6 +84,9 @@ it('renders canonical customer and address data, then omits the block after deta
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,
+            'shipping_total' => 0,
+            'tax_total' => 0,
+            'discount_total' => 0,
         ]);
         $order->items()->create([
             'name' => 'Physical Product',
@@ -174,6 +187,9 @@ it('falls back to the primary shipping address for document customer data', func
             'currency' => 'MYR',
             'subtotal' => 3000,
             'grand_total' => 3000,
+            'shipping_total' => 0,
+            'tax_total' => 0,
+            'discount_total' => 0,
         ]);
         $shipping = Address::create([
             'line1' => '789 Shipping Road',

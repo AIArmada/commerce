@@ -8,12 +8,14 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class PostalCodeTable
 {
     public static function make(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['areas']))
             ->columns([
                 TextColumn::make('code')->label('Postcode')->searchable()->sortable(),
                 TextColumn::make('country_code')->label('Country')->badge()->searchable()->sortable(),

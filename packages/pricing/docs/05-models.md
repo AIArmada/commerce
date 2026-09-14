@@ -16,7 +16,7 @@ The `PriceList` model represents a collection of prices, such as "Retail", "Whol
 | `owner_type` | string\|null | Owner model class for multitenancy |
 | `owner_id` | string\|null | Owner model ID |
 | `name` | string | Display name |
-| `slug` | string | Unique slug identifier |
+| `slug` | string | Slug identifier, unique per owner (`price_lists_owner_slug_unique`) |
 | `description` | string\|null | Optional description |
 | `currency` | string | ISO 4217 currency code |
 | `priority` | int | Priority (higher = more priority) |

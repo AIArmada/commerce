@@ -165,10 +165,15 @@ interface GatewayContract
     /**
      * Handle an incoming webhook payload.
      *
+     * When the raw request body is supplied, the signature must be verified
+     * against it before handling. A null raw body marks trusted internal
+     * replays (e.g. events re-fetched from the gateway API) that carry no
+     * HTTP signature to verify.
+     *
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $headers
      */
-    public function handleWebhook(array $payload, array $headers = []): mixed;
+    public function handleWebhook(array $payload, array $headers = [], ?string $rawPayload = null): mixed;
 
     /**
      * Verify a webhook signature.

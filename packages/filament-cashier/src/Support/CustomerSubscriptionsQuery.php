@@ -30,6 +30,7 @@ final class CustomerSubscriptionsQuery
      */
     public function getForUser(Model $user, int $perGatewayLimit = 50, bool $fetchExtra = false): array
     {
+        $perGatewayLimit = min(max(1, $perGatewayLimit), 200);
         $fetchLimit = $fetchExtra ? $perGatewayLimit + 1 : $perGatewayLimit;
         if (! $user instanceof BillableContract) {
             return ['items' => collect(), 'hasMore' => false];

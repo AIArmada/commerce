@@ -34,7 +34,7 @@ class AddressFormSchema
             ->options(
                 config('filament-addressing.resources.countries.model', AddressCountry::class)::query()
                     ->orderBy('name')
-                    ->get()
+                    ->get(['iso2', 'name'])
                     ->mapWithKeys(fn (AddressCountry $country): array => [
                         $country->iso2 => "{$country->iso2} — {$country->name}",
                     ])
@@ -66,11 +66,19 @@ class AddressFormSchema
 
         $fields[] = Select::make($prefix . 'state_id')
             ->label('State / Federal Territory')
-            ->options(fn (callable $get): array => ModelResolver::stateClass()::query()
-                ->when($get($prefix . 'country_code'), fn ($query, string $countryCode) => $query->whereHas('country', fn ($countries) => $countries->where('iso2', $countryCode)))
-                ->orderBy('name')
-                ->pluck('name', 'id')
-                ->toArray())
+            ->options(function (callable $get) use ($prefix): array {
+                $countryCode = self::nullableString($get($prefix . 'country_code'));
+
+                if ($countryCode === null) {
+                    return [];
+                }
+
+                return ModelResolver::stateClass()::query()
+                    ->whereHas('country', fn ($countries) => $countries->where('iso2', $countryCode))
+                    ->orderBy('name')
+                    ->pluck('name', 'id')
+                    ->toArray();
+            })
             ->searchable()
             ->rules(fn (callable $get): array => [new StateBelongsToCountry($get($prefix . 'country_code'))])
             ->visible(fn (callable $get): bool => self::countryHasStates($get($prefix . 'country_code')))
@@ -136,12 +144,14 @@ class AddressFormSchema
                         });
                     }
 
+                    $escapedSearch = addcslashes($search, '\\%_');
+
                     return $query
-                        ->where(function ($searchQuery) use ($search, $operator): void {
+                        ->where(function ($searchQuery) use ($escapedSearch, $operator): void {
                             $searchQuery
-                                ->where('name', $operator, "%{$search}%")
-                                ->orWhere('slug', $operator, "%{$search}%")
-                                ->orWhere('code', $operator, "%{$search}%");
+                                ->where('name', $operator, "%{$escapedSearch}%")
+                                ->orWhere('slug', $operator, "%{$escapedSearch}%")
+                                ->orWhere('code', $operator, "%{$escapedSearch}%");
                         })
                         ->orderBy('name')
                         ->limit(50)

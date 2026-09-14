@@ -113,14 +113,16 @@ it('records a checkout completed signal for the matching owner property', functi
     $session = CheckoutSession::query()->create([
         'cart_id' => 'cart-123',
         'customer_id' => $owner->id,
-        'status' => 'completed',
         'selected_payment_gateway' => 'chip',
+    ]);
+    $session->forceFill([
+        'status' => 'completed',
         'grand_total' => 15900,
         'currency' => 'MYR',
         'completed_at' => now(),
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => $owner->getKey(),
-    ]);
+    ])->save();
 
     Event::dispatch(new CheckoutCompleted($session));
 
@@ -169,14 +171,16 @@ it('records a checkout started signal for the matching owner property', function
     $session = CheckoutSession::query()->create([
         'cart_id' => 'cart-start-123',
         'customer_id' => $owner->id,
-        'status' => 'pending',
         'selected_shipping_method' => 'standard',
         'selected_payment_gateway' => 'chip',
+    ]);
+    $session->forceFill([
+        'status' => 'pending',
         'grand_total' => 9900,
         'currency' => 'MYR',
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => $owner->getKey(),
-    ]);
+    ])->save();
 
     Event::dispatch(new CheckoutStarted($session));
 
@@ -230,9 +234,11 @@ it('records an order paid signal as a conversion for the matching owner property
         'grand_total' => 24900,
         'currency' => 'MYR',
         'paid_at' => now(),
+    ]);
+    $order->forceFill([
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => $owner->getKey(),
-    ]);
+    ])->save();
 
     Event::dispatch(new OrderPaid($order, 'txn_1001', 'chip'));
 

@@ -94,3 +94,28 @@ it('allows an explicit-global context to attach an address to an owned event rec
 
     expect(OwnerContext::withOwner(null, fn (): int => $location->addresses()->count()))->toBe(1);
 });
+
+it('uses one indistinguishable message for unresolvable and missing addressables', function (): void {
+    $owner = User::factory()->create();
+
+    $messages = OwnerContext::withOwner($owner, function (): array {
+        $messages = [];
+
+        foreach ([
+            ['App\\Does\\Not\\Exist', (string) Str::orderedUuid()],
+            [AIArmada\Addressing\Models\AddressCountry::class, (string) Str::orderedUuid()],
+        ] as [$type, $id]) {
+            try {
+                AIArmada\Addressing\Support\AddressOwnerGuard::assertAddressableIsWritable($type, $id);
+                $messages[] = null;
+            } catch (AuthorizationException $exception) {
+                $messages[] = $exception->getMessage();
+            }
+        }
+
+        return $messages;
+    });
+
+    expect($messages[0])->toBe('The addressable model is not accessible to the current owner.');
+    expect($messages[1])->toBe($messages[0]);
+});

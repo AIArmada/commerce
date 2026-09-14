@@ -53,7 +53,8 @@ final class JourneyReport extends ReportPage implements HasTable
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-signals.features.journeys', true);
+        return (bool) config('filament-signals.features.journeys', true)
+            && static::canAccess();
     }
 
     /**

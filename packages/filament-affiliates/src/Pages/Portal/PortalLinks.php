@@ -97,10 +97,20 @@ class PortalLinks extends PortalPage
             $this->targetUrl = $this->resolvePublicUrl();
         }
 
-        $allowedHost = parse_url((string) config('app.url'), PHP_URL_HOST);
-        $targetHost = parse_url($this->targetUrl, PHP_URL_HOST);
+        $allowedHost = mb_strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
 
-        if ($targetHost === null || $targetHost !== $allowedHost) {
+        $validated = validator(
+            ['target_url' => $this->targetUrl],
+            ['target_url' => ['required', 'string', 'max:2048', 'url:http,https']],
+        )->validate();
+
+        $targetUrl = $validated['target_url'];
+        $targetHost = mb_strtolower((string) parse_url($targetUrl, PHP_URL_HOST));
+
+        $hostAllowed = $targetHost !== ''
+            && ($targetHost === $allowedHost || str_ends_with($targetHost, '.' . $allowedHost));
+
+        if (! $hostAllowed) {
             Notification::make()
                 ->title(__('Invalid URL'))
                 ->body(__('Only links to :host are allowed.', ['host' => $allowedHost]))
@@ -110,17 +120,16 @@ class PortalLinks extends PortalPage
             return;
         }
 
-        $param = config('affiliates.links.parameter', 'aff');
+        $param = (string) config('affiliates.links.parameter', 'aff');
+        $separator = str_contains($targetUrl, '?') ? '&' : '?';
 
-        $this->generatedLink = $this->targetUrl
-            . (str_contains($this->targetUrl, '?') ? '&' : '?')
-            . $param . '=' . $affiliate->code;
+        $this->generatedLink = $targetUrl . $separator . rawurlencode($param) . '=' . rawurlencode($affiliate->code);
 
-        $path = mb_ltrim((string) parse_url($this->targetUrl, PHP_URL_PATH), '/');
+        $path = mb_ltrim((string) parse_url($targetUrl, PHP_URL_PATH), '/');
 
         $this->generatedShortLink = mb_rtrim((string) config('app.url'), '/')
             . ($path !== '' ? '/' . $path : '')
-            . '/r/' . $affiliate->code;
+            . '/r/' . rawurlencode($affiliate->code);
 
         Notification::make()
             ->title(__('Link generated successfully'))

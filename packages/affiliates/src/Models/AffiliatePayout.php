@@ -70,8 +70,6 @@ class AffiliatePayout extends Model implements Auditable
         'external_reference',
         'payee_type',
         'payee_id',
-        'owner_type',
-        'owner_id',
         'scheduled_at',
         'paid_at',
         'failed_at',

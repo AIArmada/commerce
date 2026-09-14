@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Jobs;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\Services\DocEmailService;
 use AIArmada\Docs\Services\DueDocReminders;
 use AIArmada\Docs\States\Draft;
@@ -89,6 +90,14 @@ final class SendDocReminderJob implements ShouldQueue
             return;
         }
 
+        if (filter_var($recipientEmail, FILTER_VALIDATE_EMAIL) === false) {
+            Log::warning('SendDocReminderJob: Document has an invalid recipient email', [
+                'doc_id' => $docId,
+            ]);
+
+            return;
+        }
+
         if (! $this->shouldSendReminder($doc)) {
             return;
         }
@@ -114,6 +123,9 @@ final class SendDocReminderJob implements ShouldQueue
     {
         $docs = $dueDocReminders->dueSoon($this->daysBeforeDue);
 
+        /** @var array<string, ?DocEmailTemplate> $templates */
+        $templates = [];
+
         foreach ($docs as $doc) {
             $recipientEmail = $this->getRecipientEmail($doc);
             $recipientName = $this->getRecipientName($doc);
@@ -122,12 +134,16 @@ final class SendDocReminderJob implements ShouldQueue
                 continue;
             }
 
+            if (! array_key_exists($doc->doc_type, $templates)) {
+                $templates[$doc->doc_type] = $emailService->findTemplate($doc, 'due_soon');
+            }
+
             try {
                 $emailService->send(
                     doc: $doc,
                     recipientEmail: $recipientEmail,
                     recipientName: $recipientName,
-                    template: $emailService->findTemplate($doc, 'due_soon'),
+                    template: $templates[$doc->doc_type],
                     variables: [
                         'days_until_due' => CarbonImmutable::now()->diffInDays($doc->due_date, false),
                     ],
@@ -152,6 +168,9 @@ final class SendDocReminderJob implements ShouldQueue
     {
         $docs = $dueDocReminders->overdue($this->daysAfterOverdue);
 
+        /** @var array<string, ?DocEmailTemplate> $templates */
+        $templates = [];
+
         foreach ($docs as $doc) {
             $recipientEmail = $this->getRecipientEmail($doc);
 
@@ -159,8 +178,12 @@ final class SendDocReminderJob implements ShouldQueue
                 continue;
             }
 
+            if (! array_key_exists($doc->doc_type, $templates)) {
+                $templates[$doc->doc_type] = $emailService->findTemplate($doc, 'reminder');
+            }
+
             try {
-                $emailService->sendReminder($doc, $recipientEmail);
+                $emailService->sendReminder($doc, $recipientEmail, [], $templates[$doc->doc_type]);
 
                 Log::info('SendDocReminderJob: Overdue reminder sent', [
                     'doc_id' => $doc->id,

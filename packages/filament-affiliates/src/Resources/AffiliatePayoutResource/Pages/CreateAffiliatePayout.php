@@ -29,17 +29,21 @@ final class CreateAffiliatePayout extends CreateRecord
             ]);
         }
 
-        try {
-            $affiliate = OwnerWriteGuard::findOrFailForOwner(
-                Affiliate::class,
-                (string) $affiliateId,
-                includeGlobal: (bool) config('affiliates.owner.include_global', false),
-                message: 'The selected affiliate is not accessible in the current owner scope.',
-            );
-        } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
-            throw ValidationException::withMessages([
-                'affiliate_id' => 'The selected affiliate is not accessible in the current owner scope.',
-            ]);
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            $affiliate = Affiliate::query()->find((string) $affiliateId);
+        } else {
+            try {
+                $affiliate = OwnerWriteGuard::findOrFailForOwner(
+                    Affiliate::class,
+                    (string) $affiliateId,
+                    includeGlobal: (bool) config('affiliates.owner.include_global', false),
+                    message: 'The selected affiliate is not accessible in the current owner scope.',
+                );
+            } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
+                throw ValidationException::withMessages([
+                    'affiliate_id' => 'The selected affiliate is not accessible in the current owner scope.',
+                ]);
+            }
         }
 
         if (! $affiliate instanceof Affiliate) {

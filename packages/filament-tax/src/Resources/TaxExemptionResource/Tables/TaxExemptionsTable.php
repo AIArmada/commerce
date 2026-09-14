@@ -134,8 +134,10 @@ final class TaxExemptionsTable
             ])
             ->recordActions([
                 ActionGroup::make([
-                    ViewAction::make(),
-                    EditAction::make(),
+                    ViewAction::make()
+                        ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.view') ?? false),
+                    EditAction::make()
+                        ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.update') ?? false),
                     Action::make('download_certificate')
                         ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.download') ?? false)
                         ->label('Download Certificate')
@@ -160,7 +162,14 @@ final class TaxExemptionsTable
                         ->color('success')
                         ->visible(fn (TaxExemption $record): bool => $record->isPending())
                         ->requiresConfirmation()
-                        ->action(fn (TaxExemption $record) => $record->approve())
+                        ->action(function (TaxExemption $record): void {
+                            OwnerWriteGuard::findOrFailForOwner(
+                                TaxExemption::class,
+                                $record->getKey(),
+                                includeGlobal: false,
+                                message: 'Tax exemption is not accessible in the current owner scope.',
+                            )->approve();
+                        })
                         ->successNotificationTitle('Exemption approved'),
                     Action::make('renew')
                         ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.renew') ?? false)
@@ -175,10 +184,24 @@ final class TaxExemptionsTable
                                 ->after('today'),
                         ])
                         ->action(function (TaxExemption $record, array $data): void {
-                            $record->update(['expires_at' => $data['new_expires_at']]);
+                            OwnerWriteGuard::findOrFailForOwner(
+                                TaxExemption::class,
+                                $record->getKey(),
+                                includeGlobal: false,
+                                message: 'Tax exemption is not accessible in the current owner scope.',
+                            )->update(['expires_at' => $data['new_expires_at']]);
                         })
                         ->successNotificationTitle('Exemption renewed'),
-                    DeleteAction::make(),
+                    DeleteAction::make()
+                        ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.delete') ?? false)
+                        ->using(function (TaxExemption $record): void {
+                            OwnerWriteGuard::findOrFailForOwner(
+                                TaxExemption::class,
+                                $record->getKey(),
+                                includeGlobal: false,
+                                message: 'Tax exemption is not accessible in the current owner scope.',
+                            )->delete();
+                        }),
                 ]),
             ])
             ->toolbarActions([

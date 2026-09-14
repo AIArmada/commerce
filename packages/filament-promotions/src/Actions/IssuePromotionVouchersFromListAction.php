@@ -55,7 +55,7 @@ final class IssuePromotionVouchersFromListAction extends Action
         $this->action(function (array $data): void {
             try {
                 $promotion = $this->resolvePromotion((string) $data['promotion_id']);
-                $count = max(1, (int) ($data['count'] ?? 1));
+                $count = self::clampIssueCount($data['count'] ?? 1);
                 $codePrefix = $this->normalizeCodePrefix($data['code_prefix'] ?? null);
 
                 $issue = static fn (): Collection => IssueVouchersFromPromotion::run($promotion, $count, $codePrefix);
@@ -73,7 +73,7 @@ final class IssuePromotionVouchersFromListAction extends Action
 
                 Notification::make()
                     ->title('Unable to issue vouchers')
-                    ->body($throwable->getMessage())
+                    ->body('The vouchers could not be issued. The error was logged for review.')
                     ->danger()
                     ->send();
             }
@@ -86,12 +86,24 @@ final class IssuePromotionVouchersFromListAction extends Action
     }
 
     /**
+     * Server-side guard mirroring the form's 1-100 range so crafted
+     * requests cannot mass-create vouchers past the UI cap.
+     */
+    public static function clampIssueCount(mixed $value): int
+    {
+        return min(max(1, (int) $value), 100);
+    }
+
+    /**
      * @return array<string, string>
      */
     private static function promotionOptions(): array
     {
+        // Owner scoping comes from the Promotion OwnerScope global; the
+        // limit keeps the select from hydrating the whole table.
         return Promotion::query()
             ->orderBy('name')
+            ->limit(200)
             ->get(['id', 'name', 'code'])
             ->mapWithKeys(static fn (Promotion $promotion): array => [
                 (string) $promotion->getKey() => self::promotionLabel($promotion),

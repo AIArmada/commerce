@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\CategoryResource\Tables;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentProducts\Resources\CategoryResource;
@@ -24,14 +25,17 @@ class CategoriesTable
 {
     public static function configure(Table $table): Table
     {
+        $parentMap = null;
+
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Category')
                     ->searchable()
                     ->sortable()
-                    ->formatStateUsing(function ($record) {
-                        $depth = $record->getDepth();
+                    ->formatStateUsing(function ($record) use (&$parentMap) {
+                        $parentMap ??= self::loadParentMap();
+                        $depth = self::depthFromMap((string) $record->getKey(), $parentMap);
                         $prefix = str_repeat('— ', $depth);
 
                         return $prefix . $record->name;
@@ -111,10 +115,12 @@ class CategoriesTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize(fn (): bool => FilamentPermission::hasAbility('category.delete')),
                     BulkAction::make('show')
                         ->label('Set Active')
                         ->icon('heroicon-o-eye')
+                        ->authorize(fn (): bool => FilamentPermission::hasAbility('category.update'))
                         ->action(function (Collection $records): void {
                             $records->each(function (Category $record): void {
                                 $record->update(['status' => 'active', 'hidden_at' => null]);
@@ -123,6 +129,7 @@ class CategoriesTable
                     BulkAction::make('hide')
                         ->label('Set Hidden')
                         ->icon('heroicon-o-eye-slash')
+                        ->authorize(fn (): bool => FilamentPermission::hasAbility('category.update'))
                         ->action(function (Collection $records): void {
                             $records->each(function (Category $record): void {
                                 $record->update(['status' => 'hidden', 'hidden_at' => CarbonImmutable::now()]);
@@ -130,5 +137,47 @@ class CategoriesTable
                         }),
                 ]),
             ]);
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    private static function loadParentMap(): array
+    {
+        $owner = OwnerContext::resolve();
+
+        /** @var array<string, string|null> $map */
+        $map = OwnerQuery::applyToEloquentBuilder(
+            Category::query()->select(['id', 'parent_id']),
+            $owner,
+            (bool) config('products.features.owner.include_global', false)
+        )
+            ->pluck('parent_id', 'id')
+            ->map(static fn (mixed $parentId): ?string => $parentId === null ? null : (string) $parentId)
+            ->all();
+
+        return $map;
+    }
+
+    /**
+     * @param  array<string, string|null>  $map
+     */
+    private static function depthFromMap(string $id, array $map): int
+    {
+        $depth = 0;
+        $visited = [$id];
+        $current = $map[$id] ?? null;
+
+        while ($current !== null) {
+            if (in_array($current, $visited, true)) {
+                return $depth;
+            }
+
+            $visited[] = $current;
+            $depth++;
+            $current = $map[$current] ?? null;
+        }
+
+        return $depth;
     }
 }

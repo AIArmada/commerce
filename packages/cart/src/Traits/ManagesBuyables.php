@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Contracts\BuyableInterface;
+use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Exceptions\ProductNotPurchasableException;
 use AIArmada\Cart\Models\CartItem;
 
@@ -168,8 +169,11 @@ trait ManagesBuyables
     public function refreshBuyablePrices(callable $resolver): array
     {
         $changes = [];
+        $updatedItems = [];
 
-        foreach ($this->getItems() as $item) {
+        $cartItems = $this->getItems();
+
+        foreach ($cartItems as $item) {
             $model = $item->getAssociatedModel();
 
             if (! $model instanceof BuyableInterface) {
@@ -187,9 +191,28 @@ trait ManagesBuyables
             $newPrice = $fresh->getBuyablePrice();
 
             if ($oldPrice !== $newPrice) {
-                $this->update($item->id, ['price' => $newPrice]);
+                $updated = $item->setPrice($newPrice);
+                $cartItems->put($item->id, $updated);
+                $updatedItems[$item->id] = $updated;
                 $changes[$item->id] = ['old' => $oldPrice, 'new' => $newPrice];
             }
+        }
+
+        if ($updatedItems === []) {
+            return $changes;
+        }
+
+        $this->save($cartItems);
+
+        // Invalidate pipeline cache after cart modification
+        $this->invalidatePipelineCacheIfEnabled();
+
+        // Mark dynamic conditions dirty before dispatching events so
+        // listeners observe the latest cart state.
+        $this->markDynamicConditionsDirty();
+
+        foreach ($updatedItems as $updated) {
+            $this->dispatchEvent(new ItemUpdated($updated, $this));
         }
 
         return $changes;

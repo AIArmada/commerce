@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPromotions\Widgets;
 
-use AIArmada\Promotions\Support\PromotionPerformanceInsights;
+use AIArmada\FilamentPromotions\Support\CachedPromotionInsights;
 use Filament\Widgets\ChartWidget;
 
 final class TopPromotionsUsageChart extends ChartWidget
@@ -19,7 +19,7 @@ final class TopPromotionsUsageChart extends ChartWidget
 
     protected function getData(): array
     {
-        $insights = app(PromotionPerformanceInsights::class);
+        $insights = app(CachedPromotionInsights::class);
         $topPromotions = $insights->topPromotionsByOrders();
 
         if ($topPromotions->isNotEmpty()) {

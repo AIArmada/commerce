@@ -7,6 +7,7 @@ namespace AIArmada\Ticketing\Actions;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Support\HolderAttributesValidator;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +54,8 @@ final class IssuePassesAction
     /** @param array<string, mixed> $holderAttributes */
     private function createHolder(Pass $pass, array $holderAttributes): PassHolder
     {
+        HolderAttributesValidator::validateAttributes($holderAttributes);
+
         $holder = new PassHolder;
         $holder->pass_id = $pass->getKey();
         $holder->name = $holderAttributes['name'] ?? null;

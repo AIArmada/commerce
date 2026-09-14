@@ -7,9 +7,12 @@ namespace AIArmada\Chip\Http\Controllers;
 use AIArmada\Chip\Events\SendWebhookReceived;
 use AIArmada\Chip\Exceptions\WebhookVerificationException;
 use AIArmada\Chip\Services\WebhookService;
+use AIArmada\Chip\Support\ChipWebhookOwnerResolver;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Log;
 use JsonException;
 
 final class SendWebhookController extends Controller
@@ -37,6 +40,26 @@ final class SendWebhookController extends Controller
 
         /** @var array<string, mixed> $payload */
         $payload = $decodedPayload;
+
+        if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
+            $owner = ChipWebhookOwnerResolver::resolveSendOwner();
+
+            if ($owner === null) {
+                Log::channel(config('chip.logging.channel', 'stack'))
+                    ->warning('CHIP Send webhook received but no owner could be resolved', [
+                        'id' => $payload['id'] ?? null,
+                    ]);
+
+                return response()->json(['error' => 'Owner resolution failed'], 500);
+            }
+
+            OwnerContext::withOwner($owner, static function () use ($payload): void {
+                SendWebhookReceived::dispatch($payload);
+            });
+
+            return response()->json(['status' => 'received']);
+        }
+
         SendWebhookReceived::dispatch($payload);
 
         return response()->json(['status' => 'received']);

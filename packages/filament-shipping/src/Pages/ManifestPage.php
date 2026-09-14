@@ -221,35 +221,49 @@ class ManifestPage extends Page implements HasTable
                 ->requiresConfirmation()
                 ->authorize(fn (): bool => auth()->user()?->can('shipping.shipments.update') ?? false)
                 ->action(function (): void {
-                    $user = auth()->user();
-
-                    if ($user === null) {
-                        return;
-                    }
-
-                    $shipments = $this->getTableQuery()
-                        ->get()
-                        ->filter(fn (Shipment $shipment) => ! ($shipment->metadata['picked_up'] ?? false));
-
-                    $shipments->each(function (Shipment $shipment) use ($user): void {
-                        if (! $user->can('update', $shipment)) {
-                            return;
-                        }
-
-                        $shipment->update([
-                            'metadata' => array_merge($shipment->metadata ?? [], [
-                                'picked_up' => true,
-                                'picked_up_at' => CarbonImmutable::now()->toDateTimeString(),
-                            ]),
-                        ]);
-                    });
+                    $updated = $this->markFilteredShipmentsPickedUp();
 
                     Notification::make()
                         ->title('All Shipments Marked as Picked Up')
+                        ->body($updated . ' shipment(s) updated.')
                         ->success()
                         ->send();
                 }),
         ];
+    }
+
+    protected function markFilteredShipmentsPickedUp(): int
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return 0;
+        }
+
+        $updated = 0;
+
+        $this->getTableQuery()->chunkById(200, function ($shipments) use ($user, &$updated): void {
+            foreach ($shipments as $shipment) {
+                if (! $shipment instanceof Shipment) {
+                    continue;
+                }
+
+                if (($shipment->metadata['picked_up'] ?? false) || ! $user->can('update', $shipment)) {
+                    continue;
+                }
+
+                $shipment->update([
+                    'metadata' => array_merge($shipment->metadata ?? [], [
+                        'picked_up' => true,
+                        'picked_up_at' => CarbonImmutable::now()->toDateTimeString(),
+                    ]),
+                ]);
+
+                $updated++;
+            }
+        });
+
+        return $updated;
     }
 
     /**

@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 final class ContactMethodResource extends Resource
 {
@@ -62,6 +63,26 @@ final class ContactMethodResource extends Resource
         return [];
     }
 
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return ! app(GuardsContactingUi::class)->contactMethodsReadOnly() && parent::canEdit($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return ! app(GuardsContactingUi::class)->contactMethodsReadOnly() && parent::canDelete($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return ! app(GuardsContactingUi::class)->contactMethodsReadOnly() && parent::canDeleteAny();
+    }
+
     public static function getPages(): array
     {
         $guard = app(GuardsContactingUi::class);
@@ -71,7 +92,6 @@ final class ContactMethodResource extends Resource
         ];
 
         if (! $guard->contactMethodsReadOnly()) {
-            $pages['create'] = ContactMethodResource\Pages\CreateContactMethod::route('/create');
             $pages['edit'] = ContactMethodResource\Pages\EditContactMethod::route('/{record}/edit');
         }
 

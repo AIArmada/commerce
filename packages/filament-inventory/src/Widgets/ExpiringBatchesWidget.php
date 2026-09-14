@@ -33,11 +33,11 @@ final class ExpiringBatchesWidget extends TableWidget
                 ->expiringSoon(config('filament-inventory.tables.expiry_warning_days', 30))
                 ->with(['location'])
                 ->orderBy('expires_at')
-                ->limit(10)
         );
 
         return $table
             ->query($query)
+            ->defaultPaginationPageOption(10)
             ->columns([
                 TextColumn::make('batch_number')
                     ->label('Batch')

@@ -86,6 +86,20 @@ class AffiliateBalance extends Model implements Auditable
         $this->decrement('available_minor', $deductAmount);
     }
 
+    public function voidFromHolding(int $amountMinor): void
+    {
+        $voidAmount = min(max(0, $amountMinor), $this->holding_minor);
+        $this->decrement('holding_minor', $voidAmount);
+        $this->decrement('lifetime_earnings_minor', min(max(0, $amountMinor), $this->lifetime_earnings_minor));
+    }
+
+    public function voidFromAvailable(int $amountMinor): void
+    {
+        $voidAmount = min(max(0, $amountMinor), $this->available_minor);
+        $this->decrement('available_minor', $voidAmount);
+        $this->decrement('lifetime_earnings_minor', min(max(0, $amountMinor), $this->lifetime_earnings_minor));
+    }
+
     public function formatHolding(): string
     {
         return $this->formatAmount($this->holding_minor);

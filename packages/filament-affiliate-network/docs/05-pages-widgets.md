@@ -15,6 +15,11 @@ reads use explicit global discovery context; apply and link actions resolve the
 affiliate and write only inside that affiliate's owner context. Local imported
 offers enroll through the core `affiliates` program service.
 
+Affiliate identity resolves by email match, so users whose host account tracks
+email verification must have a verified email to resolve. State-changing
+actions are rate-limited per user (10 applications and 30 link generations per
+minute), and application reasons are capped at 2000 characters.
+
 **Features:**
 - Search offers by name/description
 - Filter by category
@@ -181,24 +186,12 @@ This is a network-wide admin leaderboard with the same explicit-global and
 30-second owner-keyed cache policy as `NetworkStatsWidget`.
 
 **Features:**
-- Top offers by clicks
-- Top offers by conversions
-- Top offers by revenue
+- Top 10 offers by clicks, with per-offer conversions and revenue
+- Revenue formatted in each offer's own currency
 
-**Customization:**
-
-```php
-namespace App\Filament\Widgets;
-
-use AIArmada\FilamentAffiliateNetwork\Widgets\TopOffersWidget as BaseWidget;
-
-class TopOffersWidget extends BaseWidget
-{
-    protected int $limit = 10; // Show top 10
-    
-    protected string $sortBy = 'conversions'; // Sort by conversions
-}
-```
+The leaderboard shows the cached top 10 by clicks in that order. The metric
+columns are deliberately not sortable: sorting would only reorder the cached
+set and hide the true leaders outside it.
 
 ---
 

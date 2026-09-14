@@ -150,10 +150,11 @@ final class CartItemsTable
                             );
                     }),
             ])
-            ->actions([
+            ->recordActions([
                 ApplyConditionAction::makeForItem(),
             ])
-            ->bulkActions([])
+            ->toolbarActions([])
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('cart'))
             ->defaultSort('created_at', 'desc')
             ->poll('30s');
     }

@@ -10,7 +10,9 @@ use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 use AIArmada\Ticketing\Models\PassTransfer;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use RuntimeException;
 
 final class DefaultPassTransferService implements PassTransferServiceInterface
@@ -21,8 +23,16 @@ final class DefaultPassTransferService implements PassTransferServiceInterface
             throw new RuntimeException('Pass cannot be transferred in its current state.');
         }
 
+        $this->assertHolderBelongsToPass($pass, $newHolder);
+
         return DB::transaction(function () use ($pass, $newHolder, $reason) {
-            $previousHolder = $pass->holder;
+            $freshPass = Pass::query()->whereKey($pass->getKey())->lockForUpdate()->first();
+
+            if (! $freshPass instanceof Pass || ! $this->canTransfer($freshPass)) {
+                throw new RuntimeException('Pass cannot be transferred in its current state.');
+            }
+
+            $previousHolder = $freshPass->holder()->lockForUpdate()->first();
 
             if ($previousHolder !== null) {
                 $previousHolder->is_current = false;
@@ -58,5 +68,22 @@ final class DefaultPassTransferService implements PassTransferServiceInterface
         }
 
         return true;
+    }
+
+    private function assertHolderBelongsToPass(Pass $pass, PassHolder $newHolder): void
+    {
+        if (! $newHolder->exists) {
+            return;
+        }
+
+        if ($newHolder->pass_id !== null && (string) $newHolder->pass_id !== (string) $pass->getKey()) {
+            throw new InvalidArgumentException('The holder already belongs to a different pass.');
+        }
+
+        if (config('ticketing.owner.enabled', true)
+            && ($newHolder->owner_type !== $pass->owner_type || (string) $newHolder->owner_id !== (string) $pass->owner_id)
+        ) {
+            throw new AuthorizationException('The holder is not accessible in the current owner scope.');
+        }
     }
 }

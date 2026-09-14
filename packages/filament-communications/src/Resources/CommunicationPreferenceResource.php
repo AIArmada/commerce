@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Models\CommunicationPreference;
 use AIArmada\Filament\Communications\Resources\CommunicationPreferenceResource\Pages;
+use AIArmada\Filament\Communications\Support\CommunicationFilterOptions;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
@@ -31,7 +32,8 @@ final class CommunicationPreferenceResource extends Resource
 
     public static function getNavigationSort(): ?int
     {
-        return config('filament-communications.navigation.sort');
+        return config('filament-communications.navigation.sort')
+            + (int) config('filament-communications.navigation.offsets.preferences', 0);
     }
 
     /**
@@ -61,12 +63,7 @@ final class CommunicationPreferenceResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('channel')
-                    ->options([
-                        'email' => 'Email',
-                        'sms' => 'SMS',
-                        'push' => 'Push',
-                        'in_app' => 'In-App',
-                    ]),
+                    ->options(CommunicationFilterOptions::channels()),
                 Tables\Filters\SelectFilter::make('category')
                     ->options(collect(CommunicationCategory::cases())->pluck('value', 'value')),
             ])

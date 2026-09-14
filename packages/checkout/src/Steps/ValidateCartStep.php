@@ -72,7 +72,7 @@ final class ValidateCartStep extends AbstractCheckoutStep
         $snapshot['totals'] = $totals;
         $snapshot['captured_at'] = CarbonImmutable::now()->toIso8601String();
 
-        $session->update([
+        $session->persistState([
             'cart_snapshot' => $snapshot,
             'subtotal' => $totals['subtotal'],
         ]);

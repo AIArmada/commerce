@@ -46,7 +46,12 @@ class TimezoneResource extends Resource
 
     public static function getNavigationSort(): ?int
     {
-        return config('filament-commerce-support.navigation.sort');
+        return config('filament-commerce-support.navigation.sort', 100);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) config('filament-commerce-support.navigation.enabled', true);
     }
 
     public static function getEloquentQuery(): Builder

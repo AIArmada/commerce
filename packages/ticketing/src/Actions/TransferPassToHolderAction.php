@@ -7,7 +7,11 @@ namespace AIArmada\Ticketing\Actions;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Support\HolderAttributesValidator;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class TransferPassToHolderAction
@@ -19,10 +23,17 @@ final class TransferPassToHolderAction
         PassHolder | Model | null $newHolder,
         array $holderAttributes = [],
         ?string $reason = null,
+        ?Model $authorizedBy = null,
     ): PassHolder {
-        $resolvedHolder = $this->resolveHolder($pass, $newHolder, $holderAttributes);
+        if ($authorizedBy !== null) {
+            Gate::forUser($authorizedBy)->authorize('transfer', $pass);
+        }
 
-        return app(PassTransferServiceInterface::class)->transfer($pass, $resolvedHolder, $reason);
+        return DB::transaction(function () use ($pass, $newHolder, $holderAttributes, $reason) {
+            $resolvedHolder = $this->resolveHolder($pass, $newHolder, $holderAttributes);
+
+            return app(PassTransferServiceInterface::class)->transfer($pass, $resolvedHolder, $reason);
+        });
     }
 
     /** @param array<string, mixed> $holderAttributes */
@@ -32,10 +43,19 @@ final class TransferPassToHolderAction
         array $holderAttributes = [],
     ): PassHolder {
         if ($newHolder instanceof PassHolder) {
+            if ($newHolder->exists
+                && $newHolder->pass_id !== null
+                && (string) $newHolder->pass_id !== (string) $pass->getKey()
+            ) {
+                throw new InvalidArgumentException('The holder already belongs to a different pass.');
+            }
+
             return $newHolder;
         }
 
         if ($newHolder instanceof Model) {
+            HolderAttributesValidator::validateHolderModel($newHolder);
+
             $holder = new PassHolder;
             $holder->pass_id = $pass->getKey();
             $holder->holder_type = $newHolder->getMorphClass();
@@ -47,6 +67,8 @@ final class TransferPassToHolderAction
 
             return $holder;
         }
+
+        HolderAttributesValidator::validateAttributes($holderAttributes);
 
         $holder = new PassHolder;
         $holder->pass_id = $pass->getKey();

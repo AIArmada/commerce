@@ -8,6 +8,7 @@ use AIArmada\Addressing\Actions\SaveAddressAreaAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\AddressAreaHierarchy;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
+use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -36,6 +37,9 @@ final class EditAddressArea extends EditRecord
                     }
 
                     return 'Are you sure you\'d like to delete this area?';
+                })
+                ->after(function (): void {
+                    AddressingFilterOptions::forgetAreaOptions();
                 }),
         ];
     }
@@ -78,6 +82,10 @@ final class EditAddressArea extends EditRecord
             throw new LogicException('Expected an address area record.');
         }
 
-        return app(SaveAddressAreaAction::class)->handle($data, $record);
+        $area = app(SaveAddressAreaAction::class)->handle($data, $record);
+
+        AddressingFilterOptions::forgetAreaOptions();
+
+        return $area;
     }
 }

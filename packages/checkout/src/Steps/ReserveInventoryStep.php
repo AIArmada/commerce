@@ -143,7 +143,7 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
             ];
             $pricingData['reservations_expire_at'] = $outcome->expiresAt ?? CarbonImmutable::now()->addSeconds($reservationTtl)->toIso8601String();
 
-            $session->update(['pricing_data' => $pricingData]);
+            $session->persistState(['pricing_data' => $pricingData]);
 
             return $this->success('Inventory reserved', [
                 'reference' => $outcome->reference,
@@ -196,7 +196,7 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
 
             $pricingData = $session->pricing_data ?? [];
             unset($pricingData['inventory_reservation'], $pricingData['reservations_expire_at']);
-            $session->update(['pricing_data' => $pricingData]);
+            $session->persistState(['pricing_data' => $pricingData]);
 
             return $this->compensated('Inventory reservation released', [
                 'operation' => 'release_inventory',

@@ -64,13 +64,13 @@ class Authz
         $scopeId = $this->resolveScopeId($scope);
 
         setPermissionsTeamId($scopeId);
-        $this->flushPermissionCache($user);
+        $this->resetScopeState($user);
 
         try {
             return $callback();
         } finally {
             setPermissionsTeamId($previousScope);
-            $this->flushPermissionCache($user);
+            $this->resetScopeState($user);
         }
     }
 
@@ -86,13 +86,20 @@ class Authz
 
     public function clearCache(): void
     {
-        $this->flushPermissionCache();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->resetScopeState();
     }
 
-    protected function flushPermissionCache(?Authorizable $user = null): void
+    /**
+     * Reset request-local permission state after a team-scope switch.
+     *
+     * Spatie applies team scoping at query time, so a global shared-cache
+     * flush is unnecessary here; clearing the request-scoped wildcard cache
+     * and the user's loaded relations is sufficient and avoids cross-request
+     * cache stampedes.
+     */
+    protected function resetScopeState(?Authorizable $user = null): void
     {
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-
         if (app()->bound(WildcardPermissionCache::class)) {
             app(WildcardPermissionCache::class)->clear();
         }
@@ -110,13 +117,13 @@ class Authz
         $teams = $registrar->teams;
 
         $registrar->teams = false;
-        $this->flushPermissionCache($user);
+        $this->resetScopeState($user);
 
         try {
             return $callback();
         } finally {
             $registrar->teams = $teams;
-            $this->flushPermissionCache($user);
+            $this->resetScopeState($user);
         }
     }
 }

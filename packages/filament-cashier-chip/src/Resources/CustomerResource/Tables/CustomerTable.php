@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Throwable;
 
 final class CustomerTable
@@ -26,9 +27,15 @@ final class CustomerTable
     /** @var array<string, bool> */
     private static array $genericTrialQuerySupport = [];
 
+    public static function resetGenericTrialQuerySupport(): void
+    {
+        self::$genericTrialQuerySupport = [];
+    }
+
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => self::eagerLoadCustomerRelations($query))
             ->columns([
                 TextColumn::make('name')
                     ->label('Name')
@@ -61,15 +68,10 @@ final class CustomerTable
 
                 TextColumn::make('default_payment_method')
                     ->label('Payment Method')
-                    ->getStateUsing(fn (Model $record): ?string => self::defaultPaymentMethodLabel($record))
+                    ->getStateUsing(fn (Model $record): ?string => self::defaultPaymentMethodSummary($record))
                     ->badge()
                     ->color('primary')
-                    ->placeholder('None')
-                    ->formatStateUsing(
-                        fn (?string $state, Model $record): ?string => $state !== null
-                        ? ucfirst($state) . ' •••• ' . (self::defaultPaymentMethodLastFour($record) ?? '****')
-                        : null
-                    ),
+                    ->placeholder('None'),
 
                 TextColumn::make('subscriptions_count')
                     ->label('Subscriptions')
@@ -78,6 +80,13 @@ final class CustomerTable
 
                         if ($relationName === null) {
                             return 0;
+                        }
+
+                        $countKey = Str::snake($relationName) . '_count';
+                        $eagerCount = $record->getAttribute($countKey);
+
+                        if (is_numeric($eagerCount)) {
+                            return (int) $eagerCount;
                         }
 
                         /** @var Relation $relation */
@@ -209,7 +218,7 @@ final class CustomerTable
         return call_user_func([$record, 'defaultPaymentMethod']);
     }
 
-    private static function defaultPaymentMethodLabel(Model $record): ?string
+    private static function defaultPaymentMethodSummary(Model $record): ?string
     {
         $paymentMethod = self::defaultPaymentMethod($record);
 
@@ -217,34 +226,64 @@ final class CustomerTable
             return null;
         }
 
+        $label = null;
+
         if (is_callable([$paymentMethod, 'brand'])) {
             $brand = call_user_func([$paymentMethod, 'brand']);
 
             if (is_string($brand) && $brand !== '') {
-                return $brand;
+                $label = $brand;
             }
         }
 
-        if (! is_callable([$paymentMethod, 'type'])) {
+        if ($label === null && is_callable([$paymentMethod, 'type'])) {
+            $type = call_user_func([$paymentMethod, 'type']);
+
+            if (is_string($type) && $type !== '') {
+                $label = $type;
+            }
+        }
+
+        if ($label === null) {
             return null;
         }
 
-        $type = call_user_func([$paymentMethod, 'type']);
+        $lastFour = null;
 
-        return is_string($type) && $type !== '' ? $type : null;
+        if (is_callable([$paymentMethod, 'lastFour'])) {
+            $value = call_user_func([$paymentMethod, 'lastFour']);
+
+            if (is_string($value) && $value !== '') {
+                $lastFour = $value;
+            }
+        }
+
+        return ucfirst($label) . ' •••• ' . ($lastFour ?? '****');
     }
 
-    private static function defaultPaymentMethodLastFour(Model $record): ?string
+    private static function eagerLoadCustomerRelations(Builder $query): Builder
     {
-        $paymentMethod = self::defaultPaymentMethod($record);
+        $model = $query->getModel();
 
-        if (! is_object($paymentMethod) || ! is_callable([$paymentMethod, 'lastFour'])) {
-            return null;
+        $with = [];
+
+        foreach (['chipCustomerLink', 'storedPaymentMethods'] as $relation) {
+            if (method_exists($model, $relation)) {
+                $with[] = $relation;
+            }
         }
 
-        $lastFour = call_user_func([$paymentMethod, 'lastFour']);
+        if ($with !== []) {
+            $query->with($with);
+        }
 
-        return is_string($lastFour) && $lastFour !== '' ? $lastFour : null;
+        $subscriptionsRelation = self::resolveSubscriptionsRelationName($model);
+
+        if ($subscriptionsRelation !== null) {
+            $query->withCount($subscriptionsRelation);
+        }
+
+        return $query;
     }
 
     private static function trialEndsAt(Model $record): ?Carbon

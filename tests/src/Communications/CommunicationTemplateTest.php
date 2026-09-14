@@ -7,12 +7,13 @@ use AIArmada\Communications\Models\CommunicationTemplate;
 use AIArmada\Communications\Models\CommunicationTemplateVersion;
 
 test('creates a template', function (): void {
-    $template = CommunicationTemplate::create([
+    $template = (new CommunicationTemplate)->forceFill([
         'key' => 'welcome-email',
         'name' => 'Welcome Email',
         'category' => 'mail',
         'status' => TemplateStatus::Draft,
     ]);
+    $template->save();
 
     expect($template->id)->toBeUuid();
     expect($template->key)->toBe('welcome-email');
@@ -23,12 +24,13 @@ test('creates a template', function (): void {
 });
 
 test('template has versions', function (): void {
-    $template = CommunicationTemplate::create([
+    $template = (new CommunicationTemplate)->forceFill([
         'key' => 'welcome-email',
         'name' => 'Welcome Email',
         'category' => 'mail',
         'status' => TemplateStatus::Published,
     ]);
+    $template->save();
 
     $version = CommunicationTemplateVersion::create([
         'template_id' => $template->id,
@@ -46,12 +48,13 @@ test('template has versions', function (): void {
 });
 
 test('template versions track full content', function (): void {
-    $template = CommunicationTemplate::create([
+    $template = (new CommunicationTemplate)->forceFill([
         'key' => 'welcome-email',
         'name' => 'Welcome Email',
         'category' => 'mail',
         'status' => TemplateStatus::Published,
     ]);
+    $template->save();
 
     $version = CommunicationTemplateVersion::create([
         'template_id' => $template->id,
@@ -71,12 +74,13 @@ test('template versions track full content', function (): void {
 });
 
 test('template cascade deletes versions', function (): void {
-    $template = CommunicationTemplate::create([
+    $template = (new CommunicationTemplate)->forceFill([
         'key' => 'test',
         'name' => 'Test',
         'category' => 'mail',
         'status' => TemplateStatus::Draft,
     ]);
+    $template->save();
 
     CommunicationTemplateVersion::create([
         'template_id' => $template->id,

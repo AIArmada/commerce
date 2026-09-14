@@ -31,7 +31,8 @@ final class CloneEventAction
                 ? $event->title . ' (Copy)'
                 : $this->contentNormalizer->normalizeTitle((string) $options['title']);
 
-            $clone = Event::query()->create([
+            $clone = new Event;
+            $clone->forceFill([
                 'owner_type' => $event->owner_type,
                 'owner_id' => $event->owner_id,
                 'created_by_type' => $event->created_by_type,
@@ -56,7 +57,7 @@ final class CloneEventAction
                 'registration_mode' => $event->registration_mode,
                 'issue_passes_for_free' => $event->issue_passes_for_free ?? true,
                 'metadata' => $event->metadata,
-            ]);
+            ])->save();
 
             $this->cloneContents->handle(
                 sourceEventId: $event->getKey(),

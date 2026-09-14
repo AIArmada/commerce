@@ -70,7 +70,7 @@ final class DownlinesRelationManager extends RelationManager
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->modifyQueryUsing(fn (Builder $query) => $query->withCount('conversions'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['rank'])->withCount('conversions'))
             ->defaultSort('created_at', 'desc')
             ->actions([
                 Action::make('view')

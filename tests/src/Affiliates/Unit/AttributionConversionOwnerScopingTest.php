@@ -33,54 +33,71 @@ it('scopes attributions to current owner and global when enabled', function (): 
         }
     });
 
-    $affiliate = Affiliate::create([
+    $affiliate = new Affiliate([
         'code' => 'AFF-OWNER-A',
         'name' => 'Owned Affiliate',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
+    ]);
+    $affiliate->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+    $affiliate->save();
 
-    $global = AffiliateAttribution::create([
+    $global = new AffiliateAttribution([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'cookie_value' => 'global-cookie',
         'cart_instance' => 'default',
+    ]);
+    $global->forceFill([
         'owner_type' => null,
         'owner_id' => null,
     ]);
+    $global->save();
 
-    $ownedA = AffiliateAttribution::create([
+    $ownedA = new AffiliateAttribution([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'cookie_value' => 'owner-a-cookie',
         'cart_instance' => 'default',
+    ]);
+    $ownedA->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+    $ownedA->save();
 
     $ownedB = OwnerContext::withOwner($ownerB, function () use ($affiliate, $ownerB): AffiliateAttribution {
-        return AffiliateAttribution::create([
+        $model = new AffiliateAttribution([
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => $affiliate->code,
             'cookie_value' => 'owner-b-cookie',
             'cart_instance' => 'default',
+        ]);
+        $model->forceFill([
             'owner_type' => $ownerB->getMorphClass(),
             'owner_id' => $ownerB->getKey(),
         ]);
+        $model->save();
+
+        return $model;
     });
 
-    $corrupt = AffiliateAttribution::create([
+    $corrupt = new AffiliateAttribution([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'cookie_value' => 'corrupt-cookie',
         'cart_instance' => 'default',
+    ]);
+    $corrupt->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+    $corrupt->save();
 
     DB::table((new AffiliateAttribution)->getTable())
         ->where('id', $corrupt->getKey())
@@ -114,18 +131,21 @@ it('scopes conversions to current owner and global when enabled', function (): v
         }
     });
 
-    $affiliate = Affiliate::create([
+    $affiliate = new Affiliate([
         'code' => 'AFF-OWNER-A-2',
         'name' => 'Owned Affiliate',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
+    ]);
+    $affiliate->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+    $affiliate->save();
 
-    $global = AffiliateConversion::create([
+    $global = new AffiliateConversion([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'order_reference' => 'GLOBAL',
@@ -133,11 +153,14 @@ it('scopes conversions to current owner and global when enabled', function (): v
         'commission_minor' => 500,
         'commission_currency' => 'USD',
         'status' => PendingConversion::class,
+    ]);
+    $global->forceFill([
         'owner_type' => null,
         'owner_id' => null,
     ]);
+    $global->save();
 
-    $ownedA = AffiliateConversion::create([
+    $ownedA = new AffiliateConversion([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'order_reference' => 'OWN-A',
@@ -145,12 +168,15 @@ it('scopes conversions to current owner and global when enabled', function (): v
         'commission_minor' => 500,
         'commission_currency' => 'USD',
         'status' => PendingConversion::class,
+    ]);
+    $ownedA->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+    $ownedA->save();
 
     $ownedB = OwnerContext::withOwner($ownerB, function () use ($affiliate, $ownerB): AffiliateConversion {
-        return AffiliateConversion::create([
+        $model = new AffiliateConversion([
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => $affiliate->code,
             'order_reference' => 'OWN-B',
@@ -158,12 +184,17 @@ it('scopes conversions to current owner and global when enabled', function (): v
             'commission_minor' => 500,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,
+        ]);
+        $model->forceFill([
             'owner_type' => $ownerB->getMorphClass(),
             'owner_id' => $ownerB->getKey(),
         ]);
+        $model->save();
+
+        return $model;
     });
 
-    $corrupt = AffiliateConversion::create([
+    $corrupt = new AffiliateConversion([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'order_reference' => 'CORRUPT',
@@ -171,9 +202,12 @@ it('scopes conversions to current owner and global when enabled', function (): v
         'commission_minor' => 500,
         'commission_currency' => 'USD',
         'status' => PendingConversion::class,
+    ]);
+    $corrupt->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+    $corrupt->save();
 
     DB::table((new AffiliateConversion)->getTable())
         ->where('id', $corrupt->getKey())
@@ -202,52 +236,66 @@ it('returns strict global-only when enabled and resolved owner is null', functio
         }
     });
 
-    $affiliate = Affiliate::create([
+    $affiliate = new Affiliate([
         'code' => 'AFF-NULL-OWNER',
         'name' => 'Owned Affiliate',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
+    ]);
+    $affiliate->forceFill([
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => $owner->getKey(),
     ]);
+    $affiliate->save();
 
     $globalAttribution = OwnerContext::withOwner(null, function () use ($affiliate): AffiliateAttribution {
-        return AffiliateAttribution::create([
+        $model = new AffiliateAttribution([
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => $affiliate->code,
             'cookie_value' => 'global-only-attribution',
             'cart_instance' => 'default',
+        ]);
+        $model->forceFill([
             'owner_type' => null,
             'owner_id' => null,
         ]);
+        $model->save();
+
+        return $model;
     });
 
-    AffiliateAttribution::create([
+    $record = new AffiliateAttribution([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'cookie_value' => 'owned-attribution',
         'cart_instance' => 'default',
+    ]);
+    $record->forceFill([
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => $owner->getKey(),
     ]);
+    $record->save();
 
-    $corruptAttribution = AffiliateAttribution::create([
+    $corruptAttribution = new AffiliateAttribution([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'cookie_value' => 'corrupt-attribution',
         'cart_instance' => 'default',
+    ]);
+    $corruptAttribution->forceFill([
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => $owner->getKey(),
     ]);
+    $corruptAttribution->save();
 
     DB::table((new AffiliateAttribution)->getTable())
         ->where('id', $corruptAttribution->getKey())
         ->update(['owner_id' => null]);
 
     $globalConversion = OwnerContext::withOwner(null, function () use ($affiliate): AffiliateConversion {
-        return AffiliateConversion::create([
+        $model = new AffiliateConversion([
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => $affiliate->code,
             'order_reference' => 'GLOBAL',
@@ -255,12 +303,17 @@ it('returns strict global-only when enabled and resolved owner is null', functio
             'commission_minor' => 500,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,
+        ]);
+        $model->forceFill([
             'owner_type' => null,
             'owner_id' => null,
         ]);
+        $model->save();
+
+        return $model;
     });
 
-    AffiliateConversion::create([
+    $record = new AffiliateConversion([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'order_reference' => 'OWNED',
@@ -268,11 +321,14 @@ it('returns strict global-only when enabled and resolved owner is null', functio
         'commission_minor' => 500,
         'commission_currency' => 'USD',
         'status' => PendingConversion::class,
+    ]);
+    $record->forceFill([
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => $owner->getKey(),
     ]);
+    $record->save();
 
-    $corruptConversion = AffiliateConversion::create([
+    $corruptConversion = new AffiliateConversion([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'order_reference' => 'CORRUPT',
@@ -280,9 +336,12 @@ it('returns strict global-only when enabled and resolved owner is null', functio
         'commission_minor' => 500,
         'commission_currency' => 'USD',
         'status' => PendingConversion::class,
+    ]);
+    $corruptConversion->forceFill([
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => $owner->getKey(),
     ]);
+    $corruptConversion->save();
 
     DB::table((new AffiliateConversion)->getTable())
         ->where('id', $corruptConversion->getKey())

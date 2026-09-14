@@ -114,3 +114,17 @@ it('allows custom loggable attributes', function (): void {
     $reflectionMethod = new ReflectionMethod($model, 'getLoggableAttributes');
     expect($reflectionMethod->invoke($model))->toBe(['name', 'status']);
 });
+
+it('excludes sensitive attributes from the default loggable attributes', function (): void {
+    $model = new class extends Model
+    {
+        use LogsCommerceActivity;
+
+        protected $table = 'test_loggable_models';
+
+        protected $fillable = ['name', 'email', 'phone', 'status', 'price', 'api_secret_token'];
+    };
+
+    $reflectionMethod = new ReflectionMethod($model, 'getLoggableAttributes');
+    expect($reflectionMethod->invoke($model))->toBe(['status', 'price']);
+});

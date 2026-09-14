@@ -23,10 +23,25 @@ require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
  */
 function createIsolationCustomer(array $attributes, ?Model $owner = null): Customer
 {
-    /** @var Customer $customer */
-    $customer = OwnerContext::withOwner($owner, fn (): Customer => Customer::query()->create($attributes));
+    $restricted = [];
 
-    return $customer;
+    foreach (['user_id', 'status', 'is_guest', 'accepts_marketing', 'created_at', 'updated_at'] as $key) {
+        if (array_key_exists($key, $attributes)) {
+            $restricted[$key] = $attributes[$key];
+            unset($attributes[$key]);
+        }
+    }
+
+    return OwnerContext::withOwner($owner, function () use ($attributes, $restricted): Customer {
+        /** @var Customer $customer */
+        $customer = Customer::query()->create($attributes);
+
+        if ($restricted !== []) {
+            $customer->forceFill($restricted)->save();
+        }
+
+        return $customer;
+    });
 }
 
 beforeEach(function (): void {

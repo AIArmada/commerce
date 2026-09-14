@@ -112,9 +112,9 @@ final class InventoryStatsAggregator
         }
 
         /** @var T $cached */
-        $cached = Cache::remember(
+        $cached = Cache::flexible(
             self::CACHE_PREFIX . $key . '|' . InventoryOwnerScope::cacheKeySuffix(),
-            $ttl,
+            [$ttl, $ttl],
             $callback,
         );
 

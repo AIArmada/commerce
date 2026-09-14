@@ -118,6 +118,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Stored Checkout Actor
+    |--------------------------------------------------------------------------
+    |
+    | PersistCustomerStep can resume the authenticated actor stored during
+    | resolve_customer. Only the model classes listed here — plus the auth
+    | provider models and the checkout customer model, which are always
+    | allowed — may be resolved from that stored reference.
+    |
+    */
+    'checkout_actor' => [
+        'allowed_types' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Integrations
     |--------------------------------------------------------------------------
     */

@@ -69,6 +69,8 @@ class RecentActivityWidget extends BaseWidget
         $query = Cart::query()
             ->selectRaw("
                 id,
+                owner_type,
+                owner_id,
                 identifier as session_id,
                 CASE
                     WHEN checkout_abandoned_at IS NOT NULL THEN 'abandoned'
@@ -80,8 +82,7 @@ class RecentActivityWidget extends BaseWidget
                 total as total_cents,
                 updated_at
             ")
-            ->orderByDesc('updated_at')
-            ->limit(50);
+            ->orderByDesc('updated_at');
 
         $query->forOwner(includeGlobal: Cart::includeGlobalRecords());
 

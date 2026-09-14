@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
@@ -18,7 +19,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 final class NotificationInboxService
 {
@@ -127,16 +127,16 @@ final class NotificationInboxService
 
     public function prune(?CarbonInterface $before = null): int
     {
-        $query = $this->prunableQuery($before);
-        $count = $query->count();
+        $pruned = 0;
 
-        if ($count === 0) {
-            return 0;
-        }
+        $this->prunableQuery($before)->chunkById(500, function ($records) use (&$pruned): void {
+            $pruned += NotificationInbox::query()
+                ->withoutOwnerScope()
+                ->whereKey($records->modelKeys())
+                ->delete();
+        });
 
-        $query->delete();
-
-        return $count;
+        return $pruned;
     }
 
     /**
@@ -191,9 +191,14 @@ final class NotificationInboxService
 
     private function validateOwnedModel(Model $model): void
     {
-        try {
-            OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
-        } catch (InvalidArgumentException) {
+        if (! in_array(HasOwnerScopeConfig::class, class_uses_recursive($model), true)) {
+            return;
         }
+
+        if (! (bool) config('communications.features.owner.enabled', false)) {
+            return;
+        }
+
+        OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
     }
 }

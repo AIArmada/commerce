@@ -41,14 +41,14 @@ beforeEach(function (): void {
 
     $this->blockedEntity = BlockableTestModel::create(['name' => 'Blocked Entity']);
 
-    Block::create([
+    Block::unguarded(fn (): Block => Block::create([
         'blockable_type' => $this->blockedEntity->getMorphClass(),
         'blockable_id' => $this->blockedEntity->id,
         'reason' => BlockReason::Spam,
         'status' => BlockStatus::Active,
         'expires_at' => CarbonImmutable::now()->addDays(30),
         'metadata' => '{}',
-    ]);
+    ]));
 });
 
 afterEach(function (): void {
@@ -67,13 +67,13 @@ describe('isBlocked', function (): void {
     it('returns false when block is expired', function (): void {
         $entity = BlockableTestModel::create(['name' => 'Expired Block Entity']);
 
-        Block::create([
+        Block::unguarded(fn (): Block => Block::create([
             'blockable_type' => $entity->getMorphClass(),
             'blockable_id' => $entity->id,
             'reason' => BlockReason::Other,
             'status' => BlockStatus::Expired,
             'metadata' => '{}',
-        ]);
+        ]));
 
         expect($entity->isBlocked())->toBeFalse();
     });
@@ -81,13 +81,13 @@ describe('isBlocked', function (): void {
     it('returns false when block is lifted', function (): void {
         $entity = BlockableTestModel::create(['name' => 'Lifted Block Entity']);
 
-        Block::create([
+        Block::unguarded(fn (): Block => Block::create([
             'blockable_type' => $entity->getMorphClass(),
             'blockable_id' => $entity->id,
             'reason' => BlockReason::Other,
             'status' => BlockStatus::Lifted,
             'metadata' => '{}',
-        ]);
+        ]));
 
         expect($entity->isBlocked())->toBeFalse();
     });
@@ -108,13 +108,13 @@ describe('activeBlocks relationship', function (): void {
     it('returns only active blocks', function (): void {
         expect($this->blockedEntity->activeBlocks)->toHaveCount(1);
 
-        Block::create([
+        Block::unguarded(fn (): Block => Block::create([
             'blockable_type' => $this->blockedEntity->getMorphClass(),
             'blockable_id' => $this->blockedEntity->id,
             'reason' => BlockReason::Other,
             'status' => BlockStatus::Expired,
             'metadata' => '{}',
-        ]);
+        ]));
 
         expect($this->blockedEntity->activeBlocks)->toHaveCount(1);
     });

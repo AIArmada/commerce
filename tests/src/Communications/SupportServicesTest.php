@@ -72,12 +72,13 @@ test('destination resolver returns null when notifiable has no route', function 
 
 test('null content renderer render method returns RenderedContentData', function (): void {
     $resolver = app(ContentRenderer::class);
-    $template = CommunicationTemplate::create([
+    $template = (new CommunicationTemplate)->forceFill([
         'key' => 'test',
         'name' => 'Test',
         'category' => 'mail',
         'status' => TemplateStatus::Draft,
     ]);
+    $template->save();
 
     $result = $resolver->render($template, 'mail', 'en', []);
 

@@ -31,7 +31,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 
-            $table->index(['delivery_id', 'attempt_number']);
+            $table->unique(['delivery_id', 'attempt_number']);
             $table->index(['delivery_id', 'created_at']);
             $table->index(['provider', 'provider_message_id']);
         });

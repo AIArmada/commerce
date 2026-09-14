@@ -31,7 +31,7 @@ beforeEach(function (): void {
         'email' => 'reviewer@app.com',
         'password' => 'secret',
     ]);
-    $this->application = $this->withMembershipOwner(fn (): MembershipApplication => MembershipApplication::query()->create([
+    $this->application = $this->withMembershipOwner(fn (): MembershipApplication => $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),
@@ -100,7 +100,7 @@ it('sets reviewed_at timestamp', function (): void {
 });
 
 it('rejects approving a terminal application', function (): void {
-    $this->application->update(['status' => ApplicationStatus::Rejected]);
+    $this->application->forceFill(['status' => ApplicationStatus::Rejected])->save();
 
     expect(fn () => ApproveMembershipApplicationAction::make()->handle(
         application: $this->application,

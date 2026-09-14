@@ -47,10 +47,19 @@ resolve them:
 `laravel/cashier`, and CHIP still relies on `aiarmada/chip` or `aiarmada/cashier-chip` for the
 rest of their gateway-specific configuration.
 
+## Customer portal
+
+The `portal` section guards the self-hosted billing portal fallback used by gateways without a
+hosted portal (CHIP):
+
+| Key | Purpose |
+| --- | --- |
+| `portal.allowed_panels` | Filament panel IDs that `customerPortalUrl()` may link to |
+
 ## Payment operations
 
-The `payment_operations.rate_limiting` section protects mutable gateway calls such as Stripe charges,
-refunds, and paid subscription creation:
+The `payment_operations.rate_limiting` section protects mutable gateway calls such as charges,
+refunds, and paid subscription creation on every gateway:
 
 | Key | Purpose |
 | --- | --- |

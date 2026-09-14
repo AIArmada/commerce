@@ -42,7 +42,7 @@ it('provides invitations relationship', function (): void {
 });
 
 it('member applications are scoped to the subject', function (): void {
-    $application1 = MembershipApplication::query()->create([
+    $application1 = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->user->getKey(),
@@ -50,7 +50,7 @@ it('member applications are scoped to the subject', function (): void {
         'justification' => 'Claim for subject 1.',
     ]);
 
-    $application2 = MembershipApplication::query()->create([
+    $application2 = $this->createMembershipApplication([
         'subject_type' => $this->subject2->getMorphClass(),
         'subject_id' => $this->subject2->getKey(),
         'applicant_id' => $this->user->getKey(),
@@ -84,14 +84,14 @@ it('member invitations are scoped to the subject', function (): void {
 });
 
 it('cancels pending records and preserves terminal history when a subject is deleted', function (): void {
-    $pendingApplication = MembershipApplication::query()->create([
+    $pendingApplication = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->user->getKey(),
         'status' => ApplicationStatus::Pending,
         'justification' => 'Pending application.',
     ]);
-    $terminalApplication = MembershipApplication::query()->create([
+    $terminalApplication = $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->user->getKey(),
@@ -157,7 +157,7 @@ it('cascades pending lifecycle records across owner scopes', function (): void {
         'password' => 'secret',
     ]);
 
-    $application = OwnerContext::withOwner($ownerA, fn (): MembershipApplication => MembershipApplication::query()->create([
+    $application = OwnerContext::withOwner($ownerA, fn (): MembershipApplication => $this->createMembershipApplication([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $ownerA->getKey(),

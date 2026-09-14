@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentProducts\Resources\CollectionResource\Pages;
 use AIArmada\FilamentProducts\Resources\CollectionResource\Schemas\CollectionForm;
 use AIArmada\FilamentProducts\Resources\CollectionResource\Schemas\CollectionInfolist;
 use AIArmada\FilamentProducts\Resources\CollectionResource\Tables\CollectionsTable;
 use AIArmada\Products\Models\Collection;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 final class CollectionResource extends BaseCatalogResource
 {
@@ -30,16 +35,52 @@ final class CollectionResource extends BaseCatalogResource
      */
     public static function getEloquentQuery(): Builder
     {
-        return Collection::query()
-            ->forOwner()
+        return parent::getEloquentQuery()
             ->withCount(['products']);
     }
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getEloquentQuery()->visible()->count();
+        $count = (int) OwnerCache::remember(
+            OwnerContext::resolve(),
+            'filament-products.nav-badge.collections',
+            CarbonImmutable::now()->addSeconds(30),
+            function (): int {
+                return (int) self::getEloquentQuery()->visible()->count();
+            }
+        );
 
         return $count > 0 ? (string) $count : null;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('collection.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('collection.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('collection.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('collection.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('collection.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function form(Schema $schema): Schema

@@ -42,8 +42,16 @@ class NavigationConfigurator
         $groups = self::resolveSetting($settings, 'groups', []);
         $overrides = self::resolveSetting($settings, 'overrides', []);
 
+        if (! is_array($groups)) {
+            $groups = [];
+        }
+
+        if (! is_array($overrides)) {
+            $overrides = [];
+        }
+
         if ($groups !== []) {
-            config()->set('commerce-support.filament.navigation.groups', array_merge(
+            config()->set('commerce-support.filament.navigation.groups', self::mergeEntries(
                 config('commerce-support.filament.navigation.groups', []),
                 $groups,
             ));
@@ -52,6 +60,9 @@ class NavigationConfigurator
         if ($overrides !== []) {
             $groupRenames = [];
             foreach ($groups as $key => $groupConfig) {
+                if (! is_array($groupConfig)) {
+                    continue;
+                }
                 $newLabel = $groupConfig['label'] ?? $key;
                 if (is_string($newLabel) && $newLabel !== '' && $newLabel !== $key) {
                     $groupRenames[$key] = $newLabel;
@@ -60,6 +71,9 @@ class NavigationConfigurator
 
             if ($groupRenames !== []) {
                 foreach ($overrides as &$itemConfig) {
+                    if (! is_array($itemConfig)) {
+                        continue;
+                    }
                     $currentGroup = $itemConfig['group'] ?? '';
                     if (isset($groupRenames[$currentGroup])) {
                         $itemConfig['group'] = $groupRenames[$currentGroup];
@@ -68,11 +82,40 @@ class NavigationConfigurator
                 unset($itemConfig);
             }
 
-            config()->set('commerce-support.filament.navigation.items', array_merge(
+            config()->set('commerce-support.filament.navigation.items', self::mergeEntries(
                 config('commerce-support.filament.navigation.items', []),
                 $overrides,
             ));
         }
+    }
+
+    /**
+     * Merge settings entries over file config per entry (not per top-level key).
+     *
+     * Settings rows persist partial configs (only submitted, differing keys),
+     * so a shallow array_merge would permanently shadow file-level keys that
+     * the settings entry omits (e.g. a file label lost when only sort was
+     * saved). Non-array entries are corrupt payloads and are skipped.
+     *
+     * @param  array<string, mixed>  $base
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private static function mergeEntries(array $base, array $overrides): array
+    {
+        foreach ($overrides as $key => $override) {
+            if (! is_array($override)) {
+                continue;
+            }
+
+            $existing = $base[$key] ?? [];
+
+            $base[$key] = is_array($existing)
+                ? array_replace_recursive($existing, $override)
+                : $override;
+        }
+
+        return $base;
     }
 
     /**
@@ -104,10 +147,31 @@ class NavigationConfigurator
         config()->set('commerce-support.filament.navigation.items', self::$originalItemsConfig);
     }
 
-    private static function resolveSettings(): ?CommerceNavigationSettings
+    /**
+     * Clear captured defaults so the next apply() re-reads file config.
+     * Intended for long-lived workers after runtime config changes and for
+     * test isolation; the captured statics otherwise never refresh in-process.
+     */
+    public static function reset(): void
+    {
+        self::$originalGroupConfig = [];
+        self::$originalItemsConfig = [];
+        self::$captured = false;
+    }
+
+    public static function resolveSettings(): ?CommerceNavigationSettings
     {
         try {
-            return app(CommerceNavigationSettings::class);
+            $settings = app(CommerceNavigationSettings::class);
+
+            // Settings load lazily on first property access: reading the
+            // properties forces the load here so a missing table or missing
+            // rows surfaces inside the catch instead of at some later,
+            // unguarded read.
+            $loaded = [$settings->groups, $settings->overrides];
+            unset($loaded);
+
+            return $settings;
         } catch (QueryException | MissingSettings) {
             return null;
         }

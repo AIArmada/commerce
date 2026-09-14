@@ -68,6 +68,24 @@ $result = $calculator->calculate($product, 1, [
 ]);
 ```
 
+Only lists, prices, and tiers in the resolved currency are considered. A
+price in another currency never wins; the calculation falls through to the
+next source (or the base price).
+
+### Batch Usage
+
+Use `calculateMany()` for carts and order lines. It resolves the default
+price list once per call instead of once per line:
+
+```php
+$results = $calculator->calculateMany([
+    ['item' => $productA, 'quantity' => 2],
+    ['item' => $productB],
+], ['customer_id' => 'uuid-of-customer']);
+
+// $results[0] and $results[1] are PriceResultData, keyed like the input.
+```
+
 ## Priceable Interface
 
 Your models must implement the `Priceable` interface to work with the pricing engine:
@@ -150,6 +168,18 @@ $priceList = PriceList::create([
 ]);
 ```
 
+Slugs are unique per owner, so different tenants may each have a
+`wholesale` list. Duplicate slugs within one owner raise the database
+native unique violation, which keeps `createOrFirst()`-style ensure
+calls idempotent:
+
+```php
+$priceList = PriceList::query()->createOrFirst(
+    ['slug' => 'wholesale'],
+    ['name' => 'Wholesale'],
+);
+```
+
 ### Creating Prices
 
 ```php
@@ -191,6 +221,25 @@ $ownerLists = PriceList::forOwner($owner)->get();
 ```
 
 Saving a list with `is_default = true` makes it the only default in its owner scope; the newly saved list wins. If legacy data contains duplicate defaults, resolution is deterministic: highest priority wins, then earliest creation time, then the record ID.
+
+### Activating and Deactivating
+
+Use the transition helpers so `is_active` and `deactivated_at` stay in sync:
+
+```php
+$priceList->deactivate();
+$priceList->save();
+
+$priceList->activate();
+$priceList->save();
+```
+
+### Price Validation
+
+Saving a `Price` or `PriceTier` validates monetary fields: amounts must be
+zero or greater, `min_quantity` at least 1, tier `max_quantity` not below
+`min_quantity`, and `starts_at` not after `ends_at`. Violations throw
+`InvalidArgumentException`.
 
 ## Working with Price Tiers
 

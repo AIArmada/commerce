@@ -8,6 +8,8 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Builder;
 
 trait InteractsWithCashierChipData
@@ -31,6 +33,31 @@ trait InteractsWithCashierChipData
         return OwnerUiScope::apply($query, includeGlobal: false);
     }
 
+    protected static function hasWidgetOwnerContext(): bool
+    {
+        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
+            return true;
+        }
+
+        return OwnerContext::resolve() !== null;
+    }
+
+    /**
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    protected function rememberWidgetValue(string $key, callable $callback): mixed
+    {
+        return OwnerCache::remember(
+            OwnerContext::resolve(),
+            'filament-cashier-chip.widget.' . $key,
+            (int) config('filament-cashier-chip.widgets.cache_ttl', 120),
+            $callback,
+        );
+    }
+
     protected function formatCurrency(int $amount): string
     {
         $currency = config('cashier-chip.currency', 'MYR');
@@ -41,6 +68,8 @@ trait InteractsWithCashierChipData
 
     protected function normalizeToMonthly(int $amount, string $interval, int $count): int
     {
+        $count = max(1, $count);
+
         $multiplier = match ($interval) {
             'day' => 30 / $count,
             'week' => 4.33 / $count,
@@ -55,5 +84,12 @@ trait InteractsWithCashierChipData
     protected function currency(): string
     {
         return config('cashier-chip.currency', 'MYR');
+    }
+
+    protected function safeCurrencyCode(): string
+    {
+        $currency = mb_strtoupper((string) $this->currency());
+
+        return preg_match('/^[A-Z]{3}$/', $currency) === 1 ? $currency : 'MYR';
     }
 }

@@ -329,6 +329,27 @@ public static function table(Table $table): Table
 }
 ```
 
+## Admin Pages
+
+### Merge Customers
+
+Merging requires `update` on both customers and `delete` on the source
+(record policies are enforced per record). Cross-owner merges are rejected
+with a notification instead of an error page.
+
+### Segment Rebuild
+
+Single-segment and rebuild-all actions are dispatched to the queue
+(`customers:rebuild-segments` with the current owner tuple), so a queue
+worker must be running. Each scoped automatic segment is authorized against
+the `rebuild` policy before anything is queued.
+
+### Address Validation
+
+Single validation marks one address `verified`. Batch validation marks up
+to 100 currently unvalidated in-scope addresses `verified` in one run. Both
+stay inside the current owner scope.
+
 ## Next Steps
 
 - [Widgets](05-widgets.md) - Dashboard widgets

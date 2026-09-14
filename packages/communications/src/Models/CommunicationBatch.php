@@ -53,7 +53,6 @@ final class CommunicationBatch extends Model
         'name',
         'purpose',
         'category',
-        'status',
         'idempotency_key',
         'laravel_batch_id',
         'requested_count',
@@ -106,7 +105,7 @@ final class CommunicationBatch extends Model
     protected static function booted(): void
     {
         static::deleting(function (CommunicationBatch $batch): void {
-            $batch->communications()->each(fn (Communication $c) => $c->delete());
+            $batch->communications()->chunkById(100, fn (Collection $communications) => $communications->each->delete());
         });
     }
 }

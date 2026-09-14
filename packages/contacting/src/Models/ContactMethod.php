@@ -164,6 +164,7 @@ final class ContactMethod extends Model
             $contactMethod->normalizeForSave();
             $contactMethod->guardAllowedType();
             $contactMethod->guardContactableOwner();
+            $contactMethod->syncVerificationState();
         });
     }
 
@@ -234,6 +235,19 @@ final class ContactMethod extends Model
         if (! $displayValueWasExplicitlyChanged
             && (! $this->exists || $contactValueChanged || $this->display_value === null)) {
             $this->display_value = $normalized['display_value'];
+        }
+    }
+
+    private function syncVerificationState(): void
+    {
+        if (! $this->isDirty('is_verified')) {
+            return;
+        }
+
+        if ($this->is_verified) {
+            $this->verified_at ??= CarbonImmutable::now();
+        } else {
+            $this->verified_at = null;
         }
     }
 

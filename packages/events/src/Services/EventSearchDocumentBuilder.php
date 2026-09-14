@@ -43,6 +43,11 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
         }
     }
 
+    /**
+     * Removing by document cascades down the scope hierarchy on purpose: an
+     * event-level document removes every occurrence and session document of
+     * that event, and an occurrence-level document removes its sessions.
+     */
     public function remove(mixed $target): void
     {
         if ($target instanceof EventSearchDocument) {
@@ -180,6 +185,10 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
 
     /**
      * Search documents can outlive a just-deleted parent during observer cleanup.
+     *
+     * This explicit opt-out only ever deletes documents keyed by the target's
+     * own event/occurrence/session ids, so it cannot touch another event's
+     * documents. Document reads stay owner-scoped.
      *
      * @return Builder<EventSearchDocument>
      */

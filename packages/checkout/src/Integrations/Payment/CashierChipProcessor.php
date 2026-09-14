@@ -14,12 +14,15 @@ use AIArmada\Checkout\Support\CheckoutPaymentReference;
 use AIArmada\Checkout\Support\ChipPaymentStatusMapper;
 use AIArmada\Checkout\Support\ChipPurchasePayloadBuilder;
 use AIArmada\Checkout\Support\ChipRefundGateway;
+use AIArmada\Checkout\Support\NormalizesCallbackAmounts;
 use AIArmada\Chip\Facades\Chip;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 final class CashierChipProcessor implements PaymentCompensationInterface, PaymentProcessorInterface
 {
+    use NormalizesCallbackAmounts;
+
     public function __construct(
         private readonly ChipPurchasePayloadBuilder $payloadBuilder,
         private readonly ChipPaymentStatusMapper $statusMapper,
@@ -72,15 +75,15 @@ final class CashierChipProcessor implements PaymentCompensationInterface, Paymen
     public function handleCallback(array $payload): PaymentResult
     {
         try {
-            $paymentId = $payload['id'] ?? null;
+            $paymentId = $this->callbackString($payload['id'] ?? null);
             $paymentStatus = $this->statusMapper->fromCallbackPayload($payload);
 
             return new PaymentResult(
                 status: $paymentStatus,
                 paymentId: $paymentId,
                 transactionId: null,
-                amount: $payload['purchase']['total'] ?? null,
-                currency: $payload['purchase']['currency'] ?? null,
+                amount: $this->minorAmount($payload['purchase']['total'] ?? null),
+                currency: $this->currency($payload['purchase']['currency'] ?? null),
                 gatewayResponse: $payload,
                 provider: 'chip',
             );

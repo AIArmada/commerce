@@ -220,11 +220,14 @@ describe('ImpersonateController', function (): void {
         ]);
         config()->set('auth.defaults.guard', 'admin');
 
+        $superAdminRole = Role::findOrCreate((string) config('authz.super_admin_role'), 'web');
+
         $impersonator = User::query()->create([
             'name' => 'Guard A Impersonator',
             'email' => 'guard-a-impersonator@example.com',
             'password' => 'secret',
         ]);
+        $impersonator->assignRole($superAdminRole);
 
         $target = User::query()->create([
             'name' => 'Guard B Target',

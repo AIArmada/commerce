@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentPersons\Resources\TitleResource\Pages\CreateTitle;
 use AIArmada\FilamentPersons\Resources\TitleResource\Pages\EditTitle;
 use AIArmada\FilamentPersons\Resources\TitleResource\Pages\ListTitles;
@@ -22,6 +23,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class TitleResource extends Resource
@@ -42,6 +44,57 @@ class TitleResource extends Resource
         $sort = config('filament-persons.resources.navigation_sort.title');
 
         return is_numeric($sort) ? (int) $sort : null;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('title.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('title.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('title.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('title.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('title.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function placementGuidance(?string $categoryId, ?string $usagePosition, int $position): string
+    {
+        if ($position < 1) {
+            return __('Enter a position of 1 or higher.');
+        }
+
+        if ($categoryId === null || $categoryId === '' || $usagePosition === null || $usagePosition === '') {
+            return __('Select a category and usage position to preview placement.');
+        }
+
+        $occupied = Title::query()
+            ->where('category_id', $categoryId)
+            ->where('usage_position', $usagePosition)
+            ->where('sort_order', $position)
+            ->exists();
+
+        return $occupied
+            ? __('Position :position is already occupied; saving will consolidate the order and shift the other title.', ['position' => $position])
+            : __('Saving will place this title at position :position and shift later titles in this category.', ['position' => $position]);
     }
 
     public static function form(Schema $schema): Schema
@@ -76,20 +129,14 @@ class TitleResource extends Resource
                             ->live(onBlur: true)
                             ->default(1)
                             ->helperText(function (Get $get): string {
-                                $position = (int) $get('sort_order');
+                                $categoryId = $get('category_id');
+                                $usagePosition = $get('usage_position');
 
-                                if ($position < 1) {
-                                    return __('Enter a position of 1 or higher.');
-                                }
-
-                                $query = Title::query()
-                                    ->where('category_id', $get('category_id'))
-                                    ->where('usage_position', $get('usage_position'))
-                                    ->where('sort_order', $position);
-
-                                return $query->exists()
-                                    ? __('Position :position is already occupied; saving will consolidate the order and shift the other title.', ['position' => $position])
-                                    : __('Saving will place this title at position :position and shift later titles in this category.', ['position' => $position]);
+                                return static::placementGuidance(
+                                    is_scalar($categoryId) ? (string) $categoryId : null,
+                                    is_scalar($usagePosition) ? (string) $usagePosition : null,
+                                    (int) $get('sort_order'),
+                                );
                             }),
                         TextInput::make('language_code')
                             ->maxLength(10),

@@ -48,9 +48,7 @@ final class Block extends Model
     protected $fillable = [
         'blockable_type', 'blockable_id',
         'blocked_by_type', 'blocked_by_id',
-        'reason', 'status', 'notes', 'expires_at',
-        'lifted_at', 'lifted_by_type', 'lifted_by_id',
-        'metadata',
+        'reason', 'notes', 'metadata',
     ];
 
     protected static string $ownerScopeConfigKey = 'moderation.owner';
@@ -115,10 +113,17 @@ final class Block extends Model
      */
     public function scopeExpired(Builder $query): Builder
     {
-        return $query->where('status', BlockStatus::Expired);
+        return $query->where(function (Builder $query): void {
+            $query->where('status', BlockStatus::Expired)
+                ->orWhere(function (Builder $query): void {
+                    $query->where('status', BlockStatus::Active)
+                        ->whereNotNull('expires_at')
+                        ->where('expires_at', '<=', CarbonImmutable::now());
+                });
+        });
     }
 
-    public function transitionTo(BlockStatus $status, ?CarbonImmutable $at = null): static
+    public function transitionTo(BlockStatus $status, ?CarbonImmutable $at = null, ?Model $liftedBy = null): static
     {
         if ($this->exists && $this->status instanceof BlockStatus && $this->status === BlockStatus::Expired && $status !== BlockStatus::Expired) {
             throw new LogicException('An expired moderation block cannot transition to another status.');
@@ -130,13 +135,20 @@ final class Block extends Model
 
         if ($status === BlockStatus::Lifted) {
             $attributes['lifted_at'] = $this->lifted_at ?? $at;
+
+            if ($liftedBy instanceof Model) {
+                $attributes['lifted_by_type'] = $liftedBy->getMorphClass();
+                $attributes['lifted_by_id'] = $liftedBy->getKey();
+            }
         }
 
         if ($status === BlockStatus::Active) {
             $attributes['lifted_at'] = null;
+            $attributes['lifted_by_type'] = null;
+            $attributes['lifted_by_id'] = null;
         }
 
-        $this->fill($attributes);
+        $this->forceFill($attributes);
 
         return $this;
     }

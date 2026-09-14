@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Events\CommunicationCompleted;
 use AIArmada\Communications\Events\CommunicationFailed;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use BackedEnum;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 
@@ -18,9 +19,15 @@ final class RecalculateCommunicationStatusAction
     {
         $communication = Communication::query()->findOrFail($communicationId);
 
-        $deliveries = $communication->deliveries()->get(['status']);
+        if (Communication::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
+        }
 
-        if ($deliveries->isEmpty()) {
+        $statuses = $communication->deliveries()
+            ->pluck('status')
+            ->map(fn (mixed $status): string => $status instanceof BackedEnum ? $status->value : (string) $status);
+
+        if ($statuses->isEmpty()) {
             $communication->status = CommunicationStatus::Draft;
             $communication->save();
 
@@ -30,10 +37,10 @@ final class RecalculateCommunicationStatusAction
         $terminalStatuses = ['delivered', 'read', 'clicked', 'replied', 'bounced', 'complained', 'failed', 'cancelled', 'expired', 'suppressed'];
         $successStatuses = ['delivered', 'opened', 'read', 'clicked', 'replied'];
 
-        $allTerminal = $deliveries->every(fn (CommunicationDelivery $d) => in_array($d->status->value, $terminalStatuses, true));
-        $anySuccess = $deliveries->contains(fn (CommunicationDelivery $d) => in_array($d->status->value, $successStatuses, true));
-        $anyFailed = $deliveries->contains(fn (CommunicationDelivery $d) => $d->status->value === 'failed');
-        $anyCancelled = $deliveries->contains(fn (CommunicationDelivery $d) => $d->status->value === 'cancelled');
+        $allTerminal = $statuses->every(fn (string $status): bool => in_array($status, $terminalStatuses, true));
+        $anySuccess = $statuses->contains(fn (string $status): bool => in_array($status, $successStatuses, true));
+        $anyFailed = $statuses->contains(fn (string $status): bool => $status === 'failed');
+        $anyCancelled = $statuses->contains(fn (string $status): bool => $status === 'cancelled');
 
         $communication->status = match (true) {
             $allTerminal && ! $anyFailed && ! $anyCancelled => CommunicationStatus::Completed,

@@ -34,7 +34,7 @@ class AddressAreaFormSchema
                             ->options(
                                 config('filament-addressing.resources.countries.model', AddressCountry::class)::query()
                                     ->orderBy('name')
-                                    ->get()
+                                    ->get(['id', 'iso2', 'name'])
                                     ->mapWithKeys(fn (AddressCountry $c): array => [$c->id => "{$c->iso2} — {$c->name}"])
                                     ->toArray(),
                             )

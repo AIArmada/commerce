@@ -6,13 +6,14 @@ namespace AIArmada\FilamentDocs\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use AIArmada\FilamentDocs\Resources\DocResource;
+use AIArmada\FilamentDocs\Support\DocPermissions;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
-use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -65,7 +66,7 @@ final class PendingApprovalsPage extends Page implements HasTable
 
     public static function canAccess(): bool
     {
-        return FilamentPermission::hasAbility('purchase.viewAny');
+        return DocPermissions::allows(DocPermissions::DOCUMENT_APPROVAL, 'viewAny');
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -81,12 +82,20 @@ final class PendingApprovalsPage extends Page implements HasTable
             return 0;
         }
 
-        $query = OwnerUiScope::apply(DocApproval::query(), includeGlobal: false)
-            ->where('assigned_to', $userId)
-            ->where('status', DocApprovalStatus::Pending)
-            ->whereHas('doc', static fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false));
+        // Shared by the navigation badge and the page header; cached per user.
+        return (int) OwnerCache::remember(
+            OwnerUiScope::resolveOwner(DocApproval::class),
+            'filament-docs.pending-approvals.count.' . str_replace(':', '-', (string) $userId),
+            30,
+            static function () use ($userId): int {
+                $query = OwnerUiScope::apply(DocApproval::query(), includeGlobal: false)
+                    ->where('assigned_to', $userId)
+                    ->where('status', DocApprovalStatus::Pending)
+                    ->whereHas('doc', static fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false));
 
-        return $query->count();
+                return $query->count();
+            },
+        );
     }
 
     public function getTitle(): string | Htmlable
@@ -116,7 +125,7 @@ final class PendingApprovalsPage extends Page implements HasTable
 
                 TextColumn::make('doc.total_minor')
                     ->label(__('Total'))
-                    ->formatStateUsing(fn (int|string $state, DocApproval $record): string => MoneyFormatter::formatMinor((int) $state, $record->doc->currency ?? 'MYR'))
+                    ->formatStateUsing(fn (int | string $state, DocApproval $record): string => MoneyFormatter::formatMinor((int) $state, $record->doc->currency ?? 'MYR'))
                     ->sortable(),
 
                 TextColumn::make('requestedBy.name')
@@ -154,13 +163,7 @@ final class PendingApprovalsPage extends Page implements HasTable
                             ->rows(3),
                     ])
                     ->action(function (DocApproval $record, array $data): void {
-                        self::assertCanActOnApproval($record);
-
-                        $record->update([
-                            'status' => DocApprovalStatus::Approved,
-                            'approved_at' => CarbonImmutable::now(),
-                            'comments' => $data['comments'] ?? null,
-                        ]);
+                        self::approveApproval($record, $data['comments'] ?? null);
 
                         Notification::make()
                             ->title(__('Document Approved'))
@@ -180,13 +183,7 @@ final class PendingApprovalsPage extends Page implements HasTable
                             ->rows(3),
                     ])
                     ->action(function (DocApproval $record, array $data): void {
-                        self::assertCanActOnApproval($record);
-
-                        $record->update([
-                            'status' => DocApprovalStatus::Rejected,
-                            'rejected_at' => CarbonImmutable::now(),
-                            'comments' => $data['comments'],
-                        ]);
+                        self::rejectApproval($record, $data['comments']);
 
                         Notification::make()
                             ->title(__('Document Rejected'))
@@ -235,6 +232,22 @@ final class PendingApprovalsPage extends Page implements HasTable
                 ->icon('heroicon-o-arrow-path')
                 ->action(fn () => $this->resetTable()),
         ];
+    }
+
+    private static function approveApproval(DocApproval $approval, ?string $comments): void
+    {
+        self::assertCanActOnApproval($approval);
+        DocsOwnerScope::assertCanMutateRecord($approval, 'Approval not found.');
+
+        $approval->approve($comments);
+    }
+
+    private static function rejectApproval(DocApproval $approval, string $comments): void
+    {
+        self::assertCanActOnApproval($approval);
+        DocsOwnerScope::assertCanMutateRecord($approval, 'Approval not found.');
+
+        $approval->reject($comments);
     }
 
     private static function assertCanActOnApproval(DocApproval $approval): void

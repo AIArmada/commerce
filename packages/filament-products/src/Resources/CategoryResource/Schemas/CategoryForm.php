@@ -6,6 +6,7 @@ namespace AIArmada\FilamentProducts\Resources\CategoryResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
 use AIArmada\Products\Enums\CatalogStatus;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
@@ -15,10 +16,12 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 class CategoryForm
 {
@@ -43,7 +46,14 @@ class CategoryForm
                                     ->label('URL Slug')
                                     ->required()
                                     ->maxLength(100)
-                                    ->unique(ignoreRecord: true),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule, Get $get): Unique {
+                                        $rule = ProductsOwnerScope::scopeUniqueRuleToOwner($rule);
+                                        $parentId = $get('parent_id');
+
+                                        return is_string($parentId) && $parentId !== ''
+                                            ? $rule->where('parent_id', $parentId)
+                                            : $rule->whereNull('parent_id');
+                                    }),
 
                                 Select::make('parent_id')
                                     ->label('Parent Category')

@@ -1,3 +1,7 @@
+---
+title: Event Taxonomy Hierarchy
+---
+
 # Event taxonomy hierarchy
 
 `EventTaxonomy` and `EventTerm` support multi-level vocabularies. The package exposes
@@ -18,3 +22,7 @@ $matchingTerms = $hierarchy->descendantIds('event_category', $selected);
 Terms also expose `taxonomy()`, `parent()`, and ordered `children()` relationships,
 plus `active()` and `roots()` query scopes. The service is taxonomy-code based so
 applications can keep vocabulary names and policy metadata in their own seeders.
+
+Term codes are unique per taxonomy. `SyncEventClassificationsAction` resolves
+concurrent syncs against that unique key, runs the delete-and-recreate inside a
+transaction, and verifies the event through the owner write guard first.

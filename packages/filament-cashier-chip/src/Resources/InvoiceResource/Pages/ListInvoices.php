@@ -30,14 +30,6 @@ final class ListInvoices extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('export_csv')
-                ->label('Export CSV')
-                ->icon('heroicon-o-arrow-down-tray')
-                ->color('gray')
-                ->action(function (): void {
-                    // Export logic would go here
-                }),
-
             Action::make('view_reports')
                 ->label('View Reports')
                 ->icon('heroicon-o-chart-bar')

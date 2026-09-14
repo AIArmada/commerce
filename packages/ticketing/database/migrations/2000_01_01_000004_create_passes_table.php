@@ -28,7 +28,7 @@ return new class extends Migration
             $table->timestampTz('voided_at')->nullable();
             $table->timestampTz('used_at')->nullable();
             $table->timestampTz('expired_at')->nullable();
-            $table->timestampTz('transfer_expires_at')->nullable();
+            $table->timestampTz('transfer_expires_at')->nullable()->index();
             $table->text('status_reason')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->nullableMorphs('owner');

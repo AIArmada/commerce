@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = (string) config('feedback.database.tables.form_analytics', 'feedback_form_analytics');
+        $tableName = (string) config('feedback.database.table_prefix', '') . (string) config('feedback.database.tables.form_analytics', 'feedback_form_analytics');
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();

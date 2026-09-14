@@ -6,7 +6,6 @@ namespace AIArmada\Membership\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
-use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipApplicationApproved;
@@ -14,6 +13,7 @@ use AIArmada\Membership\Models\MembershipApplication;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 
@@ -23,6 +23,8 @@ final class ApproveMembershipApplicationAction
 
     public function handle(MembershipApplication $application, Model $reviewer, MemberRole $role, ?string $note = null): void
     {
+        $note = $this->normalizeNote($note);
+
         $approvedApplication = DB::transaction(function () use ($application, $note, $reviewer, $role): MembershipApplication {
             $guardedApplication = OwnerWriteGuard::findOrFailForOwner(
                 MembershipApplication::class,
@@ -38,17 +40,28 @@ final class ApproveMembershipApplicationAction
                 throw new RuntimeException('Only pending membership applications can be approved.');
             }
 
-            $lockedApplication->update([
+            $applicant = $lockedApplication->applicant;
+            $subject = $lockedApplication->subject;
+
+            if (! $applicant instanceof Model) {
+                throw new RuntimeException('Cannot approve a membership application whose applicant no longer exists.');
+            }
+
+            if (! $subject instanceof Model) {
+                throw new RuntimeException('Cannot approve a membership application whose subject no longer exists.');
+            }
+
+            $lockedApplication->forceFill([
                 'status' => ApplicationStatus::Approved,
                 'granted_role' => $role->spatieRoleName(),
                 'reviewer_id' => $reviewer->getKey(),
                 'reviewer_note' => $note,
                 'reviewed_at' => CarbonImmutable::now(),
-            ]);
+            ])->save();
 
             AddMemberAction::make()->handle(
-                $lockedApplication->subject,
-                $lockedApplication->applicant,
+                $subject,
+                $applicant,
                 $role,
             );
 
@@ -60,13 +73,20 @@ final class ApproveMembershipApplicationAction
         if (app()->bound(MembershipApplicationNotifier::class)) {
             app(MembershipApplicationNotifier::class)->notifyApproved($approvedApplication);
         }
+    }
 
-        if (app()->bound(MembershipHook::class)) {
-            app(MembershipHook::class)->onMemberAdded(
-                $approvedApplication->subject,
-                $approvedApplication->applicant,
-                $role,
-            );
+    private function normalizeNote(?string $note): ?string
+    {
+        if ($note === null) {
+            return null;
         }
+
+        $note = mb_trim($note);
+
+        if (mb_strlen($note) > 5000) {
+            throw new InvalidArgumentException('The reviewer note must not exceed 5000 characters.');
+        }
+
+        return $note;
     }
 }

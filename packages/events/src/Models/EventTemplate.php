@@ -52,13 +52,10 @@ final class EventTemplate extends Model
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 
     protected $fillable = [
-        'owner_type', 'owner_id',
         'templateable_type', 'templateable_id',
         'code', 'name', 'description',
         'template_type', 'status', 'visibility',
         'payload', 'default_scope',
-        'created_by_type', 'created_by_id',
-        'published_at', 'archived_at',
         'metadata',
     ];
 

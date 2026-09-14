@@ -36,7 +36,6 @@ final class CommunicationReference extends Model
 
     protected $fillable = [
         'communication_id',
-        'reference_type',
         'reference_id',
         'role',
         'metadata',

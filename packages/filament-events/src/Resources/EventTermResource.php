@@ -20,6 +20,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 final class EventTermResource extends Resource
@@ -38,6 +39,11 @@ final class EventTermResource extends Resource
         $sort = config('filament-events.resources.navigation_sort.event_term');
 
         return is_numeric($sort) ? (int) $sort : null;
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['taxonomy', 'parent']);
     }
 
     public static function table(Table $table): Table

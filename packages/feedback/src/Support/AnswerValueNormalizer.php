@@ -8,6 +8,7 @@ use AIArmada\Feedback\Contracts\AnswerNormalizer;
 use AIArmada\Feedback\Enums\FeedbackQuestionType;
 use AIArmada\Feedback\Models\FeedbackQuestion;
 use Carbon\CarbonImmutable;
+use Throwable;
 
 final class AnswerValueNormalizer implements AnswerNormalizer
 {
@@ -29,17 +30,17 @@ final class AnswerValueNormalizer implements AnswerNormalizer
     {
         return match ($type) {
             FeedbackQuestionType::Number => [
-                'value' => $value !== null ? (float) $value : null,
-                'number_value' => $value !== null ? (float) $value : null,
+                'value' => $this->floatOrNull($value),
+                'number_value' => $this->floatOrNull($value),
                 'text_value' => $value !== null ? (string) $value : null,
             ],
             FeedbackQuestionType::Date => [
                 'value' => $value,
-                'date_value' => $value,
+                'date_value' => $this->dateStringOrNull($value),
             ],
             FeedbackQuestionType::DateTime => [
                 'value' => $value,
-                'datetime_value' => $value ? CarbonImmutable::parse($value) : null,
+                'datetime_value' => $this->dateTimeOrNull($value),
             ],
             FeedbackQuestionType::Email => [
                 'value' => $value,
@@ -67,6 +68,12 @@ final class AnswerValueNormalizer implements AnswerNormalizer
                 'value' => is_array($value) ? $value : [$value],
                 'text_value' => is_array($value) ? implode(', ', $value) : (string) $value,
             ],
+            FeedbackQuestionType::Matrix, FeedbackQuestionType::Likert => [
+                'value' => $value,
+                'text_value' => is_array($value)
+                    ? implode(', ', array_map(strval(...), array_values($value)))
+                    : (string) $value,
+            ],
             default => [
                 'value' => $value,
                 'text_value' => (string) $value,
@@ -77,9 +84,48 @@ final class AnswerValueNormalizer implements AnswerNormalizer
     private function normalizeScored(mixed $value): array
     {
         return [
-            'value' => $value !== null ? (float) $value : null,
-            'number_value' => $value !== null ? (float) $value : null,
+            'value' => $this->floatOrNull($value),
+            'number_value' => $this->floatOrNull($value),
         ];
+    }
+
+    private function floatOrNull(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        return (float) $value;
+    }
+
+    private function dateStringOrNull(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::parse($value)->toDateString();
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function dateTimeOrNull(mixed $value): ?CarbonImmutable
+    {
+        if ($value === null || $value === '' || $value === false) {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::parse($value);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     private function defaultNormalize(mixed $value): array

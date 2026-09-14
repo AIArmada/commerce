@@ -43,7 +43,7 @@ final readonly class UnifiedInvoice
             date: $invoiceDate instanceof CarbonImmutable ? $invoiceDate : CarbonImmutable::parse($invoiceDate),
             dueDate: $dueDate instanceof CarbonImmutable ? $dueDate : ($dueDate ? CarbonImmutable::parse($dueDate) : null),
             paidAt: self::resolveStripePaidAt($invoice),
-            pdfUrl: $invoice->invoicePdf(),
+            pdfUrl: $invoice->asStripeInvoice()->invoice_pdf ?? null,
             original: $invoice,
         );
     }
@@ -58,7 +58,7 @@ final readonly class UnifiedInvoice
             userId: $userId,
             number: $invoice->reference ?? $invoice->id ?? '',
             amount: (int) ($invoice->amount ?? 0),
-            currency: 'MYR',
+            currency: mb_strtoupper((string) ($invoice->currency ?? config('cashier.gateways.chip.currency', config('cashier.currency', 'MYR')))),
             status: self::normalizeChipStatus($invoice),
             date: $createdAt instanceof CarbonImmutable ? $createdAt : CarbonImmutable::parse($createdAt),
             dueDate: null,

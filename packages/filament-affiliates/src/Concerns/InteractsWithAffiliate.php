@@ -231,7 +231,7 @@ trait InteractsWithAffiliate
      *
      * @return Collection<int, Affiliate>
      */
-    public function getDownlines(): Collection
+    public function getDownlines(int $limit = 50): Collection
     {
         $affiliate = $this->getAffiliate();
 
@@ -243,6 +243,7 @@ trait InteractsWithAffiliate
             ->with(['rank'])
             ->withCount('conversions')
             ->orderBy('created_at', 'desc')
+            ->limit(max(1, $limit))
             ->get();
     }
 

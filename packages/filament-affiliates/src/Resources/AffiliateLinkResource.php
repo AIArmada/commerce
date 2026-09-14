@@ -88,15 +88,13 @@ final class AffiliateLinkResource extends Resource
             Section::make('Link Details')
                 ->schema([
                     Forms\Components\Select::make('affiliate_id')
-                        ->relationship('affiliate', 'name')
+                        ->relationship('affiliate', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
                         ->searchable()
-                        ->preload()
                         ->required(),
 
                     Forms\Components\Select::make('program_id')
-                        ->relationship('program', 'name')
-                        ->searchable()
-                        ->preload(),
+                        ->relationship('program', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                        ->searchable(),
 
                     Forms\Components\TextInput::make('destination_url')
                         ->url()

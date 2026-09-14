@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Enums\EventVisibility;
@@ -32,6 +33,8 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
 final class EventResource extends Resource
@@ -127,6 +130,9 @@ final class EventResource extends Resource
                 ExportAction::make()
                     ->exporter(EventExporter::class)
                     ->label('Export Events'),
+            ])
+            ->actions([
+                ViewAction::make(),
                 Action::make('publish')
                     ->label('Publish')
                     ->icon('heroicon-o-check-circle')
@@ -157,9 +163,6 @@ final class EventResource extends Resource
                     })
                     ->visible(fn (?Event $record) => $record !== null && ! in_array((string) $record->status, ['cancelled', 'completed', 'archived'], true))
                     ->requiresConfirmation(),
-            ])
-            ->actions([
-                ViewAction::make(),
                 Action::make('clone')
                     ->label('Clone')
                     ->icon('heroicon-o-document-duplicate')
@@ -218,7 +221,19 @@ final class EventResource extends Resource
                 Section::make('Basic Details')
                     ->schema([
                         TextInput::make('title')->required()->maxLength(255),
-                        TextInput::make('slug')->required()->maxLength(255)->unique(ignoreRecord: true),
+                        TextInput::make('slug')->required()->maxLength(255)->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule): Unique {
+                            if (! Event::ownerScopeConfig()->enabled) {
+                                return $rule;
+                            }
+
+                            $owner = OwnerContext::resolve();
+
+                            if (! $owner instanceof Model) {
+                                return $rule->whereNull('owner_type')->whereNull('owner_id');
+                            }
+
+                            return $rule->where('owner_type', $owner->getMorphClass())->where('owner_id', $owner->getKey());
+                        }),
                         Textarea::make('summary')->rows(3),
                         Textarea::make('description')->rows(5),
                     ])->columns(2),

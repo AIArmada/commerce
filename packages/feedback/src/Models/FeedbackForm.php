@@ -65,10 +65,10 @@ final class FeedbackForm extends Model
     {
         static::deleting(function (self $form): void {
             $form->analytics()->delete();
-            $form->sections()->each(fn (FeedbackSection $section): mixed => $section->delete());
-            $form->questions()->each(fn (FeedbackQuestion $question): mixed => $question->delete());
-            $form->responses()->each(fn (FeedbackResponse $response): mixed => $response->delete());
-            $form->invitations()->each(fn (FeedbackInvitation $invitation): mixed => $invitation->delete());
+            $form->sections()->chunkById(200, fn ($sections): mixed => $sections->each->delete());
+            $form->questions()->chunkById(200, fn ($questions): mixed => $questions->each->delete());
+            $form->responses()->chunkById(200, fn ($responses): mixed => $responses->each->delete());
+            $form->invitations()->chunkById(200, fn ($invitations): mixed => $invitations->each->delete());
         });
     }
 

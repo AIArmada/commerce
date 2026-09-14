@@ -12,8 +12,10 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 
 final class NamesRelationManager extends RelationManager
 {
@@ -22,6 +24,49 @@ final class NamesRelationManager extends RelationManager
     protected static ?string $title = 'Names';
 
     protected static ?string $recordTitleAttribute = 'full_name';
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getLanguageOptions(): array
+    {
+        /** @var array<string, string> $options */
+        $options = Cache::remember('filament-persons.languages', 3600, static function (): array {
+            /** @var array<string, string> $languages */
+            $languages = Language::query()->orderBy('name')->pluck('name', 'code')->all();
+
+            return $languages;
+        });
+
+        return $options;
+    }
+
+    public function form(Schema $schema): Schema
+    {
+        return $schema
+            ->schema([
+                Select::make('name_type')
+                    ->options([
+                        'legal' => 'Legal',
+                        'display' => 'Display',
+                        'birth' => 'Birth',
+                        'religious' => 'Religious',
+                        'professional' => 'Professional',
+                        'previous' => 'Previous',
+                    ])
+                    ->required(),
+                TextInput::make('full_name')
+                    ->required()
+                    ->maxLength(255),
+                Select::make('language_code')
+                    ->options(fn (): array => static::getLanguageOptions())
+                    ->searchable()
+                    ->preload()
+                    ->required()
+                    ->default('en'),
+                Checkbox::make('is_primary'),
+            ]);
+    }
 
     public function table(Table $table): Table
     {
@@ -38,29 +83,7 @@ final class NamesRelationManager extends RelationManager
                     ->boolean(),
             ])
             ->headerActions([
-                CreateAction::make()
-                    ->form([
-                        Select::make('name_type')
-                            ->options([
-                                'legal' => 'Legal',
-                                'display' => 'Display',
-                                'birth' => 'Birth',
-                                'religious' => 'Religious',
-                                'professional' => 'Professional',
-                                'previous' => 'Previous',
-                            ])
-                            ->required(),
-                        TextInput::make('full_name')
-                            ->required()
-                            ->maxLength(255),
-                        Select::make('language_code')
-                            ->options(fn (): array => Language::query()->orderBy('name')->pluck('name', 'code')->all())
-                            ->searchable()
-                            ->preload()
-                            ->required()
-                            ->default('en'),
-                        Checkbox::make('is_primary'),
-                    ]),
+                CreateAction::make(),
             ])
             ->actions([
                 EditAction::make(),

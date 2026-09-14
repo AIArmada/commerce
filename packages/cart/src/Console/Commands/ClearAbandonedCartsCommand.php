@@ -16,8 +16,6 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
-use function Laravel\Prompts\progress;
-
 final class ClearAbandonedCartsCommand extends Command
 {
     /**
@@ -277,15 +275,20 @@ final class ClearAbandonedCartsCommand extends Command
 
     private function processAbandonedSnapshots(int $minutes, bool $dryRun): int
     {
-        $snapshots = $this->abandonedSnapshotsQuery($minutes)->get();
-
-        foreach ($snapshots as $snapshot) {
-            if (! $dryRun) {
-                $snapshot->markAsAbandoned();
-            }
+        if ($dryRun) {
+            return $this->countAbandonedSnapshots($minutes);
         }
 
-        return $snapshots->count();
+        $marked = 0;
+
+        $this->abandonedSnapshotsQuery($minutes)->chunkById(500, function ($snapshots) use (&$marked): void {
+            foreach ($snapshots as $snapshot) {
+                $snapshot->markAsAbandoned();
+                $marked++;
+            }
+        });
+
+        return $marked;
     }
 
     /**
@@ -545,37 +548,38 @@ final class ClearAbandonedCartsCommand extends Command
         ?string $ownerType,
         string | int | null $ownerId,
     ): int {
-        $query = $this->baseQuery($table, $useExpired, $days, $now, $deleteMode);
-        CartOwnerScope::applyForOwner($query, $ownerType, $ownerId);
+        if ($dryRun) {
+            return $this->countForOwner($table, $useExpired, $days, $now, $ownerType, $ownerId, $deleteMode);
+        }
 
         $processedCount = 0;
 
-        $actionLabel = 'Deleting';
-        $progressLabel = $dryRun ? "Simulating {$actionLabel}..." : "{$actionLabel} abandoned carts...";
+        // Delete in id-ordered batches: only one batch of ids is ever held in
+        // memory, so --batch-size genuinely bounds memory on large tables.
+        while (true) {
+            $query = $this->baseQuery($table, $useExpired, $days, $now, $deleteMode);
+            CartOwnerScope::applyForOwner($query, $ownerType, $ownerId);
 
-        progress(
-            label: $progressLabel,
-            steps: $query->clone()->pluck('id')->chunk($batchSize),
-            callback: function ($chunk) use (&$processedCount, $dryRun, $deleteMode, $table, $ownerType, $ownerId): void {
-                if ($dryRun) {
-                    $processedCount += $chunk->count();
+            $ids = $query->orderBy('id')->limit($batchSize)->pluck('id');
 
-                    return;
-                }
-
-                $ids = $chunk->toArray();
-
-                $deleteQuery = DB::table($table)->whereIn('id', $ids);
-                CartOwnerScope::applyForOwner($deleteQuery, $ownerType, $ownerId);
-
-                if ($deleteMode) {
-                    $deleteQuery->whereNotNull('abandoned_at');
-                }
-
-                $processed = $deleteQuery->delete();
-                $processedCount += $processed;
+            if ($ids->isEmpty()) {
+                break;
             }
-        );
+
+            $deleteQuery = DB::table($table)->whereIn('id', $ids->toArray());
+            CartOwnerScope::applyForOwner($deleteQuery, $ownerType, $ownerId);
+
+            if ($deleteMode) {
+                $deleteQuery->whereNotNull('abandoned_at');
+            }
+
+            $processed = $deleteQuery->delete();
+            $processedCount += $processed;
+
+            if ($processed < $ids->count()) {
+                break;
+            }
+        }
 
         return $processedCount;
     }

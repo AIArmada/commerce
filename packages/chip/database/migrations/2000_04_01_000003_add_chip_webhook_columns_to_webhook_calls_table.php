@@ -98,11 +98,11 @@ return new class extends Migration
             }
 
             if (! Schema::hasColumn('webhook_calls', 'created_on')) {
-                $table->integer('created_on')->nullable()->index();
+                $table->bigInteger('created_on')->nullable()->index();
             }
 
             if (! Schema::hasColumn('webhook_calls', 'updated_on')) {
-                $table->integer('updated_on')->nullable();
+                $table->bigInteger('updated_on')->nullable();
             }
 
             if (! $hasOwnerType && ! $hasOwnerId) {

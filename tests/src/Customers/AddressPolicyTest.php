@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Policies\AddressPolicy;
+use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -28,14 +29,50 @@ function bindAddressPolicyOwnerResolver(?Model $owner): void
 }
 
 /**
+ * @param  array<string>  $permissions
+ */
+function createAddressPolicyTestUser(array $permissions): Authorizable
+{
+    return new class($permissions) implements Authorizable
+    {
+        /**
+         * @param  array<string>  $permissions
+         */
+        public function __construct(private readonly array $permissions) {}
+
+        public function can($abilities, $arguments = []): bool
+        {
+            $abilities = is_array($abilities) ? $abilities : [$abilities];
+
+            return array_intersect($abilities, $this->permissions) !== [];
+        }
+    };
+}
+
+/**
  * @param  array<string, mixed>  $attributes
  */
 function createAddressPolicyCustomer(array $attributes, ?Model $owner = null): Customer
 {
-    /** @var Customer $customer */
-    $customer = OwnerContext::withOwner($owner, fn (): Customer => Customer::query()->create($attributes));
+    $restricted = [];
 
-    return $customer;
+    foreach (['user_id', 'status', 'is_guest', 'accepts_marketing', 'created_at', 'updated_at'] as $key) {
+        if (array_key_exists($key, $attributes)) {
+            $restricted[$key] = $attributes[$key];
+            unset($attributes[$key]);
+        }
+    }
+
+    return OwnerContext::withOwner($owner, function () use ($attributes, $restricted): Customer {
+        /** @var Customer $customer */
+        $customer = Customer::query()->create($attributes);
+
+        if ($restricted !== []) {
+            $customer->forceFill($restricted)->save();
+        }
+
+        return $customer;
+    });
 }
 
 /**
@@ -64,16 +101,23 @@ beforeEach(function (): void {
     }
 
     $this->policy = new AddressPolicy;
-    $this->user = new class
-    {
-        public string $id = 'user-a';
-    };
+    $this->permitted = createAddressPolicyTestUser([
+        'customers.addresses.view',
+        'customers.addresses.create',
+        'customers.addresses.update',
+        'customers.addresses.delete',
+    ]);
+    $this->denied = createAddressPolicyTestUser([]);
 });
 
 describe('AddressPolicy', function (): void {
     describe('viewAny', function (): void {
-        it('allows viewing any addresses when authenticated', function (): void {
-            expect($this->policy->viewAny($this->user))->toBeTrue();
+        it('allows viewing any addresses with the view permission', function (): void {
+            expect($this->policy->viewAny($this->permitted))->toBeTrue();
+        });
+
+        it('denies viewing any addresses without the view permission', function (): void {
+            expect($this->policy->viewAny($this->denied))->toBeFalse();
         });
 
         it('denies viewing any addresses when unauthenticated', function (): void {
@@ -101,7 +145,7 @@ describe('AddressPolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->view($this->user, $address))->toBeTrue();
+            expect($this->policy->view($this->permitted, $address))->toBeTrue();
         });
 
         it('denies viewing owner-scoped address without owner resolver', function (): void {
@@ -125,7 +169,7 @@ describe('AddressPolicy', function (): void {
                 'owner_id' => $owner->getKey(),
             ], $owner);
 
-            expect($this->policy->view($this->user, $address))->toBeFalse();
+            expect($this->policy->view($this->permitted, $address))->toBeFalse();
         });
 
         it('denies cross-tenant address access when owner resolver is set', function (): void {
@@ -170,14 +214,31 @@ describe('AddressPolicy', function (): void {
 
             bindAddressPolicyOwnerResolver($ownerA);
 
-            expect($this->policy->view($this->user, $addressA))->toBeTrue()
-                ->and($this->policy->view($this->user, $addressB))->toBeFalse();
+            expect($this->policy->view($this->permitted, $addressA))->toBeTrue()
+                ->and($this->policy->view($this->permitted, $addressB))->toBeFalse();
+        });
+
+        it('denies viewing an in-scope address without the view permission', function (): void {
+            $address = createAddressPolicyAddress([
+                'line1' => '123 Test St',
+                'city' => 'Test City',
+                'postcode' => '12345',
+                'country' => 'MY',
+                'owner_type' => null,
+                'owner_id' => null,
+            ], null);
+
+            expect($this->policy->view($this->denied, $address))->toBeFalse();
         });
     });
 
     describe('create', function (): void {
-        it('allows creating addresses when authenticated', function (): void {
-            expect($this->policy->create($this->user))->toBeTrue();
+        it('allows creating addresses with the create permission', function (): void {
+            expect($this->policy->create($this->permitted))->toBeTrue();
+        });
+
+        it('denies creating addresses without the create permission', function (): void {
+            expect($this->policy->create($this->denied))->toBeFalse();
         });
 
         it('denies creating addresses when unauthenticated', function (): void {
@@ -205,7 +266,20 @@ describe('AddressPolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->update($this->user, $address))->toBeTrue();
+            expect($this->policy->update($this->permitted, $address))->toBeTrue();
+        });
+
+        it('denies updating an in-scope address without the update permission', function (): void {
+            $address = createAddressPolicyAddress([
+                'line1' => '789 Update St',
+                'city' => 'Update City',
+                'postcode' => '33333',
+                'country' => 'MY',
+                'owner_type' => null,
+                'owner_id' => null,
+            ], null);
+
+            expect($this->policy->update($this->denied, $address))->toBeFalse();
         });
 
         it('denies updating address when unauthenticated', function (): void {
@@ -251,7 +325,20 @@ describe('AddressPolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->delete($this->user, $address))->toBeTrue();
+            expect($this->policy->delete($this->permitted, $address))->toBeTrue();
+        });
+
+        it('denies deleting an in-scope address without the delete permission', function (): void {
+            $address = createAddressPolicyAddress([
+                'line1' => '999 Delete St',
+                'city' => 'Delete City',
+                'postcode' => '44444',
+                'country' => 'MY',
+                'owner_type' => null,
+                'owner_id' => null,
+            ], null);
+
+            expect($this->policy->delete($this->denied, $address))->toBeFalse();
         });
 
         it('denies deleting address when unauthenticated', function (): void {

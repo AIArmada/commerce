@@ -16,5 +16,6 @@ interface RecordsModerationAction
         string $reason,
         ?Model $actionedBy = null,
         ?array $metadata = null,
+        ?string $notes = null,
     ): ModerationAction;
 }

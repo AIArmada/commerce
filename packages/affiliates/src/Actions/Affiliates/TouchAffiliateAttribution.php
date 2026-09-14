@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Actions\Affiliates;
 use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Support\IpHasher;
 use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -59,7 +60,9 @@ final class TouchAffiliateAttribution
             'landing_url' => $context['landing_url'] ?? $attribution->landing_url,
             'referrer_url' => $context['referrer_url'] ?? $attribution->referrer_url,
             'user_agent' => $context['user_agent'] ?? $attribution->user_agent,
-            'ip_address' => $context['ip_address'] ?? $attribution->ip_address,
+            'ip_address' => array_key_exists('ip_address', $context)
+                ? IpHasher::hash($context['ip_address'])
+                : $attribution->ip_address,
             'expires_at' => $expiresAt,
         ];
 

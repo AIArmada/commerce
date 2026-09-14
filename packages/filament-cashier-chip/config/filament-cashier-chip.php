@@ -11,6 +11,7 @@ return [
     'navigation' => [
         'group' => 'Billing',
         'badge_color' => 'success',
+        'badge_cache_ttl' => 30,
     ],
 
     /*
@@ -22,6 +23,15 @@ return [
         'polling_interval' => '45s',
         'date_format' => 'Y-m-d H:i:s',
         'amount_precision' => 2,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Widgets
+    |--------------------------------------------------------------------------
+    */
+    'widgets' => [
+        'cache_ttl' => 120,
     ],
 
     /*
@@ -70,6 +80,9 @@ return [
         'invoice' => [
             'vendor_name' => null,
             'product_name' => 'Subscription',
+        ],
+        'invoices' => [
+            'limit' => 25,
         ],
         'redirects' => [
             'after_payment_method_added' => null,

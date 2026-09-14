@@ -32,6 +32,8 @@ final class RemoveMemberAction
         $role = MemberRole::fromSpatieRoleName((string) $member->pivot?->role);
 
         DB::transaction(function () use ($member, $role, $subject, $user): void {
+            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->first();
+
             if ($subject instanceof MembershipMutationGuard) {
                 $subject->assertMemberCanBeRemoved($member);
             }

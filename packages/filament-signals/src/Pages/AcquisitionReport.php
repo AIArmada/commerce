@@ -59,7 +59,8 @@ final class AcquisitionReport extends ReportPage implements HasTable
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-signals.features.acquisition', true);
+        return (bool) config('filament-signals.features.acquisition', true)
+            && static::canAccess();
     }
 
     /**

@@ -92,7 +92,7 @@ it('syncs session ticket quotas to the default inventory location', function ():
         ->and($level->quantity_reserved)->toBe(0);
     expect(TicketTypeData::fromTicketType($ticketType)->quota)->toBe(10);
 
-    $level->update(['quantity_reserved' => 4]);
+    $level->incrementReserved(4);
 
     app(EnsureTicketTypeForOccurrenceAction::class)->handle($session, [
         'name' => 'Session Access',

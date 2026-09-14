@@ -38,7 +38,7 @@ it('scopes program tiers and creatives by current owner', function (): void {
 
     $setOwner($ownerA);
 
-    $programA = AffiliateProgram::create([
+    $programA = new AffiliateProgram([
         'name' => 'Program A',
         'slug' => 'program-a',
         'status' => ProgramStatus::Active,
@@ -47,13 +47,16 @@ it('scopes program tiers and creatives by current owner', function (): void {
         'default_commission_rate_basis_points' => 1000,
         'commission_type' => CommissionType::Percentage,
         'cookie_lifetime_days' => 30,
+    ]);
+    $programA->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+    $programA->save();
 
     $setOwner($ownerB);
 
-    $programB = AffiliateProgram::create([
+    $programB = new AffiliateProgram([
         'name' => 'Program B',
         'slug' => 'program-b',
         'status' => ProgramStatus::Active,
@@ -62,9 +65,12 @@ it('scopes program tiers and creatives by current owner', function (): void {
         'default_commission_rate_basis_points' => 1000,
         'commission_type' => CommissionType::Percentage,
         'cookie_lifetime_days' => 30,
+    ]);
+    $programB->forceFill([
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
+    $programB->save();
 
     $setOwner($ownerA);
 

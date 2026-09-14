@@ -108,31 +108,33 @@ DocTemplate::create([
 
 ### Document Number Collision
 
-**Symptom:** Unique constraint violation on `doc_number`.
+**Symptom:** `InvalidArgumentException: Document number [...] is already in use.`
 
 **Solutions:**
 
-1. **Check sequence configuration**
+1. **Check which owner scope collided**
+   Numbers are unique per `(owner_type, owner_id, doc_number)`, so different owners may legitimately share a format. The error means the number is taken inside the current owner scope.
+
+2. **Let the sequence generate the number**
+   Omit `doc_number` so `SequenceManager` assigns the next atomic value instead of reusing an explicit one.
+
+3. **Check sequence configuration**
    ```php
    $sequence = DocSequence::where('doc_type', 'invoice')
        ->where('is_active', true)
        ->first();
    ```
 
-2. **Use database transactions**
-   The `SequenceManager` uses `lockForUpdate()`. Ensure you're not bypassing it.
+### Totals Mismatch on Create
 
-3. **Custom number strategy**
-   Implement `DocumentNumberStrategy` for custom logic:
-   ```php
-   class MyNumberStrategy implements DocumentNumberStrategy
-   {
-       public function generate(string $docType): string
-       {
-           // Your collision-resistant logic
-       }
-   }
-   ```
+**Symptom:** `InvalidArgumentException: Document field 'total_minor' (...) does not match the items-derived value (...)`.
+
+**Solutions:**
+
+1. **Omit explicit totals when items are present**
+   Totals are derived from items; only pass overrides when they exactly match the computed values.
+2. **Pass totals without items**
+   Item-less documents persist caller totals after non-negativity validation.
 
 ---
 
@@ -227,7 +229,7 @@ config('docs.email.attach_pdf');
 config('docs.email.queue');
 ```
 
-The package queues mail when `docs.email.queue_enabled` is true and sends immediately otherwise.
+The package queues mail when `docs.email.queue_enabled` is true and sends immediately otherwise. Queued sends dispatch `SendDocEmailJob`, which transitions the email from `queued` to `sent` (or `failed`) — check the queue worker if rows stay `queued`.
 
 ### Tracking Tokens Invalid
 
@@ -235,10 +237,13 @@ The package queues mail when `docs.email.queue_enabled` is true and sends immedi
 
 **Solutions:**
 
-1. **Check encryption key consistency**
+1. **Check token age**
+   Tokens expire after `docs.email.tracking.ttl_days` days (default 180).
+
+2. **Check encryption key consistency**
    Tokens use Laravel's `Crypt` facade. Key changes invalidate tokens.
 
-2. **Check token format**
+3. **Check token format**
    Tokens should be URL-safe encrypted JSON.
 
 ### Shared Link Returns 404

@@ -71,7 +71,7 @@ final class AffiliateTaxDocumentResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<AffiliateTaxDocument> $query */
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->with(['affiliate']);
 
         /** @var Builder<Model> $modelQuery */
         $modelQuery = $query;

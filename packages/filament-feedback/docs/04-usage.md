@@ -39,4 +39,4 @@ The feedback dashboard provides widgets for:
 
 ## Export responses
 
-Use the built-in Filament export actions to export responses, answers, and testimonials. All exports are owner-scoped.
+Use the built-in Filament export actions to export responses, answers, and testimonials. All exports are owner-scoped. Authorize export actions for trusted roles only: exports carry respondent and subject identifiers, while network identifiers such as IP addresses are excluded from the response export.

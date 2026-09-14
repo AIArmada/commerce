@@ -99,6 +99,20 @@ $checkout = $user->checkoutWithGateway('stripe')
     ->create();
 ```
 
+### CHIP Checkout
+
+CHIP has no pre-configured price IDs, so every product needs an explicit amount in minor units.
+Use `product()` (or the `"name:amountInCents"` shorthand); a bare `price()` name throws instead
+of posting a zero-amount purchase:
+
+```php
+$checkout = $user->checkoutWithGateway('chip')
+    ->product('Standard Plan', 250000, 1)
+    ->successUrl(route('checkout.success'))
+    ->cancelUrl(route('checkout.cancel'))
+    ->create();
+```
+
 ### Retrieving Checkout Status
 
 ```php

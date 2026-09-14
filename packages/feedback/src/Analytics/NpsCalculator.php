@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Analytics;
 
 use AIArmada\Feedback\Data\NpsResultData;
+use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,7 +14,9 @@ final class NpsCalculator
 {
     public function calculate(?FeedbackForm $form = null, ?string $questionKey = null): NpsResultData
     {
-        $query = $this->baseQuery($form, $questionKey);
+        $query = $questionKey !== null
+            ? $this->answerQuery($form, $questionKey)
+            : $this->baseQuery($form);
 
         $counts = (clone $query)
             ->selectRaw('
@@ -58,7 +61,7 @@ final class NpsCalculator
         );
     }
 
-    private function baseQuery(?FeedbackForm $form = null, ?string $questionKey = null): Builder
+    private function baseQuery(?FeedbackForm $form = null): Builder
     {
         /** @var Builder<FeedbackResponse> $query */
         $query = FeedbackResponse::query()
@@ -69,13 +72,32 @@ final class NpsCalculator
             $query->where('feedback_form_id', $form->id);
         }
 
-        if ($questionKey !== null) {
-            $query->whereHas('answers', function (Builder $q) use ($questionKey): void {
-                $q->whereHas('question', function (Builder $qq) use ($questionKey): void {
-                    $qq->where('key', $questionKey);
-                })->whereNotNull('score');
-            });
-        }
+        return $query;
+    }
+
+    /**
+     * @return Builder<FeedbackAnswer>
+     */
+    private function answerQuery(?FeedbackForm $form, string $questionKey): Builder
+    {
+        /** @var Builder<FeedbackAnswer> $query */
+        $query = FeedbackAnswer::query()->whereNotNull('score');
+
+        $query->whereHas('response', function (Builder $q) use ($form): void {
+            $q->where('status', 'submitted');
+
+            if ($form !== null) {
+                $q->where('feedback_form_id', $form->id);
+            }
+        });
+
+        $query->whereHas('question', function (Builder $q) use ($form, $questionKey): void {
+            $q->where('key', $questionKey);
+
+            if ($form !== null) {
+                $q->where('feedback_form_id', $form->id);
+            }
+        });
 
         return $query;
     }

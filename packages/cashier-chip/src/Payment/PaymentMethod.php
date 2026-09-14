@@ -167,6 +167,10 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      */
     public function isDefault(): bool
     {
+        if ($this->storedPaymentMethod instanceof StoredPaymentMethod) {
+            return (bool) $this->storedPaymentMethod->is_default;
+        }
+
         $defaultMethod = $this->owner->defaultPaymentMethod();
 
         return $defaultMethod instanceof self && $this->id() === $defaultMethod->id();

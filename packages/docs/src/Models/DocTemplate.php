@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
@@ -28,6 +29,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property bool $is_default
  * @property string|null $owner_type
  * @property string|null $owner_id
+ * @property string $owner_scope
  * @property array<int, array<string, mixed>> $layout
  * @property array<string, mixed>|null $settings
  * @property CarbonImmutable $created_at
@@ -106,6 +108,13 @@ final class DocTemplate extends Model implements Auditable
 
     protected static function booted(): void
     {
+        // creating (not saving): HasOwner auto-assigns the owner tuple in its own
+        // creating hook, and trait boots register before booted(), so the tuple
+        // is present here. Owner tuples are immutable afterwards.
+        self::creating(function (DocTemplate $template): void {
+            $template->owner_scope = OwnerScopeKey::forAttributes($template->getAttributes());
+        });
+
         self::saving(function (DocTemplate $template): void {
             TemplateBlockRegistry::assertValid($template->layout);
         });

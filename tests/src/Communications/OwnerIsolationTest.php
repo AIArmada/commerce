@@ -50,23 +50,29 @@ it('isolates communications across owners', function (): void {
     $ownerB = CommunicationsTestOwner::query()->create(['name' => 'Owner B']);
 
     $commA = OwnerContext::withOwner($ownerA, function (): Communication {
-        return Communication::create([
+        $communication = (new Communication)->forceFill([
             'direction' => CommunicationDirection::Outbound,
             'category' => CommunicationCategory::Transactional,
             'priority' => CommunicationPriority::Normal,
             'purpose' => 'owner-a',
             'status' => CommunicationStatus::Draft,
         ]);
+        $communication->save();
+
+        return $communication;
     });
 
     $commB = OwnerContext::withOwner($ownerB, function (): Communication {
-        return Communication::create([
+        $communication = (new Communication)->forceFill([
             'direction' => CommunicationDirection::Outbound,
             'category' => CommunicationCategory::Transactional,
             'priority' => CommunicationPriority::Normal,
             'purpose' => 'owner-b',
             'status' => CommunicationStatus::Draft,
         ]);
+        $communication->save();
+
+        return $communication;
     });
 
     expect(OwnerContext::withOwner($ownerA, function (): array {
@@ -83,7 +89,7 @@ it('isolates batches across owners', function (): void {
     $ownerB = CommunicationsTestOwner::query()->create(['name' => 'Owner B']);
 
     $batchA = OwnerContext::withOwner($ownerA, function (): CommunicationBatch {
-        return CommunicationBatch::create([
+        $batch = (new CommunicationBatch)->forceFill([
             'name' => 'Batch A',
             'purpose' => 'marketing',
             'category' => 'marketing',
@@ -94,10 +100,13 @@ it('isolates batches across owners', function (): void {
             'completed_count' => 0,
             'failed_count' => 0,
         ]);
+        $batch->save();
+
+        return $batch;
     });
 
     $batchB = OwnerContext::withOwner($ownerB, function (): CommunicationBatch {
-        return CommunicationBatch::create([
+        $batch = (new CommunicationBatch)->forceFill([
             'name' => 'Batch B',
             'purpose' => 'marketing',
             'category' => 'marketing',
@@ -108,6 +117,9 @@ it('isolates batches across owners', function (): void {
             'completed_count' => 0,
             'failed_count' => 0,
         ]);
+        $batch->save();
+
+        return $batch;
     });
 
     expect(OwnerContext::withOwner($ownerA, function (): array {
@@ -124,13 +136,16 @@ it('blocks cross-owner writes', function (): void {
     $ownerB = CommunicationsTestOwner::query()->create(['name' => 'Owner B']);
 
     $commA = OwnerContext::withOwner($ownerA, function (): Communication {
-        return Communication::create([
+        $communication = (new Communication)->forceFill([
             'direction' => CommunicationDirection::Outbound,
             'category' => CommunicationCategory::Transactional,
             'priority' => CommunicationPriority::Normal,
             'purpose' => 'cross-write-a',
             'status' => CommunicationStatus::Draft,
         ]);
+        $communication->save();
+
+        return $communication;
     });
 
     expect(fn () => OwnerContext::withOwner($ownerB, function () use ($commA): void {
@@ -143,19 +158,20 @@ it('blocks provider events from mutating another owner delivery', function (): v
     $ownerB = CommunicationsTestOwner::query()->create(['name' => 'Provider Owner B']);
 
     $delivery = OwnerContext::withOwner($ownerA, function (): CommunicationDelivery {
-        $communication = Communication::create([
+        $communication = (new Communication)->forceFill([
             'direction' => CommunicationDirection::Outbound,
             'category' => CommunicationCategory::Transactional,
             'priority' => CommunicationPriority::Normal,
             'purpose' => 'provider-cross-owner',
             'status' => CommunicationStatus::Draft,
         ]);
+        $communication->save();
         $recipient = CommunicationRecipient::create([
             'communication_id' => $communication->id,
             'role' => RecipientRole::To,
         ]);
 
-        return CommunicationDelivery::create([
+        $delivery = (new CommunicationDelivery)->forceFill([
             'communication_id' => $communication->id,
             'recipient_id' => $recipient->id,
             'channel' => 'mail',
@@ -164,6 +180,9 @@ it('blocks provider events from mutating another owner delivery', function (): v
             'attempt_count' => 0,
             'max_attempts' => 3,
         ]);
+        $delivery->save();
+
+        return $delivery;
     });
 
     expect(fn () => OwnerContext::withOwner($ownerB, function () use ($delivery): void {

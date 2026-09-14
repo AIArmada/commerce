@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -48,6 +49,7 @@ final class SendEmailAction
                         /** @var Builder<DocEmailTemplate> $query */
                         $query = OwnerUiScope::apply(DocEmailTemplate::query(), includeGlobal: false)
                             ->where('is_active', true)
+                            ->where('trigger', 'send')
                             ->orderBy('name');
 
                         if ($record !== null) {
@@ -80,6 +82,8 @@ final class SendEmailAction
      */
     private static function sendEmail(Doc $record, array $data): void
     {
+        DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
+
         try {
             $emailService = app(DocEmailService::class);
 

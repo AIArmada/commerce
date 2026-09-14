@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Actions\ProcessAffiliatePayout;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
@@ -50,7 +51,7 @@ final class PayoutQueueWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('total_minor')
                     ->label('Amount')
-                    ->money(fn ($record) => $record->currency, divideBy: 100)
+                    ->formatStateUsing(fn (AffiliatePayout $record): string => MoneyFormatter::formatMinor((int) $record->total_minor, $record->currency))
                     ->sortable(),
 
                 Tables\Columns\BadgeColumn::make('status')

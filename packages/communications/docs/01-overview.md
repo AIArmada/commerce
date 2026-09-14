@@ -51,3 +51,22 @@ The domain ships 17 models, 31 actions, and 14 services (see `src/Actions/`, `sr
 - All primary keys are UUIDs
 - Eligibility contracts: `resolveConsent()` / `resolveSuppression()` on the shared `PermissiveEligibilityResolver`
 - Provider webhooks are allowlisted, HMAC-signed, timestamp-bound, and rate-limited — see `03-configuration.md` and `04-usage.md`
+
+## Breaking changes
+
+- `CreateTrackingTokenAction::handle()` now returns `CreatedTrackingTokenData`
+  (`trackingToken` + `plaintextToken`) instead of the bare model, and the
+  misleading `getToken()` helper was removed. Capture `plaintextToken` at
+  creation time — only its SHA-256 hash is persisted.
+- `DestinationProtector` now uses Laravel authenticated encryption. Ciphertext
+  produced by the previous unauthenticated AES-CBC implementation cannot be
+  decrypted; re-protect affected destinations after upgrading.
+- `TransitionDeliveryAction::handle()` accepts an optional `force` flag; the
+  provider-event timestamp map was removed in favour of the transition action.
+- `PayloadRedactor` gained `redactText()`, and `ProviderWebhookRegistrar`
+  gained `getAlgorithm()` / `getSignatureHeader()`. Custom implementations must
+  add these methods.
+- Tracking interaction types are constrained to `TrackingInteractionType`;
+  expired or revoked tokens reject new interactions.
+- `CommunicationPolicy::update()` / `delete()` explicitly deny; use the
+  cancel/retry actions to mutate communications.

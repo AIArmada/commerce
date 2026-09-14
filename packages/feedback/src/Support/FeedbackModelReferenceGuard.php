@@ -11,6 +11,31 @@ use InvalidArgumentException;
 
 final class FeedbackModelReferenceGuard
 {
+    /**
+     * Resolve a respondent reference, enforcing the respondent allowlist when configured.
+     *
+     * HTTP callers must bind the respondent to the authenticated user; this guard only
+     * verifies existence, owner scope, and (optionally) the allowed model classes.
+     */
+    public function resolveRespondent(?string $type, ?string $id): ?Model
+    {
+        if ($type === null && $id === null) {
+            return null;
+        }
+
+        $allowlist = config('feedback.security.respondent_allowlist', []);
+
+        if (is_array($allowlist) && $allowlist !== []) {
+            $modelClass = Relation::getMorphedModel($type ?? '') ?? $type;
+
+            if (! in_array($type, $allowlist, true) && ! in_array($modelClass, $allowlist, true)) {
+                throw new InvalidArgumentException('The respondent type is not allowed.');
+            }
+        }
+
+        return $this->resolve($type, $id);
+    }
+
     public function resolve(?string $type, ?string $id): ?Model
     {
         if ($type === null && $id === null) {

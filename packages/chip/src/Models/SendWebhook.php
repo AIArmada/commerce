@@ -16,6 +16,20 @@ class SendWebhook extends ChipIntegerModel
 {
     public $timestamps = false;
 
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'id',
+        'name',
+        'public_key',
+        'callback_url',
+        'email',
+        'event_hooks',
+        'created_at',
+        'updated_at',
+    ];
+
     protected static function tableSuffix(): string
     {
         return 'send_webhooks';

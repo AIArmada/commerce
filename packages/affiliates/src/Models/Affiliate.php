@@ -126,8 +126,6 @@ class Affiliate extends Model implements Auditable
         'contact_email',
         'website_url',
         'metadata',
-        'owner_type',
-        'owner_id',
         'activated_at',
         'deactivated_at',
         'paused_at',
@@ -391,14 +389,22 @@ class Affiliate extends Model implements Auditable
         });
 
         self::deleting(function (self $affiliate): void {
-            $affiliate->attributions()->delete();
+            $affiliate->attributions()->chunkById(100, function ($attributions): void {
+                foreach ($attributions as $attribution) {
+                    $attribution->delete();
+                }
+            });
             $affiliate->conversions()->delete();
             $affiliate->fraudSignals()->delete();
             $affiliate->dailyStats()->delete();
             $affiliate->links()->delete();
             $affiliate->payoutMethods()->delete();
             $affiliate->payoutHolds()->delete();
-            $affiliate->payouts()->delete();
+            $affiliate->payouts()->chunkById(100, function ($payouts): void {
+                foreach ($payouts as $payout) {
+                    $payout->delete();
+                }
+            });
             $affiliate->balance()->delete();
             $affiliate->children()->update(['parent_affiliate_id' => null]);
         });

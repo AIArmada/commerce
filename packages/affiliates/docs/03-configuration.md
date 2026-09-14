@@ -95,7 +95,7 @@ The package is configured via `config/affiliates.php`. This document reflects th
     'ttl_minutes' => env('AFFILIATES_COOKIE_TTL_MINUTES', 43200), // 30 days
     'path' => env('AFFILIATES_COOKIE_PATH', '/'),
     'domain' => env('AFFILIATES_COOKIE_DOMAIN'),
-    'secure' => env('AFFILIATES_COOKIE_SECURE'),
+    'secure' => env('AFFILIATES_COOKIE_SECURE', true),
     'http_only' => env('AFFILIATES_COOKIE_HTTP_ONLY', true),
     'same_site' => env('AFFILIATES_COOKIE_SAME_SITE', 'lax'),
     'query_parameters' => ['aff', 'affiliate', 'ref', 'referral'],
@@ -225,7 +225,7 @@ The package is configured via `config/affiliates.php`. This document reflects th
     ],
     'attribution_model' => env('AFFILIATES_ATTRIBUTION_MODEL', 'last_touch'),
     'fingerprint' => [
-        'enabled' => env('AFFILIATES_FINGERPRINT_ENABLED', false),
+        'enabled' => env('AFFILIATES_FINGERPRINT_ENABLED', true),
         'block_duplicates' => env('AFFILIATES_FINGERPRINT_BLOCK_DUPLICATES', false),
         'threshold' => env('AFFILIATES_FINGERPRINT_THRESHOLD', 5),
     ],
@@ -317,7 +317,7 @@ The package is configured via `config/affiliates.php`. This document reflects th
 | `signing_key` | Signing key used for generated affiliate links |
 | `default_ttl_minutes` | Default lifetime for generated tracking links |
 | `parameter` | Query-string parameter used when building fallback links |
-| `allowed_hosts` | Optional hostname allowlist enforced by the link generator |
+| `allowed_hosts` | Hostname allowlist enforced by the link generator; empty falls back to the `app.url` host |
 
 ## API
 
@@ -326,8 +326,7 @@ The package is configured via `config/affiliates.php`. This document reflects th
     'enabled' => env('AFFILIATES_API_ENABLED', false),
     'prefix' => env('AFFILIATES_API_PREFIX', 'api/affiliates'),
     'middleware' => ['api', 'throttle:60,1'],
-    'auth' => env('AFFILIATES_API_AUTH', 'token'),
-    'token' => env('AFFILIATES_API_TOKEN'),
+    'token' => env('AFFILIATES_API_TOKEN'), // required Bearer [REDACTED]
 ],
 ```
 

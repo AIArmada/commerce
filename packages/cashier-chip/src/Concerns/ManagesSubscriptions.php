@@ -168,9 +168,11 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
      */
     public function subscription(string $type = 'default'): ?Subscription
     {
-        $this->loadMissing('subscriptions.items', 'subscriptions.billable');
+        if ($this->relationLoaded('subscriptions')) {
+            return $this->subscriptions->where('type', $type)->first();
+        }
 
-        return $this->subscriptions->where('type', $type)->first();
+        return $this->subscriptions()->where('type', $type)->with('items')->first();
     }
 
     /**

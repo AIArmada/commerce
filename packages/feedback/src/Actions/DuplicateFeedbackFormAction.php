@@ -7,6 +7,7 @@ namespace AIArmada\Feedback\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Models\FeedbackQuestion;
 use Illuminate\Support\Facades\DB;
 
 final class DuplicateFeedbackFormAction
@@ -46,37 +47,51 @@ final class DuplicateFeedbackFormAction
                 ]);
 
                 foreach ($section->questions as $question) {
-                    $newQuestion = $this->saveStructure->saveQuestion($form->id, [
-                        'key' => $question->key,
-                        'type' => $question->type,
-                        'label' => $question->label,
-                        'feedback_section_id' => $newSection->id,
-                        'description' => $question->description,
-                        'help_text' => $question->help_text,
-                        'placeholder' => $question->placeholder,
-                        'is_required' => $question->is_required,
-                        'is_scored' => $question->is_scored,
-                        'order_column' => $question->order_column,
-                        'validation_rules' => $question->validation_rules ?? [],
-                        'visibility_rules' => $question->visibility_rules ?? [],
-                        'scoring_rules' => $question->scoring_rules ?? [],
-                        'settings' => $question->settings ?? [],
-                        'metadata' => $question->metadata ?? [],
-                    ]);
-
-                    foreach ($question->options as $option) {
-                        $this->saveStructure->saveOption($newQuestion->id, [
-                            'label' => $option->label,
-                            'value' => $option->value,
-                            'score' => $option->score,
-                            'order_column' => $option->order_column,
-                            'metadata' => $option->metadata ?? [],
-                        ]);
-                    }
+                    $this->copyQuestion($form->id, $question, $newSection->id);
                 }
+            }
+
+            $sectionlessQuestions = $source->questions()
+                ->whereNull('feedback_section_id')
+                ->with('options')
+                ->get();
+
+            foreach ($sectionlessQuestions as $question) {
+                $this->copyQuestion($form->id, $question, null);
             }
 
             return $form->fresh();
         });
+    }
+
+    private function copyQuestion(string $formId, FeedbackQuestion $question, ?string $sectionId): void
+    {
+        $newQuestion = $this->saveStructure->saveQuestion($formId, [
+            'key' => $question->key,
+            'type' => $question->type,
+            'label' => $question->label,
+            'feedback_section_id' => $sectionId,
+            'description' => $question->description,
+            'help_text' => $question->help_text,
+            'placeholder' => $question->placeholder,
+            'is_required' => $question->is_required,
+            'is_scored' => $question->is_scored,
+            'order_column' => $question->order_column,
+            'validation_rules' => $question->validation_rules ?? [],
+            'visibility_rules' => $question->visibility_rules ?? [],
+            'scoring_rules' => $question->scoring_rules ?? [],
+            'settings' => $question->settings ?? [],
+            'metadata' => $question->metadata ?? [],
+        ]);
+
+        foreach ($question->options as $option) {
+            $this->saveStructure->saveOption($newQuestion->id, [
+                'label' => $option->label,
+                'value' => $option->value,
+                'score' => $option->score,
+                'order_column' => $option->order_column,
+                'metadata' => $option->metadata ?? [],
+            ]);
+        }
     }
 }

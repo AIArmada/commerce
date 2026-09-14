@@ -12,6 +12,8 @@ use Illuminate\Support\Arr;
 
 final class TierResolver implements TierResolverInterface
 {
+    use ResolvesCurrency;
+
     public function resolve(string $tierableType, string $tierableId, int $quantity, array $context): ?TierPriceResultData
     {
         if ($quantity <= 1) {
@@ -24,6 +26,7 @@ final class TierResolver implements TierResolverInterface
             ->where('tierable_type', $tierableType)
             ->where('tierable_id', $tierableId)
             ->where('is_active', true)
+            ->where('currency', $this->resolveCurrency($context))
             ->forQuantity($quantity)
             ->when(is_string($priceListId) && $priceListId !== '', function ($q) use ($priceListId): void {
                 $q->where(function ($inner) use ($priceListId): void {

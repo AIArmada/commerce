@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Schemas;
 
 use AIArmada\Contacting\Enums\ContactMethodType;
+use AIArmada\Contacting\Enums\ContactPurpose;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -22,10 +23,11 @@ final class ContactMethodFormSchema
         return [
             Section::make('Contact Method')
                 ->schema(function () use ($includeCountryCode) {
-                    $phoneTypes = ['phone', 'mobile', 'whatsapp'];
+                    $configuredTypes = array_keys(ContactMethodType::options(config('contacting.contact_methods.types', [])));
+                    $phoneTypes = array_values(array_intersect(['phone', 'mobile', 'whatsapp'], $configuredTypes));
 
                     return [
-                        Grid::make(2)->schema([
+                        Grid::make(3)->schema([
                             Select::make('type')
                                 ->label('Type')
                                 ->options(ContactMethodType::options(config('contacting.contact_methods.types', [])))
@@ -33,6 +35,13 @@ final class ContactMethodFormSchema
                                 ->searchable()
                                 ->native(false)
                                 ->live(),
+
+                            Select::make('purpose')
+                                ->label('Purpose')
+                                ->options(ContactPurpose::options())
+                                ->default(ContactPurpose::General->value)
+                                ->searchable()
+                                ->native(false),
 
                             TextInput::make('label')
                                 ->label('Label')
@@ -45,6 +54,16 @@ final class ContactMethodFormSchema
                             ->required()
                             ->maxLength(2048)
                             ->tel(fn (Get $get): bool => in_array($get('type'), $phoneTypes, true))
+                            ->email(fn (Get $get): bool => $get('type') === 'email')
+                            ->rules([
+                                fn (Get $get): callable => $get('type') === 'website'
+                                    ? function (string $attribute, mixed $value, callable $fail): void {
+                                        if (! is_string($value) || (! filter_var($value, FILTER_VALIDATE_URL) && ! filter_var('https://' . $value, FILTER_VALIDATE_URL))) {
+                                            $fail('The :attribute must be a valid URL.');
+                                        }
+                                    }
+                                    : function (string $attribute, mixed $value, callable $fail): void {},
+                            ])
                             ->placeholder(fn (Get $get): string => match ($get('type')) {
                                 'email' => 'hello@example.com',
                                 'phone', 'mobile', 'whatsapp' => '+60123456789',
@@ -56,6 +75,8 @@ final class ContactMethodFormSchema
                             TextInput::make('country_code')
                                 ->label('Country Code')
                                 ->maxLength(2)
+                                ->rule('nullable')
+                                ->rule('alpha')
                                 ->placeholder('MY')
                                 ->formatStateUsing(fn (?string $state): ?string => $state === null ? null : mb_strtoupper($state))
                                 ->visible($includeCountryCode),

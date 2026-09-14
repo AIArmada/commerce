@@ -38,7 +38,13 @@ final class RedemptionTrendChart extends ChartWidget
 
     protected function getData(): array
     {
-        $days = (int) $this->filter;
+        // The Livewire filter is tamperable input: only the offered ranges
+        // are accepted, anything else falls back to the 30-day default so a
+        // forged value cannot force a multi-million-iteration render.
+        $days = in_array($this->filter, ['7', '14', '30', '90'], true)
+            ? (int) $this->filter
+            : 30;
+
         $data = $this->getRedemptionData($days);
 
         return [
@@ -123,7 +129,7 @@ final class RedemptionTrendChart extends ChartWidget
 
         $result = collect();
 
-        for ($date = $startDate->copy(); $date <= $endDate; $date->addDay()) {
+        for ($date = $startDate->copy(); $date <= $endDate; $date = $date->addDay()) {
             $dateStr = $date->format('Y-m-d');
             $dateData = $redemptions->get($dateStr);
             $result->push([

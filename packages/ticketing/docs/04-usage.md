@@ -177,6 +177,20 @@ app(TransferPassToHolderAction::class)->handle(
 );
 ```
 
+### Authorizing a Transfer
+
+Pass the acting user to enforce `PassTransferPolicy` (current-holder
+ownership, validity, transfer window). Machine contexts (console, queue)
+omit it:
+
+```php
+app(TransferPassToHolderAction::class)->handle(
+    pass: $pass,
+    newHolder: $newHolder,
+    authorizedBy: auth()->user(),
+);
+```
+
 ### Checking Transfer Eligibility
 
 ```php
@@ -207,7 +221,7 @@ $result = app(BulkTransferPassesAction::class)->handle(
 $holders = $result; // Collection of newly current pass holders
 ```
 
-The bulk transfer respects `config('ticketing.transfers.bulk_max_size')` and fails if any requested pass ID is outside the current owner scope.
+The bulk transfer respects `config('ticketing.transfers.bulk_max_size')`, fails if any requested pass ID is outside the current owner scope, and rejects batches that mix owners. Each pass receives its own holder row: a `PassHolder` template is replicated per pass, and a persisted holder that already belongs to another pass is rejected. Holder attributes (`name`, `email`, `holder_type`/`holder_id`) are validated; linked holder rows must exist within the current owner scope.
 
 ## Pass State Transitions
 

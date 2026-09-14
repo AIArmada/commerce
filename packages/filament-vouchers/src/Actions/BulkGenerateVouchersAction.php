@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\States\Active;
 use Filament\Actions\Action;
@@ -15,7 +17,11 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final class BulkGenerateVouchersAction extends Action
 {
@@ -48,6 +54,7 @@ final class BulkGenerateVouchersAction extends Action
             TextInput::make('prefix')
                 ->label('Code Prefix')
                 ->maxLength(10)
+                ->alphaDash()
                 ->default('BULK')
                 ->helperText('Codes will be generated as PREFIX-XXXXXX'),
 
@@ -87,28 +94,58 @@ final class BulkGenerateVouchersAction extends Action
             /** @var VoucherService $service */
             $service = app(VoucherService::class);
 
-            $count = (int) $data['count'];
-            $created = 0;
+            // Clamp server-side: the form maxValue is client-enforced only.
+            $count = min(100, max(1, (int) $data['count']));
+            $type = VoucherType::from($data['type']);
+
+            $value = $type === VoucherType::Percentage
+                ? MoneyHelper::displayToBasisPoints((string) $data['value'])
+                : MoneyHelper::displayToCents((string) $data['value']);
+
+            if ($value === null) {
+                throw ValidationException::withMessages([
+                    'value' => 'Enter a valid numeric value.',
+                ]);
+            }
 
             $ownerDefaults = $this->enforceOwnerOnCreate([]);
+            $prefix = mb_strtoupper((string) ($data['prefix'] ?? ''));
 
-            for ($i = 0; $i < $count; $i++) {
-                $code = mb_strtoupper($data['prefix']) . '-' . mb_strtoupper(Str::random(6));
+            $created = DB::transaction(function () use ($service, $count, $type, $value, $data, $ownerDefaults, $prefix): int {
+                $created = 0;
 
-                $service->create(array_merge($ownerDefaults, [
-                    'code' => $code,
-                    'name' => $data['name'] . ' #' . ($i + 1),
-                    'type' => VoucherType::from($data['type']),
-                    'value' => VoucherType::from($data['type']) === VoucherType::Percentage
-                        ? MoneyHelper::displayToBasisPoints((string) $data['value'])
-                        : MoneyHelper::displayToCents((string) $data['value']),
-                    'currency' => $data['currency'],
-                    'status' => Active::class,
-                    'usage_limit' => $data['usage_limit'] ? (int) $data['usage_limit'] : null,
-                ]));
+                for ($i = 0; $i < $count; $i++) {
+                    $attempts = 0;
 
-                $created++;
-            }
+                    while (true) {
+                        $attempts++;
+
+                        try {
+                            $service->create(array_merge($ownerDefaults, [
+                                'code' => $this->generateUniqueCode($prefix),
+                                'name' => $data['name'] . ' #' . ($i + 1),
+                                'type' => $type,
+                                'value' => $value,
+                                'currency' => $data['currency'],
+                                'status' => Active::class,
+                                'usage_limit' => $data['usage_limit'] ? (int) $data['usage_limit'] : null,
+                            ]));
+
+                            break;
+                        } catch (QueryException $exception) {
+                            // Random suffix collision: regenerate instead of
+                            // aborting the batch with partial rows.
+                            if ($attempts >= 5 || $exception->getCode() !== '23000') {
+                                throw $exception;
+                            }
+                        }
+                    }
+
+                    $created++;
+                }
+
+                return $created;
+            });
 
             Notification::make()
                 ->title('Vouchers generated')
@@ -131,6 +168,12 @@ final class BulkGenerateVouchersAction extends Action
         $owner = OwnerContext::resolve();
 
         if (! $owner instanceof Model) {
+            if (! OwnerContext::isExplicitGlobal()) {
+                throw new NoCurrentOwnerException(
+                    'Bulk voucher generation requires an owner context or explicit global context.'
+                );
+            }
+
             $data['owner_type'] = null;
             $data['owner_id'] = null;
 
@@ -141,6 +184,30 @@ final class BulkGenerateVouchersAction extends Action
         $data['owner_id'] = (string) $owner->getKey();
 
         return $data;
+    }
+
+    private function generateUniqueCode(string $prefix): string
+    {
+        $attempts = 0;
+
+        do {
+            $attempts++;
+            $code = ($prefix !== '' ? $prefix . '-' : '') . mb_strtoupper(Str::random(6));
+
+            try {
+                $exists = DB::table((new Voucher)->getTable())
+                    ->where('code', $code)
+                    ->exists();
+            } catch (QueryException) {
+                $exists = false;
+            }
+
+            if (! $exists) {
+                return $code;
+            }
+        } while ($attempts < 10);
+
+        throw new RuntimeException('Could not generate a unique voucher code after 10 attempts.');
     }
 
     public static function getDefaultName(): ?string

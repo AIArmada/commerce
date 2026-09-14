@@ -14,6 +14,7 @@ use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
+use AIArmada\Cashier\Exceptions\Webhook\WebhookVerificationException;
 use AIArmada\Cashier\Gateways\Chip\ChipCheckoutBuilder;
 use AIArmada\Cashier\Gateways\Chip\ChipCustomer;
 use AIArmada\Cashier\Gateways\Chip\ChipPayment;
@@ -21,6 +22,7 @@ use AIArmada\Cashier\Gateways\Chip\ChipPaymentMethod;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscription;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscriptionBuilder;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
+use AIArmada\Cashier\Support\PaymentOperationLimiter;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
@@ -29,6 +31,8 @@ use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipApiException;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -77,6 +81,21 @@ class ChipGateway extends AbstractGateway
             return null;
         }
 
+        // Cashier-side owner scoping is the single source of truth: the
+        // cashier-chip directory lookup above follows its own flag, so the
+        // resolved billable is validated against the current owner here.
+        if ($this->cashierOwnerScopingEnabled()) {
+            $owner = OwnerContext::resolve();
+
+            if ($owner === null) {
+                return null;
+            }
+
+            if (method_exists($billable, 'belongsToOwner') && ! $billable->belongsToOwner($owner)) {
+                return null;
+            }
+        }
+
         return $billable;
     }
 
@@ -123,7 +142,12 @@ class ChipGateway extends AbstractGateway
      */
     public function charge(BillableContract $billable, int $amount, #[SensitiveParameter] ?string $paymentMethod = null, array $options = []): PaymentContract
     {
-        $payment = $this->callBillableMethod($billable, 'charge', [$amount, $paymentMethod, $options]);
+        $payment = PaymentOperationLimiter::run(
+            $this->name(),
+            'charge',
+            $billable,
+            fn (): mixed => $this->callBillableMethod($billable, 'charge', [$amount, $paymentMethod, $options]),
+        );
 
         return new ChipPayment($payment);
     }
@@ -135,7 +159,16 @@ class ChipGateway extends AbstractGateway
      */
     public function refund(string $paymentId, ?int $amount = null): mixed
     {
-        $purchase = $this->client()->refundPurchase($paymentId, $amount);
+        if ($amount !== null && $amount <= 0) {
+            throw new InvalidArgumentException('Refund amount must be a positive integer in minor units.');
+        }
+
+        $purchase = PaymentOperationLimiter::run(
+            $this->name(),
+            'refund',
+            'payment:' . $paymentId,
+            fn (): mixed => $this->client()->refundPurchase($paymentId, $amount),
+        );
 
         if ($purchase instanceof PaymentData) {
             return new ChipPayment($purchase);
@@ -167,6 +200,12 @@ class ChipGateway extends AbstractGateway
     {
         try {
             $purchase = $this->client()->getPurchase($sessionId);
+
+            if (! $this->purchaseBelongsToCurrentBillable($purchase)) {
+                $this->logCrossOwnerBlocked('checkout session', $sessionId);
+
+                return null;
+            }
 
             return new Chip\ChipCheckout($purchase);
         } catch (Throwable $e) {
@@ -217,6 +256,8 @@ class ChipGateway extends AbstractGateway
             $purchase = $this->client()->getPurchase($paymentId);
 
             if (! $this->purchaseBelongsToCurrentBillable($purchase)) {
+                $this->logCrossOwnerBlocked('payment', $paymentId);
+
                 return null;
             }
 
@@ -245,6 +286,8 @@ class ChipGateway extends AbstractGateway
             $purchase = $this->client()->getPurchase($invoiceId);
 
             if (! $this->purchaseBelongsToCurrentBillable($purchase)) {
+                $this->logCrossOwnerBlocked('invoice', $invoiceId);
+
                 return null;
             }
 
@@ -272,10 +315,25 @@ class ChipGateway extends AbstractGateway
         }
 
         try {
-            return CashierChip::findBillable($clientId) instanceof BillableContract;
+            return $this->resolveBillableByGatewayId(mb_trim($clientId)) instanceof BillableContract;
         } catch (Throwable) {
             return false;
         }
+    }
+
+    /**
+     * Record an ownership denial so it is distinguishable from a 404.
+     *
+     * The null return contract is preserved; the distinction lives in the
+     * security log, not the return value.
+     */
+    private function logCrossOwnerBlocked(string $resource, string $identifier): void
+    {
+        Log::warning('Cashier blocked a cross-owner gateway retrieval.', [
+            'gateway' => $this->name(),
+            'resource' => $resource,
+            'identifier' => $identifier,
+        ]);
     }
 
     private function isNotFoundException(Throwable $e): bool
@@ -300,6 +358,12 @@ class ChipGateway extends AbstractGateway
     public function subscriptions(BillableContract $billable): Collection
     {
         $subscriptionsRelation = $this->callBillableMethod($billable, 'subscriptions');
+
+        if ($subscriptionsRelation instanceof Relation) {
+            $subscriptionsRelation = $subscriptionsRelation
+                ->with('items')
+                ->limit(self::DEFAULT_LIST_LIMIT);
+        }
 
         $subscriptions = $subscriptionsRelation->get()
             ->map(fn ($subscription) => new ChipSubscription($subscription))
@@ -326,6 +390,7 @@ class ChipGateway extends AbstractGateway
 
         /** @var iterable<int, mixed> $rawInvoices */
         $invoices = collect($rawInvoices)
+            ->take(self::DEFAULT_LIST_LIMIT)
             ->map(fn ($invoice) => new Chip\ChipInvoice($invoice))
             ->values();
 
@@ -438,11 +503,18 @@ class ChipGateway extends AbstractGateway
     /**
      * Handle a webhook event.
      *
+     * When the raw request body is supplied, the signature is verified
+     * against it before the CHIP dispatcher runs.
+     *
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $headers
      */
-    public function handleWebhook(array $payload, array $headers = []): mixed
+    public function handleWebhook(array $payload, array $headers = [], ?string $rawPayload = null): mixed
     {
+        if ($rawPayload !== null && ! $this->verifyWebhookSignature($rawPayload, $headers)) {
+            throw WebhookVerificationException::invalidSignature($this->name());
+        }
+
         $event = $payload['event_type'] ?? null;
 
         if (! is_string($event) || $event === '') {
@@ -506,12 +578,32 @@ class ChipGateway extends AbstractGateway
     public function customerPortalUrl(BillableContract $billable, string $returnUrl, array $options = []): string
     {
         $panelId = $options['panel'] ?? 'billing';
+        $allowedPanels = (array) config('cashier.portal.allowed_panels', ['billing']);
         $routeName = "filament.{$panelId}.pages.dashboard";
 
-        if (! Route::has($routeName)) {
+        if (in_array($panelId, $allowedPanels, true) && Route::has($routeName)) {
+            return route($routeName);
+        }
+
+        return $this->safeReturnUrl($returnUrl);
+    }
+
+    /**
+     * Accept only relative URLs and same-host absolute URLs.
+     */
+    private function safeReturnUrl(string $returnUrl): string
+    {
+        if (str_starts_with($returnUrl, '/') && ! str_starts_with($returnUrl, '//')) {
             return $returnUrl;
         }
 
-        return route($routeName);
+        $host = parse_url($returnUrl, PHP_URL_HOST);
+        $appHost = parse_url((string) config('app.url', ''), PHP_URL_HOST);
+
+        if (is_string($host) && $host !== '' && $host === $appHost) {
+            return $returnUrl;
+        }
+
+        return url('/');
     }
 }

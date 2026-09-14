@@ -116,7 +116,7 @@ class AffiliateCommissionRule extends Model implements Auditable
 
     protected static function booted(): void
     {
-        // The rule engine is a singleton with an in-memory rules cache.
+        // The rule engine keeps a request-scoped in-memory rules cache.
         // Bust it on writes so long-lived workers never price off stale rules.
         $bust = static function (): void {
             if (app()->bound(CommissionRuleEngine::class)) {

@@ -6,6 +6,7 @@ namespace AIArmada\Engagement\Console\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Engagement\Contracts\HasSubscriptionMatchContext;
 use AIArmada\Engagement\Contracts\Subscribable;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Models\Subscription;
@@ -96,13 +97,23 @@ final class MatchSubscriptionsCommand extends Command
     }
 
     /**
+     * Match context is a whitelist: subject identity plus whatever the
+     * subject explicitly opts in via HasSubscriptionMatchContext. Raw model
+     * attributes are never exposed to criteria matching.
+     *
      * @return array<string, mixed>
      */
     private function buildMatchContext(Model $model): array
     {
-        return array_merge($model->attributesToArray(), [
+        $context = [
             'subject_type' => $model->getMorphClass(),
             'subject_id' => (string) $model->getKey(),
-        ]);
+        ];
+
+        if ($model instanceof HasSubscriptionMatchContext) {
+            return array_merge($model->subscriptionMatchContext(), $context);
+        }
+
+        return $context;
     }
 }

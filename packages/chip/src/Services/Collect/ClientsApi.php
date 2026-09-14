@@ -24,6 +24,8 @@ final class ClientsApi extends CollectApi
 
     public function find(string $clientId): ClientData
     {
+        $this->assertSafePathSegment($clientId, 'Client id');
+
         $response = $this->attempt(
             fn () => $this->client->get("clients/{$clientId}/"),
             'Failed to retrieve CHIP client',
@@ -54,6 +56,8 @@ final class ClientsApi extends CollectApi
      */
     public function update(string $clientId, array $data): ClientData
     {
+        $this->assertSafePathSegment($clientId, 'Client id');
+
         $response = $this->attempt(
             fn () => $this->client->put("clients/{$clientId}/", $data),
             'Failed to update CHIP client',
@@ -68,6 +72,8 @@ final class ClientsApi extends CollectApi
      */
     public function partialUpdate(string $clientId, array $data): ClientData
     {
+        $this->assertSafePathSegment($clientId, 'Client id');
+
         $response = $this->attempt(
             fn () => $this->client->patch("clients/{$clientId}/", $data),
             'Failed to partially update CHIP client',
@@ -79,6 +85,8 @@ final class ClientsApi extends CollectApi
 
     public function delete(string $clientId): void
     {
+        $this->assertSafePathSegment($clientId, 'Client id');
+
         $this->attempt(
             fn () => $this->client->delete("clients/{$clientId}/"),
             'Failed to delete CHIP client',
@@ -91,6 +99,8 @@ final class ClientsApi extends CollectApi
      */
     public function recurringTokens(string $clientId): array
     {
+        $this->assertSafePathSegment($clientId, 'Client id');
+
         return $this->attempt(
             fn () => $this->client->get("clients/{$clientId}/recurring_tokens/"),
             'Failed to list CHIP client recurring tokens',
@@ -103,6 +113,9 @@ final class ClientsApi extends CollectApi
      */
     public function recurringToken(string $clientId, string $tokenId): array
     {
+        $this->assertSafePathSegment($clientId, 'Client id');
+        $this->assertSafePathSegment($tokenId, 'Token id');
+
         return $this->attempt(
             fn () => $this->client->get("clients/{$clientId}/recurring_tokens/{$tokenId}/"),
             'Failed to retrieve CHIP client recurring token',
@@ -112,6 +125,9 @@ final class ClientsApi extends CollectApi
 
     public function deleteRecurringToken(string $clientId, string $tokenId): void
     {
+        $this->assertSafePathSegment($clientId, 'Client id');
+        $this->assertSafePathSegment($tokenId, 'Token id');
+
         $this->attempt(
             fn () => $this->client->delete("clients/{$clientId}/recurring_tokens/{$tokenId}/"),
             'Failed to delete CHIP client recurring token',

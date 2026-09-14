@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource\Pages\EditInventoryLevel;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource\Pages\ListInventoryLevels;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource\Pages\ViewInventoryLevel;
@@ -77,10 +79,15 @@ final class InventoryLevelResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $lowStockCount = self::getEloquentQuery()
-            ->whereRaw('quantity_on_hand - quantity_reserved <= reorder_point')
-            ->where('reorder_point', '>', 0)
-            ->count();
+        $lowStockCount = OwnerCache::remember(
+            OwnerUiScope::resolveOwner(InventoryLevel::class),
+            'filament-inventory.nav-badge.level-low-stock',
+            30,
+            fn (): int => self::getEloquentQuery()
+                ->whereRaw('quantity_on_hand - quantity_reserved <= reorder_point')
+                ->where('reorder_point', '>', 0)
+                ->count()
+        );
 
         return $lowStockCount > 0 ? (string) $lowStockCount : null;
     }

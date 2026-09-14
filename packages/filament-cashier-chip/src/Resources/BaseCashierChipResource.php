@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources;
 
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -31,7 +33,16 @@ abstract class BaseCashierChipResource extends Resource
 
     final public static function getNavigationBadge(): ?string
     {
-        $count = static::getEloquentQuery()->count();
+        try {
+            $count = OwnerCache::remember(
+                OwnerContext::resolve(),
+                'filament-cashier-chip.badge.' . static::navigationSortKey(),
+                (int) config('filament-cashier-chip.navigation.badge_cache_ttl', 30),
+                fn (): int => static::getEloquentQuery()->count(),
+            );
+        } catch (NoCurrentOwnerException) {
+            return null;
+        }
 
         return $count > 0 ? (string) $count : null;
     }
@@ -48,7 +59,19 @@ abstract class BaseCashierChipResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
+            return $query;
+        }
+
+        $model = $query->getModel();
+
+        if ($model === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (! method_exists($model, 'ownerScopeConfig')) {
+            // Explicit opt-out: billable customer models (User/Team) carry no
+            // owner tuple, so owner-column constraints would SQL-error.
             return $query;
         }
 
@@ -59,20 +82,7 @@ abstract class BaseCashierChipResource extends Resource
             sprintf('%s requires an owner context or explicit global context.', static::class),
         );
 
-        $model = $query->getModel();
-
-        if ($model === null) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        $ownerTypeColumn = 'owner_type';
-        $ownerIdColumn = 'owner_id';
-
-        if (method_exists($model, 'ownerScopeConfig')) {
-            $config = $model->ownerScopeConfig();
-            $ownerTypeColumn = $config->ownerTypeColumn;
-            $ownerIdColumn = $config->ownerIdColumn;
-        }
+        $config = $model->ownerScopeConfig();
 
         $query->withoutGlobalScope(OwnerScope::class);
 
@@ -80,8 +90,8 @@ abstract class BaseCashierChipResource extends Resource
             $query,
             $owner,
             false,
-            $ownerTypeColumn,
-            $ownerIdColumn,
+            $config->ownerTypeColumn,
+            $config->ownerIdColumn,
         );
     }
 

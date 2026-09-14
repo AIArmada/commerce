@@ -244,11 +244,22 @@ class Collection extends Model implements Auditable, HasMedia
      */
     public function getMatchingProducts(): \Illuminate\Support\Collection
     {
+        return $this->matchingProductsQuery()->get();
+    }
+
+    /**
+     * Query behind getMatchingProducts(), exposed so large automatic
+     * collections can chunk or paginate instead of hydrating every match.
+     *
+     * @return Builder<Product>
+     */
+    public function matchingProductsQuery(): Builder
+    {
         if ($this->isManual()) {
             $relation = $this->products();
             $this->applyOwnerScopeToProductsQuery($relation->getQuery());
 
-            return $relation->get();
+            return $relation->getQuery();
         }
 
         // Build query from conditions
@@ -259,7 +270,7 @@ class Collection extends Model implements Auditable, HasMedia
             $this->applyConditions($query, $this->conditions);
         }
 
-        return $query->get();
+        return $query;
     }
 
     /**
@@ -271,10 +282,29 @@ class Collection extends Model implements Auditable, HasMedia
             return;
         }
 
-        $matchingProducts = $this->getMatchingProducts();
+        // Attach matches in id chunks so huge rule results never hydrate at
+        // once (existing pivot positions are preserved).
+        $this->matchingProductsQuery()->select('id')->chunkById(500, function ($products): void {
+            $this->products()->syncWithoutDetaching($products->pluck('id')->all());
+        });
 
-        // Sync to match current rule results (existing pivot positions are preserved)
-        $this->products()->sync($matchingProducts->pluck('id'));
+        // Detach pivots that no longer match, one pivot chunk at a time.
+        // Membership is tested against the owner-scoped matching query, so
+        // cross-tenant products can neither attach nor linger.
+        $this->products()->newPivotQuery()->select('product_id')->chunkById(500, function ($rows): void {
+            $pivotIds = $rows->pluck('product_id')->all();
+
+            $stillMatching = $this->matchingProductsQuery()
+                ->whereIn('id', $pivotIds)
+                ->pluck('id')
+                ->all();
+
+            $stale = array_values(array_diff($pivotIds, $stillMatching));
+
+            if ($stale !== []) {
+                $this->products()->detach($stale);
+            }
+        }, 'product_id');
     }
 
     // =========================================================================
@@ -411,6 +441,35 @@ class Collection extends Model implements Auditable, HasMedia
     }
 
     /**
+     * Direct product columns addressable from automatic-collection
+     * conditions. Cost, metadata, and owner columns are deliberately
+     * excluded so rule authors cannot probe them.
+     */
+    private const array CONDITION_COLUMNS = [
+        'name',
+        'slug',
+        'sku',
+        'barcode',
+        'type',
+        'status',
+        'visibility',
+        'price',
+        'compare_price',
+        'weight',
+        'length',
+        'width',
+        'height',
+        'is_featured',
+        'is_taxable',
+        'requires_shipping',
+        'supports_variants',
+        'tracks_inventory',
+        'published_at',
+    ];
+
+    private const array CONDITION_OPERATORS = ['=', '!=', '<>', '>', '>=', '<', '<='];
+
+    /**
      * Apply rule conditions to a query.
      *
      * @param  Builder<Product>  $query
@@ -434,13 +493,33 @@ class Collection extends Model implements Auditable, HasMedia
                 'category' => $query->whereHas('categories', fn ($q) => $q->where('category_id', $value)),
                 'tag' => $query->whereHas('tags', fn ($q) => $q->where('name->en', $value)->orWhere('name', $value)),
                 'is_featured' => $query->where('is_featured', (bool) $value),
-                default => $query->where($field, $operator, $value),
+                default => $this->applyDirectCondition($query, (string) $field, $operator, $value),
             };
         }
     }
 
+    private function applyDirectCondition(Builder $query, string $field, mixed $operator, mixed $value): void
+    {
+        if (! in_array($field, self::CONDITION_COLUMNS, true)) {
+            throw new InvalidArgumentException(sprintf('Invalid collection condition field [%s].', $field));
+        }
+
+        if (! is_string($operator) || ! in_array($operator, self::CONDITION_OPERATORS, true)) {
+            throw new InvalidArgumentException(sprintf('Invalid collection condition operator [%s].', is_scalar($operator) ? (string) $operator : gettype($operator)));
+        }
+
+        if (! is_scalar($value)) {
+            throw new InvalidArgumentException('Invalid collection condition value: expected a scalar.');
+        }
+
+        $query->where($field, $operator, $value);
+    }
+
     /**
      * Apply owner scoping so collections never leak cross-tenant products.
+     *
+     * The ambient scope is deliberately replaced (not stacked) so products
+     * resolve against this collection's owner rather than the caller's.
      *
      * @param  Builder<Product>  $query
      */

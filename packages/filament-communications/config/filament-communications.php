@@ -10,6 +10,13 @@ return [
         'sort' => (int) env('FILAMENT_COMMUNICATIONS_NAV_SORT', 80),
     ],
 
+    /* Widgets */
+    'widgets' => [
+        'delivery_overview' => [
+            'enabled' => (bool) env('FILAMENT_COMMUNICATIONS_WIDGET_DELIVERY_OVERVIEW', true),
+        ],
+    ],
+
     /* Resources */
     'resources' => [
         'communications' => [

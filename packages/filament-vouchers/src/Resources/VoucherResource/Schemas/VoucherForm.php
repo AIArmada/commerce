@@ -29,6 +29,32 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class VoucherForm
 {
+    /**
+     * Maximum display value for the voucher amount field: percentages are
+     * capped at 100, other types are unbounded.
+     */
+    public static function maxValueForType(?string $type): ?int
+    {
+        return $type === VoucherType::Percentage->value ? 100 : null;
+    }
+
+    /**
+     * Normalize a repeater upline value without truncating fractional
+     * percentages.
+     */
+    public static function normalizeUplineValue(mixed $state, ?string $type): mixed
+    {
+        if ($state === null || $state === '') {
+            return null;
+        }
+
+        if ($type === 'fixed') {
+            return MoneyHelper::displayToCents((string) $state);
+        }
+
+        return is_numeric($state) ? $state + 0 : $state;
+    }
+
     public static function configure(Schema $schema): Schema
     {
         $currencyOptions = [
@@ -51,6 +77,7 @@ final class VoucherForm
                                 ->label('Code')
                                 ->required()
                                 ->maxLength(64)
+                                ->alphaDash()
                                 ->unique(ignoreRecord: true)
                                 ->helperText('Alphanumeric voucher code shown to customers')
                                 ->afterStateUpdated(static function (?string $state, Set $set): void {
@@ -86,6 +113,7 @@ final class VoucherForm
                                 ->label('Value')
                                 ->numeric()
                                 ->minValue(0.01)
+                                ->maxValue(static fn (Get $get): ?int => self::maxValueForType($get('type')))
                                 ->required()
                                 ->helperText('Percentage for percentage vouchers, fixed amount for other types')
                                 ->suffix(fn (Get $get): string => $get('type') === VoucherType::Percentage->value ? '%' : $get('currency') ?? $defaultCurrency)
@@ -363,17 +391,9 @@ final class VoucherForm
 
                                     return $state;
                                 })
-                                ->dehydrateStateUsing(function ($state, Get $get): mixed {
-                                    if ($state === null || $state === '') {
-                                        return null;
-                                    }
-
-                                    if ($get('type') === 'fixed') {
-                                        return MoneyHelper::displayToCents((string) $state);
-                                    }
-
-                                    return is_int($state) ? $state : (int) $state;
-                                })
+                                ->dehydrateStateUsing(
+                                    static fn ($state, Get $get): mixed => self::normalizeUplineValue($state, $get('type'))
+                                )
                                 ->helperText(fn (Get $get): string => $get('type') === 'fixed'
                                     ? 'Amount in dollars (e.g., 50.00 for $50)'
                                     : 'Percentage of commission (e.g., 5 = 5%)'),
@@ -387,7 +407,7 @@ final class VoucherForm
                 ->collapsed();
         }
 
-        if ($ownerRegistry->hasDefinitions()) {
+        if ($ownerRegistry->hasDefinitions() && config('vouchers.owner.enabled', false)) {
             $sections[] = Section::make('Ownership')
                 ->schema([
                     Grid::make(2)

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -39,6 +40,23 @@ class SeatHold extends Model
     protected static function newFactory(): SeatHoldFactory
     {
         return SeatHoldFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (SeatHold $hold): void {
+            if ($hold->seat_id === null || $hold->seat_id === '') {
+                throw new InvalidArgumentException('A hold requires a seat_id.');
+            }
+
+            if (($hold->held_by_type === null) !== ($hold->held_by_id === null)) {
+                throw new InvalidArgumentException('Held-by type and id must both be present or both be null.');
+            }
+
+            if (! Seat::query()->whereKey($hold->seat_id)->exists()) {
+                throw new InvalidArgumentException('The hold references a seat that does not exist in the current scope.');
+            }
+        });
     }
 
     public $incrementing = false;

@@ -9,6 +9,7 @@ use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\SuppressionReason;
 use AIArmada\Communications\Models\CommunicationSuppression;
 use AIArmada\Filament\Communications\Resources\CommunicationSuppressionResource\Pages;
+use AIArmada\Filament\Communications\Support\CommunicationFilterOptions;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
@@ -32,7 +33,8 @@ final class CommunicationSuppressionResource extends Resource
 
     public static function getNavigationSort(): ?int
     {
-        return config('filament-communications.navigation.sort');
+        return config('filament-communications.navigation.sort')
+            + (int) config('filament-communications.navigation.offsets.suppressions', 0);
     }
 
     /**
@@ -68,12 +70,7 @@ final class CommunicationSuppressionResource extends Resource
                 Tables\Filters\SelectFilter::make('reason')
                     ->options(collect(SuppressionReason::cases())->pluck('value', 'value')),
                 Tables\Filters\SelectFilter::make('channel')
-                    ->options([
-                        'email' => 'Email',
-                        'sms' => 'SMS',
-                        'push' => 'Push',
-                        'in_app' => 'In-App',
-                    ]),
+                    ->options(CommunicationFilterOptions::channels()),
                 Tables\Filters\SelectFilter::make('category')
                     ->options(collect(CommunicationCategory::cases())->pluck('value', 'value')),
             ])

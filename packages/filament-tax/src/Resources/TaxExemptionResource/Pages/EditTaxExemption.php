@@ -23,8 +23,10 @@ class EditTaxExemption extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\ViewAction::make()
+                ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.view') ?? false),
+            Actions\DeleteAction::make()
+                ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.delete') ?? false),
         ];
     }
 

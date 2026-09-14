@@ -11,12 +11,14 @@ use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Exceptions\CheckoutException;
 use AIArmada\Cashier\Exceptions\InsufficientStockException;
+use AIArmada\Cashier\Gateways\Chip\ChipCheckoutBuilder;
 use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\InventoryServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * Checkout builder that orchestrates cart → payment flow.
@@ -161,11 +163,15 @@ final class CartCheckoutBuilder
     /**
      * Process the checkout: validate, allocate inventory, create payment.
      *
+     * Stock validation and inventory allocation run inside a transaction.
+     * The gateway call runs outside it so database locks are never held
+     * across network I/O; a gateway failure releases the allocation.
+     *
      * @throws CheckoutException
      */
     public function process(): CheckoutContract
     {
-        return DB::transaction(function () {
+        DB::transaction(function (): void {
             // Validate stock if configured
             if ($this->validateStock) {
                 $this->performStockValidation();
@@ -175,10 +181,15 @@ final class CartCheckoutBuilder
             if ($this->allocateInventory) {
                 $this->performInventoryAllocation();
             }
-
-            // Build and create the checkout session
-            return $this->createCheckoutSession();
         });
+
+        try {
+            return $this->createCheckoutSession();
+        } catch (Throwable $e) {
+            $this->releaseInventoryAllocation();
+
+            throw $e;
+        }
     }
 
     /**
@@ -239,6 +250,26 @@ final class CartCheckoutBuilder
     }
 
     /**
+     * Release the cart allocation after a gateway failure.
+     */
+    private function releaseInventoryAllocation(): void
+    {
+        if (! $this->allocateInventory || ! class_exists(InventoryServiceProvider::class)) {
+            return;
+        }
+
+        $manager = app('cart');
+
+        if (! $manager instanceof CartManagerWithInventory && method_exists($manager, 'getBaseManager')) {
+            $manager = $manager->getBaseManager();
+        }
+
+        if ($manager instanceof CartManagerWithInventory) {
+            $manager->releaseAllInventory();
+        }
+    }
+
+    /**
      * Create the checkout session with the gateway.
      */
     private function createCheckoutSession(): CheckoutContract
@@ -284,23 +315,30 @@ final class CartCheckoutBuilder
      */
     private function addItemToCheckout(CheckoutBuilderContract $builder, LineItemInterface $item): void
     {
-        // Gateway-specific implementation
-        // For gateways that support dynamic pricing (like CHIP)
-        // we pass the item details directly
-
         // For gateways requiring pre-configured prices (like Stripe)
-        // we look for a price_id in the item attributes
-
+        // we look for a price_id in the item attributes.
         $metadata = $item->getLineItemMetadata();
         $priceId = $metadata['price_id'] ?? null;
         $quantity = (int) $item->getLineItemQuantity();
 
         if (is_string($priceId) && $priceId !== '') {
             $builder->price($priceId, $quantity);
-        } else {
-            // For dynamic pricing, we'd need gateway-specific handling
-            // This could be extended via gateway adapters
-            $builder->price($item->getLineItemId(), $quantity);
+
+            return;
         }
+
+        // For gateways with dynamic pricing (like CHIP) the real unit
+        // amount travels with the item name so the purchase never posts 0.
+        if ($builder instanceof ChipCheckoutBuilder) {
+            $builder->product(
+                $item->getLineItemName(),
+                (int) $item->getLineItemPrice()->getAmount(),
+                $quantity,
+            );
+
+            return;
+        }
+
+        $builder->price($item->getLineItemId(), $quantity);
     }
 }

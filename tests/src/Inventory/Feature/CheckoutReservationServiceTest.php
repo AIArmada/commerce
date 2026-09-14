@@ -13,6 +13,9 @@ use AIArmada\Inventory\Models\InventoryReservation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
+use ReflectionMethod;
 
 describe('CheckoutReservationService', function (): void {
     beforeEach(function (): void {
@@ -230,5 +233,25 @@ describe('CheckoutReservationService', function (): void {
             ->where('reservation_group_id', $group->id)
             ->get();
         expect($allocations->sum('quantity'))->toBe(3);
+    });
+
+    it('refuses to proceed while the reference lock is held elsewhere', function (): void {
+        $key = (new ReflectionMethod($this->reservationService, 'reservationLockKey'))->invoke(
+            $this->reservationService,
+            'ref-locked',
+        );
+        $holder = Cache::lock($key, 10, 'another-process');
+        expect($holder->acquire())->toBeTrue();
+
+        try {
+            $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 3)];
+
+            expect(fn () => $this->reservationService->reserve('ref-locked', $lines, 900))
+                ->toThrow(LockTimeoutException::class);
+        } finally {
+            $holder->release();
+        }
+
+        expect(InventoryReservation::query()->where('reference', 'ref-locked')->exists())->toBeFalse();
     });
 });

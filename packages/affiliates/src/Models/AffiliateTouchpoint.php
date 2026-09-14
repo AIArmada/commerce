@@ -76,8 +76,6 @@ class AffiliateTouchpoint extends Model
         'origin',
         'url',
         'referrer_url',
-        'owner_type',
-        'owner_id',
         'ip_address',
         'user_agent',
         'fingerprint',

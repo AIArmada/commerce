@@ -32,11 +32,14 @@ final class SocialProfileConfig
             return null;
         }
 
-        return 'https://' . ($prefix ?? '') . $handle . ($suffix ?? '');
+        return 'https://' . ($prefix ?? '') . rawurlencode($handle) . ($suffix ?? '');
     }
 
     public function extractHandle(string $platform, string $url): ?string
     {
+        $url = explode('?', $url)[0];
+        $url = explode('#', $url)[0];
+
         $prefix = $this->prefix($platform);
         $suffix = $this->suffix($platform);
 

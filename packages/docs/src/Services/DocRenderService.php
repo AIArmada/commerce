@@ -15,6 +15,7 @@ use AIArmada\Docs\Enums\ShareLinkAction;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocShareLink;
 use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Support\DocTypeKey;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -89,7 +90,7 @@ final class DocRenderService
 
         Storage::disk($disk)->put($path, $this->renderPdf($doc));
 
-        $doc->update(['pdf_path' => $path]);
+        $doc->forceFill(['pdf_path' => $path])->save();
 
         return $path;
     }
@@ -195,18 +196,34 @@ final class DocRenderService
 
         $options = array_replace_recursive($defaults, $templatePdf, $perDoc);
 
+        $format = mb_strtolower((string) ($options['format'] ?? $defaults['format']));
+        $orientation = mb_strtolower((string) ($options['orientation'] ?? $defaults['orientation']));
+
         return [
-            'format' => (string) ($options['format'] ?? $defaults['format']),
-            'orientation' => (string) ($options['orientation'] ?? $defaults['orientation']),
+            'format' => in_array($format, ['a3', 'a4', 'a5', 'letter', 'legal'], true)
+                ? $format
+                : $defaults['format'],
+            'orientation' => in_array($orientation, ['portrait', 'landscape'], true)
+                ? $orientation
+                : $defaults['orientation'],
             'margin' => [
-                'top' => (int) data_get($options, 'margin.top', $defaults['margin']['top']),
-                'right' => (int) data_get($options, 'margin.right', $defaults['margin']['right']),
-                'bottom' => (int) data_get($options, 'margin.bottom', $defaults['margin']['bottom']),
-                'left' => (int) data_get($options, 'margin.left', $defaults['margin']['left']),
+                'top' => $this->clampMargin(data_get($options, 'margin.top', $defaults['margin']['top'])),
+                'right' => $this->clampMargin(data_get($options, 'margin.right', $defaults['margin']['right'])),
+                'bottom' => $this->clampMargin(data_get($options, 'margin.bottom', $defaults['margin']['bottom'])),
+                'left' => $this->clampMargin(data_get($options, 'margin.left', $defaults['margin']['left'])),
             ],
             'full_bleed' => (bool) ($options['full_bleed'] ?? $defaults['full_bleed']),
             'print_background' => (bool) ($options['print_background'] ?? $defaults['print_background']),
         ];
+    }
+
+    private function clampMargin(mixed $value): int
+    {
+        if (! is_numeric($value)) {
+            return 10;
+        }
+
+        return max(0, min(100, (int) $value));
     }
 
     private function renderBlock(Doc $doc, array $block, RenderAudience $audience): string
@@ -454,14 +471,32 @@ final class DocRenderService
 
     private function resolveStorageDisk(string $docType): string
     {
-        return config("docs.types.{$docType}.storage.disk")
-            ?? config('docs.storage.disk', 'local');
+        $key = DocTypeKey::sanitize($docType);
+
+        if ($key !== null) {
+            $disk = config("docs.types.{$key}.storage.disk");
+
+            if (is_string($disk) && $disk !== '') {
+                return $disk;
+            }
+        }
+
+        return config('docs.storage.disk', 'local');
     }
 
     private function resolveStoragePath(string $docType): string
     {
-        return config("docs.types.{$docType}.storage.path")
-            ?? config('docs.storage.path', 'docs');
+        $key = DocTypeKey::sanitize($docType);
+
+        if ($key !== null) {
+            $path = config("docs.types.{$key}.storage.path");
+
+            if (is_string($path) && $path !== '') {
+                return $path;
+            }
+        }
+
+        return config('docs.storage.path', 'docs');
     }
 
     private function generatePdfPath(Doc $doc): string

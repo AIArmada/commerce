@@ -48,7 +48,8 @@ final class RetentionReport extends ReportPage
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-signals.features.retention', true);
+        return (bool) config('filament-signals.features.retention', true)
+            && static::canAccess();
     }
 
     /**

@@ -37,6 +37,8 @@ return new class extends Migration
             // Indexes
             $table->index(['min_quantity', 'max_quantity']);
             $table->index(['tierable_type', 'tierable_id', 'price_list_id'], 'price_tiers_tierable_lookup_idx');
+            $table->index('is_active');
+            $table->index('currency');
         });
     }
 

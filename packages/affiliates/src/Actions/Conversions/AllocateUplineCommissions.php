@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
@@ -65,10 +66,10 @@ final class AllocateUplineCommissions
                     break;
                 }
 
-                $portion = self::resolvePortion($conversionData->commissionMinor, $levelConfig);
+                $portion = CommissionCaps::clamp(self::resolvePortion($conversionData->commissionMinor, $levelConfig));
 
                 if ($portion > 0) {
-                    $model = AffiliateConversion::create([
+                    $model = new AffiliateConversion([
                         'affiliate_id' => $current->getKey(),
                         'affiliate_code' => $current->code,
                         'affiliate_attribution_id' => $attributionId,
@@ -91,11 +92,14 @@ final class AllocateUplineCommissions
                             'weight' => self::resolveWeight($levelConfig),
                             'base_conversion' => $conversionData->id,
                         ],
-                        'owner_type' => $current->owner_type,
-                        'owner_id' => $current->owner_id,
                         'occurred_at' => CarbonImmutable::now(),
                         'approved_at' => $autoApprove ? CarbonImmutable::now() : null,
                     ]);
+                    $model->forceFill([
+                        'owner_type' => $current->owner_type,
+                        'owner_id' => $current->owner_id,
+                    ]);
+                    $model->save();
 
                     $this->accounting->handle($model);
 

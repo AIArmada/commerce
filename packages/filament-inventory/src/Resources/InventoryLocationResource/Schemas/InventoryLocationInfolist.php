@@ -80,17 +80,17 @@ final class InventoryLocationInfolist
             Section::make('Statistics')
                 ->schema([
                     Grid::make(3)->schema([
-                        TextEntry::make('inventoryLevels')
+                        TextEntry::make('inventory_levels_count')
                             ->label('SKUs')
-                            ->formatStateUsing(fn ($record): string => (string) $record->inventoryLevels()->count()),
+                            ->formatStateUsing(fn ($state, $record): string => (string) ($state ?? $record->inventoryLevels()->count())),
 
-                        TextEntry::make('total_on_hand')
+                        TextEntry::make('inventory_levels_sum_quantity_on_hand')
                             ->label('Total On Hand')
-                            ->formatStateUsing(fn ($record): string => number_format($record->inventoryLevels()->sum('quantity_on_hand'))),
+                            ->formatStateUsing(fn ($state, $record): string => number_format((int) ($state ?? $record->inventoryLevels()->sum('quantity_on_hand')))),
 
-                        TextEntry::make('total_reserved')
+                        TextEntry::make('inventory_levels_sum_quantity_reserved')
                             ->label('Total Reserved')
-                            ->formatStateUsing(fn ($record): string => number_format($record->inventoryLevels()->sum('quantity_reserved'))),
+                            ->formatStateUsing(fn ($state, $record): string => number_format((int) ($state ?? $record->inventoryLevels()->sum('quantity_reserved')))),
                     ]),
                 ]),
 

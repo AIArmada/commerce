@@ -15,6 +15,35 @@ use Illuminate\Support\Facades\Route;
 
 final class InteractionRuleScanner
 {
+    /**
+     * Safety bounds for local source scans: the candidate cap alone does not
+     * bound work when a tree holds thousands of files or huge generated
+     * views, so files and bytes are capped independently.
+     */
+    public const MAX_SCAN_FILES = 500;
+
+    public const MAX_SCAN_FILE_BYTES = 262144;
+
+    /**
+     * Route prefixes that never represent storefront pages and must stay out
+     * of the scan datalist.
+     *
+     * @var list<string>
+     */
+    public const EXCLUDED_ROUTE_PREFIXES = [
+        'admin',
+        'filament',
+        'livewire',
+        'horizon',
+        'telescope',
+        'pulse',
+        '_debugbar',
+        '_ignition',
+        'sanctum',
+        'api',
+        'up',
+    ];
+
     public function __construct(
         private readonly Filesystem $filesystem,
         private readonly PublicHttpUrlGuard $urlGuard,
@@ -99,6 +128,7 @@ final class InteractionRuleScanner
 
         /** @var array<string, array{name: string, selector: string|null, page_pattern: string|null, settings: array<string, mixed>|null, confidence: int, confidence_note: string}> $candidatesByKey */
         $candidatesByKey = [];
+        $scannedFiles = 0;
 
         foreach ($paths as $path) {
             if (! is_string($path) || $path === '' || ! $this->filesystem->isDirectory($path)) {
@@ -106,11 +136,21 @@ final class InteractionRuleScanner
             }
 
             foreach ($this->filesystem->allFiles($path) as $file) {
+                if ($scannedFiles >= self::MAX_SCAN_FILES) {
+                    break 2;
+                }
+
                 $extension = mb_strtolower((string) $file->getExtension());
 
                 if (! in_array($extension, ['php', 'blade.php'], true)) {
                     continue;
                 }
+
+                if ($file->getSize() > self::MAX_SCAN_FILE_BYTES) {
+                    continue;
+                }
+
+                $scannedFiles++;
 
                 $relativePath = str_replace(base_path() . DIRECTORY_SEPARATOR, '', $file->getPathname());
                 $lines = preg_split('/\R/u', $this->filesystem->get($file->getPathname())) ?: [];
@@ -190,12 +230,29 @@ final class InteractionRuleScanner
                 continue;
             }
 
+            if ($this->isExcludedRoutePattern($uri)) {
+                continue;
+            }
+
             $patterns[$uri] = $uri;
         }
 
         ksort($patterns);
 
         return array_values($patterns);
+    }
+
+    private function isExcludedRoutePattern(string $uri): bool
+    {
+        $trimmed = mb_ltrim($uri, '/');
+
+        foreach (self::EXCLUDED_ROUTE_PREFIXES as $prefix) {
+            if ($trimmed === $prefix || str_starts_with($trimmed, $prefix . '/')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function fetchHtml(string $pageUrl): ?string

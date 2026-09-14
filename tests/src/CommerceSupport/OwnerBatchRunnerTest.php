@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -335,10 +336,27 @@ it('deduplicates explicit global tuples when multiple global rows exist', functi
 });
 
 // ---------------------------------------------------------------------------
-// include_global toggling
+// include_global suppression (scoped, without mutating config)
 // ---------------------------------------------------------------------------
 
-it('temporarily disables include_global during iteration', function (): void {
+final class BatchRunnerIncludeFixture extends Model implements OwnerScopeConfigurable
+{
+    use HasOwner;
+
+    protected $guarded = [];
+
+    public function getTable(): string
+    {
+        return 'batch_runner_fixtures';
+    }
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return new OwnerScopeConfig(enabled: true, includeGlobal: true);
+    }
+}
+
+it('suppresses include_global during iteration without touching config', function (): void {
     config()->set('batch_runner_include_test.enabled', true);
     config()->set('batch_runner_include_test.include_global', true);
 
@@ -355,19 +373,83 @@ it('temporarily disables include_global during iteration', function (): void {
 
     OwnerContext::setForRequest(null);
 
-    $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
+    $runner = new OwnerBatchRunner(BatchRunnerIncludeFixture::class, [
         'enabled' => 'batch_runner_include_test.enabled',
         'include_global' => 'batch_runner_include_test.include_global',
     ]);
 
-    $includeGlobalValues = collect();
+    $seenCounts = collect();
+    $seenConfig = collect();
 
-    $runner->forEach(function () use ($includeGlobalValues): int {
-        $includeGlobalValues->push(config('batch_runner_include_test.include_global'));
+    $runner->forEach(function () use ($seenCounts, $seenConfig): int {
+        $seenCounts->push(BatchRunnerIncludeFixture::query()->count());
+        $seenConfig->push(config('batch_runner_include_test.include_global'));
 
         return 0;
     });
 
-    expect($includeGlobalValues->every(fn ($v): bool => $v === false))->toBeTrue();
-    expect(config('batch_runner_include_test.include_global'))->toBe(true);
+    // Each iteration sees only its own scope (1 row), never owner+global (2).
+    expect($seenCounts->every(fn ($v): bool => $v === 1))->toBeTrue()
+        ->and($seenConfig->every(fn ($v): bool => $v === true))->toBeTrue()
+        ->and(config('batch_runner_include_test.include_global'))->toBe(true);
+
+    // Outside the runner, include-global matching still applies.
+    OwnerContext::withOwner($owner, function (): void {
+        expect(BatchRunnerIncludeFixture::query()->count())->toBe(2);
+    });
+});
+
+it('fails fast on orphaned owner tuples before running callbacks', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Orphan Runner',
+        'email' => 'orphan-runner@example.com',
+        'password' => 'secret',
+    ]);
+
+    DB::table('batch_runner_fixtures')->insert([
+        ['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey(), 'label' => 'owner'],
+        ['owner_type' => $owner->getMorphClass(), 'owner_id' => 999999, 'label' => 'orphan'],
+    ]);
+
+    OwnerContext::setForRequest(null);
+
+    $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
+        'enabled' => 'batch_runner_test.enabled',
+    ]);
+
+    config()->set('batch_runner_test.enabled', true);
+
+    $callCount = 0;
+
+    expect(fn () => $runner->forEach(function () use (&$callCount): int {
+        $callCount++;
+
+        return 0;
+    }))->toThrow(ModelNotFoundException::class);
+
+    expect($callCount)->toBe(0);
+});
+
+it('fails fast on malformed owner tuples before running callbacks', function (): void {
+    DB::table('batch_runner_fixtures')->insert([
+        ['owner_type' => User::class, 'owner_id' => null, 'label' => 'malformed'],
+    ]);
+
+    OwnerContext::setForRequest(null);
+
+    $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
+        'enabled' => 'batch_runner_test.enabled',
+    ]);
+
+    config()->set('batch_runner_test.enabled', true);
+
+    $callCount = 0;
+
+    expect(fn () => $runner->forEach(function () use (&$callCount): int {
+        $callCount++;
+
+        return 0;
+    }))->toThrow(InvalidArgumentException::class);
+
+    expect($callCount)->toBe(0);
 });

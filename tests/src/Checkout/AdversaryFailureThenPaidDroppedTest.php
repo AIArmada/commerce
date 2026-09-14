@@ -143,7 +143,7 @@ it('reconciles a paid event that arrives after a failure event for the same purc
         paymentResolver: $resolver,
     );
 
-    $session = CheckoutSession::create([
+    $session = CheckoutSession::forceCreate([
         'cart_id' => 'adv-dual-delivery',
         'status' => AwaitingPayment::class,
         'selected_payment_gateway' => 'chip',

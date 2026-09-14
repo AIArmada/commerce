@@ -6,6 +6,29 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
 
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createCustomerModelTestCustomer(array $attributes): Customer
+{
+    $restricted = [];
+
+    foreach (['user_id', 'status', 'is_guest', 'accepts_marketing', 'created_at', 'updated_at'] as $key) {
+        if (array_key_exists($key, $attributes)) {
+            $restricted[$key] = $attributes[$key];
+            unset($attributes[$key]);
+        }
+    }
+
+    $customer = Customer::query()->create($attributes);
+
+    if ($restricted !== []) {
+        $customer->forceFill($restricted)->save();
+    }
+
+    return $customer;
+}
+
 describe('Customer Model', function (): void {
     describe('Customer Creation', function (): void {
         it('can create a customer', function (): void {
@@ -46,7 +69,7 @@ describe('Customer Model', function (): void {
         });
 
         it('can check if customer is suspended', function (): void {
-            $suspended = Customer::create([
+            $suspended = createCustomerModelTestCustomer([
                 'first_name' => 'Suspended',
                 'last_name' => 'User',
                 'email' => 'suspended-' . uniqid() . '@example.com',
@@ -73,7 +96,7 @@ describe('Customer Model', function (): void {
         });
 
         it('can opt out of marketing', function (): void {
-            $customer = Customer::create([
+            $customer = createCustomerModelTestCustomer([
                 'first_name' => 'Marketer',
                 'last_name' => 'Test',
                 'email' => 'marketer2-' . uniqid() . '@example.com',
@@ -90,13 +113,13 @@ describe('Customer Model', function (): void {
     describe('Customer Scopes', function (): void {
         it('can filter active customers', function (): void {
             Customer::create(['first_name' => 'Active', 'last_name' => 'One', 'email' => 'a1-' . uniqid() . '@test.com', 'status' => CustomerStatus::Active]);
-            Customer::create(['first_name' => 'Inactive', 'last_name' => 'Two', 'email' => 'i2-' . uniqid() . '@test.com', 'status' => CustomerStatus::Suspended]);
+            createCustomerModelTestCustomer(['first_name' => 'Inactive', 'last_name' => 'Two', 'email' => 'i2-' . uniqid() . '@test.com', 'status' => CustomerStatus::Suspended]);
 
             expect(Customer::active()->count())->toBeGreaterThanOrEqual(1);
         });
 
         it('can filter marketing opted-in customers', function (): void {
-            Customer::create(['first_name' => 'OptedIn', 'last_name' => 'User', 'email' => 'optin-' . uniqid() . '@test.com', 'status' => CustomerStatus::Active, 'accepts_marketing' => true]);
+            createCustomerModelTestCustomer(['first_name' => 'OptedIn', 'last_name' => 'User', 'email' => 'optin-' . uniqid() . '@test.com', 'status' => CustomerStatus::Active, 'accepts_marketing' => true]);
             Customer::create(['first_name' => 'OptedOut', 'last_name' => 'User', 'email' => 'optout-' . uniqid() . '@test.com', 'status' => CustomerStatus::Active, 'accepts_marketing' => false]);
 
             expect(Customer::where('accepts_marketing', true)->count())->toBeGreaterThanOrEqual(1);

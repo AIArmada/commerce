@@ -9,5 +9,5 @@ use AIArmada\Seating\Models\SeatMap;
 interface SeatLayoutInterface
 {
     /** @return array<string, mixed> */
-    public function describe(SeatMap $map): array;
+    public function describe(SeatMap $map, ?string $sectionId = null): array;
 }

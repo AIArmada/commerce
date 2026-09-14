@@ -59,8 +59,8 @@ final class FeedbackQuestion extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $question): void {
-            $question->options()->each(fn (FeedbackQuestionOption $option): mixed => $option->delete());
-            $question->answers()->each(fn (FeedbackAnswer $answer): mixed => $answer->delete());
+            $question->options()->chunkById(200, fn ($options): mixed => $options->each->delete());
+            $question->answers()->chunkById(200, fn ($answers): mixed => $answers->each->delete());
         });
     }
 

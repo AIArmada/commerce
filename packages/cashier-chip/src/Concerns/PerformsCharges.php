@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Support\IdempotencyKey;
+use AIArmada\CashierChip\Support\RedirectUrlValidator;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Support\Facades\RateLimiter;
@@ -53,6 +54,10 @@ trait PerformsCharges // @phpstan-ignore trait.unused
         $currency = is_string($currency) && $currency !== ''
             ? mb_strtoupper($currency)
             : $this->preferredCurrency();
+
+        RedirectUrlValidator::assertValid($options['success_url'] ?? null, 'success_url');
+        RedirectUrlValidator::assertValid($options['failure_url'] ?? null, 'failure_url');
+        RedirectUrlValidator::assertValid($options['cancel_url'] ?? null, 'cancel_url');
 
         $builder = Cashier::chip()->purchase()
             ->currency($currency);
@@ -152,6 +157,11 @@ trait PerformsCharges // @phpstan-ignore trait.unused
             ? mb_strtoupper($currency)
             : $this->preferredCurrency();
 
+        RedirectUrlValidator::assertValid($options['success_url'] ?? null, 'success_url');
+        RedirectUrlValidator::assertValid($options['failure_url'] ?? null, 'failure_url');
+        RedirectUrlValidator::assertValid($options['cancel_url'] ?? null, 'cancel_url');
+        RedirectUrlValidator::assertValid($options['webhook_url'] ?? null, 'webhook_url');
+
         $builder = Cashier::chip()->purchase()
             ->currency($currency);
         $builder = IdempotencyKey::apply($builder, $options);
@@ -213,7 +223,24 @@ trait PerformsCharges // @phpstan-ignore trait.unused
     public function findPayment(string $id): ?Payment
     {
         try {
-            $purchase = Cashier::chip()->getPurchase($id);
+            $purchaseData = Cashier::chip()->getPurchase($id);
+
+            if (is_array($purchaseData)) {
+                $purchase = PurchaseData::from($purchaseData);
+            } else {
+                $purchase = $purchaseData;
+            }
+
+            $purchaseClientId = $purchase->getClientId();
+            $billableChipId = $this->chipId();
+
+            if (! is_string($purchaseClientId)
+                || mb_trim($purchaseClientId) === ''
+                || ! is_string($billableChipId)
+                || mb_trim($billableChipId) === ''
+                || $purchaseClientId !== $billableChipId) {
+                return null;
+            }
 
             return new Payment($purchase);
         } catch (Throwable) {

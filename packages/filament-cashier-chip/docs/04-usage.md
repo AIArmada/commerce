@@ -230,16 +230,24 @@ $panel->globalSearch(true);
 
 ## Navigation Badges
 
-Each resource shows a count badge:
+Each resource shows an owner-scoped count badge, cached briefly
+(see `navigation.badge_cache_ttl`). The badge is hidden when no owner
+context can be resolved.
 
-```php
-// Shows count of records
-public static function getNavigationBadge(): ?string
-{
-    $count = static::getEloquentQuery()->count();
-    return $count > 0 ? (string) $count : null;
-}
-```
+## Bulk Lifecycle Actions
+
+The subscription list offers Bulk Pause and Bulk Resume header actions.
+Both iterate the owner-scoped resource query in chunks and call the
+domain transitions (`pause()` / `unpause()`) per subscription, so
+`paused_at` timestamps, model events, and owner isolation are preserved.
+Per-row failures are reported and counted instead of aborting the run.
+
+## Customer Sync
+
+The customer list offers a Sync All to Chip header action. It dispatches
+the `SyncCustomersToChipJob` queued job, which syncs unlinked customers
+in chunks within the dispatching owner context. Progress and failures
+are written to the application log.
 
 ## Next Steps
 

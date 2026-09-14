@@ -228,6 +228,12 @@ return [
 
     /* Lifecycle configuration */
     'lifecycle' => [
+        'event' => [
+            'registration_blocked_statuses' => ['cancelled', 'completed', 'archived', 'expired', 'voided'],
+        ],
+        'session' => [
+            'registration_accepting_statuses' => ['scheduled', 'published', 'live'],
+        ],
         'occurrence' => [
             'registration_accepting_statuses' => ['scheduled', 'published', 'live'],
             'check_in_accepting_statuses' => ['scheduled', 'published', 'live'],

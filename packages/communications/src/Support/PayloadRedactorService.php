@@ -29,6 +29,33 @@ class PayloadRedactorService implements PayloadRedactor
         return $this->redactRecursive($response);
     }
 
+    public function redactText(?string $text): ?string
+    {
+        if ($text === null || $text === '') {
+            return $text;
+        }
+
+        $redacted = preg_replace(
+            '/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----.*?-----END [A-Z0-9 ]*PRIVATE KEY-----/s',
+            '**[REDACTED-PRIVATE-KEY]**',
+            $text,
+        );
+
+        $redacted = preg_replace(
+            '/\bBearer\s+[A-Za-z0-9\-._~+\/=]{8,}/',
+            'Bearer **[REDACTED]**',
+            $redacted ?? $text,
+        );
+
+        $redacted = preg_replace(
+            '/\bBasic\s+[A-Za-z0-9+\/=]{8,}/',
+            'Basic **[REDACTED]**',
+            $redacted ?? $text,
+        );
+
+        return $redacted ?? $text;
+    }
+
     private function redactRecursive(array $data): array
     {
         $result = [];

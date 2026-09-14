@@ -12,7 +12,7 @@ use AIArmada\Customers\Models\Customer;
 
 describe('PersistCustomerStep', function (): void {
     it('creates a guest customer after payment for direct-capable checkout flows', function (): void {
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-post-payment-guest-1',
             'selected_payment_gateway' => 'chip',
             'payment_data' => [
@@ -71,20 +71,19 @@ describe('PersistCustomerStep', function (): void {
 
         [$userCustomer, $guestCustomer] = OwnerContext::withOwner(null, function () use ($user): array {
             $userCustomer = Customer::create([
-                'user_id' => $user->id,
                 'first_name' => 'Registered',
                 'last_name' => 'User',
                 'email' => 'registered@example.com',
-                'is_guest' => false,
             ]);
+            $userCustomer->forceFill(['user_id' => $user->id, 'is_guest' => false])->save();
             $userCustomer->addContactMethod(ContactMethodData::email('registered@example.com'));
 
             $guestCustomer = Customer::create([
                 'first_name' => 'Guest',
                 'last_name' => 'Checkout',
                 'email' => 'guest@example.com',
-                'is_guest' => true,
             ]);
+            $guestCustomer->forceFill(['is_guest' => true])->save();
             $guestCustomer->addContactMethod(ContactMethodData::email('guest@example.com'));
 
             $mergeAddress = Address::create([
@@ -98,7 +97,7 @@ describe('PersistCustomerStep', function (): void {
             return [$userCustomer, $guestCustomer];
         });
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-post-payment-merge-1',
             'selected_payment_gateway' => 'chip',
             'customer_id' => $guestCustomer->id,
@@ -145,7 +144,7 @@ describe('PersistCustomerStep', function (): void {
             'email' => 'billable@example.com',
         ]);
 
-        $session = CheckoutSession::create([
+        $session = CheckoutSession::forceCreate([
             'cart_id' => 'cart-post-payment-billable-1',
             'selected_payment_gateway' => 'chip',
             'billable_type' => $user->getMorphClass(),
@@ -182,7 +181,7 @@ describe('PersistCustomerStep', function (): void {
             'email' => 'owner@example.com',
         ]);
 
-        $session = OwnerContext::withOwner($owner, fn (): CheckoutSession => CheckoutSession::create([
+        $session = OwnerContext::withOwner($owner, fn (): CheckoutSession => CheckoutSession::forceCreate([
             'cart_id' => 'cart-post-payment-owner-1',
             'selected_payment_gateway' => 'chip',
             'payment_data' => [
@@ -223,14 +222,14 @@ describe('PersistCustomerStep', function (): void {
                 'first_name' => 'Other',
                 'last_name' => 'Tenant',
                 'email' => 'other-tenant@example.com',
-                'is_guest' => true,
             ]);
+            $customer->forceFill(['is_guest' => true])->save();
             $customer->addContactMethod(ContactMethodData::email('shared-guest@example.com'));
 
             return $customer;
         });
 
-        $session = OwnerContext::withOwner($ownerA, fn (): CheckoutSession => CheckoutSession::create([
+        $session = OwnerContext::withOwner($ownerA, fn (): CheckoutSession => CheckoutSession::forceCreate([
             'cart_id' => 'cart-post-payment-cross-tenant-1',
             'selected_payment_gateway' => 'chip',
             'payment_data' => [

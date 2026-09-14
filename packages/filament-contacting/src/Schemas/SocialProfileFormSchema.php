@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Schemas;
 
+use AIArmada\Contacting\Enums\ContactPurpose;
 use AIArmada\Contacting\Enums\SocialPlatform;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 
 final class SocialProfileFormSchema
 {
@@ -21,11 +23,18 @@ final class SocialProfileFormSchema
         return [
             Section::make('Social Profile')
                 ->schema([
-                    Grid::make(2)->schema([
+                    Grid::make(3)->schema([
                         Select::make('platform')
                             ->label('Platform')
                             ->options(SocialPlatform::options())
                             ->required()
+                            ->searchable()
+                            ->native(false),
+
+                        Select::make('purpose')
+                            ->label('Purpose')
+                            ->options(ContactPurpose::options())
+                            ->default(ContactPurpose::General->value)
                             ->searchable()
                             ->native(false),
 
@@ -39,6 +48,7 @@ final class SocialProfileFormSchema
                         TextInput::make('handle')
                             ->label('Handle')
                             ->maxLength(255)
+                            ->required(fn (Get $get): bool => blank($get('url')))
                             ->placeholder('example'),
 
                         TextInput::make('display_name')
@@ -50,6 +60,7 @@ final class SocialProfileFormSchema
                         ->label('URL')
                         ->url()
                         ->maxLength(2048)
+                        ->required(fn (Get $get): bool => blank($get('handle')))
                         ->placeholder('https://facebook.com/example'),
 
                     Grid::make(2)->schema([

@@ -54,10 +54,6 @@ return new class extends Migration
             $table->index('position');
         });
 
-        if (! app()->environment(['local', 'development', 'testing'])) {
-            return;
-        }
-
         ProductIdentityIndexes::owner($tableName, 'code');
     }
 

@@ -48,7 +48,6 @@ final class CommunicationRecipient extends Model
 
     protected $fillable = [
         'communication_id',
-        'recipient_type',
         'recipient_id',
         'role',
         'external_key',

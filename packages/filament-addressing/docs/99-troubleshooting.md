@@ -95,12 +95,16 @@ Enable it only for debugging/admin panels:
 ],
 ```
 
+## Area Filter Options Look Stale
+
+Type, level, source, role, country, and region filter dropdowns are cached for five minutes. Writes made through the area create/edit pages, deletes, and completed area imports clear the cache automatically. Direct database edits outside the panel appear after the TTL expires.
+
 ## Verification Commands
 
 ```bash
-./vendor/bin/pest --parallel packages/filament-addressing/tests
+./vendor/bin/pest --parallel tests/src/FilamentAddressing
 ./vendor/bin/phpstan analyse packages/filament-addressing/src --level=6
-./vendor/bin/pint packages/filament-addressing/src packages/filament-addressing/tests
+./vendor/bin/pint --test packages/filament-addressing/src packages/filament-addressing/config
 rg -n -- "constrained\(|cascadeOnDelete\(" packages/filament-addressing
 rg -n -- "SoftDeletes" packages/filament-addressing
 ```

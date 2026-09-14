@@ -10,4 +10,9 @@ use Filament\Resources\Pages\EditRecord;
 final class EditPostalCode extends EditRecord
 {
     protected static string $resource = PostalCodeResource::class;
+
+    public static function canAccess(array $parameters = []): bool
+    {
+        return ! PostalCodeResource::isReadOnly();
+    }
 }

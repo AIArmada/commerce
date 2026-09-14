@@ -10,7 +10,6 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 
 final class AffiliateReportService
 {
@@ -19,10 +18,15 @@ final class AffiliateReportService
      */
     public function getSummary(CarbonInterface $startDate, CarbonInterface $endDate): array
     {
-        $conversions = AffiliateConversion::query()
+        $totals = AffiliateConversion::query()
             ->forOwner()
             ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->get(['commission_minor', 'value_minor']);
+            ->toBase()
+            ->selectRaw(sprintf(
+                'COUNT(*) as conversions, COALESCE(SUM(%s), 0) as revenue_minor, COALESCE(SUM(commission_minor), 0) as commission_minor',
+                $this->revenueMinorExpression(),
+            ))
+            ->first();
 
         $attributions = (int) $this->applyAttributionWindow(
             AffiliateAttribution::query()->forOwner(),
@@ -32,9 +36,9 @@ final class AffiliateReportService
 
         return [
             'attributions' => $attributions,
-            'conversions' => $conversions->count(),
-            'revenue_minor' => $this->sumRevenueMinor($conversions),
-            'commission_minor' => (int) $conversions->sum('commission_minor'),
+            'conversions' => (int) ($totals->conversions ?? 0),
+            'revenue_minor' => (int) ($totals->revenue_minor ?? 0),
+            'commission_minor' => (int) ($totals->commission_minor ?? 0),
         ];
     }
 
@@ -105,13 +109,35 @@ final class AffiliateReportService
      */
     public function getTrafficSources(CarbonInterface $startDate, CarbonInterface $endDate): array
     {
-        $conversions = AffiliateConversion::query()
+        $conversionsTable = (new AffiliateConversion)->getTable();
+        $attributionsTable = (new AffiliateAttribution)->getTable();
+
+        $rows = AffiliateConversion::query()
             ->forOwner()
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->with('attribution:id,source,campaign')
+            ->whereBetween("{$conversionsTable}.occurred_at", [$startDate, $endDate])
+            ->join($attributionsTable, "{$attributionsTable}.id", '=', "{$conversionsTable}.affiliate_attribution_id")
+            ->toBase()
+            ->selectRaw("{$attributionsTable}.source as source, {$attributionsTable}.campaign as campaign, COUNT(*) as conversions")
+            ->groupBy("{$attributionsTable}.source", "{$attributionsTable}.campaign")
             ->get();
 
-        return $this->aggregateUtm($conversions);
+        $sources = [];
+        $campaigns = [];
+
+        foreach ($rows as $row) {
+            if (is_string($row->source) && $row->source !== '') {
+                $sources[$row->source] = ($sources[$row->source] ?? 0) + (int) $row->conversions;
+            }
+
+            if (is_string($row->campaign) && $row->campaign !== '') {
+                $campaigns[$row->campaign] = ($campaigns[$row->campaign] ?? 0) + (int) $row->conversions;
+            }
+        }
+
+        return [
+            'sources' => $sources,
+            'campaigns' => $campaigns,
+        ];
     }
 
     /**
@@ -231,18 +257,45 @@ final class AffiliateReportService
             return [];
         }
 
-        $conversions = AffiliateConversion::query()
+        $conversionsTable = (new AffiliateConversion)->getTable();
+        $attributionsTable = (new AffiliateAttribution)->getTable();
+
+        $totals = AffiliateConversion::query()
             ->forOwner()
             ->where('affiliate_id', $affiliateId)
-            ->with('attribution:id,source,campaign')
-            ->get();
+            ->toBase()
+            ->selectRaw(sprintf(
+                'COUNT(*) as conversions, COALESCE(SUM(%s), 0) as revenue_minor, COALESCE(SUM(commission_minor), 0) as commission_minor',
+                $this->revenueMinorExpression(),
+            ))
+            ->first();
 
-        $totalCommission = (int) $conversions->sum('commission_minor');
-        $totalRevenue = $this->sumRevenueMinor($conversions);
-        $conversionCount = $conversions->count();
+        $totalCommission = (int) ($totals->commission_minor ?? 0);
+        $totalRevenue = (int) ($totals->revenue_minor ?? 0);
+        $conversionCount = (int) ($totals->conversions ?? 0);
         $ltv = $conversionCount > 0 ? ($totalRevenue / $conversionCount) : 0;
 
-        $utm = $this->aggregateUtm($conversions);
+        $utmRows = AffiliateConversion::query()
+            ->forOwner()
+            ->where("{$conversionsTable}.affiliate_id", $affiliateId)
+            ->join($attributionsTable, "{$attributionsTable}.id", '=', "{$conversionsTable}.affiliate_attribution_id")
+            ->toBase()
+            ->selectRaw("{$attributionsTable}.source as source, {$attributionsTable}.campaign as campaign, COUNT(*) as conversions")
+            ->groupBy("{$attributionsTable}.source", "{$attributionsTable}.campaign")
+            ->get();
+
+        $utm = ['sources' => [], 'campaigns' => []];
+
+        foreach ($utmRows as $row) {
+            if (is_string($row->source) && $row->source !== '') {
+                $utm['sources'][$row->source] = ($utm['sources'][$row->source] ?? 0) + (int) $row->conversions;
+            }
+
+            if (is_string($row->campaign) && $row->campaign !== '') {
+                $utm['campaigns'][$row->campaign] = ($utm['campaigns'][$row->campaign] ?? 0) + (int) $row->conversions;
+            }
+        }
+
         $attributionCount = (int) AffiliateAttribution::query()
             ->forOwner()
             ->where('affiliate_id', $affiliateId)
@@ -273,33 +326,6 @@ final class AffiliateReportService
         ];
     }
 
-    /**
-     * @return array<string, array<string, int>>
-     */
-    private function aggregateUtm(Collection $conversions): array
-    {
-        $sources = [];
-        $campaigns = [];
-
-        foreach ($conversions as $conversion) {
-            $source = $conversion->attribution?->source;
-            $campaign = $conversion->attribution?->campaign;
-
-            if ($source) {
-                $sources[$source] = ($sources[$source] ?? 0) + 1;
-            }
-
-            if ($campaign) {
-                $campaigns[$campaign] = ($campaigns[$campaign] ?? 0) + 1;
-            }
-        }
-
-        return [
-            'sources' => $sources,
-            'campaigns' => $campaigns,
-        ];
-    }
-
     private function applyAttributionWindow(Builder $query, CarbonInterface $startDate, CarbonInterface $endDate): Builder
     {
         return $query->where(function (Builder $builder) use ($startDate, $endDate): void {
@@ -311,22 +337,6 @@ final class AffiliateReportService
                         ->whereBetween('created_at', [$startDate, $endDate]);
                 });
         });
-    }
-
-    private function sumRevenueMinor(Collection $conversions): int
-    {
-        return (int) $conversions->sum(fn (AffiliateConversion $conversion): int => $this->resolveRevenueMinor($conversion));
-    }
-
-    private function resolveRevenueMinor(AffiliateConversion $conversion): int
-    {
-        $valueMinor = (int) $conversion->getRawOriginal('value_minor');
-
-        if ($valueMinor !== 0) {
-            return $valueMinor;
-        }
-
-        return (int) $conversion->getRawOriginal('value_minor');
     }
 
     private function revenueMinorExpression(): string

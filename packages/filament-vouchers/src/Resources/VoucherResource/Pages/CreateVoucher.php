@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Pages;
 
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
@@ -43,6 +44,12 @@ final class CreateVoucher extends CreateRecord
         $owner = OwnerContext::resolve();
 
         if (! $owner instanceof Model) {
+            if (! OwnerContext::isExplicitGlobal()) {
+                throw new NoCurrentOwnerException(
+                    'Creating vouchers requires an owner context or explicit global context.'
+                );
+            }
+
             $data['owner_type'] = null;
             $data['owner_id'] = null;
 

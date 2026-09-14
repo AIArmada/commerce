@@ -69,7 +69,7 @@ if (! function_exists('AIArmada\Authz\can_be_impersonated')) {
             return false;
         }
 
-        if ($currentUser->getAuthIdentifier() === $user->getAuthIdentifier()) {
+        if ((string) $currentUser->getAuthIdentifier() === (string) $user->getAuthIdentifier()) {
             return false;
         }
 

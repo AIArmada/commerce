@@ -55,10 +55,6 @@ return new class extends Migration
             $table->index('deactivated_at');
         });
 
-        if (! app()->environment(['local', 'development', 'testing'])) {
-            return;
-        }
-
         ProductIdentityIndexes::owner($tableName, 'sku');
     }
 

@@ -51,10 +51,11 @@ final class ProductStatsAggregator
 
     private function withResolvedOwnerOrExplicitGlobal(callable $callback): mixed
     {
-        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
-            return $callback();
-        }
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            OwnerContext::resolve(),
+            'Product statistics require an owner context or explicit global context.',
+        );
 
-        return OwnerContext::withOwner(null, static fn (): mixed => $callback());
+        return $callback();
     }
 }

@@ -6,6 +6,7 @@ namespace AIArmada\Cashier\Actions;
 
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Events\SubscriptionCanceled;
+use AIArmada\Cashier\Support\ActionGuard;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class CancelSubscription
@@ -17,6 +18,8 @@ final class CancelSubscription
      */
     public function handle(SubscriptionContract $subscription, bool $immediate = false, array $options = []): SubscriptionContract
     {
+        ActionGuard::assertSubscriptionInScope($subscription);
+
         if ($immediate) {
             $subscription->cancelNow();
         } else {

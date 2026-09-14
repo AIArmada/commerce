@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
+use AIArmada\FilamentCustomers\Support\PrimaryEmailResolver;
 use Carbon\CarbonImmutable;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -34,8 +35,10 @@ final class CustomersTable
                 TextColumn::make('full_name')
                     ->label('Customer')
                     ->searchable(['first_name', 'last_name'])
-                    ->sortable()
-                    ->description(fn (Customer $record): ?string => $record->resolveEmail()),
+                    ->sortable(query: static function (Builder $query, string $direction): Builder {
+                        return $query->orderBy('last_name', $direction)->orderBy('first_name', $direction);
+                    })
+                    ->description(fn (Customer $record): ?string => PrimaryEmailResolver::resolve($record)),
 
                 TextColumn::make('status')
                     ->label('Status')

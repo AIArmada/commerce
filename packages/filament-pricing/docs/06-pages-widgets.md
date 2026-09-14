@@ -6,7 +6,10 @@ title: Pages & Widgets
 
 ## ManagePricingSettings Page
 
-Settings page for configuring pricing defaults.
+Settings page for configuring pricing defaults. Pricing settings are a single global row shared by every tenant, so the page requires the `filament-pricing.authorization.settings_ability` ability (default `pricing.manage-settings`, defined via a `Gate` in the host app). Saves are validated server-side against the form rules.
+
+> [!WARNING]
+> Any ability holder changes pricing defaults for all tenants. Keep the ability narrowly assigned.
 
 ### Location
 

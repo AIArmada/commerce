@@ -33,7 +33,7 @@ use Illuminate\Support\Str;
  */
 function createCheckoutAmountReconciliationSession(array $paymentData, int $grandTotal = 1000): CheckoutSession
 {
-    $session = CheckoutSession::create([
+    $session = CheckoutSession::forceCreate([
         'cart_id' => 'cart-amount-reconciliation-' . Str::random(8),
         'cart_snapshot' => ['items' => []],
         'payment_data' => array_merge([
@@ -67,7 +67,7 @@ it('prefers the typed live cart bridge and never calls the snapshot builder path
     );
     $cart->add('typed-live-item', 'Typed Live Item', 1250, 2, ['sku' => 'TYPED-LIVE-001']);
 
-    $session = CheckoutSession::create([
+    $session = CheckoutSession::forceCreate([
         'cart_id' => 'typed-live-cart-id',
         'cart_snapshot' => [
             'items' => [
@@ -125,7 +125,7 @@ it('falls back to the snapshot builder only when the live cart is gone', functio
     $customer = new Customer;
     $customer->forceFill(['id' => 'customer-missing-cart']);
 
-    $session = CheckoutSession::create([
+    $session = CheckoutSession::forceCreate([
         'cart_id' => 'missing-live-cart-id',
         'cart_snapshot' => [
             'items' => [
@@ -218,7 +218,7 @@ it('refreshes voucher-driven affiliate overrides before creating order metadata'
 
     expect(data_get($session->cart_snapshot, 'metadata.affiliate'))->toBeNull();
 
-    $session->update([
+    $session->persistState([
         'subtotal' => 9700,
         'grand_total' => 9700,
         'currency' => 'MYR',

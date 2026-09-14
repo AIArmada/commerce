@@ -22,7 +22,16 @@ Define navigation groups with:
 | Collapsible | Whether the group can be collapsed |
 | Collapsed by Default | Initial state |
 
-Groups are rendered in sort order. Drag to reorder.
+Groups are rendered in sort order. Drag to reorder, or type an explicit
+sort value (typed values win; untouched inputs follow drag position).
+
+Items left without a group appear under **Ungrouped Items**. Typing a group
+key into that section adopts its items into the new group. The key
+`__ungrouped__` is reserved and rejected by validation.
+
+Adding the same component twice keeps the first occurrence and warns about
+the duplicate. Overrides for currently unregistered components are kept and
+labelled `[Unregistered]` so disabling a package never loses its settings.
 
 ### Item Overrides
 

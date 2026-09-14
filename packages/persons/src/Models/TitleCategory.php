@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -35,7 +36,9 @@ class TitleCategory extends Model
     protected static function booted(): void
     {
         static::deleting(function (TitleCategory $category): void {
-            $category->titles()->get()->each->delete();
+            DB::transaction(static function () use ($category): void {
+                $category->titles()->chunkById(500, static fn (Collection $titles) => $titles->each->delete());
+            });
         });
     }
 

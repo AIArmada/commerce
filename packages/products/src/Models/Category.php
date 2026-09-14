@@ -216,6 +216,9 @@ class Category extends Model implements Auditable, HasMedia
     /**
      * Apply owner scoping so category relationships never leak cross-tenant products.
      *
+     * The ambient scope is deliberately replaced (not stacked) so products
+     * resolve against this category's owner rather than the caller's.
+     *
      * @param  Builder<Product>  $query
      */
     protected function applyOwnerScopeToProductsQuery(Builder $query): void
@@ -303,11 +306,21 @@ class Category extends Model implements Auditable, HasMedia
     public function getAncestors(): Collection
     {
         $ancestors = collect();
+        $visited = [(string) $this->getKey()];
         $category = $this;
 
         while ($category->parent !== null) {
-            $ancestors->push($category->parent);
-            $category = $category->parent;
+            $parent = $category->parent;
+            $parentKey = (string) $parent->getKey();
+
+            // Stop on revisit so legacy hierarchy cycles terminate.
+            if (in_array($parentKey, $visited, true)) {
+                break;
+            }
+
+            $visited[] = $parentKey;
+            $ancestors->push($parent);
+            $category = $parent;
         }
 
         return $ancestors->reverse();
@@ -349,14 +362,21 @@ class Category extends Model implements Auditable, HasMedia
 
     /**
      * Get a nested tree of all descendants.
+     *
+     * @param  list<string>  $visited
      */
-    public function getNestedTree(): array
+    public function getNestedTree(array $visited = []): array
     {
+        $visited[] = (string) $this->getKey();
+
         return [
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
-            'children' => $this->children->map(fn ($child) => $child->getNestedTree())->toArray(),
+            'children' => $this->children
+                ->reject(fn ($child) => in_array((string) $child->getKey(), $visited, true))
+                ->map(fn ($child) => $child->getNestedTree($visited))
+                ->toArray(),
         ];
     }
 
@@ -365,33 +385,72 @@ class Category extends Model implements Auditable, HasMedia
     // =========================================================================
 
     /**
-     * Get total product count including descendants.
+     * Get the distinct product count including descendants.
      */
     public function getProductCount(bool $includeDescendants = true): int
     {
-        $count = $this->products()->count();
-
-        if ($includeDescendants) {
-            foreach ($this->children as $child) {
-                $count += $child->getProductCount(true);
-            }
+        if (! $includeDescendants) {
+            return $this->products()->count();
         }
 
-        return $count;
+        return $this->subtreeProductsQuery()->count();
     }
 
     /**
-     * Get all products including descendants.
+     * Get all distinct products including descendants.
      */
     public function getAllProducts(): Collection
     {
-        $products = $this->products()->get();
+        return $this->subtreeProductsQuery()->get()->unique('id');
+    }
 
-        foreach ($this->children()->get() as $child) {
-            $products = $products->merge($child->getAllProducts());
+    /**
+     * Collect this category plus all descendant ids iteratively (cycle-safe).
+     *
+     * @return list<string>
+     */
+    private function collectSubtreeCategoryIds(): array
+    {
+        $ids = [(string) $this->getKey()];
+        $frontier = [$this->getKey()];
+
+        while ($frontier !== []) {
+            /** @var list<string> $childIds */
+            $childIds = static::query()
+                ->whereIn('parent_id', $frontier)
+                ->pluck($this->getKeyName())
+                ->map(static fn (mixed $id): string => (string) $id)
+                ->all();
+
+            $frontier = [];
+
+            foreach ($childIds as $childId) {
+                if (in_array($childId, $ids, true)) {
+                    continue;
+                }
+
+                $ids[] = $childId;
+                $frontier[] = $childId;
+            }
         }
 
-        return $products->unique('id');
+        return $ids;
+    }
+
+    /**
+     * @return Builder<Product>
+     */
+    private function subtreeProductsQuery(): Builder
+    {
+        $ids = $this->collectSubtreeCategoryIds();
+
+        $query = Product::query()->whereHas('categories', function ($q) use ($ids): void {
+            $q->whereKey($ids);
+        });
+
+        $this->applyOwnerScopeToProductsQuery($query);
+
+        return $query;
     }
 
     // =========================================================================
@@ -467,11 +526,114 @@ class Category extends Model implements Auditable, HasMedia
             $category->assignOwner($owner);
         });
 
+        static::saving(function (Category $category): void {
+            $category->validateParentHierarchy();
+        });
+
         static::deleting(function (Category $category): void {
             // Nullify parent_id for children
             $category->children()->update(['parent_id' => null]);
             // Detach from products pivot
             $category->products()->detach();
         });
+    }
+
+    private function validateParentHierarchy(): void
+    {
+        if ($this->parent_id === null) {
+            return;
+        }
+
+        if ($this->exists && ! $this->isDirty('parent_id')) {
+            return;
+        }
+
+        /** @var Category|null $parent */
+        $parent = static::query()->withoutOwnerScope()->whereKey($this->parent_id)->first();
+
+        if ($parent === null) {
+            throw new InvalidArgumentException('Invalid parent_id: category not found.');
+        }
+
+        if ($this->exists && (string) $parent->getKey() === (string) $this->getKey()) {
+            throw new InvalidArgumentException('Invalid parent_id: a category cannot be its own parent.');
+        }
+
+        $this->rejectHierarchyCycle($parent);
+
+        if (! (bool) config('products.features.owner.enabled', true)) {
+            return;
+        }
+
+        $parentGlobal = $parent->owner_type === null && $parent->owner_id === null;
+        $includeGlobal = (bool) config('products.features.owner.include_global', false);
+
+        [$selfType, $selfId] = $this->effectiveOwnerTuple();
+
+        $sameOwner = $selfType === $parent->owner_type
+            && ($selfId === null || $parent->owner_id === null
+                ? $selfId === $parent->owner_id
+                : (string) $selfId === (string) $parent->owner_id);
+
+        if (! $sameOwner && ! ($parentGlobal && $includeGlobal)) {
+            throw new InvalidArgumentException('Cross-tenant write blocked: category parent does not belong to the same owner.');
+        }
+    }
+
+    private function rejectHierarchyCycle(Category $parent): void
+    {
+        if (! $this->exists) {
+            return;
+        }
+
+        $selfKey = (string) $this->getKey();
+        $seen = [(string) $parent->getKey()];
+        $cursor = $parent;
+
+        while ($cursor->parent_id !== null) {
+            $cursorParentId = (string) $cursor->parent_id;
+
+            if ($cursorParentId === $selfKey) {
+                throw new InvalidArgumentException('Invalid parent_id: a category cannot be moved below its own descendant.');
+            }
+
+            if (in_array($cursorParentId, $seen, true)) {
+                break;
+            }
+
+            $seen[] = $cursorParentId;
+
+            /** @var Category|null $cursor */
+            $cursor = static::query()->withoutOwnerScope()->whereKey($cursorParentId)->first();
+
+            if ($cursor === null) {
+                break;
+            }
+        }
+    }
+
+    /**
+     * Owner tuple for hierarchy checks, resolving the ambient context for
+     * creates whose auto-assignment has not run yet.
+     *
+     * @return array{0: string|null, 1: mixed}
+     */
+    private function effectiveOwnerTuple(): array
+    {
+        if ($this->owner_type !== null && $this->owner_id !== null) {
+            return [$this->owner_type, $this->owner_id];
+        }
+
+        if ($this->exists) {
+            return [$this->owner_type, $this->owner_id];
+        }
+
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null) {
+            return [null, null];
+        }
+
+        return [$owner->getMorphClass(), $owner->getKey()];
     }
 }

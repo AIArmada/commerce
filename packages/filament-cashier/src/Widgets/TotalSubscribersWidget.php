@@ -19,14 +19,18 @@ final class TotalSubscribersWidget extends StatsOverviewWidget
     protected static ?int $sort = 2;
 
     /**
-     * Get subscriber counts with once() caching.
-     *
-     * Caches the result for the current request to avoid redundant
-     * database queries during the widget render cycle.
+     * @var array<int, Stat>|null
+     */
+    protected ?array $stats = null;
+
+    /**
+     * Get subscriber counts, memoized on the widget instance (request-bound)
+     * instead of once() so owner switches within a long-lived process never
+     * leak cached totals.
      */
     protected function getStats(): array
     {
-        return once(function (): array {
+        if ($this->stats === null) {
             $detector = app(GatewayDetector::class);
             $totals = [];
 
@@ -59,13 +63,15 @@ final class TotalSubscribersWidget extends StatsOverviewWidget
                 ->map(fn ($count, $gateway) => $detector->getLabel($gateway) . ': ' . $count)
                 ->join(' | ');
 
-            return [
+            $this->stats = [
                 Stat::make(__('filament-cashier::dashboard.widgets.total_subscribers.label'), number_format($total))
                     ->description($breakdown ?: __('filament-cashier::dashboard.widgets.total_subscribers.description'))
                     ->descriptionIcon('heroicon-m-users')
                     ->chart([3, 4, 3, 5, 4, 5, 6, 7])
                     ->color('primary'),
             ];
-        });
+        }
+
+        return $this->stats;
     }
 }

@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Http\Controllers;
 
 use AIArmada\Chip\Support\ChipWebhookOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -25,6 +26,30 @@ class WebhookController extends Controller
         /** @var array<string, mixed> $payload */
         $payload = $request->all();
         $eventType = $payload['event_type'] ?? 'unknown';
+
+        $routeName = $request->route()?->getName() ?: 'chip.webhook';
+        /** @var WebhookConfigRepository $configRepository */
+        $configRepository = app(WebhookConfigRepository::class);
+        $config = $configRepository->getConfig($routeName);
+
+        if ($config === null) {
+            throw InvalidConfig::couldNotFindConfig($routeName);
+        }
+
+        // Verify the signature before touching owner resolution so unknown
+        // brand ids cannot be probed: unauthenticated callers always see 401.
+        if (! $config->signatureValidator->isValid($request, $config)) {
+            Log::channel(config('chip.logging.channel', 'stack'))
+                ->warning('CHIP webhook signature verification failed', [
+                    'event_type' => $eventType,
+                ]);
+
+            return response()->json([
+                'error' => 'Invalid signature',
+            ], 401);
+        }
+
+        $owner = null;
 
         if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
             $owner = ChipWebhookOwnerResolver::resolveFromPayload($payload);
@@ -46,15 +71,6 @@ class WebhookController extends Controller
             $request->replace($payload);
         }
 
-        $routeName = $request->route()?->getName() ?: 'chip.webhook';
-        /** @var WebhookConfigRepository $configRepository */
-        $configRepository = app(WebhookConfigRepository::class);
-        $config = $configRepository->getConfig($routeName);
-
-        if ($config === null) {
-            throw InvalidConfig::couldNotFindConfig($routeName);
-        }
-
         $processor = function () use ($request, $config): JsonResponse {
             $response = (new WebhookProcessor($request, $config))->process();
 
@@ -65,12 +81,8 @@ class WebhookController extends Controller
             return $response;
         };
 
-        if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
-            $owner = ChipWebhookOwnerResolver::resolveFromPayload($payload);
-
-            if ($owner !== null) {
-                return OwnerContext::withOwner($owner, $processor);
-            }
+        if ($owner instanceof Model) {
+            return OwnerContext::withOwner($owner, $processor);
         }
 
         $response = $processor();

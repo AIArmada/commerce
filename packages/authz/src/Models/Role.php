@@ -9,10 +9,15 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 use Spatie\Permission\Contracts\Role as RoleContract;
+use Spatie\Permission\Exceptions\RoleAlreadyExists;
 use Spatie\Permission\Guard;
 use Spatie\Permission\Models\Role as SpatieRole;
 use Spatie\Permission\PermissionRegistrar;
+use Spatie\Permission\Support\Config;
+
+use function Illuminate\Support\enum_value;
 
 /**
  * Role model extending Spatie Permission with UUID support.
@@ -34,12 +39,15 @@ final class Role extends SpatieRole
      */
     public function permissions(): BelongsToMany
     {
-        $pivotTable = (string) config('permission.table_names.role_has_permissions', 'role_has_permissions');
-        $rolePivotKey = (string) config('permission.column_names.role_pivot_key', 'role_id');
-        $permissionPivotKey = (string) config('permission.column_names.permission_pivot_key', 'permission_id');
+        $registrar = app(PermissionRegistrar::class);
 
         /** @var BelongsToMany<Permission, $this> $relation */
-        $relation = $this->belongsToMany(Permission::class, $pivotTable, $rolePivotKey, $permissionPivotKey);
+        $relation = $this->belongsToMany(
+            Config::permissionModel(),
+            Config::roleHasPermissionsTable(),
+            $registrar->pivotRole,
+            $registrar->pivotPermission
+        );
 
         return $relation;
     }
@@ -62,19 +70,36 @@ final class Role extends SpatieRole
         return parent::getTable();
     }
 
+    /**
+     * @throws RoleAlreadyExists
+     */
     public static function create(array $attributes = [])
     {
         $attributes['guard_name'] ??= Guard::getDefaultName(static::class);
+        $attributes['name'] = enum_value($attributes['name']);
+
+        $params = ['name' => $attributes['name'], 'guard_name' => $attributes['guard_name']];
 
         $registrar = app(PermissionRegistrar::class);
 
-        if ($registrar->teams && config('authz.scopes.enforce', true)) {
+        if ($registrar->teams) {
             $teamsKey = $registrar->teamsKey;
-            $teamId = getPermissionsTeamId();
 
-            if ($teamId !== null && ! array_key_exists($teamsKey, $attributes)) {
-                $attributes[$teamsKey] = $teamId;
+            if (config('authz.scopes.enforce', true)) {
+                $teamId = getPermissionsTeamId();
+
+                if ($teamId !== null && ! array_key_exists($teamsKey, $attributes)) {
+                    $attributes[$teamsKey] = $teamId;
+                }
             }
+
+            if (array_key_exists($teamsKey, $attributes)) {
+                $params[$teamsKey] = $attributes[$teamsKey];
+            }
+        }
+
+        if (static::findByParam($params)) {
+            throw RoleAlreadyExists::create($attributes['name'], $attributes['guard_name']);
         }
 
         return static::query()->create($attributes);
@@ -107,7 +132,13 @@ final class Role extends SpatieRole
             unset($params[$teamsKey]);
         }
 
+        $allowedKeys = ['name', 'guard_name', (new static)->getKeyName()];
+
         foreach ($params as $key => $value) {
+            if (! in_array($key, $allowedKeys, true)) {
+                throw new InvalidArgumentException("Unexpected role lookup parameter [{$key}].");
+            }
+
             $query->where($key, $value);
         }
 

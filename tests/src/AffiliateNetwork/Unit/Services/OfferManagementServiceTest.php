@@ -147,6 +147,7 @@ describe('OfferManagementService', function (): void {
                 ->forAffiliate($this->affiliate)
                 ->rejected()
                 ->create([
+                    'rejected_at' => now()->subDays(10),
                     'updated_at' => now()->subDays(10),
                 ]);
 
@@ -165,6 +166,7 @@ describe('OfferManagementService', function (): void {
                 ->forAffiliate($this->affiliate)
                 ->rejected()
                 ->create([
+                    'rejected_at' => now()->subDays(3),
                     'updated_at' => now()->subDays(3),
                 ]);
 
@@ -315,6 +317,23 @@ describe('OfferManagementService', function (): void {
             expect($offers)->toHaveCount(1);
             expect($offers->first()->id)->toBe($activeOffer->id);
         });
+
+        test('respects the limit', function (): void {
+            $affiliate = createTestAffiliate();
+
+            foreach (range(1, 3) as $i) {
+                $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
+
+                AffiliateOfferApplication::factory()
+                    ->forOffer($offer)
+                    ->forAffiliate($affiliate)
+                    ->approved()
+                    ->create();
+            }
+
+            expect($this->service->getApprovedOffers($affiliate, 2))->toHaveCount(2)
+                ->and($this->service->getApprovedOffers($affiliate))->toHaveCount(3);
+        });
     });
 
     describe('resolvePublicOfferOrFail', function (): void {
@@ -344,5 +363,27 @@ describe('OfferManagementService', function (): void {
 
             $this->service->resolvePublicOfferOrFail($offer->id);
         })->throws(ModelNotFoundException::class);
+    });
+
+    describe('applicationStatusForOffer', function (): void {
+        test('returns the status string for an existing network application', function (): void {
+            $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
+            $offer->update(['requires_approval' => false]);
+            $affiliate = createTestAffiliate();
+
+            $this->service->applyForOffer($offer, $affiliate);
+
+            $status = $this->service->applicationStatusForOffer($offer, $affiliate);
+
+            expect($status)->toBeString();
+            expect($status)->toBe(ApplicationStatus::Approved->value);
+        });
+
+        test('returns null when no application exists', function (): void {
+            $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
+            $affiliate = createTestAffiliate();
+
+            expect($this->service->applicationStatusForOffer($offer, $affiliate))->toBeNull();
+        });
     });
 });

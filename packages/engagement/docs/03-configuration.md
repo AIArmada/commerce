@@ -70,10 +70,23 @@ Controls how many reminders are processed per scheduled run and which notificati
 ```php
 'notifications' => [
     'reminder' => EngagementReminderNotification::class,
+    'allowed' => [
+        EngagementReminderNotification::class,
+    ],
 ]
 ```
 
-Override the notification class used for reminder delivery. Your custom class must extend the base notification.
+Override the notification class used for reminder delivery. Your custom class must extend the base notification. Any per-reminder `notification_class` (and the configured default) must additionally be listed in `notifications.allowed`, otherwise `setReminder` and the due-reminder dispatch listener reject it with an `InvalidArgumentException`.
+
+### State
+
+```php
+'state' => [
+    'result_limit' => (int) env('ENGAGEMENT_STATE_RESULT_LIMIT', 100),
+]
+```
+
+Bounds how many rows `subscriptionsFor()` and `remindersFor()` return. Both methods execute eagerly and return collections; raise the limit if a single actor legitimately holds more active subscriptions or pending reminders.
 
 ### Model class overrides
 

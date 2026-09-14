@@ -53,6 +53,8 @@ Each resource reads its icon from `navigation.icons.*`.
     'address_export' => false,
     'show_provider_payload' => false,
     'show_source_payload' => false,
+    'postal_code_import' => false,
+    'postal_code_export' => false,
 ],
 ```
 
@@ -67,6 +69,12 @@ Do not edit ISO2 or ISO3 values from the UI.
 ### Address Export
 
 Keep disabled unless you want the central Address resource to expose a built-in export action.
+
+Address exports honor the configured address model and are scoped to the current owner, matching the resource list query.
+
+### Postcode Import And Export
+
+Both default to disabled. Enable them to show import/export header actions on the postcode list. The importer delegates to the core `ImportPostalCodesAction`; expected columns are `country_code`, `code`, `source`, `source_id`, plus optional `area_source`, `area_source_id`, `relationship_type`, `is_primary`, and `metadata` (JSON).
 
 ### Source And Provider Payloads
 

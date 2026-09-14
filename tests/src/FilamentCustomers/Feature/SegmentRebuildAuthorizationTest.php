@@ -62,5 +62,14 @@ it('rebuild action honors Gate interceptors', function (): void {
     $rebuildAction->livewire($livewire);
     $rebuildAction->record($segment);
 
-    expect(fn (): mixed => $rebuildAction->call())->not->toThrow(Throwable::class);
+    // Explicit try/catch: not->toThrow(Throwable::class) is vacuous on interfaces.
+    $thrown = null;
+
+    try {
+        $rebuildAction->call();
+    } catch (Throwable $e) {
+        $thrown = $e;
+    }
+
+    expect($thrown)->toBeNull();
 });

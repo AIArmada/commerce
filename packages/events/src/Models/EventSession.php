@@ -12,6 +12,7 @@ use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Concerns\RegistersEventMedia;
 use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
 use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
+use AIArmada\Events\Support\EventDeleteCascade;
 use AIArmada\Events\Support\ModelResolver;
 use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Ticketing\Enums\PricingMode;
@@ -135,6 +136,13 @@ final class EventSession extends Model implements HasMedia
     public function getTable(): string
     {
         return config('events.database.tables.event_sessions', 'event_sessions');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (EventSession $session): void {
+            EventDeleteCascade::deleteForSession($session);
+        });
     }
 
     protected function casts(): array
@@ -419,8 +427,8 @@ final class EventSession extends Model implements HasMedia
             return $this->occurrence?->effectivePricingMode() ?? $this->event?->effectivePricingMode() ?? PricingMode::Paid;
         }
 
-        $hasPaid = $ticketTypes->contains(fn ($t): bool => (float) $t->price > 0);
-        $hasFree = $ticketTypes->contains(fn ($t): bool => (float) $t->price === 0.0);
+        $hasPaid = $ticketTypes->contains(fn ($t): bool => (int) $t->price > 0);
+        $hasFree = $ticketTypes->contains(fn ($t): bool => (int) $t->price === 0);
 
         return match (true) {
             $hasPaid && $hasFree => PricingMode::Mixed,

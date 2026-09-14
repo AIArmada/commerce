@@ -37,6 +37,23 @@ final class ChipCustomerDirectory implements ChipCustomerDirectoryInterface
                 ->withoutOwnerScope()
                 ->where('owner_type', $owner->getMorphClass())
                 ->where('owner_id', (string) $owner->getKey());
+        } elseif ((bool) config('chip.owner.enabled', false)) {
+            $resolved = OwnerContext::resolve();
+
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $resolved,
+                'CHIP customer lookup requires an owner or explicit global context.'
+            );
+
+            // Apply the ambient scope explicitly instead of relying on the
+            // implicit global scope, so the ownership boundary stays visible.
+            $query->withoutOwnerScope();
+
+            if ($resolved instanceof Model) {
+                $query->forOwner($resolved);
+            } else {
+                $query->globalOnly();
+            }
         }
 
         /** @var ChipCustomerLink|null $link */

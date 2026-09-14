@@ -23,6 +23,9 @@ return [
         
         // Badge color for record counts
         'badge_color' => 'success',
+
+        // Seconds to cache navigation badge counts (owner-scoped)
+        'badge_cache_ttl' => 30,
     ],
 
     /*
@@ -39,6 +42,11 @@ return [
         
         // Decimal precision for monetary amounts
         'amount_precision' => 2,
+    ],
+
+    'widgets' => [
+        // Seconds to cache dashboard widget aggregates (owner-scoped)
+        'cache_ttl' => 120,
     ],
 
     /*
@@ -107,6 +115,11 @@ return [
         'invoice' => [
             'vendor_name' => null,
             'product_name' => 'Subscription',
+        ],
+
+        // Billing portal invoice history cap
+        'invoices' => [
+            'limit' => 25,
         ],
         
         // Redirect URLs after actions

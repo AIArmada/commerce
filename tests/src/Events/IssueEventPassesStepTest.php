@@ -18,6 +18,15 @@ use Illuminate\Support\Str;
 
 use function Pest\Laravel\mock;
 
+if (! function_exists('createEventsCheckoutSession')) {
+    function createEventsCheckoutSession(array $attributes): CheckoutSession
+    {
+        // Fixtures bypass mass assignment: CheckoutSession guards every
+        // server-computed field, so tests plant session state unguarded.
+        return CheckoutSession::unguarded(fn (): CheckoutSession => CheckoutSession::query()->create($attributes));
+    }
+}
+
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
     config()->set('checkout.owner.enabled', false);
@@ -78,7 +87,7 @@ it('issues and delivers all passes created for matching registrations', function
         $delivery = mock(PassDeliveryServiceInterface::class);
         $delivery->shouldReceive('deliver')->twice()->with(Mockery::type(Pass::class));
 
-        $session = CheckoutSession::query()->create([
+        $session = createEventsCheckoutSession([
             'cart_id' => (string) Str::uuid(),
             'order_id' => $order->id,
             'currency' => 'MYR',
@@ -193,7 +202,7 @@ it('only issues passes once for duplicate ticket type order items', function ():
         $delivery = mock(PassDeliveryServiceInterface::class);
         $delivery->shouldReceive('deliver')->twice()->with(Mockery::type(Pass::class));
 
-        $session = CheckoutSession::query()->create([
+        $session = createEventsCheckoutSession([
             'cart_id' => (string) Str::uuid(),
             'order_id' => $order->id,
             'currency' => 'MYR',

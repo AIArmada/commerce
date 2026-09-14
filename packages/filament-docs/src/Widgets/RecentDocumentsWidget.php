@@ -50,7 +50,7 @@ final class RecentDocumentsWidget extends BaseWidget
 
                 TextColumn::make('total_minor')
                     ->label('Total')
-                    ->formatStateUsing(fn (int|string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
+                    ->formatStateUsing(fn (int | string $state, Doc $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                     ->sortable(),
 
                 TextColumn::make('status')

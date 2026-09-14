@@ -6,6 +6,7 @@ namespace AIArmada\Ticketing\Actions;
 
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 
 final class EnsureTicketTypeAction
 {
@@ -16,11 +17,13 @@ final class EnsureTicketTypeAction
             ? $ticketable->getKey()
             : $attributes['code'];
 
-        $ticketType = TicketType::query()->firstOrNew([
+        $lookup = [
             'ticketable_id' => $ticketable->getKey(),
             'ticketable_type' => $ticketable->getMorphClass(),
             'code' => $code,
-        ]);
+        ];
+
+        $ticketType = TicketType::query()->firstOrNew($lookup);
 
         $ticketType->fill([
             'name' => $attributes['name'] ?? $code,
@@ -41,9 +44,23 @@ final class EnsureTicketTypeAction
         ]);
 
         if ($ticketType->isDirty() || ! $ticketType->exists) {
-            $ticketType->save();
+            try {
+                $ticketType->save();
+            } catch (QueryException $exception) {
+                if (! self::isUniqueViolation($exception) || $ticketType->exists) {
+                    throw $exception;
+                }
+
+                // Concurrent ensure won the insert; return the winner.
+                return TicketType::query()->where($lookup)->firstOrFail();
+            }
         }
 
         return $ticketType;
+    }
+
+    private static function isUniqueViolation(QueryException $exception): bool
+    {
+        return in_array($exception->getCode(), ['23000', '23505'], true);
     }
 }

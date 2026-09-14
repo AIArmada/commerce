@@ -6,6 +6,7 @@ namespace AIArmada\Authz\Support;
 
 use AIArmada\Authz\Models\AuthzScope;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 
 final class AuthzScopeResolver
 {
@@ -33,24 +34,30 @@ final class AuthzScopeResolver
                 $label = $scope->getAuthzScopeLabel();
             }
 
-            $query = AuthzScope::query()->where([
+            $attributes = [
                 'scopeable_type' => $scopeableType,
                 'scopeable_id' => $scopeableId,
-            ]);
+            ];
 
-            if (! config('authz.scopes.auto_create', true)) {
-                return $query->value('id');
+            $existingId = AuthzScope::query()->where($attributes)->value('id');
+
+            if ($existingId !== null) {
+                return $existingId;
             }
 
-            $authzScope = AuthzScope::query()->firstOrCreate(
-                [
-                    'scopeable_type' => $scopeableType,
-                    'scopeable_id' => $scopeableId,
-                ],
-                [
-                    'label' => $label,
-                ],
-            );
+            if (! config('authz.scopes.auto_create', true)) {
+                return null;
+            }
+
+            try {
+                $authzScope = AuthzScope::query()->firstOrCreate($attributes, ['label' => $label]);
+            } catch (QueryException $exception) {
+                if ((string) $exception->getCode() !== '23000') {
+                    throw $exception;
+                }
+
+                return AuthzScope::query()->where($attributes)->value('id');
+            }
 
             if ($label !== null && $authzScope->label !== $label) {
                 $authzScope->forceFill(['label' => $label])->save();

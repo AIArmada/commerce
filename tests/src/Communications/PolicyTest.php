@@ -15,13 +15,14 @@ test('policy allows view for same owner', function (): void {
     $owner = OwnerContext::resolve();
     $policy = app(CommunicationPolicy::class);
 
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'policy-test',
         'status' => CommunicationStatus::Draft,
     ]);
+    $communication->save();
 
     expect($policy->view($owner, $communication))->toBeTrue();
 });
@@ -37,13 +38,16 @@ test('policy denies view for different owner', function (): void {
     ]);
 
     $communication = OwnerContext::withOwner($otherOwner, function () {
-        return Communication::create([
+        $otherCommunication = (new Communication)->forceFill([
             'direction' => CommunicationDirection::Outbound,
             'category' => CommunicationCategory::Transactional,
             'priority' => CommunicationPriority::Normal,
             'purpose' => 'other-owner',
             'status' => CommunicationStatus::Draft,
         ]);
+        $otherCommunication->save();
+
+        return $otherCommunication;
     });
 
     expect($policy->view($owner, $communication))->toBeFalse();

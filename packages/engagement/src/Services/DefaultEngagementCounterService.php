@@ -23,6 +23,7 @@ use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Models\Response;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 final class DefaultEngagementCounterService implements EngagementCounterService
@@ -227,11 +228,42 @@ final class DefaultEngagementCounterService implements EngagementCounterService
 
     private function recalculateResponsesByIdentity(string $subjectType, string $subjectId, ?string $responseType = null): void
     {
-        $counterKeys = $responseType === null
-            ? $this->counterKeysForResponses($subjectType, $subjectId)
-            : ['', $responseType];
+        if ($responseType !== null) {
+            foreach (['', $responseType] as $counterKey) {
+                EngagementCounter::query()->updateOrCreate(
+                    [
+                        'subject_type' => $subjectType,
+                        'subject_id' => $subjectId,
+                        'counter_type' => 'responses',
+                        'counter_key' => $counterKey,
+                    ],
+                    [
+                        'count_value' => $this->countResponsesByIdentity($subjectType, $subjectId, $counterKey === '' ? null : $counterKey),
+                        'recalculated_at' => CarbonImmutable::now(),
+                    ],
+                );
+            }
 
-        foreach ($counterKeys as $counterKey) {
+            return;
+        }
+
+        $counts = $this->groupedResponseCounts($subjectType, $subjectId);
+        $now = CarbonImmutable::now();
+
+        EngagementCounter::query()->updateOrCreate(
+            [
+                'subject_type' => $subjectType,
+                'subject_id' => $subjectId,
+                'counter_type' => 'responses',
+                'counter_key' => '',
+            ],
+            [
+                'count_value' => array_sum($counts),
+                'recalculated_at' => $now,
+            ],
+        );
+
+        foreach ($this->responseCounterKeys($subjectType, $subjectId, $counts) as $counterKey) {
             EngagementCounter::query()->updateOrCreate(
                 [
                     'subject_type' => $subjectType,
@@ -240,11 +272,49 @@ final class DefaultEngagementCounterService implements EngagementCounterService
                     'counter_key' => $counterKey,
                 ],
                 [
-                    'count_value' => $this->countResponsesByIdentity($subjectType, $subjectId, $counterKey === '' ? null : $counterKey),
-                    'recalculated_at' => CarbonImmutable::now(),
+                    'count_value' => $counts[$counterKey] ?? 0,
+                    'recalculated_at' => $now,
                 ],
             );
         }
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function groupedResponseCounts(string $subjectType, string $subjectId): array
+    {
+        /** @var array<string, int> $counts */
+        $counts = Response::query()
+            ->where('respondable_type', $subjectType)
+            ->where('respondable_id', $subjectId)
+            ->where('status', 'active')
+            ->select('response_type')
+            ->selectRaw('COUNT(*) as aggregate')
+            ->groupBy('response_type')
+            ->pluck('aggregate', 'response_type')
+            ->map(static fn (mixed $value): int => (int) $value)
+            ->all();
+
+        return $counts;
+    }
+
+    /**
+     * @param  array<string, int>  $counts
+     * @return array<int, string>
+     */
+    private function responseCounterKeys(string $subjectType, string $subjectId, array $counts): array
+    {
+        $storedKeys = EngagementCounter::query()
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', $subjectId)
+            ->where('counter_type', 'responses')
+            ->where('counter_key', '<>', '')
+            ->pluck('counter_key')
+            ->map(static fn (mixed $key): string => (string) $key)
+            ->all();
+
+        return array_values(array_unique(array_merge(array_keys($counts), $storedKeys)));
     }
 
     public function recalculateReactions(mixed $subject, ?string $reactionType = null): void
@@ -254,11 +324,42 @@ final class DefaultEngagementCounterService implements EngagementCounterService
 
     private function recalculateReactionsByIdentity(string $subjectType, string $subjectId, ?string $reactionType = null): void
     {
-        $counterKeys = $reactionType === null
-            ? $this->counterKeysForReactions($subjectType, $subjectId)
-            : ['', $reactionType];
+        if ($reactionType !== null) {
+            foreach (['', $reactionType] as $counterKey) {
+                EngagementCounter::query()->updateOrCreate(
+                    [
+                        'subject_type' => $subjectType,
+                        'subject_id' => $subjectId,
+                        'counter_type' => 'reactions',
+                        'counter_key' => $counterKey,
+                    ],
+                    [
+                        'count_value' => $this->countReactionsByIdentity($subjectType, $subjectId, $counterKey === '' ? null : $counterKey),
+                        'recalculated_at' => CarbonImmutable::now(),
+                    ],
+                );
+            }
 
-        foreach ($counterKeys as $counterKey) {
+            return;
+        }
+
+        $counts = $this->groupedReactionCounts($subjectType, $subjectId);
+        $now = CarbonImmutable::now();
+
+        EngagementCounter::query()->updateOrCreate(
+            [
+                'subject_type' => $subjectType,
+                'subject_id' => $subjectId,
+                'counter_type' => 'reactions',
+                'counter_key' => '',
+            ],
+            [
+                'count_value' => array_sum($counts),
+                'recalculated_at' => $now,
+            ],
+        );
+
+        foreach ($this->reactionCounterKeys($subjectType, $subjectId, $counts) as $counterKey) {
             EngagementCounter::query()->updateOrCreate(
                 [
                     'subject_type' => $subjectType,
@@ -267,11 +368,49 @@ final class DefaultEngagementCounterService implements EngagementCounterService
                     'counter_key' => $counterKey,
                 ],
                 [
-                    'count_value' => $this->countReactionsByIdentity($subjectType, $subjectId, $counterKey === '' ? null : $counterKey),
-                    'recalculated_at' => CarbonImmutable::now(),
+                    'count_value' => $counts[$counterKey] ?? 0,
+                    'recalculated_at' => $now,
                 ],
             );
         }
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function groupedReactionCounts(string $subjectType, string $subjectId): array
+    {
+        /** @var array<string, int> $counts */
+        $counts = Reaction::query()
+            ->where('reactable_type', $subjectType)
+            ->where('reactable_id', $subjectId)
+            ->where('status', 'active')
+            ->select('reaction_type')
+            ->selectRaw('COUNT(*) as aggregate')
+            ->groupBy('reaction_type')
+            ->pluck('aggregate', 'reaction_type')
+            ->map(static fn (mixed $value): int => (int) $value)
+            ->all();
+
+        return $counts;
+    }
+
+    /**
+     * @param  array<string, int>  $counts
+     * @return array<int, string>
+     */
+    private function reactionCounterKeys(string $subjectType, string $subjectId, array $counts): array
+    {
+        $storedKeys = EngagementCounter::query()
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', $subjectId)
+            ->where('counter_type', 'reactions')
+            ->where('counter_key', '<>', '')
+            ->pluck('counter_key')
+            ->map(static fn (mixed $key): string => (string) $key)
+            ->all();
+
+        return array_values(array_unique(array_merge(array_keys($counts), $storedKeys)));
     }
 
     private function countReactionsByIdentity(string $subjectType, string $subjectId, ?string $reactionType = null): int
@@ -289,139 +428,149 @@ final class DefaultEngagementCounterService implements EngagementCounterService
     }
 
     /**
-     * @return array<int, string>
+     * Apply one lifecycle transition to the cached counters without a full
+     * recount. Events fire inside the originating write transaction, so the
+     * adjustment stays synchronous with the write. Direct model writes and
+     * imports bypass these events; `recalculate()` (via
+     * `engagement:reconcile-counters`) remains the repair path for drift.
      */
-    private function counterKeysForResponses(string $subjectType, string $subjectId): array
+    private function adjustCounter(string $subjectType, string $subjectId, string $counterType, string $counterKey, int $delta): void
     {
-        $activeKeys = Response::query()
-            ->where('respondable_type', $subjectType)
-            ->where('respondable_id', $subjectId)
-            ->where('status', 'active')
-            ->distinct()
-            ->pluck('response_type')
-            ->map(static fn (mixed $key): string => (string) $key)
-            ->all();
+        if ($delta === 0) {
+            return;
+        }
 
-        $storedKeys = EngagementCounter::query()
-            ->where('subject_type', $subjectType)
-            ->where('subject_id', $subjectId)
-            ->where('counter_type', 'responses')
-            ->where('counter_key', '<>', '')
-            ->pluck('counter_key')
-            ->map(static fn (mixed $key): string => (string) $key)
-            ->all();
+        try {
+            DB::transaction(function () use ($subjectType, $subjectId, $counterType, $counterKey, $delta): void {
+                $this->adjustLockedCounter($subjectType, $subjectId, $counterType, $counterKey, $delta);
+            });
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueConstraintViolation($exception)) {
+                throw $exception;
+            }
 
-        return array_values(array_unique(array_merge([''], $activeKeys, $storedKeys)));
+            DB::transaction(function () use ($subjectType, $subjectId, $counterType, $counterKey, $delta): void {
+                $this->adjustLockedCounter($subjectType, $subjectId, $counterType, $counterKey, $delta);
+            });
+        }
     }
 
-    /**
-     * @return array<int, string>
-     */
-    private function counterKeysForReactions(string $subjectType, string $subjectId): array
+    private function adjustLockedCounter(string $subjectType, string $subjectId, string $counterType, string $counterKey, int $delta): void
     {
-        $activeKeys = Reaction::query()
-            ->where('reactable_type', $subjectType)
-            ->where('reactable_id', $subjectId)
-            ->where('status', 'active')
-            ->distinct()
-            ->pluck('reaction_type')
-            ->map(static fn (mixed $key): string => (string) $key)
-            ->all();
-
-        $storedKeys = EngagementCounter::query()
+        $counter = EngagementCounter::query()
             ->where('subject_type', $subjectType)
             ->where('subject_id', $subjectId)
-            ->where('counter_type', 'reactions')
-            ->where('counter_key', '<>', '')
-            ->pluck('counter_key')
-            ->map(static fn (mixed $key): string => (string) $key)
-            ->all();
+            ->where('counter_type', $counterType)
+            ->where('counter_key', $counterKey)
+            ->lockForUpdate()
+            ->first();
 
-        return array_values(array_unique(array_merge([''], $activeKeys, $storedKeys)));
+        if (! $counter instanceof EngagementCounter) {
+            if ($delta < 0) {
+                return;
+            }
+
+            $counter = EngagementCounter::query()->create([
+                'subject_type' => $subjectType,
+                'subject_id' => $subjectId,
+                'counter_type' => $counterType,
+                'counter_key' => $counterKey,
+                'count_value' => 0,
+            ]);
+        }
+
+        $counter->update([
+            'count_value' => max(0, (int) $counter->count_value + $delta),
+            'recalculated_at' => CarbonImmutable::now(),
+        ]);
+    }
+
+    private function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
     }
 
     public function onFollowCreated(FollowCreated $event): void
     {
-        $this->recalculateFollowersByIdentity($event->follow->followable_type, (string) $event->follow->followable_id);
+        $this->adjustCounter($event->follow->followable_type, (string) $event->follow->followable_id, 'followers', '', 1);
     }
 
     public function onFollowRemoved(FollowRemoved $event): void
     {
-        $this->recalculateFollowersByIdentity($event->follow->followable_type, (string) $event->follow->followable_id);
+        $this->adjustCounter($event->follow->followable_type, (string) $event->follow->followable_id, 'followers', '', -1);
     }
 
     public function onFollowMuted(FollowMuted $event): void
     {
-        $this->recalculateFollowersByIdentity($event->follow->followable_type, (string) $event->follow->followable_id);
+        $this->adjustCounter($event->follow->followable_type, (string) $event->follow->followable_id, 'followers', '', -1);
     }
 
     public function onFollowUnmuted(FollowUnmuted $event): void
     {
-        $this->recalculateFollowersByIdentity($event->follow->followable_type, (string) $event->follow->followable_id);
+        $this->adjustCounter($event->follow->followable_type, (string) $event->follow->followable_id, 'followers', '', 1);
     }
 
     public function onReactionCreated(ReactionCreated $event): void
     {
-        $this->recalculateReactionsByIdentity(
-            $event->reaction->reactable_type,
-            (string) $event->reaction->reactable_id,
-            $event->reaction->reaction_type,
-        );
+        $subjectType = $event->reaction->reactable_type;
+        $subjectId = (string) $event->reaction->reactable_id;
+
+        $this->adjustCounter($subjectType, $subjectId, 'reactions', '', 1);
+        $this->adjustCounter($subjectType, $subjectId, 'reactions', $event->reaction->reaction_type, 1);
     }
 
     public function onReactionRemoved(ReactionRemoved $event): void
     {
-        $this->recalculateReactionsByIdentity(
-            $event->reaction->reactable_type,
-            (string) $event->reaction->reactable_id,
-            $event->reaction->reaction_type,
-        );
+        $subjectType = $event->reaction->reactable_type;
+        $subjectId = (string) $event->reaction->reactable_id;
+
+        $this->adjustCounter($subjectType, $subjectId, 'reactions', '', -1);
+        $this->adjustCounter($subjectType, $subjectId, 'reactions', $event->reaction->reaction_type, -1);
     }
 
     public function onBookmarkCreated(BookmarkCreated $event): void
     {
-        $this->recalculateBookmarksByIdentity($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id);
+        $this->adjustCounter($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id, 'bookmarks', '', 1);
     }
 
     public function onBookmarkRemoved(BookmarkRemoved $event): void
     {
-        $this->recalculateBookmarksByIdentity($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id);
+        $this->adjustCounter($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id, 'bookmarks', '', -1);
     }
 
     public function onBookmarkArchived(BookmarkArchived $event): void
     {
-        $this->recalculateBookmarksByIdentity($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id);
+        $this->adjustCounter($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id, 'bookmarks', '', -1);
     }
 
     public function onResponseCreated(ResponseCreated $event): void
     {
-        $this->recalculateResponsesByIdentity(
-            $event->response->respondable_type,
-            (string) $event->response->respondable_id,
-            $event->response->response_type,
-        );
+        $subjectType = $event->response->respondable_type;
+        $subjectId = (string) $event->response->respondable_id;
+
+        $this->adjustCounter($subjectType, $subjectId, 'responses', '', 1);
+        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->response->response_type, 1);
     }
 
     public function onResponseChanged(ResponseChanged $event): void
     {
-        $this->recalculateResponsesByIdentity(
-            $event->response->respondable_type,
-            (string) $event->response->respondable_id,
-            $event->previousType,
-        );
-        $this->recalculateResponsesByIdentity(
-            $event->response->respondable_type,
-            (string) $event->response->respondable_id,
-            $event->response->response_type,
-        );
+        if ($event->previousType === $event->response->response_type) {
+            return;
+        }
+
+        $subjectType = $event->response->respondable_type;
+        $subjectId = (string) $event->response->respondable_id;
+
+        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->previousType, -1);
+        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->response->response_type, 1);
     }
 
     public function onResponseCancelled(ResponseCancelled $event): void
     {
-        $this->recalculateResponsesByIdentity(
-            $event->response->respondable_type,
-            (string) $event->response->respondable_id,
-            $event->response->response_type,
-        );
+        $subjectType = $event->response->respondable_type;
+        $subjectId = (string) $event->response->respondable_id;
+
+        $this->adjustCounter($subjectType, $subjectId, 'responses', '', -1);
+        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->response->response_type, -1);
     }
 }

@@ -43,6 +43,8 @@ final class CreateChipSubscription
         $couponDuration = null;
 
         if ($couponId) {
+            $builder->assertCouponValidForSubscription($couponId);
+
             $coupon = $builder->retrieveCoupon($couponId);
 
             if ($coupon) {
@@ -58,7 +60,8 @@ final class CreateChipSubscription
         $trialEndsAt = ! $skipTrial ? $trialExpires : null;
 
         if ($trialEndsAt) {
-            $nextBillingAt = $trialEndsAt->copy()->add(
+            $nextBillingAt = Subscription::advanceBillingDate(
+                $trialEndsAt,
                 $builder->getBillingInterval(),
                 $builder->getBillingIntervalCount()
             );

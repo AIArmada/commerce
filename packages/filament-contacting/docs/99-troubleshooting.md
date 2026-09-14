@@ -50,15 +50,18 @@ use AiArmada\Contacting\Concerns\HasContactMethods;
 use AiArmada\Contacting\Concerns\HasSocialProfiles;
 ```
 
-## Create Button Hidden
+## No Create Button on Standalone Resources
 
-The create button is hidden when the resource is read-only:
+Standalone resources never offer creates by design: a standalone form cannot
+safely pick a parent entity, so create contact methods and social profiles
+through the relation managers on the owning resource. The edit button is hidden
+only when the resource is read-only:
 
 ```php
 'resources' => [
     'contact_methods' => [
         'enabled' => true,
-        'read_only' => false,  // Set to false to show create/edit buttons
+        'read_only' => false,  // Set to false to show edit buttons
     ],
 ],
 ```
@@ -71,8 +74,12 @@ If your app uses owner scoping from `commerce-support` and standalone resources 
 
 ## Import Failing
 
-Imports are disabled by default (`imports: false`). To enable, set to `true` and ensure your app provides an owner-safe contactable/socialable resolver.
+Imports are disabled by default (`imports: false`). To enable, set to `true`; rows
+that name an invalid parent reference fail with a descriptive reason while the
+rest of the file still imports. Rows that name a record from another owner are
+rejected without detail by design. Re-running an import re-inserts rows instead
+of updating them because imports are insert-only.
 
 ## Filament Method Signature Mismatch
 
-If you see method signature errors, check that your installed Filament version matches `^5.6.7`. The components in this package use Filament v5 APIs.
+If you see method signature errors, check that your installed Filament version matches `^5.7.0`. The components in this package use Filament v5 APIs.

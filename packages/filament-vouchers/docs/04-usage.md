@@ -267,3 +267,19 @@ TextInput::make('value')
     ->formatStateUsing(fn (?int $state) => MoneyHelper::centsToDisplay($state))
     ->dehydrateStateUsing(fn (?string $state) => MoneyHelper::displayToCents($state))
 ```
+
+## Suggestion apply flow
+
+The suggestion widget passes voucher record keys to the `applySuggestion` action; the code is resolved server-side inside the current owner scope, so hostile code text can never break out of the Livewire action argument.
+
+## Manual redemption guards
+
+Manual redemption rechecks `allows_manual_redemption` and the remaining usage limit when the action runs, requires a parsed amount of at least 0.01, and requires the `voucher.update` ability.
+
+## Bulk generation limits
+
+Bulk generation runs in a transaction, clamps forged counts to 100 vouchers, retries code collisions, and requires an owner context (or explicit global context) when owner mode is enabled.
+
+## Cached counts
+
+Navigation badges, the stats aggregator, and the wallet stats widget cache owner-scoped counts for 30 seconds; fresh writes can lag briefly behind the displayed numbers.

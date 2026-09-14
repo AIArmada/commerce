@@ -77,42 +77,22 @@ class CheckoutSession extends Model
         // default state before database attributes are read back.
     }
 
+    /**
+     * Host-supplied input only. Every server-computed field (owner tuple,
+     * status, totals, snapshots, payment data, timestamps) is guarded so a
+     * host-side `update($request->all())` cannot hop tenants, tamper status,
+     * or zero the grand total. Package internals persist computed state via
+     * `persistState()`.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'cart_id',
         'customer_id',
-        'billable_type',
-        'billable_id',
-        'order_id',
-        'payment_id',
-        'status',
-        'current_step',
-        'cart_snapshot',
-        'step_states',
-        'shipping_data',
         'billing_data',
-        'pricing_data',
-        'discount_data',
-        'tax_data',
-        'payment_data',
-        'payment_redirect_url',
-        'payment_attempts',
+        'shipping_data',
         'selected_shipping_method',
         'selected_payment_gateway',
-        'subtotal',
-        'discount_total',
-        'shipping_total',
-        'tax_total',
-        'grand_total',
-        'currency',
-        'error_message',
-        'finalization_phase',
-        'finalization_error',
-        'expires_at',
-        'completed_at',
-        'cancelled_at',
-        'payment_failed_at',
-        'owner_type',
-        'owner_id',
     ];
 
     protected $attributes = [
@@ -180,12 +160,43 @@ class CheckoutSession extends Model
         return $state !== null ? StepStatus::from($state) : null;
     }
 
+    /**
+     * Persist server-computed attributes, bypassing mass-assignment guards.
+     * This is the only write path the package itself uses for computed
+     * state; hosts must only mass-assign `$fillable` input fields.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function persistState(array $attributes): bool
+    {
+        return $this->forceFill($attributes)->save();
+    }
+
     public function setStepState(string $identifier, StepStatus $status): void
     {
         $states = $this->step_states ?? [];
+
+        if (($states[$identifier] ?? null) === $status->value) {
+            return;
+        }
+
         $states[$identifier] = $status->value;
 
-        $this->update(['step_states' => $states]);
+        $this->persistState(['step_states' => $states]);
+    }
+
+    /**
+     * Mark a step started and advance the pipeline pointer in one write.
+     */
+    public function beginStep(string $identifier): void
+    {
+        $states = $this->step_states ?? [];
+        $states[$identifier] = StepStatus::Processing->value;
+
+        $this->persistState([
+            'step_states' => $states,
+            'current_step' => $identifier,
+        ]);
     }
 
     /**
@@ -213,7 +224,7 @@ class CheckoutSession extends Model
         $stepData[$identifier] = $data;
         $paymentData['checkout_step_data'] = $stepData;
 
-        $this->update(['payment_data' => $paymentData]);
+        $this->persistState(['payment_data' => $paymentData]);
     }
 
     /**
@@ -249,7 +260,7 @@ class CheckoutSession extends Model
 
         $paymentData['checkout_compensation_log'] = $log;
 
-        $this->update(['payment_data' => $paymentData]);
+        $this->persistState(['payment_data' => $paymentData]);
     }
 
     public function isStepCompleted(string $identifier): bool
@@ -273,53 +284,16 @@ class CheckoutSession extends Model
     /**
      * Persist a checkout status transition reliably for cross-request flows.
      *
+     * This is the package's single transition path. Spatie's `transitionTo()`
+     * already persists via `DefaultTransition::handle()` (one `save()`), and
+     * the `updating` hook stamps the terminal lifecycle timestamp in that
+     * same write, so no follow-up query is needed.
+     *
      * @param  class-string<CheckoutState>  $stateClass
      */
     public function transitionStatus(string $stateClass): self
     {
         $this->status->transitionTo($stateClass);
-
-        $timestampMap = [
-            Completed::class => 'completed_at',
-            Cancelled::class => 'cancelled_at',
-            PaymentFailed::class => 'payment_failed_at',
-        ];
-
-        $updates = [
-            'status' => $stateClass::getMorphClass(),
-        ];
-
-        foreach ($timestampMap as $class => $column) {
-            if (is_a($stateClass, $class, true)) {
-                $updates[$column] = CarbonImmutable::now();
-
-                break;
-            }
-        }
-
-        $updates['updated_at'] = CarbonImmutable::now();
-
-        // Direct DB::table() update scoped to this model's own PK to bypass Spatie's HasStates
-        // Eloquent listener (which would cause an infinite loop). The PK constraint guarantees
-        // this touches exactly one row for the already-resolved model instance.
-        $this->getConnection()
-            ->table($this->getTable())
-            ->where($this->getKeyName(), $this->getKey())
-            ->update($updates);
-
-        $this->forceFill(['status' => $stateClass]);
-
-        foreach ($timestampMap as $column) {
-            if (array_key_exists($column, $updates)) {
-                $this->{$column} = $updates[$column];
-            }
-        }
-
-        $this->updated_at = $updates['updated_at'];
-
-        unset($this->classCastCache['status'], $this->attributeCastCache['status']);
-
-        $this->syncOriginal();
 
         return $this;
     }

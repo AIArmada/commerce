@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Pages;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentSignals\Widgets\EventTrendWidget;
 use AIArmada\FilamentSignals\Widgets\PendingSignalAlertsWidget;
 use AIArmada\FilamentSignals\Widgets\SignalsStatsWidget;
@@ -28,9 +29,15 @@ final class SignalsDashboard extends Dashboard
         return (int) config('filament-signals.resources.navigation_sort.dashboard', 10);
     }
 
+    public static function canAccess(): bool
+    {
+        return FilamentPermission::hasAbility('signal-report.view');
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-signals.features.dashboard', true);
+        return (bool) config('filament-signals.features.dashboard', true)
+            && static::canAccess();
     }
 
     public function getColumns(): int | array

@@ -16,6 +16,15 @@ use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Active;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Cache;
+
+beforeEach(function (): void {
+    Cache::flush();
+});
+
+afterEach(function (): void {
+    Cache::flush();
+});
 
 function filamentPromotions_invokeProtected(object $instance, string $methodName, array $arguments = []): mixed
 {

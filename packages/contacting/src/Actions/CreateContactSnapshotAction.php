@@ -10,16 +10,20 @@ use AIArmada\Contacting\Exceptions\ContactSnapshotsDisabledException;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Models\ContactSnapshot;
 use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 final class CreateContactSnapshotAction
 {
     public function fromContactMethod(Model $snapshotable, ContactMethod $contactMethod, ?string $reason = null): ContactSnapshot
     {
         $this->assertSnapshotsEnabled();
+        $contactMethod->loadMissing('owner');
         $ownerValue = $contactMethod->getRelationValue('owner');
         $owner = $ownerValue instanceof Model ? $ownerValue : null;
         $this->assertOwnerMatches($snapshotable, $owner);
@@ -48,6 +52,7 @@ final class CreateContactSnapshotAction
     public function fromSocialProfile(Model $snapshotable, SocialProfile $socialProfile, ?string $reason = null): ContactSnapshot
     {
         $this->assertSnapshotsEnabled();
+        $socialProfile->loadMissing('owner');
         $ownerValue = $socialProfile->getRelationValue('owner');
         $owner = $ownerValue instanceof Model ? $ownerValue : null;
         $this->assertOwnerMatches($snapshotable, $owner);
@@ -83,18 +88,101 @@ final class CreateContactSnapshotAction
         $this->assertSnapshotsEnabled();
 
         return DB::transaction(function () use ($contactMethods, $reason, $snapshotable, $socialProfiles): Collection {
-            $snapshots = new Collection;
+            $contactMethods = Collection::make($contactMethods)->loadMissing('owner');
+            $socialProfiles = Collection::make($socialProfiles)->loadMissing('owner');
 
-            foreach ($contactMethods as $cm) {
-                $snapshots->push($this->fromContactMethod($snapshotable, $cm, $reason));
+            $snapshots = new Collection;
+            $rows = [];
+            $now = Carbon::now();
+
+            foreach ($contactMethods as $contactMethod) {
+                $owner = $this->sourceOwner($contactMethod);
+                $this->assertOwnerMatches($snapshotable, $owner);
+
+                $snapshots->push($this->stageSnapshot(
+                    $this->makeSnapshot(
+                        snapshotable: $snapshotable,
+                        snapshotType: 'contact_method',
+                        sourceId: $contactMethod->id,
+                        sourceType: $contactMethod->getMorphClass(),
+                        reason: $reason,
+                        label: $contactMethod->label,
+                        channel: $contactMethod->type,
+                        value: $contactMethod->value,
+                        normalizedValue: $contactMethod->normalized_value,
+                        url: null,
+                        displayValue: $contactMethod->display_value,
+                        isPublic: $contactMethod->is_public,
+                        payload: $contactMethod->toArray(),
+                        owner: $owner,
+                    ),
+                    $rows,
+                    $now,
+                ));
             }
 
-            foreach ($socialProfiles as $sp) {
-                $snapshots->push($this->fromSocialProfile($snapshotable, $sp, $reason));
+            foreach ($socialProfiles as $socialProfile) {
+                $owner = $this->sourceOwner($socialProfile);
+                $this->assertOwnerMatches($snapshotable, $owner);
+
+                $snapshots->push($this->stageSnapshot(
+                    $this->makeSnapshot(
+                        snapshotable: $snapshotable,
+                        snapshotType: 'social_profile',
+                        sourceId: $socialProfile->id,
+                        sourceType: $socialProfile->getMorphClass(),
+                        reason: $reason,
+                        label: $socialProfile->label,
+                        channel: $socialProfile->platform,
+                        value: $socialProfile->handle ?? $socialProfile->url,
+                        normalizedValue: $socialProfile->normalized_url,
+                        url: $socialProfile->url,
+                        displayValue: $socialProfile->display_name ?? $socialProfile->handle,
+                        isPublic: $socialProfile->is_public,
+                        payload: $socialProfile->toArray(),
+                        owner: $owner,
+                    ),
+                    $rows,
+                    $now,
+                ));
+            }
+
+            if ($rows !== []) {
+                app(ContactingModelReferenceGuard::class)->resolve(
+                    $snapshotable->getMorphClass(),
+                    (string) $snapshotable->getKey(),
+                );
+
+                ContactSnapshot::query()->insert($rows);
             }
 
             return $snapshots;
         });
+    }
+
+    private function sourceOwner(ContactMethod | SocialProfile $source): ?Model
+    {
+        $owner = $source->getRelationValue('owner');
+
+        return $owner instanceof Model ? $owner : null;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     */
+    private function stageSnapshot(ContactSnapshot $snapshot, array &$rows, Carbon $now): ContactSnapshot
+    {
+        $snapshot->id ??= (string) Str::uuid();
+        $snapshot->created_at = $now;
+        $snapshot->updated_at = $now;
+
+        $rows[] = $snapshot->getAttributes();
+
+        $snapshot->exists = true;
+        $snapshot->wasRecentlyCreated = true;
+        $snapshot->syncOriginal();
+
+        return $snapshot;
     }
 
     /**

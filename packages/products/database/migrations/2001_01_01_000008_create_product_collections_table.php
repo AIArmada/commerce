@@ -57,10 +57,6 @@ return new class extends Migration
             $table->index(['published_at', 'unpublished_at']);
         });
 
-        if (! app()->environment(['local', 'development', 'testing'])) {
-            return;
-        }
-
         ProductIdentityIndexes::owner($tableName, 'slug');
     }
 

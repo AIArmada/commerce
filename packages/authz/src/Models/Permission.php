@@ -13,6 +13,8 @@ use Spatie\Permission\Exceptions\PermissionAlreadyExists;
 use Spatie\Permission\Guard;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 
+use function Illuminate\Support\enum_value;
+
 /**
  * Permission model extending Spatie Permission with UUID support.
  *
@@ -28,19 +30,12 @@ final class Permission extends SpatiePermission
     use HasUuids;
 
     /**
-     * @return Collection<int, static>
-     */
-    protected static function getPermissions(array $params = [], bool $onlyOne = false): Collection
-    {
-        return parent::getPermissions($params, $onlyOne);
-    }
-
-    /**
      * @throws PermissionAlreadyExists
      */
     public static function create(array $attributes = [])
     {
         $attributes['guard_name'] ??= Guard::getDefaultName(static::class);
+        $attributes['name'] = enum_value($attributes['name']);
 
         $permission = static::getPermission(['name' => $attributes['name'], 'guard_name' => $attributes['guard_name']]);
 
@@ -53,6 +48,7 @@ final class Permission extends SpatiePermission
 
     public static function findOrCreate(BackedEnum | string $name, ?string $guardName = null): PermissionContract
     {
+        $name = enum_value($name);
         $guardName ??= Guard::getDefaultName(static::class);
         $permission = static::getPermission(['name' => $name, 'guard_name' => $guardName]);
 

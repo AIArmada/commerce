@@ -6,24 +6,30 @@ namespace AIArmada\Cart\Listeners;
 
 use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
 use AIArmada\Cart\Storage\StorageInterface;
-use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Container\Container;
 
 final class HandleUserLogin
 {
+    /**
+     * Maximum guest-cart instances migrated on a single login.
+     */
+    private const MAX_LOGIN_INSTANCES = 25;
+
     public function __construct(
         private readonly MigrateCartOnLoginAction $migrationAction,
-        private readonly LoginMigrationIdentifierResolver $identifierResolver,
         private readonly Container $container,
     ) {}
 
     public function handle(Login $event): void
     {
-        $identifiers = $this->identifierResolver->resolveFromUser($event->user);
-        $sessionId = $this->identifierResolver->findCachedSessionId($identifiers);
+        if (! app()->bound('session')) {
+            return;
+        }
 
-        if ($sessionId === null) {
+        $sessionId = session()->pull(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY);
+
+        if (! is_string($sessionId) || $sessionId === '') {
             return;
         }
 
@@ -31,7 +37,11 @@ final class HandleUserLogin
         $guestStorage = $storage->getOwnerType() !== null
             ? $storage->withOwner(null)
             : $storage;
-        $instances = $guestStorage->getInstances($sessionId);
+        $instances = array_slice(
+            array_values(array_unique($guestStorage->getInstances($sessionId))),
+            0,
+            self::MAX_LOGIN_INSTANCES
+        );
 
         if ($instances === []) {
             $instances = ['default'];
@@ -40,7 +50,7 @@ final class HandleUserLogin
         $itemsMerged = 0;
         $message = 'Cart migration completed';
 
-        foreach (array_values(array_unique($instances)) as $instance) {
+        foreach ($instances as $instance) {
             $result = $this->migrationAction->execute($event->user, $instance, $sessionId);
 
             if (! $result['success']) {

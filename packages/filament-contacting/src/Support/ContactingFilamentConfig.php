@@ -70,4 +70,20 @@ final class ContactingFilamentConfig
     {
         return (int) config('filament-contacting.tables.default_pagination', 25);
     }
+
+    /**
+     * @return array<int, int|string>
+     */
+    public function paginationPageOptions(): array
+    {
+        $options = [5, 10, 25, 50];
+        $default = $this->defaultPagination();
+
+        if (! in_array($default, $options, true)) {
+            $options[] = $default;
+            sort($options);
+        }
+
+        return $options;
+    }
 }

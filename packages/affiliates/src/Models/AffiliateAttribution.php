@@ -106,8 +106,6 @@ class AffiliateAttribution extends Model
         'user_id',
         'fingerprint',
         'metadata',
-        'owner_type',
-        'owner_id',
         'first_seen_at',
         'last_seen_at',
         'last_cookie_seen_at',

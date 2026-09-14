@@ -87,4 +87,27 @@ describe('RemoteCatalogClient', function (): void {
         expect(fn (): array => $this->client->snapshot($this->site, 'prog-1'))
             ->toThrow(OfferNotFoundException::class, 'exceeded the configured size limit');
     });
+
+    test('fails closed when the catalog token cannot be decrypted', function (): void {
+        Http::fake();
+
+        $this->site->update(['catalog_token_encrypted' => 'not-a-valid-ciphertext']);
+
+        expect(fn (): array => $this->client->snapshot($this->site, 'prog-1'))
+            ->toThrow(OfferNotFoundException::class, 'cannot be decrypted');
+
+        Http::assertNothingSent();
+    });
+
+    test('encodes program ids placed into the request path', function (): void {
+        Http::fake(['*' => Http::response([
+            'version' => 'v1',
+            'program_id' => 'prog-1',
+            'subjects' => [],
+        ])]);
+
+        $this->client->snapshot($this->site, 'a/b?c=d');
+
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'programs/a%2Fb%3Fc%3Dd/catalog'));
+    });
 });

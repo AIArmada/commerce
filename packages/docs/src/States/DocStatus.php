@@ -6,6 +6,7 @@ namespace AIArmada\Docs\States;
 
 use AIArmada\Docs\Models\Doc;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;
 
@@ -125,7 +126,7 @@ abstract class DocStatus extends State
             }
         }
 
-        return Draft::class;
+        throw new InvalidArgumentException("Unknown document status [{$status}].");
     }
 
     final public static function config(): StateConfig

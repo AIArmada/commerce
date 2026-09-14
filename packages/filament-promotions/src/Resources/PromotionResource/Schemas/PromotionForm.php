@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Promotions\Enums\PromotionType;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
@@ -15,6 +16,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Unique;
 
 final class PromotionForm
 {
@@ -40,7 +42,7 @@ final class PromotionForm
                             ->label('Promo Code')
                             ->helperText('Leave empty for automatic promotions')
                             ->maxLength(50)
-                            ->unique(ignoreRecord: true),
+                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => self::scopeCodeUniqueRule($rule)),
                     ])
                     ->columns(2),
 
@@ -58,11 +60,13 @@ final class PromotionForm
                             ->label('Discount Value')
                             ->required()
                             ->numeric()
+                            ->minValue(0)
                             ->helperText('For percentage: enter number (e.g., 20 for 20%). For fixed: enter minor units (e.g., 1000 = ' . MoneyFormatter::formatMinor(1000, $currency) . ')'),
 
                         TextInput::make('min_purchase_amount')
                             ->label('Minimum Order Value')
                             ->numeric()
+                            ->minValue(0)
                             ->helperText('In minor units (e.g., 5000 = ' . MoneyFormatter::formatMinor(5000, $currency) . ')')
                             ->nullable(),
                     ])
@@ -76,12 +80,14 @@ final class PromotionForm
                                 TextInput::make('usage_limit')
                                     ->label('Total Usage Limit')
                                     ->numeric()
+                                    ->minValue(0)
                                     ->helperText('Leave empty for unlimited')
                                     ->nullable(),
 
                                 TextInput::make('per_customer_limit')
                                     ->label('Per Customer Limit')
                                     ->numeric()
+                                    ->minValue(0)
                                     ->helperText('Leave empty for unlimited')
                                     ->nullable(),
                             ]),
@@ -135,5 +141,29 @@ final class PromotionForm
                             ]),
                     ]),
             ]);
+    }
+
+    /**
+     * Scope the promo-code uniqueness check to the current owner tuple.
+     *
+     * The promotions table enforces uniqueness per (owner_type, owner_id,
+     * code), so a global check would wrongly block legitimate reuse of a
+     * code by another owner and leak code existence across owners.
+     */
+    public static function scopeCodeUniqueRule(Unique $rule): Unique
+    {
+        if (! config('promotions.features.owner.enabled', false)) {
+            return $rule;
+        }
+
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null) {
+            return $rule->whereNull('owner_type')->whereNull('owner_id');
+        }
+
+        return $rule
+            ->where('owner_type', $owner->getMorphClass())
+            ->where('owner_id', $owner->getKey());
     }
 }

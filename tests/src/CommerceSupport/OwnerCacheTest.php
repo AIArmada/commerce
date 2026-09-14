@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Cache;
 
 describe('OwnerCache', function (): void {
@@ -30,13 +31,13 @@ describe('OwnerCache', function (): void {
 
         expect($key)->toStartWith('owner:')
             ->and($key)->toContain(':cart.summary')
-            ->and($key)->toMatch('/^owner:[a-f0-9]{64}:cart\.summary$/');
+            ->and($key)->toMatch('/^owner:[a-f0-9]{64}:v1:cart\.summary$/');
     });
 
     it('builds global cache keys for null owner', function (): void {
         $key = OwnerCache::key(null, 'config.defaults');
 
-        expect($key)->toBe('owner:' . OwnerScopeKey::GLOBAL . ':config.defaults');
+        expect($key)->toBe('owner:' . OwnerScopeKey::GLOBAL . ':v1:config.defaults');
     });
 
     it('rejects empty logical keys', function (): void {
@@ -219,6 +220,76 @@ describe('OwnerCache', function (): void {
 
         OwnerCache::put($owner, 'shared', 'value');
 
-        expect(fn () => OwnerCache::forgetOwner($owner))->not->toThrow(Throwable::class);
+        // Explicit try/catch: not->toThrow(Throwable::class) is vacuous on interfaces.
+        $thrown = null;
+
+        try {
+            OwnerCache::forgetOwner($owner);
+        } catch (Throwable $e) {
+            $thrown = $e;
+        }
+
+        expect($thrown)->toBeNull();
+    });
+
+    it('invalidates every owner key when the owner version bumps', function (): void {
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-versioned';
+            }
+        };
+
+        OwnerCache::put($owner, 'one', 'value-one');
+        OwnerCache::put($owner, 'two', 'value-two');
+
+        expect(OwnerCache::get($owner, 'one'))->toBe('value-one');
+
+        OwnerCache::forgetOwner($owner);
+
+        expect(OwnerCache::version($owner))->toBe(2)
+            ->and(OwnerCache::get($owner, 'one'))->toBeNull()
+            ->and(OwnerCache::get($owner, 'two'))->toBeNull();
+    });
+
+    it('invalidates owner keys on a file store without tag support', function (): void {
+        $path = sys_get_temp_dir() . '/owner-cache-file-test-' . uniqid();
+
+        config()->set('cache.stores.owner-cache-file', [
+            'driver' => 'file',
+            'path' => $path,
+        ]);
+        config()->set('cache.default', 'owner-cache-file');
+
+        try {
+            $owner = new class implements OwnerScopeIdentifiable
+            {
+                public function getMorphClass(): string
+                {
+                    return 'store';
+                }
+
+                public function getKey(): mixed
+                {
+                    return 'store-file';
+                }
+            };
+
+            OwnerCache::put($owner, 'shared', 'value');
+
+            expect(OwnerCache::get($owner, 'shared'))->toBe('value');
+
+            OwnerCache::forgetOwner($owner);
+
+            expect(OwnerCache::get($owner, 'shared'))->toBeNull();
+        } finally {
+            (new Filesystem)->deleteDirectory($path);
+        }
     });
 });

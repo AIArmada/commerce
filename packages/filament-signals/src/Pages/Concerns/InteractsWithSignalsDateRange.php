@@ -10,6 +10,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Support\Icons\Heroicon;
+use Throwable;
 
 trait InteractsWithSignalsDateRange
 {
@@ -58,8 +59,19 @@ trait InteractsWithSignalsDateRange
                         ->searchable(),
                 ])
                 ->action(function (array $data): void {
-                    $this->dateFrom = CarbonImmutable::parse((string) $data['from'])->toDateString();
-                    $this->dateTo = CarbonImmutable::parse((string) $data['to'])->toDateString();
+                    try {
+                        $from = CarbonImmutable::parse((string) $data['from'])->toDateString();
+                        $to = CarbonImmutable::parse((string) $data['to'])->toDateString();
+                    } catch (Throwable) {
+                        // Forged filter payloads fall back to the current
+                        // (already sanitized) range instead of 500ing.
+                        $this->sanitizeSignalsFilterState();
+
+                        return;
+                    }
+
+                    $this->dateFrom = $from;
+                    $this->dateTo = $to;
                     $this->trackedPropertyId = is_string($data['tracked_property_id'] ?? null)
                         ? $data['tracked_property_id']
                         : '';
@@ -96,6 +108,9 @@ trait InteractsWithSignalsDateRange
     {
         $sanitizer = app(SignalsReportStateSanitizer::class);
 
+        $range = $sanitizer->sanitizeDateRange($this->dateFrom, $this->dateTo);
+        $this->dateFrom = $range['from'];
+        $this->dateTo = $range['to'];
         $this->trackedPropertyId = $sanitizer->sanitizeTrackedPropertyId($this->trackedPropertyId);
         $this->signalSegmentId = $sanitizer->sanitizeSignalSegmentId($this->signalSegmentId);
     }
@@ -110,5 +125,15 @@ trait InteractsWithSignalsDateRange
     {
         $this->signalSegmentId = app(SignalsReportStateSanitizer::class)
             ->sanitizeSignalSegmentId($this->signalSegmentId);
+    }
+
+    public function updatedDateFrom(): void
+    {
+        $this->sanitizeSignalsFilterState();
+    }
+
+    public function updatedDateTo(): void
+    {
+        $this->sanitizeSignalsFilterState();
     }
 }

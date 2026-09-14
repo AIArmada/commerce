@@ -12,9 +12,22 @@ use Illuminate\Support\Facades\Schema;
 final class OwnerScopedQuery
 {
     /**
-     * @var array<string, bool>
+     * Time-to-live for cached schema checks, in seconds.
+     */
+    private const COLUMN_CACHE_TTL_SECONDS = 60;
+
+    /**
+     * @var array<string, array{exists: bool, at: int}>
      */
     private static array $columnExistsCache = [];
+
+    /**
+     * Clear cached schema checks (e.g. between Octane requests).
+     */
+    public static function flushColumnCache(): void
+    {
+        self::$columnExistsCache = [];
+    }
 
     public static function apply(Builder $query, ?Model $owner = null, ?bool $includeGlobal = null): Builder
     {
@@ -76,7 +89,17 @@ final class OwnerScopedQuery
         $connection = $model->getConnectionName() ?? config('database.default');
         $cacheKey = "{$connection}:{$table}:{$column}";
 
-        return self::$columnExistsCache[$cacheKey] ??= Schema::connection($connection)->hasColumn($table, $column);
+        $cached = self::$columnExistsCache[$cacheKey] ?? null;
+
+        if (is_array($cached) && (time() - $cached['at']) < self::COLUMN_CACHE_TTL_SECONDS) {
+            return $cached['exists'];
+        }
+
+        $exists = Schema::connection($connection)->hasColumn($table, $column);
+
+        self::$columnExistsCache[$cacheKey] = ['exists' => $exists, 'at' => time()];
+
+        return $exists;
     }
 
     private static function applyViaBillableIdSubquery(Builder $query, string $foreignKey, Model $owner, bool $includeGlobal): Builder

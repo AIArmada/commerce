@@ -81,10 +81,13 @@ class PortalRegistration extends FilamentRegister
      */
     protected function handleRegistration(array $data): Model
     {
-        $userData = $data;
-        unset($userData['affiliate_name'], $userData['phone'], $userData['referral_code'], $userData['affiliate_code']);
-
-        $user = $this->getUserModel()::create($userData);
+        // Pick only the user attributes explicitly; the password arrives
+        // already hashed via the registration form's dehydrateStateUsing.
+        $user = $this->getUserModel()::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $data['password'],
+        ]);
 
         $this->createAffiliateForUser($user, $data);
 

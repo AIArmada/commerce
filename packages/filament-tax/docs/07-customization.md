@@ -380,6 +380,16 @@ public static function canCreate(): bool
 }
 ```
 
+### Enforced abilities
+
+The package registers policies for every tax model, so these Gate abilities gate resources, pages, table actions, and direct record URLs. Each record ability also requires the record to sit inside the current owner scope:
+
+- Zones: `tax.zones.view`, `tax.zones.create`, `tax.zones.update`, `tax.zones.delete`
+- Rates: `tax.rates.view`, `tax.rates.create`, `tax.rates.update`, `tax.rates.delete`
+- Classes: `tax.classes.view`, `tax.classes.create`, `tax.classes.update`, `tax.classes.delete`
+- Exemptions: `tax.exemptions.view`, `tax.exemptions.create`, `tax.exemptions.update`, `tax.exemptions.delete`, `tax.exemptions.approve`, `tax.exemptions.reject`, `tax.exemptions.renew`, `tax.exemptions.download`
+- Settings: `tax.settings.manage`
+
 ## Views Customization
 
 ### Publish Views

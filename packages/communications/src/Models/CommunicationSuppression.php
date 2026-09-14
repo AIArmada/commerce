@@ -46,7 +46,6 @@ final class CommunicationSuppression extends Model
     use HasUuids;
 
     protected $fillable = [
-        'recipient_type',
         'recipient_id',
         'destination_hash',
         'channel',
@@ -56,7 +55,6 @@ final class CommunicationSuppression extends Model
         'starts_at',
         'expires_at',
         'lifted_at',
-        'created_by_type',
         'created_by_id',
         'metadata',
     ];

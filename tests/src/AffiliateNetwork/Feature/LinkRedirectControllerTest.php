@@ -79,6 +79,24 @@ describe('affiliate network redirect route', function (): void {
             ->and($link->fresh()->clicks)->toBe(1);
     });
 
+    test('bot hits redirect without recording a click', function (): void {
+        $link = AffiliateOfferLink::factory()
+            ->forOffer($this->offer)
+            ->forAffiliate($this->affiliate)
+            ->create([
+                'code' => 'bot-link',
+                'target_url' => 'https://merchant.example/offers/spring',
+            ]);
+
+        $response = $this->get(
+            app(OfferLinkService::class)->generateTrackingUrl($link),
+            ['User-Agent' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'],
+        );
+
+        $response->assertRedirect();
+        expect($link->fresh()->clicks)->toBe(0);
+    });
+
     test('expired link returns gone without recording a click', function (): void {
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)

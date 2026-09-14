@@ -13,6 +13,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 final class PaymentMethodStore implements PaymentMethodStoreInterface
 {
@@ -26,10 +27,12 @@ final class PaymentMethodStore implements PaymentMethodStoreInterface
 
     public function findForBillable(Model $billable, string $recurringToken): ?StoredPaymentMethod
     {
+        // Tokens are encrypted at rest with a random IV, so ciphertext cannot
+        // be matched in SQL; compare decrypted values after fetching.
         /** @var StoredPaymentMethod|null $paymentMethod */
-        $paymentMethod = $this->queryForBillable($billable)
-            ->where('recurring_token', $recurringToken)
-            ->first();
+        $paymentMethod = $this->queryForBillable($billable)->get()->first(
+            fn (StoredPaymentMethod $paymentMethod): bool => $this->tokenMatches($paymentMethod, $recurringToken)
+        );
 
         return $paymentMethod;
     }
@@ -39,15 +42,6 @@ final class PaymentMethodStore implements PaymentMethodStoreInterface
         /** @var StoredPaymentMethod|null $paymentMethod */
         $paymentMethod = $this->queryForBillable($billable)
             ->where('is_default', true)
-            ->first();
-
-        if ($paymentMethod !== null) {
-            return $paymentMethod;
-        }
-
-        /** @var StoredPaymentMethod|null $paymentMethod */
-        $paymentMethod = $this->queryForBillable($billable)
-            ->orderByDesc('created_at')
             ->first();
 
         return $paymentMethod;
@@ -66,57 +60,61 @@ final class PaymentMethodStore implements PaymentMethodStoreInterface
     ): StoredPaymentMethod {
         $this->assertBillableWriteAllowed($billable);
 
-        $paymentMethod = $this->findForBillable($billable, $recurringToken);
+        return DB::transaction(function () use ($billable, $recurringToken, $attributes, $makeDefault): StoredPaymentMethod {
+            $paymentMethod = $this->findForBillable($billable, $recurringToken);
 
-        if ($paymentMethod === null) {
-            if ($this->findAnyForBillable($billable, $recurringToken) !== null) {
-                throw new AuthorizationException('Payment method is not accessible for the current owner context.');
+            if ($paymentMethod === null) {
+                if ($this->findAnyForBillable($billable, $recurringToken) !== null) {
+                    throw new AuthorizationException('Payment method is not accessible for the current owner context.');
+                }
+
+                $paymentMethod = new StoredPaymentMethod;
             }
 
-            $paymentMethod = new StoredPaymentMethod;
-        }
+            $paymentMethod->billable()->associate($billable);
+            $paymentMethod->recurring_token = $recurringToken;
+            $paymentMethod->type = $attributes['type'] ?? $paymentMethod->type;
+            $paymentMethod->brand = $attributes['brand'] ?? $paymentMethod->brand;
+            $paymentMethod->last_four = $attributes['last_four'] ?? $paymentMethod->last_four;
+            $paymentMethod->metadata = $attributes['metadata'] ?? $paymentMethod->metadata;
 
-        $paymentMethod->billable()->associate($billable);
-        $paymentMethod->recurring_token = $recurringToken;
-        $paymentMethod->type = $attributes['type'] ?? $paymentMethod->type;
-        $paymentMethod->brand = $attributes['brand'] ?? $paymentMethod->brand;
-        $paymentMethod->last_four = $attributes['last_four'] ?? $paymentMethod->last_four;
-        $paymentMethod->metadata = $attributes['metadata'] ?? $paymentMethod->metadata;
+            $shouldSetDefault = $makeDefault || ! $this->queryForBillable($billable)->lockForUpdate()->where('is_default', true)->exists();
 
-        $shouldSetDefault = $makeDefault || ! $this->queryForBillable($billable)->where('is_default', true)->exists();
+            if ($shouldSetDefault) {
+                $this->queryForBillable($billable)->update(['is_default' => false]);
+                $paymentMethod->is_default = true;
+            } else {
+                $paymentMethod->is_default ??= false;
+            }
 
-        if ($shouldSetDefault) {
-            $this->queryForBillable($billable)->update(['is_default' => false]);
-            $paymentMethod->is_default = true;
-        } else {
-            $paymentMethod->is_default ??= false;
-        }
+            $paymentMethod->save();
 
-        $paymentMethod->save();
-
-        return $paymentMethod->refresh();
+            return $paymentMethod->refresh();
+        });
     }
 
     public function setDefaultForBillable(Model $billable, string $recurringToken): ?StoredPaymentMethod
     {
         $this->assertBillableWriteAllowed($billable);
 
-        $paymentMethod = $this->findForBillable($billable, $recurringToken);
+        return DB::transaction(function () use ($billable, $recurringToken): ?StoredPaymentMethod {
+            $paymentMethod = $this->findForBillable($billable, $recurringToken);
 
-        if ($paymentMethod === null) {
-            if ($this->findAnyForBillable($billable, $recurringToken) !== null) {
-                throw new AuthorizationException('Payment method is not accessible for the current owner context.');
+            if ($paymentMethod === null) {
+                if ($this->findAnyForBillable($billable, $recurringToken) !== null) {
+                    throw new AuthorizationException('Payment method is not accessible for the current owner context.');
+                }
+
+                return null;
             }
 
-            return null;
-        }
+            $this->queryForBillable($billable)->lockForUpdate()->update(['is_default' => false]);
 
-        $this->queryForBillable($billable)->update(['is_default' => false]);
+            $paymentMethod->is_default = true;
+            $paymentMethod->save();
 
-        $paymentMethod->is_default = true;
-        $paymentMethod->save();
-
-        return $paymentMethod->refresh();
+            return $paymentMethod->refresh();
+        });
     }
 
     public function deleteForBillable(Model $billable, string $recurringToken): void
@@ -175,10 +173,21 @@ final class PaymentMethodStore implements PaymentMethodStoreInterface
             ->withoutOwnerScope()
             ->where('billable_type', $billable->getMorphClass())
             ->where('billable_id', (string) $billable->getKey())
-            ->where('recurring_token', $recurringToken)
-            ->first();
+            ->get()
+            ->first(fn (StoredPaymentMethod $paymentMethod): bool => $this->tokenMatches($paymentMethod, $recurringToken));
 
         return $paymentMethod;
+    }
+
+    private function tokenMatches(StoredPaymentMethod $paymentMethod, string $recurringToken): bool
+    {
+        $stored = $paymentMethod->recurring_token;
+
+        if (! is_string($stored) || $stored === '' || $recurringToken === '') {
+            return false;
+        }
+
+        return hash_equals($stored, $recurringToken);
     }
 
     private function assertBillableWriteAllowed(Model $billable): void

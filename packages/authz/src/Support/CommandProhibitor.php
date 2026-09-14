@@ -39,10 +39,20 @@ final class CommandProhibitor
             SuperAdminCommand::class,
             SyncAuthzCommand::class,
         ]);
+    }
+
+    /**
+     * Reset prohibition state. Intended for tests; production sets this once
+     * at config time. Registrations are kept: sibling packages register at
+     * boot, and dropping them here would silently unprotect their commands.
+     */
+    public static function reset(): void
+    {
+        self::$prohibited = false;
 
         foreach (array_keys(self::$commands) as $command) {
             if (is_callable([$command, 'prohibit'])) {
-                $command::prohibit($prohibit);
+                $command::prohibit(false);
             }
         }
     }

@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Support\ModelResolver;
 use Closure;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use LogicException;
@@ -29,8 +34,10 @@ final class EventRegistrationImporter extends Importer
         return [
             ImportColumn::make('event_id')
                 ->requiredMapping()
+                ->rules(['required', 'uuid'])
                 ->label('Event ID'),
             ImportColumn::make('event_occurrence_id')
+                ->rules(['nullable', 'uuid'])
                 ->label('Occurrence ID'),
             ImportColumn::make('registration_type')
                 ->requiredMapping()
@@ -86,6 +93,8 @@ final class EventRegistrationImporter extends Importer
 
     protected function beforeCreate(): void
     {
+        $this->assertEventScope($this->data['event_id'] ?? null, $this->data['event_occurrence_id'] ?? null);
+
         $record = $this->record;
         $status = $this->data['status'] ?? null;
 
@@ -100,6 +109,42 @@ final class EventRegistrationImporter extends Importer
         } catch (InvalidArgumentException | LogicException $exception) {
             throw ValidationException::withMessages([
                 'status' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function assertEventScope(mixed $eventId, mixed $occurrenceId): void
+    {
+        if (! is_string($eventId) || mb_trim($eventId) === '') {
+            throw ValidationException::withMessages([
+                'event_id' => 'The selected event does not exist in the current scope.',
+            ]);
+        }
+
+        try {
+            if (method_exists(Event::class, 'ownerScopeConfig') && ! Event::ownerScopeConfig()->enabled) {
+                $event = Event::query()->findOrFail($eventId);
+            } else {
+                $event = OwnerWriteGuard::findOrFailForOwner(Event::class, $eventId);
+            }
+        } catch (AuthorizationException | ModelNotFoundException) {
+            throw ValidationException::withMessages([
+                'event_id' => 'The selected event does not exist in the current scope.',
+            ]);
+        }
+
+        if ($occurrenceId === null || $occurrenceId === '') {
+            return;
+        }
+
+        $belongsToEvent = EventOccurrence::query()
+            ->whereKey($occurrenceId)
+            ->where('event_id', $event->getKey())
+            ->exists();
+
+        if (! $belongsToEvent) {
+            throw ValidationException::withMessages([
+                'event_occurrence_id' => 'The selected occurrence does not belong to the selected event.',
             ]);
         }
     }

@@ -24,6 +24,7 @@ use Filament\Schemas\Components\Utilities\Set as SetFormState;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Unique;
 
 final class TaxExemptionForm
 {
@@ -58,6 +59,7 @@ final class TaxExemptionForm
 
                                         /** @var Builder<Model> $query */
                                         $query = $type::query();
+                                        $query = OwnerUiScope::apply($query, includeGlobal: false);
                                         $operator = match (ConnectionDriver::name($query->getConnection())) {
                                             'pgsql' => 'ilike',
                                             default => 'like',
@@ -67,8 +69,9 @@ final class TaxExemptionForm
                                             return $query
                                                 ->where(function (Builder $builder) use ($search, $operator): void {
                                                     $builder
-                                                        ->where('full_name', $operator, "%{$search}%")
-                                                        ->orWhere('email', $operator, "%{$search}%");
+                                                        ->where('first_name', $operator, "%{$search}%")
+                                                        ->orWhere('last_name', $operator, "%{$search}%")
+                                                        ->orWhere('company', $operator, "%{$search}%");
                                                 })
                                                 ->limit(50)
                                                 ->get()
@@ -108,6 +111,7 @@ final class TaxExemptionForm
 
                                         /** @var Builder<Model> $query */
                                         $query = $type::query();
+                                        $query = OwnerUiScope::apply($query, includeGlobal: false);
 
                                         $record = $query->whereKey($value)->first();
 
@@ -141,7 +145,19 @@ final class TaxExemptionForm
                                 TextInput::make('certificate_number')
                                     ->label('Certificate Number')
                                     ->maxLength(100)
-                                    ->unique(ignoreRecord: true),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule): Unique {
+                                        $owner = OwnerUiScope::resolveOwner(TaxExemption::class);
+
+                                        if ($owner !== null) {
+                                            return $rule
+                                                ->where('owner_type', $owner->getMorphClass())
+                                                ->where('owner_id', $owner->getKey());
+                                        }
+
+                                        return $rule
+                                            ->whereNull('owner_type')
+                                            ->whereNull('owner_id');
+                                    }),
 
                                 FileUpload::make('document_path')
                                     ->label('Certificate Document')

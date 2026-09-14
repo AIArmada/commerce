@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Models\DocSequence;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use BackedEnum;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -48,27 +48,27 @@ final class DocSequenceResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return FilamentPermission::hasAbility('purchase.viewAny');
+        return DocPermissions::allows(DocPermissions::DOCUMENT_SEQUENCE, 'viewAny');
     }
 
     public static function canView(Model $record): bool
     {
-        return FilamentPermission::hasAbility('purchase.view');
+        return DocPermissions::allows(DocPermissions::DOCUMENT_SEQUENCE, 'view');
     }
 
     public static function canCreate(): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.create', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT_SEQUENCE, 'create');
     }
 
     public static function canEdit(Model $record): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.update', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT_SEQUENCE, 'update');
     }
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.delete', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT_SEQUENCE, 'delete');
     }
 
     public static function shouldRegisterNavigation(): bool

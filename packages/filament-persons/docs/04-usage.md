@@ -21,6 +21,25 @@ The resource form and table surfaces use the domain relationships supplied by
 `aiarmada/persons`. Configure morph aliases and optional country resolution in
 the domain package rather than in this adapter.
 
+Title and credential assignments share one form between create and edit:
+expiry must fall on or after the awarded/obtained date, and duplicates are
+rejected with a validation error. Affiliation institutions resolve from
+`persons.models.institution` when configured (owner-aware when the institution
+model is owner-scoped).
+
+## Authorization
+
+Every resource gates access through `FilamentPermission` abilities:
+
+| Resource | Ability prefix |
+|----------|----------------|
+| Persons | `person.*` |
+| Titles | `title.*` |
+| Title issuers | `title-issuer.*` |
+| Credential definitions | `credential-definition.*` |
+
+Each prefix supports `viewAny`, `view`, `create`, `update`, and `delete`.
+
 ## Disabling a resource
 
 Disable a resource in `config/filament-persons.php`, then clear cached panel

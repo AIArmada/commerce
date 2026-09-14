@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Pages;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Schemas\SegmentForm;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Tables\SegmentsTable;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -38,9 +40,16 @@ class SegmentResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = OwnerUiScope::apply(static::getModel()::query(), includeGlobal: false)
-            ->whereNull('deactivated_at')
-            ->count();
+        $count = OwnerCache::remember(
+            OwnerUiScope::resolveOwner(Segment::class),
+            'filament-customers.nav-badge.active-segments',
+            CarbonImmutable::now()->addSeconds(30),
+            function (): int {
+                return OwnerUiScope::apply(static::getModel()::query(), includeGlobal: false)
+                    ->whereNull('deactivated_at')
+                    ->count();
+            },
+        );
 
         return $count > 0 ? (string) $count : null;
     }

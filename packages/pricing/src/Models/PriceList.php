@@ -152,6 +152,24 @@ class PriceList extends Model implements Auditable
     // HELPERS
     // =========================================================================
 
+    /**
+     * Single transition helper: keeps is_active and deactivated_at in sync.
+     */
+    public function activate(): void
+    {
+        $this->is_active = true;
+        $this->deactivated_at = null;
+    }
+
+    /**
+     * Single transition helper: keeps is_active and deactivated_at in sync.
+     */
+    public function deactivate(): void
+    {
+        $this->is_active = false;
+        $this->deactivated_at ??= CarbonImmutable::now();
+    }
+
     public function isActive(): bool
     {
         if (! $this->is_active || $this->deactivated_at !== null) {

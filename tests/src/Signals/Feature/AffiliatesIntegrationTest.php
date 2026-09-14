@@ -126,9 +126,11 @@ it('records an affiliate attributed signal for the matching owner property', fun
         'commission_type' => CommissionType::Percentage->value,
         'commission_rate' => 1000,
         'currency' => 'MYR',
+    ]);
+    $affiliate->forceFill([
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => $owner->getKey(),
-    ]);
+    ])->save();
 
     $attribution = AffiliateAttribution::query()->create([
         'affiliate_id' => $affiliate->getKey(),
@@ -147,10 +149,12 @@ it('records an affiliate attributed signal for the matching owner property', fun
         'landing_url' => '/events/ramadan-series',
         'referrer_url' => 'https://wa.me/community',
         'user_id' => $owner->getKey(),
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => $owner->getKey(),
         'last_seen_at' => now(),
     ]);
+    $attribution->forceFill([
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
+    ])->save();
 
     Event::dispatch(new AffiliateAttributed(
         AffiliateData::fromModel($affiliate),
@@ -215,9 +219,11 @@ it('records an affiliate conversion signal for the matching owner property', fun
         'commission_type' => CommissionType::Percentage->value,
         'commission_rate' => 800,
         'currency' => 'MYR',
+    ]);
+    $affiliate->forceFill([
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => $owner->getKey(),
-    ]);
+    ])->save();
 
     $attribution = AffiliateAttribution::query()->create([
         'affiliate_id' => $affiliate->getKey(),
@@ -234,10 +240,12 @@ it('records an affiliate conversion signal for the matching owner property', fun
         'landing_url' => '/events/weekly-tafsir',
         'referrer_url' => 'https://t.me/majlis',
         'user_id' => $owner->getKey(),
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => $owner->getKey(),
         'last_seen_at' => now(),
     ]);
+    $attribution->forceFill([
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
+    ])->save();
 
     $conversion = AffiliateConversion::query()->create([
         'affiliate_id' => $affiliate->getKey(),
@@ -254,10 +262,12 @@ it('records an affiliate conversion signal for the matching owner property', fun
         'commission_currency' => 'MYR',
         'status' => ApprovedConversion::class,
         'channel' => 'share',
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => $owner->getKey(),
         'occurred_at' => now(),
     ]);
+    $conversion->forceFill([
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
+    ])->save();
 
     Event::dispatch(new AffiliateConversionRecorded(
         AffiliateConversionData::fromModel($conversion),
@@ -328,9 +338,11 @@ it('ignores forged affiliate events that target another owner model id', functio
         'commission_type' => CommissionType::Percentage->value,
         'commission_rate' => 1000,
         'currency' => 'MYR',
+    ]);
+    $affiliateA->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
-    ]);
+    ])->save();
 
     $affiliateB = Affiliate::query()->create([
         'code' => 'OWNER-B-AFF',
@@ -339,9 +351,11 @@ it('ignores forged affiliate events that target another owner model id', functio
         'commission_type' => CommissionType::Percentage->value,
         'commission_rate' => 1000,
         'currency' => 'MYR',
+    ]);
+    $affiliateB->forceFill([
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
-    ]);
+    ])->save();
 
     $targetAttribution = AffiliateAttribution::query()->create([
         'affiliate_id' => $affiliateA->getKey(),
@@ -350,9 +364,11 @@ it('ignores forged affiliate events that target another owner model id', functio
         'subject_instance' => 'share',
         'cart_identifier' => 'share-a',
         'cart_instance' => 'share',
+    ]);
+    $targetAttribution->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
-    ]);
+    ])->save();
 
     Event::dispatch(new AffiliateAttributed(
         AffiliateData::fromModel($affiliateB),
@@ -369,18 +385,22 @@ it('ignores forged affiliate events that target another owner model id', functio
         ),
     ));
 
+    $mismatchedConversion = AffiliateConversion::query()->create([
+        'affiliate_id' => $affiliateA->getKey(),
+        'affiliate_code' => $affiliateA->code,
+        'affiliate_attribution_id' => $targetAttribution->getKey(),
+        'subject_key' => 'event:owner-a',
+        'subject_instance' => 'share',
+        'commission_currency' => 'MYR',
+    ]);
+    $mismatchedConversion->forceFill([
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => $ownerA->getKey(),
+    ])->save();
+
     Event::dispatch(new AffiliateConversionRecorded(
         new AffiliateConversionData(
-            id: AffiliateConversion::query()->create([
-                'affiliate_id' => $affiliateA->getKey(),
-                'affiliate_code' => $affiliateA->code,
-                'affiliate_attribution_id' => $targetAttribution->getKey(),
-                'subject_key' => 'event:owner-a',
-                'subject_instance' => 'share',
-                'owner_type' => $ownerA->getMorphClass(),
-                'owner_id' => $ownerA->getKey(),
-                'commission_currency' => 'MYR',
-            ])->id,
+            id: $mismatchedConversion->id,
             affiliateId: $affiliateB->id,
             affiliateCode: $affiliateB->code,
             subjectKey: 'event:owner-b',

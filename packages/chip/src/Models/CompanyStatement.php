@@ -23,6 +23,25 @@ class CompanyStatement extends ChipModel
 {
     public $timestamps = true;
 
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'id',
+        'type',
+        'format',
+        'timezone',
+        'is_test',
+        'company_uid',
+        'query_string',
+        'status',
+        'download_url',
+        'began_on',
+        'finished_on',
+        'created_on',
+        'updated_on',
+    ];
+
     public function createdOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['created_on'] ?? null));

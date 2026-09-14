@@ -39,7 +39,6 @@ final class EventItinerary extends Model
 
     protected $fillable = [
         'event_id', 'event_occurrence_id',
-        'owner_type', 'owner_id',
         'name', 'itinerary_type',
         'visibility', 'status',
         'metadata',
@@ -48,6 +47,17 @@ final class EventItinerary extends Model
     public function getTable(): string
     {
         return config('events.database.tables.event_itineraries', 'event_itineraries');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (EventItinerary $itinerary): void {
+            $itinerary->items()->chunkById(200, function ($items): void {
+                foreach ($items as $item) {
+                    $item->delete();
+                }
+            });
+        });
     }
 
     protected function casts(): array

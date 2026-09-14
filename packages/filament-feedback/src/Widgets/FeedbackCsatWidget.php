@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Widgets;
 
-use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
+use AIArmada\FilamentFeedback\Support\FeedbackDashboardMemo;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -12,7 +12,7 @@ final class FeedbackCsatWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $csat = app(FeedbackAnalyticsService::class)->dashboard()['csat'];
+        $csat = app(FeedbackDashboardMemo::class)->dashboard()['csat'];
 
         return [
             Stat::make('CSAT', $csat->score !== null

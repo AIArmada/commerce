@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Pages\Portal;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentAffiliates\Concerns\PortalPage;
@@ -138,9 +139,18 @@ class PortalPrograms extends PortalPage
 
         $programService = app(ProgramService::class);
 
-        $programs = $programService->getAvailablePrograms()
-            ->map(function (AffiliateProgram $program) use ($affiliate, $programService): array {
-                $membership = $programService->getMembership($affiliate, $program);
+        $availablePrograms = $programService->getAvailablePrograms();
+
+        $memberships = AffiliateProgramMembership::query()
+            ->where('affiliate_id', $affiliate->getKey())
+            ->whereIn('program_id', $availablePrograms->map(fn (AffiliateProgram $program): string => (string) $program->getKey())->all())
+            ->with(['tier'])
+            ->get()
+            ->keyBy(fn (AffiliateProgramMembership $membership): string => (string) $membership->program_id);
+
+        $programs = $availablePrograms
+            ->map(function (AffiliateProgram $program) use ($affiliate, $memberships): array {
+                $membership = $memberships->get((string) $program->getKey());
                 $isJoined = $membership?->status === MembershipStatus::Approved;
                 $isPending = $membership?->status === MembershipStatus::Pending;
 

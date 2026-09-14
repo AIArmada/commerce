@@ -20,7 +20,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->uuidMorphs('billable');
-            $table->string('recurring_token');
+            $table->text('recurring_token');
             $table->string('type')->nullable();
             $table->string('brand')->nullable();
             $table->string('last_four', 4)->nullable();
@@ -28,9 +28,7 @@ return new class extends Migration
             $table->{$jsonColumnType}('metadata')->nullable();
             $table->timestampsTz();
 
-            $table->unique(['billable_type', 'billable_id', 'recurring_token'], $tableName . '_billable_token_unique');
             $table->index(['billable_type', 'billable_id', 'is_default'], $tableName . '_billable_default_idx');
-            $table->index('recurring_token');
         });
     }
 

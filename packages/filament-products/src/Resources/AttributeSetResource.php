@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentProducts\Resources\AttributeSetResource\Pages;
 use AIArmada\FilamentProducts\Resources\AttributeSetResource\Schemas\AttributeSetForm;
 use AIArmada\FilamentProducts\Resources\AttributeSetResource\Tables\AttributeSetsTable;
@@ -12,6 +13,7 @@ use BackedEnum;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 final class AttributeSetResource extends BaseAttributeResource
 {
@@ -31,8 +33,7 @@ final class AttributeSetResource extends BaseAttributeResource
      */
     public static function getEloquentQuery(): Builder
     {
-        return AttributeSet::query()
-            ->forOwner();
+        return parent::getEloquentQuery();
     }
 
     public static function getNavigationLabel(): string
@@ -48,6 +49,36 @@ final class AttributeSetResource extends BaseAttributeResource
     public static function getPluralModelLabel(): string
     {
         return __('filament-products::resources.attribute_sets.plural_model_label');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('attribute-set.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('attribute-set.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('attribute-set.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('attribute-set.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('attribute-set.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function form(Schema $schema): Schema

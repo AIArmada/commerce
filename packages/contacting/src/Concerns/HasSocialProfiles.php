@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Concerns;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Actions\CreateSocialProfileAction;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Models\SocialProfile;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -18,7 +20,19 @@ trait HasSocialProfiles
     {
         static::deleting(function (Model $model): void {
             /** @phpstan-ignore-next-line dynamic relationship from trait */
-            $model->socialProfiles()->delete();
+            $model->socialProfiles()->withoutOwnerScope()->chunkById(100, function (Collection $socialProfiles): void {
+                foreach ($socialProfiles as $socialProfile) {
+                    $owner = $socialProfile->getRelationValue('owner');
+
+                    if ($owner === null && $socialProfile->getAttribute('owner_type') !== null) {
+                        $owner = $socialProfile->owner;
+                    }
+
+                    OwnerContext::withOwner($owner instanceof Model ? $owner : null, function () use ($socialProfile): void {
+                        $socialProfile->delete();
+                    });
+                }
+            });
         });
     }
 

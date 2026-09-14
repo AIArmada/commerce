@@ -10,8 +10,16 @@ use Illuminate\Database\Eloquent\Model;
 uses(MembershipTestCase::class);
 
 it('does not invoke the owner guard for an explicitly unscoped subject', function (): void {
-    expect(fn (): mixed => (new MembershipSubjectGuard)->validate(new MembershipSubjectGuardUnscopedSubject))
-        ->not->toThrow(Throwable::class);
+    // Explicit try/catch: not->toThrow(Throwable::class) is vacuous on interfaces.
+    $thrown = null;
+
+    try {
+        (new MembershipSubjectGuard)->validate(new MembershipSubjectGuardUnscopedSubject);
+    } catch (Throwable $e) {
+        $thrown = $e;
+    }
+
+    expect($thrown)->toBeNull();
 });
 
 final class MembershipSubjectGuardUnscopedSubject extends Model

@@ -79,7 +79,6 @@ final class CustomerForm
                                             ->where('is_automatic', false),
                                     )
                                     ->multiple()
-                                    ->preload()
                                     ->searchable()
                                     ->helperText('Manual segment assignment')
                                     ->saveRelationshipsUsing(function (Customer $record, ?array $state): void {

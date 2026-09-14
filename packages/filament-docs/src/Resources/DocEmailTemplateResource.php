@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\FilamentDocs\Support\DocPermissions;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -19,6 +19,7 @@ use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -33,7 +34,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
@@ -53,27 +53,27 @@ final class DocEmailTemplateResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return FilamentPermission::hasAbility('purchase.viewAny');
+        return DocPermissions::allows(DocPermissions::DOCUMENT_EMAIL_TEMPLATE, 'viewAny');
     }
 
     public static function canView(Model $record): bool
     {
-        return FilamentPermission::hasAbility('purchase.view');
+        return DocPermissions::allows(DocPermissions::DOCUMENT_EMAIL_TEMPLATE, 'view');
     }
 
     public static function canCreate(): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.create', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT_EMAIL_TEMPLATE, 'create');
     }
 
     public static function canEdit(Model $record): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.update', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT_EMAIL_TEMPLATE, 'update');
     }
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAnyAbility(['purchase.delete', 'purchase.viewAny']);
+        return DocPermissions::allows(DocPermissions::DOCUMENT_EMAIL_TEMPLATE, 'delete');
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -96,9 +96,7 @@ final class DocEmailTemplateResource extends Resource
                                 TextInput::make('slug')
                                     ->required()
                                     ->maxLength(255)
-                                    ->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule): Unique {
-                                        return self::scopeUniqueRuleToOwner($rule);
-                                    }),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => DocsOwnerScope::scopeUniqueRuleToOwner($rule)),
 
                                 Select::make('doc_type')
                                     ->label('Document Type')
@@ -209,12 +207,7 @@ final class DocEmailTemplateResource extends Resource
                 EditAction::make(),
                 Action::make('duplicate')
                     ->icon('heroicon-o-document-duplicate')
-                    ->action(function (DocEmailTemplate $record): void {
-                        $new = $record->replicate();
-                        $new->name = $record->name . ' (Copy)';
-                        $new->slug = $record->slug . '-copy-' . CarbonImmutable::now()->timestamp;
-                        $new->save();
-                    }),
+                    ->action(fn (DocEmailTemplate $record): DocEmailTemplate => self::duplicateTemplate($record)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -268,37 +261,34 @@ final class DocEmailTemplateResource extends Resource
         return OwnerUiScope::apply($query, includeGlobal: false);
     }
 
-    private static function scopeUniqueRuleToOwner(Unique $rule): Unique
+    public static function duplicateTemplate(DocEmailTemplate $record): DocEmailTemplate
     {
-        if (! (bool) config('docs.owner.enabled', false)) {
-            return $rule;
+        DocsOwnerScope::assertCanAccessRecord($record, 'Email template not found.');
+
+        $copy = $record->replicate();
+        $copy->name = $record->name . ' (Copy)';
+        $copy->slug = self::uniqueDuplicateSlug($record->slug);
+        $copy->save();
+
+        Notification::make()
+            ->title('Email template duplicated')
+            ->success()
+            ->send();
+
+        return $copy;
+    }
+
+    private static function uniqueDuplicateSlug(string $slug): string
+    {
+        $base = $slug . '-copy-' . CarbonImmutable::now()->timestamp;
+        $candidate = $base;
+
+        // The database unique is effectively global (see docs package follow-up),
+        // so probe every scope before saving.
+        for ($i = 2; DocEmailTemplate::query()->withoutOwnerScope()->where('slug', $candidate)->exists(); $i++) {
+            $candidate = $base . '-' . $i;
         }
 
-        $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('docs.owner.include_global', false);
-
-        if ($owner instanceof Model) {
-            if ($includeGlobal) {
-                return $rule->where(function (Builder $query) use ($owner): void {
-                    $query
-                        ->where(function (Builder $ownerQuery) use ($owner): void {
-                            $ownerQuery
-                                ->where('owner_type', $owner->getMorphClass())
-                                ->where('owner_id', (string) $owner->getKey());
-                        })
-                        ->orWhere(function (Builder $globalQuery): void {
-                            $globalQuery->whereNull('owner_type')->whereNull('owner_id');
-                        });
-                });
-            }
-
-            return $rule
-                ->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', (string) $owner->getKey());
-        }
-
-        return $rule
-            ->whereNull('owner_type')
-            ->whereNull('owner_id');
+        return $candidate;
     }
 }

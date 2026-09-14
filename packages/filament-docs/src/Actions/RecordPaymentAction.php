@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocPaymentRecorder;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -20,6 +22,11 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Component;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
+use Throwable;
 
 /**
  * Action to record a payment against a document.
@@ -49,7 +56,7 @@ final class RecordPaymentAction
 
     private static function getTotalPaid(Doc $record): int
     {
-        return (int) $record->payments()->sum('amount_minor');
+        return (int) $record->payments()->where('status', DocPaymentStatus::Paid->value)->sum('amount_minor');
     }
 
     /**
@@ -103,16 +110,38 @@ final class RecordPaymentAction
      */
     private static function recordPayment(Doc $record, array $data): void
     {
+        DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
+
         $amountMinor = (int) $data['amount_minor'];
 
-        app(DocPaymentRecorder::class)->record($record, [
-            'amount_minor' => $amountMinor,
-            'currency' => $record->currency,
-            'payment_method' => $data['payment_method'],
-            'reference' => $data['reference'] ?? null,
-            'paid_at' => $data['paid_at'],
-            'notes' => $data['notes'] ?? null,
-        ]);
+        try {
+            app(DocPaymentRecorder::class)->record($record, [
+                'amount_minor' => $amountMinor,
+                'currency' => $record->currency,
+                'payment_method' => $data['payment_method'],
+                'reference' => $data['reference'] ?? null,
+                'paid_at' => $data['paid_at'],
+                'notes' => $data['notes'] ?? null,
+            ]);
+        } catch (InvalidArgumentException | ModelNotFoundException $exception) {
+            throw ValidationException::withMessages([
+                'amount_minor' => $exception->getMessage(),
+            ]);
+        } catch (Throwable $exception) {
+            Log::warning('Filament docs record payment action failed.', [
+                'doc_id' => $record->getKey(),
+                'amount_minor' => $amountMinor,
+                'error' => $exception->getMessage(),
+            ]);
+
+            Notification::make()
+                ->title(__('Payment Failed'))
+                ->body(__('The payment could not be recorded. Please try again.'))
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         Notification::make()
             ->title('Payment Recorded')

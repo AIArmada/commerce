@@ -19,7 +19,7 @@ class ReleaseExpiredHoldsCommand extends Command
 
     public function handle(): int
     {
-        $chunk = (int) $this->option('chunk');
+        $chunk = max(1, min(5000, (int) $this->option('chunk')));
 
         $released = OwnerContext::withOwner(null, fn (): int => (int) (new OwnerBatchRunner(
             SeatHold::class,

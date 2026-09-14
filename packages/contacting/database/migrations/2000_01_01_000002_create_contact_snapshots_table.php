@@ -43,6 +43,7 @@ return new class extends Migration
             $table->index(['channel']);
             $table->index(['reason']);
             $table->index(['is_public']);
+            $table->index(['source_type', 'source_id']);
         });
     }
 };

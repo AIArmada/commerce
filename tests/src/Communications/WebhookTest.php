@@ -289,13 +289,16 @@ test('process webhook job restores owner context before applying the event', fun
     ]);
 
     $communication = OwnerContext::withOwner($owner, function (): Communication {
-        return Communication::create([
+        $ownedCommunication = (new Communication)->forceFill([
             'direction' => CommunicationDirection::Outbound,
             'category' => CommunicationCategory::Transactional,
             'priority' => CommunicationPriority::Normal,
             'purpose' => 'webhook-owner-test',
             'status' => CommunicationStatus::Draft,
         ]);
+        $ownedCommunication->save();
+
+        return $ownedCommunication;
     });
 
     $recipient = OwnerContext::withOwner($owner, function () use ($communication): CommunicationRecipient {
@@ -306,7 +309,7 @@ test('process webhook job restores owner context before applying the event', fun
     });
 
     $delivery = OwnerContext::withOwner($owner, function () use ($communication, $recipient): CommunicationDelivery {
-        return CommunicationDelivery::create([
+        $ownedDelivery = (new CommunicationDelivery)->forceFill([
             'communication_id' => $communication->id,
             'recipient_id' => $recipient->id,
             'channel' => 'mail',
@@ -315,6 +318,9 @@ test('process webhook job restores owner context before applying the event', fun
             'attempt_count' => 0,
             'max_attempts' => 3,
         ]);
+        $ownedDelivery->save();
+
+        return $ownedDelivery;
     });
 
     $job = new ProcessWebhookEventJob(

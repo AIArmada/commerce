@@ -31,10 +31,6 @@ return new class extends Migration
             $table->index('visibility');
         });
 
-        if (! app()->environment(['local', 'development', 'testing'])) {
-            return;
-        }
-
         ProductIdentityIndexes::owner($tableName, 'code');
     }
 

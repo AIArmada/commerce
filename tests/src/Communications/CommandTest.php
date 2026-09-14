@@ -39,14 +39,14 @@ test('prune-inboxes command runs without error', function (): void {
 });
 
 test('expire command runs without error', function (): void {
-    Communication::create([
+    (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'expire-test',
         'status' => CommunicationStatus::Scheduled,
         'expires_at' => now()->subDay(),
-    ]);
+    ])->save();
 
     $exitCode = Artisan::call('communications:expire');
     expect($exitCode)->toBe(0);
@@ -89,15 +89,16 @@ test('prune-inboxes command reports archived inbox entries in dry-run mode', fun
         'password' => 'secret',
     ]);
 
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Internal,
         'category' => CommunicationCategory::Internal,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'prune-inboxes-test',
         'status' => CommunicationStatus::Completed,
     ]);
+    $communication->save();
 
-    NotificationInbox::create([
+    (new NotificationInbox)->forceFill([
         'recipient_type' => $user::class,
         'recipient_id' => $user->id,
         'communication_id' => $communication->id,
@@ -106,7 +107,7 @@ test('prune-inboxes command reports archived inbox entries in dry-run mode', fun
         'trigger' => NotificationTrigger::SystemAlert,
         'title' => 'Archived Inbox',
         'archived_at' => now()->subDays(100),
-    ]);
+    ])->save();
 
     $exitCode = Artisan::call('communications:prune-inboxes', ['--dry-run' => true]);
 

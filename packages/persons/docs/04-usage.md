@@ -47,6 +47,9 @@ $title = app(ReorderTitleAction::class)->create([
 - `bio` accepts a locale map (`['en' => '...']`) or a list of `locale`/`text` entries; anything else throws `InvalidArgumentException`.
 - `TitleIssuer` with type government/university requires an `institution_id`.
 - `AssignTitleAction`/`AssignCredentialAction` are idempotent: re-assigning the same title/credential returns the existing assignment (`CreatePersonAction` always creates).
+- `CreatePersonAction` validates input: `name` is required (1–255 chars), `family_name`/`middle_name` cap at 100 chars, and `gender`/`status`/`slug` must be valid when present.
+- Title and credential assignments carry database unique indexes on their `(assignable_type, assignable_id, definition_id)` tuples; concurrent double-assigns resolve to the existing row instead of duplicating.
+- `Person::withFormattedName()` eager-loads the title graph behind `formatted_name`; use it in lists to avoid one query per person. The accessor itself never populates relations.
 - `ReorderTitleAction::create()/update()` renumbers the `(category_id, usage_position)` scope gaplessly (`1..N`) in a transaction with `lockForUpdate`.
 
 ## Multi-context names

@@ -33,7 +33,6 @@ final class ReorderSuggestionsWidget extends TableWidget
                 ->pending()
                 ->byUrgency()
                 ->with(['location', 'supplierLeadtime'])
-                ->limit(10)
         );
 
         if (InventoryOwnerScope::isEnabled()) {
@@ -46,6 +45,7 @@ final class ReorderSuggestionsWidget extends TableWidget
 
         return $table
             ->query($query)
+            ->defaultPaginationPageOption(10)
             ->columns([
                 TextColumn::make('inventoryable_type')
                     ->label('Product Type')

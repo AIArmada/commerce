@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
-            $table->uuid('subscription_id');
+            $table->foreignUuid('subscription_id');
             $table->string('status')->default('claimed')->index();
             $table->integer('amount_minor');
             $table->string('period_key')->nullable();
@@ -27,6 +27,8 @@ return new class extends Migration
 
             $table->index('subscription_id');
             $table->index(['subscription_id', 'status'], $tableName . '_subscription_status');
+            $table->index('purchase_id');
+            $table->index('lease_expires_at');
             $table->unique(['subscription_id', 'period_key'], str_replace(['.', '-', ' '], '_', $tableName) . '_subscription_period_unique');
         });
     }

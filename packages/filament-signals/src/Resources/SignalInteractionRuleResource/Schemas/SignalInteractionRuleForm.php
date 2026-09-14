@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\Signals\Models\TrackedProperty;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
@@ -11,6 +13,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 final class SignalInteractionRuleForm
 {
@@ -33,7 +36,22 @@ final class SignalInteractionRuleForm
                         ->required()
                         ->maxLength(255)
                         ->alphaDash()
-                        ->unique(ignoreRecord: true),
+                        // The database unique is (owner_scope, slug): scope the
+                        // rule the same way so slugs are reusable across owners
+                        // without false collisions.
+                        ->unique(ignoreRecord: true, modifyRuleUsing: static function (Unique $rule, Forms\Components\TextInput $field): Unique {
+                            $record = $field->getRecord();
+                            $scopeKey = $record?->getAttribute('owner_scope');
+
+                            if (! is_string($scopeKey) || $scopeKey === '') {
+                                $owner = OwnerContext::resolve();
+                                $scopeKey = $owner !== null && ! OwnerContext::isExplicitGlobal()
+                                    ? OwnerScopeKey::forOwner($owner)
+                                    : OwnerScopeKey::forTypeAndId(null, null);
+                            }
+
+                            return $rule->where('owner_scope', $scopeKey);
+                        }),
 
                     Forms\Components\Select::make('tracked_property_id')
                         ->label('Website or app')

@@ -24,21 +24,21 @@ return new class extends Migration
             $table->boolean('is_outgoing')->default(false);
 
             // Amount fields - exactly as per API (integers for cents)
-            $table->integer('amount'); // Amount in smallest currency unit
+            $table->unsignedBigInteger('amount'); // Amount in smallest currency unit
             $table->string('currency', 3)->default('MYR');
-            $table->integer('net_amount'); // Net amount after fees
-            $table->integer('fee_amount'); // Processing fees
-            $table->integer('pending_amount')->default(0); // Pending amount
-            $table->integer('pending_unfreeze_on')->nullable(); // Unix timestamp
+            $table->unsignedBigInteger('net_amount'); // Net amount after fees
+            $table->unsignedBigInteger('fee_amount'); // Processing fees
+            $table->unsignedBigInteger('pending_amount')->default(0); // Pending amount
+            $table->bigInteger('pending_unfreeze_on')->nullable(); // Unix timestamp
 
             // Payment details
             $table->text('description')->nullable();
-            $table->integer('paid_on')->nullable(); // Unix timestamp
-            $table->integer('remote_paid_on')->nullable(); // Unix timestamp
+            $table->bigInteger('paid_on')->nullable(); // Unix timestamp
+            $table->bigInteger('remote_paid_on')->nullable(); // Unix timestamp
 
             // API timestamps (Unix timestamps as integers)
-            $table->integer('created_on'); // When payment was created
-            $table->integer('updated_on'); // When payment was last updated
+            $table->bigInteger('created_on'); // When payment was created
+            $table->bigInteger('updated_on'); // When payment was last updated
 
             // Owner scoping
             $table->nullableMorphs('owner');

@@ -112,3 +112,17 @@ it('converts to array and back', function (): void {
     expect($restored->city)->toBe('Kuala Lumpur');
     expect($restored->countryCode)->toBe('MY');
 });
+
+it('returns null for non-numeric coordinates', function (): void {
+    $address = AddressData::from(['latitude' => 'abc', 'longitude' => 'def']);
+
+    expect($address->latitude)->toBeNull();
+    expect($address->longitude)->toBeNull();
+});
+
+it('keeps numeric-string coordinates', function (): void {
+    $address = AddressData::from(['latitude' => '3.1390', 'longitude' => 101.6869]);
+
+    expect($address->latitude)->toBe(3.139);
+    expect($address->longitude)->toBe(101.6869);
+});

@@ -66,7 +66,8 @@ Available on the order view page. Shows chronological history:
 - Shipment events
 - Notes added
 
-Includes a form to add new notes directly from the timeline.
+Includes a form to add new notes directly from the timeline. Notes are capped at
+2000 characters and visibility is server-validated (`internal` or `customer`).
 
 ## Relation Managers
 

@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Models;
 
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
@@ -21,7 +22,11 @@ use Illuminate\Support\Arr;
  * @property array<string, mixed>|null $currency_conversion
  * @property array<string>|null $payment_method_whitelist
  * @property string|null $checkout_url
- * @property int|null $paid_on
+ * @property string|null $payment_method
+ * @property int $total_minor
+ * @property int $refund_amount_minor
+ * @property int $refundable_amount
+ * @property string|null $failure_reason
  * @property bool $send_receipt
  * @property bool $is_test
  * @property bool $is_recurring_token
@@ -34,6 +39,8 @@ use Illuminate\Support\Arr;
  * @property int|null $viewed_on
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
+ * @property CarbonImmutable|null $failed_at
+ * @property CarbonImmutable|null $refunded_at
  * @property-read Money|null $totalMoney
  * @property-read array<int, array{status: string, timestamp: CarbonImmutable|null, translated: string}> $timeline
  */
@@ -201,6 +208,21 @@ class Purchase extends ChipModel
         return $this->hasMany(Payment::class, 'purchase_id');
     }
 
+    /**
+     * Exclude unrecorded idempotency reservations (crash stubs) from reads.
+     *
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeWithoutIdempotencyStubs(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query): void {
+            $query->whereNull('metadata')
+                ->orWhereNull('metadata->chip_idempotency->idempotency_key')
+                ->orWhereNotNull('metadata->chip_idempotency->response');
+        });
+    }
+
     protected static function tableSuffix(): string
     {
         return 'purchases';
@@ -236,6 +258,8 @@ class Purchase extends ChipModel
             'marked_as_paid' => 'boolean',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
+            'failed_at' => 'immutable_datetime',
+            'refunded_at' => 'immutable_datetime',
         ];
     }
 }

@@ -24,6 +24,39 @@ path.
 ownerless remain global and are not returned by owner-scoped queries unless global rows are
 explicitly included.
 
+## Renewal idempotency
+
+Renewal charges carry an idempotency key derived from the attempt id (`renewal-{attempt_id}`),
+so transport retries cannot double-charge the same attempt. Attempts stuck in `unknown` are
+reconciled on the next run: attempts with a `purchase_id` are resolved via `getPurchase`, and
+attempts without one are retried under the same attempt id (same idempotency key). Webhook
+deliveries are deduplicated by `purchase_id`, and webhooks never resurrect canceled
+subscriptions. Renewals charge `renewalAmount()` (items minus any in-window coupon discount);
+fully-discounted ($0) renewals auto-complete locally — no charge is attempted, no payment
+method is required, the billing date advances, and `SubscriptionRenewed` is dispatched
+with a `null` payment.
+
+## Settled-period reconciliation hook
+
+When a second *distinct* purchase arrives for an already-settled billing period, the
+settle transaction rolls back without extending the subscription. This is safe against
+gateway double-charges, but the money still needs host reconciliation (refund, credit,
+or manual extension).
+
+Hosts should listen for `AIArmada\CashierChip\Events\SettledPeriodPurchaseConflict`,
+which carries the subscription, the rolled-back `purchaseId`, and the settled
+`periodKey`. A warning is also logged with the same identifiers.
+
+```php
+use AIArmada\CashierChip\Events\SettledPeriodPurchaseConflict;
+
+protected $listen = [
+    SettledPeriodPurchaseConflict::class => [
+        ReconcileDuplicateSettledPurchase::class,
+    ],
+];
+```
+
 ## Creating Subscriptions
 
 The canonical way to create a subscription is via the `CreateChipSubscription` Action.
@@ -123,6 +156,9 @@ $subscription = $user->newSubscription('default', 'price_biweekly')
     ->billingInterval('week', 2)  // Every 2 weeks
     ->create();
 ```
+
+Only `day`, `week`, `month`, and `year` are accepted; anything else throws
+`InvalidArgumentException` at the builder and on model save.
 
 ## Checking Subscription Status
 
@@ -270,6 +306,10 @@ $subscription->swap([
     'price_base',
     'price_addon' => ['quantity' => 2],
 ]);
+
+// Override unit amounts explicitly (otherwise the existing per-price amounts carry over)
+$subscription->swap(['price_new' => ['unit_amount' => 1500]]);
+$subscription->swap('price_new', ['unit_amount' => 1500]);
 ```
 
 ### Change Quantity

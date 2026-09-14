@@ -28,7 +28,8 @@ final class GoalsReport extends ReportPage
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-signals.features.goals_report', true);
+        return (bool) config('filament-signals.features.goals_report', true)
+            && static::canAccess();
     }
 
     /**

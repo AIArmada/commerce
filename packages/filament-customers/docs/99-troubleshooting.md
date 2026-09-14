@@ -69,6 +69,25 @@ if (empty($segment->conditions)) {
 php artisan customers:rebuild-segments --segment={uuid}
 ```
 
+### Segment Rebuild Queued But Never Runs
+
+**Problem**: The rebuild page reports success but membership never changes.
+
+**Solution**: Rebuilds run on the queue. Ensure a worker is processing the
+default queue connection:
+
+```bash
+php artisan queue:work
+```
+
+### Merge Blocked With 403
+
+**Problem**: Merging two customers ends in a 403 page or authorization error.
+
+**Solution**: Merging requires `update` on both customers and `delete` on
+the source customer, plus both records in the current owner scope. Verify
+the panel user is authenticated and the record policies allow the action.
+
 ### Form Validation Errors
 
 **Problem**: Form submissions fail with validation errors

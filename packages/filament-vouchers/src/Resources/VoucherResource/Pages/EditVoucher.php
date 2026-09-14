@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Pages;
 
-use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
+use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\Vouchers\Support\VoucherAffiliateOwnershipGuard;
@@ -54,18 +54,11 @@ final class EditVoucher extends EditRecord
     private function hydrateConditionTargetState(array $data): array
     {
         $metadata = is_array($data['metadata'] ?? null) ? $data['metadata'] : [];
-        $definition = $data['target_definition']
-            ?? $metadata['target_definition']
-            ?? null;
+        $definition = ConditionTargetDisplay::definition(
+            $data['target_definition'] ?? $metadata['target_definition'] ?? null
+        );
 
-        if (! is_array($definition)) {
-            $definition = ConditionTargetPreset::default()->target()?->toArray();
-            if ($definition === null) {
-                $definition = ConditionTarget::from(ConditionTargetPreset::default()->dsl())->toArray();
-            }
-        }
-
-        $dsl = ConditionTarget::from($definition)->toDsl();
+        $dsl = ConditionTargetDisplay::dsl($definition);
         $preset = ConditionTargetPreset::detect($dsl) ?? ConditionTargetPreset::default();
 
         $data['condition_target_dsl'] = $dsl;

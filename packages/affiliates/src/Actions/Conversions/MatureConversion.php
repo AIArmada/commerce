@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class MatureConversion
@@ -28,23 +29,47 @@ final class MatureConversion
             return false;
         }
 
+        if ($conversion->occurred_at === null) {
+            return false;
+        }
+
         $maturityDate = $conversion->occurred_at->addDays($this->maturityDays);
 
         if ($maturityDate->isFuture()) {
             return false;
         }
 
-        $previousStatus = $conversion->status;
+        return DB::transaction(function () use ($conversion): bool {
+            $locked = AffiliateConversion::query()->lockForUpdate()->find($conversion->getKey());
 
-        $conversion->update([
-            'status' => ApprovedConversion::class,
-            'metadata' => array_merge($conversion->metadata ?? [], [
-                'matured_at' => CarbonImmutable::now()->toIso8601String(),
-            ]),
-        ]);
+            if (! $locked instanceof AffiliateConversion) {
+                return false;
+            }
 
-        $this->accounting->handle($conversion, $previousStatus);
+            if (! $locked->status->equals(QualifiedConversion::class)) {
+                return false;
+            }
 
-        return true;
+            if ($locked->occurred_at === null) {
+                return false;
+            }
+
+            if ($locked->occurred_at->addDays($this->maturityDays)->isFuture()) {
+                return false;
+            }
+
+            $previousStatus = $locked->status;
+
+            $locked->update([
+                'status' => ApprovedConversion::class,
+                'metadata' => array_merge($locked->metadata ?? [], [
+                    'matured_at' => CarbonImmutable::now()->toIso8601String(),
+                ]),
+            ]);
+
+            $this->accounting->handle($locked, $previousStatus);
+
+            return true;
+        }, attempts: 3);
     }
 }

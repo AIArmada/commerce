@@ -40,7 +40,7 @@ title: Engagement Overview
 ## Key Features
 
 - Fully polymorphic — works with any Eloquent model
-- Duplicate prevention for active follows, bookmarks, and responses
+- Duplicate prevention for active follows, bookmarks, responses, subscriptions, collection items, and identical pending reminders
 - Lifecycle tracking — never deletes rows, transitions through statuses
 - Bookmark collections with sorting and visibility control
 - Subscription criteria matching engine for content-based notifications

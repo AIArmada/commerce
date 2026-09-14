@@ -66,5 +66,6 @@ final class UpdateProductStatus
     {
         $product->archived_at = null;
         $product->deactivated_at = null;
+        $product->published_at = null;
     }
 }

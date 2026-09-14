@@ -20,6 +20,29 @@ use Illuminate\Validation\ValidationException;
 
 require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
 
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createResolverTestCustomer(array $attributes): Customer
+{
+    $restricted = [];
+
+    foreach (['user_id', 'status', 'is_guest', 'accepts_marketing', 'created_at', 'updated_at'] as $key) {
+        if (array_key_exists($key, $attributes)) {
+            $restricted[$key] = $attributes[$key];
+            unset($attributes[$key]);
+        }
+    }
+
+    $customer = Customer::query()->create($attributes);
+
+    if ($restricted !== []) {
+        $customer->forceFill($restricted)->save();
+    }
+
+    return $customer;
+}
+
 beforeEach(function (): void {
     Schema::dropIfExists('test_owners');
 
@@ -36,7 +59,7 @@ describe('CustomerResolver', function (): void {
 
         $email = 'registered-' . uniqid() . '@example.com';
 
-        $existing = Customer::query()->create([
+        $existing = createResolverTestCustomer([
             'first_name' => 'Registered',
             'last_name' => 'Customer',
             'email' => $email,
@@ -75,7 +98,7 @@ describe('CustomerResolver', function (): void {
         $email = 'guest-' . uniqid() . '@example.com';
 
         [$guest, $resolved] = OwnerContext::withOwner($owner, function () use ($email, $resolver): array {
-            $guest = Customer::query()->create([
+            $guest = createResolverTestCustomer([
                 'first_name' => 'Guest',
                 'last_name' => 'Customer',
                 'email' => $email,
@@ -115,7 +138,7 @@ describe('CustomerResolver', function (): void {
         $email = 'legacy-guest-' . uniqid() . '@example.com';
 
         [$guest, $resolved] = OwnerContext::withOwner($owner, function () use ($email, $resolver): array {
-            $guest = Customer::query()->create([
+            $guest = createResolverTestCustomer([
                 'first_name' => 'Legacy',
                 'last_name' => 'Guest',
                 'email' => $email,
@@ -154,7 +177,7 @@ describe('CustomerResolver', function (): void {
         $email = 'legacy-contact-' . uniqid() . '@example.com';
 
         [$guest, $resolved] = OwnerContext::withOwner($owner, function () use ($email, $resolver): array {
-            $guest = Customer::query()->create([
+            $guest = createResolverTestCustomer([
                 'first_name' => 'Legacy',
                 'last_name' => 'Contact',
                 'email' => 'different-' . uniqid() . '@example.com',
@@ -197,7 +220,7 @@ describe('CustomerResolver', function (): void {
         [$guest, $resolved] = OwnerContext::withOwner($owner, function () use ($resolver): array {
             $email = 'existing-guest-' . uniqid() . '@example.com';
 
-            $guest = Customer::query()->create([
+            $guest = createResolverTestCustomer([
                 'first_name' => 'Existing',
                 'last_name' => 'Guest',
                 'email' => $email,
@@ -232,7 +255,7 @@ describe('CustomerResolver', function (): void {
     it('merges segment and group memberships into the target customer', function (): void {
         $resolver = new CustomerResolver(new CreateCustomer, new UpdateCustomerProfile);
 
-        $source = Customer::query()->create([
+        $source = createResolverTestCustomer([
             'first_name' => 'Source',
             'last_name' => 'Guest',
             'email' => 'source-' . uniqid() . '@example.com',
@@ -240,7 +263,7 @@ describe('CustomerResolver', function (): void {
             'is_guest' => true,
         ]);
 
-        $target = Customer::query()->create([
+        $target = createResolverTestCustomer([
             'first_name' => 'Target',
             'last_name' => 'User',
             'email' => 'target-' . uniqid() . '@example.com',
@@ -306,7 +329,7 @@ describe('CustomerResolver', function (): void {
         $owner = CustomersTestOwner::query()->create(['name' => 'Resolver Owner']);
 
         [$guest, $resolved] = OwnerContext::withOwner($owner, function () use ($email, $resolver, $user): array {
-            $guest = Customer::query()->create([
+            $guest = createResolverTestCustomer([
                 'first_name' => 'Guest',
                 'last_name' => 'Before Login',
                 'email' => $email,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Models\CommunicationAttempt;
 use Carbon\CarbonImmutable;
@@ -21,6 +22,10 @@ final class CompleteDeliveryAttemptAction
         array $responsePayload = [],
     ): CommunicationAttempt {
         $attempt = CommunicationAttempt::query()->findOrFail($attemptId);
+
+        if (CommunicationAttempt::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationAttempt::class, $attemptId);
+        }
 
         $attempt->provider_message_id = $providerMessageId ?? $attempt->provider_message_id;
         $attempt->duration_ms = $durationMs;

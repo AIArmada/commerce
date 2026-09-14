@@ -15,7 +15,6 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 
 final class AddressAreaResource extends Resource
 {
@@ -63,11 +62,6 @@ final class AddressAreaResource extends Resource
     public static function getModel(): string
     {
         return config('filament-addressing.resources.areas.model', AddressArea::class);
-    }
-
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery();
     }
 
     public static function table(Table $table): Table

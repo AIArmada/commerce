@@ -37,6 +37,8 @@ return new class extends Migration
             // Indexes
             $table->index(['priceable_type', 'priceable_id', 'price_list_id']);
             $table->index(['starts_at', 'ends_at']);
+            $table->index('deactivated_at');
+            $table->index('currency');
             $table->unique(['price_list_id', 'priceable_type', 'priceable_id', 'min_quantity'], 'prices_unique_per_quantity');
         });
     }

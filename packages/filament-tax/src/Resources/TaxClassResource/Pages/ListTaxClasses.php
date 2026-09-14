@@ -15,7 +15,8 @@ class ListTaxClasses extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->authorize(fn (): bool => auth()->user()?->can('tax.classes.create') ?? false),
         ];
     }
 }

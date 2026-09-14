@@ -66,6 +66,16 @@ Available actions:
 
 The unified invoices resource is list-first: it aggregates invoice records across installed gateways and exposes download, export, and external-dashboard actions without pretending the underlying gateway data lives in one table.
 
+### Scoping Notes
+
+- The admin subscription and invoice lists delegate to the per-billable
+  gateway clients, so they show the signed-in staff member's own records —
+  not an owner-wide view. An owner-wide admin list needs gateway support that
+  does not exist yet.
+- The customer portal shows the signed-in customer's records only.
+- Gateway health probes are cached per owner for 60 seconds. Probe failures
+  surface a generic message; details go to the log.
+
 ## Dashboard Widgets
 
 ### Total MRR Widget

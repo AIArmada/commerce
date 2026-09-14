@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $reviewer_note
  * @property CarbonImmutable|null $reviewed_at
  * @property CarbonImmutable|null $cancelled_at
+ * @property string|null $cancelled_by
  * @property array|null $meta
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
@@ -39,19 +40,20 @@ class MembershipApplication extends Model
         'subject_type',
         'subject_id',
         'applicant_id',
-        'status',
-        'granted_role',
         'justification',
-        'reviewer_id',
-        'reviewer_note',
-        'reviewed_at',
-        'cancelled_at',
         'meta',
     ];
 
     protected static string $ownerScopeConfigKey = 'membership.owner';
 
     protected static bool $ownerScopeEnabledByDefault = true;
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $application): void {
+            $application->status ??= ApplicationStatus::Pending;
+        });
+    }
 
     public function getTable(): string
     {

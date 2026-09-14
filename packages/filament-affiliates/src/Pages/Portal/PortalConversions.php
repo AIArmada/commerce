@@ -49,8 +49,7 @@ class PortalConversions extends PortalPage implements HasTable
 
         $affiliateId = $affiliate->getKey();
 
-        $query = AffiliateConversion::query()
-            ->where('affiliate_id', $affiliateId);
+        $affiliateIds = [$affiliateId];
 
         if (config('affiliates.upline.enabled', false)) {
             $descendantIds = AffiliateUpline::query()
@@ -59,13 +58,15 @@ class PortalConversions extends PortalPage implements HasTable
                 ->pluck('descendant_id')
                 ->toArray();
 
-            if ($descendantIds !== []) {
-                $query->orWhereIn('affiliate_id', $descendantIds);
-            }
+            $affiliateIds = array_values(array_unique(array_merge($affiliateIds, $descendantIds)));
         }
 
         return $table
-            ->query($query)
+            ->query(
+                AffiliateConversion::query()
+                    ->whereIn('affiliate_id', $affiliateIds)
+                    ->with(['affiliate'])
+            )
             ->columns([
                 TextColumn::make('occurred_at')
                     ->label(__('Date'))

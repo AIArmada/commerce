@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -330,12 +331,7 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
      */
     public function getOptionSummary(): string
     {
-        return $this->optionValues()
-            ->with('option')
-            ->get()
-            ->sortBy('option.position')
-            ->pluck('name')
-            ->implode(' / ');
+        return $this->orderedOptionValues()->pluck('name')->implode(' / ');
     }
 
     /**
@@ -381,12 +377,18 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
         if (class_exists(InventoryService::class)) {
             try {
                 return app(InventoryService::class)->getTotalAvailable($this);
-            } catch (Throwable) {
-                return 0;
+            } catch (Throwable $exception) {
+                // Inventory outage: log loudly and fall back to local stock
+                // like Product::getStockQuantity instead of reporting a
+                // possibly-wrong zero as out-of-stock.
+                Log::warning('Inventory lookup failed for variant; falling back to local stock.', [
+                    'variant_id' => $this->getKey(),
+                    'exception' => $exception->getMessage(),
+                ]);
             }
         }
 
-        return 0;
+        return (int) ($this->stock ?? 0);
     }
 
     public function isInStock(): bool
@@ -417,16 +419,33 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
     // =========================================================================
 
     /**
+     * Option values ordered by their option position. The result populates
+     * the relation cache so repeated calls on one instance do not re-query;
+     * refresh the relation to pick up later pivot changes.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, OptionValue>
+     */
+    private function orderedOptionValues(): \Illuminate\Database\Eloquent\Collection
+    {
+        if (! $this->relationLoaded('optionValues')) {
+            $this->setRelation('optionValues', $this->optionValues()->get());
+        }
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, OptionValue> $values */
+        $values = $this->optionValues;
+        $values->loadMissing('option');
+
+        return $values->sortBy('option.position')->values();
+    }
+
+    /**
      * Generate a SKU based on the configured pattern.
      */
     public function generateSku(): string
     {
         $pattern = config('products.features.variants.sku_pattern', '{parent_sku}-{option_codes}');
 
-        $optionCodes = $this->optionValues()
-            ->with('option')
-            ->get()
-            ->sortBy('option.position')
+        $optionCodes = $this->orderedOptionValues()
             ->map(fn ($opt) => mb_strtoupper(mb_substr($opt->name, 0, 2)))
             ->implode('-');
 
@@ -516,6 +535,36 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
             }
 
             $variant->assignOwner($ownerToAssign);
+        });
+
+        static::updating(function (Variant $variant): void {
+            // Parent and tenancy are immutable after creation.
+            if ($variant->isDirty('product_id') || $variant->isDirty('owner_type') || $variant->isDirty('owner_id')) {
+                throw new InvalidArgumentException('Cross-tenant write blocked: variant product and owner are immutable after creation.');
+            }
+
+            if (! (bool) config('products.features.owner.enabled', true)) {
+                return;
+            }
+
+            $currentOwner = OwnerContext::resolve();
+
+            // No owner context = system/admin operation, allow it
+            if ($currentOwner === null) {
+                return;
+            }
+
+            $variantIsGlobal = $variant->owner_type === null && $variant->owner_id === null;
+
+            // Block tenant from updating global variants
+            if ($variantIsGlobal) {
+                throw new InvalidArgumentException('Cross-tenant write blocked: cannot update global variant from an owner context.');
+            }
+
+            // Block cross-tenant updates
+            if (! $variant->belongsToOwner($currentOwner)) {
+                throw new InvalidArgumentException('Cross-tenant write blocked: variant does not belong to the current owner context.');
+            }
         });
 
         static::saving(function (Variant $variant): void {

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 
-use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\FilamentPricing\Support\CatalogReference;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Filament\Actions;
@@ -21,6 +22,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 final class TiersRelationManager extends RelationManager
 {
@@ -66,13 +68,8 @@ final class TiersRelationManager extends RelationManager
                                         $owner,
                                         (bool) config('products.features.owner.include_global', false)
                                     );
-                                    $operator = match (ConnectionDriver::name($query->getConnection())) {
-                                        'pgsql' => 'ilike',
-                                        default => 'like',
-                                    };
 
-                                    return $query
-                                        ->where('name', $operator, "%{$search}%")
+                                    return LikeSearch::whereLike($query, 'name', LikeSearch::contains($search))
                                         ->limit(50)
                                         ->pluck('name', 'id')
                                         ->toArray();
@@ -80,10 +77,6 @@ final class TiersRelationManager extends RelationManager
 
                                 if ($type === Variant::class) {
                                     $variantQuery = Variant::query();
-                                    $operator = match (ConnectionDriver::name($variantQuery->getConnection())) {
-                                        'pgsql' => 'ilike',
-                                        default => 'like',
-                                    };
 
                                     return $variantQuery
                                         ->with('product')
@@ -94,13 +87,14 @@ final class TiersRelationManager extends RelationManager
                                                 (bool) config('products.features.owner.include_global', false)
                                             );
                                         })
-                                        ->where(function ($query) use ($search, $operator): void {
-                                            $query->where('sku', $operator, "%{$search}%")
-                                                ->orWhereHas('product', fn ($inner) => $inner->where('name', $operator, "%{$search}%"));
+                                        ->where(function ($query) use ($search): void {
+                                            $pattern = LikeSearch::contains($search);
+                                            LikeSearch::whereLike($query, 'sku', $pattern);
+                                            $query->orWhereHas('product', fn ($inner) => LikeSearch::whereLike($inner, 'name', $pattern));
                                         })
                                         ->limit(50)
                                         ->get()
-                                        ->mapWithKeys(fn ($v): array => [$v->id => $v->product->name . ' - ' . $v->sku])
+                                        ->mapWithKeys(fn ($v): array => [$v->id => ($v->product?->name ?? 'Variant') . ' - ' . $v->sku])
                                         ->toArray();
                                 }
 
@@ -115,7 +109,7 @@ final class TiersRelationManager extends RelationManager
 
                                 $owner = $this->resolveOwner();
 
-                                if (! in_array($type, [Product::class, Variant::class], true)) {
+                                if (! in_array($type, CatalogReference::allowedTypes(), true)) {
                                     return null;
                                 }
 
@@ -136,7 +130,7 @@ final class TiersRelationManager extends RelationManager
                                 if ($record instanceof Variant) {
                                     $record->loadMissing('product');
 
-                                    return $record->product->name . ' - ' . $record->sku;
+                                    return ($record->product?->name ?? 'Variant') . ' - ' . $record->sku;
                                 }
 
                                 return (string) ($record->name ?? $record->sku ?? $record->getKey());
@@ -207,6 +201,10 @@ final class TiersRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('min_quantity')
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['tierable' => fn (MorphTo $morphTo) => $morphTo->morphWith([
+                Variant::class => ['product'],
+                Product::class => [],
+            ])]))
             ->columns([
                 Tables\Columns\TextColumn::make('tierable_type')
                     ->label('Type')
@@ -277,10 +275,12 @@ final class TiersRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Actions\CreateAction::make(),
+                Actions\CreateAction::make()
+                    ->mutateFormDataUsing(fn (array $data): array => CatalogReference::validateFormData($data, 'tierable_type', 'tierable_id')),
             ])
             ->actions([
-                Actions\EditAction::make(),
+                Actions\EditAction::make()
+                    ->mutateFormDataUsing(fn (array $data): array => CatalogReference::validateFormData($data, 'tierable_type', 'tierable_id')),
                 Actions\DeleteAction::make(),
             ])
             ->bulkActions([

@@ -21,6 +21,8 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Throwable;
@@ -48,6 +50,7 @@ final class ListSignalInteractionRules extends ListRecords
                 ->label('Create from preview')
                 ->icon('heroicon-o-check-badge')
                 ->color('success')
+                ->authorize('create', SignalInteractionRule::class)
                 ->visible(fn (): bool => $this->scanPreviewPayload()['candidates'] !== [])
                 ->modalHeading('Create rules from scan preview')
                 ->modalDescription('Review detected candidates and choose which ones to turn into interaction rules.')
@@ -115,32 +118,35 @@ final class ListSignalInteractionRules extends ListRecords
                     }
                     $isActive = (bool) ($data['activate_created_rules'] ?? false);
                     $existingSortOrder = (int) (SignalInteractionRule::query()->forOwner()->max('sort_order') ?? 0);
-                    $created = 0;
 
-                    foreach ($selectedIndexes as $index => $candidateIndex) {
-                        $candidate = $candidates[$candidateIndex];
-                        $slugBase = Str::slug((string) $candidate['name']);
-                        $slug = $this->uniqueSlug($slugBase !== '' ? $slugBase : 'interaction-rule');
-                        $candidateSettings = is_array($candidate['settings'] ?? null) ? $candidate['settings'] : [];
-                        $candidateSettings['scanner_confidence'] = $candidate['confidence'] ?? null;
-                        $candidateSettings['scanner_confidence_note'] = $candidate['confidence_note'] ?? null;
+                    $created = DB::transaction(function () use ($selectedIndexes, $candidates, $trackedPropertyId, $triggerType, $eventName, $eventCategory, $isActive, $existingSortOrder): int {
+                        $created = 0;
 
-                        SignalInteractionRule::query()->create([
-                            'tracked_property_id' => $trackedPropertyId,
-                            'name' => (string) $candidate['name'],
-                            'slug' => $slug,
-                            'trigger_type' => $triggerType,
-                            'event_name' => $eventName,
-                            'event_category' => $eventCategory,
-                            'selector' => is_string($candidate['selector'] ?? null) ? $candidate['selector'] : null,
-                            'page_pattern' => is_string($candidate['page_pattern'] ?? null) ? $candidate['page_pattern'] : null,
-                            'settings' => $candidateSettings,
-                            'sort_order' => $existingSortOrder + $index + 1,
-                            'is_active' => $isActive,
-                        ]);
+                        foreach ($selectedIndexes as $index => $candidateIndex) {
+                            $candidate = $candidates[$candidateIndex];
+                            $slugBase = Str::slug((string) $candidate['name']);
+                            $candidateSettings = is_array($candidate['settings'] ?? null) ? $candidate['settings'] : [];
+                            $candidateSettings['scanner_confidence'] = $candidate['confidence'] ?? null;
+                            $candidateSettings['scanner_confidence_note'] = $candidate['confidence_note'] ?? null;
 
-                        $created++;
-                    }
+                            $this->createRuleWithUniqueSlug([
+                                'tracked_property_id' => $trackedPropertyId,
+                                'name' => (string) $candidate['name'],
+                                'trigger_type' => $triggerType,
+                                'event_name' => $eventName,
+                                'event_category' => $eventCategory,
+                                'selector' => is_string($candidate['selector'] ?? null) ? $candidate['selector'] : null,
+                                'page_pattern' => is_string($candidate['page_pattern'] ?? null) ? $candidate['page_pattern'] : null,
+                                'settings' => $candidateSettings,
+                                'sort_order' => $existingSortOrder + $index + 1,
+                                'is_active' => $isActive,
+                            ], $slugBase !== '' ? $slugBase : 'interaction-rule');
+
+                            $created++;
+                        }
+
+                        return $created;
+                    });
 
                     Notification::make()
                         ->title('Interaction rules created from preview')
@@ -153,6 +159,7 @@ final class ListSignalInteractionRules extends ListRecords
             Actions\Action::make('scanPage')
                 ->label('Scan page')
                 ->icon('heroicon-o-magnifying-glass')
+                ->authorize('create', SignalInteractionRule::class)
                 ->modalHeading('Scan page and create draft rules')
                 ->modalDescription('We will scan the URL for interactive elements and create disabled draft rules for review.')
                 ->form([
@@ -160,11 +167,16 @@ final class ListSignalInteractionRules extends ListRecords
                         ->label('Website or app')
                         ->required()
                         ->searchable()
-                        ->options(static fn (): array => TrackedProperty::query()
+                        ->getSearchResultsUsing(static fn (string $search): array => TrackedProperty::query()
                             ->forOwner()
+                            ->where('name', 'like', '%' . addcslashes($search, '%_\\') . '%')
                             ->orderBy('name')
+                            ->limit(50)
                             ->pluck('name', 'id')
-                            ->all()),
+                            ->all())
+                        ->getOptionLabelUsing(static fn (mixed $value): ?string => is_scalar($value)
+                            ? TrackedProperty::query()->forOwner()->whereKey($value)->value('name')
+                            : null),
                     Select::make('scan_source')
                         ->label('Scan source')
                         ->options([
@@ -324,28 +336,31 @@ final class ListSignalInteractionRules extends ListRecords
                     $triggerType = (string) $data['trigger_type'];
                     $isActive = (bool) ($data['activate_created_rules'] ?? false);
                     $existingSortOrder = (int) (SignalInteractionRule::query()->forOwner()->max('sort_order') ?? 0);
-                    $created = 0;
 
-                    foreach ($candidates as $index => $candidate) {
-                        $slugBase = Str::slug((string) $candidate['name']);
-                        $slug = $this->uniqueSlug($slugBase !== '' ? $slugBase : 'interaction-rule');
+                    $created = DB::transaction(function () use ($candidates, $trackedPropertyId, $triggerType, $eventName, $eventCategory, $isActive, $existingSortOrder): int {
+                        $created = 0;
 
-                        SignalInteractionRule::query()->create([
-                            'tracked_property_id' => $trackedPropertyId,
-                            'name' => (string) $candidate['name'],
-                            'slug' => $slug,
-                            'trigger_type' => $triggerType,
-                            'event_name' => $eventName,
-                            'event_category' => $eventCategory !== '' ? $eventCategory : null,
-                            'selector' => $candidate['selector'],
-                            'page_pattern' => $candidate['page_pattern'],
-                            'settings' => is_array($candidate['settings']) ? $candidate['settings'] : null,
-                            'sort_order' => $existingSortOrder + $index + 1,
-                            'is_active' => $isActive,
-                        ]);
+                        foreach ($candidates as $index => $candidate) {
+                            $slugBase = Str::slug((string) $candidate['name']);
 
-                        $created++;
-                    }
+                            $this->createRuleWithUniqueSlug([
+                                'tracked_property_id' => $trackedPropertyId,
+                                'name' => (string) $candidate['name'],
+                                'trigger_type' => $triggerType,
+                                'event_name' => $eventName,
+                                'event_category' => $eventCategory !== '' ? $eventCategory : null,
+                                'selector' => $candidate['selector'],
+                                'page_pattern' => $candidate['page_pattern'],
+                                'settings' => is_array($candidate['settings']) ? $candidate['settings'] : null,
+                                'sort_order' => $existingSortOrder + $index + 1,
+                                'is_active' => $isActive,
+                            ], $slugBase !== '' ? $slugBase : 'interaction-rule');
+
+                            $created++;
+                        }
+
+                        return $created;
+                    });
 
                     Notification::make()
                         ->title('Interaction rules created')
@@ -361,6 +376,7 @@ final class ListSignalInteractionRules extends ListRecords
                 ->label('Rescan route')
                 ->icon('heroicon-o-arrow-path')
                 ->color('warning')
+                ->authorize('create', SignalInteractionRule::class)
                 ->modalHeading('Rescan local route source')
                 ->modalDescription('Quickly rescan Blade/Livewire sources for a route path and refresh the preview candidates.')
                 ->form([
@@ -368,11 +384,16 @@ final class ListSignalInteractionRules extends ListRecords
                         ->label('Website or app')
                         ->required()
                         ->searchable()
-                        ->options(static fn (): array => TrackedProperty::query()
+                        ->getSearchResultsUsing(static fn (string $search): array => TrackedProperty::query()
                             ->forOwner()
+                            ->where('name', 'like', '%' . addcslashes($search, '%_\\') . '%')
                             ->orderBy('name')
+                            ->limit(50)
                             ->pluck('name', 'id')
-                            ->all()),
+                            ->all())
+                        ->getOptionLabelUsing(static fn (mixed $value): ?string => is_scalar($value)
+                            ? TrackedProperty::query()->forOwner()->whereKey($value)->value('name')
+                            : null),
                     TextInput::make('route_path')
                         ->label('Route path pattern')
                         ->required()
@@ -588,5 +609,33 @@ final class ListSignalInteractionRules extends ListRecords
         }
 
         return $slug;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function createRuleWithUniqueSlug(array $attributes, string $slugBase): SignalInteractionRule
+    {
+        $attempts = 0;
+
+        while (true) {
+            $attempts++;
+
+            try {
+                /** @var SignalInteractionRule $rule */
+                $rule = SignalInteractionRule::query()->create([
+                    ...$attributes,
+                    'slug' => $this->uniqueSlug($slugBase),
+                ]);
+
+                return $rule;
+            } catch (QueryException $exception) {
+                // A concurrent scan claimed the slug between the exists check
+                // and the insert: pick the next candidate and retry.
+                if ($attempts >= 5 || $exception->getCode() !== '23000') {
+                    throw $exception;
+                }
+            }
+        }
     }
 }

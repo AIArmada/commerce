@@ -10,6 +10,8 @@ The main catalog model. `Product` is owner-aware, media-aware, slugged, and impl
 
 Prices are integer minor units end to end. `getBuyablePrice()` and `getCalculatedPrice()` both return the canonical minor-unit integer consumed by downstream cart, pricing, inventory, and checkout integrations.
 
+`currency` must be a supported ISO 4217 code (validated on save, stored uppercase); anything else throws `InvalidArgumentException` instead of failing later in formatting. `ProductCreated`/`ProductUpdated` fire exactly once per action call via `$dispatchesEvents`. Deleting a product removes its variants, options, option values, and variant pivots in a transaction with model events. Returning to draft via `UpdateProductStatus` clears `published_at`.
+
 ### Common relationships
 
 - `variants()`
@@ -37,7 +39,9 @@ Prices are integer minor units end to end. `getBuyablePrice()` and `getCalculate
 
 ## Variant
 
-Variants belong to a product and optional option values.
+Variants belong to a product and optional option values. `product_id` and the owner tuple are immutable after creation; updates are owner-guarded like products.
+
+When the inventory package is installed but a lookup fails, `getStockQuantity()` logs a warning and falls back to local stock instead of reporting zero.
 
 ### Common relationships
 
@@ -58,6 +62,8 @@ Variants belong to a product and optional option values.
 
 Categories support parent/child hierarchies, owner-aware relations, media collections, and slug generation.
 
+Parents are validated on save: the parent must exist, must not be the category itself or one of its descendants, and must belong to the same owner (a global parent is accepted only when `include_global` is enabled). Ancestor and tree traversal terminate on legacy cycles. `getProductCount()` and `getAllProducts()` count distinct products across the subtree in bulk queries.
+
 ### Common relationships
 
 - `parent()`
@@ -66,7 +72,7 @@ Categories support parent/child hierarchies, owner-aware relations, media collec
 
 ## Collection
 
-Collections can be manual or automatic.
+Collections can be manual or automatic. Automatic-collection conditions accept the named rules (`price_min`, `price_max`, `type`, `category`, `tag`, `is_featured`) plus direct product columns from a fixed allowlist (`cost`, `metadata`, and owner columns are excluded) with comparison operators only; anything else throws `InvalidArgumentException`.
 
 ### Common relationships
 
@@ -77,13 +83,14 @@ Collections can be manual or automatic.
 - `isManual()`
 - `isAutomatic()`
 - `getMatchingProducts()`
-- `rebuildProductList()`
+- `matchingProductsQuery()` — chunk or paginate this for large rule results
+- `rebuildProductList()` — chunked attach/detach, preserves pivot positions
 - `isPublished()`
 - `isScheduled()`
 
 ## Option and OptionValue
 
-Options describe configurable dimensions such as size or color, and option values provide the actual selectable values.
+Options describe configurable dimensions such as size or color, and option values provide the actual selectable values. Swatches are validated on save (`swatch_color` must be hex, `swatch_image` a plain path/URL); legacy invalid values render no style. Deleting an option removes its values individually so variant pivots detach.
 
 ### Common relationships
 

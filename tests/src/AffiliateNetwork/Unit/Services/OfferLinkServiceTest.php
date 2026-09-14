@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
@@ -19,6 +20,7 @@ describe('OfferLinkService', function (): void {
         ]);
         $this->offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
             'landing_url' => 'https://example.com/landing',
+            'requires_approval' => false,
         ]);
         $this->affiliate = Affiliate::create([
             'code' => 'AFF' . uniqid(),
@@ -96,6 +98,40 @@ describe('OfferLinkService', function (): void {
 
             expect($link->target_url)->toBe('https://example.com/');
         });
+
+        test('refuses links for inactive offers', function (): void {
+            $draft = AffiliateOffer::factory()->draft()->forSite($this->site)->create([
+                'requires_approval' => false,
+            ]);
+
+            $this->service->createLink($draft, $this->affiliate);
+        })->throws(RuntimeException::class, 'active');
+
+        test('refuses links without approval', function (): void {
+            $this->offer->update(['requires_approval' => true]);
+
+            $this->service->createLink($this->offer, $this->affiliate);
+        })->throws(RuntimeException::class, 'not approved');
+
+        test('creates links for approved affiliates', function (): void {
+            $this->offer->update(['requires_approval' => true]);
+
+            AffiliateOfferApplication::factory()
+                ->forOffer($this->offer)
+                ->forAffiliate($this->affiliate)
+                ->approved()
+                ->create();
+
+            $link = $this->service->createLink($this->offer, $this->affiliate);
+
+            expect($link->offer_id)->toBe($this->offer->id);
+        });
+
+        test('refuses non-http target urls', function (): void {
+            $this->service->createLink($this->offer, $this->affiliate, [
+                'target_url' => 'javascript:alert(1)',
+            ]);
+        })->throws(RuntimeException::class, 'http(s)');
     });
 
     describe('buildDirectLink', function (): void {
@@ -275,7 +311,8 @@ describe('OfferLinkService', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliate($this->affiliate)
-                ->create(['clicks' => 10]);
+                ->withStats(10, 0, 0)
+                ->create();
 
             $this->service->recordClick($link);
 
@@ -286,7 +323,7 @@ describe('OfferLinkService', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliate($this->affiliate)
-                ->create(['clicks' => 0]);
+                ->create();
 
             $this->service->recordClick($link);
 
@@ -299,10 +336,8 @@ describe('OfferLinkService', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliate($this->affiliate)
-                ->create([
-                    'conversions' => 5,
-                    'revenue' => 10000,
-                ]);
+                ->withStats(0, 5, 10000)
+                ->create();
 
             $this->service->recordConversion($link, 5000);
 
@@ -315,7 +350,7 @@ describe('OfferLinkService', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliate($this->affiliate)
-                ->create(['conversions' => 0, 'revenue' => 0]);
+                ->create();
 
             $this->service->recordConversion($link, 0);
 
@@ -346,7 +381,7 @@ describe('OfferLinkService', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliate($this->affiliate)
-                ->create(['clicks' => 0, 'conversions' => 0, 'revenue' => 0]);
+                ->create();
 
             $stats = $this->service->getStats($link);
 

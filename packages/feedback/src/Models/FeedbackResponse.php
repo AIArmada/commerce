@@ -64,8 +64,8 @@ final class FeedbackResponse extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $response): void {
-            $response->answers()->each(fn (FeedbackAnswer $answer): mixed => $answer->delete());
-            $response->testimonials()->each(fn (FeedbackTestimonial $testimonial): mixed => $testimonial->delete());
+            $response->answers()->chunkById(200, fn ($answers): mixed => $answers->each->delete());
+            $response->testimonials()->chunkById(200, fn ($testimonials): mixed => $testimonials->each->delete());
         });
     }
 

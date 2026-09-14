@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Models\Communication;
@@ -23,6 +24,10 @@ final class AddCommunicationRecipientAction
         ?array $snapshot = null,
     ): CommunicationRecipient {
         $communication = Communication::query()->findOrFail($communicationId);
+
+        if (Communication::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
+        }
 
         $recipient = new CommunicationRecipient;
         $recipient->communication_id = $communication->id;

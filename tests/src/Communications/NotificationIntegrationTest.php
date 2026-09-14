@@ -15,13 +15,14 @@ use AIArmada\Communications\Traits\HasCommunicationContext;
 use Illuminate\Notifications\Notification;
 
 beforeEach(function (): void {
-    $this->communication = Communication::create([
+    $this->communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'notification-test',
         'status' => CommunicationStatus::Draft,
     ]);
+    $this->communication->save();
 });
 
 test('HasCommunicationContext trait attaches IDs', function (): void {
@@ -67,7 +68,7 @@ test('recordCommunicationFailure marks delivery as failed', function (): void {
         'role' => 'to',
     ]);
 
-    $delivery = CommunicationDelivery::create([
+    $delivery = (new CommunicationDelivery)->forceFill([
         'communication_id' => $this->communication->id,
         'recipient_id' => $recipient->id,
         'channel' => 'mail',
@@ -76,6 +77,7 @@ test('recordCommunicationFailure marks delivery as failed', function (): void {
         'attempt_count' => 0,
         'max_attempts' => 3,
     ]);
+    $delivery->save();
 
     $notification = new class extends Notification
     {

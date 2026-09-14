@@ -33,28 +33,38 @@ final class AffiliateStatsAggregator
     public function overview(): array
     {
         $owner = $this->resolveOwner();
-        $affiliateQuery = $this->affiliateQuery($owner);
-        $conversionQuery = $this->conversionQuery($owner);
 
-        $totalAffiliates = (clone $affiliateQuery)->count();
-        $activeAffiliates = (clone $affiliateQuery)
-            ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
-            ->count();
-        $pendingAffiliates = (clone $affiliateQuery)
-            ->where('status', AffiliateStatus::fromString(Pending::class)->getValue())
-            ->count();
-        $totalConversions = (clone $conversionQuery)->count();
-        $pendingCommission = (int) (clone $conversionQuery)
-            ->where('status', PendingConversion::value())
-            ->sum('commission_minor');
-        $paidCommission = (int) (clone $conversionQuery)
-            ->where('status', PaidConversion::value())
-            ->sum('commission_minor');
-        $totalCommission = (int) (clone $conversionQuery)->sum('commission_minor');
+        $activeStatus = AffiliateStatus::fromString(Active::class)->getValue();
+        $pendingStatus = AffiliateStatus::fromString(Pending::class)->getValue();
 
-        $approved = (clone $conversionQuery)
-            ->whereIn('status', [ApprovedConversion::value(), PaidConversion::value()])
-            ->count();
+        $affiliateRow = $this->affiliateQuery($owner)
+            ->toBase()
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active', [$activeStatus])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending', [$pendingStatus])
+            ->first();
+
+        $pendingConversion = PendingConversion::value();
+        $paidConversion = PaidConversion::value();
+        $approvedConversion = ApprovedConversion::value();
+
+        $conversionRow = $this->conversionQuery($owner)
+            ->toBase()
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('COALESCE(SUM(CASE WHEN status = ? THEN commission_minor ELSE 0 END), 0) as pending_commission', [$pendingConversion])
+            ->selectRaw('COALESCE(SUM(CASE WHEN status = ? THEN commission_minor ELSE 0 END), 0) as paid_commission', [$paidConversion])
+            ->selectRaw('COALESCE(SUM(commission_minor), 0) as total_commission')
+            ->selectRaw('SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as approved', [$approvedConversion, $paidConversion])
+            ->first();
+
+        $totalAffiliates = (int) ($affiliateRow->total ?? 0);
+        $activeAffiliates = (int) ($affiliateRow->active ?? 0);
+        $pendingAffiliates = (int) ($affiliateRow->pending ?? 0);
+        $totalConversions = (int) ($conversionRow->total ?? 0);
+        $pendingCommission = (int) ($conversionRow->pending_commission ?? 0);
+        $paidCommission = (int) ($conversionRow->paid_commission ?? 0);
+        $totalCommission = (int) ($conversionRow->total_commission ?? 0);
+        $approved = (int) ($conversionRow->approved ?? 0);
 
         $conversionRate = $totalConversions > 0
             ? ($approved / $totalConversions) * 100

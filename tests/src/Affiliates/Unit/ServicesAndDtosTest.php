@@ -83,7 +83,7 @@ test('AffiliateLinkGenerator can be instantiated', function (): void {
 
 test('AffiliateLinkGenerator generates tracking link', function (): void {
     config(['affiliates.links.parameter' => 'aff']);
-    config(['affiliates.links.allowed_hosts' => []]);
+    config(['affiliates.links.allowed_hosts' => ['example.com']]);
 
     $generator = app(AffiliateLinkGenerator::class);
 

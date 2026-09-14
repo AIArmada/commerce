@@ -32,17 +32,19 @@ final class PayoutExportService
     {
         $payout = $this->resolveOwnerScopedPayout($payout);
 
-        $csv = Writer::createFromFileObject(new SplTempFileObject);
-        $csv->insertOne($this->getHeaders());
-
-        foreach ($payout->conversions as $conversion) {
-            $csv->insertOne($this->getRowData($conversion));
-        }
-
-        $filename = sprintf('%s.csv', $payout->reference);
+        $filename = $this->sanitizeFilename($payout->reference, 'csv');
 
         return response()->streamDownload(
-            static fn () => print $csv->toString(),
+            function () use ($payout): void {
+                $csv = Writer::createFromFileObject(new SplTempFileObject);
+                $csv->insertOne($this->getHeaders());
+
+                foreach ($this->conversionRows($payout) as $conversion) {
+                    $csv->insertOne($this->getRowData($conversion));
+                }
+
+                echo $csv->toString();
+            },
             $filename,
             ['Content-Type' => 'text/csv']
         );
@@ -58,7 +60,7 @@ final class PayoutExportService
         $payout = $this->resolveOwnerScopedPayout($payout);
 
         $data = $this->buildExportData($payout);
-        $filename = sprintf('%s.xlsx', $payout->reference);
+        $filename = $this->sanitizeFilename($payout->reference, 'xlsx');
 
         // Use Spatie SimpleXLSXGen or fallback to CSV-compatible Excel
         if (class_exists(SimpleXLSXGen::class)) {
@@ -79,7 +81,7 @@ final class PayoutExportService
         $payout = $this->resolveOwnerScopedPayout($payout);
 
         $data = $this->buildExportData($payout);
-        $filename = sprintf('%s.pdf', $payout->reference);
+        $filename = $this->sanitizeFilename($payout->reference, 'pdf');
 
         // Use Spatie Laravel PDF if available
         if (class_exists(Pdf::class)) {
@@ -98,7 +100,9 @@ final class PayoutExportService
     private function resolveOwnerScopedPayout(AffiliatePayout $payout): AffiliatePayout
     {
         if (! (bool) config('affiliates.owner.enabled', false)) {
-            return $payout->loadMissing('conversions');
+            return $payout->exists
+                ? AffiliatePayout::query()->whereKey($payout->getKey())->firstOrFail()
+                : $payout;
         }
 
         $owner = OwnerContext::resolve();
@@ -108,9 +112,20 @@ final class PayoutExportService
         OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
 
         return $query
-            ->with('conversions')
             ->whereKey($payout->getKey())
             ->firstOrFail();
+    }
+
+    /**
+     * Stream conversion rows for the payout without hydrating them all at once.
+     *
+     * @return iterable<int, object>
+     */
+    private function conversionRows(AffiliatePayout $payout): iterable
+    {
+        foreach ($payout->conversions()->orderBy('id')->cursor() as $conversion) {
+            yield $conversion;
+        }
     }
 
     /**
@@ -138,13 +153,45 @@ final class PayoutExportService
     private function getRowData(object $conversion): array
     {
         return [
-            (string) $conversion->affiliate_code,
-            (string) $conversion->external_reference,
-            MoneyFormatter::decimalFromMinor((int) $conversion->commission_minor, (string) $conversion->commission_currency),
-            (string) $conversion->commission_currency,
-            $this->stringifyStatus($conversion->status),
-            $conversion->created_at?->format('Y-m-d H:i:s') ?? '',
+            $this->sanitizeCell((string) $conversion->affiliate_code),
+            $this->sanitizeCell((string) $conversion->external_reference),
+            $this->sanitizeCell(MoneyFormatter::decimalFromMinor((int) $conversion->commission_minor, (string) $conversion->commission_currency)),
+            $this->sanitizeCell((string) $conversion->commission_currency),
+            $this->sanitizeCell($this->stringifyStatus($conversion->status)),
+            $this->sanitizeCell($conversion->created_at?->format('Y-m-d H:i:s') ?? ''),
         ];
+    }
+
+    /**
+     * Neutralize CSV/XLSX formula injection: cells starting with a formula
+     * trigger character are prefixed with a single quote so spreadsheet
+     * applications treat them as plain text.
+     */
+    private function sanitizeCell(string $value): string
+    {
+        if ($value === '') {
+            return $value;
+        }
+
+        $first = $value[0];
+
+        if (in_array($first, ['=', '+', '-', '@', "\t", "\r", "\n"], true)) {
+            return "'" . $value;
+        }
+
+        return $value;
+    }
+
+    private function sanitizeFilename(?string $reference, string $extension): string
+    {
+        $base = (string) preg_replace('/[^A-Za-z0-9\-_]+/', '_', (string) $reference);
+        $base = mb_trim($base, '_');
+
+        if ($base === '') {
+            $base = 'payout';
+        }
+
+        return mb_substr($base, 0, 120) . '.' . $extension;
     }
 
     /**
@@ -156,7 +203,7 @@ final class PayoutExportService
     {
         $data = [$this->getHeaders()];
 
-        foreach ($payout->conversions as $conversion) {
+        foreach ($this->conversionRows($payout) as $conversion) {
             $data[] = $this->getRowData($conversion);
         }
 
@@ -287,16 +334,22 @@ final class PayoutExportService
         $headers = array_shift($data);
         $rows = $data;
 
-        $totalCommissionMinor = (int) collect($payout->conversions)->sum('commission_minor');
-        $currency = $payout->conversions->first()?->commission_currency ?? 'USD';
-        $formattedTotalCommission = MoneyFormatter::formatMinor($totalCommissionMinor, $currency);
+        $totalCommissionMinor = (int) $payout->conversions()->sum('commission_minor');
+        $conversionCount = (int) $payout->conversions()->count();
+        $currency = $payout->conversions()->value('commission_currency') ?? 'USD';
+        $formattedTotalCommission = MoneyFormatter::formatMinor($totalCommissionMinor, (string) $currency);
+
+        $reference = htmlspecialchars((string) $payout->reference, ENT_QUOTES, 'UTF-8');
+        $status = htmlspecialchars($this->getStatusValue($payout), ENT_QUOTES, 'UTF-8');
+        $generated = htmlspecialchars($payout->created_at->format('Y-m-d H:i:s'), ENT_QUOTES, 'UTF-8');
+        $total = htmlspecialchars($formattedTotalCommission, ENT_QUOTES, 'UTF-8');
 
         $html = <<<HTML
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Payout Report - {$payout->reference}</title>
+    <title>Payout Report - {$reference}</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
         h1 { color: #333; font-size: 18px; }
@@ -312,11 +365,11 @@ final class PayoutExportService
 <body>
     <h1>Affiliate Payout Report</h1>
     <div class="meta">
-        <p><strong>Reference:</strong> {$payout->reference}</p>
-        <p><strong>Status:</strong> {$this->getStatusValue($payout)}</p>
-        <p><strong>Generated:</strong> {$payout->created_at->format('Y-m-d H:i:s')}</p>
-        <p><strong>Total Conversions:</strong> {$payout->conversions->count()}</p>
-        <p><strong>Total Amount:</strong> {$formattedTotalCommission}</p>
+        <p><strong>Reference:</strong> {$reference}</p>
+        <p><strong>Status:</strong> {$status}</p>
+        <p><strong>Generated:</strong> {$generated}</p>
+        <p><strong>Total Conversions:</strong> {$conversionCount}</p>
+        <p><strong>Total Amount:</strong> {$total}</p>
     </div>
     <table>
         <thead>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\RelationManagers;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use Filament\Actions\AttachAction;
 use Filament\Actions\DetachAction;
 use Filament\Actions\EditAction;
@@ -11,6 +12,8 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class AddressesRelationManager extends RelationManager
 {
@@ -48,12 +51,21 @@ class AddressesRelationManager extends RelationManager
             ->headerActions([
                 AttachAction::make()
                     ->label('Add Address')
-                    ->preloadRecordSelect(),
+                    ->preloadRecordSelect()
+                    ->recordSelectOptionsQuery(fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false)),
             ])
             ->actions([
-                EditAction::make(),
+                EditAction::make()
+                    ->visible(fn (?Model $record): bool => $record === null || OwnerUiScope::canMutateRecord($record))
+                    ->before(function (?Model $record): void {
+                        abort_unless($record === null || OwnerUiScope::canMutateRecord($record), 403);
+                    }),
                 DetachAction::make()
-                    ->label('Remove'),
+                    ->label('Remove')
+                    ->visible(fn (?Model $record): bool => $record === null || OwnerUiScope::canMutateRecord($record))
+                    ->before(function (?Model $record): void {
+                        abort_unless($record === null || OwnerUiScope::canMutateRecord($record), 403);
+                    }),
             ]);
     }
 }

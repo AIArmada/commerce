@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
 use AIArmada\Addressing\Models\Address;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Venue;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use LogicException;
 
@@ -43,7 +47,17 @@ final class VenueImporter extends Importer
                         throw new LogicException('Venue importer did not resolve a Venue record.');
                     }
 
-                    $address = Address::query()->findOrFail($state);
+                    try {
+                        if (method_exists(Address::class, 'ownerScopeConfig') && ! Address::ownerScopeConfig()->enabled) {
+                            $address = Address::query()->findOrFail($state);
+                        } else {
+                            $address = OwnerWriteGuard::findOrFailForOwner(Address::class, $state);
+                        }
+                    } catch (AuthorizationException | ModelNotFoundException) {
+                        throw ValidationException::withMessages([
+                            'address_id' => 'The selected address does not exist in the current scope.',
+                        ]);
+                    }
 
                     $record->attachAddress($address, type: 'primary', isPrimary: true);
                 }),

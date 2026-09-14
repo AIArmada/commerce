@@ -6,12 +6,16 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Services\DocService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -73,10 +77,34 @@ final class DocVersion extends Model implements Auditable
 
     /**
      * Restore this version to the document.
+     *
+     * The snapshot is applied through the document service so template
+     * validation, totals derivation, the status state machine, and owner
+     * scoping all apply; the restore itself is recorded as a new version.
+     * Immutable snapshot keys (number, type, pdf path, totals) are ignored.
      */
-    public function restore(): void
+    public function restore(?string $summary = null): void
     {
-        $this->doc->update($this->snapshot);
+        $doc = $this->doc;
+
+        if (! $doc instanceof Doc) {
+            throw (new ModelNotFoundException)->setModel(Doc::class, [$this->doc_id]);
+        }
+
+        if (config('docs.owner.enabled', false)) {
+            OwnerWriteGuard::findOrFailForOwner(
+                Doc::class,
+                (string) $doc->getKey(),
+                owner: OwnerContext::resolve(),
+                includeGlobal: (bool) config('docs.owner.include_global', false),
+                message: 'Document is not available in the current owner scope.',
+            );
+        }
+
+        $restored = app(DocService::class)->update($doc, $this->snapshot ?? []);
+
+        $restored->versions()->latest('version_number')->first()
+            ?->update(['change_summary' => $summary ?? "Restored version {$this->version_number}"]);
     }
 
     /**

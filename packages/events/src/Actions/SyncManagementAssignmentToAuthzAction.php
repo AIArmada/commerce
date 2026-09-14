@@ -8,6 +8,7 @@ use AIArmada\Authz\Models\Role;
 use AIArmada\Events\Models\EventManagementAssignment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\PermissionRegistrar;
 
 final class SyncManagementAssignmentToAuthzAction
@@ -61,6 +62,13 @@ final class SyncManagementAssignmentToAuthzAction
             ->first();
 
         if ($role === null) {
+            Log::warning('Skipping management assignment authz sync because the role does not exist in the resolved scope.', [
+                'role' => $roleName,
+                'scope_id' => $scopeId,
+                'manager_type' => $manager->getMorphClass(),
+                'manager_id' => (string) $manager->getKey(),
+            ]);
+
             return;
         }
 
@@ -73,6 +81,13 @@ final class SyncManagementAssignmentToAuthzAction
             ],
             [],
         );
+
+        Log::debug('Synced management assignment to authz role.', [
+            'role' => $roleName,
+            'scope_id' => $scopeId,
+            'manager_type' => $manager->getMorphClass(),
+            'manager_id' => (string) $manager->getKey(),
+        ]);
     }
 
     private function authzAvailable(): bool

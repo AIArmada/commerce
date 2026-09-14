@@ -48,13 +48,14 @@ test('event references normalize models, arrays, and communication context', fun
 });
 
 test('attaching an event reference is idempotent and merges metadata', function (): void {
-    $communication = Communication::create([
+    $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
         'priority' => CommunicationPriority::Normal,
         'purpose' => 'reference-test',
         'status' => CommunicationStatus::Draft,
     ]);
+    $communication->save();
 
     $action = app(AttachCommunicationReferenceAction::class);
     $first = $action->handle(

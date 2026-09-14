@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Widgets;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\Promotions\Support\PromotionPerformanceInsights;
+use AIArmada\FilamentPromotions\Support\CachedPromotionInsights;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -15,7 +15,7 @@ final class PromotionStatsWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $overview = app(PromotionPerformanceInsights::class)->overview();
+        $overview = app(CachedPromotionInsights::class)->overview();
         $defaultCurrency = (string) config('promotions.defaults.currency', 'USD');
         $moneyCurrency = $overview['reporting_currency'] ?? $defaultCurrency;
         $influencedRevenue = $overview['currency_count'] > 1

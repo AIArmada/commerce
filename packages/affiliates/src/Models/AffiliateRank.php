@@ -59,8 +59,6 @@ class AffiliateRank extends Model implements Auditable
         'override_rates',
         'benefits',
         'metadata',
-        'owner_type',
-        'owner_id',
     ];
 
     protected $casts = [

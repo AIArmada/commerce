@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Resources;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\CreateVoucher;
@@ -113,7 +114,12 @@ final class VoucherResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = (int) self::getEloquentQuery()->count();
+        $count = (int) OwnerCache::remember(
+            OwnerContext::resolve(),
+            'filament-vouchers.nav-badge.vouchers',
+            30,
+            static fn (): int => (int) self::getEloquentQuery()->count(),
+        );
 
         return $count > 0 ? (string) $count : null;
     }

@@ -5,80 +5,84 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Console\Commands;
 
 use AIArmada\Cashier\Actions\SyncWebhook;
+use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
 use AIArmada\Cashier\GatewayManager;
-use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\Customers\Models\Customer;
+use AIArmada\Cashier\Gateways\StripeGateway;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 final class WebhookReplayCommand extends Command
 {
     protected $signature = 'cashier:webhook:replay
-                          {event-id? : Specific webhook event ID to replay (replays all if omitted)}
-                          {--gateway= : Gateway to replay webhooks for (stripe, chip)}
+                          {event-id? : Webhook event ID to replay}
+                          {--gateway=stripe : Gateway to replay the webhook for (stripe, chip)}
                           {--dry-run : Dry run without dispatching}';
 
-    protected $description = 'Replay failed or pending webhook events';
+    protected $description = 'Replay a webhook event by re-fetching it from the gateway API';
 
     public function handle(GatewayManager $gatewayManager, SyncWebhook $syncWebhook): int
     {
         $eventId = $this->argument('event-id');
-        $gateway = $this->option('gateway');
+        $gateway = (string) ($this->option('gateway') ?: 'stripe');
         $dryRun = (bool) $this->option('dry-run');
 
-        if (is_string($eventId) && $eventId !== '') {
-            $this->info("Replaying webhook event: {$eventId}");
+        if (! $gatewayManager->supportsGateway($gateway)) {
+            $this->error("Gateway [{$gateway}] is not supported. Supported gateways: " . implode(', ', $gatewayManager->supportedGateways()) . '.');
 
-            if (! $dryRun) {
-                $syncWebhook->handle($gateway ?? 'stripe', ['event_id' => $eventId]);
-            }
+            return self::FAILURE;
+        }
 
-            $this->info('Webhook event replayed.');
+        if (! is_string($eventId) || $eventId === '') {
+            $this->error('An event ID is required. Replay-all was removed: cashier stores no pending-webhook queue, so pass the gateway event ID to re-fetch.');
+
+            return self::FAILURE;
+        }
+
+        if ($dryRun) {
+            $this->info("Dry run: would replay webhook event [{$eventId}] from gateway [{$gateway}].");
 
             return self::SUCCESS;
         }
 
-        $runner = new OwnerBatchRunner(Customer::class, [
-            'enabled' => 'commerce-support.owner.enabled',
-        ]);
+        try {
+            $payload = $this->fetchEventPayload($gatewayManager, $gateway, $eventId);
+        } catch (GatewayRetrievalException $e) {
+            $this->error($e->getMessage());
 
-        $this->info('Replaying all pending webhook events...');
+            return self::FAILURE;
+        }
 
-        $total = $runner->run(function () use ($gatewayManager, $syncWebhook, $dryRun, $gateway): int {
-            $processed = 0;
+        // Events re-fetched from the gateway API over TLS are trusted
+        // server-side truth: they carry no HTTP signature to verify.
+        $syncWebhook->handle($gateway, $payload);
 
-            if ($dryRun) {
-                return 0;
-            }
-
-            $gateways = is_string($gateway) && $gateway !== ''
-                ? [$gateway]
-                : ['stripe', 'chip'];
-
-            foreach ($gateways as $gw) {
-                $manager = $gatewayManager->gateway($gw);
-
-                if (method_exists($manager, 'pendingWebhooks')) {
-                    $pending = $manager->pendingWebhooks();
-
-                    foreach ($pending as $webhookEvent) {
-                        $syncWebhook->handle($gw, (array) $webhookEvent);
-                        $processed++;
-                    }
-                }
-            }
-
-            return $processed;
-        });
-
-        $this->info("Webhook events processed: {$total}");
+        $this->info("Webhook event [{$eventId}] replayed.");
 
         Log::info('Webhook replay completed', [
-            'total' => $total,
+            'event_id' => $eventId,
             'gateway' => $gateway,
-            'dry_run' => $dryRun,
         ]);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function fetchEventPayload(GatewayManager $gatewayManager, string $gateway, string $eventId): array
+    {
+        $gatewayInstance = $gatewayManager->gateway($gateway);
+
+        if ($gatewayInstance instanceof StripeGateway) {
+            return $gatewayInstance->fetchWebhookEvent($eventId);
+        }
+
+        throw GatewayRetrievalException::create(
+            $gateway,
+            'webhook event',
+            $eventId,
+            new RuntimeException("Gateway [{$gateway}] exposes no event API, so replay-by-ID is unsupported; re-deliver the webhook from the gateway dashboard instead."),
+        );
     }
 }

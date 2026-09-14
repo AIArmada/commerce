@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create(config('pricing.database.tables.price_lists', 'price_lists'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug')->index();
             $table->text('description')->nullable();
             $table->string('currency', 3)->default('MYR');
             $table->integer('priority')->default(0);
@@ -38,6 +38,13 @@ return new class extends Migration
             $table->index(['starts_at', 'ends_at']);
             $table->index('customer_id');
             $table->index('segment_id');
+            $table->index('is_default');
+            $table->index('currency');
+            // Slugs are unique per owner so tenants can reuse names like
+            // `retail`. NULL owner tuples stay mutually distinct on most
+            // drivers; global rows are privileged writes guarded by scoped
+            // form rules in addition to this constraint.
+            $table->unique(['owner_type', 'owner_id', 'slug'], 'price_lists_owner_slug_unique');
         });
     }
 

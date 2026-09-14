@@ -8,6 +8,8 @@ use AIArmada\Chip\Models\Purchase;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Filament-only exporter — depends on Filament\Actions\Exports\Exporter.
@@ -44,14 +46,31 @@ class PurchaseExporter extends Exporter
 
             ExportColumn::make('is_test')
                 ->label('Test Mode')
-                ->formatStateUsing(fn (bool $state): string => $state ? 'Yes' : 'No'),
+                ->formatStateUsing(fn (mixed $state): string => $state ? 'Yes' : 'No'),
 
             ExportColumn::make('created_on')
                 ->label('Created'),
-
-            ExportColumn::make('checkout_url')
-                ->label('Checkout URL'),
         ];
+    }
+
+    /**
+     * Exports never consult policies, so scope the query to the current
+     * owner here. The signed `checkout_url` is intentionally not exported.
+     *
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    public static function modifyQuery(Builder $query): Builder
+    {
+        $model = $query->getModel();
+
+        if (method_exists($model, 'scopeForOwner')) {
+            return $model->scopeForOwner($query);
+        }
+
+        return $query;
     }
 
     public static function getCompletedNotificationBody(Export $export): string

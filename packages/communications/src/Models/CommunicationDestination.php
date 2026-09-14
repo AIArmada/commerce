@@ -46,12 +46,10 @@ final class CommunicationDestination extends Model
     use HasUuids;
 
     protected $fillable = [
-        'recipient_type',
         'recipient_id',
         'channel',
         'address',
         'external_id',
-        'status',
         'is_primary',
         'verified_at',
         'metadata',

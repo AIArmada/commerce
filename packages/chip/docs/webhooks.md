@@ -31,7 +31,7 @@ Relevant config:
 'webhooks' => [
     'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
     'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhooks'),
-    'middleware' => ['api'],
+    'middleware' => ['api', 'throttle:120,1'],
     'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
     'store_webhooks' => env('CHIP_WEBHOOK_STORE', true),
     'deduplication' => env('CHIP_WEBHOOK_DEDUPLICATION', true),
@@ -96,11 +96,12 @@ abort_unless($service->verifySuccessCallbackSignature($request), 400, 'Invalid s
 
 When the built-in route is enabled, successful deliveries flow through these steps:
 
-1. signature verification
-2. deduplication and webhook-call storage
-3. `WebhookReceived` dispatch
-4. typed event dispatch through `WebhookEventDispatcher`
-5. local model synchronization
+1. signature verification (before any owner lookup, so unknown brands cannot be probed)
+2. owner resolution from the brand map (owner mode only; resolved once)
+3. deduplication and webhook-call storage
+4. `WebhookReceived` dispatch
+5. typed event dispatch through `WebhookEventDispatcher`
+6. local model synchronization
 
 The generic event is:
 
@@ -272,3 +273,14 @@ CHIP_SEND_WEBHOOK_ROUTE=/chip/send/webhooks
 ```
 
 For multiple Send webhooks, use `CHIP_SEND_WEBHOOK_PUBLIC_KEYS` as a JSON object keyed by the integer webhook ID. The route returns HTTP 200 only after signature and JSON-object validation; a non-2xx response allows CHIP to retry the delivery.
+
+When owner scoping is enabled, the event is dispatched inside the owner configured via `chip.owner.send_webhook_owner` (see [Configuration](03-configuration.md#send-webhook-owner)). Host listeners therefore run with an owner context and must not assume global scope.
+
+## Custom routes and the signature middleware
+
+The built-in Collect route verifies signatures through the Spatie webhook validator. Hosts with their own webhook routes can reuse the package middleware via its alias instead of duplicating verification logic:
+
+```php
+Route::post('/webhooks/chip/custom', [CustomWebhookController::class, 'handle'])
+    ->middleware(['api', 'chip.verify-webhook']);
+```

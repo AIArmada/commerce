@@ -27,10 +27,10 @@ return new class extends Migration
             $table->string('download_url', 500)->nullable();
 
             // Lifecycle timestamps from API (unix seconds)
-            $table->integer('began_on')->nullable();
-            $table->integer('finished_on')->nullable();
-            $table->integer('created_on');
-            $table->integer('updated_on');
+            $table->bigInteger('began_on')->nullable();
+            $table->bigInteger('finished_on')->nullable();
+            $table->bigInteger('created_on');
+            $table->bigInteger('updated_on');
 
             // Owner scoping
             $table->nullableMorphs('owner');

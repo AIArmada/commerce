@@ -37,6 +37,12 @@ final class DispatchReminderThroughCommunications
             throw new InvalidArgumentException('The configured reminder notification must extend Laravel Notification.');
         }
 
+        $allowed = config('engagement.notifications.allowed', []);
+
+        if (! is_array($allowed) || ! in_array($notificationClass, $allowed, true)) {
+            throw new InvalidArgumentException(sprintf('Notification class [%s] is not in the engagement.notifications.allowed allowlist.', $notificationClass));
+        }
+
         $notification = app($notificationClass);
 
         if (! $notification instanceof Notification) {

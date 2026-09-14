@@ -65,6 +65,17 @@ class EventAttendance extends Model
         return config('events.database.tables.event_attendances', 'event_attendances');
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (EventAttendance $attendance): void {
+            $attendance->logs()->chunkById(200, function ($logs): void {
+                foreach ($logs as $log) {
+                    $log->delete();
+                }
+            });
+        });
+    }
+
     protected function casts(): array
     {
         return [

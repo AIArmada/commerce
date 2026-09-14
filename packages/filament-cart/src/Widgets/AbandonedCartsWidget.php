@@ -59,7 +59,7 @@ final class AbandonedCartsWidget extends BaseWidget
                     ->getStateUsing(fn (Cart $record): string => $this->getTimeSinceAbandonment($record)),
             ])
             ->defaultSort('checkout_abandoned_at', 'desc')
-            ->actions([
+            ->recordActions([
                 Action::make('view')
                     ->icon('heroicon-o-eye')
                     ->url(fn (Cart $record): string => CartResource::getUrl('view', ['record' => $record])),

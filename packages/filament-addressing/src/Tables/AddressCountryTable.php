@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Tables;
 
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class AddressCountryTable
 {
     public static function make(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['currencies']))
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
@@ -41,24 +43,12 @@ class AddressCountryTable
             ])
             ->filters([
                 SelectFilter::make('region')
-                    ->options(fn (): array => self::getRegionOptions()),
+                    ->options(fn (): array => AddressingFilterOptions::countryRegions()),
                 SelectFilter::make('currencies')
                     ->label('Currency')
                     ->relationship('currencies', 'code'),
             ])
             ->defaultSort('name')
             ->paginated([10, 25, 50, 100]);
-    }
-
-    private static function getRegionOptions(): array
-    {
-        $countryClass = config('filament-addressing.resources.countries.model', AddressCountry::class);
-
-        return $countryClass::query()
-            ->whereNotNull('region')
-            ->distinct()
-            ->orderBy('region')
-            ->pluck('region', 'region')
-            ->toArray();
     }
 }

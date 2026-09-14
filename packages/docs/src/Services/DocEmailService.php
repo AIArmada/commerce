@@ -7,6 +7,7 @@ namespace AIArmada\Docs\Services;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\EmailStatus;
+use AIArmada\Docs\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -38,6 +40,8 @@ final class DocEmailService
         ?string $bodyOverride = null,
         array $metadata = [],
     ): DocEmail {
+        $this->assertValidRecipient($recipientEmail, $recipientName);
+
         // Find template if not provided
         $template ??= $this->findTemplate($doc, 'send');
 
@@ -72,9 +76,9 @@ final class DocEmailService
     /**
      * Send a reminder for an overdue document.
      */
-    public function sendReminder(Doc $doc, string $recipientEmail, array $metadata = []): DocEmail
+    public function sendReminder(Doc $doc, string $recipientEmail, array $metadata = [], ?DocEmailTemplate $template = null): DocEmail
     {
-        $template = $this->findTemplate($doc, 'reminder');
+        $template ??= $this->findTemplate($doc, 'reminder');
 
         return $this->send(
             doc: $doc,
@@ -256,29 +260,48 @@ final class DocEmailService
      */
     private function queueEmail(DocEmail $email, Doc $doc): void
     {
+        if (config('docs.email.queue_enabled', true)) {
+            SendDocEmailJob::dispatch(
+                docEmailId: (string) $email->getKey(),
+                docId: (string) $doc->getKey(),
+                attachPdf: (bool) config('docs.email.attach_pdf', true),
+            )->onQueue((string) config('docs.email.queue', 'default'));
+
+            return;
+        }
+
         try {
-            $mailable = new DocMail(
+            Mail::send(new DocMail(
                 docEmail: $email,
                 doc: $doc,
-                attachPdf: config('docs.email.attach_pdf', true),
-            );
+                attachPdf: (bool) config('docs.email.attach_pdf', true),
+            ));
 
-            if (config('docs.email.queue_enabled', true)) {
-                Mail::queue($mailable);
-            } else {
-                Mail::send($mailable);
-                $email->update([
-                    'status' => EmailStatus::Sent,
-                    'sent_at' => CarbonImmutable::now(),
-                ]);
-            }
+            $email->update([
+                'status' => EmailStatus::Sent,
+                'sent_at' => CarbonImmutable::now(),
+            ]);
         } catch (Throwable $e) {
             $email->update([
                 'status' => EmailStatus::Failed,
+                'failed_at' => CarbonImmutable::now(),
                 'failure_reason' => $e->getMessage(),
             ]);
 
             throw $e;
+        }
+    }
+
+    private function assertValidRecipient(string $recipientEmail, ?string $recipientName): void
+    {
+        $email = mb_trim($recipientEmail);
+
+        if ($email === '' || mb_strlen($email) > 320 || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            throw new InvalidArgumentException('Document email recipient must be a valid email address.');
+        }
+
+        if ($recipientName !== null && ($recipientName === '' || mb_strlen($recipientName) > 255)) {
+            throw new InvalidArgumentException('Document email recipient name must be a non-empty string up to 255 characters.');
         }
     }
 
@@ -291,6 +314,7 @@ final class DocEmailService
             'email_id' => $email->id,
             'type' => $type,
             'url' => $url,
+            'issued_at' => CarbonImmutable::now()->getTimestamp(),
         ];
 
         $payload = json_encode($data);
@@ -315,7 +339,23 @@ final class DocEmailService
             /** @var array<string, mixed>|null $decoded */
             $decoded = json_decode($payload, true);
 
-            return is_array($decoded) ? $decoded : null;
+            if (! is_array($decoded) || ! isset($decoded['email_id'], $decoded['type'])) {
+                return null;
+            }
+
+            $issuedAt = $decoded['issued_at'] ?? null;
+
+            if (! is_int($issuedAt) || $issuedAt <= 0) {
+                return null;
+            }
+
+            $ttlDays = max(1, (int) config('docs.email.tracking.ttl_days', 180));
+
+            if ($issuedAt < CarbonImmutable::now()->subDays($ttlDays)->getTimestamp()) {
+                return null;
+            }
+
+            return $decoded;
         } catch (Throwable) {
             return null;
         }

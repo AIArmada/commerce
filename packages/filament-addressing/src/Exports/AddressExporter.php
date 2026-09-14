@@ -5,13 +5,27 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Exports;
 
 use AIArmada\Addressing\Models\Address;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
+use Illuminate\Database\Eloquent\Builder;
 
 class AddressExporter extends Exporter
 {
-    protected static ?string $model = Address::class;
+    public static function getModel(): string
+    {
+        return config('filament-addressing.resources.addresses.model', Address::class);
+    }
+
+    /**
+     * @param  Builder<Address>  $query
+     * @return Builder<Address>
+     */
+    public static function modifyQuery(Builder $query): Builder
+    {
+        return OwnerUiScope::apply($query, includeGlobal: false);
+    }
 
     public static function getColumns(): array
     {

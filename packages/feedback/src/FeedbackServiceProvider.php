@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Feedback;
 
 use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
+use AIArmada\Feedback\Console\Commands\PruneExpiredFeedbackInvitationsCommand;
 use AIArmada\Feedback\Contracts\AnswerNormalizer;
 use AIArmada\Feedback\Contracts\FeedbackAnalyticsCalculator;
 use AIArmada\Feedback\Contracts\InvitationUrlGenerator;
@@ -38,7 +39,8 @@ final class FeedbackServiceProvider extends PackageServiceProvider
             ->name('feedback')
             ->hasConfigFile()
             ->runsMigrations()
-            ->discoversMigrations();
+            ->discoversMigrations()
+            ->hasCommand(PruneExpiredFeedbackInvitationsCommand::class);
     }
 
     public function registeringPackage(): void

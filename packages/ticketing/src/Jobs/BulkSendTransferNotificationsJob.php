@@ -40,6 +40,12 @@ final class BulkSendTransferNotificationsJob implements OwnerScopedJob, ShouldQu
 
     protected function performJob(): void
     {
+        $previousByPassId = $this->event->previousHolders->keyBy(
+            fn ($holder): string => (string) $holder->pass_id
+        );
+
+        $this->event->passes->loadMissing('holder');
+
         foreach ($this->event->passes as $pass) {
             $holder = $pass->holder;
 
@@ -47,10 +53,10 @@ final class BulkSendTransferNotificationsJob implements OwnerScopedJob, ShouldQu
                 continue;
             }
 
-            $transferredFrom = $this->event->toHolder ?? $holder;
+            $previousHolder = $previousByPassId->get((string) $pass->getKey(), $holder);
 
             Notification::route('mail', $holder->email)
-                ->notify(new PassTransferredToNewHolderNotification($pass, $transferredFrom, $this->event->reason));
+                ->notify(new PassTransferredToNewHolderNotification($pass, $previousHolder, $this->event->reason));
         }
     }
 }

@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 
 final class EventSessionImporter extends Importer
 {
@@ -18,8 +24,10 @@ final class EventSessionImporter extends Importer
         return [
             ImportColumn::make('event_id')
                 ->requiredMapping()
+                ->rules(['required', 'uuid'])
                 ->label('Event ID'),
             ImportColumn::make('event_occurrence_id')
+                ->rules(['nullable', 'uuid'])
                 ->label('Occurrence ID'),
             ImportColumn::make('title')
                 ->requiredMapping()
@@ -52,6 +60,47 @@ final class EventSessionImporter extends Importer
     public function resolveRecord(): ?EventSession
     {
         return new EventSession;
+    }
+
+    public function beforeCreate(): void
+    {
+        $this->assertEventScope($this->data['event_id'] ?? null, $this->data['event_occurrence_id'] ?? null);
+    }
+
+    private function assertEventScope(mixed $eventId, mixed $occurrenceId): void
+    {
+        if (! is_string($eventId) || mb_trim($eventId) === '') {
+            throw ValidationException::withMessages([
+                'event_id' => 'The selected event does not exist in the current scope.',
+            ]);
+        }
+
+        try {
+            if (method_exists(Event::class, 'ownerScopeConfig') && ! Event::ownerScopeConfig()->enabled) {
+                $event = Event::query()->findOrFail($eventId);
+            } else {
+                $event = OwnerWriteGuard::findOrFailForOwner(Event::class, $eventId);
+            }
+        } catch (AuthorizationException | ModelNotFoundException) {
+            throw ValidationException::withMessages([
+                'event_id' => 'The selected event does not exist in the current scope.',
+            ]);
+        }
+
+        if ($occurrenceId === null || $occurrenceId === '') {
+            return;
+        }
+
+        $belongsToEvent = EventOccurrence::query()
+            ->whereKey($occurrenceId)
+            ->where('event_id', $event->getKey())
+            ->exists();
+
+        if (! $belongsToEvent) {
+            throw ValidationException::withMessages([
+                'event_occurrence_id' => 'The selected occurrence does not belong to the selected event.',
+            ]);
+        }
     }
 
     public static function getCompletedNotificationBody(Import $import): string

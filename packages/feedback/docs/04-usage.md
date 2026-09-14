@@ -88,7 +88,27 @@ $url = $result['url']; // Send this to the user
 ```
 
 The raw invitation token is only available when the invitation is created. Store or
-send the returned URL immediately; only its hash is persisted.
+send the returned URL immediately; only its hash is persisted. Sending an
+invitation marks it `sent` (with `sent_at`) and dispatches
+`FeedbackInvitationSent` in addition to `FeedbackInvitationCreated`.
+
+## Invitation URL route
+
+This package generates invitation URLs (`/{prefix}/invitations/{token}`, prefix
+from `feedback.http.route_prefix`) but ships no HTTP routes. The consuming app
+must define a route matching that shape whose handler resolves the raw token and
+renders the form:
+
+```php
+use AIArmada\Feedback\Actions\ResolveFeedbackInvitationTokenAction;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/feedback/invitations/{token}', function (string $token) {
+    $invitation = app(ResolveFeedbackInvitationTokenAction::class)->execute($token);
+
+    return view('feedback.invitation', ['invitation' => $invitation]);
+});
+```
 
 ## Submit response
 
@@ -112,7 +132,13 @@ $response = app(SubmitFeedbackResponseAction::class)->execute(
 ```
 
 When the form enables one response per respondent, repeating the same submission
-returns the existing submitted response.
+returns the existing submitted (or reviewed) response. Rejected and spam
+responses do not block the respondent from submitting again.
+
+HTTP callers must bind `respondentType`/`respondentId` to the authenticated
+user; the package verifies that the respondent exists and is owner-visible, and
+optionally enforces `feedback.security.respondent_allowlist`, but it cannot
+prove the caller is that user.
 
 Starting the same response again while it is still a draft returns that draft.
 When one-response mode is disabled, the draft is reused until submission and
@@ -138,7 +164,13 @@ use AIArmada\Feedback\Analytics\CsatCalculator;
 
 $nps = app(NpsCalculator::class)->calculate($form);
 $csat = app(CsatCalculator::class)->calculate($form);
+
+// Per-question aggregates run over that question's answer scores.
+$npsForQuestion = app(NpsCalculator::class)->calculate($form, 'recommendation');
 ```
+
+`FeedbackAnalyticsService::nps($form, $questionKey)` and `csat($form,
+$questionKey)` return the calculated result objects directly.
 
 ## Testimonials
 
@@ -169,6 +201,19 @@ use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 
 app(SaveFeedbackFormStructureAction::class)->saveSection(formId: $form->id, data: ['title' => 'Basics']);
 app(SaveFeedbackFormStructureAction::class)->saveOption(questionId: $question->id, data: ['label' => 'Yes', 'value' => 'yes']);
+```
+
+Question keys are unique per form (enforced in code and by a unique index), and
+unknown or disabled question types (e.g. `file_upload`, `signature`) are
+rejected. Choice answers are validated against the question's defined options.
+
+## Prune expired invitations
+
+`feedback:prune-expired-invitations` marks past-due invitations `expired` across
+all owners (schedule it nightly; pass `--dry-run` to preview):
+
+```bash
+php artisan feedback:prune-expired-invitations
 ```
 
 ## Invitation tokens

@@ -19,6 +19,15 @@ use Illuminate\Support\Str;
 
 use function Pest\Laravel\mock;
 
+if (! function_exists('createEventsCheckoutSession')) {
+    function createEventsCheckoutSession(array $attributes): CheckoutSession
+    {
+        // Fixtures bypass mass assignment: CheckoutSession guards every
+        // server-computed field, so tests plant session state unguarded.
+        return CheckoutSession::unguarded(fn (): CheckoutSession => CheckoutSession::query()->create($attributes));
+    }
+}
+
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', true);
     config()->set('checkout.owner.enabled', false);
@@ -31,8 +40,8 @@ it('reuses snapshot participants and uses the purchaser when none were assigned'
         $customer = Customer::create([
             'first_name' => 'Maya',
             'last_name' => 'Jones',
-            'is_guest' => false,
         ]);
+        $customer->forceFill(['is_guest' => false])->save();
         $customer->addContactMethod(ContactMethodData::email('maya@example.com'));
         $customer->addContactMethod(ContactMethodData::phone('+60111222333', countryCode: 'MY'));
 
@@ -77,7 +86,7 @@ it('reuses snapshot participants and uses the purchaser when none were assigned'
             'currency' => $purchaserTicketType->currency,
         ]);
 
-        $session = CheckoutSession::query()->create([
+        $session = createEventsCheckoutSession([
             'cart_id' => (string) Str::uuid(),
             'order_id' => $order->id,
             'cart_snapshot' => [
@@ -174,8 +183,8 @@ it('uses the customer contact methods when purchaser participants are built', fu
         $customer = Customer::create([
             'first_name' => 'Raw',
             'last_name' => 'Source',
-            'is_guest' => false,
         ]);
+        $customer->forceFill(['is_guest' => false])->save();
 
         $customer->addContactMethod(ContactMethodData::email('stale@example.com'));
         $customer->addContactMethod(ContactMethodData::phone('+60987654321', countryCode: 'MY'));
@@ -206,7 +215,7 @@ it('uses the customer contact methods when purchaser participants are built', fu
             'currency' => $ticketType->currency,
         ]);
 
-        $session = CheckoutSession::query()->create([
+        $session = createEventsCheckoutSession([
             'cart_id' => (string) Str::uuid(),
             'order_id' => $order->id,
             'cart_snapshot' => [
@@ -312,7 +321,7 @@ it('routes registrations to the matching event scope for event, occurrence, and 
             'currency' => $sessionTicketType->currency,
         ]);
 
-        $checkoutSession = CheckoutSession::query()->create([
+        $checkoutSession = createEventsCheckoutSession([
             'cart_id' => (string) Str::uuid(),
             'order_id' => $order->id,
             'cart_snapshot' => [
@@ -440,7 +449,7 @@ it('compensates only registrations recorded by the checkout step', function (): 
             'total_participants' => 1,
             'currency' => 'MYR',
         ]);
-        $session = CheckoutSession::query()->create([
+        $session = createEventsCheckoutSession([
             'cart_id' => (string) Str::uuid(),
             'cart_snapshot' => [],
         ]);

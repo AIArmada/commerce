@@ -20,6 +20,25 @@ class BankAccount extends ChipIntegerModel
 {
     public $timestamps = true;
 
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'id',
+        'account_number',
+        'bank_code',
+        'name',
+        'status',
+        'group_id',
+        'reference',
+        'is_debiting_account',
+        'is_crediting_account',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+        'rejection_reason',
+    ];
+
     public function statusColor(): string
     {
         $status = $this->status ?? '';

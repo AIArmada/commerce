@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Validator;
 use InvalidArgumentException;
 
 final class AffiliateApiController extends Controller
@@ -53,28 +54,39 @@ final class AffiliateApiController extends Controller
             return response()->json(['message' => 'Affiliate not found'], 404);
         }
 
-        $url = (string) $request->input('url', url('/'));
-        $ttl = null;
-        if ($request->filled('ttl')) {
-            $ttlValue = $request->integer('ttl');
-            $ttl = $ttlValue > 0 ? $ttlValue : null;
-        }
-        $params = (array) $request->input('params', []);
-        $subjectMetadata = $request->input('subject_metadata', []);
+        $validator = Validator::make($request->all(), [
+            'url' => ['nullable', 'string', 'max:2048'],
+            'ttl' => ['nullable', 'integer', 'min:1', 'max:31536000'],
+            'params' => ['nullable', 'array', 'max:50'],
+            'params.*' => ['nullable', 'string', 'max:2048'],
+            'subject_type' => ['nullable', 'string', 'max:255'],
+            'subject_key' => ['nullable', 'string', 'max:255'],
+            'subject_id' => ['nullable', 'string', 'max:255'],
+            'subject_instance' => ['nullable', 'string', 'max:255'],
+            'subject_title_snapshot' => ['nullable', 'string', 'max:255'],
+            'subject_metadata' => ['nullable', 'array', 'max:50'],
+        ]);
 
-        if (! is_array($subjectMetadata)) {
-            $subjectMetadata = [];
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
         }
+
+        $validated = $validator->validated();
+
+        $url = (string) ($validated['url'] ?? url('/'));
+        $ttl = isset($validated['ttl']) ? (int) $validated['ttl'] : null;
+        $params = $validated['params'] ?? [];
+        $subjectMetadata = $validated['subject_metadata'] ?? [];
 
         try {
             $link = $this->createTrackingLink->handle($affiliate, $url, [
                 'params' => $params,
                 'ttl_seconds' => $ttl,
-                'subject_type' => $request->input('subject_type'),
-                'subject_key' => $request->input('subject_key'),
-                'subject_id' => $request->input('subject_id'),
-                'subject_instance' => $request->input('subject_instance'),
-                'subject_title_snapshot' => $request->input('subject_title_snapshot'),
+                'subject_type' => $validated['subject_type'] ?? null,
+                'subject_key' => $validated['subject_key'] ?? null,
+                'subject_id' => $validated['subject_id'] ?? null,
+                'subject_instance' => $validated['subject_instance'] ?? null,
+                'subject_title_snapshot' => $validated['subject_title_snapshot'] ?? null,
                 'subject_metadata' => $subjectMetadata,
             ]);
         } catch (InvalidArgumentException $e) {

@@ -82,10 +82,12 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
         'conversion_type' => 'registration',
         'status' => ApprovedConversion::class,
         'occurred_at' => Carbon::now(),
-        'owner_type' => 'users',
-        'owner_id' => 'owner-1',
         'metadata' => ['key' => 'value'],
     ]);
+    $conversion->forceFill([
+        'owner_type' => 'users',
+        'owner_id' => 'owner-1',
+    ])->save();
 
     $data = AffiliateConversionData::fromModel($conversion);
 

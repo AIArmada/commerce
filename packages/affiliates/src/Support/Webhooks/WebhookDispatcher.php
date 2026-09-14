@@ -30,7 +30,12 @@ class WebhookDispatcher
         ];
         $bodyJson = $this->encode($body);
         $secret = config('affiliates.webhooks.signature_secret');
-        $signature = is_string($secret) && $secret !== '' ? hash_hmac('sha256', $bodyJson, $secret) : null;
+
+        if (! is_string($secret) || $secret === '') {
+            return;
+        }
+
+        $signature = hash_hmac('sha256', $bodyJson, $secret);
         $headers = array_filter(
             (array) config('affiliates.webhooks.headers', []),
             static fn (mixed $value, string | int $key): bool => is_string($key) && is_scalar($value),
@@ -54,7 +59,7 @@ class WebhookDispatcher
             }
 
             $seen[$destinationKey] = true;
-            $delivery = AffiliateWebhookDelivery::query()->create([
+            $delivery = new AffiliateWebhookDelivery([
                 'event_id' => $eventId,
                 'event_type' => $type,
                 'destination_key' => $destinationKey,
@@ -65,9 +70,12 @@ class WebhookDispatcher
                 'status' => 'pending',
                 'max_attempts' => max(1, (int) config('affiliates.webhooks.delivery.max_attempts', 5)),
                 'available_at' => CarbonImmutable::now(),
+            ]);
+            $delivery->forceFill([
                 'owner_type' => $owner?->getMorphClass(),
                 'owner_id' => $owner?->getKey(),
             ]);
+            $delivery->save();
 
             DispatchAffiliateWebhook::dispatch($delivery->id)->afterCommit();
         }

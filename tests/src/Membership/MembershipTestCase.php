@@ -8,6 +8,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase as BaseTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Membership\Actions\AddMemberAction;
+use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Models\MembershipInvitation;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -42,6 +44,21 @@ abstract class MembershipTestCase extends BaseTestCase
         return $invitation;
     }
 
+    /**
+     * Create an application with explicit lifecycle attributes.
+     *
+     * Lifecycle fields are not mass-assignable, so fixtures bypass the guard
+     * the same way the package actions do internally.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function createMembershipApplication(array $attributes = []): MembershipApplication
+    {
+        return MembershipApplication::unguarded(
+            fn (): MembershipApplication => MembershipApplication::query()->create($attributes)
+        );
+    }
+
     protected function withMembershipOwner(callable $callback): mixed
     {
         $owner = User::query()
@@ -64,6 +81,7 @@ abstract class MembershipTestCase extends BaseTestCase
         app(PermissionRegistrar::class);
         request()->attributes->remove(OwnerContext::REQUEST_KEY);
         Model::clearBootedModels();
+        AddMemberAction::flushPivotIdColumnCache();
     }
 
     protected function defineEnvironment($app): void
@@ -99,6 +117,7 @@ abstract class MembershipTestCase extends BaseTestCase
             $table->text('reviewer_note')->nullable();
             $table->timestampTz('reviewed_at')->nullable();
             $table->timestampTz('cancelled_at')->nullable();
+            $table->foreignUuid('cancelled_by')->nullable();
             $table->json('meta')->nullable();
             $table->timestampsTz();
 
@@ -106,6 +125,7 @@ abstract class MembershipTestCase extends BaseTestCase
             $table->index('applicant_id');
             $table->index('status');
             $table->index('reviewer_id');
+            $table->index('cancelled_by');
             $table->unique(
                 ['subject_type', 'subject_id', 'applicant_id', 'status'],
                 'membership_applications_subject_applicant_status_unique',

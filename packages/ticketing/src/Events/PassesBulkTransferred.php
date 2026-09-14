@@ -15,11 +15,15 @@ final class PassesBulkTransferred
 {
     use Dispatchable, SerializesModels;
 
-    /** @param Collection<int, Pass> $passes */
+    /**
+     * @param  Collection<int, Pass>  $passes
+     * @param  Collection<int, PassHolder>  $previousHolders  Holders that were current before the transfer, keyed lookup via pass_id at runtime.
+     */
     public function __construct(
         public readonly Collection $passes,
         public readonly ?PassHolder $toHolder = null,
         public readonly ?string $reason = null,
         public readonly CarbonImmutable $transferredAt = new CarbonImmutable,
+        public readonly Collection $previousHolders = new Collection,
     ) {}
 }

@@ -20,7 +20,6 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->unique(['scopeable_type', 'scopeable_id']);
-            $table->index(['scopeable_type', 'scopeable_id']);
         });
     }
 

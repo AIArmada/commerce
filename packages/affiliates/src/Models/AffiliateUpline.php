@@ -45,8 +45,6 @@ class AffiliateUpline extends Model implements Auditable
         'ancestor_id',
         'descendant_id',
         'depth',
-        'owner_type',
-        'owner_id',
     ];
 
     protected $casts = [
@@ -172,16 +170,14 @@ class AffiliateUpline extends Model implements Auditable
     public static function addToUpline(Affiliate $affiliate, ?Affiliate $sponsor = null): void
     {
         // Self-referencing entry (every node points to itself at depth 0)
-        static::updateOrCreate(
+        self::storePath(
             [
                 'ancestor_id' => $affiliate->getKey(),
                 'descendant_id' => $affiliate->getKey(),
             ],
-            [
-                'depth' => 0,
-                'owner_type' => $affiliate->owner_type,
-                'owner_id' => $affiliate->owner_id,
-            ]
+            0,
+            $affiliate->owner_type,
+            $affiliate->owner_id,
         );
 
         if (! $sponsor) {
@@ -194,16 +190,14 @@ class AffiliateUpline extends Model implements Auditable
             ->get();
 
         foreach ($sponsorAncestors as $path) {
-            static::updateOrCreate(
+            self::storePath(
                 [
                     'ancestor_id' => $path->ancestor_id,
                     'descendant_id' => $affiliate->getKey(),
                 ],
-                [
-                    'depth' => $path->depth + 1,
-                    'owner_type' => $affiliate->owner_type,
-                    'owner_id' => $affiliate->owner_id,
-                ]
+                $path->depth + 1,
+                $affiliate->owner_type,
+                $affiliate->owner_id,
             );
         }
     }
@@ -258,16 +252,14 @@ class AffiliateUpline extends Model implements Auditable
                 ->value('depth');
 
             foreach ($newSponsorAncestors as $path) {
-                static::updateOrCreate(
+                self::storePath(
                     [
                         'ancestor_id' => $path->ancestor_id,
                         'descendant_id' => $descendantId,
                     ],
-                    [
-                        'depth' => $path->depth + 1 + $currentDepth,
-                        'owner_type' => $affiliate->owner_type,
-                        'owner_id' => $affiliate->owner_id,
-                    ]
+                    $path->depth + 1 + $currentDepth,
+                    $affiliate->owner_type,
+                    $affiliate->owner_id,
                 );
             }
         }
@@ -276,6 +268,20 @@ class AffiliateUpline extends Model implements Auditable
     public function getTable(): string
     {
         return config('affiliates.database.tables.upline', 'affiliate_upline');
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private static function storePath(array $attributes, int $depth, ?string $ownerType, ?string $ownerId): void
+    {
+        $record = static::query()->firstOrNew($attributes);
+        $record->depth = $depth;
+        $record->forceFill([
+            'owner_type' => $ownerType,
+            'owner_id' => $ownerId,
+        ]);
+        $record->save();
     }
 
     /**

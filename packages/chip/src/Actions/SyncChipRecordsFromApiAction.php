@@ -7,6 +7,8 @@ namespace AIArmada\Chip\Actions;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 class SyncChipRecordsFromApiAction
@@ -21,6 +23,32 @@ class SyncChipRecordsFromApiAction
      * @return array{processed:int,synced:int,skipped:int,failed:int,errors:array<int, string>}
      */
     public function handle(
+        array $purchaseIds,
+        bool $dryRun = false,
+        bool $overwriteExisting = false,
+        array $statuses = [],
+        ?callable $onProgress = null,
+        ?Model $owner = null,
+    ): array {
+        $execute = fn (): array => $this->executeSync($purchaseIds, $dryRun, $overwriteExisting, $statuses, $onProgress);
+
+        if ($owner instanceof Model) {
+            return OwnerContext::withOwner($owner, $execute);
+        }
+
+        if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
+            return OwnerContext::withOwner(null, $execute);
+        }
+
+        return $execute();
+    }
+
+    /**
+     * @param  array<int, string>  $purchaseIds
+     * @param  array<int, string>  $statuses
+     * @return array{processed:int,synced:int,skipped:int,failed:int,errors:array<int, string>}
+     */
+    private function executeSync(
         array $purchaseIds,
         bool $dryRun = false,
         bool $overwriteExisting = false,
@@ -48,13 +76,13 @@ class SyncChipRecordsFromApiAction
         foreach ($ids as $purchaseId) {
             $summary['processed']++;
 
-            if (! $dryRun && ! $overwriteExisting && Purchase::query()->whereKey($purchaseId)->exists()) {
-                $summary['skipped']++;
-
-                continue;
-            }
-
             try {
+                if (! $dryRun && ! $overwriteExisting && Purchase::query()->whereKey($purchaseId)->exists()) {
+                    $summary['skipped']++;
+
+                    continue;
+                }
+
                 $remotePurchase = Chip::getPurchase($purchaseId);
                 $payload = $this->toPayload($remotePurchase);
                 $remoteStatus = mb_strtolower((string) ($payload['status'] ?? ''));

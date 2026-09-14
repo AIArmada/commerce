@@ -10,6 +10,7 @@ use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
+use AIArmada\FilamentEngagement\Support\BulkRecordProcessor;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -119,23 +120,27 @@ final class FollowResource extends Resource
             ->bulkActions([
                 BulkAction::make('mute')
                     ->action(function ($records): void {
-                        foreach ($records as $record) {
-                            if ($record instanceof Follow && $record->isActive()) {
-                                $record = ActionRecordResolver::resolve($record);
-                                app(EngagementManager::class)
-                                    ->muteFollow($record->follower, $record->followable);
+                        BulkRecordProcessor::eachInChunks($records, ModelResolver::followClass(), function (Follow $record): void {
+                            if (! $record->isActive()) {
+                                return;
                             }
-                        }
+
+                            $record = ActionRecordResolver::resolve($record);
+                            app(EngagementManager::class)
+                                ->muteFollow($record->follower, $record->followable);
+                        });
                     }),
                 BulkAction::make('unfollow')
                     ->action(function ($records): void {
-                        foreach ($records as $record) {
-                            if ($record instanceof Follow && $record->isActive()) {
-                                $record = ActionRecordResolver::resolve($record);
-                                app(EngagementManager::class)
-                                    ->unfollow($record->follower, $record->followable);
+                        BulkRecordProcessor::eachInChunks($records, ModelResolver::followClass(), function (Follow $record): void {
+                            if (! $record->isActive()) {
+                                return;
                             }
-                        }
+
+                            $record = ActionRecordResolver::resolve($record);
+                            app(EngagementManager::class)
+                                ->unfollow($record->follower, $record->followable);
+                        });
                     }),
             ])
             ->defaultSort('followed_at', 'desc');

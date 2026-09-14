@@ -48,7 +48,11 @@ final class ScoreCalculator
         }
 
         if ($question->is_scored && $type->isChoiceType()) {
-            return (float) $question->options()->max('score');
+            $max = $question->relationLoaded('options')
+                ? $question->options->whereNotNull('score')->max('score')
+                : $question->options()->max('score');
+
+            return $max !== null ? (float) $max : null;
         }
 
         if ($type->isScoredType()) {
@@ -72,15 +76,21 @@ final class ScoreCalculator
 
         $optionValues = is_array($value) ? $value : [$value];
 
-        $totalScore = 0;
-        foreach ($optionValues as $val) {
-            $option = FeedbackQuestionOption::where('feedback_question_id', $question->id)
-                ->where('value', (string) $val)
-                ->first();
+        $options = $question->relationLoaded('options')
+            ? $question->options
+            : $question->options()->get();
 
-            if ($option !== null && $option->score !== null) {
-                $totalScore += (float) $option->score;
+        $scoresByValue = [];
+        foreach ($options as $option) {
+            /** @var FeedbackQuestionOption $option */
+            if ($option->score !== null) {
+                $scoresByValue[(string) $option->value] = (float) $option->score;
             }
+        }
+
+        $totalScore = 0.0;
+        foreach ($optionValues as $val) {
+            $totalScore += $scoresByValue[(string) $val] ?? 0.0;
         }
 
         return $totalScore;

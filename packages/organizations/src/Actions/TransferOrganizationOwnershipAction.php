@@ -12,6 +12,7 @@ use AIArmada\Organizations\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 
@@ -53,6 +54,10 @@ final class TransferOrganizationOwnershipAction
 
             if (! $target instanceof Model) {
                 throw new RuntimeException('The new owner must already be an organization member.');
+            }
+
+            if ($target->getMorphClass() !== $newOwner->getMorphClass()) {
+                throw new InvalidArgumentException('The new owner must use the organization member model.');
             }
 
             $targetRole = MemberRole::fromSpatieRoleName((string) data_get($target->getRelationValue('pivot'), 'role'));

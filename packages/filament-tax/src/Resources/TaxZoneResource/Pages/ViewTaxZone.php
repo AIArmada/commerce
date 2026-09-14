@@ -15,7 +15,8 @@ class ViewTaxZone extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make(),
+            Actions\EditAction::make()
+                ->authorize(fn (): bool => auth()->user()?->can('tax.zones.update') ?? false),
         ];
     }
 }

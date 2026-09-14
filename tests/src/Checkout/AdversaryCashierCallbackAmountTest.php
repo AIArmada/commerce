@@ -97,7 +97,7 @@ it('records the gateway-declared amount instead of self-confirming the session t
         paymentResolver: $resolver,
     );
 
-    $session = CheckoutSession::create([
+    $session = CheckoutSession::forceCreate([
         'cart_id' => 'adv-cashier-callback',
         'status' => AwaitingPayment::class,
         'selected_payment_gateway' => 'cashier',

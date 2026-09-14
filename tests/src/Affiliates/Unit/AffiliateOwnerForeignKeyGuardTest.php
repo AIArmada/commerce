@@ -35,16 +35,19 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
         }
     });
 
-    $affiliateA = Affiliate::create([
+    $affiliateA = new Affiliate([
         'code' => 'AFF-GUARD-A',
         'name' => 'Affiliate A',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
+    ]);
+    $affiliateA->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+    $affiliateA->save();
 
     app()->instance(OwnerResolverInterface::class, new class($ownerB) implements OwnerResolverInterface
     {
@@ -58,16 +61,19 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
         }
     });
 
-    $affiliateB = Affiliate::create([
+    $affiliateB = new Affiliate([
         'code' => 'AFF-GUARD-B',
         'name' => 'Affiliate B',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
+    ]);
+    $affiliateB->forceFill([
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
+    $affiliateB->save();
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -145,16 +151,19 @@ it('rejects cross-tenant ticket_id writes when owner mode is enabled', function 
         }
     });
 
-    $affiliateA = Affiliate::create([
+    $affiliateA = new Affiliate([
         'code' => 'AFF-SUPPORT-A',
         'name' => 'Affiliate A',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
+    ]);
+    $affiliateA->forceFill([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+    $affiliateA->save();
 
     $ticketA = AffiliateSupportTicket::create([
         'affiliate_id' => $affiliateA->getKey(),

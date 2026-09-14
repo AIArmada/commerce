@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Support;
 
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Models\Voucher;
@@ -27,16 +28,24 @@ final class VoucherStatsAggregator
      */
     public function overview(): array
     {
-        return [
-            'total' => $this->vouchers()->count(),
-            'active' => $this->vouchers()->live()->count(),
-            'upcoming' => $this->vouchers()
-                ->where('starts_at', '>', CarbonImmutable::now())
-                ->count(),
-            'expired' => $this->vouchers()->where('status', VoucherStatus::normalize(Expired::class))->count(),
-            'manual_redemptions' => $this->usages()->where('channel', VoucherUsage::CHANNEL_MANUAL)->count(),
-            'total_discount_minor' => $this->sumDiscountMinor(),
-        ];
+        /** @var array{total: int, active: int, upcoming: int, expired: int, manual_redemptions: int, total_discount_minor: int} $overview */
+        $overview = OwnerCache::remember(
+            OwnerContext::resolve(),
+            'filament-vouchers.stats-overview',
+            30,
+            fn (): array => [
+                'total' => $this->vouchers()->count(),
+                'active' => $this->vouchers()->live()->count(),
+                'upcoming' => $this->vouchers()
+                    ->where('starts_at', '>', CarbonImmutable::now())
+                    ->count(),
+                'expired' => $this->vouchers()->where('status', VoucherStatus::normalize(Expired::class))->count(),
+                'manual_redemptions' => $this->usages()->where('channel', VoucherUsage::CHANNEL_MANUAL)->count(),
+                'total_discount_minor' => $this->sumDiscountMinor(),
+            ],
+        );
+
+        return $overview;
     }
 
     /**

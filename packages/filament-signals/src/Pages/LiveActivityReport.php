@@ -34,7 +34,8 @@ final class LiveActivityReport extends ReportPage implements HasTable
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-signals.features.live_activity', true);
+        return (bool) config('filament-signals.features.live_activity', true)
+            && static::canAccess();
     }
 
     /**

@@ -29,4 +29,9 @@ return [
         'block_duration_days' => (int) env('MODERATION_BLOCK_DURATION_DAYS', 30),
     ],
 
+    /* Actors */
+    'actors' => [
+        'allowed_types' => [],
+    ],
+
 ];

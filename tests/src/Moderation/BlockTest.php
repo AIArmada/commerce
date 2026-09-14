@@ -22,7 +22,7 @@ beforeEach(function (): void {
         'password' => 'secret',
     ]);
 
-    $this->block = Block::create([
+    $this->block = Block::unguarded(fn (): Block => Block::create([
         'blockable_type' => $this->blockable->getMorphClass(),
         'blockable_id' => $this->blockable->id,
         'blocked_by_type' => $this->blockedBy->getMorphClass(),
@@ -32,17 +32,17 @@ beforeEach(function (): void {
         'notes' => 'Repeated policy violations',
         'expires_at' => CarbonImmutable::now()->addDays(30),
         'metadata' => '{}',
-    ]);
+    ]));
 });
 
 test('creates a block with minimal attributes', function (): void {
-    $minimal = Block::create([
+    $minimal = Block::unguarded(fn (): Block => Block::create([
         'blockable_type' => $this->blockable->getMorphClass(),
         'blockable_id' => $this->blockable->id,
         'reason' => BlockReason::Spam,
         'status' => BlockStatus::Active,
         'metadata' => '{}',
-    ]);
+    ]));
 
     expect($minimal->id)->toBeUuid();
     expect($minimal->reason->value)->toBe('spam');
@@ -88,13 +88,13 @@ test('has morphTo blockedBy relationship', function (): void {
 });
 
 test('scopeActive returns only active blocks', function (): void {
-    $expired = Block::create([
+    $expired = Block::unguarded(fn (): Block => Block::create([
         'blockable_type' => $this->blockable->getMorphClass(),
         'blockable_id' => $this->blockable->id,
         'reason' => BlockReason::Spam,
         'status' => BlockStatus::Expired,
         'metadata' => '{}',
-    ]);
+    ]));
 
     $activeBlocks = Block::active()->get();
 
@@ -104,13 +104,13 @@ test('scopeActive returns only active blocks', function (): void {
 });
 
 test('scopeExpired returns only expired blocks', function (): void {
-    $expired = Block::create([
+    $expired = Block::unguarded(fn (): Block => Block::create([
         'blockable_type' => $this->blockable->getMorphClass(),
         'blockable_id' => $this->blockable->id,
         'reason' => BlockReason::Spam,
         'status' => BlockStatus::Expired,
         'metadata' => '{}',
-    ]);
+    ]));
 
     $expiredBlocks = Block::expired()->get();
 

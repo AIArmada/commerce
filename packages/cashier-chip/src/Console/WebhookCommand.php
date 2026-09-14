@@ -52,7 +52,7 @@ class WebhookCommand extends Command
         $this->components->info('Required Environment Variables:');
 
         $this->components->twoColumnDetail('CHIP_WEBHOOK_SECRET', config('cashier-chip.webhooks.secret') ? '✓ Set' : '✗ Not set');
-        $this->components->twoColumnDetail('CHIP_WEBHOOK_VERIFY_SIGNATURE', config('cashier-chip.webhooks.verify_signature', true) ? 'Enabled' : 'Disabled');
+        $this->components->twoColumnDetail('CHIP_WEBHOOK_VERIFY_SIGNATURE', config('chip.webhooks.verify_signature', true) ? 'Enabled' : 'Disabled');
 
         return Command::SUCCESS;
     }

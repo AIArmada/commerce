@@ -69,7 +69,7 @@ final class AffiliateRankHistoryResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<AffiliateRankHistory> $query */
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->with(['affiliate', 'fromRank', 'toRank']);
 
         /** @var Builder<Model> $modelQuery */
         $modelQuery = $query;

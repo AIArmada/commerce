@@ -9,11 +9,13 @@ use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentCart\Resources\CartResource;
+use Exception;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -206,13 +208,7 @@ final class CartsTable
                     ->requiresConfirmation()
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Cart> $records */
-                        $records->each(function (Cart $record): void {
-                            $cart = self::authorizeCart($record);
-
-                            app(CartInstanceManager::class)
-                                ->resolveForSnapshot($cart)
-                                ->clear();
-                        });
+                        self::runBulkOperation($records, 'clear');
                     }),
 
                 BulkAction::make('delete_selected')
@@ -222,18 +218,60 @@ final class CartsTable
                     ->requiresConfirmation()
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Cart> $records */
-                        $records->each(function (Cart $record): void {
-                            $cart = self::authorizeCart($record);
-
-                            app(CartInstanceManager::class)
-                                ->resolveForSnapshot($cart)
-                                ->destroy();
-                        });
+                        self::runBulkOperation($records, 'delete');
                     }),
             ])
             ->defaultSort('updated_at', 'desc')
             ->poll(fn (): string => self::resolvePollingInterval())
             ->striped();
+    }
+
+    /**
+     * @param  Collection<int|string, Cart>  $records
+     * @param  'clear'|'delete'  $operation
+     */
+    private static function runBulkOperation(Collection $records, string $operation): void
+    {
+        $processed = 0;
+        $failed = 0;
+
+        foreach ($records->chunk(100) as $chunk) {
+            /** @var Cart $record */
+            foreach ($chunk as $record) {
+                try {
+                    $cart = self::authorizeCart($record);
+                    $instance = app(CartInstanceManager::class)->resolveForSnapshot($cart);
+
+                    if ($operation === 'delete') {
+                        $instance->destroy();
+                    } else {
+                        $instance->clear();
+                    }
+
+                    $processed++;
+                } catch (Exception) {
+                    $failed++;
+                }
+            }
+        }
+
+        $label = $operation === 'delete' ? 'deleted' : 'cleared';
+
+        if ($failed > 0) {
+            Notification::make()
+                ->title("Some carts could not be {$label}")
+                ->body("{$label}: {$processed}, failed: {$failed}.")
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title("Selected carts {$label}")
+            ->body("{$processed} " . str('cart')->plural($processed) . " {$label}.")
+            ->success()
+            ->send();
     }
 
     private static function authorizeCart(Cart $cart): Cart

@@ -11,4 +11,6 @@ interface PayloadRedactor
     public function redactRequest(array $request): array;
 
     public function redactResponse(array $response): array;
+
+    public function redactText(?string $text): ?string;
 }

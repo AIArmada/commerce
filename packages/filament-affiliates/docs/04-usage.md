@@ -72,6 +72,10 @@ Write paths should:
 
 Recent hardened write paths include support-ticket, link/program membership, and commission-promotion affiliate targeting flows.
 
+Payout rejection on `PayoutBatchPage` routes through the domain payout-status action and releases reserved funds; affiliate ownership on the affiliate form is resolved server-side from the linked user (submitted owner tuples are never trusted); affiliate pickers search lazily within the current owner scope.
+
+`ManageAffiliateCommissionSettings` requires the `affiliates.commission.update` or `affiliate.update` ability. Rates are validated as percentages between 0 and 100, and the level count is capped by `affiliates.upline.max_depth`.
+
 ## Plugin registration
 
 Register in your panel provider:

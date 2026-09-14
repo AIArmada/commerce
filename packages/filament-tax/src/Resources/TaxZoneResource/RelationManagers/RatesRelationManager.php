@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\RatesRelationManager\Schemas\RatesForm;
 use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\RatesRelationManager\Tables\RatesTable;
 use AIArmada\Tax\Models\TaxRate;
@@ -24,14 +25,15 @@ final class RatesRelationManager extends RelationManager
     }
 
     /**
+     * Owner-scoped like the rates resource table so foreign-tenant rates
+     * neither render nor resolve for record actions.
+     *
      * @return Builder<TaxRate>
      */
     protected function getTableQuery(): Builder
     {
-        /** @var Builder<TaxRate> $query */
-        $query = parent::getTableQuery();
-
-        return $query;
+        /** @phpstan-ignore return.type (template type not preserved through helper) */
+        return OwnerUiScope::apply(parent::getTableQuery(), includeGlobal: false);
     }
 
     public function table(Table $table): Table

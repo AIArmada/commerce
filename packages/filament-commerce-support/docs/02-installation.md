@@ -23,6 +23,11 @@ public function panel(Panel $panel): Panel
 }
 ```
 
+The plugin registers the **Settings → Navigation** manager page plus the
+`currencies`, `languages`, and `timezones` reference-data resources
+automatically (each can be omitted via `resources.<name>.enabled`). No
+manual `$panel->resources()` calls are needed.
+
 ### Publish config (optional)
 
 ```bash

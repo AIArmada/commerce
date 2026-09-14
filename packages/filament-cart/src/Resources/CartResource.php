@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources;
 
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ListCarts;
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ViewCart;
 use AIArmada\FilamentCart\Resources\CartResource\RelationManagers\ConditionsRelationManager;
@@ -86,7 +87,12 @@ final class CartResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = self::getEloquentQuery()->count();
+        $count = (int) OwnerCache::remember(
+            Cart::resolveCurrentOwner(),
+            'filament-cart.nav.carts-count',
+            30,
+            fn (): int => self::getEloquentQuery()->count(),
+        );
 
         return $count > 0 ? (string) $count : null;
     }

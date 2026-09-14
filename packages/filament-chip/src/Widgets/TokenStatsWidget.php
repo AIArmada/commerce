@@ -6,9 +6,11 @@ namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\FilamentChip\Support\PurchaseRevenueExpressions;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\DB;
 
 final class TokenStatsWidget extends BaseWidget
 {
@@ -68,17 +70,15 @@ final class TokenStatsWidget extends BaseWidget
             ->whereIn('status', ['paid', 'cleared', 'settled'])
             ->count();
 
-        $tokenRevenue = tap(Purchase::query(), function ($query): void {
+        $revenueQuery = tap(Purchase::query(), function ($query): void {
             if (method_exists($query->getModel(), 'scopeForOwner')) {
                 $query->forOwner();
             }
         })
             ->whereNotNull('recurring_token')
-            ->whereIn('status', ['paid', 'cleared', 'settled'])
-            ->get()
-            ->sum(function (Purchase $purchase): int {
-                return (int) ($purchase->purchase['total'] ?? 0);
-            });
+            ->whereIn('status', ['paid', 'cleared', 'settled']);
+
+        $tokenRevenue = (int) $revenueQuery->sum(DB::raw(PurchaseRevenueExpressions::totalMinor($revenueQuery)));
 
         return [
             'active_tokens' => $activeTokens,

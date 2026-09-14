@@ -75,19 +75,24 @@ final class TransitionDeliveryAction
         'unsubscribed' => 'unsubscribed_at',
     ];
 
+    public const TERMINAL_STATUSES = ['failed', 'cancelled', 'expired', 'suppressed', 'unsubscribed'];
+
     public function handle(
         CommunicationDelivery $delivery,
         DeliveryStatus $newStatus,
+        bool $force = false,
     ): CommunicationDelivery {
         $currentStatus = $delivery->status->value;
         $targetStatus = $newStatus->value;
 
-        $allowed = self::ALLOWED_TRANSITIONS[$currentStatus];
+        if (! $force) {
+            $allowed = self::ALLOWED_TRANSITIONS[$currentStatus];
 
-        if (! in_array($targetStatus, $allowed, true)) {
-            throw new RuntimeException(
-                "Cannot transition delivery {$delivery->id} from {$currentStatus} to {$targetStatus}.",
-            );
+            if (! in_array($targetStatus, $allowed, true)) {
+                throw new RuntimeException(
+                    "Cannot transition delivery {$delivery->id} from {$currentStatus} to {$targetStatus}.",
+                );
+            }
         }
 
         $delivery->status = $newStatus;
@@ -103,6 +108,36 @@ final class TransitionDeliveryAction
         $this->dispatchEvent($delivery, $targetStatus);
 
         return $delivery;
+    }
+
+    /**
+     * Apply a provider-reported status as an explicit out-of-order-tolerant jump.
+     *
+     * Returns false — leaving the delivery untouched — when the delivery is
+     * already terminal and the late provider event must not regress it.
+     */
+    public function applyProviderStatus(
+        CommunicationDelivery $delivery,
+        DeliveryStatus $target,
+    ): bool {
+        if ($delivery->status === $target) {
+            $timestampColumn = self::STATUS_TIMESTAMP_MAP[$target->value];
+
+            if ($delivery->{$timestampColumn} === null) {
+                $delivery->{$timestampColumn} = CarbonImmutable::now();
+                $delivery->save();
+            }
+
+            return true;
+        }
+
+        if (in_array($delivery->status->value, self::TERMINAL_STATUSES, true)) {
+            return false;
+        }
+
+        $this->handle($delivery, $target, force: true);
+
+        return true;
     }
 
     private function dispatchEvent(CommunicationDelivery $delivery, string $targetStatus): void

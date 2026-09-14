@@ -9,6 +9,7 @@ use AIArmada\Addressing\Models\Address;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 
 final class CreateAddress extends CreateRecord
 {
@@ -22,7 +23,13 @@ final class CreateAddress extends CreateRecord
     protected function handleRecordCreation(array $data): Address
     {
         return DB::transaction(function () use ($data): Address {
-            $address = new Address;
+            $modelClass = AddressResource::getModel();
+            $address = new $modelClass;
+
+            if (! $address instanceof Address) {
+                throw new LogicException('Configured address model must extend Address.');
+            }
+
             $address->fill($data);
             $address->save();
 

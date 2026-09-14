@@ -23,9 +23,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
@@ -274,14 +272,6 @@ class CartSnapshot extends Model
     public function itemLevelConditions(): HasMany
     {
         return $this->cartConditions()->itemLevel();
-    }
-
-    public function user(): BelongsTo
-    {
-        /** @var class-string<Model> $userModel */
-        $userModel = config('auth.providers.users.model', User::class);
-
-        return $this->belongsTo($userModel, 'identifier', 'id');
     }
 
     public function isEmpty(): bool

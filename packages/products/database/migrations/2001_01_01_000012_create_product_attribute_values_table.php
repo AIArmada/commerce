@@ -36,10 +36,6 @@ return new class extends Migration
             $table->index('attribute_id');
         });
 
-        if (! app()->environment(['local', 'development', 'testing'])) {
-            return;
-        }
-
         ProductIdentityIndexes::attributeValues($tableName);
     }
 

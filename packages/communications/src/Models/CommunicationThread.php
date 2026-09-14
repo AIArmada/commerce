@@ -46,12 +46,10 @@ final class CommunicationThread extends Model
     use HasUuids;
 
     protected $fillable = [
-        'subject_type',
         'subject_id',
         'external_thread_id',
         'channel',
         'title',
-        'status',
         'opened_at',
         'last_communication_at',
         'closed_at',
@@ -97,7 +95,7 @@ final class CommunicationThread extends Model
     protected static function booted(): void
     {
         static::deleting(function (CommunicationThread $thread): void {
-            $thread->communications()->each(fn (Communication $c) => $c->delete());
+            $thread->communications()->chunkById(100, fn (Collection $communications) => $communications->each->delete());
         });
     }
 }

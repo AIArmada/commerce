@@ -157,16 +157,6 @@ final class InvoiceTable
                 ViewAction::make()
                     ->icon('heroicon-o-eye'),
 
-                Action::make('download_pdf')
-                    ->label('PDF')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->color('gray')
-                    ->visible(fn (Purchase $record): bool => in_array($record->status, ['paid', 'cleared', 'settled'], true))
-                    ->action(function (Purchase $record): void {
-                        // PDF download logic would be handled here
-                        // For now, we just show a notification
-                    }),
-
                 Action::make('view_checkout')
                     ->label('Checkout')
                     ->icon('heroicon-o-arrow-top-right-on-square')

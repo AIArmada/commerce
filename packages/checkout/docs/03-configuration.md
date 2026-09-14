@@ -460,6 +460,20 @@ Enable multi-tenancy:
 ],
 ```
 
+### Stored Checkout Actor
+
+`PersistCustomerStep` can resume the authenticated actor stored during `resolve_customer`. Only allowlisted model classes may be resolved from that stored reference; anything else is ignored. The auth provider models and the checkout customer model are always allowed:
+
+```php
+'checkout_actor' => [
+    'allowed_types' => [
+        // App\Models\TeamMember::class,
+    ],
+],
+```
+
+The resolved actor must also be owner-consistent with the session: an actor owned by a different owner is rejected.
+
 ## Environment Variables
 
 ```env

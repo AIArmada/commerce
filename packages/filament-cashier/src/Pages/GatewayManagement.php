@@ -19,8 +19,9 @@ use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
-use Stripe\Account;
-use Stripe\Stripe;
+use Illuminate\Support\Facades\Log;
+use Stripe\Service\AccountService;
+use Stripe\StripeClient;
 
 final class GatewayManagement extends Page
 {
@@ -194,32 +195,54 @@ final class GatewayManagement extends Page
             });
     }
 
+    private const int HEALTH_CACHE_TTL = 60;
+
     /**
      * Check health of a specific gateway.
+     *
+     * Healthy probe results are cached per owner for the TTL so repeated
+     * renders and refreshes do not hit the payment APIs. Failures are never
+     * cached. Exception details are logged, never surfaced to the UI.
      *
      * @return array{status: string, color: string, message: string|null}
      */
     protected function checkGatewayHealth(string $gateway): array
     {
         try {
-            if ($gateway === 'stripe') {
-                return $this->checkStripeHealth();
+            if ($gateway !== 'stripe' && $gateway !== 'chip') {
+                return [
+                    'status' => 'unknown',
+                    'color' => 'gray',
+                    'message' => __('filament-cashier::gateway.health.unknown'),
+                ];
             }
 
-            if ($gateway === 'chip') {
-                return $this->checkChipHealth();
+            $owner = OwnerContext::resolve();
+            $cacheKey = 'filament-cashier.gateway_health.' . $gateway . '.' . md5($this->gatewayCredentialFingerprint($gateway));
+
+            $cached = OwnerCache::get($owner, $cacheKey);
+
+            if (is_array($cached)) {
+                return $cached;
             }
 
-            return [
-                'status' => 'unknown',
-                'color' => 'gray',
-                'message' => __('filament-cashier::gateway.health.unknown'),
-            ];
+            $health = $gateway === 'stripe' ? $this->checkStripeHealth() : $this->checkChipHealth();
+
+            if (($health['status'] ?? null) === 'healthy') {
+                OwnerCache::put($owner, $cacheKey, $health, self::HEALTH_CACHE_TTL);
+            }
+
+            return $health;
         } catch (Exception $e) {
+            Log::warning('filament-cashier: gateway health probe failed', [
+                'gateway' => $gateway,
+                'exception' => $e->getMessage(),
+            ]);
+
             return [
                 'status' => 'error',
                 'color' => 'danger',
-                'message' => $e->getMessage(),
+                'message' => __('filament-cashier::gateway.health.connection_error'),
             ];
         }
     }
@@ -242,15 +265,8 @@ final class GatewayManagement extends Page
         }
 
         try {
-            if (class_exists(Stripe::class)) {
-                $previousApiKey = Stripe::getApiKey();
-                Stripe::setApiKey($secret);
-
-                try {
-                    Account::retrieve();
-                } finally {
-                    Stripe::setApiKey(is_string($previousApiKey) ? $previousApiKey : '');
-                }
+            if (class_exists(StripeClient::class)) {
+                (new AccountService(new StripeClient($secret)))->retrieve();
 
                 return [
                     'status' => 'healthy',
@@ -259,10 +275,14 @@ final class GatewayManagement extends Page
                 ];
             }
         } catch (Exception $e) {
+            Log::warning('filament-cashier: stripe health probe failed', [
+                'exception' => $e->getMessage(),
+            ]);
+
             return [
                 'status' => 'error',
                 'color' => 'danger',
-                'message' => $e->getMessage(),
+                'message' => __('filament-cashier::gateway.health.connection_error'),
             ];
         }
 
@@ -302,10 +322,14 @@ final class GatewayManagement extends Page
                 ];
             }
         } catch (Exception $e) {
+            Log::warning('filament-cashier: chip health probe failed', [
+                'exception' => $e->getMessage(),
+            ]);
+
             return [
                 'status' => 'error',
                 'color' => 'danger',
-                'message' => $e->getMessage(),
+                'message' => __('filament-cashier::gateway.health.connection_error'),
             ];
         }
 
@@ -351,5 +375,18 @@ final class GatewayManagement extends Page
     private function isPlaceholderSecret(string $secret): bool
     {
         return str_contains($secret, 'xxx') || str_contains($secret, 'placeholder');
+    }
+
+    /**
+     * Tie the health cache key to the active credentials so rotation never
+     * serves a stale probe result. Secrets themselves never enter the key.
+     */
+    private function gatewayCredentialFingerprint(string $gateway): string
+    {
+        if ($gateway === 'stripe') {
+            return $this->resolveStripeSecret() ?? '';
+        }
+
+        return (string) config('chip.collect.brand_id') . '|' . (string) config('chip.collect.api_key');
     }
 }

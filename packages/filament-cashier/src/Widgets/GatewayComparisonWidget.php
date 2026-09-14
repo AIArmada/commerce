@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Subscription;
 
@@ -30,9 +31,16 @@ final class GatewayComparisonWidget extends ChartWidget
         return __('filament-cashier::dashboard.widgets.comparison.label');
     }
 
+    /**
+     * @var array{datasets: array, labels: array}|null
+     */
+    protected ?array $chartData = null;
+
     protected function getData(): array
     {
-        return once(function (): array {
+        // Memoized on the widget instance (request-bound) instead of once()
+        // so owner switches within a long-lived process never leak data.
+        if ($this->chartData === null) {
             $detector = app(GatewayDetector::class);
             $gateways = $detector->availableGateways();
 
@@ -55,11 +63,13 @@ final class GatewayComparisonWidget extends ChartWidget
                 ];
             }
 
-            return [
+            $this->chartData = [
                 'datasets' => $datasets,
                 'labels' => $labels,
             ];
-        });
+        }
+
+        return $this->chartData;
     }
 
     protected function getType(): string
@@ -93,76 +103,88 @@ final class GatewayComparisonWidget extends ChartWidget
     /**
      * Get monthly revenue data for a gateway.
      *
+     * Scans the six-month window once per gateway and buckets rows by their
+     * creation month, instead of one full scan per month.
+     *
      * @return list<float>
      */
     protected function getMonthlyDataForGateway(string $gateway): array
     {
-        $data = [];
+        $months = [];
 
-        // Generate data for last 6 months
         for ($i = 5; $i >= 0; $i--) {
             $startOfMonth = CarbonImmutable::now()->subMonths($i)->startOfMonth();
-            $endOfMonth = CarbonImmutable::now()->subMonths($i)->endOfMonth();
-
-            $revenue = $this->getRevenueForPeriod($gateway, $startOfMonth, $endOfMonth);
-            $data[] = round($revenue / 100, 2);
+            $months[$startOfMonth->format('Y-m')] = [
+                'end' => $startOfMonth->endOfMonth(),
+                'revenue' => 0,
+            ];
         }
 
-        return $data;
+        $windowStart = CarbonImmutable::now()->subMonths(5)->startOfMonth();
+        $revenues = $this->getRevenueByMonth($gateway, $windowStart, $months);
+
+        return array_map(
+            static fn (int $revenue): float => round($revenue / 100, 2),
+            array_values($revenues),
+        );
     }
 
-    protected function getRevenueForPeriod(string $gateway, DateTimeInterface $start, DateTimeInterface $end): int
+    /**
+     * @param  array<string, array{end: CarbonImmutable, revenue: int}>  $months
+     * @return array<string, int>
+     */
+    protected function getRevenueByMonth(string $gateway, DateTimeInterface $windowStart, array $months): array
+    {
+        $query = $this->gatewaySubscriptionsQuery($gateway);
+
+        if ($query === null) {
+            return array_map(static fn (array $month): int => $month['revenue'], $months);
+        }
+
+        $query->with('items')
+            ->whereBetween('created_at', [$windowStart, CarbonImmutable::now()])
+            ->chunk(200, function (Collection $subscriptions) use ($gateway, &$months): void {
+                foreach ($subscriptions as $subscription) {
+                    $unified = $gateway === 'stripe'
+                        ? UnifiedSubscription::fromStripe($subscription)
+                        : UnifiedSubscription::fromChip($subscription);
+
+                    if (! $unified->status->isActive()) {
+                        continue;
+                    }
+
+                    $bucket = $unified->createdAt->format('Y-m');
+
+                    if (! isset($months[$bucket])) {
+                        continue;
+                    }
+
+                    if ($unified->endsAt !== null && ! $unified->endsAt->isAfter($months[$bucket]['end'])) {
+                        continue;
+                    }
+
+                    $months[$bucket]['revenue'] += $unified->amount;
+                }
+            });
+
+        return array_map(static fn (array $month): int => $month['revenue'], $months);
+    }
+
+    protected function gatewaySubscriptionsQuery(string $gateway): ?Builder
     {
         $detector = app(GatewayDetector::class);
 
         if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            $revenue = 0;
-
-            OwnerScopedQuery::apply(Subscription::query())
-                ->with('items')
-                ->whereBetween('created_at', [$start, $end])
-                ->where(function ($query) use ($end): void {
-                    $query->whereNull('ends_at')
-                        ->orWhere('ends_at', '>', $end);
-                })
-                ->chunk(200, function (Collection $subscriptions) use (&$revenue): void {
-                    foreach ($subscriptions as $subscription) {
-                        $unified = UnifiedSubscription::fromStripe($subscription);
-
-                        if ($unified->status->isActive()) {
-                            $revenue += $unified->amount;
-                        }
-                    }
-                });
-
-            return $revenue;
+            return OwnerScopedQuery::apply(Subscription::query());
         }
 
         if ($gateway === 'chip' && $detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
-            $revenue = 0;
 
-            OwnerScopedQuery::apply($subscriptionModel::query())
-                ->with('items')
-                ->whereBetween('created_at', [$start, $end])
-                ->where(function ($query) use ($end): void {
-                    $query->whereNull('ends_at')
-                        ->orWhere('ends_at', '>', $end);
-                })
-                ->chunk(200, function (Collection $subscriptions) use (&$revenue): void {
-                    foreach ($subscriptions as $subscription) {
-                        $unified = UnifiedSubscription::fromChip($subscription);
-
-                        if ($unified->status->isActive()) {
-                            $revenue += $unified->amount;
-                        }
-                    }
-                });
-
-            return $revenue;
+            return OwnerScopedQuery::apply($subscriptionModel::query());
         }
 
-        return 0;
+        return null;
     }
 
     protected function getColorValue(string $color, float $alpha = 1): string

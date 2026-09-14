@@ -150,7 +150,6 @@ final class SegmentForm
                                         modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false),
                                     )
                                     ->multiple()
-                                    ->preload()
                                     ->searchable()
                                     ->helperText('For manual segments only')
                                     ->saveRelationshipsUsing(function (Segment $record, ?array $state): void {

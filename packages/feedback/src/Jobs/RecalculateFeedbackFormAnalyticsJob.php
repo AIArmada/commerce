@@ -11,11 +11,12 @@ use AIArmada\Feedback\Actions\RecalculateFeedbackFormAnalyticsAction;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 
-final class RecalculateFeedbackFormAnalyticsJob implements OwnerScopedJob, ShouldQueue
+final class RecalculateFeedbackFormAnalyticsJob implements OwnerScopedJob, ShouldBeUnique, ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
@@ -56,6 +57,11 @@ final class RecalculateFeedbackFormAnalyticsJob implements OwnerScopedJob, Shoul
             ownerId: $this->ownerId,
             ownerIsGlobal: $this->ownerIsGlobal,
         );
+    }
+
+    public function uniqueId(): string
+    {
+        return 'feedback-analytics:' . $this->formId;
     }
 
     protected function performJob(): void

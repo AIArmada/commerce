@@ -30,10 +30,6 @@ return new class extends Migration
             $table->index(['is_default', 'position']);
         });
 
-        if (! app()->environment(['local', 'development', 'testing'])) {
-            return;
-        }
-
         ProductIdentityIndexes::owner($tableName, 'code');
     }
 

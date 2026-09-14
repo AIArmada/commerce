@@ -148,6 +148,8 @@ if ($refund instanceof PurchaseData && $refund->status === 'pending_refund') {
 
 CHIP returns a `PaymentData` object for completed refunds, but may return a `PurchaseData` object with `status = pending_refund` while the acquirer is still processing the refund.
 
+Every `refund()` and `capture()` call reaches the CHIP API: repeat mutations are never replayed from cache, so two genuine same-amount partial refunds both execute. Naturally idempotent operations (`cancel`, `release`, `markAsPaid`, `resendInvoice`, `deleteRecurringToken`, recurring-token `charge` retries) are still deduplicated through the mutation cache.
+
 ### Client Management
 
 ```php
@@ -445,6 +447,8 @@ $summary = app(SyncChipRecordsFromApiAction::class)->handle(
 
 Use `dryRun: true` to preview which purchases would be synced. Use `overwriteExisting: true` to re-sync purchases already stored locally (required for backfill scenarios). Downstream checkout or customer integrations should subscribe to the stable CHIP webhook events if they need to link records.
 
+When owner scoping is enabled, pass `owner:` (or `--owner-type` / `--owner-id` on the command) to sync under a tenant; without an owner the sync runs in explicit global context instead of failing.
+
 ## Artisan Commands
 
 | Command | Description |
@@ -453,3 +457,4 @@ Use `dryRun: true` to preview which purchases would be synced. Use `overwriteExi
 | `chip:retry-webhooks` | Retry failed webhooks |
 | `chip:clean-webhooks` | Clean old webhook records |
 | `chip:sync-from-api --purchase-id=<id>` | Sync explicitly supplied CHIP purchase IDs |
+| `chip:prune-idempotency-stubs` | Delete expired unrecorded purchase idempotency reservations |

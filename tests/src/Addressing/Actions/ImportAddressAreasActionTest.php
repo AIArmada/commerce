@@ -231,3 +231,65 @@ it('keeps a manual relationship when an import owns the same typed edge', functi
         ->pluck('source')
         ->all())->toBe(['manual']);
 });
+
+it('quiesces when re-imported without changes', function (): void {
+    $rows = fn (): array => [
+        new AddressAreaData(
+            source: 'test',
+            sourceId: '1',
+            countryCode: 'MY',
+            type: 'state',
+            name: 'Selangor',
+        ),
+    ];
+
+    $this->action->execute(new ArrayAddressAreaSource('test', $rows()));
+    $result = $this->action->execute(new ArrayAddressAreaSource('test', $rows()));
+
+    expect($result->created)->toBe(0);
+    expect($result->updated)->toBe(0);
+    expect($result->skipped)->toBe(1);
+    expect($result->hasFailures())->toBeFalse();
+});
+
+it('preserves operator deactivation unless reactivate is set', function (): void {
+    $rows = fn (): array => [
+        new AddressAreaData(
+            source: 'test',
+            sourceId: '1',
+            countryCode: 'MY',
+            type: 'state',
+            name: 'Selangor',
+        ),
+    ];
+
+    $this->action->execute(new ArrayAddressAreaSource('test', $rows()));
+    AddressArea::where('source', 'test')->where('source_id', '1')->update(['is_active' => false]);
+
+    $this->action->execute(new ArrayAddressAreaSource('test', $rows()));
+
+    expect(AddressArea::where('source', 'test')->where('source_id', '1')->firstOrFail()->is_active)->toBeFalse();
+
+    $this->action->execute(new ArrayAddressAreaSource('test', $rows()), reactivate: true);
+
+    expect(AddressArea::where('source', 'test')->where('source_id', '1')->firstOrFail()->is_active)->toBeTrue();
+});
+
+it('reports missing parents during dry-run', function (): void {
+    $source = new ArrayAddressAreaSource('test', [
+        new AddressAreaData(
+            source: 'test',
+            sourceId: '2',
+            countryCode: 'MY',
+            type: 'district',
+            name: 'Petaling',
+            parentSourceId: 'nonexistent',
+        ),
+    ]);
+
+    $result = $this->action->execute($source, dryRun: true);
+
+    expect($result->created)->toBe(0);
+    expect($result->hasFailures())->toBeTrue();
+    expect($result->failures[0]->reason)->toContain('Parent not found');
+});

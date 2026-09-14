@@ -17,7 +17,7 @@ it('uses shipping condition from cart snapshot when present', function (): void 
     $service = app(CheckoutServiceInterface::class);
     $session = $service->startCheckout($cartId);
 
-    $session->update([
+    $session->persistState([
         'shipping_data' => [
             'name' => 'Test Customer',
             'line1' => '123 Test Street',
@@ -46,7 +46,7 @@ it('falls back to shipping adapter when no cart condition exists', function (): 
     $service = app(CheckoutServiceInterface::class);
     $session = $service->startCheckout($cartId);
 
-    $session->update([
+    $session->persistState([
         'shipping_data' => [
             'name' => 'Test Customer',
             'line1' => '123 Test Street',
@@ -98,7 +98,7 @@ it('calculates grand total correctly with shipping condition', function (): void
     $service = app(CheckoutServiceInterface::class);
     $session = $service->startCheckout($cartId);
 
-    $session->update([
+    $session->persistState([
         'subtotal' => 10000,
         'shipping_data' => [
             'name' => 'Test Customer',

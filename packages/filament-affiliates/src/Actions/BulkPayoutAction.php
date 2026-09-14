@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Filament\Actions\BulkAction;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Gate;
 
@@ -23,6 +24,9 @@ final class BulkPayoutAction extends BulkAction
         $this->requiresConfirmation();
         $this->modalHeading('Process Selected Payouts');
         $this->modalDescription('Are you sure you want to process these payouts? This will initiate payment transfers.');
+
+        $this->failureNotificationTitle('Payout processing failed');
+        $this->successNotificationTitle('Payout processing complete');
 
         $this->action(function (Collection $records): void {
             $processed = 0;
@@ -54,11 +58,29 @@ final class BulkPayoutAction extends BulkAction
                 $failed++;
             }
 
-            if ($processed > 0) {
+            if ($processed > 0 && $failed === 0) {
                 $this->success();
+
+                $this->sendSuccessNotification();
+
+                return;
             }
 
-            $this->sendSuccessNotification();
+            if ($processed === 0) {
+                $this->failure();
+
+                $this->sendFailureNotification();
+
+                return;
+            }
+
+            $this->success();
+
+            Notification::make()
+                ->warning()
+                ->title('Payout processing partially complete')
+                ->body("Processed: {$processed}, Failed: {$failed}")
+                ->send();
         });
 
         $this->deselectRecordsAfterCompletion();

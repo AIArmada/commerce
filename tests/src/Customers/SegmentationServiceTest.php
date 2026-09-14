@@ -12,6 +12,29 @@ use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Services\SegmentationService;
 use Illuminate\Support\Facades\Event;
 
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createSegmentationServiceTestCustomer(array $attributes): Customer
+{
+    $restricted = [];
+
+    foreach (['user_id', 'status', 'is_guest', 'accepts_marketing', 'created_at', 'updated_at'] as $key) {
+        if (array_key_exists($key, $attributes)) {
+            $restricted[$key] = $attributes[$key];
+            unset($attributes[$key]);
+        }
+    }
+
+    $customer = Customer::query()->create($attributes);
+
+    if ($restricted !== []) {
+        $customer->forceFill($restricted)->save();
+    }
+
+    return $customer;
+}
+
 describe('SegmentationService', function (): void {
     beforeEach(function (): void {
         $this->service = new SegmentationService(
@@ -67,7 +90,7 @@ describe('SegmentationService', function (): void {
                 ],
             ]);
 
-            Customer::create([
+            createSegmentationServiceTestCustomer([
                 'first_name' => 'Rebuild',
                 'last_name' => 'Event',
                 'email' => 'rebuild-event-' . uniqid() . '@example.com',
@@ -95,7 +118,7 @@ describe('SegmentationService', function (): void {
                 ],
             ]);
 
-            $customer = Customer::create([
+            $customer = createSegmentationServiceTestCustomer([
                 'first_name' => 'Evaluate',
                 'last_name' => 'Me',
                 'email' => 'evaluate-' . uniqid() . '@example.com',
@@ -152,7 +175,7 @@ describe('SegmentationService', function (): void {
         });
 
         it('matches accepts_marketing condition', function (): void {
-            $customer = Customer::create([
+            $customer = createSegmentationServiceTestCustomer([
                 'first_name' => 'Marketing',
                 'last_name' => 'Yes',
                 'email' => 'marketing-' . uniqid() . '@example.com',
@@ -191,7 +214,7 @@ describe('SegmentationService', function (): void {
         });
 
         it('matches created_days_ago condition', function (): void {
-            $customer = Customer::create([
+            $customer = createSegmentationServiceTestCustomer([
                 'first_name' => 'Old',
                 'last_name' => 'Customer',
                 'email' => 'old-customer-' . uniqid() . '@example.com',
@@ -259,7 +282,7 @@ describe('SegmentationService', function (): void {
                 'slug' => 'stats-' . uniqid(),
             ]);
 
-            $customer1 = Customer::create([
+            $customer1 = createSegmentationServiceTestCustomer([
                 'first_name' => 'Stats',
                 'last_name' => 'One',
                 'email' => 'stats-one-' . uniqid() . '@example.com',

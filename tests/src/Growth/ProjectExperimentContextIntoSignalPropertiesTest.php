@@ -515,28 +515,37 @@ it('merges explicit experiment contexts from payment and billing payloads withou
     $owner = growthProjectionOwner();
     $trackedProperty = growthProjectionTrackedProperty($owner);
 
-    $checkoutSession = OwnerContext::withOwner($owner, fn (): CheckoutSession => CheckoutSession::query()->create([
-        'cart_id' => 'cart-replay-nested',
-        'customer_id' => 'customer-replay-nested',
-        'grand_total' => 39900,
-        'currency' => 'MYR',
-        'billing_data' => [
-            'metadata' => [
+    // payment_data is deliberately not mass-assignable on CheckoutSession, so it
+    // must be attached explicitly; create() would silently discard it.
+    $checkoutSession = OwnerContext::withOwner($owner, function (): CheckoutSession {
+        $session = CheckoutSession::query()->create([
+            'cart_id' => 'cart-replay-nested',
+            'customer_id' => 'customer-replay-nested',
+            'grand_total' => 39900,
+            'currency' => 'MYR',
+            'billing_data' => [
+                'metadata' => [
+                    'experiment_contexts' => [[
+                        'experiment_id' => 'exp-billing-context',
+                        'variant_id' => 'var-billing-context',
+                        'variant_code' => 'BILLING',
+                    ]],
+                ],
+            ],
+        ]);
+
+        $session->forceFill([
+            'payment_data' => [
                 'experiment_contexts' => [[
-                    'experiment_id' => 'exp-billing-context',
-                    'variant_id' => 'var-billing-context',
-                    'variant_code' => 'BILLING',
+                    'experiment_id' => 'exp-payment-context',
+                    'variant_id' => 'var-payment-context',
+                    'variant_code' => 'PAYMENT',
                 ]],
             ],
-        ],
-        'payment_data' => [
-            'experiment_contexts' => [[
-                'experiment_id' => 'exp-payment-context',
-                'variant_id' => 'var-payment-context',
-                'variant_code' => 'PAYMENT',
-            ]],
-        ],
-    ]));
+        ])->saveQuietly();
+
+        return $session->fresh();
+    });
 
     $properties = OwnerContext::withOwner($owner, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($checkoutSession, $trackedProperty, [
         'checkout_session_id' => $checkoutSession->getKey(),

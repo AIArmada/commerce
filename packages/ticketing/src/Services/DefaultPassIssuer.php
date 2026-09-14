@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Contracts\TicketableInterface;
 use AIArmada\Ticketing\Events\PassIssued;
+use AIArmada\Ticketing\Exceptions\IssuanceQuantityExceededException;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use AIArmada\Ticketing\Support\TicketingOwnerGuard;
@@ -17,13 +18,24 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 final class DefaultPassIssuer implements PassIssuerInterface
 {
+    private const int MAX_COLLISION_ATTEMPTS = 10;
+
+    private const int INSERT_CHUNK_SIZE = 200;
+
     public function issuePassesFor(PassIssuanceContext $context): Collection
     {
         if ($context->quantity <= 0) {
             return new Collection;
+        }
+
+        $maxQuantity = (int) config('ticketing.issuance.max_quantity', 500);
+
+        if ($context->quantity > $maxQuantity) {
+            throw new IssuanceQuantityExceededException($maxQuantity, $context->quantity);
         }
 
         $ticketable = $context->ticketType->ticketable;
@@ -34,9 +46,17 @@ final class DefaultPassIssuer implements PassIssuerInterface
             $passes->push($this->makePass($context, $ticketable, $passNumber));
         }
 
+        $attempts = 0;
+
         while (true) {
+            if (++$attempts > self::MAX_COLLISION_ATTEMPTS) {
+                throw new RuntimeException('Unable to issue passes: unique code generation did not converge.');
+            }
+
             try {
                 return DB::transaction(function () use ($context, $passes): Collection {
+                    $this->assertHomogeneousBatch($passes);
+
                     /** @var Pass $firstPass */
                     $firstPass = $passes->first();
                     TicketingOwnerGuard::assertRelations($firstPass, [
@@ -56,13 +76,36 @@ final class DefaultPassIssuer implements PassIssuerInterface
                     return $passes;
                 });
             } catch (QueryException $exception) {
-                $collisions = $this->findPassNumberCollisions($passes->pluck('pass_no')->all());
-
-                if ($collisions === []) {
+                if (! $this->replaceAllCollisions($passes)) {
                     throw $exception;
                 }
+            }
+        }
+    }
 
-                $this->replaceCollidingPassNumbers($passes, $collisions);
+    /**
+     * All passes in a batch are built from one context, so they share the
+     * ticket type, registration, and owner. Assert that here so guarding the
+     * first pass covers the whole batch without per-row relation queries.
+     *
+     * @param  Collection<int, Pass>  $passes
+     */
+    private function assertHomogeneousBatch(Collection $passes): void
+    {
+        /** @var Pass|null $first */
+        $first = $passes->first();
+
+        if (! $first instanceof Pass) {
+            return;
+        }
+
+        $keys = ['ticket_type_id', 'ticketable_type', 'ticketable_id', 'registration_type', 'registration_id', 'owner_type', 'owner_id'];
+
+        foreach ($passes as $pass) {
+            foreach ($keys as $key) {
+                if ((string) $pass->getAttribute($key) !== (string) $first->getAttribute($key)) {
+                    throw new RuntimeException('Pass issuance batch mixes ticket types, registrations, or owners.');
+                }
             }
         }
     }
@@ -73,8 +116,13 @@ final class DefaultPassIssuer implements PassIssuerInterface
     private function generatePassNumbers(int $quantity): array
     {
         $passNumbers = [];
+        $attempts = 0;
 
         while (true) {
+            if (++$attempts > self::MAX_COLLISION_ATTEMPTS) {
+                throw new RuntimeException('Unable to generate unique pass numbers.');
+            }
+
             while (count($passNumbers) < $quantity) {
                 $candidate = $this->generatePassNo();
 
@@ -83,27 +131,13 @@ final class DefaultPassIssuer implements PassIssuerInterface
                 }
             }
 
-            $collisions = $this->findPassNumberCollisions($passNumbers);
+            $collisions = $this->findCollisions('pass_no', $passNumbers);
 
             if ($collisions === []) {
                 return $passNumbers;
             }
 
-            $reserved = array_fill_keys($passNumbers, true);
-
-            foreach ($passNumbers as $index => $passNumber) {
-                if (! in_array($passNumber, $collisions, true)) {
-                    continue;
-                }
-
-                do {
-                    $candidate = $this->generatePassNo();
-                } while (isset($reserved[$candidate]));
-
-                unset($reserved[$passNumber]);
-                $reserved[$candidate] = true;
-                $passNumbers[$index] = $candidate;
-            }
+            $passNumbers = $this->replaceCollidingValues($passNumbers, $collisions, fn (): string => $this->generatePassNo());
         }
     }
 
@@ -150,23 +184,31 @@ final class DefaultPassIssuer implements PassIssuerInterface
     }
 
     /**
+     * Bulk insert intentionally bypasses model events (creating/created
+     * observers, casts on write). Owner scoping is enforced up front by
+     * asserting a homogeneous batch and guarding the first pass, and
+     * issuance is observable via the per-pass PassIssued events.
+     *
      * @param  Collection<int, Pass>  $passes
      */
     private function insertPasses(Collection $passes): void
     {
+        $attempts = 0;
+
         while (true) {
-            $passNumbers = $passes->pluck('pass_no')->all();
-            $collisions = $this->findPassNumberCollisions($passNumbers);
+            if (++$attempts > self::MAX_COLLISION_ATTEMPTS) {
+                throw new RuntimeException('Unable to issue passes: unique code generation did not converge.');
+            }
 
-            if ($collisions !== []) {
-                $this->replaceCollidingPassNumbers($passes, $collisions);
-
+            if ($this->replaceAllCollisions($passes)) {
                 continue;
             }
 
-            Pass::query()->insert($passes->map(
-                fn (Pass $pass): array => $pass->getAttributes(),
-            )->all());
+            foreach ($passes->chunk(self::INSERT_CHUNK_SIZE) as $chunk) {
+                Pass::query()->insert($chunk->map(
+                    fn (Pass $pass): array => $pass->getAttributes(),
+                )->all());
+            }
 
             foreach ($passes as $pass) {
                 $pass->exists = true;
@@ -179,38 +221,91 @@ final class DefaultPassIssuer implements PassIssuerInterface
     }
 
     /**
-     * @param  list<string>  $passNumbers
+     * Regenerate colliding unique codes across the batch. Returns whether
+     * any collision was found (and repaired).
+     *
+     * @param  Collection<int, Pass>  $passes
+     */
+    private function replaceAllCollisions(Collection $passes): bool
+    {
+        $repaired = false;
+        $generators = [
+            'pass_no' => fn (): string => $this->generatePassNo(),
+            'qr_code' => fn (): string => (string) Str::uuid(),
+            'barcode' => fn (): string => Str::random(16),
+        ];
+
+        foreach ($generators as $column => $generate) {
+            $values = $passes->map(fn (Pass $pass): ?string => $pass->getAttribute($column))->filter()->values()->all();
+            $collisions = $this->findCollisions($column, $values);
+
+            if ($collisions === []) {
+                continue;
+            }
+
+            $repaired = true;
+            $reserved = array_fill_keys($values, true);
+
+            foreach ($passes as $pass) {
+                $current = $pass->getAttribute($column);
+
+                if (! in_array($current, $collisions, true)) {
+                    continue;
+                }
+
+                do {
+                    $candidate = $generate();
+                } while (isset($reserved[$candidate]));
+
+                unset($reserved[$current]);
+                $reserved[$candidate] = true;
+                $pass->setAttribute($column, $candidate);
+            }
+        }
+
+        return $repaired;
+    }
+
+    /**
+     * @param  list<string>  $values
      * @return list<string>
      */
-    private function findPassNumberCollisions(array $passNumbers): array
+    private function findCollisions(string $column, array $values): array
     {
+        if ($values === []) {
+            return [];
+        }
+
         return Pass::query()
             ->withoutOwnerScope()
-            ->whereIn('pass_no', $passNumbers)
-            ->pluck('pass_no')
+            ->whereIn($column, $values)
+            ->pluck($column)
             ->all();
     }
 
     /**
-     * @param  Collection<int, Pass>  $passes
+     * @param  list<string>  $values
      * @param  list<string>  $collisions
+     * @return list<string>
      */
-    private function replaceCollidingPassNumbers(Collection $passes, array $collisions): void
+    private function replaceCollidingValues(array $values, array $collisions, callable $generate): array
     {
-        $reserved = array_fill_keys($passes->pluck('pass_no')->all(), true);
+        $reserved = array_fill_keys($values, true);
 
-        foreach ($passes as $pass) {
-            if (! in_array($pass->pass_no, $collisions, true)) {
+        foreach ($values as $index => $value) {
+            if (! in_array($value, $collisions, true)) {
                 continue;
             }
 
             do {
-                $candidate = $this->generatePassNo();
+                $candidate = $generate();
             } while (isset($reserved[$candidate]));
 
-            unset($reserved[$pass->pass_no]);
+            unset($reserved[$value]);
             $reserved[$candidate] = true;
-            $pass->pass_no = $candidate;
+            $values[$index] = $candidate;
         }
+
+        return $values;
     }
 }

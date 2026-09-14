@@ -90,8 +90,8 @@ test('downloadPdf returns existing path if exists', function (): void {
     $doc = Doc::factory()->create([
         'doc_type' => 'invoice',
         'doc_number' => 'INV-001',
-        'pdf_path' => 'docs/INV-001.pdf',
     ]);
+    $doc->forceFill(['pdf_path' => 'docs/INV-001.pdf'])->save();
 
     Storage::disk('docs')->put('docs/INV-001.pdf', 'dummy content');
 
@@ -108,9 +108,9 @@ test('downloadPdf generates pdf if missing', function (): void {
     $doc = Doc::factory()->create([
         'doc_type' => 'invoice',
         'doc_number' => 'INV-002',
-        // pdf_path might be set but file missing
-        'pdf_path' => 'docs/INV-002.pdf',
     ]);
+    // pdf_path might be set but file missing
+    $doc->forceFill(['pdf_path' => 'docs/INV-002.pdf'])->save();
 
     // File content missing in storage
 

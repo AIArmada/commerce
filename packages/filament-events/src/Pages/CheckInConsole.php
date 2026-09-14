@@ -101,11 +101,13 @@ final class CheckInConsole extends Page implements HasTable
         };
 
         if ($this->passOrRegistration) {
-            $query->where(function (Builder $q) use ($operator): void {
-                $q->where('pass_no', $operator, "%{$this->passOrRegistration}%")
+            $pattern = '%' . addcslashes($this->passOrRegistration, '\\%_') . '%';
+
+            $query->where(function (Builder $q) use ($operator, $pattern): void {
+                $q->whereRaw("pass_no {$operator} ? ESCAPE '\\'", [$pattern])
                     ->orWhereHas(
                         'registration',
-                        fn (Builder $r) => $r->where('registration_no', $operator, "%{$this->passOrRegistration}%")
+                        fn (Builder $r) => $r->whereRaw("registration_no {$operator} ? ESCAPE '\\'", [$pattern])
                     );
             });
         }
@@ -134,10 +136,16 @@ final class CheckInConsole extends Page implements HasTable
                 ->form([
                     Select::make('event_id')
                         ->label('Event')
-                        ->options(fn (): array => OwnerUiScope::apply(Event::query(), includeGlobal: false)
+                        ->searchable()
+                        ->getSearchResultsUsing(fn (string $search): array => OwnerUiScope::apply(Event::query(), includeGlobal: false)
+                            ->where('title', 'like', '%' . addcslashes($search, '\\%_') . '%')
+                            ->orderBy('title')
+                            ->limit(50)
                             ->pluck('title', 'id')
                             ->all())
-                        ->searchable()
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => OwnerUiScope::apply(Event::query(), includeGlobal: false)
+                            ->whereKey($value)
+                            ->value('title'))
                         ->required(),
                     TextInput::make('attendee_name')->label('Name'),
                     TextInput::make('attendee_email')->label('Email'),

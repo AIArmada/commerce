@@ -85,16 +85,26 @@ it('records checkout and order signals with projected experiment context', funct
     $trackedProperty = growthRecorderTrackedProperty($owner);
     [$experiment, $variant] = growthRecorderExperimentContext($owner, $trackedProperty, 'customer-recorder-1', 'cart-recorder-1');
 
-    $checkoutSession = OwnerContext::withOwner($owner, fn (): CheckoutSession => CheckoutSession::query()->create([
-        'cart_id' => 'cart-recorder-1',
-        'customer_id' => 'customer-recorder-1',
-        'grand_total' => 129900,
-        'currency' => 'MYR',
-        'selected_payment_gateway' => 'chip',
-        'selected_shipping_method' => 'express',
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => (string) $owner->getKey(),
-    ]));
+    // owner_type/owner_id are not mass-assignable on CheckoutSession and checkout
+    // owner auto-assignment is disabled, so the owner link the recorder resolves
+    // the tracked property through must be attached explicitly.
+    $checkoutSession = OwnerContext::withOwner($owner, function () use ($owner): CheckoutSession {
+        $session = CheckoutSession::query()->create([
+            'cart_id' => 'cart-recorder-1',
+            'customer_id' => 'customer-recorder-1',
+            'grand_total' => 129900,
+            'currency' => 'MYR',
+            'selected_payment_gateway' => 'chip',
+            'selected_shipping_method' => 'express',
+        ]);
+
+        $session->forceFill([
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+        ])->saveQuietly();
+
+        return $session->fresh();
+    });
 
     $order = OwnerContext::withOwner($owner, fn (): Order => Order::query()->create([
         'customer_id' => 'customer-recorder-1',
@@ -111,9 +121,13 @@ it('records checkout and order signals with projected experiment context', funct
 
     $recorder = app(CommerceSignalsRecorder::class);
 
-    $checkoutStarted = $recorder->recordCheckoutStarted($checkoutSession);
-    $orderPaid = $recorder->recordOrderPaid($order, 'txn-growth-1', 'chip');
-    $orderRefunded = $recorder->recordOrderRefunded($order, 1500, 'customer-request');
+    [$checkoutStarted, $orderPaid, $orderRefunded] = OwnerContext::withOwner($owner, function () use ($recorder, $checkoutSession, $order): array {
+        return [
+            $recorder->recordCheckoutStarted($checkoutSession),
+            $recorder->recordOrderPaid($order, 'txn-growth-1', 'chip'),
+            $recorder->recordOrderRefunded($order, 1500, 'customer-request'),
+        ];
+    });
 
     expect($checkoutStarted)->not->toBeNull()
         ->and($orderPaid)->not->toBeNull()

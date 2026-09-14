@@ -70,3 +70,18 @@ it('converts to array and back preserving nav links', function (): void {
     expect($restored->googleMapsUrl)->toBe('https://maps.app.goo.gl/test');
     expect($restored->navigationLinks)->toBe(['waze' => ['url' => 'https://waze.com/test']]);
 });
+
+it('drops non-http navigation urls', function (): void {
+    $data = AddressData::from([
+        'google_maps_url' => 'javascript:alert(1)',
+        'waze_url' => 'ftp://example.com/x',
+        'navigation_links' => [
+            'waze' => ['url' => 'javascript:alert(1)'],
+            'foo' => 'bar',
+        ],
+    ]);
+
+    expect($data->googleMapsUrl)->toBeNull();
+    expect($data->wazeUrl)->toBeNull();
+    expect($data->navigationLinks)->toBe(['waze' => ['url' => null], 'foo' => 'bar']);
+});

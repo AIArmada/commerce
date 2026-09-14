@@ -192,7 +192,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
 
     expect($recommend->invoke($suggestions, $limited, 10000, 100))->toContain('uses left');
 
-    $suggestions->applySuggestion($voucher->code);
+    $suggestions->applySuggestion((string) $voucher->getKey());
 
     app()->instance(CartInstanceManager::class, new class
     {
@@ -208,7 +208,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
         }
     });
 
-    $suggestions->applySuggestion($voucher->code);
+    $suggestions->applySuggestion((string) $voucher->getKey());
 });
 
 it('prevents voucher suggestions widget cross-tenant cart access when owner scoping enabled', function (): void {
@@ -277,7 +277,7 @@ it('prevents voucher suggestions widget cross-tenant cart access when owner scop
     $suggestions->record = $cartOwnedByB;
 
     expect($suggestions->getEligibleVouchers())->toBeEmpty();
-    $suggestions->applySuggestion($voucher->code);
+    $suggestions->applySuggestion((string) $voucher->getKey());
 
     expect($manager->calls)->toBe(0);
 });

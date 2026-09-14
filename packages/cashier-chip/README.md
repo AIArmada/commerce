@@ -363,7 +363,6 @@ return [
     
     'webhooks' => [
         'secret' => env('CHIP_WEBHOOK_SECRET'),
-        'verify_signature' => true,
     ],
     
     'success_url' => env('CASHIER_CHIP_SUCCESS_URL'),

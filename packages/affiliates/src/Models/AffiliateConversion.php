@@ -104,8 +104,6 @@ class AffiliateConversion extends Model
         'status',
         'channel',
         'metadata',
-        'owner_type',
-        'owner_id',
         'occurred_at',
         'approved_at',
         'rejected_at',
