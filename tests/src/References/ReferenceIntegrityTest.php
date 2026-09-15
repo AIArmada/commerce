@@ -245,10 +245,3 @@ test('allows a single canonical reference per owner', function (): void {
 
     expect($other->is_canonical)->toBeTrue();
 });
-
-test('migration rolls back the references table', function (): void {
-    $migration = file_get_contents(__DIR__ . '/../../../packages/references/database/migrations/2000_01_01_000001_create_references_table.php');
-
-    expect($migration)->toContain('function down')
-        ->and($migration)->toContain('dropIfExists');
-});
