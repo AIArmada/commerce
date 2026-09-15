@@ -22,9 +22,4 @@ return new class extends Migration
             $table->unique(['scopeable_type', 'scopeable_id']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(authz_table('scopes'));
-    }
 };

@@ -38,10 +38,4 @@ return new class extends Migration
             $table->index('status');
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.fraud_signals', 'affiliate_fraud_signals');
-        Schema::dropIfExists($tableName);
-    }
 };

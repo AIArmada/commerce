@@ -24,9 +24,4 @@ return new class extends Migration
             $table->index(['organization_id', 'role'], 'organization_members_organization_role_index');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists((string) config('organizations.database.tables.members', 'organization_members'));
-    }
 };

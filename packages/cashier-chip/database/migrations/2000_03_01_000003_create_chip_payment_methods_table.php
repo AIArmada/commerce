@@ -31,13 +31,4 @@ return new class extends Migration
             $table->index(['billable_type', 'billable_id', 'is_default'], $tableName . '_billable_default_idx');
         });
     }
-
-    public function down(): void
-    {
-        $databaseConfig = config('cashier-chip.database', []);
-        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
-        $tables = $databaseConfig['tables'] ?? [];
-
-        Schema::dropIfExists($tables['payment_methods'] ?? $tablePrefix . 'payment_methods');
-    }
 };

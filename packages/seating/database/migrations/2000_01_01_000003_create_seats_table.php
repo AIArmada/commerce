@@ -31,9 +31,4 @@ return new class extends Migration
             $table->index(['seat_section_id', 'category', 'status']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('seating.database.tables.seats', 'seats'));
-    }
 };

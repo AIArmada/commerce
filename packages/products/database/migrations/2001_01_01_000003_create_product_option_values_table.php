@@ -34,9 +34,4 @@ return new class extends Migration
             $table->index(['option_id', 'position']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('products.database.tables.option_values', 'product_option_values'));
-    }
 };

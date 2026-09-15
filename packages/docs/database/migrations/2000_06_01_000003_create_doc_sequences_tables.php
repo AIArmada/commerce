@@ -54,17 +54,4 @@ return new class extends Migration
             $table->index('period_key', $numbersTable . '_period_key_index');
         });
     }
-
-    public function down(): void
-    {
-        $database = config('docs.database', []);
-        $tablePrefix = $database['table_prefix'] ?? 'docs_';
-        $tables = $database['tables'] ?? [];
-
-        $sequencesTable = $tables['doc_sequences'] ?? $tablePrefix . 'sequences';
-        $numbersTable = $tables['sequence_numbers'] ?? $tablePrefix . 'sequence_numbers';
-
-        Schema::dropIfExists($numbersTable);
-        Schema::dropIfExists($sequencesTable);
-    }
 };

@@ -62,11 +62,4 @@ return new class extends Migration
             });
         }
     }
-
-    public function down(): void
-    {
-        $tableName = (string) config('cart.database.tables.snapshots', 'cart_snapshots');
-
-        Schema::dropIfExists($tableName);
-    }
 };

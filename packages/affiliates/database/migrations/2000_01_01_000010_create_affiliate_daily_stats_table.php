@@ -39,10 +39,4 @@ return new class extends Migration
             $table->index(['date', 'revenue_cents']);
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.daily_stats', 'affiliate_daily_stats');
-        Schema::dropIfExists($tableName);
-    }
 };

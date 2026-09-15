@@ -49,10 +49,4 @@ return new class extends Migration
             $table->unique(['affiliate_id', 'module_id']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('affiliates.database.tables.training_progress', 'affiliate_training_progress'));
-        Schema::dropIfExists(config('affiliates.database.tables.training_modules', 'affiliate_training_modules'));
-    }
 };

@@ -54,16 +54,4 @@ return new class extends Migration
             $table->index(['billable_type', 'billable_id', 'type'], $subscriptionsTable . '_billable_type_idx');
         });
     }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        $databaseConfig = config('cashier-chip.database', []);
-        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
-        $tables = $databaseConfig['tables'] ?? [];
-
-        Schema::dropIfExists($tables['subscriptions'] ?? $tablePrefix . 'subscriptions');
-    }
 };

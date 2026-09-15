@@ -24,9 +24,4 @@ return new class extends Migration
             $table->index('created_at');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('affiliates.database.tables.payout_events', 'affiliate_payout_events'));
-    }
 };

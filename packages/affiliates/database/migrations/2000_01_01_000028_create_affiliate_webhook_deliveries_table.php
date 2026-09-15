@@ -36,9 +36,4 @@ return new class extends Migration
             $table->index(['status', 'available_at']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('affiliates.database.tables.webhook_deliveries', 'affiliate_webhook_deliveries'));
-    }
 };

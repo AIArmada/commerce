@@ -30,9 +30,4 @@ return new class extends Migration
             $table->index('visibility');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('products.database.tables.options', 'product_options'));
-    }
 };

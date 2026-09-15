@@ -26,10 +26,4 @@ return new class extends Migration
             $table->index('min_volume_minor');
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.volume_tiers', 'affiliate_volume_tiers');
-        Schema::dropIfExists($tableName);
-    }
 };

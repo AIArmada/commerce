@@ -99,15 +99,4 @@ return new class extends Migration
             $table->primary([$permissionColumnName, $roleColumnName], 'role_has_permissions_permission_id_role_id_primary');
         });
     }
-
-    public function down(): void
-    {
-        $tableNames = config('permission.table_names', []);
-
-        Schema::dropIfExists($tableNames['model_has_roles'] ?? 'model_has_roles');
-        Schema::dropIfExists($tableNames['model_has_permissions'] ?? 'model_has_permissions');
-        Schema::dropIfExists($tableNames['role_has_permissions'] ?? 'role_has_permissions');
-        Schema::dropIfExists($tableNames['roles'] ?? 'roles');
-        Schema::dropIfExists($tableNames['permissions'] ?? 'permissions');
-    }
 };

@@ -24,10 +24,4 @@ return new class extends Migration
             $table->timestampsTz();
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.balances', 'affiliate_balances');
-        Schema::dropIfExists($tableName);
-    }
 };

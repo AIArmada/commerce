@@ -28,9 +28,4 @@ return new class extends Migration
             $table->timestampsTz();
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists((string) config('organizations.database.tables.organizations', 'organizations'));
-    }
 };

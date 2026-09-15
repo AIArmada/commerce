@@ -36,10 +36,4 @@ return new class extends Migration
             $table->index('program_id');
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.commission_promotions', 'affiliate_commission_promotions');
-        Schema::dropIfExists($tableName);
-    }
 };

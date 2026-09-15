@@ -34,10 +34,4 @@ return new class extends Migration
             $table->index(['program_id', 'status']);
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.program_memberships', 'affiliate_program_memberships');
-        Schema::dropIfExists($tableName);
-    }
 };

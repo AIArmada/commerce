@@ -37,10 +37,4 @@ return new class extends Migration
             $table->unique(['owner_type', 'owner_id', 'level'], 'affiliate_ranks_owner_level_unique');
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.ranks', 'affiliate_ranks');
-        Schema::dropIfExists($tableName);
-    }
 };

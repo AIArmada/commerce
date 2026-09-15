@@ -25,10 +25,4 @@ return new class extends Migration
             $table->index(['affiliate_id', 'released_at']);
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.payout_holds', 'affiliate_payout_holds');
-        Schema::dropIfExists($tableName);
-    }
 };

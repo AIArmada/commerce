@@ -50,17 +50,4 @@ return new class extends Migration
             $table->index(['workflow_id', 'order']);
         });
     }
-
-    public function down(): void
-    {
-        $database = config('docs.database', []);
-        $prefix = $database['table_prefix'] ?? 'docs_';
-        $tables = $database['tables'] ?? [];
-
-        $workflowsTable = $tables['workflows'] ?? $prefix . 'workflows';
-        $workflowStepsTable = $tables['workflow_steps'] ?? $prefix . 'workflow_steps';
-
-        Schema::dropIfExists($workflowStepsTable);
-        Schema::dropIfExists($workflowsTable);
-    }
 };

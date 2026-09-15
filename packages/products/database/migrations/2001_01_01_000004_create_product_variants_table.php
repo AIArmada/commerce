@@ -57,9 +57,4 @@ return new class extends Migration
 
         ProductIdentityIndexes::owner($tableName, 'sku');
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('products.database.tables.variants', 'product_variants'));
-    }
 };

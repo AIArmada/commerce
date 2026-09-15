@@ -42,9 +42,4 @@ return new class extends Migration
             $table->index(['ticketable_id', 'ticketable_type']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('ticketing.database.tables.passes', 'ticket_passes'));
-    }
 };

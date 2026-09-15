@@ -21,9 +21,4 @@ return new class extends Migration
             $table->primary(['category_id', 'product_id']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('products.database.tables.category_product', 'category_product'));
-    }
 };

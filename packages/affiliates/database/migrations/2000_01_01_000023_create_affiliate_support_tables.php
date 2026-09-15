@@ -33,10 +33,4 @@ return new class extends Migration
             $table->timestampsTz();
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('affiliates.database.tables.support_messages', 'affiliate_support_messages'));
-        Schema::dropIfExists(config('affiliates.database.tables.support_tickets', 'affiliate_support_tickets'));
-    }
 };

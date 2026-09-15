@@ -42,9 +42,4 @@ return new class extends Migration
             $table->unique(['external_reference_type', 'external_reference'], 'affiliates_external_ref_unique_idx');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('affiliates.database.tables.affiliates', 'affiliates'));
-    }
 };

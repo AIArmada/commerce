@@ -46,11 +46,4 @@ return new class extends Migration
             $table->index('attribute_set_id');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('products.database.tables.attribute_group_attribute_set', 'product_attribute_group_attribute_set'));
-        Schema::dropIfExists(config('products.database.tables.attribute_attribute_set', 'product_attribute_attribute_set'));
-        Schema::dropIfExists(config('products.database.tables.attribute_attribute_group', 'product_attribute_attribute_group'));
-    }
 };

@@ -29,9 +29,4 @@ return new class extends Migration
             $table->unique(['owner_type', 'owner_id', 'slug'], 'affiliate_commission_templates_owner_slug_unique');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('affiliates.database.tables.commission_templates', 'affiliate_commission_templates'));
-    }
 };

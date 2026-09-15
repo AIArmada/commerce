@@ -131,7 +131,7 @@ it('rejects an ownership transfer target from a different member model', functio
         ->toThrow(InvalidArgumentException::class, 'member model');
 });
 
-it('drops and recreates the organization tables through migration rollback', function (): void {
+it('drops and recreates the organization tables through the create migrations', function (): void {
     $organizationsTable = (string) config('organizations.database.tables.organizations', 'organizations');
     $membersTable = (string) config('organizations.database.tables.members', 'organization_members');
     $base = dirname(__DIR__, 4) . '/packages/organizations/database/migrations/';
@@ -143,8 +143,8 @@ it('drops and recreates the organization tables through migration rollback', fun
         ->and(Schema::hasTable($membersTable))->toBeTrue();
 
     try {
-        $createMembers->down();
-        $createOrganizations->down();
+        Schema::dropIfExists($membersTable);
+        Schema::dropIfExists($organizationsTable);
 
         expect(Schema::hasTable($organizationsTable))->toBeFalse()
             ->and(Schema::hasTable($membersTable))->toBeFalse();

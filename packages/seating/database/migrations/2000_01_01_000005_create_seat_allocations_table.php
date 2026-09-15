@@ -57,9 +57,4 @@ return new class extends Migration
             $grammar->wrap('status'),
         ));
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('seating.database.tables.seat_allocations', 'seat_allocations'));
-    }
 };

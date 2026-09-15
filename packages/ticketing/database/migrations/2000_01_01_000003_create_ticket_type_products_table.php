@@ -29,9 +29,4 @@ return new class extends Migration
             $table->index(['ticket_type_id', 'product_id', 'variant_id']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('ticketing.database.tables.ticket_type_products', 'ticket_type_products'));
-    }
 };

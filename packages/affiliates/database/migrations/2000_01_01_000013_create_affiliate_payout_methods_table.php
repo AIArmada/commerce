@@ -24,10 +24,4 @@ return new class extends Migration
             $table->index(['affiliate_id', 'is_default']);
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.payout_methods', 'affiliate_payout_methods');
-        Schema::dropIfExists($tableName);
-    }
 };

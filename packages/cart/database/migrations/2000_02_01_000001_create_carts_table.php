@@ -57,11 +57,6 @@ return new class extends Migration
         }
     }
 
-    public function down(): void
-    {
-        Schema::dropIfExists(config('cart.database.table', 'carts'));
-    }
-
     private function addPostgreSQLIndexes(string $tableName, string $jsonType): void
     {
         DB::statement("

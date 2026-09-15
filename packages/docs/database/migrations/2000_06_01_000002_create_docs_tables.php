@@ -109,21 +109,4 @@ return new class extends Migration
             $table->index('status', $statusTable . '_status_index');
         });
     }
-
-    public function down(): void
-    {
-        $database = config('docs.database', []);
-        $tablePrefix = $database['table_prefix'] ?? 'docs_';
-        $tables = $database['tables'] ?? [];
-
-        $templatesTable = $tables['doc_templates'] ?? $tablePrefix . 'doc_templates';
-        $docsTable = $tables['docs'] ?? $tablePrefix . 'docs';
-        $shareLinksTable = $tables['doc_share_links'] ?? $tablePrefix . 'doc_share_links';
-        $statusTable = $tables['doc_status_histories'] ?? $tablePrefix . 'doc_status_histories';
-
-        Schema::dropIfExists($statusTable);
-        Schema::dropIfExists($shareLinksTable);
-        Schema::dropIfExists($docsTable);
-        Schema::dropIfExists($templatesTable);
-    }
 };

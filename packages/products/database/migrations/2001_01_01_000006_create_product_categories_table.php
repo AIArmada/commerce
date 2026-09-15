@@ -51,9 +51,4 @@ return new class extends Migration
 
         ProductIdentityIndexes::categories($tableName);
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('products.database.tables.categories', 'product_categories'));
-    }
 };

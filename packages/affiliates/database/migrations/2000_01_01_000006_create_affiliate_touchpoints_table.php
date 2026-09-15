@@ -51,9 +51,4 @@ return new class extends Migration
             $table->index(['affiliate_attribution_id', 'touchpoint_type', 'touched_at'], 'affiliate_touchpoints_attribution_type_date_idx');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('affiliates.database.tables.touchpoints', 'affiliate_touchpoints'));
-    }
 };

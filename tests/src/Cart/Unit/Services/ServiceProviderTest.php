@@ -252,7 +252,7 @@ it('integration: uses configured conditions table name when migrating', function
     $migrationPath = getcwd() . '/packages/cart/database/migrations/2000_02_01_000002_create_cart_conditions_table.php';
     expect(file_exists($migrationPath))->toBeTrue();
 
-    /** @var object{up: callable, down: callable} $migration */
+    /** @var object{up: callable} $migration */
     $migration = include $migrationPath;
 
     Schema::dropIfExists($tableName);
@@ -260,7 +260,7 @@ it('integration: uses configured conditions table name when migrating', function
 
     expect(Schema::hasTable($tableName))->toBeTrue();
 
-    $migration->down();
+    Schema::drop($tableName);
 
     expect(Schema::hasTable($tableName))->toBeFalse();
 });

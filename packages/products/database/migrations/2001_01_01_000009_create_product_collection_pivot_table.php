@@ -23,9 +23,4 @@ return new class extends Migration
             $table->index(['collection_id', 'position']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('products.database.tables.collection_product', 'collection_product'));
-    }
 };

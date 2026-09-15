@@ -29,9 +29,4 @@ return new class extends Migration
             $table->index(['affiliate_id', 'tax_year']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('affiliates.database.tables.tax_documents', 'affiliate_tax_documents'));
-    }
 };

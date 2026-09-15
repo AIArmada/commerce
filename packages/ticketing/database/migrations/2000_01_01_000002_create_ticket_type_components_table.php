@@ -24,9 +24,4 @@ return new class extends Migration
             $table->unique(['parent_ticket_type_id', 'component_ticket_type_id'], 'ticket_type_components_pair_unique');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('ticketing.database.tables.ticket_type_components', 'ticket_type_components'));
-    }
 };

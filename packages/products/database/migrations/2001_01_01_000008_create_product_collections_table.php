@@ -59,9 +59,4 @@ return new class extends Migration
 
         ProductIdentityIndexes::owner($tableName, 'slug');
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('products.database.tables.collections', 'product_collections'));
-    }
 };

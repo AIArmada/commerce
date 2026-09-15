@@ -43,10 +43,4 @@ return new class extends Migration
             $table->index(['subject_type', 'subject_id'], 'affiliate_links_subject_id_idx');
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.links', 'affiliate_links');
-        Schema::dropIfExists($tableName);
-    }
 };

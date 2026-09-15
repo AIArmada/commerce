@@ -36,9 +36,4 @@ return new class extends Migration
             $table->index(['status', 'scheduled_at'], 'affiliate_payouts_pending_idx');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('affiliates.database.tables.payouts', 'affiliate_payouts'));
-    }
 };

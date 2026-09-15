@@ -39,9 +39,4 @@ return new class extends Migration
             $table->unique(['ticketable_type', 'ticketable_id', 'code'], 'ticket_types_ticketable_code_unique');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('ticketing.database.tables.ticket_types', 'ticket_types'));
-    }
 };

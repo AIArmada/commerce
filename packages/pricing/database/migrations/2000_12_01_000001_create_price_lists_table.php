@@ -47,9 +47,4 @@ return new class extends Migration
             $table->unique(['owner_type', 'owner_id', 'slug'], 'price_lists_owner_slug_unique');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('pricing.database.tables.price_lists', 'price_lists'));
-    }
 };

@@ -38,9 +38,4 @@ return new class extends Migration
 
         ProductIdentityIndexes::attributeValues($tableName);
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('products.database.tables.attribute_values', 'product_attribute_values'));
-    }
 };

@@ -157,21 +157,6 @@ PHP);
     }
 });
 
-it('drops and restores the settings table during a migration rollback round trip', function (): void {
-    $this->artisan('migrate:fresh')->assertExitCode(0);
-    expectSettingsToMatchDefaults();
-
-    $this->artisan('migrate:rollback', [
-        '--path' => [settingsBaseMigrationPath(), pricingSettingsMigrationPath()],
-        '--realpath' => true,
-    ])->assertExitCode(0);
-
-    expect(Schema::hasTable('settings'))->toBeFalse();
-
-    $this->artisan('migrate')->assertExitCode(0);
-    expectSettingsToMatchDefaults();
-});
-
 it('resolves free, paid, and mixed ticket and event pricing modes', function (): void {
     $freeTicket = TicketType::factory()->make(['price' => null]);
     $paidTicket = TicketType::factory()->make(['price' => 1500]);
@@ -212,11 +197,6 @@ function settingsMigrationIsRegistered(): bool
 {
     return collect(app('migrator')->paths())
         ->contains(static fn (string $path): bool => str_ends_with($path, basename(settingsBaseMigrationPath())));
-}
-
-function pricingSettingsMigrationPath(): string
-{
-    return realpath(__DIR__ . '/../../../packages/pricing/database/settings') ?: '';
 }
 
 function expectSettingsToMatchDefaults(): void

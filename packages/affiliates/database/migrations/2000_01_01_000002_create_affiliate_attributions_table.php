@@ -63,9 +63,4 @@ return new class extends Migration
             $table->index(['subject_type', 'subject_id'], 'affiliate_attributions_subject_id_idx');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('affiliates.database.tables.attributions', 'affiliate_attributions'));
-    }
 };

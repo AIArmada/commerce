@@ -17,9 +17,4 @@ return new class extends Migration
             $table->primary(['variant_id', 'option_value_id']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('products.database.tables.variant_options', 'product_variant_options'));
-    }
 };

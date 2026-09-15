@@ -25,10 +25,4 @@ return new class extends Migration
             $table->index(['ancestor_id', 'depth']);
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.upline', 'affiliate_upline');
-        Schema::dropIfExists($tableName);
-    }
 };

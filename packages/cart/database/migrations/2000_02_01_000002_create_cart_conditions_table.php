@@ -78,12 +78,4 @@ return new class extends Migration
             DB::statement("CREATE INDEX {$tableName}_target_definition_gin_index ON \"{$tableName}\" USING GIN (\"target_definition\")");
         }
     }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists(config('cart.database.conditions_table', 'conditions'));
-    }
 };

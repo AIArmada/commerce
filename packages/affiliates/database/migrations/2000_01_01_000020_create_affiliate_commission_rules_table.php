@@ -36,10 +36,4 @@ return new class extends Migration
             $table->index('rule_type');
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.commission_rules', 'affiliate_commission_rules');
-        Schema::dropIfExists($tableName);
-    }
 };

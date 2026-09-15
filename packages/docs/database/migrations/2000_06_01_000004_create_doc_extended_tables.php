@@ -150,18 +150,4 @@ return new class extends Migration
             $table->index('status', $einvoiceTable . '_status_index');
         });
     }
-
-    public function down(): void
-    {
-        $database = config('docs.database', []);
-        $tablePrefix = $database['table_prefix'] ?? 'docs_';
-        $tables = $database['tables'] ?? [];
-
-        Schema::dropIfExists($tables['doc_einvoice_submissions'] ?? $tablePrefix . 'einvoice_submissions');
-        Schema::dropIfExists($tables['doc_approvals'] ?? $tablePrefix . 'approvals');
-        Schema::dropIfExists($tables['doc_versions'] ?? $tablePrefix . 'versions');
-        Schema::dropIfExists($tables['doc_emails'] ?? $tablePrefix . 'emails');
-        Schema::dropIfExists($tables['doc_email_templates'] ?? $tablePrefix . 'email_templates');
-        Schema::dropIfExists($tables['doc_payments'] ?? $tablePrefix . 'payments');
-    }
 };

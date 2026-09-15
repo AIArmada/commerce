@@ -24,10 +24,4 @@ return new class extends Migration
             $table->index(['affiliate_id', 'qualified_at']);
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.rank_histories', 'affiliate_rank_histories');
-        Schema::dropIfExists($tableName);
-    }
 };

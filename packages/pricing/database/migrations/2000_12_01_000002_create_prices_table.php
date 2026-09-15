@@ -42,9 +42,4 @@ return new class extends Migration
             $table->unique(['price_list_id', 'priceable_type', 'priceable_id', 'min_quantity'], 'prices_unique_per_quantity');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('pricing.database.tables.prices', 'prices'));
-    }
 };

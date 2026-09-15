@@ -41,9 +41,4 @@ return new class extends Migration
             $table->index('currency');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('pricing.database.tables.price_tiers', 'price_tiers'));
-    }
 };

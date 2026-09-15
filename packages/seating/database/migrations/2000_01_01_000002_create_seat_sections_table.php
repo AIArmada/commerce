@@ -25,9 +25,4 @@ return new class extends Migration
             $table->timestampsTz();
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('seating.database.tables.seat_sections', 'seat_sections'));
-    }
 };

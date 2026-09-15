@@ -32,9 +32,4 @@ return new class extends Migration
             $table->unique(['affiliate_id', 'payout_sequence'], 'affiliate_payout_operation_sequence_unique');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('affiliates.database.tables.payout_operations', 'affiliate_payout_operations'));
-    }
 };

@@ -43,10 +43,4 @@ return new class extends Migration
             $table->unique(['owner_type', 'owner_id', 'slug'], 'affiliate_programs_owner_slug_unique');
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.programs', 'affiliate_programs');
-        Schema::dropIfExists($tableName);
-    }
 };

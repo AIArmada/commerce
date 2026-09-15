@@ -33,10 +33,4 @@ return new class extends Migration
             $table->index('type');
         });
     }
-
-    public function down(): void
-    {
-        $tableName = config('affiliates.database.tables.program_creatives', 'affiliate_program_creatives');
-        Schema::dropIfExists($tableName);
-    }
 };

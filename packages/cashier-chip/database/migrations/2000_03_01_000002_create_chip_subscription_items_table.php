@@ -34,17 +34,4 @@ return new class extends Migration
             $table->index('chip_product');
         });
     }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        $databaseConfig = config('cashier-chip.database', []);
-        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
-        $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['subscription_items'] ?? $tablePrefix . 'subscription_items';
-
-        Schema::dropIfExists($tableName);
-    }
 };

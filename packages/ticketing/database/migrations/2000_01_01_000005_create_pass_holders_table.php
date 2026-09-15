@@ -29,9 +29,4 @@ return new class extends Migration
             $table->index(['pass_id', 'is_current']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('ticketing.database.tables.pass_holders', 'ticket_pass_holders'));
-    }
 };

@@ -56,9 +56,4 @@ return new class extends Migration
 
         ProductIdentityIndexes::owner($tableName, 'code');
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists(config('products.database.tables.attributes', 'product_attributes'));
-    }
 };
