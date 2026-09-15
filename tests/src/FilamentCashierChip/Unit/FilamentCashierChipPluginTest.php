@@ -95,34 +95,14 @@ it('can disable billing dashboard', function (): void {
     expect($property->getValue($plugin))->toBeFalse();
 });
 
-it('returns fluent instance from subscriptions method', function (): void {
+it('returns fluent instance from configuration methods', function (): void {
     $plugin = new FilamentCashierChipPlugin;
 
-    expect($plugin->subscriptions())->toBe($plugin);
-});
-
-it('returns fluent instance from customers method', function (): void {
-    $plugin = new FilamentCashierChipPlugin;
-
-    expect($plugin->customers())->toBe($plugin);
-});
-
-it('returns fluent instance from invoices method', function (): void {
-    $plugin = new FilamentCashierChipPlugin;
-
-    expect($plugin->invoices())->toBe($plugin);
-});
-
-it('returns fluent instance from dashboardWidgets method', function (): void {
-    $plugin = new FilamentCashierChipPlugin;
-
-    expect($plugin->dashboardWidgets())->toBe($plugin);
-});
-
-it('returns fluent instance from billingDashboard method', function (): void {
-    $plugin = new FilamentCashierChipPlugin;
-
-    expect($plugin->billingDashboard())->toBe($plugin);
+    expect($plugin->subscriptions())->toBe($plugin)
+        ->and($plugin->customers())->toBe($plugin)
+        ->and($plugin->invoices())->toBe($plugin)
+        ->and($plugin->dashboardWidgets())->toBe($plugin)
+        ->and($plugin->billingDashboard())->toBe($plugin);
 });
 
 it('implements filament plugin interface', function (): void {

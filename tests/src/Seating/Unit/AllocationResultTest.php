@@ -30,16 +30,4 @@ it('can be created with category', function (): void {
     expect($result->category)->toBe('vip');
 });
 
-it('has expected properties', function (): void {
-    $result = new AllocationResult(
-        seatId: 'uuid-1',
-        sectionCode: 'C',
-        rowLabel: '3',
-        seatLabel: '15',
-        category: 'standard',
-    );
-
-    expect($result->seatId)->toBe('uuid-1');
-    expect($result->sectionCode)->toBe('C');
-    expect($result->category)->toBe('standard');
-});
+/* Property-readback subset removed; covered by the two creation tests above. */

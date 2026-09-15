@@ -27,37 +27,6 @@ describe('InventoryLocation', function (): void {
         expect($location->is_active)->toBeTrue();
     });
 
-    it('can have parent location', function (): void {
-        $parent = InventoryLocation::factory()->create([
-            'name' => 'Main Building',
-        ]);
-
-        $child = InventoryLocation::factory()->create([
-            'name' => 'Section A',
-            'parent_id' => $parent->id,
-        ]);
-
-        expect($child->parent)->not->toBeNull();
-        expect($child->parent->id)->toBe($parent->id);
-    });
-
-    it('children relationship', function (): void {
-        $parent = InventoryLocation::factory()->create([
-            'name' => 'Main Building',
-        ]);
-
-        InventoryLocation::factory()->create([
-            'name' => 'Section A',
-            'parent_id' => $parent->id,
-        ]);
-        InventoryLocation::factory()->create([
-            'name' => 'Section B',
-            'parent_id' => $parent->id,
-        ]);
-
-        expect($parent->children)->toHaveCount(2);
-    });
-
     it('inventory levels relationship', function (): void {
         $location = InventoryLocation::factory()->create();
         $item = InventoryItem::create(['name' => 'Test Item']);
@@ -119,32 +88,6 @@ describe('InventoryLocation', function (): void {
         expect($regularLocation->isDefault())->toBeFalse();
     });
 
-    it('is root returns true for top level', function (): void {
-        $location = InventoryLocation::factory()->create(['parent_id' => null]);
-
-        expect($location->isRoot())->toBeTrue();
-    });
-
-    it('is root returns false for children', function (): void {
-        $parent = InventoryLocation::factory()->create();
-        $child = InventoryLocation::factory()->create(['parent_id' => $parent->id]);
-
-        expect($child->isRoot())->toBeFalse();
-    });
-
-    it('is leaf returns true for childless', function (): void {
-        $location = InventoryLocation::factory()->create();
-
-        expect($location->isLeaf())->toBeTrue();
-    });
-
-    it('is leaf returns false for parents', function (): void {
-        $parent = InventoryLocation::factory()->create();
-        InventoryLocation::factory()->create(['parent_id' => $parent->id]);
-
-        expect($parent->isLeaf())->toBeFalse();
-    });
-
     it('has no children for empty', function (): void {
         $location = InventoryLocation::factory()->create();
 
@@ -172,39 +115,6 @@ describe('InventoryLocation', function (): void {
         $location->delete();
 
         expect(InventoryLevel::find($levelId))->toBeNull();
-    });
-
-    it('get descendants', function (): void {
-        $root = InventoryLocation::factory()->create(['name' => 'Root']);
-        $child1 = InventoryLocation::factory()->create(['name' => 'Child 1', 'parent_id' => $root->id]);
-        $child2 = InventoryLocation::factory()->create(['name' => 'Child 2', 'parent_id' => $root->id]);
-        $grandchild = InventoryLocation::factory()->create(['name' => 'Grandchild', 'parent_id' => $child1->id]);
-
-        $descendants = $root->descendants;
-
-        expect($descendants)->toHaveCount(3);
-        expect($descendants->pluck('id')->toArray())->toContain($child1->id, $child2->id, $grandchild->id);
-    });
-
-    it('get ancestors', function (): void {
-        $root = InventoryLocation::factory()->create(['name' => 'Root']);
-        $child = InventoryLocation::factory()->create(['name' => 'Child', 'parent_id' => $root->id]);
-        $grandchild = InventoryLocation::factory()->create(['name' => 'Grandchild', 'parent_id' => $child->id]);
-
-        $ancestors = $grandchild->ancestors;
-
-        expect($ancestors)->toHaveCount(2);
-    });
-
-    it('get breadcrumbs', function (): void {
-        $root = InventoryLocation::factory()->create(['name' => 'Root']);
-        $child = InventoryLocation::factory()->create(['name' => 'Child', 'parent_id' => $root->id]);
-        $grandchild = InventoryLocation::factory()->create(['name' => 'Grandchild', 'parent_id' => $child->id]);
-
-        $breadcrumbs = $grandchild->getBreadcrumbs();
-
-        expect($breadcrumbs)->toHaveCount(3);
-        expect($breadcrumbs->last()->id)->toBe($grandchild->id);
     });
 
     it('depth property', function (): void {

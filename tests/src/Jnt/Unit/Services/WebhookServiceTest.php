@@ -58,17 +58,7 @@ describe('WebhookService', function (): void {
             expect($this->service->verifySignature($signature, ''))->toBeFalse();
         });
 
-        it('uses timing-safe comparison', function (): void {
-            // This test ensures hash_equals is being used
-            // by verifying the method exists and works correctly
-            $bizContent = '{"billCode":"TEST123","details":[]}';
-            $validSignature = base64_encode(md5($bizContent . $this->privateKey, true));
-
-            // Test multiple times to ensure consistent behavior
-            foreach (range(1, 10) as $i) {
-                expect($this->service->verifySignature($validSignature, $bizContent))->toBeTrue();
-            }
-        });
+        /* Timing-safe comparison is unobservable; valid-signature path covered above. */
     });
 
     describe('generateSignature()', function (): void {

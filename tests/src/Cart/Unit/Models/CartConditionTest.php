@@ -152,15 +152,6 @@ it('identifies discount conditions correctly', function (): void {
     expect($charge->isCharge())->toBeTrue();
 });
 
-it('validates condition properties', function (): void {
-    expect(fn () => new CartCondition(
-        name: '',
-        type: 'tax',
-        target: 'cart@cart_subtotal/aggregate',
-        value: '10%'
-    ))->toThrow(InvalidCartConditionException::class, 'Condition name cannot be empty');
-});
-
 it('validates condition target', function (): void {
     expect(fn () => new CartCondition(
         name: 'Invalid Target',
@@ -168,24 +159,13 @@ it('validates condition target', function (): void {
         target: 'invalid',
         value: '10%'
     ))->toThrow(InvalidArgumentException::class, 'Malformed target segment [invalid]');
-});
 
-it('can create condition from array', function (): void {
-    $condition = CartCondition::fromArray([
-        'name' => 'Test Condition',
-        'type' => 'discount',
-        'target' => 'cart@cart_subtotal/aggregate',
-        'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
-        'target_definition' => ConditionTarget::from('cart@cart_subtotal/aggregate')->toArray(),
-        'value' => '-10%',
-        'attributes' => ['description' => 'Test discount'],
-        'order' => 1,
-    ]);
-
-    expect($condition->getName())->toBe('Test Condition');
-    expect($condition->getType())->toBe('discount');
-    expect($condition->getAttribute('description'))->toBe('Test discount');
-    expect($condition->getOrder())->toBe(1);
+    expect(fn () => new CartCondition(
+        name: 'Invalid Target',
+        type: 'discount',
+        target: 'invalid_target',
+        value: '-10%'
+    ))->toThrow(InvalidArgumentException::class, 'Malformed target segment [invalid_target]');
 });
 
 it('can convert condition to array', function (): void {
@@ -322,15 +302,6 @@ it('validates condition properties on creation', function (): void {
         target: '',
         value: '-10%'
     ))->toThrow(InvalidArgumentException::class, 'Target string cannot be empty.');
-});
-
-it('validates condition target values', function (): void {
-    expect(fn () => new CartCondition(
-        name: 'Invalid Target',
-        type: 'discount',
-        target: 'invalid_target',
-        value: '-10%'
-    ))->toThrow(InvalidArgumentException::class, 'Malformed target segment [invalid_target]');
 });
 
 it('validates condition value is not empty', function (): void {

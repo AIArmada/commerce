@@ -35,14 +35,6 @@ describe('CustomersServiceProvider', function (): void {
     });
 
     describe('boot Method', function (): void {
-        it('can boot without errors', function (): void {
-            $provider = new CustomersServiceProvider(app());
-            $provider->register();
-            $provider->boot();
-
-            expect(true)->toBeTrue();
-        });
-
         it('loads translations', function (): void {
             $provider = new CustomersServiceProvider(app());
             $provider->register();

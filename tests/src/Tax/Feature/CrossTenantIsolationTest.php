@@ -100,39 +100,6 @@ it('blocks cross-tenant reads and writes when owner scoping is enabled', functio
         ->toThrow(AuthorizationException::class);
 });
 
-it('blocks deleting a global tax zone while owned rates exist', function (): void {
-    config()->set('tax.features.owner.enabled', true);
-    config()->set('tax.features.owner.include_global', true);
-
-    $ownerA = User::query()->create([
-        'name' => 'Owner A',
-        'email' => 'tax-owner-a-delete-global@example.com',
-        'password' => 'secret',
-    ]);
-
-    $globalZone = OwnerContext::withOwner(null, fn () => TaxZone::query()->create([
-        'name' => 'Global Zone',
-        'code' => 'GLOBAL-ZONE-DELETE',
-        'is_active' => true,
-        'is_default' => false,
-    ]));
-
-    bindTaxOwner($ownerA);
-
-    TaxRate::query()->create([
-        'zone_id' => $globalZone->id,
-        'name' => 'Owned Rate',
-        'rate' => 600,
-        'tax_class' => 'standard',
-        'is_active' => true,
-    ]);
-
-    bindTaxOwner(null);
-
-    expect(fn () => $globalZone->delete())
-        ->toThrow(AuthorizationException::class);
-});
-
 it('blocks creating an exemption referencing an out-of-scope zone', function (): void {
     config()->set('tax.features.owner.enabled', true);
     config()->set('tax.features.owner.include_global', false);

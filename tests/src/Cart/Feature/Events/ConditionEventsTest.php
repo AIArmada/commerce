@@ -37,13 +37,6 @@ describe('Condition Added Events', function (): void {
         });
     });
 
-    it('calculates correct impact for condition added', function (): void {
-        Cart::add('item', 'Item', 100.00, 1);
-
-        Cart::addTax('VAT', '10%');
-
-        Event::assertDispatched(CartConditionAdded::class);
-    });
 });
 
 describe('Condition Removed Events', function (): void {

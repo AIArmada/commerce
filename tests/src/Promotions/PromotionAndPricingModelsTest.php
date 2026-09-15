@@ -39,57 +39,7 @@ describe('PriceList Model', function (): void {
         });
     });
 
-    describe('PriceList Scheduling', function (): void {
-        it('is active when within date range', function (): void {
-            $priceList = PriceList::create([
-                'name' => 'Scheduled Price List',
-                'slug' => 'scheduled-' . uniqid(),
-                'currency' => 'MYR',
-                'is_active' => true,
-                'starts_at' => Carbon::now()->subDay(),
-                'ends_at' => Carbon::now()->addDay(),
-            ]);
-
-            expect($priceList->isActive())->toBeTrue();
-        });
-
-        it('is not active when before start date', function (): void {
-            $priceList = PriceList::create([
-                'name' => 'Future Price List',
-                'slug' => 'future-' . uniqid(),
-                'currency' => 'MYR',
-                'is_active' => true,
-                'starts_at' => Carbon::now()->addDay(),
-                'ends_at' => Carbon::now()->addWeek(),
-            ]);
-
-            expect($priceList->isActive())->toBeFalse();
-        });
-
-        it('is not active when after end date', function (): void {
-            $priceList = PriceList::create([
-                'name' => 'Expired Price List',
-                'slug' => 'expired-' . uniqid(),
-                'currency' => 'MYR',
-                'is_active' => true,
-                'starts_at' => Carbon::now()->subWeek(),
-                'ends_at' => Carbon::now()->subDay(),
-            ]);
-
-            expect($priceList->isActive())->toBeFalse();
-        });
-
-        it('is not active when is_active is false', function (): void {
-            $priceList = PriceList::create([
-                'name' => 'Disabled Price List',
-                'slug' => 'disabled-' . uniqid(),
-                'currency' => 'MYR',
-                'is_active' => false,
-            ]);
-
-            expect($priceList->isActive())->toBeFalse();
-        });
-    });
+    /* PriceList scheduling removed; covered by Pricing/PriceListModelExtendedTest. */
 
     describe('PriceList Priority', function (): void {
         it('can set and use priority for ordering', function (): void {

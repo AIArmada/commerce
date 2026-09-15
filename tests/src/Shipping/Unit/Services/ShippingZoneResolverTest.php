@@ -125,6 +125,17 @@ describe('ShippingZoneResolver', function (): void {
     });
 
     it('can clear cache', function (): void {
+        ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'US Zone',
+            'code' => 'US',
+            'type' => 'country',
+            'countries' => ['US'],
+            'priority' => 10,
+            'active' => true,
+        ]);
+
         $address = new AddressData(
             name: 'John Doe',
             phone: '123-456-7890',
@@ -136,10 +147,14 @@ describe('ShippingZoneResolver', function (): void {
         );
 
         $zone1 = $this->resolver->resolve($address, 'test-owner-123', 'TestOwner');
+        expect($zone1?->name)->toBe('US Zone');
+
         $this->resolver->clearCache();
+
         $zone2 = $this->resolver->resolve($address, 'test-owner-123', 'TestOwner');
 
-        expect($zone1)->toBe($zone2); // Still same due to database state
+        expect($zone2?->name)->toBe('US Zone');
+        expect($zone2)->not->toBe($zone1); // Fresh instance after clear
     });
 
     it('invalidates cached resolutions after a zone changes', function (): void {

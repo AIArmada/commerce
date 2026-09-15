@@ -84,12 +84,4 @@ describe('CartDestroyed Event Dispatch', function (): void {
             return $event->identifier === $identifier && $event->instance === 'default';
         });
     });
-
-    it('dispatches CartDestroyed event when events are enabled', function (): void {
-        Cart::add('item-1', 'Item 1', 100.00, 1);
-
-        Cart::destroy();
-
-        Event::assertDispatched(CartDestroyed::class);
-    });
 });

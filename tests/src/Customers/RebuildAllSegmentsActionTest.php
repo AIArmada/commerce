@@ -2,12 +2,18 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Actions\RebuildAllSegments;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Schema;
+
+require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
 
 /**
  * @param  array<string, mixed>  $attributes
@@ -38,8 +44,21 @@ describe('RebuildAllSegments', function (): void {
     });
 
     describe('forOwner', function (): void {
+        beforeEach(function (): void {
+            Schema::dropIfExists('test_owners');
+
+            Schema::create('test_owners', function (Blueprint $table): void {
+                $table->uuid('id')->primary();
+                $table->string('name');
+                $table->timestamps();
+            });
+        });
+
         it('returns results keyed by segment name', function (): void {
-            $segment = Segment::create([
+            /** @var Model $owner */
+            $owner = CustomersTestOwner::query()->create(['name' => 'Owner']);
+
+            $segment = OwnerContext::withOwner($owner, fn (): Segment => Segment::create([
                 'name' => 'ForOwner ' . uniqid(),
                 'slug' => 'forowner-' . uniqid(),
                 'is_active' => true,
@@ -47,19 +66,21 @@ describe('RebuildAllSegments', function (): void {
                 'conditions' => [
                     ['field' => 'accepts_marketing', 'value' => true],
                 ],
-            ]);
+            ]));
 
-            createRebuildActionTestCustomer([
-                'first_name' => 'For',
-                'last_name' => 'Owner',
-                'email' => 'for-owner-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-                'accepts_marketing' => true,
-            ]);
+            OwnerContext::withOwner($owner, function (): void {
+                createRebuildActionTestCustomer([
+                    'first_name' => 'For',
+                    'last_name' => 'Owner',
+                    'email' => 'for-owner-' . uniqid() . '@example.com',
+                    'status' => CustomerStatus::Active,
+                    'accepts_marketing' => true,
+                ]);
+            });
 
-            $results = $this->action->forOwner();
+            $results = $this->action->forOwner($owner);
 
-            expect($results)->toBeArray();
+            expect($results)->toBe([$segment->name => 1]);
         });
     });
 
@@ -84,7 +105,7 @@ describe('RebuildAllSegments', function (): void {
 
             $count = $this->action->rebuildSegment($segment);
 
-            expect($count)->toBeGreaterThanOrEqual(0);
+            expect($count)->toBe(1);
         });
 
         it('returns existing count for manual segment without changes', function (): void {
@@ -196,29 +217,4 @@ describe('RebuildAllSegments', function (): void {
         });
     });
 
-    describe('rebuildSegment with owner-scoped data', function (): void {
-        it('handles global segments and customers', function (): void {
-            $segment = Segment::create([
-                'name' => 'Owner Scoped ' . uniqid(),
-                'slug' => 'owner-scoped-' . uniqid(),
-                'is_automatic' => true,
-                'is_active' => true,
-                'conditions' => [
-                    ['field' => 'accepts_marketing', 'value' => true],
-                ],
-            ]);
-
-            createRebuildActionTestCustomer([
-                'first_name' => 'Owner',
-                'last_name' => 'Scoped',
-                'email' => 'owner-scoped-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-                'accepts_marketing' => true,
-            ]);
-
-            $count = $this->action->rebuildSegment($segment);
-
-            expect($count)->toBeGreaterThanOrEqual(0);
-        });
-    });
 });

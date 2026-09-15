@@ -6,9 +6,6 @@ use AIArmada\Commerce\Tests\FilamentProducts\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentProducts\Resources\AttributeGroupResource\Pages\CreateAttributeGroup;
-use AIArmada\FilamentProducts\Resources\AttributeResource\Pages\CreateAttribute;
-use AIArmada\FilamentProducts\Resources\AttributeSetResource\Pages\CreateAttributeSet;
 use AIArmada\FilamentProducts\Resources\CategoryResource\Pages\CreateCategory;
 use AIArmada\FilamentProducts\Resources\CategoryResource\Pages\EditCategory;
 use AIArmada\FilamentProducts\Resources\ProductResource\Pages\CreateProduct;
@@ -104,18 +101,4 @@ it('removes cross-owner parent ids in EditCategory mutator', function (): void {
 
     expect($validData['parent_id'])->toBe($parentA->id)
         ->and($invalidData)->not->toHaveKey('parent_id');
-});
-
-it('executes redirect url methods (they may throw without a panel)', function (): void {
-    foreach ([
-        CreateAttribute::class,
-        CreateAttributeGroup::class,
-        CreateAttributeSet::class,
-    ] as $class) {
-        $instance = new $class;
-
-        $method = new ReflectionMethod($class, 'getRedirectUrl');
-
-        expect(fn () => $method->invoke($instance))->toThrow(Exception::class);
-    }
 });

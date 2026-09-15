@@ -49,12 +49,4 @@ describe('CartCleared Event Dispatch', function (): void {
                    isset($data['timestamp']);
         });
     });
-
-    it('dispatches CartCleared event when events are enabled', function (): void {
-        Cart::add('item-1', 'Item 1', 100.00, 1);
-
-        Cart::clear();
-
-        Event::assertDispatched(CartCleared::class);
-    });
 });

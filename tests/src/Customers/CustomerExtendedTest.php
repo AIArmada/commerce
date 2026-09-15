@@ -117,17 +117,6 @@ describe('Customer Model - Extended Coverage', function (): void {
         });
     });
 
-    describe('Full Name Accessor', function (): void {
-        it('returns combined first and last name', function (): void {
-            $customer = new Customer([
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-            ]);
-
-            expect($customer->full_name)->toBe('John Doe');
-        });
-    });
-
     describe('Scopes', function (): void {
         it('has inSegment scope', function (): void {
             $query = Customer::inSegment('test-id');
@@ -174,16 +163,10 @@ describe('Customer Model - Extended Coverage', function (): void {
 
     describe('Media Collections', function (): void {
         it('registers media collections', function (): void {
-            $customer = Customer::create([
-                'first_name' => 'Media',
-                'last_name' => 'Test',
-                'email' => 'media-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-            ]);
+            $customer = new Customer;
 
-            $customer->registerMediaCollections();
-
-            expect(true)->toBeTrue();
+            expect(collect($customer->getRegisteredMediaCollections())->pluck('name')->all())
+                ->toBe(['avatar', 'documents']);
         });
 
         it('returns null for avatar when none set', function (): void {

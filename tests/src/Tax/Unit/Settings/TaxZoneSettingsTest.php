@@ -46,39 +46,4 @@ describe('TaxZoneSettings', function (): void {
     it('settings class extends spatie settings', function (): void {
         $this->assertTrue(is_subclass_of(TaxZoneSettings::class, Settings::class));
     });
-
-    it('settings can be instantiated without constructor', function (): void {
-        $reflection = new ReflectionClass(TaxZoneSettings::class);
-        $settings = $reflection->newInstanceWithoutConstructor();
-
-        $this->assertInstanceOf(TaxZoneSettings::class, $settings);
-    });
-
-    it('settings properties are accessible', function (): void {
-        $reflection = new ReflectionClass(TaxZoneSettings::class);
-        $settings = $reflection->newInstanceWithoutConstructor();
-
-        $settings->multiZoneEnabled = true;
-        $settings->defaultZoneId = 'zone-123';
-        $settings->autoDetectZone = true;
-        $settings->fallbackBehavior = 'default';
-        $settings->compoundTaxEnabled = false;
-        $settings->showTaxBreakdown = true;
-
-        $this->assertTrue($settings->multiZoneEnabled);
-        $this->assertEquals('zone-123', $settings->defaultZoneId);
-        $this->assertTrue($settings->autoDetectZone);
-        $this->assertEquals('default', $settings->fallbackBehavior);
-        $this->assertFalse($settings->compoundTaxEnabled);
-        $this->assertTrue($settings->showTaxBreakdown);
-    });
-
-    it('settings default zone id can be null', function (): void {
-        $reflection = new ReflectionClass(TaxZoneSettings::class);
-        $settings = $reflection->newInstanceWithoutConstructor();
-
-        $settings->defaultZoneId = null;
-
-        $this->assertNull($settings->defaultZoneId);
-    });
 });

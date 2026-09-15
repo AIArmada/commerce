@@ -551,10 +551,11 @@ describe('permission state hydration', function (): void {
     });
 
     it('ignores null records', function (): void {
-        $component = CheckboxList::make('null-record')->options(['a' => 'A']);
+        $schema = Schema::make(new RepairSchemaHost);
+        $component = CheckboxList::make('null-record')->options(['a' => 'A'])->container($schema);
         PermissionTabFactory::setPermissionStateForRecord($component, null);
 
-        expect(true)->toBeTrue();
+        expect($component->getRawState())->toBeNull();
     });
 });
 

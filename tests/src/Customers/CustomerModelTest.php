@@ -57,7 +57,7 @@ describe('Customer Model', function (): void {
     });
 
     describe('Customer Status', function (): void {
-        it('can check if customer is active', function (): void {
+        it('reports active and suspended flags', function (): void {
             $active = Customer::create([
                 'first_name' => 'Active',
                 'last_name' => 'User',
@@ -65,10 +65,9 @@ describe('Customer Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            expect($active->isActive())->toBeTrue();
-        });
+            expect($active->isActive())->toBeTrue()
+                ->and($active->isSuspended())->toBeFalse();
 
-        it('can check if customer is suspended', function (): void {
             $suspended = createCustomerModelTestCustomer([
                 'first_name' => 'Suspended',
                 'last_name' => 'User',
@@ -76,12 +75,13 @@ describe('Customer Model', function (): void {
                 'status' => CustomerStatus::Suspended,
             ]);
 
-            expect($suspended->isSuspended())->toBeTrue();
+            expect($suspended->isSuspended())->toBeTrue()
+                ->and($suspended->isActive())->toBeFalse();
         });
     });
 
     describe('Customer Marketing', function (): void {
-        it('can opt in to marketing', function (): void {
+        it('opts in and out of marketing', function (): void {
             $customer = Customer::create([
                 'first_name' => 'Marketer',
                 'last_name' => 'Test',
@@ -93,16 +93,6 @@ describe('Customer Model', function (): void {
             $customer->optInMarketing();
 
             expect($customer->accepts_marketing)->toBeTrue();
-        });
-
-        it('can opt out of marketing', function (): void {
-            $customer = createCustomerModelTestCustomer([
-                'first_name' => 'Marketer',
-                'last_name' => 'Test',
-                'email' => 'marketer2-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-                'accepts_marketing' => true,
-            ]);
 
             $customer->optOutMarketing();
 
@@ -116,13 +106,6 @@ describe('Customer Model', function (): void {
             createCustomerModelTestCustomer(['first_name' => 'Inactive', 'last_name' => 'Two', 'email' => 'i2-' . uniqid() . '@test.com', 'status' => CustomerStatus::Suspended]);
 
             expect(Customer::active()->count())->toBeGreaterThanOrEqual(1);
-        });
-
-        it('can filter marketing opted-in customers', function (): void {
-            createCustomerModelTestCustomer(['first_name' => 'OptedIn', 'last_name' => 'User', 'email' => 'optin-' . uniqid() . '@test.com', 'status' => CustomerStatus::Active, 'accepts_marketing' => true]);
-            Customer::create(['first_name' => 'OptedOut', 'last_name' => 'User', 'email' => 'optout-' . uniqid() . '@test.com', 'status' => CustomerStatus::Active, 'accepts_marketing' => false]);
-
-            expect(Customer::where('accepts_marketing', true)->count())->toBeGreaterThanOrEqual(1);
         });
 
         it('can filter customers by segment membership', function (): void {

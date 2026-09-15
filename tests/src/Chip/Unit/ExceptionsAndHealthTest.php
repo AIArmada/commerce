@@ -21,10 +21,6 @@ describe('NoRecurringTokenException', function (): void {
         expect($exception->getMessage())->toBe('Custom error message');
     });
 
-    it('is throwable', function (): void {
-        expect(fn () => throw new NoRecurringTokenException('Test'))
-            ->toThrow(NoRecurringTokenException::class, 'Test');
-    });
 });
 
 describe('ChipGatewayCheck', function (): void {

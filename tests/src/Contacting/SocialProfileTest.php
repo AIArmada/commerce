@@ -12,12 +12,6 @@ use AIArmada\Contacting\Support\SocialProfileConfig;
 use AIArmada\Customers\Models\Customer;
 use Carbon\CarbonImmutable;
 
-test('SocialProfile model class exists', function (): void {
-    expect(class_exists(SocialProfile::class))->toBeTrue();
-    // getTable() uses config() which needs Laravel app; skip for unit tests
-    expect(true)->toBeTrue();
-});
-
 test('SocialPlatform enum has expected values', function (): void {
     expect(SocialPlatform::Facebook->value)->toBe('facebook');
     expect(SocialPlatform::Instagram->value)->toBe('instagram');

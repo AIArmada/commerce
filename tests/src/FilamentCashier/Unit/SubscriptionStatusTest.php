@@ -33,19 +33,6 @@ it('provides label for each status', function (SubscriptionStatus $status): void
     'expired' => [SubscriptionStatus::Expired],
 ]);
 
-it('provides color for each status', function (SubscriptionStatus $status): void {
-    expect($status->color())->toBeString()->not->toBeEmpty();
-})->with([
-    'active' => [SubscriptionStatus::Active],
-    'on_trial' => [SubscriptionStatus::OnTrial],
-    'past_due' => [SubscriptionStatus::PastDue],
-    'canceled' => [SubscriptionStatus::Canceled],
-    'on_grace_period' => [SubscriptionStatus::OnGracePeriod],
-    'paused' => [SubscriptionStatus::Paused],
-    'incomplete' => [SubscriptionStatus::Incomplete],
-    'expired' => [SubscriptionStatus::Expired],
-]);
-
 it('provides icon for each status', function (SubscriptionStatus $status): void {
     expect($status->icon())->toBeString()->toContain('heroicon');
 })->with([

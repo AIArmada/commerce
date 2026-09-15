@@ -261,12 +261,6 @@ it('registers the pending alerts widget on the dashboard', function (): void {
         ->toContain(PendingSignalAlertsWidget::class);
 });
 
-it('can instantiate the pending alerts widget', function (): void {
-    $widget = new PendingSignalAlertsWidget;
-
-    expect($widget)->toBeInstanceOf(PendingSignalAlertsWidget::class);
-});
-
 it('builds pending alerts table when no owner is resolved', function (): void {
     app()->forgetInstance(OwnerResolverInterface::class);
 

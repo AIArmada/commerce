@@ -35,15 +35,18 @@ describe('SyncNormalizedCartJob', function (): void {
     });
 
     it('defaults queue when config is not set', function (): void {
-        // Don't set config, let the code handle defaults
+        // offsetUnset() only nulls the key; rebuild the array to truly remove it.
+        $sync = config('cart.snapshots.synchronization', []);
+        unset($sync['queue_name'], $sync['queue_connection']);
+        config(['cart.snapshots.synchronization' => $sync]);
+
         $job = new SyncNormalizedCartJob(
             identifier: 'user-789',
             instance: 'default',
         );
 
-        // The job should have a queue set (either from config defaults or constructor)
-        expect($job->identifier)->toBe('user-789');
-        expect($job->instance)->toBe('default');
+        expect($job->queue)->toBe('cart-sync');
+        expect($job->connection)->toBe(config('queue.default', 'sync'));
     });
 
     it('syncs a resolved cart on handle', function (): void {

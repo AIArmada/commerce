@@ -80,9 +80,16 @@ describe('Authz Service', function (): void {
     });
 
     it('can clear cache', function (): void {
+        $permissionCache = new ReflectionProperty(Authz::class, 'permissionCache');
+        $discoveryCache = new ReflectionProperty(Authz::class, 'discoveryCache');
+
+        $permissionCache->setValue($this->authz, ['page' => ['StalePage_default' => 'page.stale']]);
+        $discoveryCache->setValue($this->authz, ['admin_resources' => collect()]);
+
         $this->authz->clearCache();
 
-        expect(true)->toBeTrue();
+        expect($permissionCache->getValue($this->authz))->toBe([])
+            ->and($discoveryCache->getValue($this->authz))->toBe([]);
     });
 
     it('returns empty collection when panel is null', function (): void {

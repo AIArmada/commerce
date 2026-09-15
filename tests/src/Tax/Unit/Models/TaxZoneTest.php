@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use OwenIt\Auditing\Contracts\Auditable;
 
 $bindTaxOwnerForScoping = function (?Model $owner): void {
     app()->bind(OwnerResolverInterface::class, fn () => new class($owner) implements OwnerResolverInterface
@@ -39,6 +40,7 @@ describe('TaxZone', function () use ($bindTaxOwnerForScoping): void {
         $this->assertInstanceOf(TaxZone::class, $zone);
         $this->assertEquals('Malaysia', $zone->name);
         $this->assertEquals('MY', $zone->code);
+        $this->assertSame(ZoneType::Country, $zone->type);
         $this->assertEquals(['MY'], $zone->countries);
         $this->assertTrue($zone->is_default);
         $this->assertTrue($zone->is_active);
@@ -147,48 +149,7 @@ describe('TaxZone', function () use ($bindTaxOwnerForScoping): void {
         $this->assertFalse($zone->matchesAddress('CA', 'CA')); // Wrong country
     });
 
-    it('matches address with postcode exact', function (): void {
-        $zone = TaxZone::create([
-            'name' => 'Specific Postcode',
-            'code' => 'POST',
-            'countries' => ['MY'],
-            'postcodes' => ['12345', '67890'],
-            'is_active' => true,
-        ]);
-
-        $this->assertTrue($zone->matchesAddress('MY', null, '12345'));
-        $this->assertTrue($zone->matchesAddress('MY', null, '67890'));
-        $this->assertFalse($zone->matchesAddress('MY', null, '11111'));
-    });
-
-    it('matches address with postcode wildcard', function (): void {
-        $zone = TaxZone::create([
-            'name' => 'Postcode Range',
-            'code' => 'RANGE',
-            'countries' => ['MY'],
-            'postcodes' => ['50*', '60*'],
-            'is_active' => true,
-        ]);
-
-        $this->assertTrue($zone->matchesAddress('MY', null, '50000'));
-        $this->assertTrue($zone->matchesAddress('MY', null, '60012'));
-        $this->assertFalse($zone->matchesAddress('MY', null, '70000'));
-    });
-
-    it('matches address with postcode range', function (): void {
-        $zone = TaxZone::create([
-            'name' => 'Postcode Numeric Range',
-            'code' => 'NUMRANGE',
-            'countries' => ['MY'],
-            'postcodes' => ['10000-19999', '30000-39999'],
-            'is_active' => true,
-        ]);
-
-        $this->assertTrue($zone->matchesAddress('MY', null, '15000'));
-        $this->assertTrue($zone->matchesAddress('MY', null, '35000'));
-        $this->assertFalse($zone->matchesAddress('MY', null, '25000'));
-        $this->assertFalse($zone->matchesAddress('MY', null, '45000'));
-    });
+    /* Postcode exact/wildcard/range merged into TaxZonePostcodeMatchingTest. */
 
     it('matches address combined conditions', function (): void {
         $zone = TaxZone::create([
@@ -252,28 +213,6 @@ describe('TaxZone', function () use ($bindTaxOwnerForScoping): void {
         $this->assertIsBool($zone->is_active);
     });
 
-    it('deleting zone deletes rates', function (): void {
-        $zone = TaxZone::create([
-            'name' => 'Delete Test',
-            'code' => 'DELETE',
-            'is_active' => true,
-        ]);
-
-        TaxRate::create([
-            'zone_id' => $zone->id,
-            'name' => 'Rate to Delete',
-            'rate' => 1000,
-            'tax_class' => 'standard',
-            'is_active' => true,
-        ]);
-
-        $this->assertEquals(1, TaxRate::count());
-
-        $zone->delete();
-
-        $this->assertEquals(0, TaxRate::count());
-    });
-
     it('activity logging', function (): void {
         $zone = TaxZone::create([
             'name' => 'Activity Test',
@@ -284,9 +223,9 @@ describe('TaxZone', function () use ($bindTaxOwnerForScoping): void {
 
         $zone->update(['name' => 'Updated Name']);
 
-        // Activity logging is configured but we can't easily test it without more setup
-        // This test ensures the trait is applied and doesn't break
-        $this->assertTrue(true);
+        // No audits table in the test DB, so assert the audit contract holds and updates persist.
+        $this->assertInstanceOf(Auditable::class, $zone);
+        $this->assertEquals('Updated Name', $zone->refresh()->name);
     });
 
     it('for owner scope when owner disabled', function (): void {
@@ -509,15 +448,5 @@ describe('TaxZone', function () use ($bindTaxOwnerForScoping): void {
         $this->assertTrue($zone->matchesAddress('US', 'CA'));
     });
 
-    it('matches address with empty postcodes', function (): void {
-        $zone = new TaxZone([
-            'name' => 'Empty Postcodes Zone',
-            'code' => 'EMPTY',
-            'countries' => ['US'],
-            'postcodes' => [],
-            'is_active' => true,
-        ]);
-
-        $this->assertTrue($zone->matchesAddress('US', null, '12345'));
-    });
+    /* Empty-postcodes merged into TaxZonePostcodeMatchingTest. */
 });

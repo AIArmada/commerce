@@ -5,13 +5,7 @@ declare(strict_types=1);
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Models\ContactSnapshot;
 use AIArmada\Contacting\Models\SocialProfile;
-use AIArmada\FilamentContacting\Exports\ContactMethodExporter;
-use AIArmada\FilamentContacting\Exports\SocialProfileExporter;
 use AIArmada\FilamentContacting\FilamentContactingPlugin;
-use AIArmada\FilamentContacting\Imports\ContactMethodImporter;
-use AIArmada\FilamentContacting\Imports\SocialProfileImporter;
-use AIArmada\FilamentContacting\RelationManagers\ContactMethodsRelationManager;
-use AIArmada\FilamentContacting\RelationManagers\SocialProfilesRelationManager;
 use AIArmada\FilamentContacting\Resources\ContactMethodResource;
 use AIArmada\FilamentContacting\Resources\ContactSnapshotResource;
 use AIArmada\FilamentContacting\Resources\SocialProfileResource;
@@ -23,9 +17,6 @@ use AIArmada\FilamentContacting\Schemas\SocialProfileInfolistSchema;
 use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
 use AIArmada\FilamentContacting\Support\ResolvesContactingModels;
-use AIArmada\FilamentContacting\Tables\ContactMethodTable;
-use AIArmada\FilamentContacting\Tables\ContactSnapshotTable;
-use AIArmada\FilamentContacting\Tables\SocialProfileTable;
 
 test('config default values are correct', function (): void {
     expect(config('filament-contacting.features.standalone_resources'))->toBeFalse();
@@ -95,26 +86,4 @@ test('no migration files exist in package', function (): void {
     expect(glob(base_path('packages/filament-contacting/database/migrations/*.php')))->toBeEmpty();
 });
 
-test('table classes exist', function (): void {
-    expect(class_exists(ContactMethodTable::class))->toBeTrue();
-    expect(class_exists(SocialProfileTable::class))->toBeTrue();
-    expect(class_exists(ContactSnapshotTable::class))->toBeTrue();
-})->skip('Requires Filament Table class which needs Laravel app');
-
-test('resource classes exist', function (): void {
-    expect(class_exists(ContactMethodResource::class))->toBeTrue();
-    expect(class_exists(SocialProfileResource::class))->toBeTrue();
-    expect(class_exists(ContactSnapshotResource::class))->toBeTrue();
-})->skip('Requires Filament Resource class which needs Laravel app');
-
-test('relation manager classes exist', function (): void {
-    expect(class_exists(ContactMethodsRelationManager::class))->toBeTrue();
-    expect(class_exists(SocialProfilesRelationManager::class))->toBeTrue();
-})->skip('Requires Filament RelationManager class which needs Laravel app');
-
-test('export and import classes exist', function (): void {
-    expect(class_exists(ContactMethodExporter::class))->toBeTrue();
-    expect(class_exists(SocialProfileExporter::class))->toBeTrue();
-    expect(class_exists(ContactMethodImporter::class))->toBeTrue();
-    expect(class_exists(SocialProfileImporter::class))->toBeTrue();
-})->skip('Requires Filament importer/exporter classes which need Laravel app');
+/* Permanently-skipped class_exists checks removed; classes are exercised by RegressionTest. */

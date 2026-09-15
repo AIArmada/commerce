@@ -219,8 +219,6 @@ describe('CommitInventoryOnPayment', function (): void {
     it('ignores events that do not provide inventory commit context', function (): void {
         $event = new class {};
 
-        $this->listener->handle($event);
-
-        expect(true)->toBeTrue();
+        expect(fn () => $this->listener->handle($event))->not->toThrow(Exception::class);
     });
 });

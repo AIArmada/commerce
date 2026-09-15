@@ -11,9 +11,8 @@ it('boots the filament products service provider', function (): void {
     $provider = new FilamentProductsServiceProvider(app());
 
     $provider->register();
-    $provider->boot();
 
-    expect(true)->toBeTrue();
+    expect(fn () => $provider->boot())->not->toThrow(Exception::class);
 });
 
 it('loads the published filament products configuration', function (): void {

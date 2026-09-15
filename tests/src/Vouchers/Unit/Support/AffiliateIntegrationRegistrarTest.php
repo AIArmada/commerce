@@ -84,13 +84,6 @@ describe('AffiliateIntegrationRegistrar', function (): void {
     });
 
     describe('registrar instantiation', function (): void {
-        it('can be instantiated with dependencies', function (): void {
-            $dispatcher = app(Dispatcher::class);
-            $registrar = new AffiliateIntegrationRegistrar($dispatcher);
-
-            expect($registrar)->toBeInstanceOf(AffiliateIntegrationRegistrar::class);
-        });
-
         it('is registered as singleton in container', function (): void {
             $instance1 = app(AffiliateIntegrationRegistrar::class);
             $instance2 = app(AffiliateIntegrationRegistrar::class);
@@ -101,26 +94,7 @@ describe('AffiliateIntegrationRegistrar', function (): void {
 });
 
 describe('AffiliateIntegrationRegistrar affiliate voucher creation', function (): void {
-    it('can check if affiliate has voucher', function (): void {
-        // Create a voucher with affiliate_id
-        $voucher = Voucher::create([
-            'code' => 'AFFILIATE-TEST-' . uniqid(),
-            'name' => 'Affiliate Test Voucher',
-            'type' => 'percentage',
-            'value' => 1000,
-            'currency' => 'MYR',
-            'status' => 'active',
-            'affiliate_id' => 'test-affiliate-123',
-        ]);
-
-        // Check if voucher with affiliate_id exists
-        $exists = Voucher::where('affiliate_id', 'test-affiliate-123')->exists();
-
-        expect($exists)->toBeTrue();
-
-        // Clean up
-        $voucher->delete();
-    });
+    /* Raw exists() query removed; registrar affiliateHasVoucher covered via reflection below. */
 
     it('creates a voucher linked to an affiliate', function (): void {
         $affiliateCode = 'PARTNER' . uniqid();
@@ -162,32 +136,7 @@ describe('AffiliateIntegrationRegistrar affiliate voucher creation', function ()
         $affiliate->delete();
     });
 
-    it('generates code with prefix_code format', function (): void {
-        $prefix = 'REF';
-        $affiliateCode = 'PARTNER123';
-
-        $generatedCode = mb_strtoupper($prefix . $affiliateCode);
-
-        expect($generatedCode)->toBe('REFPARTNER123');
-    });
-
-    it('generates code with code_only format', function (): void {
-        $affiliateCode = 'partner123';
-
-        $generatedCode = mb_strtoupper($affiliateCode);
-
-        expect($generatedCode)->toBe('PARTNER123');
-    });
-
-    it('generates code with prefix_random format', function (): void {
-        $prefix = 'REF';
-        $randomPart = bin2hex(random_bytes(4));
-
-        $generatedCode = mb_strtoupper($prefix . $randomPart);
-
-        expect($generatedCode)->toStartWith('REF')
-            ->and(mb_strlen($generatedCode))->toBe(11); // REF + 8 hex chars
-    });
+    /* Inline string-math format tests removed; real coverage via reflection below. */
 });
 
 describe('AffiliateIntegrationRegistrar private methods via reflection', function (): void {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use OwenIt\Auditing\Contracts\Auditable;
 
 describe('TaxRate', function (): void {
     it('can create tax rate', function (): void {
@@ -201,8 +202,8 @@ describe('TaxRate', function (): void {
 
         $rate->update(['rate' => 800]);
 
-        // Activity logging is configured but we can't easily test it without more setup
-        // This test ensures the trait is applied and doesn't break
-        $this->assertTrue(true);
+        // No audits table in the test DB, so assert the audit contract holds and updates persist.
+        $this->assertInstanceOf(Auditable::class, $rate);
+        $this->assertEquals(800, $rate->refresh()->rate);
     });
 });

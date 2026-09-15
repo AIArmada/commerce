@@ -21,11 +21,6 @@ beforeEach(function (): void {
 
 describe('GenerateInvoice Action', function (): void {
     describe('Invoice Generation', function (): void {
-        it('can be instantiated', function (): void {
-            $action = new GenerateInvoice;
-            expect($action)->toBeInstanceOf(GenerateInvoice::class);
-        });
-
         it('can save invoice to path', function (): void {
             $order = Order::create([
                 'order_number' => 'ORD-INV1-' . uniqid(),
@@ -50,11 +45,6 @@ describe('GenerateInvoice Action', function (): void {
             $result = $action->save($order, $path);
 
             expect($result)->toBe($path);
-        });
-
-        it('has download method', function (): void {
-            $action = new GenerateInvoice;
-            expect(method_exists($action, 'download'))->toBeTrue();
         });
 
         it('falls back to html download when puppeteer runtime is unavailable', function (): void {

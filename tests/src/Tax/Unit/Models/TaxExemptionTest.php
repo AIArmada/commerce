@@ -9,6 +9,7 @@ use AIArmada\Tax\States\TaxExemptionState\PendingState;
 use AIArmada\Tax\States\TaxExemptionState\RejectedState;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use OwenIt\Auditing\Contracts\Auditable;
 
 describe('TaxExemption', function (): void {
     it('can create tax exemption', function (): void {
@@ -336,9 +337,9 @@ describe('TaxExemption', function (): void {
 
         $exemption->update(['status' => ApprovedState::class]);
 
-        // Activity logging is configured but we can't easily test it without more setup
-        // This test ensures the trait is applied and doesn't break
-        $this->assertTrue(true);
+        // No audits table in the test DB, so assert the audit contract holds and updates persist.
+        $this->assertInstanceOf(Auditable::class, $exemption);
+        $this->assertInstanceOf(ApprovedState::class, $exemption->refresh()->status);
     });
 
     it('get table method', function (): void {

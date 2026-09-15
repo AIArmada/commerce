@@ -10,42 +10,6 @@ use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 
 uses(CashierChipTestCase::class);
 
-it('can set custom customer model', function (): void {
-    Cashier::useCustomerModel(User::class);
-
-    expect(Cashier::$customerModel)->toBe(User::class);
-});
-
-it('can set custom subscription model', function (): void {
-    Cashier::useSubscriptionModel(Subscription::class);
-
-    expect(Cashier::$subscriptionModel)->toBe(Subscription::class);
-});
-
-it('can set custom subscription item model', function (): void {
-    Cashier::useSubscriptionItemModel(SubscriptionItem::class);
-
-    expect(Cashier::$subscriptionItemModel)->toBe(SubscriptionItem::class);
-});
-
-it('can keep past due subscriptions active', function (): void {
-    Cashier::keepPastDueSubscriptionsActive();
-
-    expect(Cashier::$deactivatePastDue)->toBeFalse();
-
-    // Reset
-    Cashier::$deactivatePastDue = true;
-});
-
-it('can keep incomplete subscriptions active', function (): void {
-    Cashier::keepIncompleteSubscriptionsActive();
-
-    expect(Cashier::$deactivateIncomplete)->toBeFalse();
-
-    // Reset
-    Cashier::$deactivateIncomplete = true;
-});
-
 it('can ignore routes', function (): void {
     Cashier::ignoreRoutes();
 

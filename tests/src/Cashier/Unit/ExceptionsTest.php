@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\Exceptions\CashierException;
 use AIArmada\Cashier\Exceptions\CustomerNotFoundException;
-use AIArmada\Cashier\Exceptions\Gateway\GatewayNotFoundException;
 use AIArmada\Cashier\Exceptions\Gateway\InvalidGatewayException;
 use AIArmada\Cashier\Exceptions\Payment\PaymentActionRequired;
 use AIArmada\Cashier\Exceptions\Payment\PaymentFailedException;
@@ -29,15 +28,6 @@ describe('Exceptions', function (): void {
             $exception->setGateway('stripe');
 
             expect($exception->gateway())->toBe('stripe');
-        });
-    });
-
-    describe('GatewayNotFoundException', function (): void {
-        it('can be created with gateway name', function (): void {
-            $exception = GatewayNotFoundException::forGateway('unknown');
-
-            expect($exception)->toBeInstanceOf(GatewayNotFoundException::class)
-                ->and($exception->getMessage())->toContain('unknown');
         });
     });
 

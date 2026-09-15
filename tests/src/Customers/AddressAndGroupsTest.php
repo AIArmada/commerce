@@ -170,10 +170,5 @@ describe('Segment Model', function (): void {
         expect($segment->conditions)->toBe($conditions);
     });
 
-    it('can filter active segments', function (): void {
-        Segment::create(['name' => 'Active Segment', 'slug' => 'active-' . uniqid(), 'is_active' => true]);
-        Segment::create(['name' => 'Inactive Segment', 'slug' => 'inactive-' . uniqid(), 'is_active' => false]);
-
-        expect(Segment::active()->count())->toBeGreaterThanOrEqual(1);
-    });
+    /* Weak active-scope count removed; stronger every(is_active) check in SegmentModelTest. */
 });

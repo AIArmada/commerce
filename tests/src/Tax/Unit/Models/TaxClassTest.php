@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use OwenIt\Auditing\Contracts\Auditable;
 
 $bindTaxOwnerForScoping = function (?Model $owner): void {
     app()->bind(OwnerResolverInterface::class, fn () => new class($owner) implements OwnerResolverInterface
@@ -188,9 +189,9 @@ describe('TaxClass', function () use ($bindTaxOwnerForScoping): void {
 
         $taxClass->update(['name' => 'Updated Name']);
 
-        // Activity logging is configured but we can't easily test it without more setup
-        // This test ensures the trait is applied and doesn't break
-        $this->assertTrue(true);
+        // No audits table in the test DB, so assert the audit contract holds and updates persist.
+        $this->assertInstanceOf(Auditable::class, $taxClass);
+        $this->assertEquals('Updated Name', $taxClass->refresh()->name);
     });
 
     it('for owner scope when owner disabled', function (): void {

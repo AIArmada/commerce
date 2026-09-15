@@ -76,16 +76,6 @@ describe('InventorySerialHistory', function (): void {
     });
 
     describe('getEventTypeEnum', function (): void {
-        it('returns event type as enum', function (): void {
-            $history = InventorySerialHistory::create([
-                'serial_id' => $this->serial->id,
-                'event_type' => SerialEventType::Received->value,
-                'occurred_at' => now(),
-            ]);
-
-            expect($history->getEventTypeEnum())->toBe(SerialEventType::Received);
-        });
-
         it('returns correct enum for each type', function (): void {
             foreach (SerialEventType::cases() as $eventType) {
                 $history = InventorySerialHistory::create([

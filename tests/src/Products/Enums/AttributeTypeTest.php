@@ -26,15 +26,15 @@ describe('AttributeType Enum', function (): void {
 
     describe('label()', function (): void {
         it('returns translation key for all types', function (): void {
-            expect(AttributeType::Text->label())->not->toBeEmpty()
-                ->and(AttributeType::Textarea->label())->not->toBeEmpty()
-                ->and(AttributeType::Number->label())->not->toBeEmpty()
-                ->and(AttributeType::Boolean->label())->not->toBeEmpty()
-                ->and(AttributeType::Select->label())->not->toBeEmpty()
-                ->and(AttributeType::Multiselect->label())->not->toBeEmpty()
-                ->and(AttributeType::Date->label())->not->toBeEmpty()
-                ->and(AttributeType::Color->label())->not->toBeEmpty()
-                ->and(AttributeType::Media->label())->not->toBeEmpty();
+            expect(AttributeType::Text->label())->toBe(__('products::enums.attribute_type.text'))
+                ->and(AttributeType::Textarea->label())->toBe(__('products::enums.attribute_type.textarea'))
+                ->and(AttributeType::Number->label())->toBe(__('products::enums.attribute_type.number'))
+                ->and(AttributeType::Boolean->label())->toBe(__('products::enums.attribute_type.boolean'))
+                ->and(AttributeType::Select->label())->toBe(__('products::enums.attribute_type.select'))
+                ->and(AttributeType::Multiselect->label())->toBe(__('products::enums.attribute_type.multiselect'))
+                ->and(AttributeType::Date->label())->toBe(__('products::enums.attribute_type.date'))
+                ->and(AttributeType::Color->label())->toBe(__('products::enums.attribute_type.color'))
+                ->and(AttributeType::Media->label())->toBe(__('products::enums.attribute_type.media'));
         });
     });
 
@@ -114,6 +114,18 @@ describe('AttributeType Enum', function (): void {
         it('returns false for date', function (): void {
             expect(AttributeType::Date->hasOptions())->toBeFalse();
         });
+
+        it('returns false for textarea', function (): void {
+            expect(AttributeType::Textarea->hasOptions())->toBeFalse();
+        });
+
+        it('returns false for color', function (): void {
+            expect(AttributeType::Color->hasOptions())->toBeFalse();
+        });
+
+        it('returns false for media', function (): void {
+            expect(AttributeType::Media->hasOptions())->toBeFalse();
+        });
     });
 
     describe('isMultiple()', function (): void {
@@ -127,6 +139,30 @@ describe('AttributeType Enum', function (): void {
 
         it('returns false for text', function (): void {
             expect(AttributeType::Text->isMultiple())->toBeFalse();
+        });
+
+        it('returns false for textarea', function (): void {
+            expect(AttributeType::Textarea->isMultiple())->toBeFalse();
+        });
+
+        it('returns false for number', function (): void {
+            expect(AttributeType::Number->isMultiple())->toBeFalse();
+        });
+
+        it('returns false for boolean', function (): void {
+            expect(AttributeType::Boolean->isMultiple())->toBeFalse();
+        });
+
+        it('returns false for date', function (): void {
+            expect(AttributeType::Date->isMultiple())->toBeFalse();
+        });
+
+        it('returns false for color', function (): void {
+            expect(AttributeType::Color->isMultiple())->toBeFalse();
+        });
+
+        it('returns false for media', function (): void {
+            expect(AttributeType::Media->isMultiple())->toBeFalse();
         });
     });
 
@@ -182,7 +218,8 @@ describe('AttributeType Enum', function (): void {
         });
 
         it('casts number to float', function (): void {
-            expect(AttributeType::Number->castValue('42.5'))->toBe(42.5);
+            expect(AttributeType::Number->castValue('42.5'))->toBe(42.5)
+                ->and(AttributeType::Number->castValue(123))->toBe(123.0);
         });
 
         it('returns null for non-numeric number', function (): void {
@@ -191,7 +228,9 @@ describe('AttributeType Enum', function (): void {
 
         it('casts boolean to bool', function (): void {
             expect(AttributeType::Boolean->castValue('1'))->toBeTrue()
-                ->and(AttributeType::Boolean->castValue('0'))->toBeFalse();
+                ->and(AttributeType::Boolean->castValue('0'))->toBeFalse()
+                ->and(AttributeType::Boolean->castValue(true))->toBeTrue()
+                ->and(AttributeType::Boolean->castValue(false))->toBeFalse();
         });
 
         it('casts select to string', function (): void {
@@ -219,6 +258,7 @@ describe('AttributeType Enum', function (): void {
         it('casts date from string', function (): void {
             $result = AttributeType::Date->castValue('2024-01-15');
             expect($result)->toBeInstanceOf(DateTimeImmutable::class);
+            expect($result->format('Y-m-d'))->toBe('2024-01-15');
         });
 
         it('passes through date objects', function (): void {

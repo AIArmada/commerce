@@ -255,20 +255,6 @@ it('AffiliateUplineResource configures table and infolist contracts', function (
     expect(true)->toBeTrue();
 });
 
-it('AffiliateRankHistoryResource configures table and infolist contracts', function (): void {
-    $table = Mockery::mock(Table::class);
-    $table->shouldReceive('columns')->once()->andReturnSelf();
-    $table->shouldReceive('actions')->once()->andReturnSelf();
-
-    $infolist = Mockery::mock(Schema::class);
-    $infolist->shouldReceive('schema')->once()->andReturnSelf();
-
-    AffiliateRankHistoryResource::table($table);
-    AffiliateRankHistoryResource::infolist($infolist);
-
-    expect(true)->toBeTrue();
-});
-
 it('AffiliateProgram relation managers exist', function (): void {
     expect(class_exists(TiersRelationManager::class))->toBeTrue()
         ->and(class_exists(MembershipsRelationManager::class))->toBeTrue()

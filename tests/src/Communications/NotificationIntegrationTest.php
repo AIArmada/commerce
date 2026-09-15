@@ -112,7 +112,6 @@ test('recordCommunicationFailure handles null communicationId gracefully', funct
         }
     };
 
-    $notification->recordCommunicationFailure(new RuntimeException('Should be silent'));
-
-    expect(true)->toBeTrue();
+    expect(fn () => $notification->recordCommunicationFailure(new RuntimeException('Should be silent')))
+        ->not->toThrow(Exception::class);
 });

@@ -111,10 +111,10 @@ it('denies unknown abilities even for owners and admins', function (): void {
         ->and(fn () => $authorization->authorize($admin, $organization, 'organization.typo-ability'))
         ->toThrow(AuthorizationException::class);
 
-    $authorization->authorize($creator, $organization, 'organization.transfer-ownership');
-    $authorization->authorize($admin, $organization, 'organization.change-status');
-
-    expect(true)->toBeTrue();
+    expect(fn () => $authorization->authorize($creator, $organization, 'organization.transfer-ownership'))
+        ->not->toThrow(AuthorizationException::class)
+        ->and(fn () => $authorization->authorize($admin, $organization, 'organization.change-status'))
+        ->not->toThrow(AuthorizationException::class);
 });
 
 it('rejects an ownership transfer target from a different member model', function (): void {

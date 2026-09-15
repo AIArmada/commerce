@@ -13,12 +13,6 @@ use AIArmada\Contacting\Support\NormalizesUrl;
 use AIArmada\Customers\Models\Customer;
 use Carbon\CarbonImmutable;
 
-test('ContactMethod model class exists', function (): void {
-    expect(class_exists(ContactMethod::class))->toBeTrue();
-    // getTable() uses config() which needs Laravel app
-    expect(true)->toBeTrue();
-});
-
 test('ContactMethodType enum has expected values', function (): void {
     expect(ContactMethodType::Email->value)->toBe('email');
     expect(ContactMethodType::Phone->value)->toBe('phone');

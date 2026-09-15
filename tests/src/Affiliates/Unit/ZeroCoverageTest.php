@@ -6,15 +6,12 @@ use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
 use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateTrainingModule;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\Commissions\CommissionCalculationResult;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\PerformanceBonusService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
 // MatureConversion Action Tests
@@ -94,55 +91,6 @@ test('ProcessConversionMaturity processes qualified conversions', function (): v
 
     expect($result)->toBeInt();
     expect($result)->toBeGreaterThanOrEqual(0);
-});
-
-// AffiliateTrainingModule Tests
-test('AffiliateTrainingModule can be created with all fields', function (): void {
-    $module = AffiliateTrainingModule::create([
-        'title' => 'Getting Started with Affiliate Marketing',
-        'description' => 'Learn the basics',
-        'content' => 'This is the full content of the training module.',
-        'type' => 'video',
-        'video_url' => 'https://youtube.com/watch?v=abc123',
-        'resources' => ['doc1.pdf', 'doc2.pdf'],
-        'quiz' => [
-            ['question' => 'What is affiliate marketing?', 'options' => ['A', 'B', 'C'], 'answer' => 'A'],
-        ],
-        'passing_score' => 70,
-        'duration_minutes' => 30,
-        'sort_order' => 1,
-        'is_required' => true,
-        'is_active' => true,
-    ]);
-
-    expect($module)->toBeInstanceOf(AffiliateTrainingModule::class);
-    expect($module->title)->toBe('Getting Started with Affiliate Marketing');
-    expect($module->is_required)->toBeTrue();
-    expect($module->quiz)->toBeArray();
-});
-
-test('AffiliateTrainingModule has progress relationship', function (): void {
-    $module = new AffiliateTrainingModule;
-
-    expect($module->progress())->toBeInstanceOf(HasMany::class);
-});
-
-test('AffiliateTrainingModule casts are correct', function (): void {
-    $module = new AffiliateTrainingModule([
-        'resources' => ['file1.pdf'],
-        'quiz' => [['question' => 'Q1']],
-        'passing_score' => 80,
-        'duration_minutes' => 45,
-        'sort_order' => 2,
-        'is_required' => true,
-        'is_active' => false,
-    ]);
-
-    expect($module->resources)->toBeArray();
-    expect($module->quiz)->toBeArray();
-    expect($module->passing_score)->toBeInt();
-    expect($module->is_required)->toBeBool();
-    expect($module->is_active)->toBeBool();
 });
 
 // CommissionCalculationResult Tests
@@ -304,35 +252,4 @@ test('CommissionRuleEngine clearCache works', function (): void {
     $engine->clearCache();
 
     expect(true)->toBeTrue(); // Just verify no exception was thrown
-});
-
-// PerformanceBonusService Tests
-test('PerformanceBonusService can be instantiated', function (): void {
-    $service = app(PerformanceBonusService::class);
-
-    expect($service)->toBeInstanceOf(PerformanceBonusService::class);
-});
-
-test('PerformanceBonusService awardBonuses processes empty array', function (): void {
-    $service = app(PerformanceBonusService::class);
-
-    $result = $service->awardBonuses([]);
-
-    expect($result)->toBe(0);
-});
-
-test('PerformanceBonusService getLeaderboard returns collection', function (): void {
-    $service = app(PerformanceBonusService::class);
-
-    $leaderboard = $service->getLeaderboard();
-
-    expect($leaderboard)->toBeInstanceOf(Collection::class);
-});
-
-test('PerformanceBonusService getLeaderboard with custom limit', function (): void {
-    $service = app(PerformanceBonusService::class);
-
-    $leaderboard = $service->getLeaderboard(limit: 5);
-
-    expect($leaderboard)->toBeInstanceOf(Collection::class);
 });

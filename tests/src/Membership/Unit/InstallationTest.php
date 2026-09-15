@@ -33,14 +33,6 @@ it('creates membership invitations table', function (): void {
         ->and($schema->hasIndex('membership_invitations', 'membership_invitations_subject_email_role_status_unique'))->toBeTrue();
 });
 
-it('has membership application model', function (): void {
-    expect(class_exists(MembershipApplication::class))->toBeTrue();
-});
-
-it('has membership invitation model', function (): void {
-    expect(class_exists(MembershipInvitation::class))->toBeTrue();
-});
-
 it('reads owner scoping from the top-level membership owner configuration', function (): void {
     expect(config('membership.owner.enabled'))->toBeTrue()
         ->and(MembershipApplication::ownerScopeConfig()->enabled)->toBeTrue()

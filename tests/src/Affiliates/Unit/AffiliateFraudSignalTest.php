@@ -25,38 +25,6 @@ describe('AffiliateFraudSignal Model', function (): void {
         ]);
     });
 
-    test('can be created with required fields', function (): void {
-        $signal = AffiliateFraudSignal::create([
-            'affiliate_id' => $this->affiliate->id,
-            'rule_code' => 'RAPID_CLICKS',
-            'risk_points' => 50,
-            'severity' => FraudSeverity::Medium,
-            'description' => 'Rapid click pattern detected',
-            'status' => FraudSignalStatus::Detected,
-            'detected_at' => now(),
-        ]);
-
-        expect($signal)->toBeInstanceOf(AffiliateFraudSignal::class);
-        expect($signal->rule_code)->toBe('RAPID_CLICKS');
-        expect($signal->risk_points)->toBe(50);
-        expect($signal->severity)->toBe(FraudSeverity::Medium);
-    });
-
-    test('belongs to affiliate', function (): void {
-        $signal = AffiliateFraudSignal::create([
-            'affiliate_id' => $this->affiliate->id,
-            'rule_code' => 'RAPID_CLICKS',
-            'risk_points' => 50,
-            'severity' => FraudSeverity::Medium,
-            'description' => 'Test signal',
-            'status' => FraudSignalStatus::Detected,
-            'detected_at' => now(),
-        ]);
-
-        expect($signal->affiliate)->toBeInstanceOf(Affiliate::class);
-        expect($signal->affiliate->id)->toBe($this->affiliate->id);
-    });
-
     test('belongs to conversion when set', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
@@ -120,60 +88,6 @@ describe('AffiliateFraudSignal Model', function (): void {
         expect($signal->touchpoint->id)->toBe($touchpoint->id);
     });
 
-    test('scopePending returns only detected signals', function (): void {
-        AffiliateFraudSignal::create([
-            'affiliate_id' => $this->affiliate->id,
-            'rule_code' => 'PENDING1',
-            'risk_points' => 50,
-            'severity' => FraudSeverity::Medium,
-            'description' => 'Pending signal',
-            'status' => FraudSignalStatus::Detected,
-            'detected_at' => now(),
-        ]);
-
-        AffiliateFraudSignal::create([
-            'affiliate_id' => $this->affiliate->id,
-            'rule_code' => 'REVIEWED1',
-            'risk_points' => 50,
-            'severity' => FraudSeverity::Medium,
-            'description' => 'Reviewed signal',
-            'status' => FraudSignalStatus::Reviewed,
-            'detected_at' => now(),
-        ]);
-
-        $pending = AffiliateFraudSignal::pending()->get();
-
-        expect($pending)->toHaveCount(1);
-        expect($pending->first()->rule_code)->toBe('PENDING1');
-    });
-
-    test('scopeConfirmed returns only confirmed signals', function (): void {
-        AffiliateFraudSignal::create([
-            'affiliate_id' => $this->affiliate->id,
-            'rule_code' => 'DETECTED1',
-            'risk_points' => 50,
-            'severity' => FraudSeverity::Medium,
-            'description' => 'Detected signal',
-            'status' => FraudSignalStatus::Detected,
-            'detected_at' => now(),
-        ]);
-
-        AffiliateFraudSignal::create([
-            'affiliate_id' => $this->affiliate->id,
-            'rule_code' => 'CONFIRMED1',
-            'risk_points' => 100,
-            'severity' => FraudSeverity::High,
-            'description' => 'Confirmed signal',
-            'status' => FraudSignalStatus::Confirmed,
-            'detected_at' => now(),
-        ]);
-
-        $confirmed = AffiliateFraudSignal::confirmed()->get();
-
-        expect($confirmed)->toHaveCount(1);
-        expect($confirmed->first()->rule_code)->toBe('CONFIRMED1');
-    });
-
     test('scopeHighSeverity returns high and critical signals', function (): void {
         AffiliateFraudSignal::create([
             'affiliate_id' => $this->affiliate->id,
@@ -212,61 +126,6 @@ describe('AffiliateFraudSignal Model', function (): void {
         expect($highSeverity->pluck('rule_code')->toArray())->toContain('CRITICAL1');
     });
 
-    test('markAsReviewed updates status and timestamps', function (): void {
-        $signal = AffiliateFraudSignal::create([
-            'affiliate_id' => $this->affiliate->id,
-            'rule_code' => 'REVIEW_TEST',
-            'risk_points' => 50,
-            'severity' => FraudSeverity::Medium,
-            'description' => 'Test review',
-            'status' => FraudSignalStatus::Detected,
-            'detected_at' => now(),
-        ]);
-
-        $signal->markAsReviewed('admin@example.com');
-
-        $signal->refresh();
-        expect($signal->status)->toBe(FraudSignalStatus::Reviewed);
-        expect($signal->reviewed_at)->not->toBeNull();
-        expect($signal->reviewed_by)->toBe('admin@example.com');
-    });
-
-    test('dismiss updates status to dismissed', function (): void {
-        $signal = AffiliateFraudSignal::create([
-            'affiliate_id' => $this->affiliate->id,
-            'rule_code' => 'DISMISS_TEST',
-            'risk_points' => 50,
-            'severity' => FraudSeverity::Medium,
-            'description' => 'Test dismiss',
-            'status' => FraudSignalStatus::Detected,
-            'detected_at' => now(),
-        ]);
-
-        $signal->dismiss('reviewer@example.com');
-
-        $signal->refresh();
-        expect($signal->status)->toBe(FraudSignalStatus::Dismissed);
-        expect($signal->reviewed_by)->toBe('reviewer@example.com');
-    });
-
-    test('confirm updates status to confirmed', function (): void {
-        $signal = AffiliateFraudSignal::create([
-            'affiliate_id' => $this->affiliate->id,
-            'rule_code' => 'CONFIRM_TEST',
-            'risk_points' => 100,
-            'severity' => FraudSeverity::High,
-            'description' => 'Test confirm',
-            'status' => FraudSignalStatus::Detected,
-            'detected_at' => now(),
-        ]);
-
-        $signal->confirm('security@example.com');
-
-        $signal->refresh();
-        expect($signal->status)->toBe(FraudSignalStatus::Confirmed);
-        expect($signal->reviewed_by)->toBe('security@example.com');
-    });
-
     test('can store evidence array', function (): void {
         $evidence = [
             'ip_address' => '192.168.1.100',
@@ -289,21 +148,6 @@ describe('AffiliateFraudSignal Model', function (): void {
         expect($signal->evidence['ip_address'])->toBe('192.168.1.100');
         expect($signal->evidence['clicks_per_minute'])->toBe(150);
         expect($signal->evidence['patterns'])->toContain('rapid');
-    });
-
-    test('casts severity correctly', function (): void {
-        $signal = AffiliateFraudSignal::create([
-            'affiliate_id' => $this->affiliate->id,
-            'rule_code' => 'CAST_TEST',
-            'risk_points' => 25,
-            'severity' => FraudSeverity::Low,
-            'description' => 'Test casts',
-            'status' => FraudSignalStatus::Detected,
-            'detected_at' => now(),
-        ]);
-
-        expect($signal->severity)->toBeInstanceOf(FraudSeverity::class);
-        expect($signal->severity)->toBe(FraudSeverity::Low);
     });
 
     test('casts status correctly', function (): void {
@@ -334,11 +178,5 @@ describe('AffiliateFraudSignal Model', function (): void {
 
         expect($signal->detected_at)->toBeInstanceOf(CarbonImmutable::class);
         expect($signal->detected_at->format('Y-m-d'))->toBe('2024-06-15');
-    });
-
-    test('uses correct table name from config', function (): void {
-        $signal = new AffiliateFraudSignal;
-
-        expect($signal->getTable())->toBe(config('affiliates.database.tables.fraud_signals', 'affiliate_fraud_signals'));
     });
 });

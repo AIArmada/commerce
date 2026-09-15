@@ -265,5 +265,27 @@ describe('BOGOVoucherCondition', function (): void {
             $discount = $condition->calculateDiscount($cart);
             expect($discount)->toBe(1000);
         });
+
+        it('returns zero discount when requirements are not met', function (): void {
+            $voucher = createBogoVoucherDataFor();
+            $condition = new BOGOVoucherCondition($voucher, $voucher->valueConfig);
+
+            $cart = createBogoTestCart([
+                ['sku' => 'SHIRT-001', 'price' => 2000, 'quantity' => 1],
+            ]);
+
+            expect($condition->calculateDiscount($cart))->toBe(0);
+        });
+
+        it('returns no applications when requirements are not met', function (): void {
+            $voucher = createBogoVoucherDataFor();
+            $condition = new BOGOVoucherCondition($voucher, $voucher->valueConfig);
+
+            $cart = createBogoTestCart([
+                ['sku' => 'SHIRT-001', 'price' => 2000, 'quantity' => 1],
+            ]);
+
+            expect($condition->calculateApplications($cart))->toBe([]);
+        });
     });
 });

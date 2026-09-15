@@ -548,12 +548,6 @@ describe('Cart information and calculations', function (): void {
         $this->cart->add('product-3', 'Product 3', 8.25, 1);
     });
 
-    it('returns accurate item counts', function (): void {
-        expect($this->cart->getTotalQuantity())->toBe(6);
-        expect($this->cart->count())->toBe(6);
-        expect($this->cart->getItems()->count())->toBe(3); // Unique items
-    });
-
     it('calculates correct subtotals', function (): void {
         // (10.99 * 2) + (15.50 * 3) + (8.25 * 1) = 21.98 + 46.50 + 8.25 = 76.73
         expect($this->cart->subtotal()->getAmount())->toBe(7673);
@@ -898,22 +892,6 @@ describe('Cart instance management', function (): void {
         expect($originalCart->getItems())->toHaveCount(1);
     });
 
-    it('provides getCurrentInstance method', function (): void {
-        expect($this->cart->instance())->toBe('bulletproof_test');
-
-        $newCart = $this->cart->setInstance('test_instance', app('events'));
-        expect($newCart->instance())->toBe('test_instance');
-    });
-});
-
-describe('Cart save operations', function (): void {
-    it('can explicitly store cart data', function (): void {
-        $this->cart->add('item-1', 'Item 1', 10.00, 1);
-
-        // Data should still be accessible
-        expect($this->cart->getItems())->toHaveCount(1);
-        expect($this->cart->get('item-1'))->toBeInstanceOf(CartItem::class);
-    });
 });
 
 describe('Convenience condition methods', function (): void {
@@ -989,22 +967,20 @@ describe('Content alias methods', function (): void {
     it('provides subtotal() as alias for getSubtotal()', function (): void {
         $this->cart->add('item-1', 'Item 1', 25.50, 2);
 
-        $subtotal = $this->cart->subtotal();
-        $getSubtotal = $this->cart->subtotal();
+        $protected = new ReflectionMethod($this->cart, 'getSubtotal');
 
-        expect($subtotal->getAmount())->toBe($getSubtotal->getAmount());
-        expect($subtotal->getAmount())->toBe(5100);
+        expect($this->cart->subtotal()->getAmount())->toBe($protected->invoke($this->cart)->getAmount())
+            ->and($this->cart->subtotal()->getAmount())->toBe(5100);
     });
 
     it('provides total() as alias for getTotal()', function (): void {
         $this->cart->add('item-1', 'Item 1', 100.00, 1);
         $this->cart->addTax('vat', '20%');
 
-        $total = $this->cart->total();
-        $getTotal = $this->cart->total();
+        $protected = new ReflectionMethod($this->cart, 'getTotal');
 
-        expect($total->getAmount())->toBe($getTotal->getAmount());
-        expect($total->getAmount())->toBe(12000);
+        expect($this->cart->total()->getAmount())->toBe($protected->invoke($this->cart)->getAmount())
+            ->and($this->cart->total()->getAmount())->toBe(12000);
     });
 });
 

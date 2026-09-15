@@ -22,51 +22,13 @@ use Laravel\Cashier\Http\Controllers\WebhookController;
 uses(CashierTestCase::class);
 
 describe('Gateways', function (): void {
-    describe('AbstractGateway', function (): void {
-        it('is an abstract class implementing GatewayContract', function (): void {
-            $reflection = new ReflectionClass(AbstractGateway::class);
-
-            expect($reflection->isAbstract())->toBeTrue()
-                ->and($reflection->implementsInterface(GatewayContract::class))->toBeTrue();
-        });
-
-        it('defines name as abstract method', function (): void {
-            $reflection = new ReflectionClass(AbstractGateway::class);
-            $method = $reflection->getMethod('name');
-
-            expect($method->isAbstract())->toBeTrue();
-        });
-
-        it('provides currency method', function (): void {
-            $gateway = $this->gatewayManager->gateway('stripe');
-
-            expect($gateway->currency())->toBe('USD');
-        });
-    });
+    /* AbstractGateway structure + stripe name/currency/contract removed; covered by AbstractGatewayTest + GatewayManagerTest. */
 
     describe('StripeGateway', function (): void {
-        it('returns correct name', function (): void {
-            $gateway = $this->gatewayManager->gateway('stripe');
-
-            expect($gateway->name())->toBe('stripe');
-        });
-
         it('extends AbstractGateway', function (): void {
             $gateway = $this->gatewayManager->gateway('stripe');
 
             expect($gateway)->toBeInstanceOf(AbstractGateway::class);
-        });
-
-        it('implements GatewayContract', function (): void {
-            $gateway = $this->gatewayManager->gateway('stripe');
-
-            expect($gateway)->toBeInstanceOf(GatewayContract::class);
-        });
-
-        it('returns correct currency', function (): void {
-            $gateway = $this->gatewayManager->gateway('stripe');
-
-            expect($gateway->currency())->toBe('USD');
         });
 
         it('fails closed when webhook secret is missing', function (): void {
@@ -108,11 +70,7 @@ describe('Gateways', function (): void {
     });
 
     describe('ChipGateway', function (): void {
-        it('returns correct name', function (): void {
-            $gateway = $this->gatewayManager->gateway('chip');
-
-            expect($gateway->name())->toBe('chip');
-        });
+        /* Chip name/currency removed; covered by GatewayManagerTest + AbstractGatewayTest. */
 
         it('extends AbstractGateway', function (): void {
             $gateway = $this->gatewayManager->gateway('chip');
@@ -124,12 +82,6 @@ describe('Gateways', function (): void {
             $gateway = $this->gatewayManager->gateway('chip');
 
             expect($gateway)->toBeInstanceOf(GatewayContract::class);
-        });
-
-        it('returns correct currency', function (): void {
-            $gateway = $this->gatewayManager->gateway('chip');
-
-            expect($gateway->currency())->toBe('MYR');
         });
 
         it('resolves its client through cashier-chip', function (): void {

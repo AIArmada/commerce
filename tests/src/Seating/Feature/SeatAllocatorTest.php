@@ -93,18 +93,18 @@ it('stores the held by morph relation', function (): void {
 });
 
 it('skips held seats', function (): void {
+    config()->set('seating.holds.ttl_minutes', 15);
+
     $seat = Seat::firstOrFail();
     SeatHold::factory()->create(['seat_id' => $seat->id]);
 
-    if (config('seating.holds.ttl_minutes', 15) > 0) {
-        $results = app(SeatAllocatorInterface::class)->allocate(
-            map: $this->map,
-            quantity: 10,
-        );
+    $results = app(SeatAllocatorInterface::class)->allocate(
+        map: $this->map,
+        quantity: 10,
+    );
 
-        expect($results)->toHaveCount(10);
-        expect($results->pluck('seatId'))->not->toContain($seat->id);
-    }
+    expect($results)->toHaveCount(10);
+    expect($results->pluck('seatId'))->not->toContain($seat->id);
 });
 
 it('skips blocked seats', function (): void {

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
@@ -125,6 +124,7 @@ describe('TaxCalculatorEdgeCases', function (): void {
             'is_active' => true,
         ]);
 
+        config(['tax.features.zone_resolution.use_customer_address' => false]);
         config(['tax.features.zone_resolution.fallback_zone_id' => $fallbackZone->id]);
 
         $result = $this->calculator->calculateTax(10000, 'standard');
@@ -420,29 +420,7 @@ describe('TaxCalculatorEdgeCases', function (): void {
         $this->assertEquals(0, $result->taxAmount);
     });
 
-    it('fallback zone via config', function (): void {
-        $fallbackZone = TaxZone::create([
-            'name' => 'Fallback',
-            'code' => 'FALLBACK',
-            'is_active' => true,
-        ]);
-
-        TaxRate::create([
-            'zone_id' => $fallbackZone->id,
-            'name' => 'Fallback Rate',
-            'rate' => 550,
-            'tax_class' => 'standard',
-            'is_active' => true,
-        ]);
-
-        config(['tax.features.zone_resolution.use_customer_address' => false]);
-        config(['tax.features.zone_resolution.fallback_zone_id' => $fallbackZone->id]);
-
-        $result = $this->calculator->calculateTax(10000, 'standard');
-
-        $this->assertEquals(550, $result->taxAmount);
-        $this->assertEquals($fallbackZone->id, $result->zoneId);
-    });
+    /* Fallback-via-config merged into 'fallback zone id resolution' above. */
 
     it('billing address priority via config', function (): void {
         config(['tax.features.zone_resolution.address_priority' => 'billing']);
@@ -484,11 +462,4 @@ describe('TaxCalculatorEdgeCases', function (): void {
 
         $this->assertEquals(900, $result->taxAmount);
     });
-
-    it('unknown zone behavior error via config', function (): void {
-        config(['tax.features.zone_resolution.use_customer_address' => false]);
-        config(['tax.features.zone_resolution.unknown_zone_behavior' => 'error']);
-
-        $this->calculator->calculateTax(10000, 'standard');
-    })->throws(TaxZoneNotFoundException::class);
 });

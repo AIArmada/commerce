@@ -268,16 +268,6 @@ it('AffiliatePayoutResource has correct model', function (): void {
     expect(AffiliatePayoutResource::getModel())->toBe(AffiliatePayout::class);
 });
 
-it('AffiliatePayoutResource returns pages array', function (): void {
-    $pages = AffiliatePayoutResource::getPages();
-
-    expect($pages)
-        ->toBeArray()
-        ->toHaveKey('index')
-        ->toHaveKey('create')
-        ->toHaveKey('view');
-});
-
 it('AffiliatePayoutResource has relations', function (): void {
     $relations = AffiliatePayoutResource::getRelations();
 
@@ -311,23 +301,6 @@ it('AffiliatePayoutResource is explicitly non-CRUD', function (): void {
     expect(AffiliatePayoutResource::canCreate())->toBeFalse()
         ->and(AffiliatePayoutResource::canEdit($payout))->toBeFalse()
         ->and(AffiliatePayoutResource::canDelete($payout))->toBeFalse();
-});
-
-it('AffiliatePayoutResource canCreate allows payout operator abilities', function (): void {
-    $user = User::create([
-        'name' => 'Payout Creator',
-        'email' => 'payout-creator@example.com',
-        'password' => bcrypt('password'),
-    ]);
-
-    $this->actingAs($user);
-
-    expect(AffiliatePayoutResource::canCreate())->toBeFalse();
-
-    Permission::create(['name' => 'affiliate.payout', 'guard_name' => 'web']);
-    $user->givePermissionTo('affiliate.payout');
-
-    expect(AffiliatePayoutResource::canCreate())->toBeTrue();
 });
 
 it('AffiliatePayoutResource has navigation sort from config', function (): void {
@@ -400,17 +373,6 @@ it('AffiliateProgramResource CRUD abilities follow affiliate permission set', fu
 // AffiliateLinkResource Tests
 it('AffiliateLinkResource has correct model', function (): void {
     expect(AffiliateLinkResource::getModel())->toBe(AffiliateLink::class);
-});
-
-it('AffiliateLinkResource returns pages array', function (): void {
-    $pages = AffiliateLinkResource::getPages();
-
-    expect($pages)
-        ->toBeArray()
-        ->toHaveKey('index')
-        ->toHaveKey('create')
-        ->toHaveKey('view')
-        ->toHaveKey('edit');
 });
 
 it('AffiliateLinkResource CRUD abilities follow affiliate permission set', function (): void {

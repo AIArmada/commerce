@@ -22,25 +22,7 @@ describe('Cashier Static Methods Full Coverage', function (): void {
             expect(Cashier::$deactivatePastDue)->toBeTrue();
         });
 
-        it('sets deactivatePastDue to false when passed false', function (): void {
-            Cashier::deactivatePastDue(false);
-
-            expect(Cashier::$deactivatePastDue)->toBeFalse();
-        });
-
-        it('syncs to Laravel Cashier when available', function (): void {
-            // This tests the code path even if Laravel\Cashier\Cashier isn't available
-            Cashier::deactivatePastDue(true);
-
-            expect(Cashier::$deactivatePastDue)->toBeTrue();
-        });
-
-        it('syncs to CashierChip when available', function (): void {
-            // This tests the code path even if AIArmada\CashierChip\Cashier isn't available
-            Cashier::deactivatePastDue(false);
-
-            expect(Cashier::$deactivatePastDue)->toBeFalse();
-        });
+        /* Explicit false + unverified syncs removed; covered by CashierTest. */
     });
 
     describe('deactivateIncomplete', function (): void {
@@ -52,25 +34,7 @@ describe('Cashier Static Methods Full Coverage', function (): void {
             expect(Cashier::$deactivateIncomplete)->toBeTrue();
         });
 
-        it('sets deactivateIncomplete to false when passed false', function (): void {
-            Cashier::deactivateIncomplete(false);
-
-            expect(Cashier::$deactivateIncomplete)->toBeFalse();
-        });
-
-        it('syncs to Laravel Cashier when available', function (): void {
-            // This tests the code path even if Laravel\Cashier\Cashier isn't available
-            Cashier::deactivateIncomplete(true);
-
-            expect(Cashier::$deactivateIncomplete)->toBeTrue();
-        });
-
-        it('syncs to CashierChip when available', function (): void {
-            // This tests the code path even if AIArmada\CashierChip\Cashier isn't available
-            Cashier::deactivateIncomplete(false);
-
-            expect(Cashier::$deactivateIncomplete)->toBeFalse();
-        });
+        /* Explicit false + unverified syncs removed; covered by CashierTest. */
     });
 
     describe('defaultCurrency', function (): void {
@@ -134,13 +98,7 @@ describe('Cashier Static Methods Full Coverage', function (): void {
         });
     });
 
-    describe('useCustomerModel', function (): void {
-        it('sets customer model class', function (): void {
-            Cashier::useCustomerModel('App\\Models\\Customer');
-
-            expect(Cashier::$customerModel)->toBe('App\\Models\\Customer');
-        });
-    });
+    /* useCustomerModel removed; covered by CashierTest. */
 
     describe('formatCurrencyUsing', function (): void {
         afterEach(function (): void {

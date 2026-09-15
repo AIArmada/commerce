@@ -91,18 +91,6 @@ describe('Plugin Configuration', function (): void {
         expect($plugin->getCheckboxListColumns())->toBe(4);
     });
 
-    it('has correct plugin id', function (): void {
-        $plugin = FilamentAuthzPlugin::make();
-
-        expect($plugin->getId())->toBe('aiarmada-filament-authz');
-    });
-
-    it('can be instantiated via make method', function (): void {
-        $plugin = FilamentAuthzPlugin::make();
-
-        expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
-    });
-
     it('can use fluent interface chaining', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->roleResource()

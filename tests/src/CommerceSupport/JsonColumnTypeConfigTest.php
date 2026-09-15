@@ -17,125 +17,47 @@ afterEach(function (): void {
     unsetEnvVar('MEMBERSHIP_JSON_COLUMN_TYPE');
 });
 
-it('resolves per-package override for hyphenated package keys', function (): void {
+it('resolves per-package override via the helper', function (string $package, string $envKey): void {
     putenv('COMMERCE_JSON_COLUMN_TYPE=json');
-    putenv('AFFILIATE_NETWORK_JSON_COLUMN_TYPE=jsonb');
+    putenv($envKey . '=jsonb');
 
-    expect(commerce_json_column_type('affiliate-network', 'json'))->toBe('jsonb');
-});
+    expect(commerce_json_column_type($package, 'json'))->toBe('jsonb');
+})->with([
+    'hyphenated package key' => ['affiliate-network', 'AFFILIATE_NETWORK_JSON_COLUMN_TYPE'],
+    'underscore env key' => ['cashier-chip', 'CASHIER_CHIP_JSON_COLUMN_TYPE'],
+    'commerce support' => ['commerce-support', 'COMMERCE_SUPPORT_JSON_COLUMN_TYPE'],
+]);
 
-it('resolves underscore env keys for helper lookups consistently', function (): void {
-    putenv('COMMERCE_JSON_COLUMN_TYPE=json');
-    putenv('CASHIER_CHIP_JSON_COLUMN_TYPE=jsonb');
-
-    expect(commerce_json_column_type('cashier-chip', 'json'))->toBe('jsonb');
-});
-
-it('falls back to COMMERCE_JSON_COLUMN_TYPE for commerce support', function (): void {
-    unsetEnvVar('COMMERCE_SUPPORT_JSON_COLUMN_TYPE');
+it('falls back to COMMERCE_JSON_COLUMN_TYPE for package configs', function (string $envKey, string $configPath): void {
+    unsetEnvVar($envKey);
     putenv('COMMERCE_JSON_COLUMN_TYPE=jsonb');
 
-    $config = require repoPath('packages/commerce-support/config/commerce-support.php');
+    $config = require repoPath($configPath);
 
     expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
-});
+})->with([
+    'commerce support' => ['COMMERCE_SUPPORT_JSON_COLUMN_TYPE', 'packages/commerce-support/config/commerce-support.php'],
+    'products' => ['PRODUCTS_JSON_COLUMN_TYPE', 'packages/products/config/products.php'],
+    'customers' => ['CUSTOMERS_JSON_COLUMN_TYPE', 'packages/customers/config/customers.php'],
+    'tax' => ['TAX_JSON_COLUMN_TYPE', 'packages/tax/config/tax.php'],
+    'filament cart' => ['FILAMENT_CART_JSON_COLUMN_TYPE', 'packages/filament-cart/config/filament-cart.php'],
+    'promotions' => ['PROMOTIONS_JSON_COLUMN_TYPE', 'packages/promotions/config/promotions.php'],
+]);
 
-it('resolves json column type for commerce support via env fallback', function (): void {
+it('allows per-package override for package configs', function (string $envKey, string $configPath): void {
     putenv('COMMERCE_JSON_COLUMN_TYPE=json');
-    putenv('COMMERCE_SUPPORT_JSON_COLUMN_TYPE=jsonb');
+    putenv($envKey . '=jsonb');
 
-    expect(commerce_json_column_type('commerce-support', 'json'))->toBe('jsonb');
-});
-
-it('falls back to COMMERCE_JSON_COLUMN_TYPE for products', function (): void {
-    unsetEnvVar('PRODUCTS_JSON_COLUMN_TYPE');
-    putenv('COMMERCE_JSON_COLUMN_TYPE=jsonb');
-
-    $config = require repoPath('packages/products/config/products.php');
+    $config = require repoPath($configPath);
 
     expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
-});
-
-it('allows per-package override for products', function (): void {
-    putenv('COMMERCE_JSON_COLUMN_TYPE=json');
-    putenv('PRODUCTS_JSON_COLUMN_TYPE=jsonb');
-
-    $config = require repoPath('packages/products/config/products.php');
-
-    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
-});
-
-it('falls back to COMMERCE_JSON_COLUMN_TYPE for customers', function (): void {
-    unsetEnvVar('CUSTOMERS_JSON_COLUMN_TYPE');
-    putenv('COMMERCE_JSON_COLUMN_TYPE=jsonb');
-
-    $config = require repoPath('packages/customers/config/customers.php');
-
-    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
-});
-
-it('allows per-package override for customers', function (): void {
-    putenv('COMMERCE_JSON_COLUMN_TYPE=json');
-    putenv('CUSTOMERS_JSON_COLUMN_TYPE=jsonb');
-
-    $config = require repoPath('packages/customers/config/customers.php');
-
-    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
-});
-
-it('falls back to COMMERCE_JSON_COLUMN_TYPE for tax', function (): void {
-    unsetEnvVar('TAX_JSON_COLUMN_TYPE');
-    putenv('COMMERCE_JSON_COLUMN_TYPE=jsonb');
-
-    $config = require repoPath('packages/tax/config/tax.php');
-
-    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
-});
-
-it('allows per-package override for tax', function (): void {
-    putenv('COMMERCE_JSON_COLUMN_TYPE=json');
-    putenv('TAX_JSON_COLUMN_TYPE=jsonb');
-
-    $config = require repoPath('packages/tax/config/tax.php');
-
-    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
-});
-
-it('falls back to COMMERCE_JSON_COLUMN_TYPE for filament cart', function (): void {
-    unsetEnvVar('FILAMENT_CART_JSON_COLUMN_TYPE');
-    putenv('COMMERCE_JSON_COLUMN_TYPE=jsonb');
-
-    $config = require repoPath('packages/filament-cart/config/filament-cart.php');
-
-    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
-});
-
-it('allows per-package override for filament cart', function (): void {
-    putenv('COMMERCE_JSON_COLUMN_TYPE=json');
-    putenv('FILAMENT_CART_JSON_COLUMN_TYPE=jsonb');
-
-    $config = require repoPath('packages/filament-cart/config/filament-cart.php');
-
-    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
-});
-
-it('falls back to COMMERCE_JSON_COLUMN_TYPE for promotions', function (): void {
-    unsetEnvVar('PROMOTIONS_JSON_COLUMN_TYPE');
-    putenv('COMMERCE_JSON_COLUMN_TYPE=jsonb');
-
-    $config = require repoPath('packages/promotions/config/promotions.php');
-
-    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
-});
-
-it('allows per-package override for promotions', function (): void {
-    putenv('COMMERCE_JSON_COLUMN_TYPE=json');
-    putenv('PROMOTIONS_JSON_COLUMN_TYPE=jsonb');
-
-    $config = require repoPath('packages/promotions/config/promotions.php');
-
-    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
-});
+})->with([
+    'products' => ['PRODUCTS_JSON_COLUMN_TYPE', 'packages/products/config/products.php'],
+    'customers' => ['CUSTOMERS_JSON_COLUMN_TYPE', 'packages/customers/config/customers.php'],
+    'tax' => ['TAX_JSON_COLUMN_TYPE', 'packages/tax/config/tax.php'],
+    'filament cart' => ['FILAMENT_CART_JSON_COLUMN_TYPE', 'packages/filament-cart/config/filament-cart.php'],
+    'promotions' => ['PROMOTIONS_JSON_COLUMN_TYPE', 'packages/promotions/config/promotions.php'],
+]);
 
 it('uses COMMERCE_JSON_COLUMN_TYPE fallback for every package', function (): void {
     putenv('COMMERCE_JSON_COLUMN_TYPE=jsonb');

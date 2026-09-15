@@ -89,26 +89,12 @@ describe('RetryService', function (): void {
         expect($attempts)->toBe(3);
     });
 
-    it('can configure attempts', function (): void {
-        $retry = RetryService::make()->attempts(5);
-
-        expect($retry)->toBeInstanceOf(RetryService::class);
-    });
-
-    it('can configure delay', function (): void {
-        $retry = RetryService::make()->delay(500);
-
-        expect($retry)->toBeInstanceOf(RetryService::class);
-    });
-
-    it('can configure backoff multiplier', function (): void {
-        $retry = RetryService::make()->backoff(3.0);
-
-        expect($retry)->toBeInstanceOf(RetryService::class);
-    });
-
-    it('can disable jitter', function (): void {
-        $retry = RetryService::make()->withJitter(false);
+    it('supports chaining all configuration setters', function (): void {
+        $retry = RetryService::make()
+            ->attempts(5)
+            ->delay(500)
+            ->backoff(3.0)
+            ->withJitter(false);
 
         expect($retry)->toBeInstanceOf(RetryService::class);
     });

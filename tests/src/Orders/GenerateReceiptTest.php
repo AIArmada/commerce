@@ -10,10 +10,6 @@ use Spatie\LaravelPdf\PdfBuilder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 describe('GenerateReceipt Action', function (): void {
-    it('can be instantiated', function (): void {
-        expect(new GenerateReceipt)->toBeInstanceOf(GenerateReceipt::class);
-    });
-
     it('uses the stable order number when downloading the html fallback', function (): void {
         $order = Order::create([
             'order_number' => 'ORD-RECEIPT-123',

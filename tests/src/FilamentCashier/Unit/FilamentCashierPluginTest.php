@@ -80,22 +80,4 @@ it('defines the billing portal login toggle in config', function (): void {
     expect($config['billing_portal'])->toHaveKey('login_enabled', true);
 });
 
-it('gateway detector can be instantiated', function (): void {
-    $detector = new GatewayDetector;
-
-    expect($detector)->toBeInstanceOf(GatewayDetector::class);
-});
-
-it('gateway detector returns available gateways as collection', function (): void {
-    $detector = new GatewayDetector;
-    $gateways = $detector->availableGateways();
-
-    expect($gateways)->toBeInstanceOf(Collection::class);
-});
-
-it('gateway detector provides gateway options', function (): void {
-    $detector = new GatewayDetector;
-    $options = $detector->getGatewayOptions();
-
-    expect($options)->toBeArray();
-});
+/* GatewayDetector instantiation/collection/options removed; identical in GatewayDetectorTest. */

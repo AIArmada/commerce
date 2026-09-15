@@ -27,8 +27,4 @@ it('registers all resources when enabled', function (): void {
     expect($plugin)->toBeInstanceOf(FilamentAddressingPlugin::class);
 });
 
-it('has correct plugin id', function (): void {
-    $plugin = FilamentAddressingPlugin::make();
-
-    expect($plugin->getId())->toBe('filament-addressing');
-});
+/* Plugin-id assert removed; getId is asserted in the registration tests above. */

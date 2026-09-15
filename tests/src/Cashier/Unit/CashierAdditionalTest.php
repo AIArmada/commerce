@@ -29,34 +29,7 @@ describe('Cashier Class - Additional Coverage', function (): void {
         });
     });
 
-    describe('manager', function (): void {
-        it('returns GatewayManager instance', function (): void {
-            $manager = Cashier::manager();
-
-            expect($manager)->toBeInstanceOf(GatewayManager::class);
-        });
-    });
-
-    describe('supportedGateways', function (): void {
-        it('is alias for availableGateways', function (): void {
-            $supported = Cashier::supportedGateways();
-            $available = Cashier::availableGateways();
-
-            expect($supported)->toBe($available);
-        });
-    });
-
-    describe('formatCurrencyUsing', function (): void {
-        it('accepts custom currency formatter', function (): void {
-            Cashier::formatCurrencyUsing(function (int $amount, ?string $currency, ?string $locale) {
-                return 'CUSTOM:' . $amount . ':' . ($currency ?? 'USD');
-            });
-
-            $formatted = Cashier::formatAmount(1000, 'EUR');
-
-            expect($formatted)->toBe('CUSTOM:1000:EUR');
-        });
-    });
+    /* manager/supportedGateways/formatCurrencyUsing removed; covered by CashierTest + CashierStaticMethodsTest. */
 
     describe('formatAmount', function (): void {
         it('formats native minor units without multiplying them again', function (): void {
@@ -91,27 +64,5 @@ describe('Cashier Class - Additional Coverage', function (): void {
         });
     });
 
-    describe('deactivatePastDue', function (): void {
-        it('syncs to underlying packages when available', function (): void {
-            Cashier::deactivatePastDue(true);
-
-            expect(Cashier::$deactivatePastDue)->toBeTrue();
-        });
-    });
-
-    describe('deactivateIncomplete', function (): void {
-        it('syncs to underlying packages when available', function (): void {
-            Cashier::deactivateIncomplete(true);
-
-            expect(Cashier::$deactivateIncomplete)->toBeTrue();
-        });
-    });
-
-    describe('useCustomerModel', function (): void {
-        it('sets customer model class', function (): void {
-            Cashier::useCustomerModel(User::class);
-
-            expect(Cashier::$customerModel)->toBe(User::class);
-        });
-    });
+    /* deactivate + useCustomerModel setters removed; covered by CashierTest true+false matrix. */
 });

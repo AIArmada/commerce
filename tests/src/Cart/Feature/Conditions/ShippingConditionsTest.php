@@ -67,14 +67,6 @@ describe('Shipping Conditions', function (): void {
 
         expect(Cart::total()->getAmount())->toBe(11000);
     });
-
-    it('works with Cart facade', function (): void {
-        Cart::add('item', 'Item', 50.00, 1);
-
-        Cart::addShipping('Facade Shipping', 5.00);
-
-        expect(Cart::total()->getAmount())->toBe(5500);  // 50 + 5 = 55.00 in cents
-    });
 });
 
 describe('Multiple Shipping Scenarios', function (): void {

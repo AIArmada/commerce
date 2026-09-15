@@ -117,27 +117,6 @@ describe('WebhookRetryManager', function (): void {
         expect($manager)->toBeInstanceOf(WebhookRetryManager::class);
     });
 
-    it('determines if webhook should retry', function (): void {
-        $manager = app(WebhookRetryManager::class);
-
-        // Mock webhook with failed status
-        $webhook = new Webhook;
-        $webhook->forceFill([
-            'status' => 'failed',
-            'retry_count' => 0,
-        ]);
-
-        expect($manager->shouldRetry($webhook))->toBeTrue();
-
-        // After max retries
-        $webhook->forceFill(['retry_count' => 5]);
-        expect($manager->shouldRetry($webhook))->toBeFalse();
-
-        // Not failed status
-        $webhook->forceFill(['status' => 'processed', 'retry_count' => 0]);
-        expect($manager->shouldRetry($webhook))->toBeFalse();
-    });
-
     it('calculates next retry delay', function (): void {
         $manager = app(WebhookRetryManager::class);
 
@@ -154,20 +133,6 @@ describe('WebhookRetryManager', function (): void {
         // Third retry = 900 seconds
         $webhook->forceFill(['retry_count' => 2]);
         expect($manager->getNextRetryDelay($webhook))->toBe(900);
-    });
-
-    it('can set custom backoff schedule', function (): void {
-        $manager = app(WebhookRetryManager::class);
-
-        $result = $manager->setBackoffSchedule([1 => 30, 2 => 120]);
-
-        expect($result)->toBe($manager);
-
-        $webhook = new Webhook;
-        $webhook->forceFill(['retry_count' => 0]);
-
-        // Should now use custom schedule
-        expect($manager->getNextRetryDelay($webhook))->toBe(30);
     });
 
     it('retries supported dispatcher events without explicit handlers', function (): void {

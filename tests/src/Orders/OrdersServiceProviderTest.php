@@ -15,30 +15,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 
 describe('OrdersServiceProvider', function (): void {
-    it('can be instantiated', function (): void {
-        $provider = new OrdersServiceProvider(app());
-        expect($provider)->toBeInstanceOf(OrdersServiceProvider::class);
-    });
-
-    it('has register method', function (): void {
-        $provider = new OrdersServiceProvider(app());
-        expect(method_exists($provider, 'register'))->toBeTrue();
-    });
-
-    it('has boot method', function (): void {
-        $provider = new OrdersServiceProvider(app());
-        expect(method_exists($provider, 'boot'))->toBeTrue();
-    });
-
-    it('has registerPolicies method', function (): void {
-        $provider = new OrdersServiceProvider(app());
-        expect(method_exists($provider, 'registerPolicies'))->toBeTrue();
-    });
-
-    it('has registerEventListeners method', function (): void {
-        $provider = new OrdersServiceProvider(app());
-        expect(method_exists($provider, 'registerEventListeners'))->toBeTrue();
-    });
+    /* Instantiation/method-existence smoke tests removed; covered by invoking siblings below. */
 
     it('can call register method without errors', function (): void {
         $provider = new OrdersServiceProvider(app());

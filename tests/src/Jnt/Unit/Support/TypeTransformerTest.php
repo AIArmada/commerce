@@ -55,16 +55,19 @@ describe('TypeTransformer - Context-Aware Methods', function (): void {
             expect(TypeTransformer::forItemWeight(500))->toBe('500');
             expect(TypeTransformer::forItemWeight(1000))->toBe('1000');
             expect(TypeTransformer::forItemWeight(1))->toBe('1');
+            expect(TypeTransformer::forItemWeight(250))->toBe('250');
         });
 
         it('converts float grams to integer string (truncates)', function (): void {
             expect(TypeTransformer::forItemWeight(500.7))->toBe('500');
             expect(TypeTransformer::forItemWeight(999.99))->toBe('999');
+            expect(TypeTransformer::forItemWeight(500.5))->toBe('500');
         });
 
         it('converts string grams to integer string', function (): void {
             expect(TypeTransformer::forItemWeight('500'))->toBe('500');
             expect(TypeTransformer::forItemWeight('1000'))->toBe('1000');
+            expect(TypeTransformer::forItemWeight('180'))->toBe('180');
         });
     });
 
@@ -81,6 +84,8 @@ describe('TypeTransformer - Context-Aware Methods', function (): void {
             expect(TypeTransformer::forPackageWeight(5.456))->toBe('5.46');
             expect(TypeTransformer::forPackageWeight(0.01))->toBe('0.01');
             expect(TypeTransformer::forPackageWeight(999.99))->toBe('999.99');
+            expect(TypeTransformer::forPackageWeight(2.5))->toBe('2.50');
+            expect(TypeTransformer::forPackageWeight(15.456))->toBe('15.46');
         });
 
         it('converts string kg to 2-decimal string', function (): void {
@@ -95,6 +100,9 @@ describe('TypeTransformer - Context-Aware Methods', function (): void {
             expect(TypeTransformer::forDimension(25))->toBe('25.00');
             expect(TypeTransformer::forDimension(50))->toBe('50.00');
             expect(TypeTransformer::forDimension(1))->toBe('1.00');
+            expect(TypeTransformer::forDimension(30))->toBe('30.00');
+            expect(TypeTransformer::forDimension(20))->toBe('20.00');
+            expect(TypeTransformer::forDimension(10))->toBe('10.00');
         });
 
         it('converts float cm to 2-decimal string', function (): void {
@@ -103,6 +111,7 @@ describe('TypeTransformer - Context-Aware Methods', function (): void {
             expect(TypeTransformer::forDimension(25.756))->toBe('25.76');
             expect(TypeTransformer::forDimension(0.01))->toBe('0.01');
             expect(TypeTransformer::forDimension(999.99))->toBe('999.99');
+            expect(TypeTransformer::forDimension(15.756))->toBe('15.76');
         });
 
         it('converts string cm to 2-decimal string', function (): void {
@@ -124,6 +133,8 @@ describe('TypeTransformer - Context-Aware Methods', function (): void {
             expect(TypeTransformer::forMoney(1990))->toBe('19.90');
             expect(TypeTransformer::forMoney(1))->toBe('0.01');
             expect(TypeTransformer::forMoney(99999999))->toBe('999999.99');
+            expect(TypeTransformer::forMoney(129999))->toBe('1299.99');
+            expect(TypeTransformer::forMoney(50))->toBe('0.50');
         });
 
         it('rejects API money with more than two decimal places', function (): void {
@@ -177,56 +188,4 @@ describe('TypeTransformer - Boolean Methods', function (): void {
     });
 });
 
-describe('TypeTransformer - Real-World Scenarios', function (): void {
-    it('handles item weight transformation correctly', function (): void {
-        // Scenario: T-shirt weighing 250 grams
-        expect(TypeTransformer::forItemWeight(250))->toBe('250');
-
-        // Scenario: Book weighing 500.5 grams (truncate to integer)
-        expect(TypeTransformer::forItemWeight(500.5))->toBe('500');
-
-        // Scenario: Phone weighing 180 grams (from string)
-        expect(TypeTransformer::forItemWeight('180'))->toBe('180');
-    });
-
-    it('handles package weight transformation correctly', function (): void {
-        // Scenario: Small package 2.5 kg
-        expect(TypeTransformer::forPackageWeight(2.5))->toBe('2.50');
-
-        // Scenario: Medium package 5 kg (integer input)
-        expect(TypeTransformer::forPackageWeight(5))->toBe('5.00');
-
-        // Scenario: Large package 15.456 kg (rounds to 2dp)
-        expect(TypeTransformer::forPackageWeight(15.456))->toBe('15.46');
-
-        // Scenario: Minimum weight 0.01 kg
-        expect(TypeTransformer::forPackageWeight(0.01))->toBe('0.01');
-    });
-
-    it('handles dimension transformation correctly', function (): void {
-        // Scenario: Box 30x20x10 cm
-        expect(TypeTransformer::forDimension(30))->toBe('30.00');
-        expect(TypeTransformer::forDimension(20))->toBe('20.00');
-        expect(TypeTransformer::forDimension(10))->toBe('10.00');
-
-        // Scenario: Precise dimension 25.5 cm
-        expect(TypeTransformer::forDimension(25.5))->toBe('25.50');
-
-        // Scenario: Measured dimension 15.756 cm (rounds to 2dp)
-        expect(TypeTransformer::forDimension(15.756))->toBe('15.76');
-    });
-
-    it('handles money transformation correctly', function (): void {
-        // Scenario: Product price RM 19.90
-        expect(TypeTransformer::forMoney(1990))->toBe('19.90');
-
-        // Scenario: COD amount RM 150 (integer input)
-        expect(TypeTransformer::forMoney(15000))->toBe('150.00');
-
-        // Scenario: Declared value RM 1299.99
-        expect(TypeTransformer::forMoney(129999))->toBe('1299.99');
-
-        // Scenario: Small amount RM 0.50
-        expect(TypeTransformer::forMoney(50))->toBe('0.50');
-    });
-});
+/* Real-world scenario values folded into the granular tests above. */

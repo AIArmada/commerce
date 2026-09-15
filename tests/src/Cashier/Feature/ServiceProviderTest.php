@@ -58,7 +58,7 @@ describe('CashierServiceProvider', function (): void {
                     ->toBeTrue();
             }
         } else {
-            expect(true)->toBeTrue();
+            $this->markTestSkipped('laravel/cashier is not installed.');
         }
     });
 });

@@ -87,22 +87,6 @@ describe('CreateShipment Action', function (): void {
         expect($shipment->status)->toBeInstanceOf(Draft::class);
     });
 
-    it('defaults to draft status', function (): void {
-        $action = app(CreateShipment::class);
-
-        $data = [
-            'reference' => 'TEST-INVALID-STATUS',
-            'carrierCode' => 'test-carrier',
-            'serviceCode' => 'standard',
-            'origin' => ['name' => 'Origin', 'phone' => '123', 'line1' => '123 St', 'postcode' => '12345'],
-            'destination' => ['name' => 'Dest', 'phone' => '456', 'line1' => '456 St', 'postcode' => '67890'],
-        ];
-
-        $shipment = $action->handle(ShipmentData::from($data));
-
-        expect($shipment->status)->toBeInstanceOf(Draft::class);
-    });
-
     it('requires owner context when owner scoping is enabled', function (): void {
         config(['shipping.features.owner.enabled' => true]);
 

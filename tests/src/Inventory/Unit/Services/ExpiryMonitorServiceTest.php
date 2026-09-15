@@ -169,22 +169,6 @@ describe('ExpiryMonitorService', function (): void {
         expect($slowMoving->first()->quantity_on_hand)->toBe(100);
     });
 
-    it('processes expired batches', function (): void {
-        InventoryBatch::factory()->forInventoryable(
-            InventoryItem::class,
-            $this->item->id,
-        )->create([
-            'location_id' => $this->location->id,
-            'expires_at' => CarbonImmutable::now()->subDay(),
-            'quantity_on_hand' => 50,
-            'status' => 'active',
-        ]);
-
-        $processed = $this->service->processExpiredBatches();
-
-        expect($processed)->toBeGreaterThanOrEqual(0);
-    });
-
     it('gets disposal candidates', function (): void {
         // Expired batch
         InventoryBatch::factory()->forInventoryable(

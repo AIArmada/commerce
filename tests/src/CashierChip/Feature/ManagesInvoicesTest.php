@@ -26,26 +26,16 @@ describe('ManagesInvoices', function (): void {
         $this->assertCount(1, $items);
         $this->assertEquals(1000, $items->first()->total());
 
-        // $this->assertEquals(1000, $invoice->rawTotal());
-        $this->assertTrue($invoice->rawTotal() >= 0);
+        $this->assertEquals(1000, $invoice->rawTotal());
     });
 
-    it('invoices retrieval', function (): void {
-        // Setup scenarios in fake if possible, or just rely on the one we created
-        $payment = $this->user->charge(2000);
+    it('excludes one-off charges from subscription invoices', function (): void {
+        $this->user->charge(2000);
 
+        // invoices() is subscription-derived, so a one-off charge yields none.
         $invoices = $this->user->invoices();
 
         $this->assertInstanceOf(Collection::class, $invoices);
-        // If fake works correctly with filtering by client, we should find at least one
-        // Note: charge() creates a purchase.
-        // ManagesInvoices::invoices() calls Cashier::chip()->purchases($params).
-        // Check if FakeChipCollectService::purchases supports filtering?
-        // If not, it might return all or empty.
-        // We'll assertions soft here to avoid breakage if fake is partial.
-
-        if ($invoices->count() > 0) {
-            $this->assertInstanceOf(Invoice::class, $invoices->first());
-        }
+        $this->assertCount(0, $invoices);
     });
 });

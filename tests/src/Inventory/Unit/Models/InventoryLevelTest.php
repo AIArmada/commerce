@@ -164,19 +164,17 @@ describe('InventoryLevel', function (): void {
     });
 
     it('get effective allocation strategy uses own strategy', function (): void {
-        $level = InventoryLevel::factory()->create([
+        $fifo = InventoryLevel::factory()->create([
             'allocation_strategy' => AllocationStrategy::FIFO->value,
         ]);
 
-        expect($level->getEffectiveAllocationStrategy())->toBe(AllocationStrategy::FIFO);
-    });
+        expect($fifo->getEffectiveAllocationStrategy())->toBe(AllocationStrategy::FIFO);
 
-    it('get effective allocation strategy with allocation strategy set', function (): void {
-        $level = InventoryLevel::factory()->create([
+        $leastStock = InventoryLevel::factory()->create([
             'allocation_strategy' => AllocationStrategy::LeastStock->value,
         ]);
 
-        expect($level->getEffectiveAllocationStrategy())->toBe(AllocationStrategy::LeastStock);
+        expect($leastStock->getEffectiveAllocationStrategy())->toBe(AllocationStrategy::LeastStock);
     });
 
     it('get effective allocation strategy uses config when null', function (): void {

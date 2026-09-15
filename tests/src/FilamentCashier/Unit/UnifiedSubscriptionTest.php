@@ -107,7 +107,7 @@ it('returns billing cycle as monthly by default', function (): void {
 
     $cycle = $subscription->billingCycle();
 
-    expect($cycle)->toBeString();
+    expect($cycle)->toBe('Monthly');
 });
 
 it('identifies yearly billing cycle from plan name', function (): void {
@@ -132,7 +132,7 @@ it('identifies yearly billing cycle from plan name', function (): void {
 
     $cycle = $subscription->billingCycle();
 
-    expect($cycle)->toBeString();
+    expect($cycle)->toBe('Yearly');
 });
 
 it('detects subscription needs attention when past due', function (): void {

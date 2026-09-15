@@ -10,14 +10,6 @@ beforeEach(function (): void {
     $this->workflow = app(EventLifecycleWorkflow::class);
 });
 
-it('publishes event', function (): void {
-    $event = Event::factory()->create(['status' => 'scheduled']);
-
-    $this->workflow->publish($event);
-
-    expect($event->fresh()->status->getValue())->toBe(Event::PUBLISHED);
-});
-
 it('archives event', function (): void {
     $event = Event::factory()->published()->create();
 

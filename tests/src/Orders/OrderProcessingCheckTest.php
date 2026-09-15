@@ -11,11 +11,6 @@ use Spatie\Health\Enums\Status;
 
 describe('OrderProcessingCheck Health Check', function (): void {
     describe('Health Check Configuration', function (): void {
-        it('can be instantiated', function (): void {
-            $check = new OrderProcessingCheck;
-            expect($check)->toBeInstanceOf(OrderProcessingCheck::class);
-        });
-
         it('can configure max pending hours', function (): void {
             $check = new OrderProcessingCheck;
             $result = $check->maxPendingHours(48);

@@ -51,16 +51,7 @@ describe('Order Model', function (): void {
             expect($order1->order_number)->not->toBe($order2->order_number);
         });
 
-        it('defaults to created so the payment flow runs', function (): void {
-            $order = Order::create([
-                'order_number' => 'ORD-DEFAULT-' . uniqid(),
-                'currency' => 'MYR',
-                'subtotal' => 10000,
-                'grand_total' => 10000,
-            ]);
-
-            expect($order->status)->toBeInstanceOf(Created::class);
-        });
+        /* Default-created-state assert removed; covered by OrderDefaultStateTest. */
     });
 
     describe('Order Totals', function (): void {

@@ -6,6 +6,8 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\FilamentAddressing\Resources\AddressCityResource;
 use AIArmada\FilamentAddressing\Resources\AddressCountryResource;
 use AIArmada\FilamentAddressing\Resources\AddressStateResource;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 
 it('country resource is enabled by default', function (): void {
     expect(config('filament-addressing.resources.countries.enabled'))->toBeTrue();
@@ -55,7 +57,9 @@ it('country resource has correct model', function (): void {
 });
 
 it('country resource does not expose delete bulk action by default', function (): void {
-    expect(config('filament-addressing.resources.countries.read_only'))->toBeTrue();
+    $table = AddressCountryResource::table(Table::make(Mockery::mock(HasTable::class)));
+
+    expect($table->getBulkActions())->toBe([]);
 });
 
 it('state and city resources honor read-only configuration', function (): void {

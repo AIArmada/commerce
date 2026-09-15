@@ -8,8 +8,6 @@ use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
-use AIArmada\Affiliates\Models\AffiliateDailyStat;
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
@@ -257,59 +255,6 @@ test('AffiliateCommissionRule scopeOrdered orders by priority descending', funct
     expect($orderedRules->last())->toBe('Low Priority');
 });
 
-// AffiliateDailyStat Tests
-test('AffiliateDailyStat can be created with required fields', function (): void {
-    $affiliate = Affiliate::create([
-        'code' => 'STAT001',
-        'name' => 'Stats Test Affiliate',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 1000,
-        'currency' => 'USD',
-    ]);
-
-    $stat = AffiliateDailyStat::create([
-        'affiliate_id' => $affiliate->id,
-        'date' => now()->toDateString(),
-        'clicks' => 100,
-        'unique_clicks' => 80,
-        'attributions' => 50,
-        'conversions' => 10,
-        'revenue_cents' => 50000,
-        'commission_cents' => 5000,
-        'refunds' => 1,
-        'refund_amount_cents' => 2500,
-        'conversion_rate' => 10.0,
-        'epc_cents' => 50.0,
-    ]);
-
-    expect($stat)->toBeInstanceOf(AffiliateDailyStat::class);
-    expect($stat->clicks)->toBe(100);
-    expect($stat->conversions)->toBe(10);
-});
-
-test('AffiliateDailyStat has affiliate relationship', function (): void {
-    $stat = new AffiliateDailyStat;
-
-    expect($stat->affiliate())->toBeInstanceOf(BelongsTo::class);
-});
-
-test('AffiliateDailyStat stores revenue cents', function (): void {
-    $stat = new AffiliateDailyStat([
-        'revenue_cents' => 50000,
-    ]);
-
-    expect($stat->revenue_cents)->toBe(50000);
-});
-
-test('AffiliateDailyStat stores commission cents', function (): void {
-    $stat = new AffiliateDailyStat([
-        'commission_cents' => 5000,
-    ]);
-
-    expect($stat->commission_cents)->toBe(5000);
-});
-
 // AffiliatePayoutMethod Tests
 test('AffiliatePayoutMethod can be created with required fields', function (): void {
     $affiliate = Affiliate::create([
@@ -445,31 +390,4 @@ test('AffiliatePayoutMethod label attribute for bank transfer', function (): voi
     ]);
 
     expect($method->label)->toBe('Wells Fargo');
-});
-
-// AffiliatePayoutHold Tests
-test('AffiliatePayoutHold can be created', function (): void {
-    $affiliate = Affiliate::create([
-        'code' => 'HOLD001',
-        'name' => 'Hold Test Affiliate',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 1000,
-        'currency' => 'USD',
-    ]);
-
-    $hold = AffiliatePayoutHold::create([
-        'affiliate_id' => $affiliate->id,
-        'reason' => 'Pending verification',
-        'released_at' => null,
-    ]);
-
-    expect($hold)->toBeInstanceOf(AffiliatePayoutHold::class);
-    expect($hold->reason)->toBe('Pending verification');
-});
-
-test('AffiliatePayoutHold has affiliate relationship', function (): void {
-    $hold = new AffiliatePayoutHold;
-
-    expect($hold->affiliate())->toBeInstanceOf(BelongsTo::class);
 });

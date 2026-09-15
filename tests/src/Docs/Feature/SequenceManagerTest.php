@@ -150,11 +150,10 @@ test('sequence respects padding configuration', function (): void {
     $manager = app(SequenceManager::class);
 
     $number = $manager->generate('invoice');
-    $parsed = $manager->parse($number);
 
-    // Default padding is 6
-    $numericPart = array_filter(explode('-', $number), 'is_numeric');
-    $numericPart = array_pop($numericPart);
+    // Default padding is 6, so the first number is zero-padded to 000001.
+    $numericParts = array_filter(explode('-', $number), 'is_numeric');
+    $numericPart = array_pop($numericParts);
 
-    expect(mb_strlen($numericPart))->toBeGreaterThanOrEqual(1);
+    expect($numericPart)->toBe('000001');
 });

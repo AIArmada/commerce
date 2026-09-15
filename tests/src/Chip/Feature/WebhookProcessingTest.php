@@ -645,60 +645,6 @@ describe('WebhookMonitor', function (): void {
     });
 
     describe('getHealth', function (): void {
-        it('returns WebhookHealth with correct counts', function (): void {
-            // Skip due to SQLite CASE statement incompatibility in parallel testing
-            // See: https://github.com/laravel/framework/issues/47655
-            // The aggregate query works in MySQL but fails in SQLite.
-            $this->markTestSkipped('SQLite CASE statement incompatibility in parallel testing');
-            Webhook::query()->delete();
-
-            // Create test webhooks with explicit recent timestamps
-            $now = now();
-
-            Webhook::forceCreate([
-                'title' => 'Test Webhook 1',
-                'event_type' => 'purchase.paid',
-                'events' => ['purchase.paid'],
-                'payload' => ['test' => 'data'],
-                'status' => 'processed',
-                'created_at' => $now->copy()->subHours(1),
-                'created_on' => $now->copy()->subHours(1)->timestamp,
-                'updated_on' => $now->copy()->subHours(1)->timestamp,
-                'callback' => 'http://example.com/webhook',
-            ]);
-
-            Webhook::forceCreate([
-                'title' => 'Test Webhook 2',
-                'event_type' => 'purchase.paid',
-                'events' => ['purchase.paid'],
-                'payload' => ['test' => 'data'],
-                'status' => 'processed',
-                'created_at' => $now->copy()->subHours(2),
-                'created_on' => $now->copy()->subHours(2)->timestamp,
-                'updated_on' => $now->copy()->subHours(2)->timestamp,
-                'callback' => 'http://example.com/webhook',
-            ]);
-
-            Webhook::forceCreate([
-                'title' => 'Test Webhook 3',
-                'event_type' => 'purchase.payment_failure',
-                'events' => ['purchase.payment_failure'],
-                'payload' => ['test' => 'data'],
-                'status' => 'failed',
-                'created_at' => $now->copy()->subHours(3),
-                'created_on' => $now->copy()->subHours(3)->timestamp,
-                'updated_on' => $now->copy()->subHours(3)->timestamp,
-                'callback' => 'http://example.com/webhook',
-            ]);
-
-            $health = $this->monitor->getHealth();
-
-            expect($health)->toBeInstanceOf(WebhookHealth::class);
-            expect($health->total)->toBe(3);
-            expect($health->processed)->toBe(2);
-            expect($health->failed)->toBe(1);
-        });
-
         it('filters by since date', function (): void {
             // Old webhook
             Webhook::forceCreate([

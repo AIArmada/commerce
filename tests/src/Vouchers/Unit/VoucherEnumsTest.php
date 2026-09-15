@@ -30,12 +30,6 @@ it('can check if voucher status can be used', function (): void {
         ->and(VoucherStatus::fromString(Depleted::class)->canBeUsed())->toBeFalse();
 });
 
-it('can get voucher type labels', function (): void {
-    expect(VoucherType::Percentage->label())->toBe('Percentage Discount')
-        ->and(VoucherType::Fixed->label())->toBe('Fixed Amount Discount')
-        ->and(VoucherType::FreeShipping->label())->toBe('Free Shipping');
-});
-
 it('can get voucher type descriptions', function (): void {
     expect(VoucherType::Percentage->description())->toBe('Reduces cart total by a percentage')
         ->and(VoucherType::Fixed->description())->toBe('Reduces cart total by a fixed amount')

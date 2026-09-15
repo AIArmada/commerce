@@ -76,17 +76,17 @@ it('executes ship stock action with insufficient stock without throwing', functi
     $callback = $action->getActionFunction();
     expect($callback)->not()->toBeNull();
 
-    $callback($item, [
-        'location_id' => $location->id,
-        'quantity' => 10,
-        'order_number' => 'ORD-1',
-        'customer' => 'Customer',
-        'tracking_number' => 'TRK',
-        'shipped_at' => now(),
-        'notes' => 'ship',
-    ]);
-
-    expect(true)->toBeTrue();
+    expect(function () use ($callback, $item, $location): void {
+        $callback($item, [
+            'location_id' => $location->id,
+            'quantity' => 10,
+            'order_number' => 'ORD-1',
+            'customer' => 'Customer',
+            'tracking_number' => 'TRK',
+            'shipped_at' => now(),
+            'notes' => 'ship',
+        ]);
+    })->not->toThrow(Exception::class);
 });
 
 it('executes transfer stock action and moves stock between locations', function (): void {

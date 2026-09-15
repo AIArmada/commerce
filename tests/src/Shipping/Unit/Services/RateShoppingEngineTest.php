@@ -11,6 +11,8 @@ use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Services\RateShoppingEngine;
 use AIArmada\Shipping\ShippingManager;
+use Illuminate\Cache\TaggableStore;
+use Illuminate\Cache\TaggedCache;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -179,13 +181,15 @@ describe('RateShoppingEngine', function (): void {
         $shippingManager = Mockery::mock(ShippingManager::class);
         $engine = new RateShoppingEngine($shippingManager, ['cache_ttl' => 0]);
 
+        $taggedCache = Mockery::mock(TaggedCache::class);
+        $taggedCache->shouldReceive('flush')->once();
+
         $cacheRepository = Mockery::mock(Repository::class);
-        $cacheRepository->shouldReceive('getStore')->andReturn(new class {});
+        $cacheRepository->shouldReceive('getStore')->andReturn(Mockery::mock(TaggableStore::class));
+        $cacheRepository->shouldReceive('tags')->once()->andReturn($taggedCache);
         Cache::shouldReceive('store')->andReturn($cacheRepository);
 
         $engine->clearCache();
-
-        expect(true)->toBeTrue();
     });
 
     it('returns fallback rate when no carriers available', function (): void {

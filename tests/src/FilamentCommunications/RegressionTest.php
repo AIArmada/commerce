@@ -287,6 +287,10 @@ describe('widget toggle', function (): void {
 });
 
 describe('resource registry sanity', function (): void {
+    test('plugin id matches the package key', function (): void {
+        expect(FilamentCommunicationsPlugin::make()->getId())->toBe('filament-communications');
+    });
+
     test('all seven resources stay registered by default', function (): void {
         $panel = Panel::make();
 

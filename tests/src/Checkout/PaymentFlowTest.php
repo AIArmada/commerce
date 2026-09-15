@@ -39,7 +39,6 @@ use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Data\ReservationOutcome;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -644,7 +643,7 @@ describe('CreateOrderStep', function (): void {
         expect($session->fresh()->completed_at)->not->toBeNull();
     });
 
-    it('does not commit inventory reservations when payment confirmation fails', function (): void {
+    it('fails order creation when payment confirmation fails', function (): void {
         config()->set('checkout.create_order.confirm_payment', true);
 
         $orderService = mock(OrderServiceInterface::class);
@@ -657,10 +656,6 @@ describe('CreateOrderStep', function (): void {
         $orderService->shouldReceive('createOrder')->once()->andReturn($order);
         $orderService->shouldReceive('confirmPayment')->once()->andThrow(new RuntimeException('gateway unavailable'));
         app()->instance(OrderServiceInterface::class, $orderService);
-
-        $inventoryService = mock(CheckoutReservationServiceInterface::class);
-        $inventoryService->shouldReceive('commit')->never();
-        app()->instance(CheckoutReservationServiceInterface::class, $inventoryService);
 
         $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-payment-failed-no-inv',
@@ -686,7 +681,7 @@ describe('CreateOrderStep', function (): void {
         expect($result->isSuccessful())->toBeFalse();
     });
 
-    it('commits inventory reservations when payment confirmation succeeds for paid orders', function (): void {
+    it('creates the order when payment confirmation succeeds for paid orders', function (): void {
         config()->set('checkout.create_order.confirm_payment', true);
 
         $orderService = mock(OrderServiceInterface::class);
@@ -700,9 +695,6 @@ describe('CreateOrderStep', function (): void {
         $orderService->shouldReceive('confirmPayment')->once()->andReturn($order);
 
         app()->instance(OrderServiceInterface::class, $orderService);
-
-        $inventoryService = mock(CheckoutReservationServiceInterface::class);
-        app()->instance(CheckoutReservationServiceInterface::class, $inventoryService);
 
         $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-paid-inventory-order',
@@ -741,7 +733,7 @@ describe('CreateOrderStep', function (): void {
         expect($step->handle($session)->isSuccessful())->toBeTrue();
     });
 
-    it('still commits inventory reservations for paid orders when payment confirmation is disabled', function (): void {
+    it('creates the order for paid orders when payment confirmation is disabled', function (): void {
         config()->set('checkout.create_order.confirm_payment', false);
 
         $orderService = mock(OrderServiceInterface::class);
@@ -786,15 +778,12 @@ describe('CreateOrderStep', function (): void {
         ]);
         $session = $session->transitionStatus(Processing::class);
 
-        $inventoryService = mock(CheckoutReservationServiceInterface::class);
-        app()->instance(CheckoutReservationServiceInterface::class, $inventoryService);
-
         $step = app(CreateOrderStep::class);
 
         expect($step->handle($session)->isSuccessful())->toBeTrue();
     });
 
-    it('still commits inventory reservations for free orders', function (): void {
+    it('creates the order for free orders', function (): void {
         $orderService = mock(OrderServiceInterface::class);
         $order = new Order;
         $order->forceFill([
@@ -833,9 +822,6 @@ describe('CreateOrderStep', function (): void {
             'currency' => 'USD',
         ]);
         $session = $session->transitionStatus(Processing::class);
-
-        $inventoryService = mock(CheckoutReservationServiceInterface::class);
-        app()->instance(CheckoutReservationServiceInterface::class, $inventoryService);
 
         $step = app(CreateOrderStep::class);
 
@@ -925,7 +911,7 @@ describe('CreateOrderStep', function (): void {
         expect($step->handle($session)->isSuccessful())->toBeTrue();
     });
 
-    it('redeems applied vouchers after a successful order', function (): void {
+    it('passes voucher codes and promo code from the cart snapshot into order metadata', function (): void {
         $orderService = mock(OrderServiceInterface::class);
         $order = new Order;
         $order->forceFill([
@@ -935,12 +921,16 @@ describe('CreateOrderStep', function (): void {
 
         /** @var Expectation $createOrderExpectation */
         $createOrderExpectation = $orderService->shouldReceive('createOrder');
-        $createOrderExpectation->once()->andReturn($order);
+        $createOrderExpectation->once()
+            ->withArgs(function (array $orderData, array $items): bool {
+                expect($orderData['metadata']['voucher_codes'] ?? null)->toBe(['WELCOME10']);
+                expect($orderData['metadata']['promo_code'] ?? null)->toBe('SAVE20');
+
+                return true;
+            })
+            ->andReturn($order);
 
         app()->instance(OrderServiceInterface::class, $orderService);
-
-        $voucherService = mock(VoucherServiceInterface::class);
-        app()->instance(VoucherServiceInterface::class, $voucherService);
 
         $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-voucher-order',
@@ -952,14 +942,13 @@ describe('CreateOrderStep', function (): void {
                         'price' => 1000,
                     ],
                 ],
+                'metadata' => [
+                    'voucher_codes' => ['WELCOME10', '  ', ''],
+                    'promo_code' => 'SAVE20',
+                ],
             ],
             'payment_data' => [
                 'type' => 'free_order',
-            ],
-            'discount_data' => [
-                'vouchers' => [
-                    ['code' => 'WELCOME10'],
-                ],
             ],
             'subtotal' => 1000,
             'grand_total' => 1000,

@@ -198,12 +198,6 @@ describe('createShipmentDataFromOrder', function (): void {
 });
 
 describe('isCartPackageInstalled', function (): void {
-    it('returns boolean', function (): void {
-        $result = $this->bridge->isCartPackageInstalled();
-
-        expect($result)->toBeBool();
-    });
-
     it('returns true when cart package is installed', function (): void {
         // Cart package is installed in test environment
         expect($this->bridge->isCartPackageInstalled())->toBeTrue();

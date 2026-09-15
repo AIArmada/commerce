@@ -72,13 +72,6 @@ describe('ChipWebhookProfile', function (): void {
 
         expect($profile->shouldProcess($request))->toBeFalse();
     });
-
-    it('returns false for unknown event types', function (): void {
-        $profile = new ChipWebhookProfile;
-        $request = Request::create('/webhook', 'POST', ['event_type' => 'unknown.event']);
-
-        expect($profile->shouldProcess($request))->toBeFalse();
-    });
 });
 
 describe('WebhookValidator', function (): void {

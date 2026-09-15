@@ -62,13 +62,7 @@ describe('Optimistic Locking', function (): void {
         Cart::clear();
     });
 
-    it('uses version numbers for optimistic locking', function (): void {
-        Cart::add('versioned-item', 'Versioned Item', 100.00, 1);
-
-        // The cart should have version tracking
-        $cartData = Cart::toArray();
-        expect($cartData)->toBeArray();
-    });
+    /* Version tracking covered with real assertions by StorageVersionAndIdTest. */
 
     it('handles optimistic lock conflicts gracefully', function (): void {
         Cart::add('conflict-item', 'Conflict Item', 50.00, 1);

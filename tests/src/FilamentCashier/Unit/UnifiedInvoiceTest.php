@@ -79,7 +79,7 @@ it('returns gateway config', function (): void {
         ->and($config)->toHaveKeys(['label', 'color', 'icon']);
 });
 
-it('can have a pdf url', function (): void {
+it('exposes the pdf url as provided', function (?string $pdfUrl): void {
     $original = new stdClass;
     $original->id = 'inv_123';
 
@@ -94,34 +94,15 @@ it('can have a pdf url', function (): void {
         date: CarbonImmutable::now(),
         dueDate: null,
         paidAt: CarbonImmutable::now(),
-        pdfUrl: 'https://example.com/invoice.pdf',
+        pdfUrl: $pdfUrl,
         original: $original
     );
 
-    expect($invoice->pdfUrl)->toBe('https://example.com/invoice.pdf');
-});
-
-it('can have null pdf url', function (): void {
-    $original = new stdClass;
-    $original->id = 'inv_123';
-
-    $invoice = new UnifiedInvoice(
-        id: 'inv_123',
-        gateway: 'stripe',
-        userId: 'user_456',
-        number: 'INV-0001',
-        amount: 2999,
-        currency: 'USD',
-        status: InvoiceStatus::Paid,
-        date: CarbonImmutable::now(),
-        dueDate: null,
-        paidAt: CarbonImmutable::now(),
-        pdfUrl: null,
-        original: $original
-    );
-
-    expect($invoice->pdfUrl)->toBeNull();
-});
+    expect($invoice->pdfUrl)->toBe($pdfUrl);
+})->with([
+    'set url' => ['https://example.com/invoice.pdf'],
+    'null url' => [null],
+]);
 
 it('can be open without paid date', function (): void {
     $original = new stdClass;

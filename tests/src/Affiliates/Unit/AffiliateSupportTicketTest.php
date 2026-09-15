@@ -19,61 +19,6 @@ describe('AffiliateSupportTicket Model', function (): void {
         ]);
     });
 
-    test('can be created with required fields', function (): void {
-        $ticket = AffiliateSupportTicket::create([
-            'affiliate_id' => $this->affiliate->id,
-            'subject' => 'Need help with tracking',
-            'category' => 'technical',
-            'priority' => 'normal',
-            'status' => 'open',
-        ]);
-
-        expect($ticket)->toBeInstanceOf(AffiliateSupportTicket::class);
-        expect($ticket->subject)->toBe('Need help with tracking');
-        expect($ticket->category)->toBe('technical');
-        expect($ticket->priority)->toBe('normal');
-        expect($ticket->status)->toBe('open');
-    });
-
-    test('belongs to affiliate', function (): void {
-        $ticket = AffiliateSupportTicket::create([
-            'affiliate_id' => $this->affiliate->id,
-            'subject' => 'Question about commissions',
-            'category' => 'billing',
-            'priority' => 'high',
-            'status' => 'open',
-        ]);
-
-        expect($ticket->affiliate)->toBeInstanceOf(Affiliate::class);
-        expect($ticket->affiliate->id)->toBe($this->affiliate->id);
-    });
-
-    test('has many messages', function (): void {
-        $ticket = AffiliateSupportTicket::create([
-            'affiliate_id' => $this->affiliate->id,
-            'subject' => 'Discussion topic',
-            'category' => 'general',
-            'priority' => 'low',
-            'status' => 'open',
-        ]);
-
-        AffiliateSupportMessage::create([
-            'ticket_id' => $ticket->id,
-            'affiliate_id' => $this->affiliate->id,
-            'message' => 'First message',
-            'is_staff_reply' => false,
-        ]);
-
-        AffiliateSupportMessage::create([
-            'ticket_id' => $ticket->id,
-            'staff_id' => 'agent@example.com',
-            'message' => 'Response from support',
-            'is_staff_reply' => true,
-        ]);
-
-        expect($ticket->messages)->toHaveCount(2);
-    });
-
     test('messages are ordered by created_at', function (): void {
         $ticket = AffiliateSupportTicket::create([
             'affiliate_id' => $this->affiliate->id,
@@ -102,48 +47,6 @@ describe('AffiliateSupportTicket Model', function (): void {
         $messages = $ticket->messages;
         expect($messages->first()->id)->toBe($firstMessage->id);
         expect($messages->last()->id)->toBe($secondMessage->id);
-    });
-
-    test('can have various priority levels', function (): void {
-        $lowPriority = AffiliateSupportTicket::create([
-            'affiliate_id' => $this->affiliate->id,
-            'subject' => 'Low priority issue',
-            'category' => 'general',
-            'priority' => 'low',
-            'status' => 'open',
-        ]);
-
-        $urgentPriority = AffiliateSupportTicket::create([
-            'affiliate_id' => $this->affiliate->id,
-            'subject' => 'Urgent issue',
-            'category' => 'billing',
-            'priority' => 'urgent',
-            'status' => 'open',
-        ]);
-
-        expect($lowPriority->priority)->toBe('low');
-        expect($urgentPriority->priority)->toBe('urgent');
-    });
-
-    test('can have various status values', function (): void {
-        $openTicket = AffiliateSupportTicket::create([
-            'affiliate_id' => $this->affiliate->id,
-            'subject' => 'Open ticket',
-            'category' => 'general',
-            'priority' => 'normal',
-            'status' => 'open',
-        ]);
-
-        $closedTicket = AffiliateSupportTicket::create([
-            'affiliate_id' => $this->affiliate->id,
-            'subject' => 'Closed ticket',
-            'category' => 'general',
-            'priority' => 'normal',
-            'status' => 'closed',
-        ]);
-
-        expect($openTicket->status)->toBe('open');
-        expect($closedTicket->status)->toBe('closed');
     });
 
     test('can have different categories', function (): void {

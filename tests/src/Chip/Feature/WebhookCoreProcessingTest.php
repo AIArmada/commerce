@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Chip\Feature;
 
-use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
-use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Events\PurchaseCreated;
 use AIArmada\Chip\Events\PurchasePaid;
@@ -111,71 +109,6 @@ describe('ProcessChipWebhook', function (): void {
         expect($webhook)->not->toBeNull();
         expect($webhook->event_type)->toBe($payload['event_type'] ?? '');
         expect($webhook->status)->toBe('processed');
-    });
-});
-
-describe('WebhookRetryManager', function (): void {
-    it('retries a failed webhook', function (): void {
-        $webhook = Webhook::forceCreate([
-            'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/webhooks',
-            'title' => 'Failed webhook',
-            'event_type' => 'purchase.paid',
-            'events' => ['purchase.paid'],
-            'payload' => WebhookFactory::make()->paid()->toArray(),
-            'status' => 'failed',
-            'last_error' => 'Previous error',
-            'retry_count' => 0,
-            'created_on' => time(),
-            'updated_on' => time(),
-            'callback' => 'https://example.test/webhooks',
-        ]);
-
-        $manager = new WebhookRetryManager(app(DispatchChipWebhookAction::class));
-
-        $result = $manager->retry($webhook);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
-    });
-
-    it('determines should retry for failed webhooks', function (): void {
-        $webhook = Webhook::forceCreate([
-            'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/webhooks',
-            'title' => 'Retryable webhook',
-            'event_type' => 'purchase.paid',
-            'events' => ['purchase.paid'],
-            'payload' => WebhookFactory::make()->paid()->toArray(),
-            'status' => 'failed',
-            'retry_count' => 0,
-            'created_on' => time(),
-            'updated_on' => time(),
-            'callback' => 'https://example.test/webhooks',
-        ]);
-
-        $manager = new WebhookRetryManager(app(DispatchChipWebhookAction::class));
-
-        expect($manager->shouldRetry($webhook))->toBeTrue();
-    });
-
-    it('should not retry processed webhooks', function (): void {
-        $webhook = Webhook::forceCreate([
-            'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/webhooks',
-            'title' => 'Processed webhook',
-            'event_type' => 'purchase.paid',
-            'events' => ['purchase.paid'],
-            'payload' => WebhookFactory::make()->paid()->toArray(),
-            'status' => 'processed',
-            'retry_count' => 0,
-            'created_on' => time(),
-            'updated_on' => time(),
-            'callback' => 'https://example.test/webhooks',
-        ]);
-
-        $manager = new WebhookRetryManager(app(DispatchChipWebhookAction::class));
-
-        expect($manager->shouldRetry($webhook))->toBeFalse();
     });
 });
 

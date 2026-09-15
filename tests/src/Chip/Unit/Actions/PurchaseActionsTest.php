@@ -9,37 +9,15 @@ use AIArmada\Chip\Actions\Purchases\CreatePurchase;
 use AIArmada\Chip\Actions\Purchases\RefundPurchase;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-describe('CreatePurchase action', function (): void {
-    it('exists and uses AsAction trait', function (): void {
-        expect(class_exists(CreatePurchase::class))->toBeTrue();
-        expect(class_uses(CreatePurchase::class))->toContain(AsAction::class);
-    });
-});
-
-describe('CancelPurchase action', function (): void {
-    it('exists and uses AsAction trait', function (): void {
-        expect(class_exists(CancelPurchase::class))->toBeTrue();
-        expect(class_uses(CancelPurchase::class))->toContain(AsAction::class);
-    });
-});
-
-describe('CapturePurchase action', function (): void {
-    it('exists and uses AsAction trait', function (): void {
-        expect(class_exists(CapturePurchase::class))->toBeTrue();
-        expect(class_uses(CapturePurchase::class))->toContain(AsAction::class);
-    });
-});
-
-describe('ChargePurchase action', function (): void {
-    it('exists and uses AsAction trait', function (): void {
-        expect(class_exists(ChargePurchase::class))->toBeTrue();
-        expect(class_uses(ChargePurchase::class))->toContain(AsAction::class);
-    });
-});
-
-describe('RefundPurchase action', function (): void {
-    it('exists and uses AsAction trait', function (): void {
-        expect(class_exists(RefundPurchase::class))->toBeTrue();
-        expect(class_uses(RefundPurchase::class))->toContain(AsAction::class);
-    });
+describe('Purchase actions', function (): void {
+    it('exist and use the AsAction trait', function (string $actionClass): void {
+        expect(class_exists($actionClass))->toBeTrue();
+        expect(class_uses($actionClass))->toContain(AsAction::class);
+    })->with([
+        'create' => [CreatePurchase::class],
+        'cancel' => [CancelPurchase::class],
+        'capture' => [CapturePurchase::class],
+        'charge' => [ChargePurchase::class],
+        'refund' => [RefundPurchase::class],
+    ]);
 });

@@ -85,46 +85,4 @@ it('adds owner-aware customer email indexes to canonical contact methods', funct
     }
 });
 
-it('enforces customer email uniqueness at the database level', function (): void {
-    $tableName = 'verifier_contact_methods_' . Str::lower(Str::random(8));
-
-    Schema::create($tableName, function (Blueprint $table): void {
-        $table->uuid('id')->primary();
-        $table->string('owner_type')->nullable();
-        $table->uuid('owner_id')->nullable();
-        $table->string('contactable_type');
-        $table->uuid('contactable_id')->nullable();
-        $table->string('type');
-        $table->text('value')->nullable();
-        $table->text('normalized_value')->nullable();
-    });
-
-    config()->set('contacting.database.tables.contact_methods', $tableName);
-
-    try {
-        $migration = require dirname(__DIR__, 3) . '/packages/customers/database/migrations/2000_05_01_000007_add_owner_email_uniqueness_to_contact_methods_table.php';
-        $migration->up();
-
-        $customerMorph = (new Customer)->getMorphClass();
-
-        $duplicate = [
-            'owner_type' => 'VerifierOwner',
-            'owner_id' => (string) Str::uuid(),
-            'contactable_type' => $customerMorph,
-            'contactable_id' => (string) Str::uuid(),
-            'type' => 'email',
-            'value' => 'duplicate@example.com',
-            'normalized_value' => null,
-        ];
-
-        DB::table($tableName)->insert(array_merge(['id' => (string) Str::uuid()], $duplicate));
-
-        expect(fn () => DB::table($tableName)->insert(array_merge([
-            'id' => (string) Str::uuid(),
-            'contactable_id' => (string) Str::uuid(),
-        ], $duplicate)))->toThrow(QueryException::class);
-    } finally {
-        Schema::dropIfExists($tableName);
-        config()->set('contacting.database.tables.contact_methods', 'contact_methods');
-    }
-});
+/* Single-owner duplicate-insert subset removed; covered by the owner-aware index test above. */

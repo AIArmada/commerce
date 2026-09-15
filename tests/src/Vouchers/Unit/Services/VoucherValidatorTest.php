@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Services\VoucherValidator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -191,28 +190,7 @@ describe('VoucherValidator', function (): void {
         });
     });
 
-    describe('VoucherValidationResult integration', function (): void {
-        it('invalid result has correct properties', function (): void {
-            $result = VoucherValidationResult::invalid('Test error');
-
-            expect($result->isValid)->toBeFalse()
-                ->and($result->reason)->toBe('Test error');
-        });
-
-        it('invalid result with context', function (): void {
-            $result = VoucherValidationResult::invalid('Test error', ['key' => 'value']);
-
-            expect($result->isValid)->toBeFalse()
-                ->and($result->details)->toBe(['key' => 'value']);
-        });
-
-        it('valid result has correct properties', function (): void {
-            $result = VoucherValidationResult::valid();
-
-            expect($result)->toBeInstanceOf(VoucherValidationResult::class)
-                ->and($result->isValid)->toBeTrue();
-        });
-    });
+    /* VoucherValidationResult factory asserts removed; covered by Data/VoucherValidationResultTest. */
 
     describe('getUser method', function (): void {
         it('returns null when Auth user is null', function (): void {

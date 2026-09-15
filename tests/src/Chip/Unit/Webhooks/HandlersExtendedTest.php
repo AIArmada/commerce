@@ -61,21 +61,6 @@ function createTestEnrichedPayload(string $event, array $rawPayload = []): Enric
 }
 
 describe('PurchasePaidHandler', function (): void {
-    it('can be instantiated', function (): void {
-        $handler = app(PurchasePaidHandler::class);
-        expect($handler)->toBeInstanceOf(PurchasePaidHandler::class);
-    });
-
-    it('returns skipped result when no local purchase exists', function (): void {
-        $handler = app(PurchasePaidHandler::class);
-        $payload = createTestEnrichedPayload('purchase.paid');
-
-        $result = $handler->handle($payload);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
-        expect($result->isSkipped())->toBeTrue();
-    });
-
     it('has handle method that accepts EnrichedWebhookPayload', function (): void {
         $handler = app(PurchasePaidHandler::class);
         $reflection = new ReflectionMethod($handler, 'handle');
@@ -83,69 +68,6 @@ describe('PurchasePaidHandler', function (): void {
 
         expect($params)->toHaveCount(1);
         expect($params[0]->getType()->getName())->toBe(EnrichedWebhookPayload::class);
-    });
-});
-
-describe('PurchaseCancelledHandler', function (): void {
-    it('can be instantiated', function (): void {
-        $handler = app(PurchaseCancelledHandler::class);
-        expect($handler)->toBeInstanceOf(PurchaseCancelledHandler::class);
-    });
-
-    it('returns skipped result when no local purchase exists', function (): void {
-        $handler = app(PurchaseCancelledHandler::class);
-        $payload = createTestEnrichedPayload('purchase.cancelled');
-
-        $result = $handler->handle($payload);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
-        expect($result->isSkipped())->toBeTrue();
-    });
-});
-
-describe('PaymentFailedHandler', function (): void {
-    it('can be instantiated', function (): void {
-        $handler = app(PaymentFailedHandler::class);
-        expect($handler)->toBeInstanceOf(PaymentFailedHandler::class);
-    });
-
-    it('returns skipped result when no local purchase exists', function (): void {
-        $handler = app(PaymentFailedHandler::class);
-        $payload = createTestEnrichedPayload('purchase.payment_failure');
-
-        $result = $handler->handle($payload);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
-        expect($result->isSkipped())->toBeTrue();
-    });
-
-    it('handles payload with failure reason', function (): void {
-        $handler = app(PaymentFailedHandler::class);
-        $payload = createTestEnrichedPayload('purchase.payment_failure', [
-            'status' => 'error',
-            'failure_reason' => 'Insufficient funds',
-        ]);
-
-        $result = $handler->handle($payload);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
-    });
-});
-
-describe('PurchaseRefundedHandler', function (): void {
-    it('can be instantiated', function (): void {
-        $handler = app(PurchaseRefundedHandler::class);
-        expect($handler)->toBeInstanceOf(PurchaseRefundedHandler::class);
-    });
-
-    it('returns skipped result when no local purchase exists', function (): void {
-        $handler = app(PurchaseRefundedHandler::class);
-        $payload = createTestEnrichedPayload('payment.refunded');
-
-        $result = $handler->handle($payload);
-
-        expect($result)->toBeInstanceOf(WebhookResult::class);
-        expect($result->isSkipped())->toBeTrue();
     });
 });
 

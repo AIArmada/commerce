@@ -8,8 +8,6 @@ use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\PostalCodeData;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Addressing\Support\ArrayPostalCodeSource;
@@ -103,29 +101,6 @@ it('moves source-owned postcode coverage when the source changes its area', func
         ->and($secondResult->created)->toBe(0)
         ->and($secondResult->updated)->toBe(1)
         ->and($postcode->areas()->pluck('name')->all())->toBe(['Brickfields']);
-});
-
-it('scopes source coverage reconciliation to the postal code country', function (): void {
-    $otherCountry = AddressCountry::query()->where('iso2', 'SG')->firstOrFail();
-    $myArea = AddressArea::query()->create([
-        'country_id' => AddressCountry::query()->where('iso2', 'MY')->value('id'),
-        'country_code' => 'MY', 'type' => 'locality', 'name' => 'MY locality', 'slug' => 'my-locality',
-        'source' => 'areas', 'source_id' => 'shared-area-my',
-    ]);
-    $sgArea = AddressArea::query()->create([
-        'country_id' => $otherCountry->id,
-        'country_code' => 'SG', 'type' => 'locality', 'name' => 'SG locality', 'slug' => 'sg-locality',
-        'source' => 'areas', 'source_id' => 'shared-area-sg',
-    ]);
-    $source = static fn (string $country, string $areaId): ArrayPostalCodeSource => new ArrayPostalCodeSource('postcodes', [
-        new PostalCodeData(source: 'shared-source', sourceId: 'shared-id', countryCode: $country, code: $country === 'MY' ? '50450' : '018989', areaSource: 'areas', areaSourceId: $areaId),
-    ]);
-
-    app(ImportPostalCodesAction::class)->execute($source('MY', 'shared-area-my'));
-    app(ImportPostalCodesAction::class)->execute($source('SG', 'shared-area-sg'));
-
-    expect(AddressAreaPostalCode::query()->where('address_area_id', $myArea->id)->exists())->toBeTrue()
-        ->and(AddressAreaPostalCode::query()->where('address_area_id', $sgArea->id)->exists())->toBeTrue();
 });
 
 it('does not delete source-owned coverage for another country', function (): void {

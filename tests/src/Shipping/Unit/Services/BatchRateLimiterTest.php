@@ -62,32 +62,13 @@ describe('BatchRateLimiter', function (): void {
         expect($results[2]['success'])->toBeTrue();
     });
 
-    it('can configure max attempts', function (): void {
-        $limiter = BatchRateLimiter::make()->maxAttempts(20);
-
-        expect($limiter)->toBeInstanceOf(BatchRateLimiter::class);
-    });
-
-    it('can configure decay seconds', function (): void {
-        $limiter = BatchRateLimiter::make()->decaySeconds(120);
-
-        expect($limiter)->toBeInstanceOf(BatchRateLimiter::class);
-    });
-
-    it('can configure batch delay', function (): void {
-        $limiter = BatchRateLimiter::make()->batchDelay(500);
-
-        expect($limiter)->toBeInstanceOf(BatchRateLimiter::class);
-    });
-
-    it('can configure batch size', function (): void {
-        $limiter = BatchRateLimiter::make()->batchSize(10);
-
-        expect($limiter)->toBeInstanceOf(BatchRateLimiter::class);
-    });
-
-    it('can configure key prefix', function (): void {
-        $limiter = BatchRateLimiter::make()->keyPrefix('custom:prefix');
+    it('supports chaining all configuration setters', function (): void {
+        $limiter = BatchRateLimiter::make()
+            ->maxAttempts(20)
+            ->decaySeconds(120)
+            ->batchDelay(500)
+            ->batchSize(10)
+            ->keyPrefix('custom:prefix');
 
         expect($limiter)->toBeInstanceOf(BatchRateLimiter::class);
     });

@@ -76,12 +76,6 @@ it('returns shipment unchanged when driver does not support tracking', function 
     expect($result)->toBe($shipment);
 });
 
-it('syncs tracking and updates shipment', function (): void {
-    // This test requires a real database to properly test
-    // because processTrackingEvents calls $shipment->events() which needs
-    // a real HasMany relationship. This should be tested as an integration test.
-})->skip('Requires database for proper Eloquent relationship mocking');
-
 it('syncs batch of shipments', function (): void {
     $shipment1 = Mockery::mock(Shipment::class)->makePartial();
     $shipment1->id = 1;

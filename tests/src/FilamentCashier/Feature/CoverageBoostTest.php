@@ -300,10 +300,8 @@ it('covers the filament-cashier public surface', function (): void {
     expect(MoneyFormatter::formatMinor(12345, 'AUD'))->toBe('A$123.45');
     expect(MoneyFormatter::formatMinor(12345, 'CAD'))->toBe('C$123.45');
     expect(MoneyFormatter::formatMinorWithCode(12345, 'usd'))->toBe('123.45 USD');
-    expect(MoneyFormatter::precisionFor('JPY') === 0)->toBeTrue();
     expect(MoneyFormatter::precisionFor('JPY'))->toBe(0);
     expect(MoneyFormatter::formatMinor(12345, 'JPY'))->toBe('¥12,345');
-    expect(MoneyFormatter::formatMinor(12345, 'USD'))->toBe('$123.45');
 
     $badge = new GatewayBadge('stripe');
     expect($badge->label)->toBe('Stripe');

@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Concerns\SyncsRolePermissions;
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
-use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
 use Filament\Pages\Page;
 use Filament\Widgets\Widget;
@@ -34,10 +32,6 @@ class CustomAuthzWidget extends Widget
 }
 
 describe('HasPageAuthz Trait', function (): void {
-    it('exists', function (): void {
-        expect(trait_exists(HasPageAuthz::class))->toBeTrue();
-    });
-
     it('has canAccess method', function (): void {
         $reflection = new ReflectionClass(HasPageAuthz::class);
 
@@ -56,23 +50,9 @@ describe('HasPageAuthz Trait', function (): void {
 });
 
 describe('HasWidgetAuthz Trait', function (): void {
-    it('exists', function (): void {
-        expect(trait_exists(HasWidgetAuthz::class))->toBeTrue();
-    });
-
     it('uses custom permission override', function (): void {
         expect(CustomAuthzWidget::getAuthzPermission())->toBe('widget.custom-access');
     });
 });
 
-describe('HasPanelAuthz Trait', function (): void {
-    it('exists', function (): void {
-        expect(trait_exists(HasPanelAuthz::class))->toBeTrue();
-    });
-});
-
-describe('SyncsRolePermissions Trait', function (): void {
-    it('exists', function (): void {
-        expect(trait_exists(SyncsRolePermissions::class))->toBeTrue();
-    });
-});
+/* HasPanelAuthz/SyncsRolePermissions existence checks removed; both traits are exercised by RegressionTest + Authz tests. */

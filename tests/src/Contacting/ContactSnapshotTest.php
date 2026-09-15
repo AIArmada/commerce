@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Contacting\Actions\CreateContactSnapshotAction;
 use AIArmada\Contacting\Data\ContactMethodData;
+use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Exceptions\ContactSnapshotsDisabledException;
 use AIArmada\Contacting\Models\ContactSnapshot;
 use AIArmada\Customers\Models\Customer;
-
-test('CreateContactSnapshotAction can be instantiated', function (): void {
-    $action = new CreateContactSnapshotAction;
-    expect($action)->toBeInstanceOf(CreateContactSnapshotAction::class);
-});
 
 test('CreateContactSnapshotAction persists snapshots with the source owner', function (): void {
     $customer = Customer::create([
@@ -49,9 +45,24 @@ test('CreateContactSnapshotAction throws when snapshots are disabled', function 
     expect(ContactSnapshot::query()->count())->toBe(0);
 });
 
-test('snapshot action methods exist', function (): void {
-    $action = new CreateContactSnapshotAction;
-    expect(method_exists($action, 'fromContactMethod'))->toBeTrue();
-    expect(method_exists($action, 'fromSocialProfile'))->toBeTrue();
-    expect(method_exists($action, 'fromBundle'))->toBeTrue();
+test('CreateContactSnapshotAction persists social profile snapshots', function (): void {
+    $customer = Customer::create([
+        'first_name' => 'Snapshot',
+        'last_name' => 'Social',
+        'email' => 'snapshot-social-' . uniqid() . '@example.com',
+        'status' => 'active',
+    ]);
+
+    $profile = $customer->addSocialProfile(new SocialProfileData(
+        platform: 'facebook',
+        handle: 'snapshot-' . uniqid(),
+    ));
+
+    $snapshot = (new CreateContactSnapshotAction)->fromSocialProfile($customer, $profile, 'checkout');
+
+    expect($snapshot->exists)->toBeTrue()
+        ->and($snapshot->snapshot_type)->toBe('social_profile')
+        ->and($snapshot->source_id)->toBe($profile->id)
+        ->and($snapshot->owner_type)->toBe($profile->owner_type)
+        ->and($snapshot->owner_id)->toBe($profile->owner_id);
 });

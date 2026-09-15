@@ -527,32 +527,6 @@ it('returns false when guest cart is empty', function (): void {
     expect($result)->toBeFalse();
 });
 
-it('can get instance name for authenticated user', function (): void {
-    // FIXED: Instance names should not be auto-generated based on user ID
-    // This test should verify that instance names remain as set by developer
-
-    // Set a custom instance name
-    Cart::setInstance('wishlist');
-    $currentInstance = Cart::instance();
-    expect($currentInstance)->toBe('wishlist');
-
-    // Instance names should not change based on authentication
-    // This test validates that principle
-});
-
-it('can get instance name for guest session', function (): void {
-    // FIXED: Instance names should not be auto-generated based on session ID
-    // This test should verify that instance names remain as set by developer
-
-    // Set a custom instance name
-    Cart::setInstance('compare');
-    $currentInstance = Cart::instance();
-    expect($currentInstance)->toBe('compare');
-
-    // Instance names should not change based on session state
-    // This test validates that principle
-});
-
 it('validates merge strategy configuration', function (): void {
     // Test with invalid merge strategy
     config(['cart.migration.merge_strategy' => 'invalid_strategy']);

@@ -337,19 +337,15 @@ describe('Voucher Model', function (): void {
     });
 
     describe('table configuration', function (): void {
-        it('gets table name from config', function (): void {
-            config(['vouchers.database.tables.vouchers' => 'custom_vouchers']);
+        it('gets table name from config', function (string $table): void {
+            config(['vouchers.database.tables.vouchers' => $table]);
 
             $voucher = new Voucher;
-            expect($voucher->getTable())->toBe('custom_vouchers');
-        });
-
-        it('uses config value when set', function (): void {
-            config(['vouchers.database.tables.vouchers' => 'my_vouchers_table']);
-
-            $voucher = new Voucher;
-            expect($voucher->getTable())->toBe('my_vouchers_table');
-        });
+            expect($voucher->getTable())->toBe($table);
+        })->with([
+            'custom' => ['custom_vouchers'],
+            'another custom' => ['my_vouchers_table'],
+        ]);
     });
 
     describe('booted lifecycle', function (): void {

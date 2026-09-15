@@ -28,16 +28,6 @@ describe('ApproveApplication', function (): void {
         Event::assertDispatched(ApplicationApproved::class);
     });
 
-    test('dispatches ApplicationApproved event', function (): void {
-        Event::fake();
-
-        $application = AffiliateOfferApplication::factory()->pending()->create();
-
-        $this->action->execute($application);
-
-        Event::assertDispatched(ApplicationApproved::class);
-    });
-
     test('approves without reviewer', function (): void {
         $application = AffiliateOfferApplication::factory()->pending()->create();
 

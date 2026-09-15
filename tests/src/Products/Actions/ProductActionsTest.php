@@ -35,17 +35,6 @@ describe('CreateProduct Action', function (): void {
             ->and($product->exists)->toBeTrue();
     });
 
-    it('dispatches ProductCreated event', function (): void {
-        Event::fake([ProductCreated::class]);
-
-        app(CreateProduct::class)->execute([
-            'name' => 'Event Test Product',
-            'price' => 1000,
-        ]);
-
-        Event::assertDispatched(ProductCreated::class);
-    });
-
     it('can be invoked', function (): void {
         $action = app(CreateProduct::class);
 

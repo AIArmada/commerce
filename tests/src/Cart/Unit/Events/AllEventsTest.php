@@ -25,10 +25,6 @@ describe('CartCleared Event', function (): void {
         $this->event = new CartCleared($this->cart);
     });
 
-    it('can be instantiated', function (): void {
-        expect($this->event)->toBeInstanceOf(CartCleared::class);
-    });
-
     it('returns correct event type', function (): void {
         expect($this->event->getEventType())->toBe('cart.cleared');
     });
@@ -61,10 +57,6 @@ describe('CartCreated Event', function (): void {
         $storage = new InMemoryStorage;
         $this->cart = new Cart($storage, 'new-user');
         $this->event = new CartCreated($this->cart);
-    });
-
-    it('can be instantiated', function (): void {
-        expect($this->event)->toBeInstanceOf(CartCreated::class);
     });
 
     it('returns correct event type', function (): void {
@@ -102,10 +94,6 @@ describe('CartDestroyed Event', function (): void {
             owner_type: 'App\\Models\\User',
             owner_id: '42',
         );
-    });
-
-    it('can be instantiated', function (): void {
-        expect($this->event)->toBeInstanceOf(CartDestroyed::class);
     });
 
     it('returns correct event type', function (): void {
@@ -146,10 +134,6 @@ describe('ItemAdded Event', function (): void {
         $this->event = new ItemAdded($this->item, $this->cart);
     });
 
-    it('can be instantiated', function (): void {
-        expect($this->event)->toBeInstanceOf(ItemAdded::class);
-    });
-
     it('returns correct event type', function (): void {
         expect($this->event->getEventType())->toBe('cart.item.added');
     });
@@ -178,10 +162,6 @@ describe('ItemRemoved Event', function (): void {
         $this->event = new ItemRemoved($this->item, $this->cart);
     });
 
-    it('can be instantiated', function (): void {
-        expect($this->event)->toBeInstanceOf(ItemRemoved::class);
-    });
-
     it('returns correct event type', function (): void {
         expect($this->event->getEventType())->toBe('cart.item.removed');
     });
@@ -203,10 +183,6 @@ describe('ItemUpdated Event', function (): void {
         $this->item = $this->cart->getItems()->first();
         // ItemUpdated only takes (item, cart) - no old/new quantities in constructor
         $this->event = new ItemUpdated($this->item, $this->cart);
-    });
-
-    it('can be instantiated', function (): void {
-        expect($this->event)->toBeInstanceOf(ItemUpdated::class);
     });
 
     it('returns correct event type', function (): void {
@@ -232,10 +208,6 @@ describe('CartConditionAdded Event', function (): void {
             value: '-10%'
         );
         $this->event = new CartConditionAdded($this->condition, $this->cart);
-    });
-
-    it('can be instantiated', function (): void {
-        expect($this->event)->toBeInstanceOf(CartConditionAdded::class);
     });
 
     it('returns correct event type', function (): void {
@@ -270,10 +242,6 @@ describe('CartConditionRemoved Event', function (): void {
         $this->event = new CartConditionRemoved($this->condition, $this->cart);
     });
 
-    it('can be instantiated', function (): void {
-        expect($this->event)->toBeInstanceOf(CartConditionRemoved::class);
-    });
-
     it('returns correct event type', function (): void {
         expect($this->event->getEventType())->toBe('cart.condition.removed');
     });
@@ -292,10 +260,6 @@ describe('MetadataAdded Event', function (): void {
         $storage = new InMemoryStorage;
         $this->cart = new Cart($storage, 'meta-user');
         $this->event = new MetadataAdded('coupon_code', 'SAVE20', $this->cart);
-    });
-
-    it('can be instantiated', function (): void {
-        expect($this->event)->toBeInstanceOf(MetadataAdded::class);
     });
 
     it('returns correct event type', function (): void {
@@ -325,10 +289,6 @@ describe('MetadataRemoved Event', function (): void {
         $this->event = new MetadataRemoved('coupon_code', $this->cart);
     });
 
-    it('can be instantiated', function (): void {
-        expect($this->event)->toBeInstanceOf(MetadataRemoved::class);
-    });
-
     it('returns correct event type', function (): void {
         expect($this->event->getEventType())->toBe('cart.metadata.removed');
     });
@@ -347,10 +307,6 @@ describe('MetadataCleared Event', function (): void {
         $storage = new InMemoryStorage;
         $this->cart = new Cart($storage, 'meta-clear-user');
         $this->event = new MetadataCleared($this->cart);
-    });
-
-    it('can be instantiated', function (): void {
-        expect($this->event)->toBeInstanceOf(MetadataCleared::class);
     });
 
     it('returns correct event type', function (): void {

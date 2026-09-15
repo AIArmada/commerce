@@ -35,18 +35,6 @@ it('creates a membership application', function (): void {
         ->justification->toBe('I am the rightful owner.');
 });
 
-it('casts status to enum', function (): void {
-    $application = $this->createMembershipApplication([
-        'subject_type' => $this->subject->getMorphClass(),
-        'subject_id' => $this->subject->getKey(),
-        'applicant_id' => $this->applicant->getKey(),
-        'status' => ApplicationStatus::Pending,
-        'justification' => 'Testing enum cast.',
-    ]);
-
-    expect($application->status)->toBeInstanceOf(ApplicationStatus::class);
-});
-
 it('casts meta to array', function (): void {
     $meta = ['evidence' => ['file1.pdf'], 'notes' => 'Additional info'];
     $application = $this->createMembershipApplication([

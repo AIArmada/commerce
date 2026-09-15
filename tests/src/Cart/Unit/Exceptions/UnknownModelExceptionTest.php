@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Exceptions\CartException;
 use AIArmada\Cart\Exceptions\UnknownModelException;
 
 it('can be instantiated with message', function (): void {
@@ -33,32 +34,9 @@ it('can be instantiated with message, code and previous exception', function ():
         ->and($exception->getPrevious())->toBe($previous);
 });
 
-it('extends exception class', function (): void {
-    $exception = new UnknownModelException('Test');
+it('uses the default message and cart exception hierarchy', function (): void {
+    $exception = new UnknownModelException;
 
-    expect($exception)->toBeInstanceOf(Exception::class);
-});
-
-it('can be thrown and caught', function (): void {
-    $message = 'Test exception throwing';
-
-    expect(function () use ($message): void {
-        throw new UnknownModelException($message);
-    })->toThrow(UnknownModelException::class, $message);
-});
-
-it('maintains proper exception hierarchy', function (): void {
-    $exception = new UnknownModelException('Test');
-
-    expect($exception)->toBeInstanceOf(Throwable::class)
-        ->and($exception)->toBeInstanceOf(Exception::class);
-});
-
-it('can include model class information in message', function (): void {
-    $modelClass = 'App\Models\NonExistentModel';
-    $message = "Unknown model class: {$modelClass}";
-
-    $exception = new UnknownModelException($message);
-
-    expect($exception->getMessage())->toContain($modelClass);
+    expect($exception->getMessage())->toBe('Unknown model class')
+        ->and($exception)->toBeInstanceOf(CartException::class);
 });

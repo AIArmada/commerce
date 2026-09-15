@@ -23,16 +23,6 @@ it('AffiliateForm configures schema with components', function (): void {
     expect(true)->toBeTrue();
 });
 
-// AffiliateInfolist Tests
-it('AffiliateInfolist configures schema with components', function (): void {
-    $schema = Mockery::mock(Schema::class);
-    $schema->shouldReceive('components')->once()->andReturnSelf();
-
-    AffiliateInfolist::configure($schema);
-
-    expect(true)->toBeTrue();
-});
-
 // AffiliatesTable Tests
 it('AffiliatesTable configures table with columns and filters', function (): void {
     $table = Mockery::mock(Table::class);
@@ -78,15 +68,6 @@ it('AffiliateConversionInfolist configures schema', function (): void {
 
 it('AffiliateFraudSignalInfolist exists and is callable', function (): void {
     expect(class_exists(AffiliateFraudSignalInfolist::class))->toBeTrue();
-});
-
-it('AffiliateFraudSignalInfolist configures schema', function (): void {
-    $schema = Mockery::mock(Schema::class);
-    $schema->shouldReceive('components')->once()->andReturnSelf();
-
-    AffiliateFraudSignalInfolist::configure($schema);
-
-    expect(true)->toBeTrue();
 });
 
 it('AffiliatePayoutInfolist configures schema', function (): void {

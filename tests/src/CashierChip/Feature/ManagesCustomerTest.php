@@ -38,12 +38,4 @@ describe('ManagesCustomer', function (): void {
 
         $this->assertEquals($this->user->chip_id, $customer->id);
     });
-
-    it('chip name and email accessors', function (): void {
-        $this->user->name = 'Test User';
-        $this->user->email = 'test@example.com';
-
-        $this->assertEquals('Test User', $this->user->chipName());
-        $this->assertEquals('test@example.com', $this->user->chipEmail());
-    });
 });

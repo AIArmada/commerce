@@ -44,12 +44,6 @@ describe('SegmentationService', function (): void {
         );
     });
 
-    describe('Instantiation', function (): void {
-        it('can be instantiated', function (): void {
-            expect($this->service)->toBeInstanceOf(SegmentationService::class);
-        });
-    });
-
     describe('rebuildAllSegments', function (): void {
         it('returns results for automatic segments', function (): void {
             // Create an automatic segment
@@ -100,7 +94,7 @@ describe('SegmentationService', function (): void {
 
             $count = $this->service->rebuildSegment($segment);
 
-            expect($count)->toBeGreaterThanOrEqual(0);
+            expect($count)->toBe(1);
         });
     });
 

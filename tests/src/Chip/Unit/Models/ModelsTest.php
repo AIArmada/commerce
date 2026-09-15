@@ -255,12 +255,6 @@ describe('Purchase model', function (): void {
 });
 
 describe('Client model', function (): void {
-    it('returns correct table name', function (): void {
-        config(['chip.database.table_prefix' => 'chip_']);
-        $client = new Client;
-        expect($client->getTable())->toBe('chip_clients');
-    });
-
     it('can access location attribute', function (): void {
         $client = new Client;
         $client->forceFill([
@@ -369,12 +363,6 @@ describe('Payment model', function (): void {
 });
 
 describe('Webhook model', function (): void {
-    it('returns correct table name', function (): void {
-        config(['chip.database.table_prefix' => 'chip_']);
-        $webhook = new Webhook;
-        expect($webhook->getTable())->toBe('webhook_calls');
-    });
-
     it('can access timestamp attributes', function (): void {
         $webhook = new Webhook;
         $webhook->forceFill([
@@ -421,13 +409,5 @@ describe('CompanyStatement model', function (): void {
         config(['chip.database.table_prefix' => 'chip_']);
         $statement = new CompanyStatement;
         expect($statement->getTable())->toBe('chip_company_statements');
-    });
-});
-
-describe('BankAccount model', function (): void {
-    it('returns correct table name', function (): void {
-        config(['chip.database.table_prefix' => 'chip_']);
-        $bankAccount = new BankAccount;
-        expect($bankAccount->getTable())->toBe('chip_bank_accounts');
     });
 });

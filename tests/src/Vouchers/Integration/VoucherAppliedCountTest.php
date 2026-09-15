@@ -136,6 +136,23 @@ test('getConversionRate returns null when voucher has never been applied', funct
     expect($voucher->getConversionRate())->toBeNull();
 });
 
+test('getConversionRate returns zero when applied but never redeemed', function (): void {
+    $voucher = VoucherModel::create([
+        'name' => 'No Redeem Voucher',
+        'code' => 'NOREDEEM',
+        'type' => VoucherType::Percentage,
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => Active::class,
+    ]);
+
+    $voucher->applied_count = 10;
+    $voucher->save();
+    $voucher->refresh();
+
+    expect($voucher->getConversionRate())->toBe(0.0);
+});
+
 test('getConversionRate calculates correct percentage', function (): void {
     $voucher = VoucherModel::create([
         'name' => 'Conversion Test',

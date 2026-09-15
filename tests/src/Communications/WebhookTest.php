@@ -157,15 +157,13 @@ test('signature middleware aborts on missing signature when secret is set', func
 test('recordWebhookReplay does not throw on NullCommunicationAuditRecorder', function (): void {
     $recorder = new NullCommunicationAuditRecorder;
 
-    $recorder->recordWebhookReplay(
+    expect(fn () => $recorder->recordWebhookReplay(
         communicationId: 'test-comm-id',
         actorType: null,
         actorId: null,
         reason: 'test replay',
         metadata: ['test' => true],
-    );
-
-    expect(true)->toBeTrue();
+    ))->not->toThrow(Exception::class);
 });
 
 test('NullCommunicationAuditRecorder implements CommunicationAuditRecorder', function (): void {

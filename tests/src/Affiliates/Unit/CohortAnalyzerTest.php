@@ -3,16 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Services\CohortAnalyzer;
-use Illuminate\Support\Carbon;
 
 /**
- * CohortAnalyzer Tests
+ * CohortAnalyzer structure tests.
  *
- * NOTE: CohortAnalyzer uses MySQL-specific functions (DATE_FORMAT, JSON_EXTRACT, JSON_UNQUOTE)
- * that are not compatible with SQLite. These tests verify class structure and type signatures
- * but skip actual execution tests.
- *
- * To properly test this service, a MySQL database is required.
+ * Behavioral coverage lives in Services/CohortAnalyzerTest, which runs against SQLite.
  */
 describe('CohortAnalyzer', function (): void {
     test('can be instantiated', function (): void {
@@ -94,26 +89,6 @@ describe('CohortAnalyzer', function (): void {
         expect($reflection->getReturnType()->getName())->toBe('array');
     });
 
-    // Skipped tests that require MySQL
-    test('analyzeMonthly executes with MySQL database', function (): void {
-        // This test requires MySQL - DATE_FORMAT function not available in SQLite
-    })->skip('Requires MySQL database - uses DATE_FORMAT function');
-
-    test('calculateRetentionCurve executes with MySQL database', function (): void {
-        // This test requires MySQL - DATE_FORMAT function not available in SQLite
-    })->skip('Requires MySQL database - uses DATE_FORMAT function');
-
-    test('calculateLtv executes with MySQL database', function (): void {
-        // This test requires MySQL - DATE_FORMAT function not available in SQLite
-    })->skip('Requires MySQL database - uses DATE_FORMAT function');
-
-    test('compareCohorts executes with MySQL database', function (): void {
-        // This test requires MySQL - DATE_FORMAT function not available in SQLite
-    })->skip('Requires MySQL database - uses DATE_FORMAT function');
-
-    test('analyzeBySource executes with MySQL database', function (): void {
-        // This test requires MySQL - uses JSON_EXTRACT and JSON_UNQUOTE functions
-    })->skip('Requires MySQL database - uses JSON_EXTRACT function');
 });
 
 describe('CohortAnalyzer class structure', function (): void {
@@ -135,14 +110,5 @@ describe('CohortAnalyzer class structure', function (): void {
 
         expect($reflection->hasMethod('calculateMonthlyBreakdown'))->toBeTrue();
         expect($reflection->getMethod('calculateMonthlyBreakdown')->isPrivate())->toBeTrue();
-    });
-
-    test('uses Carbon for date handling', function (): void {
-        $reflection = new ReflectionMethod(CohortAnalyzer::class, 'analyzeMonthly');
-        $params = $reflection->getParameters();
-
-        // First parameter should accept Carbon
-        $type = $params[0]->getType();
-        expect($type->allowsNull())->toBeTrue();
     });
 });

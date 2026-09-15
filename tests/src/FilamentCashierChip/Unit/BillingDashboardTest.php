@@ -5,42 +5,14 @@ declare(strict_types=1);
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\BillingDashboard;
 use Filament\Pages\Page;
 
-it('extends filament page', function (): void {
-    expect(is_subclass_of(BillingDashboard::class, Page::class))->toBeTrue();
-});
-
-it('has navigation icon property', function (): void {
+it('has the expected billing dashboard structure', function (): void {
     $reflection = new ReflectionClass(BillingDashboard::class);
 
-    expect($reflection->hasProperty('navigationIcon'))->toBeTrue();
-});
-
-it('has slug property', function (): void {
-    $reflection = new ReflectionClass(BillingDashboard::class);
-
-    expect($reflection->hasProperty('slug'))->toBeTrue();
-});
-
-it('has header widgets method', function (): void {
-    $reflection = new ReflectionClass(BillingDashboard::class);
-
-    expect($reflection->hasMethod('getHeaderWidgets'))->toBeTrue();
-});
-
-it('has footer widgets method', function (): void {
-    $reflection = new ReflectionClass(BillingDashboard::class);
-
-    expect($reflection->hasMethod('getFooterWidgets'))->toBeTrue();
-});
-
-it('has get title method', function (): void {
-    $reflection = new ReflectionClass(BillingDashboard::class);
-
-    expect($reflection->hasMethod('getTitle'))->toBeTrue();
-});
-
-it('has get navigation label method', function (): void {
-    $reflection = new ReflectionClass(BillingDashboard::class);
-
-    expect($reflection->hasMethod('getNavigationLabel'))->toBeTrue();
+    expect(is_subclass_of(BillingDashboard::class, Page::class))->toBeTrue()
+        ->and($reflection->hasProperty('navigationIcon'))->toBeTrue()
+        ->and($reflection->hasProperty('slug'))->toBeTrue()
+        ->and($reflection->hasMethod('getHeaderWidgets'))->toBeTrue()
+        ->and($reflection->hasMethod('getFooterWidgets'))->toBeTrue()
+        ->and($reflection->hasMethod('getTitle'))->toBeTrue()
+        ->and($reflection->hasMethod('getNavigationLabel'))->toBeTrue();
 });

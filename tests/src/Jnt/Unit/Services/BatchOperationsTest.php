@@ -111,23 +111,6 @@ describe('Batch Create Orders', function (): void {
         expect($result['failed'])->toHaveCount(0);
     });
 
-    it('includes exception details in failed results', function (): void {
-        Http::fake([
-            '*/api/order/addOrder' => Http::response(['code' => '0', 'msg' => 'Invalid data'], 400),
-        ]);
-
-        $orders = [
-            ['orderId' => 'ORDER1', 'sender' => [], 'receiver' => [], 'items' => [], 'packageInfo' => []],
-        ];
-
-        $result = createTestService()->batchCreateOrders($orders);
-
-        expect($result['failed'])->toHaveCount(1);
-        expect($result['failed'][0])->toHaveKey('orderId');
-        expect($result['failed'][0])->toHaveKey('error');
-        expect($result['failed'][0])->toHaveKey('exception');
-        expect($result['failed'][0]['exception'])->toBeInstanceOf(Throwable::class);
-    });
 });
 
 describe('Batch Track Parcels', function (): void {

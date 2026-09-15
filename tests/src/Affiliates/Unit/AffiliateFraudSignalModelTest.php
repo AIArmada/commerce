@@ -138,53 +138,6 @@ describe('AffiliateFraudSignal Model', function (): void {
             ->and($confirmedSignals->first()->rule_code)->toBe('confirmed_test');
     });
 
-    it('scopes high severity signals', function (): void {
-        $affiliate = Affiliate::create([
-            'code' => 'FRAUD-HIGH-' . uniqid(),
-            'name' => 'Test Affiliate',
-            'status' => Active::class,
-            'commission_type' => CommissionType::Percentage,
-            'commission_rate' => 1000,
-            'currency' => 'USD',
-        ]);
-
-        AffiliateFraudSignal::create([
-            'affiliate_id' => $affiliate->id,
-            'rule_code' => 'critical_fraud',
-            'risk_points' => 100,
-            'severity' => FraudSeverity::Critical,
-            'description' => 'Critical fraud detected',
-            'status' => FraudSignalStatus::Detected,
-            'detected_at' => now(),
-        ]);
-
-        AffiliateFraudSignal::create([
-            'affiliate_id' => $affiliate->id,
-            'rule_code' => 'high_fraud',
-            'risk_points' => 80,
-            'severity' => FraudSeverity::High,
-            'description' => 'High fraud detected',
-            'status' => FraudSignalStatus::Detected,
-            'detected_at' => now(),
-        ]);
-
-        AffiliateFraudSignal::create([
-            'affiliate_id' => $affiliate->id,
-            'rule_code' => 'low_fraud',
-            'risk_points' => 20,
-            'severity' => FraudSeverity::Low,
-            'description' => 'Low risk',
-            'status' => FraudSignalStatus::Detected,
-            'detected_at' => now(),
-        ]);
-
-        $highSeveritySignals = AffiliateFraudSignal::highSeverity()
-            ->where('affiliate_id', $affiliate->id)
-            ->get();
-
-        expect($highSeveritySignals)->toHaveCount(2);
-    });
-
     it('can mark signal as reviewed', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-REVIEW-' . uniqid(),

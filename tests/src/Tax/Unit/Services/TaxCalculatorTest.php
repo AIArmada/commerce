@@ -384,34 +384,7 @@ describe('TaxCalculator', function (): void {
         $this->assertEquals('Unknown Zone', $result->zoneName);
     });
 
-    it('calculate tax with address priority', function (): void {
-        config(['tax.features.zone_resolution.address_priority' => 'billing']);
-
-        $zone = TaxZone::create([
-            'name' => 'Billing Priority',
-            'code' => 'BILL',
-            'countries' => ['US'],
-            'is_active' => true,
-        ]);
-
-        TaxRate::create([
-            'zone_id' => $zone->id,
-            'name' => 'Billing Rate',
-            'rate' => 700,
-            'tax_class' => 'standard',
-            'is_active' => true,
-        ]);
-
-        $context = [
-            'shipping_address' => ['country' => 'MY'],
-            'billing_address' => ['country' => 'US'],
-        ];
-
-        $result = $this->calculator->calculateTax(10000, 'standard', null, $context);
-
-        // Should use billing address (US) over shipping (MY)
-        $this->assertEquals(700, $result->taxAmount);
-    });
+    /* Address-priority merged into EdgeCases 'billing address priority via config' (both-zones variant). */
 
     it('calculate tax with disabled exemptions', function (): void {
         config(['tax.features.exemptions.enabled' => false]);

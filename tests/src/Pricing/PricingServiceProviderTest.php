@@ -25,17 +25,7 @@ describe('PricingServiceProvider', function (): void {
             expect($provider)->toBeInstanceOf(PricingServiceProvider::class);
         });
 
-        it('has register method', function (): void {
-            $provider = new PricingServiceProvider(app());
-
-            expect(method_exists($provider, 'register'))->toBeTrue();
-        });
-
-        it('has boot method', function (): void {
-            $provider = new PricingServiceProvider(app());
-
-            expect(method_exists($provider, 'boot'))->toBeTrue();
-        });
+        /* register/boot method_exists removed; both run in beforeEach. */
     });
 
     describe('PriceCalculator', function (): void {
@@ -50,15 +40,6 @@ describe('PricingServiceProvider', function (): void {
             expect($calculator)->toBeInstanceOf(PriceCalculator::class);
         });
 
-        it('has calculate method', function (): void {
-            $calculator = new PriceCalculator(
-                new TierResolver,
-                new PromotionalPriceResolver(new ApplyPromotionalAdjustment),
-                new CustomerPriceResolver,
-                new SegmentPriceResolver,
-            );
-
-            expect(method_exists($calculator, 'calculate'))->toBeTrue();
-        });
+        /* calculate method_exists removed; covered by PriceCalculatorTest. */
     });
 });

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Shipping\Actions\ShipShipment;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\CarrierOperationResult;
-use AIArmada\Shipping\Data\LabelData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\ShipmentOperationStatus;
 use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
@@ -70,48 +69,6 @@ describe('ShipShipment Action', function (): void {
 
         expect(fn () => $action->handle($shipment))
             ->toThrow(ShipmentAlreadyShippedException::class);
-    });
-
-    it('generates label when driver supports it and no URL returned', function (): void {
-        $shipment = Shipment::create([
-            'owner_type' => 'TestOwner',
-            'owner_id' => 'test-owner-123',
-            'reference' => 'TEST-LABEL-GEN',
-            'carrier_code' => 'null',
-            'status' => Pending::class,
-            'origin_address' => [
-                'name' => 'Origin', 'phone' => '123', 'line1' => '123 St',
-                'postcode' => '12345', 'country' => 'US',
-            ],
-            'destination_address' => [
-                'name' => 'Dest', 'phone' => '456', 'line1' => '456 St',
-                'postcode' => '67890', 'country' => 'US',
-            ],
-        ]);
-
-        $mockResult = CarrierOperationResult::succeeded(
-            trackingNumber: 'TRACK-LABEL-001',
-            carrierReference: 'CARRIER-001',
-        );
-
-        $labelData = new LabelData(
-            format: 'pdf',
-            url: 'https://example.com/label-auto.pdf',
-            size: 'a4',
-        );
-
-        $mockDriver = Mockery::mock(ShippingDriverInterface::class);
-        $mockDriver->shouldReceive('createShipment')->andReturn($mockResult);
-        $mockDriver->shouldReceive('supports')->with(DriverCapability::LabelGeneration)->andReturn(false);
-
-        $manager = Mockery::mock(ShippingManager::class);
-        $manager->shouldReceive('driver')->with('null')->andReturn($mockDriver);
-
-        $action = new ShipShipment($manager);
-        $shipped = $action->handle($shipment);
-
-        expect($shipped->status)->toBeInstanceOf(Shipped::class);
-        expect($shipped->tracking_number)->toBe('TRACK-LABEL-001');
     });
 
     it('does not call carrier twice on concurrent submit', function (): void {

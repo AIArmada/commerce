@@ -167,23 +167,9 @@ describe('VoucherServiceProvider', function (): void {
 
     describe('event listeners', function (): void {
         it('registers VoucherApplied event listener', function (): void {
-            $listeners = Event::getListeners(VoucherApplied::class);
+            $listeners = Event::getRawListeners()[VoucherApplied::class] ?? [];
 
-            $hasListener = false;
-            foreach ($listeners as $listener) {
-                if (is_string($listener) && str_contains($listener, IncrementVoucherAppliedCount::class)) {
-                    $hasListener = true;
-
-                    break;
-                }
-                if (is_array($listener) && $listener[0] instanceof IncrementVoucherAppliedCount) {
-                    $hasListener = true;
-
-                    break;
-                }
-            }
-
-            expect(count($listeners))->toBeGreaterThanOrEqual(1);
+            expect($listeners)->toContain(IncrementVoucherAppliedCount::class);
         });
 
         it('registers checkout-started validation when checkout is installed', function (): void {

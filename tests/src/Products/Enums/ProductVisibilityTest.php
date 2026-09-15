@@ -25,23 +25,23 @@ describe('ProductVisibility Enum', function (): void {
 
     describe('label()', function (): void {
         it('returns translation key for catalog', function (): void {
-            expect(ProductVisibility::Catalog->label())->not->toBeEmpty();
+            expect(ProductVisibility::Catalog->label())->toBe(__('products::enums.visibility.catalog'));
         });
 
         it('returns translation key for search', function (): void {
-            expect(ProductVisibility::Search->label())->not->toBeEmpty();
+            expect(ProductVisibility::Search->label())->toBe(__('products::enums.visibility.search'));
         });
 
         it('returns translation key for catalog_search', function (): void {
-            expect(ProductVisibility::CatalogSearch->label())->not->toBeEmpty();
+            expect(ProductVisibility::CatalogSearch->label())->toBe(__('products::enums.visibility.catalog_search'));
         });
 
         it('returns translation key for individual', function (): void {
-            expect(ProductVisibility::Individual->label())->not->toBeEmpty();
+            expect(ProductVisibility::Individual->label())->toBe(__('products::enums.visibility.individual'));
         });
 
         it('returns translation key for hidden', function (): void {
-            expect(ProductVisibility::Hidden->label())->not->toBeEmpty();
+            expect(ProductVisibility::Hidden->label())->toBe(__('products::enums.visibility.hidden'));
         });
     });
 

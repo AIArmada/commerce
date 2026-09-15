@@ -213,22 +213,6 @@ it('can set new quantity', function (): void {
         ->and($item->quantity)->toBe(2); // Original item unchanged
 });
 
-it('can add and remove attributes', function (): void {
-    $item = new CartItem(
-        id: 'product-1',
-        name: 'Test Product',
-        price: 9999,
-        quantity: 1
-    );
-
-    $itemWithAttribute = $item->addAttribute('color', 'red');
-    expect($itemWithAttribute->getAttribute('color'))->toBe('red')
-        ->and($itemWithAttribute->hasAttribute('color'))->toBeTrue();
-
-    $itemWithoutAttribute = $itemWithAttribute->removeAttribute('color');
-    expect($itemWithoutAttribute->hasAttribute('color'))->toBeFalse();
-});
-
 it('can add and remove conditions', function (): void {
     $item = new CartItem(
         id: 'product-1',
@@ -795,29 +779,6 @@ describe('CartItem Condition Normalization', function (): void {
         expect($item->getConditions())->toBeInstanceOf(CartConditionCollection::class);
         expect($item->getConditions()->count())->toBe(1);
         expect($item->hasCondition('discount'))->toBeTrue();
-    });
-
-    it('handles CartConditionCollection directly', function (): void {
-        $condition = new CartCondition(
-            name: 'shipping',
-            type: 'shipping',
-            target: 'items@item_discount/per-item',
-            value: 10.0
-        );
-
-        $conditionCollection = new CartConditionCollection;
-        $conditionCollection->put('shipping', $condition);
-
-        $item = new CartItem(
-            id: 'product-1',
-            name: 'Test Product',
-            price: 100.0,
-            quantity: 1,
-            conditions: $conditionCollection
-        );
-
-        expect($item->getConditions())->toBe($conditionCollection);
-        expect($item->getConditions()->count())->toBe(1);
     });
 
     it('handles mixed condition formats', function (): void {

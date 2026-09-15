@@ -2,17 +2,15 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Actions\PublishTemplateAction;
+use AIArmada\Communications\Enums\TemplateStatus;
 use AIArmada\Communications\Events\TemplatePublished;
+use AIArmada\Communications\Models\CommunicationTemplate;
+use AIArmada\Communications\Models\CommunicationTemplateVersion;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
-
-test('PublishTemplateAction exists and can be instantiated', function (): void {
-    $action = app(PublishTemplateAction::class);
-
-    expect($action)->toBeInstanceOf(PublishTemplateAction::class);
-});
 
 test('PublishTemplateAction handle throws for non-existent version', function (): void {
     $action = app(PublishTemplateAction::class);
@@ -39,8 +37,32 @@ test('TemplatePublished event has correct properties', function (): void {
 test('PublishTemplateAction dispatches TemplatePublished event', function (): void {
     Event::fake();
 
-    // We can verify the event class is dispatchable without triggering it
-    expect(class_exists(TemplatePublished::class))->toBeTrue();
+    [$template, $version] = OwnerContext::withOwner(null, function (): array {
+        $template = (new CommunicationTemplate)->forceFill([
+            'key' => 'publish-event',
+            'name' => 'Publish Event',
+            'category' => 'mail',
+            'status' => TemplateStatus::Draft,
+        ]);
+        $template->save();
 
-    Event::assertNothingDispatched();
+        $version = CommunicationTemplateVersion::create([
+            'template_id' => $template->id,
+            'version' => 1,
+            'channel' => 'mail',
+            'locale' => 'en',
+            'subject' => 'Hello',
+            'content_text' => 'Hello {{name}}!',
+            'checksum' => hash('sha256', 'Hello {{name}}!'),
+        ]);
+
+        app(PublishTemplateAction::class)->handle($version->id);
+
+        return [$template, $version];
+    });
+
+    Event::assertDispatched(TemplatePublished::class, fn (TemplatePublished $event): bool => $event->templateId === $template->id
+        && $event->versionId === $version->id
+        && $event->version === 1
+        && $event->channel === 'mail');
 });

@@ -183,55 +183,18 @@ describe('VoucherValidationResult', function (): void {
     });
 
     describe('common validation scenarios', function (): void {
-        it('handles voucher not found', function (): void {
-            $result = VoucherValidationResult::invalid('Voucher not found', [
-                'code' => 'INVALID123',
-            ]);
+        it('handles invalid scenarios with reason and details', function (string $reason, array $details): void {
+            $result = VoucherValidationResult::invalid($reason, $details);
 
             expect($result->failed())->toBeTrue()
-                ->and($result->getDetail('code'))->toBe('INVALID123');
-        });
-
-        it('handles expired voucher', function (): void {
-            $result = VoucherValidationResult::invalid('Voucher has expired', [
-                'expired_at' => '2024-01-01 00:00:00',
-            ]);
-
-            expect($result->failed())->toBeTrue()
-                ->and($result->getDetail('expired_at'))->toBe('2024-01-01 00:00:00');
-        });
-
-        it('handles min cart value not met', function (): void {
-            $result = VoucherValidationResult::invalid('Minimum cart value not met', [
-                'min_required' => 10000,
-                'cart_value' => 5000,
-                'currency' => 'MYR',
-            ]);
-
-            expect($result->failed())->toBeTrue()
-                ->and($result->getDetail('min_required'))->toBe(10000)
-                ->and($result->getDetail('cart_value'))->toBe(5000);
-        });
-
-        it('handles usage limit exceeded', function (): void {
-            $result = VoucherValidationResult::invalid('Usage limit exceeded', [
-                'limit' => 100,
-                'used' => 100,
-            ]);
-
-            expect($result->failed())->toBeTrue()
-                ->and($result->getDetail('limit'))->toBe(100);
-        });
-
-        it('handles user limit exceeded', function (): void {
-            $result = VoucherValidationResult::invalid('User usage limit exceeded', [
-                'user_limit' => 1,
-                'user_uses' => 1,
-                'user_id' => 'user-123',
-            ]);
-
-            expect($result->failed())->toBeTrue()
-                ->and($result->getDetail('user_id'))->toBe('user-123');
-        });
+                ->and($result->getFailureReason())->toBe($reason)
+                ->and($result->details)->toBe($details);
+        })->with([
+            'voucher not found' => ['Voucher not found', ['code' => 'INVALID123']],
+            'expired voucher' => ['Voucher has expired', ['expired_at' => '2024-01-01 00:00:00']],
+            'min cart value not met' => ['Minimum cart value not met', ['min_required' => 10000, 'cart_value' => 5000, 'currency' => 'MYR']],
+            'usage limit exceeded' => ['Usage limit exceeded', ['limit' => 100, 'used' => 100]],
+            'user limit exceeded' => ['User usage limit exceeded', ['user_limit' => 1, 'user_uses' => 1, 'user_id' => 'user-123']],
+        ]);
     });
 });

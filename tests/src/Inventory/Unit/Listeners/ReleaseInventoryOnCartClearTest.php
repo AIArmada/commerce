@@ -77,10 +77,7 @@ describe('ReleaseInventoryOnCartClear', function (): void {
         it('handles event with no cart identifier gracefully', function (): void {
             $event = new class {};
 
-            // Should not throw
-            $this->listener->handleCleared($event);
-
-            expect(true)->toBeTrue();
+            expect(fn () => $this->listener->handleCleared($event))->not->toThrow(Exception::class);
         });
 
         it('extracts cart id from cart with getIdentifier and instance methods', function (): void {

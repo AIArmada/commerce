@@ -140,7 +140,5 @@ it('treats a missing job product as a no-op', function (): void {
         ownerIsGlobal: false,
     );
 
-    $job->handle();
-
-    expect(true)->toBeTrue();
+    expect(fn () => $job->handle())->not->toThrow(Exception::class);
 });

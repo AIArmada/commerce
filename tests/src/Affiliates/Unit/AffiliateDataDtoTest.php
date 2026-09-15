@@ -60,38 +60,6 @@ describe('AffiliateAttributionData', function (): void {
         });
     });
 
-    describe('fromModel', function (): void {
-        test('creates data from attribution model', function (): void {
-            $affiliate = Affiliate::create([
-                'code' => 'MODEL-' . uniqid(),
-                'name' => 'Test Affiliate',
-                'contact_email' => 'test@example.com',
-                'status' => Active::class,
-                'commission_type' => CommissionType::Percentage,
-                'commission_rate' => 1000,
-                'currency' => 'USD',
-            ]);
-
-            $attribution = AffiliateAttribution::create([
-                'affiliate_id' => $affiliate->id,
-                'affiliate_code' => $affiliate->code,
-                'cart_identifier' => 'cart-test',
-                'cart_instance' => 'default',
-                'source' => 'facebook',
-                'medium' => 'social',
-            ]);
-
-            $data = AffiliateAttributionData::fromModel($attribution);
-
-            expect($data)->toBeInstanceOf(AffiliateAttributionData::class);
-            expect($data->id)->toBe($attribution->id);
-            expect($data->affiliateId)->toBe($affiliate->id);
-            expect($data->affiliateCode)->toBe($affiliate->code);
-            expect($data->source)->toBe('facebook');
-            expect($data->medium)->toBe('social');
-        });
-    });
-
     describe('isExpired', function (): void {
         test('returns false when expiresAt is null', function (): void {
             $data = new AffiliateAttributionData(
@@ -288,6 +256,7 @@ describe('AffiliateData', function (): void {
             expect($data->commissionRate)->toBe(500);
             expect($data->currency)->toBe('EUR');
             expect($data->defaultVoucherCode)->toBe('DISCOUNT20');
+            expect($data->metadata)->toBe(['key' => 'value']);
         });
     });
 

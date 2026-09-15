@@ -367,36 +367,7 @@ describe('Segment Model', function (): void {
     });
 
     describe('applyConditions Edge Cases', function (): void {
-        it('skips conditions without field', function (): void {
-            $segment = Segment::create([
-                'name' => 'No Field ' . uniqid(),
-                'slug' => 'no-field-' . uniqid(),
-                'is_automatic' => true,
-                'conditions' => [
-                    ['value' => 100], // No field
-                ],
-            ]);
-
-            $matching = $segment->getMatchingCustomers();
-
-            // Should return all active customers
-            expect($matching)->toBeInstanceOf(Collection::class);
-        });
-
-        it('skips conditions without value', function (): void {
-            $segment = Segment::create([
-                'name' => 'No Value ' . uniqid(),
-                'slug' => 'no-value-' . uniqid(),
-                'is_automatic' => true,
-                'conditions' => [
-                    ['field' => 'accepts_marketing'], // No value
-                ],
-            ]);
-
-            $matching = $segment->getMatchingCustomers();
-
-            expect($matching)->toBeInstanceOf(Collection::class);
-        });
+        /* Type-only skip-condition tests removed; behavior covered by RegressionTest unknown-field test. */
 
         it('handles default field with custom operator', function (): void {
             $segment = Segment::create([

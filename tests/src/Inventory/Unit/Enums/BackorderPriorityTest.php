@@ -4,18 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Inventory\Enums\BackorderPriority;
 
-it('has correct backorder priority values', function (): void {
-    expect(BackorderPriority::Low->value)->toBe('low');
-    expect(BackorderPriority::Normal->value)->toBe('normal');
-    expect(BackorderPriority::High->value)->toBe('high');
-    expect(BackorderPriority::Urgent->value)->toBe('urgent');
-});
-
-it('can get all backorder priority values', function (): void {
-    $cases = BackorderPriority::cases();
-
-    expect($cases)->toHaveCount(4);
-});
+/* Values/count covered by Unit/BackorderPriorityTest. */
 
 it('can create backorder priority from value', function (): void {
     $priority = BackorderPriority::from('urgent');

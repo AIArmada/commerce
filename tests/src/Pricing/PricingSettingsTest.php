@@ -33,13 +33,7 @@ describe('PricingSettings', function (): void {
                 ->and($properties)->toContain('customerGroupPricingEnabled');
         });
 
-        it('has getCurrencySymbol method', function (): void {
-            expect(method_exists(PricingSettings::class, 'getCurrencySymbol'))->toBeTrue();
-        });
-
-        it('has formatAmount method', function (): void {
-            expect(method_exists(PricingSettings::class, 'formatAmount'))->toBeTrue();
-        });
+        /* getCurrencySymbol/formatAmount method_exists removed; implied by reflection siblings. */
     });
 
     describe('getCurrencySymbol static mapping', function (): void {

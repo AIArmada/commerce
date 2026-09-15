@@ -10,25 +10,7 @@ use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 uses(CashierTestCase::class);
 
 describe('CashierServiceProvider - Additional Coverage', function (): void {
-    it('merges config from package', function (): void {
-        $config = config('cashier');
-
-        expect($config)->toBeArray()
-            ->and($config)->toHaveKey('default');
-    });
-
-    it('registers GatewayManager as singleton', function (): void {
-        $manager1 = app(GatewayManager::class);
-        $manager2 = app(GatewayManager::class);
-
-        expect($manager1)->toBe($manager2);
-    });
-
-    it('registers cashier alias', function (): void {
-        $manager = app('cashier');
-
-        expect($manager)->toBeInstanceOf(GatewayManager::class);
-    });
+    /* Config-merge/singleton/alias removed; covered by Feature/ServiceProviderTest. */
 
     it('registers CartIntegrationRegistrar as singleton', function (): void {
         $registrar1 = app(CartIntegrationRegistrar::class);

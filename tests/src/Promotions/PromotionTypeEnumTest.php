@@ -54,6 +54,10 @@ describe('PromotionType Enum', function (): void {
     });
 
     describe('enum values', function (): void {
+        it('has two cases', function (): void {
+            expect(PromotionType::cases())->toHaveCount(2);
+        });
+
         it('has correct string values', function (): void {
             expect(PromotionType::Percentage->value)->toBe('percentage');
             expect(PromotionType::Fixed->value)->toBe('fixed');

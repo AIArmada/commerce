@@ -102,28 +102,4 @@ describe('FefoStrategy', function (): void {
         expect($order)->toHaveCount(2);
         expect($order->first()->id)->toBe($batch2->id); // Expires sooner
     });
-
-    it('context default values', function (): void {
-        $context = new AllocationContext;
-
-        expect($context->locationId)->toBeNull();
-        expect($context->excludeExpiringSoon)->toBeFalse();
-        expect($context->minDaysToExpiry)->toBe(7);
-    });
-
-    it('context can set location', function (): void {
-        $context = new AllocationContext;
-        $context->locationId = 'test-location-id';
-
-        expect($context->locationId)->toBe('test-location-id');
-    });
-
-    it('context can exclude expiring soon', function (): void {
-        $context = new AllocationContext;
-        $context->excludeExpiringSoon = true;
-        $context->minDaysToExpiry = 14;
-
-        expect($context->excludeExpiringSoon)->toBeTrue();
-        expect($context->minDaysToExpiry)->toBe(14);
-    });
 });

@@ -19,7 +19,11 @@ it('transfers multiple passes', function (): void {
         $newHolder,
     );
 
-    expect($results)->toHaveCount(3);
+    // Every input pass maps to exactly one result holder (no drops/dupes).
+    // Per-pass holder-row isolation is pinned by TransferSecurityTest.
+    expect($results)->toHaveCount(3)
+        ->and($results->pluck('pass_id')->sort()->values()->all())
+        ->toBe($passes->pluck('id')->sort()->values()->all());
 });
 
 it('throws exception when exceeding max size', function (): void {

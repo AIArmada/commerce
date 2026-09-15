@@ -21,25 +21,6 @@ describe('StoreWebhookData Listener', function (): void {
     });
 
     describe('configuration checks', function (): void {
-        it('does nothing when store_webhooks config is false', function (): void {
-            Config::set('chip.webhooks.store_webhooks', false);
-
-            $event = WebhookReceived::fromPayload([
-                'id' => 'purchase-test-id-1',
-                'type' => 'purchase',
-                'status' => 'paid',
-                'event_type' => 'purchase.paid',
-                'brand_id' => 'brand-123',
-                'created_on' => time(),
-                'updated_on' => time(),
-            ]);
-
-            // Mock the Purchase model to verify it's NOT called
-            Purchase::shouldReceive('updateOrCreate')->never();
-
-            $this->listener->handle($event);
-        })->skip('Mockery static mocking conflicts with Eloquent');
-
         it('only processes purchase type webhooks', function (): void {
             $initialPurchaseCount = Purchase::count();
 
@@ -261,11 +242,6 @@ describe('StoreWebhookData Listener', function (): void {
     });
 
     describe('listener instantiation', function (): void {
-        it('can be instantiated', function (): void {
-            $listener = new StoreWebhookData;
-            expect($listener)->toBeInstanceOf(StoreWebhookData::class);
-        });
-
         it('has handle method', function (): void {
             expect(method_exists($this->listener, 'handle'))->toBeTrue();
         });

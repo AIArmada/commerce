@@ -31,14 +31,6 @@ describe('CreateOffer', function (): void {
         Event::assertDispatched(OfferCreated::class, fn (OfferCreated $event): bool => $event->offer->id === $offer->id);
     });
 
-    test('dispatches OfferCreated event', function (): void {
-        Event::fake();
-
-        $this->action->execute($this->site, ['name' => 'Event Test']);
-
-        Event::assertDispatched(OfferCreated::class);
-    });
-
     test('creates offer with draft status when approval required', function (): void {
         config(['affiliate-network.offers.require_approval' => true]);
 

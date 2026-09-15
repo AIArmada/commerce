@@ -70,35 +70,4 @@ it('builds a valid order payload', function (): void {
         ->and($payload['codInfo']['codValue'])->toBe('199.90');
 });
 
-it('throws exception when orderId is missing', function (): void {
-    $builder = new OrderBuilder('ITTEST0001', '9C75439FB1FD01EB01861670DD1B949C');
-    $builder->build();
-})->throws(JntException::class, 'orderId is required');
-
-it('throws exception when sender is missing', function (): void {
-    $builder = new OrderBuilder('ITTEST0001', '9C75439FB1FD01EB01861670DD1B949C');
-    $builder->orderId('TEST-123456')->build();
-})->throws(JntException::class, 'Sender address is required');
-
-it('throws exception when items are empty', function (): void {
-    $sender = new AddressData(
-        name: 'John Sender',
-        phone: '60123456789',
-        address: 'No 32, Jalan Kempas 4',
-        postCode: '81930'
-    );
-
-    $receiver = new AddressData(
-        name: 'Jane Receiver',
-        phone: '60987654321',
-        address: '4678, Laluan Sentang 35',
-        postCode: '31000'
-    );
-
-    $builder = new OrderBuilder('ITTEST0001', '9C75439FB1FD01EB01861670DD1B949C');
-    $builder
-        ->orderId('TEST-123456')
-        ->sender($sender)
-        ->receiver($receiver)
-        ->build();
-})->throws(JntException::class, 'At least one item is required');
+/* Validation throws (orderId/sender/items) covered by Builders/OrderBuilderValidationTest. */

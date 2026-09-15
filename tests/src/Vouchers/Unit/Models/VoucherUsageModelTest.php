@@ -210,16 +210,6 @@ describe('VoucherUsage Model', function (): void {
             expect($method->isProtected())->toBeTrue();
         });
 
-        it('returns Attribute instance', function (): void {
-            $usage = new VoucherUsage;
-            $reflection = new ReflectionClass(VoucherUsage::class);
-            $method = $reflection->getMethod('userIdentifier');
-
-            $result = $method->invoke($usage);
-
-            expect($result)->toBeInstanceOf(Attribute::class);
-        });
-
         it('returns N/A when no redeemedBy relation', function (): void {
             $usage = new VoucherUsage;
             $usage->redeemed_by_type = null;
@@ -321,28 +311,16 @@ describe('VoucherUsage Model', function (): void {
     });
 
     describe('getTable method', function (): void {
-        it('returns table name from config', function (): void {
-            config(['vouchers.database.tables.voucher_usage' => 'custom_voucher_usages']);
+        it('returns table name from config', function (string $table): void {
+            config(['vouchers.database.tables.voucher_usage' => $table]);
 
             $usage = new VoucherUsage;
 
-            expect($usage->getTable())->toBe('custom_voucher_usages');
-        });
-
-        it('returns another custom table name', function (): void {
-            config(['vouchers.database.tables.voucher_usage' => 'my_usage_logs']);
-
-            $usage = new VoucherUsage;
-
-            expect($usage->getTable())->toBe('my_usage_logs');
-        });
-
-        it('returns prefixed table name from config', function (): void {
-            config(['vouchers.database.tables.voucher_usage' => 'acme_voucher_usage']);
-
-            $usage = new VoucherUsage;
-
-            expect($usage->getTable())->toBe('acme_voucher_usage');
-        });
+            expect($usage->getTable())->toBe($table);
+        })->with([
+            'custom' => ['custom_voucher_usages'],
+            'another custom' => ['my_usage_logs'],
+            'prefixed' => ['acme_voucher_usage'],
+        ]);
     });
 });

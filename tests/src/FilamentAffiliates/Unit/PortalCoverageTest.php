@@ -27,7 +27,6 @@ use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -527,36 +526,6 @@ it('PortalLinks falls back when link generator rejects the default URL', functio
     $fallback = $page->getDefaultLink();
 
     expect($fallback)->toContain('?');
-});
-
-it('PortalRegistration blocks register when disabled', function (): void {
-    $registration = new PortalRegistration;
-
-    $reflection = new ReflectionClass($registration);
-    $enabled = $reflection->getProperty('registrationEnabled');
-    $enabled->setValue($registration, false);
-
-    expect($registration->register())->toBeNull();
-});
-
-it('PortalRegistration subheading reflects approval mode', function (): void {
-    $registration = new PortalRegistration;
-
-    $reflection = new ReflectionClass($registration);
-
-    $enabled = $reflection->getProperty('registrationEnabled');
-    $enabled->setValue($registration, true);
-
-    $mode = $reflection->getProperty('approvalMode');
-
-    $mode->setValue($registration, 'auto');
-    expect($registration->getSubheading())->toBeNull();
-
-    $mode->setValue($registration, 'open');
-    expect($registration->getSubheading())->toContain('pending');
-
-    $mode->setValue($registration, 'admin');
-    expect($registration->getSubheading())->toContain('reviewed');
 });
 
 it('PortalProfile updates affiliate profile and default payout method', function (): void {

@@ -112,34 +112,14 @@ describe('PriceCalculator Service', function (): void {
     });
 
     describe('calculate method parameters', function (): void {
-        it('accepts quantity parameter', function (): void {
-            $item = new TestPriceableItem('test-qty', 1000);
+        it('accepts quantity and context parameters', function (): void {
+            $item = new TestPriceableItem('test-params', 1000);
 
-            $result = $this->calculator->calculate($item, 10);
-
-            expect($result)->toBeInstanceOf(PriceResultData::class);
-        });
-
-        it('accepts context array parameter', function (): void {
-            $item = new TestPriceableItem('test-ctx', 1000);
-
-            $result = $this->calculator->calculate($item, 1, ['customer_id' => 'test']);
-
-            expect($result)->toBeInstanceOf(PriceResultData::class);
-        });
-
-        it('accepts segment_ids in context', function (): void {
-            $item = new TestPriceableItem('test-seg', 1000);
-
-            $result = $this->calculator->calculate($item, 1, ['segment_ids' => ['vip', 'wholesale']]);
-
-            expect($result)->toBeInstanceOf(PriceResultData::class);
-        });
-
-        it('accepts price_list_id in context', function (): void {
-            $item = new TestPriceableItem('test-pl', 1000);
-
-            $result = $this->calculator->calculate($item, 1, ['price_list_id' => 'some-id']);
+            $result = $this->calculator->calculate($item, 10, [
+                'customer_id' => 'test',
+                'segment_ids' => ['vip', 'wholesale'],
+                'price_list_id' => 'some-id',
+            ]);
 
             expect($result)->toBeInstanceOf(PriceResultData::class);
         });

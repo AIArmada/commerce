@@ -8,12 +8,6 @@ use Illuminate\Contracts\Console\Kernel;
 
 describe('RebuildSegmentsCommand', function (): void {
     describe('Instantiation', function (): void {
-        it('can be instantiated', function (): void {
-            $command = new RebuildSegmentsCommand;
-
-            expect($command)->toBeInstanceOf(RebuildSegmentsCommand::class);
-        });
-
         it('has correct signature', function (): void {
             $command = new RebuildSegmentsCommand;
 

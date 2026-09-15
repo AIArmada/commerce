@@ -183,10 +183,6 @@ it('covers widget query logic with owner scoping', function (): void {
     expect($catB->getKey())->not->toBeNull();
 });
 
-it('products table builds correctly', function (): void {
-    expect(makeProductsTable())->toBeInstanceOf(Table::class);
-});
-
 it('renders product stats in explicit global context when no owner is resolved', function (): void {
     Carbon::setTestNow(Carbon::parse('2025-01-10 10:00:00'));
 

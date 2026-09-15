@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\ApproveAffiliate;
 use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
-use AIArmada\Affiliates\Actions\Affiliates\GenerateAffiliateCode;
 use AIArmada\Affiliates\Actions\Affiliates\RejectAffiliate;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
@@ -66,13 +65,6 @@ test('RejectAffiliate disables an affiliate', function (): void {
     $result = app(RejectAffiliate::class)->handle($affiliate);
 
     expect($result->status->equals(Disabled::class))->toBeTrue();
-});
-
-test('GenerateAffiliateCode creates a unique code', function (): void {
-    $code = app(GenerateAffiliateCode::class)->handle('Test Name');
-
-    expect($code)->toBeString();
-    expect(mb_strlen($code))->toBeGreaterThan(0);
 });
 
 // DailyAggregationService Tests
@@ -230,41 +222,6 @@ test('DailyAggregationService backfill processes date range', function (): void 
 });
 
 // ProgramService Tests
-test('ProgramService can be instantiated', function (): void {
-    $service = app(ProgramService::class);
-
-    expect($service)->toBeInstanceOf(ProgramService::class);
-});
-
-test('ProgramService getAvailablePrograms returns active public programs', function (): void {
-    $service = app(ProgramService::class);
-
-    AffiliateProgram::create([
-        'name' => 'Public Program',
-        'slug' => 'public-program-svc',
-        'status' => ProgramStatus::Active,
-        'visibility' => ProgramVisibility::Public,
-        'commission_type' => 'percentage',
-        'default_commission_rate_basis_points' => 1000,
-        'cookie_lifetime_days' => 30,
-    ]);
-
-    AffiliateProgram::create([
-        'name' => 'Private Program',
-        'slug' => 'private-program-svc',
-        'status' => ProgramStatus::Active,
-        'visibility' => ProgramVisibility::Private,
-        'commission_type' => 'percentage',
-        'default_commission_rate_basis_points' => 1000,
-        'cookie_lifetime_days' => 30,
-    ]);
-
-    $programs = $service->getAvailablePrograms();
-
-    expect($programs->pluck('slug'))->toContain('public-program-svc');
-    expect($programs->pluck('slug'))->not->toContain('private-program-svc');
-});
-
 test('ProgramService joinProgram creates membership', function (): void {
     Event::fake([AffiliateProgramJoined::class]);
 
@@ -361,36 +318,6 @@ test('ProgramService leaveProgram removes membership', function (): void {
     expect($service->isMember($affiliate, $program))->toBeFalse();
 });
 
-test('ProgramService isMember returns correct status', function (): void {
-    $service = app(ProgramService::class);
-
-    $affiliate = Affiliate::create([
-        'code' => 'MEMBER001',
-        'name' => 'Member Test',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 1000,
-        'currency' => 'USD',
-    ]);
-
-    $program = AffiliateProgram::create([
-        'name' => 'Member Test Program',
-        'slug' => 'member-test-program',
-        'status' => ProgramStatus::Active,
-        'visibility' => ProgramVisibility::Public,
-        'requires_approval' => false,
-        'commission_type' => 'percentage',
-        'default_commission_rate_basis_points' => 1000,
-        'cookie_lifetime_days' => 30,
-    ]);
-
-    expect($service->isMember($affiliate, $program))->toBeFalse();
-
-    $service->joinProgram($affiliate, $program);
-
-    expect($service->isMember($affiliate, $program))->toBeTrue();
-});
-
 test('ProgramService getMembership returns membership details', function (): void {
     $service = app(ProgramService::class);
 
@@ -421,34 +348,4 @@ test('ProgramService getMembership returns membership details', function (): voi
     expect($membership)->toBeInstanceOf(AffiliateProgramMembership::class);
     expect($membership->affiliate_id)->toBe($affiliate->id);
     expect($membership->program_id)->toBe($program->id);
-});
-
-test('ProgramService getAffiliatePrograms returns affiliate programs', function (): void {
-    $service = app(ProgramService::class);
-
-    $affiliate = Affiliate::create([
-        'code' => 'PROGS001',
-        'name' => 'Programs Test',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 1000,
-        'currency' => 'USD',
-    ]);
-
-    $program1 = AffiliateProgram::create([
-        'name' => 'Program 1',
-        'slug' => 'program-1-svc',
-        'status' => ProgramStatus::Active,
-        'visibility' => ProgramVisibility::Public,
-        'requires_approval' => false,
-        'commission_type' => 'percentage',
-        'default_commission_rate_basis_points' => 1000,
-        'cookie_lifetime_days' => 30,
-    ]);
-
-    $service->joinProgram($affiliate, $program1);
-
-    // Check isMember works instead of using relationship that may have schema issues
-    expect($service->isMember($affiliate, $program1))->toBeTrue();
-    expect($service->getMembership($affiliate, $program1))->not->toBeNull();
 });

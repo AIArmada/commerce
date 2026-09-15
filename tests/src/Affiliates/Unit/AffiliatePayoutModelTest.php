@@ -11,8 +11,6 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
-use Carbon\Carbon;
-use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
@@ -42,7 +40,8 @@ describe('AffiliatePayout Model', function (): void {
         expect($payout)->toBeInstanceOf(AffiliatePayout::class)
             ->and($payout->status)->toBeInstanceOf(PendingPayout::class)
             ->and($payout->total_minor)->toBe(50000)
-            ->and($payout->conversion_count)->toBe(5);
+            ->and($payout->conversion_count)->toBe(5)
+            ->and($payout->currency)->toBe('USD');
     });
 
     it('has polymorphic payee relationship', function (): void {
@@ -161,38 +160,6 @@ describe('AffiliatePayout Model', function (): void {
 
         expect($payout->metadata)->toBeArray()
             ->and($payout->metadata['key'])->toBe('value');
-    });
-
-    it('casts scheduled_at as datetime', function (): void {
-        $scheduledAt = Carbon::now()->addDay();
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-' . uniqid(),
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-            'status' => PendingPayout::class,
-            'total_minor' => 50000,
-            'conversion_count' => 5,
-            'currency' => 'USD',
-            'scheduled_at' => $scheduledAt,
-        ]);
-
-        expect($payout->scheduled_at)->toBeInstanceOf(CarbonInterface::class);
-    });
-
-    it('casts paid_at as datetime', function (): void {
-        $paidAt = Carbon::now();
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-' . uniqid(),
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-            'status' => CompletedPayout::class,
-            'total_minor' => 50000,
-            'conversion_count' => 5,
-            'currency' => 'USD',
-            'paid_at' => $paidAt,
-        ]);
-
-        expect($payout->paid_at)->toBeInstanceOf(CarbonInterface::class);
     });
 
     it('cascade deletes events on delete', function (): void {

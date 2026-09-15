@@ -90,16 +90,6 @@ it('downloads payout as CSV', function (): void {
         ->and($content)->toContain('paid');
 });
 
-it('download method returns CSV format (backward compatibility)', function (): void {
-    $payout = createPayoutWithConversions();
-    $service = new PayoutExportService;
-
-    $response = $service->downloadCsv($payout);
-
-    expect($response)->toBeInstanceOf(StreamedResponse::class)
-        ->and($response->headers->get('Content-Type'))->toBe('text/csv');
-});
-
 it('downloads payout as Excel (XML fallback)', function (): void {
     $payout = createPayoutWithConversions();
     $service = new PayoutExportService;

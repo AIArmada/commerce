@@ -165,11 +165,6 @@ beforeEach(function (): void {
     });
 });
 
-test('ReconcileCommunicationStatusCommand can be instantiated', function (): void {
-    $command = app(ReconcileCommunicationStatusCommand::class);
-    expect($command)->toBeInstanceOf(ReconcileCommunicationStatusCommand::class);
-});
-
 test('ReconcileCommunicationStatusCommand dry-run shows no communications message', function (): void {
     $exitCode = Artisan::call('communications:reconcile', ['--dry-run' => true]);
     expect($exitCode)->toBe(ReconcileCommunicationStatusCommand::SUCCESS);
@@ -222,11 +217,6 @@ test('ExpireCommunicationsCommand accepts owner flag', function (): void {
         '--owner' => $owner->getMorphClass() . ':' . $owner->getKey(),
     ]);
     expect($exitCode)->toBe(ExpireCommunicationsCommand::SUCCESS);
-});
-
-test('PruneCommunicationDataCommand can be instantiated', function (): void {
-    $command = app(PruneCommunicationDataCommand::class);
-    expect($command)->toBeInstanceOf(PruneCommunicationDataCommand::class);
 });
 
 test('PruneCommunicationDataCommand dry-run returns success', function (): void {

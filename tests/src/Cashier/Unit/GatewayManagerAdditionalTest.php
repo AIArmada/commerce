@@ -21,51 +21,9 @@ describe('GatewayManager - Additional Coverage', function (): void {
         });
     });
 
-    describe('getDefaultDriver', function (): void {
-        it('returns configured default gateway', function (): void {
-            $manager = app(GatewayManager::class);
-
-            expect($manager->getDefaultDriver())->toBe('stripe');
-        });
-    });
-
-    describe('gateway', function (): void {
-        it('returns gateway for null parameter', function (): void {
-            $manager = app(GatewayManager::class);
-            $gateway = $manager->gateway(null);
-
-            expect($gateway)->toBeInstanceOf(GatewayContract::class)
-                ->and($gateway->name())->toBe('stripe');
-        });
-
-        it('returns gateway for explicit name', function (): void {
-            $manager = app(GatewayManager::class);
-            $gateway = $manager->gateway('chip');
-
-            expect($gateway)->toBeInstanceOf(GatewayContract::class)
-                ->and($gateway->name())->toBe('chip');
-        });
-    });
-
-    describe('supportedGateways', function (): void {
-        it('returns array of configured gateway names', function (): void {
-            $manager = app(GatewayManager::class);
-            $gateways = $manager->supportedGateways();
-
-            expect($gateways)->toBeArray()
-                ->and($gateways)->toContain('stripe')
-                ->and($gateways)->toContain('chip');
-        });
-    });
+    /* getDefaultDriver/gateway(list)/supportedGateways/supports-true removed; covered by GatewayManagerTest. */
 
     describe('supportsGateway', function (): void {
-        it('returns true for configured gateways', function (): void {
-            $manager = app(GatewayManager::class);
-
-            expect($manager->supportsGateway('stripe'))->toBeTrue()
-                ->and($manager->supportsGateway('chip'))->toBeTrue();
-        });
-
         it('returns false for unconfigured gateways', function (): void {
             $manager = app(GatewayManager::class);
 
@@ -116,14 +74,7 @@ describe('GatewayManager - Additional Coverage', function (): void {
         });
     });
 
-    describe('custom driver extension', function (): void {
-        it('can be extended via extend method', function (): void {
-            $manager = app(GatewayManager::class);
-
-            // Verify extend method exists
-            expect(method_exists($manager, 'extend'))->toBeTrue();
-        });
-    });
+    /* extend method_exists removed; GatewayManagerTest extends + resolves a custom gateway. */
 
     describe('buildGateway exception', function (): void {
         it('throws GatewayNotFoundException when gateway class does not exist', function (): void {

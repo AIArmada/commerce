@@ -11,68 +11,23 @@ beforeEach(function (): void {
     $this->snapshotsTable = AddressingTableResolver::resolve('snapshots');
 });
 
-it('has latitude on addresses table', function (): void {
-    expect(Schema::hasColumn($this->addressesTable, 'latitude'))->toBeTrue();
-});
+it('has geo and navigation columns on addresses and snapshots tables', function (): void {
+    $columns = [
+        'latitude',
+        'longitude',
+        'formatted_address',
+        'provider',
+        'provider_place_id',
+        'google_maps_url',
+        'waze_url',
+        'navigation_links',
+    ];
 
-it('has longitude on addresses table', function (): void {
-    expect(Schema::hasColumn($this->addressesTable, 'longitude'))->toBeTrue();
-});
-
-it('has formatted_address on addresses table', function (): void {
-    expect(Schema::hasColumn($this->addressesTable, 'formatted_address'))->toBeTrue();
-});
-
-it('has provider on addresses table', function (): void {
-    expect(Schema::hasColumn($this->addressesTable, 'provider'))->toBeTrue();
-});
-
-it('has provider_place_id on addresses table', function (): void {
-    expect(Schema::hasColumn($this->addressesTable, 'provider_place_id'))->toBeTrue();
-});
-
-it('has google_maps_url on addresses table', function (): void {
-    expect(Schema::hasColumn($this->addressesTable, 'google_maps_url'))->toBeTrue();
-});
-
-it('has waze_url on addresses table', function (): void {
-    expect(Schema::hasColumn($this->addressesTable, 'waze_url'))->toBeTrue();
-});
-
-it('has navigation_links on addresses table', function (): void {
-    expect(Schema::hasColumn($this->addressesTable, 'navigation_links'))->toBeTrue();
-});
-
-it('has latitude on address_snapshots table', function (): void {
-    expect(Schema::hasColumn($this->snapshotsTable, 'latitude'))->toBeTrue();
-});
-
-it('has longitude on address_snapshots table', function (): void {
-    expect(Schema::hasColumn($this->snapshotsTable, 'longitude'))->toBeTrue();
-});
-
-it('has formatted_address on address_snapshots table', function (): void {
-    expect(Schema::hasColumn($this->snapshotsTable, 'formatted_address'))->toBeTrue();
-});
-
-it('has provider on address_snapshots table', function (): void {
-    expect(Schema::hasColumn($this->snapshotsTable, 'provider'))->toBeTrue();
-});
-
-it('has provider_place_id on address_snapshots table', function (): void {
-    expect(Schema::hasColumn($this->snapshotsTable, 'provider_place_id'))->toBeTrue();
-});
-
-it('has google_maps_url on address_snapshots table', function (): void {
-    expect(Schema::hasColumn($this->snapshotsTable, 'google_maps_url'))->toBeTrue();
-});
-
-it('has waze_url on address_snapshots table', function (): void {
-    expect(Schema::hasColumn($this->snapshotsTable, 'waze_url'))->toBeTrue();
-});
-
-it('has navigation_links on address_snapshots table', function (): void {
-    expect(Schema::hasColumn($this->snapshotsTable, 'navigation_links'))->toBeTrue();
+    foreach ([$this->addressesTable, $this->snapshotsTable] as $table) {
+        foreach ($columns as $column) {
+            expect(Schema::hasColumn($table, $column))->toBeTrue("{$table} should have {$column}");
+        }
+    }
 });
 
 it('uses configured json column type for navigation_links', function (): void {

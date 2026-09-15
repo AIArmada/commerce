@@ -23,19 +23,19 @@ describe('ProductStatus Enum', function (): void {
 
     describe('label()', function (): void {
         it('returns translation key for draft', function (): void {
-            expect(ProductStatus::Draft->label())->not->toBeEmpty();
+            expect(ProductStatus::Draft->label())->toBe(__('products::enums.status.draft'));
         });
 
         it('returns translation key for active', function (): void {
-            expect(ProductStatus::Active->label())->not->toBeEmpty();
+            expect(ProductStatus::Active->label())->toBe(__('products::enums.status.active'));
         });
 
         it('returns translation key for disabled', function (): void {
-            expect(ProductStatus::Disabled->label())->not->toBeEmpty();
+            expect(ProductStatus::Disabled->label())->toBe(__('products::enums.status.disabled'));
         });
 
         it('returns translation key for archived', function (): void {
-            expect(ProductStatus::Archived->label())->not->toBeEmpty();
+            expect(ProductStatus::Archived->label())->toBe(__('products::enums.status.archived'));
         });
     });
 

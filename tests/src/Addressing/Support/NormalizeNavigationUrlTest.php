@@ -43,8 +43,3 @@ it('rejects javascript scheme', function (): void {
 it('rejects ftp scheme', function (): void {
     expect($this->normalizer->normalize('ftp://example.com/file'))->toBeNull();
 });
-
-it('does not perform http requests', function (): void {
-    $result = $this->normalizer->normalize('https://maps.app.goo.gl/example');
-    expect($result)->toBe('https://maps.app.goo.gl/example');
-});

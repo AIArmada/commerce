@@ -26,9 +26,7 @@ test('doc template resource has correct pages', function (): void {
 });
 
 test('doc template resource has correct relations', function (): void {
-    $relations = DocTemplateResource::getRelations();
-
-    expect($relations)->toBeArray();
+    expect(DocTemplateResource::getRelations())->toBe([]);
 });
 
 test('doc template resource navigation badge color', function (): void {

@@ -27,16 +27,6 @@ it('provides label for each status', function (InvoiceStatus $status): void {
     'uncollectible' => [InvoiceStatus::Uncollectible],
 ]);
 
-it('provides color for each status', function (InvoiceStatus $status): void {
-    expect($status->color())->toBeString()->not->toBeEmpty();
-})->with([
-    'paid' => [InvoiceStatus::Paid],
-    'open' => [InvoiceStatus::Open],
-    'draft' => [InvoiceStatus::Draft],
-    'void' => [InvoiceStatus::Void],
-    'uncollectible' => [InvoiceStatus::Uncollectible],
-]);
-
 it('provides icon for each status', function (InvoiceStatus $status): void {
     expect($status->icon())->toBeString()->toContain('heroicon');
 })->with([

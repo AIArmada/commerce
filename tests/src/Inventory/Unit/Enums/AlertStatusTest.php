@@ -4,21 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Inventory\Enums\AlertStatus;
 
-it('has correct alert status values', function (): void {
-    expect(AlertStatus::None->value)->toBe('none');
-    expect(AlertStatus::LowStock->value)->toBe('low_stock');
-    expect(AlertStatus::OutOfStock->value)->toBe('out_of_stock');
-    expect(AlertStatus::SafetyBreached->value)->toBe('safety_breached');
-    expect(AlertStatus::OverStock->value)->toBe('over_stock');
-    expect(AlertStatus::Expiring->value)->toBe('expiring');
-    expect(AlertStatus::Expired->value)->toBe('expired');
-});
-
-it('can get all alert status values', function (): void {
-    $cases = AlertStatus::cases();
-
-    expect($cases)->toHaveCount(7);
-});
+/* Values/count covered by Unit/AlertStatusTest. */
 
 it('can create alert status from value', function (): void {
     $status = AlertStatus::from('low_stock');
@@ -38,10 +24,4 @@ it('can try from value', function (): void {
     expect($invalid)->toBeNull();
 });
 
-it('can get critical statuses', function (): void {
-    $critical = AlertStatus::criticalStatuses();
-
-    expect($critical)->toContain(AlertStatus::OutOfStock);
-    expect($critical)->toContain(AlertStatus::SafetyBreached);
-    expect($critical)->toContain(AlertStatus::Expired);
-});
+/* criticalStatuses covered by Unit/AlertStatusTest (with count). */

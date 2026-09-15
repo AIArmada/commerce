@@ -60,14 +60,6 @@ describe('ApplyToOffer', function (): void {
         expect($application->reason)->toBe('I have a large audience');
     });
 
-    test('dispatches ApplicationSubmitted event', function (): void {
-        Event::fake();
-
-        $this->action->execute($this->offer, $this->affiliate);
-
-        Event::assertDispatched(ApplicationSubmitted::class);
-    });
-
     test('returns existing application if already exists', function (): void {
         $existing = AffiliateOfferApplication::factory()
             ->forOffer($this->offer)

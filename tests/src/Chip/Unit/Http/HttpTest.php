@@ -11,6 +11,7 @@ use AIArmada\Chip\Services\WebhookService;
 use AIArmada\Chip\Testing\WebhookFactory;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 
@@ -316,6 +317,11 @@ describe('VerifyWebhookSignature middleware', function (): void {
     });
 
     it('logs payload when logging is enabled', function (): void {
+        $logged = [];
+        Event::listen(MessageLogged::class, function (MessageLogged $event) use (&$logged): void {
+            $logged[] = $event;
+        });
+
         $webhookService = Mockery::mock(WebhookService::class);
         $webhookService->shouldReceive('verifySignature')
             ->once()
@@ -335,5 +341,15 @@ describe('VerifyWebhookSignature middleware', function (): void {
         $response = $middleware->handle($request, fn () => response()->json(['ok' => true]));
 
         expect($response->getStatusCode())->toBe(200);
+
+        $payloadLogs = array_values(array_filter(
+            $logged,
+            fn (MessageLogged $log): bool => $log->message === 'CHIP webhook received'
+        ));
+
+        expect($payloadLogs)->not->toBeEmpty();
+        expect($payloadLogs[0]->level)->toBe('info');
+        expect($payloadLogs[0]->context['event_type'] ?? null)->toBe('purchase.paid');
+        expect($payloadLogs[0]->context['id'] ?? null)->toBe('purch_123');
     });
 });

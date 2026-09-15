@@ -235,10 +235,31 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'current_uses' => 0,
         ]);
 
+        AffiliateCommissionPromotion::create([
+            'name' => 'Future Scoped',
+            'bonus_type' => 'percentage',
+            'bonus_value' => 300,
+            'starts_at' => now()->addDay(),
+            'ends_at' => now()->addWeek(),
+            'current_uses' => 0,
+        ]);
+
+        AffiliateCommissionPromotion::create([
+            'name' => 'Maxed Out Scoped',
+            'bonus_type' => 'percentage',
+            'bonus_value' => 300,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+            'max_uses' => 10,
+            'current_uses' => 10,
+        ]);
+
         $active = AffiliateCommissionPromotion::active()->get();
 
         expect($active->pluck('name')->contains('Active Scoped'))->toBeTrue()
-            ->and($active->pluck('name')->contains('Expired Scoped'))->toBeFalse();
+            ->and($active->pluck('name')->contains('Expired Scoped'))->toBeFalse()
+            ->and($active->pluck('name')->contains('Future Scoped'))->toBeFalse()
+            ->and($active->pluck('name')->contains('Maxed Out Scoped'))->toBeFalse();
     });
 
     it('uses correct table name from config', function (): void {

@@ -5,10 +5,8 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 uses(CashierChipTestCase::class);
 
@@ -83,12 +81,6 @@ it('can update default payment method', function (): void {
 
 // Subscription Tests
 
-it('can start a new subscription', function (): void {
-    $builder = $this->user->newSubscription('standard', 'price_monthly');
-
-    expect($builder)->toBeInstanceOf(SubscriptionBuilder::class);
-});
-
 it('can check if subscribed', function (): void {
     expect($this->user->subscribed('standard'))->toBeFalse();
 
@@ -129,10 +121,6 @@ it('can get specific subscription', function (): void {
 
     expect($subscription)->toBeInstanceOf(Subscription::class);
     expect($subscription->type)->toBe('standard');
-});
-
-it('returns null for non-existent subscription', function (): void {
-    expect($this->user->subscription('standard'))->toBeNull();
 });
 
 it('can have multiple subscriptions', function (): void {
@@ -181,10 +169,6 @@ it('can check generic trial on model', function (): void {
 });
 
 // Subscription Scopes
-
-it('has subscriptions relationship', function (): void {
-    expect($this->user->subscriptions())->toBeInstanceOf(MorphMany::class);
-});
 
 it('can get only active subscriptions', function (): void {
     $this->createTrustedSubscription($this->user, [

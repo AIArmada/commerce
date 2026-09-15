@@ -20,11 +20,6 @@ describe('CartStatsWidget', function (): void {
         Cache::flush();
     });
 
-    it('can be instantiated', function (): void {
-        $widget = new CartStatsWidget;
-        expect($widget)->toBeInstanceOf(CartStatsWidget::class);
-    });
-
     it('returns 4 columns', function (): void {
         $widget = new CartStatsWidget;
         $reflection = new ReflectionClass($widget);

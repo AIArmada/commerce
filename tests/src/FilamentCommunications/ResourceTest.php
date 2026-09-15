@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Filament\Communications\FilamentCommunicationsPlugin;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Filament\Communications\Resources\CommunicationBatchResource;
 use AIArmada\Filament\Communications\Resources\CommunicationDeliveryResource;
 use AIArmada\Filament\Communications\Resources\CommunicationPreferenceResource;
@@ -10,9 +10,9 @@ use AIArmada\Filament\Communications\Resources\CommunicationResource;
 use AIArmada\Filament\Communications\Resources\CommunicationSuppressionResource;
 use AIArmada\Filament\Communications\Resources\CommunicationTemplateResource;
 use AIArmada\Filament\Communications\Resources\CommunicationThreadResource;
-use AIArmada\Filament\Communications\Widgets\DeliveryStatusOverviewWidget;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 $resources = [
     CommunicationResource::class,
@@ -42,16 +42,14 @@ describe('navigation configuration', function () use ($resources): void {
         expect($sort)->toBe(80);
     })->with($resources);
 
-    test('getNavigationGroup is not null for all resources', function (string $resourceClass): void {
-        $group = $resourceClass::getNavigationGroup();
-        /** @phpstan-ignore argument.templateType */
-        expect($group)->not->toBeNull();
-    })->with($resources);
 });
 
 describe('resource methods', function () use ($resources): void {
-    test('getEloquentQuery method exists on all resources', function (string $resourceClass): void {
-        expect(method_exists($resourceClass, 'getEloquentQuery'))->toBeTrue();
+    test('getEloquentQuery returns a builder for all resources', function (string $resourceClass): void {
+        $query = OwnerContext::withOwner(null, fn () => $resourceClass::getEloquentQuery());
+
+        /** @phpstan-ignore argument.templateType */
+        expect($query)->toBeInstanceOf(EloquentBuilder::class);
     })->with($resources);
 
     test('getPages returns array with index and view for all resources', function (string $resourceClass): void {
@@ -77,20 +75,6 @@ test('no resource declares static $navigationGroup', function () use ($resources
             }
         }
     }
-});
-
-test('FilamentCommunicationsPlugin can be instantiated', function (): void {
-    $plugin = FilamentCommunicationsPlugin::make();
-
-    expect($plugin)->toBeInstanceOf(FilamentCommunicationsPlugin::class);
-    expect($plugin->getId())->toBe('filament-communications');
-});
-
-test('DeliveryStatusOverviewWidget can be instantiated', function (): void {
-    $widget = app(DeliveryStatusOverviewWidget::class);
-
-    expect($widget)->toBeInstanceOf(DeliveryStatusOverviewWidget::class);
-    expect(method_exists($widget, 'getStats'))->toBeTrue();
 });
 
 test('delivery resource exposes a retry action', function (): void {

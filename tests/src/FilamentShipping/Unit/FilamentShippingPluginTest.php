@@ -32,75 +32,16 @@ it('returns correct plugin id', function (): void {
     expect($plugin->getId())->toBe('filament-shipping');
 });
 
-it('can disable shipment resource', function (): void {
-    $plugin = FilamentShippingPlugin::make()
-        ->shipmentResource(false);
-
-    expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
-});
-
-it('can disable shipping zone resource', function (): void {
-    $plugin = FilamentShippingPlugin::make()
-        ->shippingZoneResource(false);
-
-    expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
-});
-
-it('can disable shipping rate resource', function (): void {
-    $plugin = FilamentShippingPlugin::make()
-        ->shippingRateResource(false);
-
-    expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
-});
-
-it('can disable return authorization resource', function (): void {
-    $plugin = FilamentShippingPlugin::make()
-        ->returnAuthorizationResource(false);
-
-    expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
-});
-
-it('can disable dashboard widgets', function (): void {
-    $plugin = FilamentShippingPlugin::make()
-        ->dashboardWidgets(false);
-
-    expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
-});
-
-it('can disable shipping dashboard page', function (): void {
-    $plugin = FilamentShippingPlugin::make()
-        ->shippingDashboard(false);
-
-    expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
-});
-
-it('can disable manifest page', function (): void {
-    $plugin = FilamentShippingPlugin::make()
-        ->manifestPage(false);
-
-    expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
-});
-
-it('supports method chaining for configuration', function (): void {
-    $plugin = FilamentShippingPlugin::make()
-        ->shipmentResource(true)
-        ->shippingZoneResource(true)
-        ->returnAuthorizationResource(true)
-        ->dashboardWidgets(true)
-        ->shippingDashboard(true)
-        ->manifestPage(true);
-
-    expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
-});
-
-it('can disable all features', function (): void {
+it('supports method chaining for all feature toggles', function (): void {
     $plugin = FilamentShippingPlugin::make()
         ->shipmentResource(false)
         ->shippingZoneResource(false)
+        ->shippingRateResource(false)
         ->returnAuthorizationResource(false)
         ->dashboardWidgets(false)
         ->shippingDashboard(false)
-        ->manifestPage(false);
+        ->manifestPage(false)
+        ->fulfillmentQueue(false);
 
     expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
 });

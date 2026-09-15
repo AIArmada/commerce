@@ -360,12 +360,6 @@ describe('AbstractGateway Protected Methods', function (): void {
             expect($gateway->isTestMode())->toBeFalse();
         });
 
-        it('returns false by default', function (): void {
-            $gateway = new TestableGateway([]);
-
-            expect($gateway->isTestMode())->toBeFalse();
-        });
-
         it('converts truthy values to boolean', function (): void {
             $gateway1 = new TestableGateway(['test_mode' => 1]);
             $gateway2 = new TestableGateway(['test_mode' => 'yes']);

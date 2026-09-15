@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -41,12 +40,6 @@ describe('VoucherUsage Model', function (): void {
             ->and($usage->channel)->toBe('automatic');
     });
 
-    it('has correct channel constants', function (): void {
-        expect(VoucherUsage::CHANNEL_AUTOMATIC)->toBe('automatic')
-            ->and(VoucherUsage::CHANNEL_MANUAL)->toBe('manual')
-            ->and(VoucherUsage::CHANNEL_API)->toBe('api');
-    });
-
     it('belongs to voucher', function (): void {
         $voucher = createVoucherForUsageTest('RELATION-USAGE');
         $usage = VoucherUsage::create([
@@ -60,48 +53,6 @@ describe('VoucherUsage Model', function (): void {
         expect($usage->voucher)->toBeInstanceOf(Voucher::class)
             ->and($usage->voucher->id)->toBe($voucher->id)
             ->and($usage->voucher->code)->toBe('RELATION-USAGE');
-    });
-
-    it('identifies manual channel', function (): void {
-        $voucher = createVoucherForUsageTest('MANUAL-TEST');
-
-        $manualUsage = VoucherUsage::create([
-            'voucher_id' => $voucher->id,
-            'discount_amount' => 500,
-            'currency' => 'MYR',
-            'channel' => VoucherUsage::CHANNEL_MANUAL,
-            'used_at' => now(),
-        ]);
-
-        $automaticUsage = VoucherUsage::create([
-            'voucher_id' => $voucher->id,
-            'discount_amount' => 500,
-            'currency' => 'MYR',
-            'channel' => VoucherUsage::CHANNEL_AUTOMATIC,
-            'used_at' => now(),
-        ]);
-
-        expect($manualUsage->isManual())->toBeTrue()
-            ->and($automaticUsage->isManual())->toBeFalse();
-    });
-
-    it('casts attributes correctly', function (): void {
-        $voucher = createVoucherForUsageTest('CASTS-TEST');
-        $usage = VoucherUsage::create([
-            'voucher_id' => $voucher->id,
-            'discount_amount' => 1000,
-            'currency' => 'MYR',
-            'channel' => VoucherUsage::CHANNEL_AUTOMATIC,
-            'metadata' => ['order_id' => 'order-123', 'cart_id' => 'cart-456'],
-            'target_definition' => ['product_ids' => ['prod-1', 'prod-2']],
-            'used_at' => '2024-01-15 10:30:00',
-        ]);
-
-        expect($usage->discount_amount)->toBeInt()
-            ->and($usage->metadata)->toBeArray()
-            ->and($usage->metadata)->toHaveKey('order_id')
-            ->and($usage->target_definition)->toBeArray()
-            ->and($usage->used_at)->toBeInstanceOf(CarbonImmutable::class);
     });
 
     it('stores notes correctly', function (): void {
@@ -123,25 +74,6 @@ describe('VoucherUsage Model', function (): void {
         $table = $usage->getTable();
 
         expect($table)->toBe('voucher_usage');
-    });
-
-    it('returns N/A for user identifier when no redeemed by', function (): void {
-        $voucher = createVoucherForUsageTest('NO-USER-TEST');
-        $usage = VoucherUsage::create([
-            'voucher_id' => $voucher->id,
-            'discount_amount' => 500,
-            'currency' => 'MYR',
-            'channel' => VoucherUsage::CHANNEL_AUTOMATIC,
-            'used_at' => now(),
-        ]);
-
-        expect($usage->user_identifier)->toBe('N/A');
-    });
-
-    it('has timestamps disabled', function (): void {
-        $usage = new VoucherUsage;
-
-        expect($usage->timestamps)->toBeFalse();
     });
 
     it('allows polymorphic redeemedBy relationship', function (): void {

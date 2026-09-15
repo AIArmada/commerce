@@ -69,41 +69,7 @@ describe('Voucher Model Scopes', function (): void {
 });
 
 describe('Voucher Model Methods', function (): void {
-    it('checks if voucher is active', function (): void {
-        $active = createVoucherForScopesTest(['status' => Active::class]);
-        $paused = createVoucherForScopesTest(['status' => Paused::class]);
-
-        expect($active->isActive())->toBeTrue()
-            ->and($paused->isActive())->toBeFalse();
-    });
-
-    it('checks if voucher has started', function (): void {
-        $started = createVoucherForScopesTest(['starts_at' => Carbon::now()->subHour()]);
-        $notStarted = createVoucherForScopesTest(['starts_at' => Carbon::now()->addHour()]);
-        $noStartDate = createVoucherForScopesTest(['starts_at' => null]);
-
-        expect($started->hasStarted())->toBeTrue()
-            ->and($notStarted->hasStarted())->toBeFalse()
-            ->and($noStartDate->hasStarted())->toBeTrue();
-    });
-
-    it('checks if voucher is expired', function (): void {
-        $expired = createVoucherForScopesTest(['expires_at' => Carbon::now()->subHour()]);
-        $notExpired = createVoucherForScopesTest(['expires_at' => Carbon::now()->addHour()]);
-        $noExpireDate = createVoucherForScopesTest(['expires_at' => null]);
-
-        expect($expired->isExpired())->toBeTrue()
-            ->and($notExpired->isExpired())->toBeFalse()
-            ->and($noExpireDate->isExpired())->toBeFalse();
-    });
-
-    it('checks usage limit remaining', function (): void {
-        $unlimited = createVoucherForScopesTest(['usage_limit' => null]);
-        $limited = createVoucherForScopesTest(['usage_limit' => 5]);
-
-        expect($unlimited->hasUsageLimitRemaining())->toBeTrue()
-            ->and($limited->hasUsageLimitRemaining())->toBeTrue();
-    });
+    /* isActive/hasStarted/isExpired/hasUsageLimitRemaining removed; fuller matrices in Models/VoucherModelTest. */
 
     it('transitions to depleted through the state machine after usage reaches the limit', function (): void {
         $voucher = createVoucherForScopesTest(['usage_limit' => 1]);
@@ -214,85 +180,7 @@ describe('Voucher Model Methods', function (): void {
             ->and($limited->usageProgress)->toBe(30.0);
     });
 
-    it('calculates conversion rate', function (): void {
-        $voucher = createVoucherForScopesTest(['applied_count' => 10]);
-
-        // No usages yet
-        expect($voucher->getConversionRate())->toBe(0.0);
-
-        // Add some usages
-        VoucherUsage::create([
-            'voucher_id' => $voucher->id,
-            'discount_amount' => 100,
-            'currency' => 'MYR',
-            'channel' => 'web',
-            'used_at' => now(),
-        ]);
-        VoucherUsage::create([
-            'voucher_id' => $voucher->id,
-            'discount_amount' => 100,
-            'currency' => 'MYR',
-            'channel' => 'web',
-            'used_at' => now(),
-        ]);
-
-        $voucher->refresh();
-
-        expect($voucher->getConversionRate())->toBe(20.0);
-    });
-
-    it('returns null conversion rate when never applied', function (): void {
-        $voucher = createVoucherForScopesTest(['applied_count' => 0]);
-
-        expect($voucher->getConversionRate())->toBeNull();
-    });
-
-    it('calculates abandoned count', function (): void {
-        $voucher = createVoucherForScopesTest(['applied_count' => 10]);
-
-        // Add 3 usages (7 abandoned)
-        for ($i = 0; $i < 3; $i++) {
-            VoucherUsage::create([
-                'voucher_id' => $voucher->id,
-                'discount_amount' => 100,
-                'currency' => 'MYR',
-                'channel' => 'web',
-                'used_at' => now(),
-            ]);
-        }
-
-        $voucher->refresh();
-
-        expect($voucher->getAbandonedCount())->toBe(7);
-    });
-
-    it('returns comprehensive statistics', function (): void {
-        $voucher = createVoucherForScopesTest([
-            'applied_count' => 20,
-            'usage_limit' => 50,
-        ]);
-
-        // Add 10 usages
-        for ($i = 0; $i < 10; $i++) {
-            VoucherUsage::create([
-                'voucher_id' => $voucher->id,
-                'discount_amount' => 100,
-                'currency' => 'MYR',
-                'channel' => 'web',
-                'used_at' => now(),
-            ]);
-        }
-
-        $voucher->refresh();
-        $stats = $voucher->getStatistics();
-
-        expect($stats)->toBeArray()
-            ->and($stats['applied_count'])->toBe(20)
-            ->and($stats['redeemed_count'])->toBe(10)
-            ->and($stats['abandoned_count'])->toBe(10)
-            ->and($stats['conversion_rate'])->toBe(50.0)
-            ->and($stats['remaining_uses'])->toBe(40);
-    });
+    /* Conversion/abandoned/statistics removed; covered by Integration/VoucherAppliedCountTest. */
 });
 
 describe('Voucher Stacking Methods', function (): void {

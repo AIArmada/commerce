@@ -7,11 +7,6 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 uses(CashierChipTestCase::class);
 
 describe('ConsoleCommands', function (): void {
-    it('webhook command runs successfully', function (): void {
-        $this->artisan('cashier-chip:webhook')
-            ->assertSuccessful();
-    });
-
     it('webhook command outputs webhook url', function (): void {
         $this->artisan('cashier-chip:webhook')
             ->expectsOutputToContain('Webhook URL')

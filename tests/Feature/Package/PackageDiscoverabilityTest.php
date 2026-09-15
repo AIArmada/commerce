@@ -2,18 +2,20 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
-uses(TestCase::class);
+// InventoryTestCase = base TestCase + InventoryServiceProvider (kept out of the
+// base case because its boot hooks extend the cart binding and add listeners).
+uses(InventoryTestCase::class);
 
 it('discovers all core package configs for publishing', function (): void {
     $expectedTags = [
         'cart-config',
         'chip-config',
-        'stock-config',
+        'inventory-config',
         'vouchers-config',
         'jnt-config',
         'docs-config',
@@ -55,7 +57,7 @@ it('discovers and runs all package migrations', function (): void {
     // by checking that their core tables exist in the database
     $expectedTables = [
         'cart' => ['carts', 'cart_snapshots'],
-        'stock' => ['stock_transactions'],
+        'inventory' => ['stock_transactions'],
         'vouchers' => ['vouchers', 'voucher_usage'],
         'chip' => ['chip_purchases', 'chip_payments'],
         'jnt' => ['jnt_orders'],

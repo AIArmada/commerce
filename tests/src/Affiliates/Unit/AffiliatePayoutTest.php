@@ -11,7 +11,6 @@ use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 describe('AffiliatePayout Model', function (): void {
     beforeEach(function (): void {
@@ -23,48 +22,6 @@ describe('AffiliatePayout Model', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-    });
-
-    test('can be created with required fields', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-' . uniqid(),
-            'status' => PendingPayout::class,
-            'total_minor' => 100000,
-            'conversion_count' => 10,
-            'currency' => 'USD',
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-        ]);
-
-        expect($payout)->toBeInstanceOf(AffiliatePayout::class);
-        expect($payout->total_minor)->toBe(100000);
-        expect($payout->conversion_count)->toBe(10);
-        expect($payout->currency)->toBe('USD');
-    });
-
-    test('has polymorphic payee relationship', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-MORPH-' . uniqid(),
-            'status' => PendingPayout::class,
-            'total_minor' => 50000,
-            'conversion_count' => 5,
-            'currency' => 'USD',
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-        ]);
-
-        expect($payout->payee)->toBeInstanceOf(Affiliate::class);
-        expect($payout->payee->id)->toBe($this->affiliate->id);
-    });
-
-    test('has conversions relationship', function (): void {
-        $payout = new AffiliatePayout;
-        expect($payout->conversions())->toBeInstanceOf(HasMany::class);
-    });
-
-    test('has events relationship', function (): void {
-        $payout = new AffiliatePayout;
-        expect($payout->events())->toBeInstanceOf(HasMany::class);
     });
 
     test('has many conversions', function (): void {
@@ -132,84 +89,6 @@ describe('AffiliatePayout Model', function (): void {
         expect($payout->events)->toHaveCount(2);
     });
 
-    test('affiliate accessor returns payee when payee is Affiliate', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-AFF-' . uniqid(),
-            'status' => PendingPayout::class,
-            'total_minor' => 20000,
-            'conversion_count' => 2,
-            'currency' => 'USD',
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-        ]);
-
-        expect($payout->payee)->toBeInstanceOf(Affiliate::class);
-        expect($payout->payee->id)->toBe($this->affiliate->id);
-    });
-
-    test('stores payout total in minor units', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-AMT-' . uniqid(),
-            'status' => PendingPayout::class,
-            'total_minor' => 45000,
-            'conversion_count' => 4,
-            'currency' => 'USD',
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-        ]);
-
-        expect($payout->total_minor)->toBe(45000);
-    });
-
-    test('external_reference is a native payout field', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-EXT-' . uniqid(),
-            'status' => CompletedPayout::class,
-            'total_minor' => 60000,
-            'conversion_count' => 6,
-            'currency' => 'USD',
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-            'external_reference' => 'EXT-12345',
-        ]);
-
-        expect($payout->external_reference)->toBe('EXT-12345');
-    });
-
-    test('external_reference accessor returns null when not set', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-NOEXT-' . uniqid(),
-            'status' => PendingPayout::class,
-            'total_minor' => 10000,
-            'conversion_count' => 1,
-            'currency' => 'USD',
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-        ]);
-
-        expect($payout->external_reference)->toBeNull();
-    });
-
-    test('casts metadata as array', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-META-' . uniqid(),
-            'status' => 'pending',
-            'total_minor' => 25000,
-            'conversion_count' => 2,
-            'currency' => 'USD',
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-            'metadata' => [
-                'batch_id' => 'BATCH-001',
-                'processed_by' => 'admin@example.com',
-            ],
-        ]);
-
-        expect($payout->metadata)->toBeArray();
-        expect($payout->metadata['batch_id'])->toBe('BATCH-001');
-        expect($payout->metadata['processed_by'])->toBe('admin@example.com');
-    });
-
     test('casts scheduled_at as datetime', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-SCHED-' . uniqid(),
@@ -240,62 +119,5 @@ describe('AffiliatePayout Model', function (): void {
 
         expect($payout->paid_at)->toBeInstanceOf(CarbonImmutable::class);
         expect($payout->paid_at->format('Y-m-d'))->toBe('2024-12-20');
-    });
-
-    test('cascade deletes events on delete', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-DEL-' . uniqid(),
-            'status' => 'pending',
-            'total_minor' => 20000,
-            'conversion_count' => 2,
-            'currency' => 'USD',
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-        ]);
-
-        $eventId = AffiliatePayoutEvent::create([
-            'affiliate_payout_id' => $payout->id,
-            'to_status' => 'created',
-            'metadata' => ['note' => 'Test event'],
-        ])->id;
-
-        $payout->delete();
-
-        expect(AffiliatePayoutEvent::find($eventId))->toBeNull();
-    });
-
-    test('nullifies conversion payout_id on delete', function (): void {
-        $payout = AffiliatePayout::create([
-            'reference' => 'PAY-NULL-' . uniqid(),
-            'status' => 'completed',
-            'total_minor' => 30000,
-            'conversion_count' => 1,
-            'currency' => 'USD',
-            'payee_type' => Affiliate::class,
-            'payee_id' => $this->affiliate->id,
-        ]);
-
-        $conversion = AffiliateConversion::create([
-            'affiliate_id' => $this->affiliate->id,
-            'affiliate_code' => $this->affiliate->code,
-            'affiliate_payout_id' => $payout->id,
-            'order_reference' => 'ORD-NULL-001',
-            'total_minor' => 30000,
-            'commission_minor' => 3000,
-            'commission_currency' => 'USD',
-            'status' => PaidConversion::class,
-            'occurred_at' => now(),
-        ]);
-
-        $payout->delete();
-
-        $conversion->refresh();
-        expect($conversion->affiliate_payout_id)->toBeNull();
-    });
-
-    test('uses correct table name from config', function (): void {
-        $payout = new AffiliatePayout;
-
-        expect($payout->getTable())->toBe(config('affiliates.database.tables.payouts', 'affiliate_payouts'));
     });
 });
