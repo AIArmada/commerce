@@ -65,6 +65,13 @@ it('returns an empty suffix without location data', function (): void {
     expect(LocationSlugSegments::suffix([]))->toBe('');
 });
 
+it('lets the suffix prefer the referenced country over the literal', function (): void {
+    $address = ['country_id' => $this->country->getKey(), 'country_code' => 'SG'];
+
+    expect(LocationSlugSegments::suffix($address))->toBe('sg')
+        ->and(LocationSlugSegments::suffix($address, preferLiteralCountry: false))->toBe('my');
+});
+
 it('resolves granular names and ignores non-uuid input', function (): void {
     expect(LocationSlugSegments::areaName($this->area->getKey()))->toBe('Bangsar')
         ->and(LocationSlugSegments::cityName($this->city->getKey()))->toBe('Kuala Lumpur')
