@@ -10,7 +10,7 @@
   "require": {
     "aiarmada/commerce-support": "self.version",
     "aiarmada/chip": "self.version",
-    "spatie/laravel-webhook-client": "^3.6.2",
+    "spatie/laravel-webhook-client": "^3.7.0",
     "php": "^8.4"
   },
   "autoload": {

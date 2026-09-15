@@ -17,9 +17,9 @@
         "aiarmada/pricing": "self.version",
         "aiarmada/products": "self.version",
         "aiarmada/shipping": "self.version",
-        "illuminate/contracts": "^13.15.0",
-        "illuminate/support": "^13.15.0",
-        "spatie/laravel-webhook-client": "^3.6.2"
+        "illuminate/contracts": "^13.31.0",
+        "illuminate/support": "^13.31.0",
+        "spatie/laravel-webhook-client": "^3.7.0"
     },
     "suggest": {
         "aiarmada/cashier": "For unified multi-gateway payment processing (recommended)",

@@ -6,7 +6,7 @@
         "php": "^8.4",
         "aiarmada/commerce-support": "self.version",
         "aiarmada/contacting": "self.version",
-        "filament/filament": "^5.7.0"
+        "filament/filament": "^5.8.1"
     },
     "autoload": {
         "psr-4": {

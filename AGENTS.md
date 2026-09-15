@@ -37,11 +37,8 @@ These files are intentionally split by concern for easier maintenance. Read and 
 - Required frontmatter: `title`, `package`, `status`, `surface`, `family`.
 - Standard section order:
   - `## Snapshot`
-
   - `## Read next`
-
   - `## Guardrails`
-
 - `Snapshot` should name the Composer package, the package role, the best starting search paths, and the related packages.
 - `Read next` should point to the package docs in this order: `01-overview`, `03-configuration`, `04-usage`, `99-troubleshooting`, then `02-installation` when setup or publishing is involved. Add sibling `CONTEXT.md` files when cross-package changes are likely.
 - `Guardrails` should state the package's ownership boundary, the main surfaces it owns, what belongs in sibling packages, and any must-follow review rule such as revalidating IDs or updating docs in the same pass.
@@ -533,7 +530,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 ## Foundational Context
 
-This application is a Laravel application running on PHP 8.4. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
+This application is a Laravel application running on PHP 8.5. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
 
 Before relying on a package's API, confirm its installed version:
 - PHP packages: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
@@ -602,4 +599,15 @@ Before relying on a package's API, confirm its installed version:
 # Deployment
 
 - Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
+- Activate the `deploying-to-cloud` skill whenever deploying to Laravel Cloud, configuring Cloud environments or resources, using the Cloud CLI, or troubleshooting Cloud deployments.
+
+=== tests rules ===
+
+# Test Enforcement
+
+- Add or update tests for behavior and logic changes when a test provides meaningful regression coverage.
+- Pure copy, styling, and layout-only changes do not require new or updated tests.
+- When test coverage applies, run the affected tests and ensure they pass.
+- Test the changed behavior and its important failure modes, but do not add tests beyond them.
+- Read the `testing-best-practices` skill before writing tests.
 </laravel-boost-guidelines>

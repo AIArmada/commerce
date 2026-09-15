@@ -21,7 +21,7 @@
         "php": "^8.4",
         "aiarmada/commerce-support": "self.version",
         "spatie/laravel-data": "^4.23.0",
-        "spatie/laravel-package-tools": "^1.93.1"
+        "spatie/laravel-package-tools": "^1.93.2"
     },
     "suggest": {
         "aiarmada/filament-communications": "Filament admin UI for communications.",
