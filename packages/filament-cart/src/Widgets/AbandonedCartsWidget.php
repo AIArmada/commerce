@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCart\Widgets;
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\FilamentCart\Resources\CartResource;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -97,14 +98,16 @@ final class AbandonedCartsWidget extends BaseWidget
      */
     private function applyMetadataSearch(Builder $query, string $search): Builder
     {
-        $needle = "%{$search}%";
+        $pattern = LikeSearch::contains($search);
         $driver = ConnectionDriver::name($query->getModel()->getConnection());
 
         if ($driver === 'pgsql') {
-            return $query->whereRaw('CAST(metadata AS TEXT) ILIKE ?', [$needle]);
+            return $query->whereRaw('CAST(metadata AS TEXT) ILIKE ? ' . LikeSearch::escapeClause($query), [$pattern]);
         }
 
-        return $query->where('metadata', 'like', $needle);
+        LikeSearch::whereLike($query, 'metadata', $pattern);
+
+        return $query;
     }
 
     private function getItemsCount(Cart $record): int

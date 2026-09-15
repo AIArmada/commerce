@@ -12,6 +12,7 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CancelledPayout;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
+use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
@@ -37,6 +38,13 @@ final class PayoutReconciliationService
                 return false;
             }
 
+            // Provider events can arrive stale or out of order (including for
+            // terminal payouts). Only declared state-machine transitions run;
+            // anything else is ignored rather than forced.
+            if (! $locked->status->canTransitionTo($statusClass)) {
+                return false;
+            }
+
             $fromStatus = $locked->status->getValue();
             $reference = isset($externalData['reference']) && is_string($externalData['reference'])
                 ? mb_trim($externalData['reference'])
@@ -52,8 +60,9 @@ final class PayoutReconciliationService
                 'external_data' => $externalData === [] ? null : $externalData,
             ], static fn (mixed $value): bool => $value !== null && $value !== ''));
 
+            $locked->status->transitionTo($statusClass);
+
             $locked->forceFill([
-                'status' => $statusClass,
                 'paid_at' => $newStatus->equals(CompletedPayout::class) ? CarbonImmutable::now() : $locked->paid_at,
                 'failed_at' => $newStatus->equals(FailedPayout::class) ? CarbonImmutable::now() : $locked->failed_at,
                 'cancelled_at' => $newStatus->equals(CancelledPayout::class) ? CarbonImmutable::now() : $locked->cancelled_at,
@@ -75,6 +84,8 @@ final class PayoutReconciliationService
                 ])->save();
             }
 
+            $this->syncConversions($locked, $newStatus);
+
             $locked->events()->create([
                 'from_status' => $fromStatus,
                 'to_status' => $newStatus->getValue(),
@@ -85,11 +96,30 @@ final class PayoutReconciliationService
             return true;
         }, attempts: 3);
 
-        if ($changed && in_array($statusClass, [FailedPayout::class, CancelledPayout::class], true)) {
-            $this->releaseReservedFunds($payout);
+        return $changed;
+    }
+
+    private function syncConversions(AffiliatePayout $payout, PayoutStatus $newStatus): void
+    {
+        if ($newStatus->equals(CompletedPayout::class)) {
+            $payout->conversions()->update([
+                'status' => PaidConversion::value(),
+                'paid_at' => CarbonImmutable::now(),
+            ]);
+
+            return;
         }
 
-        return $changed;
+        if ($newStatus->equals(FailedPayout::class) || $newStatus->equals(CancelledPayout::class)) {
+            if ($this->releaseReservedFunds($payout)) {
+                return;
+            }
+
+            $payout->conversions()->update([
+                'status' => ApprovedConversion::value(),
+                'affiliate_payout_id' => null,
+            ]);
+        }
     }
 
     public function releaseReservedFunds(AffiliatePayout $payout): bool

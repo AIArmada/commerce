@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Actions\ProcessWebhookCallAction;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Spatie\WebhookClient\Models\WebhookCall;
 
@@ -93,45 +93,17 @@ it('still deduplicates repeated deliveries for the same owner', function (): voi
         ->and($second->fresh()?->processed_at)->not->toBeNull();
 });
 
-it('upgrades legacy webhook tables to the owner-scoped unique', function (): void {
-    Schema::dropIfExists('webhook_calls');
-
-    Schema::create('webhook_calls', function (Blueprint $table): void {
-        $table->bigIncrements('id');
-        $table->string('name');
-        $table->string('url', 512);
-        $table->json('headers')->nullable();
-        $table->json('payload')->nullable();
-        $table->text('exception')->nullable();
-        $table->timestampTz('processed_at')->nullable();
-        $table->string('status', 50)->default('pending');
-        $table->timestampTz('failed_at')->nullable();
-        $table->integer('retry_count')->default(0);
-        $table->timestampTz('last_retry_at')->nullable();
-        $table->string('event_id', 191)->nullable();
-        $table->string('event_type', 191)->nullable();
-        $table->timestampsTz();
-        $table->unique(['name', 'event_id', 'event_type']);
-    });
-
-    ownerDedupMigration('1970_01_01_000006_add_owner_dedup_to_webhook_calls_table.php.stub')->up();
-
-    expect(Schema::hasColumn('webhook_calls', 'owner_type'))->toBeTrue()
-        ->and(Schema::hasColumn('webhook_calls', 'owner_id'))->toBeTrue()
-        ->and(Schema::hasColumn('webhook_calls', 'owner_hash'))->toBeTrue()
-        ->and(Schema::hasIndex('webhook_calls', 'webhook_calls_name_event_id_event_type_unique'))->toBeFalse()
-        ->and(Schema::hasIndex('webhook_calls', 'webhook_calls_owner_dedup_unique'))->toBeTrue();
+it('stamps ownerless deliveries with the ownerless sentinel so they collide', function (): void {
+    $payload = [
+        'event_type' => 'payment.completed',
+        'id' => 'evt_ownerless_repeat',
+    ];
 
     $first = WebhookCall::query()->create([
         'name' => 'owner-dedup',
         'url' => 'https://example.test/webhooks/owner-dedup',
         'headers' => [],
-        'payload' => [
-            'event_type' => 'payment.completed',
-            'id' => 'evt_legacy_upgrade',
-            '__owner_type' => 'team',
-            '__owner_id' => 'owner-one',
-        ],
+        'payload' => $payload,
         'exception' => null,
     ]);
 
@@ -139,19 +111,64 @@ it('upgrades legacy webhook tables to the owner-scoped unique', function (): voi
         'name' => 'owner-dedup',
         'url' => 'https://example.test/webhooks/owner-dedup',
         'headers' => [],
-        'payload' => [
-            'event_type' => 'payment.completed',
-            'id' => 'evt_legacy_upgrade',
-            '__owner_type' => 'team',
-            '__owner_id' => 'owner-two',
-        ],
+        'payload' => $payload,
         'exception' => null,
     ]);
 
     (new OwnerDedupWebhookProcessor($first))->handle();
     (new OwnerDedupWebhookProcessor($second))->handle();
 
-    expect(OwnerDedupWebhookProcessor::$processed)->toHaveCount(2);
+    expect(OwnerDedupWebhookProcessor::$processed)->toHaveCount(1)
+        ->and($first->fresh()?->processed_at)->not->toBeNull()
+        ->and($second->fresh()?->processed_at)->not->toBeNull()
+        ->and($first->fresh()?->getAttribute('owner_hash'))->not->toBeNull()
+        ->and($first->fresh()?->getAttribute('owner_hash'))
+        ->toBe(ProcessWebhookCallAction::ownerHashFor([null, null]));
+});
+
+it('deduplicates deliveries without a provider event id by payload hash', function (): void {
+    $payload = [
+        'event_type' => 'payment.completed',
+        'amount_minor' => 1000,
+    ];
+
+    $first = WebhookCall::query()->create([
+        'name' => 'owner-dedup',
+        'url' => 'https://example.test/webhooks/owner-dedup',
+        'headers' => [],
+        'payload' => $payload,
+        'exception' => null,
+    ]);
+
+    $second = WebhookCall::query()->create([
+        'name' => 'owner-dedup',
+        'url' => 'https://example.test/webhooks/owner-dedup',
+        'headers' => [],
+        'payload' => $payload,
+        'exception' => null,
+    ]);
+
+    $distinct = WebhookCall::query()->create([
+        'name' => 'owner-dedup',
+        'url' => 'https://example.test/webhooks/owner-dedup',
+        'headers' => [],
+        'payload' => [
+            'event_type' => 'payment.completed',
+            'amount_minor' => 2000,
+        ],
+        'exception' => null,
+    ]);
+
+    (new OwnerDedupWebhookProcessor($first))->handle();
+    (new OwnerDedupWebhookProcessor($second))->handle();
+    (new OwnerDedupWebhookProcessor($distinct))->handle();
+
+    expect(OwnerDedupWebhookProcessor::$processed)->toHaveCount(2)
+        ->and($first->fresh()?->getAttribute('event_id'))->not->toBeNull()
+        ->and($second->fresh()?->processed_at)->not->toBeNull()
+        ->and($second->fresh()?->getAttribute('event_id'))->toBeNull()
+        ->and($distinct->fresh()?->getAttribute('event_id'))->not->toBeNull()
+        ->and($distinct->fresh()?->getAttribute('event_id'))->not->toBe($first->fresh()?->getAttribute('event_id'));
 });
 
 function ownerDedupMigration(string $migrationFile): Migration

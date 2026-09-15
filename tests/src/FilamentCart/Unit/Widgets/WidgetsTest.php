@@ -11,6 +11,7 @@ use Filament\Widgets\Widget;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Grammars\Grammar;
 
 describe('Widgets Instantiation', function (): void {
     it('can instantiate AbandonedCartsWidget', function (): void {
@@ -57,10 +58,11 @@ describe('Widgets Instantiation', function (): void {
 
         $builder->shouldReceive('getModel')->once()->andReturn($model);
         $model->shouldReceive('getConnection')->once()->andReturn($connection);
-        $connection->shouldReceive('getDriverName')->once()->andReturn('pgsql');
+        $connection->shouldReceive('getDriverName')->andReturn('pgsql');
+        $builder->shouldReceive('getConnection')->andReturn($connection);
         $builder->shouldReceive('whereRaw')
             ->once()
-            ->with('CAST(metadata AS TEXT) ILIKE ?', ['%alice%'])
+            ->with("CAST(metadata AS TEXT) ILIKE ? ESCAPE '\\'", ['%alice%'])
             ->andReturnSelf();
 
         $method->invoke($widget, $builder, 'alice');
@@ -74,13 +76,17 @@ describe('Widgets Instantiation', function (): void {
         $builder = Mockery::mock(Builder::class);
         $model = Mockery::mock(Model::class);
         $connection = Mockery::mock(Connection::class);
+        $grammar = Mockery::mock(Grammar::class);
 
         $builder->shouldReceive('getModel')->once()->andReturn($model);
         $model->shouldReceive('getConnection')->once()->andReturn($connection);
-        $connection->shouldReceive('getDriverName')->once()->andReturn('sqlite');
-        $builder->shouldReceive('where')
+        $connection->shouldReceive('getDriverName')->andReturn('sqlite');
+        $builder->shouldReceive('getConnection')->andReturn($connection);
+        $builder->shouldReceive('getGrammar')->andReturn($grammar);
+        $grammar->shouldReceive('wrap')->once()->with('metadata')->andReturn('"metadata"');
+        $builder->shouldReceive('whereRaw')
             ->once()
-            ->with('metadata', 'like', '%alice%')
+            ->with("\"metadata\" LIKE ? ESCAPE '\\'", ['%alice%'], 'and')
             ->andReturnSelf();
 
         $method->invoke($widget, $builder, 'alice');

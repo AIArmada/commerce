@@ -154,7 +154,7 @@ it('does not deduplicate rows that share an event_id but have different event ty
         ->and($second->fresh()?->processed_at)->not->toBeNull();
 });
 
-it('processes canonical events without a provider id independently', function (): void {
+it('deduplicates identical events without a provider id by payload hash', function (): void {
     $first = WebhookCall::query()->create([
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
@@ -174,18 +174,19 @@ it('processes canonical events without a provider id independently', function ()
     (new SupportWebhookProcessor($first))->handle();
     (new SupportWebhookProcessor($second))->handle();
 
-    // Without a provider id, cross-row deduplication cannot run.
-    expect(SupportWebhookProcessor::$processed)->toHaveCount(2)
+    // Without a provider id the claim falls back to a payload hash, so an
+    // identical redelivery deduplicates instead of double-processing.
+    expect(SupportWebhookProcessor::$processed)->toHaveCount(1)
         ->and($first->fresh()?->processed_at)->not->toBeNull()
         ->and($second->fresh()?->processed_at)->not->toBeNull();
 });
 
-it('does not cross-row deduplicate when no event_id is present', function (): void {
+it('processes distinct events without a provider id independently', function (): void {
     $first = WebhookCall::query()->create([
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['event_type' => 'payment.completed'],
+        'payload' => ['event_type' => 'payment.completed', 'amount_minor' => 1000],
         'exception' => null,
     ]);
 
@@ -193,14 +194,15 @@ it('does not cross-row deduplicate when no event_id is present', function (): vo
         'name' => 'support-test',
         'url' => 'https://example.test/webhooks/support-test',
         'headers' => [],
-        'payload' => ['event_type' => 'payment.completed'],
+        'payload' => ['event_type' => 'payment.completed', 'amount_minor' => 2000],
         'exception' => null,
     ]);
 
     (new SupportWebhookProcessor($first))->handle();
     (new SupportWebhookProcessor($second))->handle();
 
-    // Without an event_id, cross-row dedupe cannot run; both rows are processed independently.
+    // Distinct payloads hash differently, so payload-hash dedup never
+    // suppresses genuinely different deliveries.
     expect(SupportWebhookProcessor::$processed)->toHaveCount(2)
         ->and($first->fresh()?->processed_at)->not->toBeNull()
         ->and($second->fresh()?->processed_at)->not->toBeNull();

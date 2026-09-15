@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources;
 
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentAffiliates\Resources\AffiliateRankResource\Pages\CreateAffiliateRank;
 use AIArmada\FilamentAffiliates\Resources\AffiliateRankResource\Pages\EditAffiliateRank;
 use AIArmada\FilamentAffiliates\Resources\AffiliateRankResource\Pages\ListAffiliateRanks;
@@ -24,6 +25,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
 final class AffiliateRankResource extends Resource
@@ -102,7 +104,7 @@ final class AffiliateRankResource extends Resource
                     Forms\Components\TextInput::make('slug')
                         ->required()
                         ->maxLength(255)
-                        ->unique(ignoreRecord: true),
+                        ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, AffiliateRank::class)),
 
                     Forms\Components\TextInput::make('level')
                         ->numeric()

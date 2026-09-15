@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\Pricing\Models\PriceList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -14,6 +16,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 final class PriceListForm
 {
@@ -38,7 +41,7 @@ final class PriceListForm
                                     ->label('Slug')
                                     ->required()
                                     ->maxLength(100)
-                                    ->unique(ignoreRecord: true),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, PriceList::class)),
 
                                 Select::make('currency')
                                     ->label('Currency')

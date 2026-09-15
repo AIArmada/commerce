@@ -247,6 +247,31 @@ test('validates voucher with cart condition target definition as no eligibility 
     expect($result->isValid)->toBeTrue();
 });
 
+test('fails closed for targeted vouchers without a live cart', function (): void {
+    Config::set('vouchers.validation.check_targeting', true);
+
+    Voucher::create([
+        'code' => 'SNAPSHOTTARGET',
+        'name' => 'Snapshot Target Voucher',
+        'type' => VoucherType::Percentage->value,
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => Active::class,
+        'target_definition' => [
+            'type' => 'category',
+            'categories' => ['electronics'],
+        ],
+    ]);
+
+    $validator = app(VoucherValidator::class);
+    $snapshot = ['total' => 100.0, 'customer_id' => 'snapshot-customer'];
+
+    $result = $validator->validate('snapshottarget', $snapshot);
+
+    expect($result->isValid)->toBeFalse()
+        ->and($result->details)->toBe(['targeting_failed' => true]);
+});
+
 test('fails closed for unknown non-empty target definition payloads', function (): void {
     Config::set('vouchers.validation.check_targeting', true);
 

@@ -373,4 +373,93 @@ describe('RenewSubscriptionsCommand', function (): void {
             ->and($attempt->fresh()?->last_error_code)->toBe('INVALID_RENEWAL_AMOUNT')
             ->and($this->fakeChip->getFakeClient()->getPurchases())->toBe([]);
     });
+
+    it('fails a renewal with unknown item prices instead of renewing for free', function (): void {
+        /** @var User $user */
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $subscription = Subscription::factory()->for($user, 'billable')->create([
+            'chip_status' => SubscriptionStatus::Active,
+            'next_billing_at' => Carbon::now()->subDay(),
+        ]);
+
+        SubscriptionItem::factory()->forSubscription($subscription)->create([
+            'unit_amount' => null,
+            'quantity' => 1,
+        ]);
+
+        $command = $this->app->make(RenewSubscriptionsCommand::class);
+        $command->setLaravel($this->app);
+        $command->setOutput(new OutputStyle(
+            new ArrayInput([]),
+            new BufferedOutput,
+        ));
+        $method = new ReflectionMethod($command, 'processRenewals');
+        /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
+        $result = $method->invoke($command, false, 0);
+
+        expect($result)->toBe(['renewed' => 0, 'failed' => 1, 'unknown' => 0, 'skipped' => 0])
+            ->and($subscription->fresh()?->chip_status)->toBe(SubscriptionStatus::PastDue)
+            ->and($this->fakeChip->getFakeClient()->getPurchases())->toBe([]);
+
+        $attempt = RenewalAttempt::query()
+            ->where('subscription_id', $subscription->id)
+            ->first();
+
+        expect($attempt?->status)->toBe('failed')
+            ->and($attempt?->last_error_code)->toBe('INVALID_RENEWAL_AMOUNT');
+    });
+
+    it('refuses to charge a subscription with unknown item prices', function (): void {
+        /** @var User $user */
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $subscription = Subscription::factory()->for($user, 'billable')->create([
+            'chip_status' => SubscriptionStatus::Active,
+            'next_billing_at' => Carbon::now()->subDay(),
+        ]);
+
+        SubscriptionItem::factory()->forSubscription($subscription)->create([
+            'unit_amount' => null,
+            'quantity' => 1,
+        ]);
+
+        expect(fn () => $subscription->charge())->toThrow(InvalidArgumentException::class, 'unknown item prices');
+    });
+
+    it('fails an expired renewal claim closed to past-due instead of stalling', function (): void {
+        /** @var User $user */
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $subscription = Subscription::factory()->for($user, 'billable')->create([
+            'chip_status' => SubscriptionStatus::Active,
+            'next_billing_at' => Carbon::now()->subDay(),
+        ]);
+
+        SubscriptionItem::factory()->forSubscription($subscription)->create([
+            'unit_amount' => 1000,
+            'quantity' => 1,
+        ]);
+
+        /** @var ClaimRenewalAttempt $claimRenewalAttempt */
+        $claimRenewalAttempt = app(ClaimRenewalAttempt::class);
+        $attempt = $claimRenewalAttempt->handle($subscription->id);
+
+        expect($attempt)->toBeInstanceOf(RenewalAttempt::class);
+
+        $attempt?->update(['lease_expires_at' => CarbonImmutable::now()->subMinute()]);
+
+        $command = $this->app->make(RenewSubscriptionsCommand::class);
+        $command->setLaravel($this->app);
+        $command->setOutput(new OutputStyle(
+            new ArrayInput([]),
+            new BufferedOutput,
+        ));
+        $method = new ReflectionMethod($command, 'processRenewals');
+        /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
+        $result = $method->invoke($command, false, 0);
+
+        expect($result)->toBe(['renewed' => 0, 'failed' => 1, 'unknown' => 0, 'skipped' => 0])
+            ->and($subscription->fresh()?->chip_status)->toBe(SubscriptionStatus::PastDue)
+            ->and($attempt?->fresh()?->status)->toBe('failed')
+            ->and($attempt?->fresh()?->last_error_code)->toBe('CLAIM_EXPIRED')
+            ->and($this->fakeChip->getFakeClient()->getPurchases())->toBe([]);
+    });
 });

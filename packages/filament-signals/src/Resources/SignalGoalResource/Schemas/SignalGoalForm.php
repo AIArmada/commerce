@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Resources\SignalGoalResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentSignals\Support\SignalFormOptionLists;
+use AIArmada\Signals\Models\SignalGoal;
 use AIArmada\Signals\Models\TrackedProperty;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
@@ -12,6 +14,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 final class SignalGoalForm
 {
@@ -37,7 +40,7 @@ final class SignalGoalForm
                         ->placeholder('shared-link-produced-a-signup')
                         ->helperText('Auto-filled from the name. Edit it if you need a shorter internal key.')
                         ->alphaDash()
-                        ->unique(ignoreRecord: true),
+                        ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, SignalGoal::class)),
 
                     Forms\Components\Select::make('tracked_property_id')
                         ->label('Website or app')

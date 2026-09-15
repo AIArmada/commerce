@@ -6,12 +6,14 @@ namespace AIArmada\Events\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Events\EventRegistrationRefunded;
+use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationItem;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Ticketing\Models\TicketType;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -33,35 +35,52 @@ final class RestoreTicketInventoryOnRegistrationRefunded
             return;
         }
 
-        $registration = $event->registration;
-        $orderId = $registration->external_order_id;
+        $orderId = $event->registration->external_order_id;
 
         if (! is_string($orderId) || $orderId === '') {
             return;
         }
 
-        OwnerContext::withOwner(null, function () use ($orderId, $registration): void {
-            $order = Order::query()->find($orderId);
+        $registrationId = $event->registration->getKey();
 
-            if (! $order instanceof Order || ! is_string($order->order_number) || $order->order_number === '') {
+        DB::transaction(function () use ($orderId, $registrationId): void {
+            // Mutex, not authorization: the refund decision already happened
+            // upstream. Locking the registration row (unscoped) serializes
+            // concurrent deliveries so the already-restored guard inside
+            // restoreItem computes against settled receipts, and keeps
+            // multi-item restores atomic.
+            $registration = EventRegistration::query()
+                ->withoutGlobalScopes()
+                ->lockForUpdate()
+                ->find($registrationId);
+
+            if (! $registration instanceof EventRegistration) {
                 return;
             }
 
-            $registration->loadMissing('items.ticketType');
+            OwnerContext::withOwner(null, function () use ($orderId, $registration): void {
+                $order = Order::query()->find($orderId);
 
-            foreach ($registration->items as $item) {
-                if (! $item instanceof EventRegistrationItem) {
-                    continue;
+                if (! $order instanceof Order || ! is_string($order->order_number) || $order->order_number === '') {
+                    return;
                 }
 
-                $ticketType = $item->ticketType;
+                $registration->loadMissing('items.ticketType');
 
-                if (! $ticketType instanceof TicketType) {
-                    continue;
+                foreach ($registration->items as $item) {
+                    if (! $item instanceof EventRegistrationItem) {
+                        continue;
+                    }
+
+                    $ticketType = $item->ticketType;
+
+                    if (! $ticketType instanceof TicketType) {
+                        continue;
+                    }
+
+                    $this->restoreItem($order, $registration->getKey(), $item, $ticketType);
                 }
-
-                $this->restoreItem($order, $registration->getKey(), $item, $ticketType);
-            }
+            });
         });
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\FilamentDocs\Support\DocPermissions;
@@ -96,7 +97,7 @@ final class DocEmailTemplateResource extends Resource
                                 TextInput::make('slug')
                                     ->required()
                                     ->maxLength(255)
-                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => DocsOwnerScope::scopeUniqueRuleToOwner($rule)),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, DocEmailTemplate::class)),
 
                                 Select::make('doc_type')
                                     ->label('Document Type')

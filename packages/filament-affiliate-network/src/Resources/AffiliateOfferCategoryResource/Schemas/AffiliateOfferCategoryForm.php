@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Schemas;
 
+use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -14,6 +16,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 final class AffiliateOfferCategoryForm
 {
@@ -45,7 +48,7 @@ final class AffiliateOfferCategoryForm
                         TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
-                            ->unique(ignoreRecord: true),
+                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, AffiliateOfferCategory::class)),
 
                         TextInput::make('icon')
                             ->maxLength(100)

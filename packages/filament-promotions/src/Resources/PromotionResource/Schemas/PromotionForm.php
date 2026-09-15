@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Promotions\Enums\PromotionType;
+use AIArmada\Promotions\Models\Promotion;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
@@ -42,7 +43,7 @@ final class PromotionForm
                             ->label('Promo Code')
                             ->helperText('Leave empty for automatic promotions')
                             ->maxLength(50)
-                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => self::scopeCodeUniqueRule($rule)),
+                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, Promotion::class)),
                     ])
                     ->columns(2),
 
@@ -141,29 +142,5 @@ final class PromotionForm
                             ]),
                     ]),
             ]);
-    }
-
-    /**
-     * Scope the promo-code uniqueness check to the current owner tuple.
-     *
-     * The promotions table enforces uniqueness per (owner_type, owner_id,
-     * code), so a global check would wrongly block legitimate reuse of a
-     * code by another owner and leak code existence across owners.
-     */
-    public static function scopeCodeUniqueRule(Unique $rule): Unique
-    {
-        if (! config('promotions.features.owner.enabled', false)) {
-            return $rule;
-        }
-
-        $owner = OwnerContext::resolve();
-
-        if ($owner === null) {
-            return $rule->whereNull('owner_type')->whereNull('owner_id');
-        }
-
-        return $rule
-            ->where('owner_type', $owner->getMorphClass())
-            ->where('owner_id', $owner->getKey());
     }
 }

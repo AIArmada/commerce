@@ -6,7 +6,7 @@ namespace AIArmada\Authz\Console\Commands;
 
 use AIArmada\Authz\Console\Concerns\Prohibitable;
 use AIArmada\Authz\Models\Role;
-use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use Filament\Facades\Filament;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -131,14 +131,9 @@ class SuperAdminCommand extends Command
                 }
 
                 $query = $userModel::query();
-                $likeOperator = ConnectionDriver::name($query->getConnection()) === 'pgsql'
-                    ? 'ILIKE'
-                    : 'LIKE';
+                $pattern = LikeSearch::contains($search);
 
-                $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search);
-
-                return $query
-                    ->where($emailColumn, $likeOperator, "%{$escaped}%")
+                return LikeSearch::whereLike($query, $emailColumn, $pattern)
                     ->limit(10)
                     ->get()
                     ->mapWithKeys(fn ($user): array => [

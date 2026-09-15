@@ -32,7 +32,9 @@ return new class extends Migration
             $table->text('status_reason')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->nullableMorphs('owner');
-            $table->nullableMorphs('registration');
+            $table->string('registration_type')->nullable();
+            $table->string('registration_id')->nullable();
+            $table->index(['registration_type', 'registration_id']);
             $table->uuid('occurrence_id')->nullable()->index();
             $table->uuid('session_id')->nullable()->index();
             $table->timestampsTz();

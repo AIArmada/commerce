@@ -6,7 +6,7 @@ namespace AIArmada\FilamentSeating\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\FilamentSeating\Support\SeatingOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use BackedEnum;
 use Filament\Actions\EditAction;
@@ -92,7 +92,7 @@ final class SeatMapResource extends Resource
                         TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
-                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => SeatingOwnerScope::scopeUniqueRuleToOwner($rule)),
+                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, SeatMapModel::class)),
                         TextInput::make('version')
                             ->numeric()
                             ->integer()

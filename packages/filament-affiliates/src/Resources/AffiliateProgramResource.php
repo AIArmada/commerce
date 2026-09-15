@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CommissionPromotionsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CommissionRulesRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CreativesRelationManager;
@@ -28,6 +29,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
 final class AffiliateProgramResource extends Resource
@@ -110,7 +112,7 @@ final class AffiliateProgramResource extends Resource
                     Forms\Components\TextInput::make('slug')
                         ->required()
                         ->maxLength(255)
-                        ->unique(ignoreRecord: true),
+                        ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, AffiliateProgram::class)),
 
                     Forms\Components\Textarea::make('description')
                         ->rows(3),

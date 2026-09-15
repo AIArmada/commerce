@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Inventory\Enums\BatchStatus;
+use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
@@ -15,6 +17,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rules\Unique;
 
 final class InventoryBatchForm
 {
@@ -29,7 +32,7 @@ final class InventoryBatchForm
                                 ->label('Batch Number')
                                 ->required()
                                 ->maxLength(100)
-                                ->unique(ignoreRecord: true),
+                                ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, InventoryBatch::class)),
 
                             TextInput::make('lot_number')
                                 ->label('Lot Number')

@@ -6,8 +6,9 @@ namespace AIArmada\FilamentProducts\Resources\AttributeResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Products\Enums\AttributeType;
+use AIArmada\Products\Models\Attribute;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -33,7 +34,7 @@ class AttributeForm
                         TextInput::make('code')
                             ->label(__('filament-products::resources.attributes.fields.code'))
                             ->required()
-                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => ProductsOwnerScope::scopeUniqueRuleToOwner($rule))
+                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, Attribute::class))
                             ->maxLength(100)
                             ->alphaDash()
                             ->live(onBlur: true)

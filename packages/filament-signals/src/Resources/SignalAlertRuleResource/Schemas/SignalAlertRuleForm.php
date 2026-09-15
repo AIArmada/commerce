@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Resources\SignalAlertRuleResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentSignals\Support\SignalFormOptionLists;
+use AIArmada\Signals\Models\SignalAlertRule;
 use AIArmada\Signals\Models\TrackedProperty;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
@@ -12,6 +14,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 final class SignalAlertRuleForm
 {
@@ -30,7 +33,7 @@ final class SignalAlertRuleForm
                         ->required()
                         ->maxLength(255)
                         ->alphaDash()
-                        ->unique(ignoreRecord: true),
+                        ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, SignalAlertRule::class)),
 
                     Forms\Components\Select::make('tracked_property_id')
                         ->label('Tracked Property')

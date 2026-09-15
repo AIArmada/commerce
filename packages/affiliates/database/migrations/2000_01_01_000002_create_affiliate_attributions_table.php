@@ -56,7 +56,6 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['cart_identifier', 'cart_instance'], 'affiliate_attributions_cart_index');
-            $table->index('cookie_value', 'affiliate_attributions_cookie_index');
 
             $table->index(['affiliate_id', 'first_seen_at'], 'affiliate_attributions_timeline_idx');
             $table->index(['subject_key', 'subject_instance'], 'affiliate_attributions_subject_idx');

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Resources;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Pages\CreateAffiliatePayout;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Pages\ListAffiliatePayouts;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Pages\ViewAffiliatePayout;
@@ -84,10 +85,12 @@ final class AffiliatePayoutResource extends Resource
                                 $query->forOwner();
                             }
 
+                            $pattern = LikeSearch::contains($search);
+
                             return $query
-                                ->where(function ($nested) use ($search): void {
-                                    $nested->where('name', 'like', "%{$search}%")
-                                        ->orWhere('code', 'like', "%{$search}%");
+                                ->where(function ($nested) use ($pattern): void {
+                                    LikeSearch::whereLike($nested, 'name', $pattern);
+                                    LikeSearch::orWhereLike($nested, 'code', $pattern);
                                 })
                                 ->orderBy('name')
                                 ->limit(50)

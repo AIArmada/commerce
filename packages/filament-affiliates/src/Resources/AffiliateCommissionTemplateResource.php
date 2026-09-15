@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources;
 
 use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource\Pages\CreateAffiliateCommissionTemplate;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource\Pages\EditAffiliateCommissionTemplate;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource\Pages\ListAffiliateCommissionTemplates;
@@ -29,6 +30,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
 final class AffiliateCommissionTemplateResource extends Resource
@@ -107,7 +109,7 @@ final class AffiliateCommissionTemplateResource extends Resource
                     TextInput::make('slug')
                         ->required()
                         ->maxLength(255)
-                        ->unique(ignoreRecord: true),
+                        ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, AffiliateCommissionTemplate::class)),
 
                     TextInput::make('description')
                         ->maxLength(255),

@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Models\Product;
 use Illuminate\Database\Eloquent\Model;
@@ -49,7 +49,7 @@ function resolveUniquenessOwner(?Model $owner): void
 
 function ownerScopedSlugRule(): Unique
 {
-    return ProductsOwnerScope::scopeUniqueRuleToOwner(Rule::unique('products', 'slug'));
+    return OwnerUniqueRule::scopeToOwner(Rule::unique('products', 'slug'), Product::class);
 }
 
 it('scopes slug uniqueness to the resolved owner', function (): void {
@@ -102,7 +102,7 @@ it('matches global rows when global identities are included', function (): void 
 it('leaves uniqueness unscoped when owner mode is disabled', function (): void {
     config()->set('products.features.owner.enabled', false);
 
-    $rule = ProductsOwnerScope::scopeUniqueRuleToOwner(Rule::unique('products', 'slug'));
+    $rule = OwnerUniqueRule::scopeToOwner(Rule::unique('products', 'slug'), Product::class);
 
     expect((string) $rule)->toBe((string) Rule::unique('products', 'slug'));
 });

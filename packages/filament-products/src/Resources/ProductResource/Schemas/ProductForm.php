@@ -7,9 +7,9 @@ namespace AIArmada\FilamentProducts\Resources\ProductResource\Schemas;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentProducts\Resources\ProductResource;
-use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
@@ -56,7 +56,7 @@ class ProductForm
                                     ->label('URL Slug')
                                     ->required()
                                     ->maxLength(100)
-                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => ProductsOwnerScope::scopeUniqueRuleToOwner($rule)),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, Product::class)),
 
                                 MarkdownEditor::make('description')
                                     ->label('Description')
@@ -107,7 +107,7 @@ class ProductForm
                             ->schema([
                                 TextInput::make('sku')
                                     ->label('SKU')
-                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => ProductsOwnerScope::scopeUniqueRuleToOwner($rule))
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, Product::class))
                                     ->maxLength(100),
 
                                 TextInput::make('barcode')

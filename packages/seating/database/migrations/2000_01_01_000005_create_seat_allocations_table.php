@@ -18,7 +18,9 @@ return new class extends Migration
             $table->nullableMorphs('owner');
             $table->uuid('seat_id')->nullable();
             $table->uuid('seat_section_id')->nullable()->index();
-            $table->nullableMorphs('allocated_to');
+            $table->string('allocated_to_type')->nullable();
+            $table->string('allocated_to_id')->nullable();
+            $table->index(['allocated_to_type', 'allocated_to_id']);
             $table->string('reference')->nullable()->index();
             $table->timestampTz('allocated_at');
             $table->timestampTz('released_at')->nullable();

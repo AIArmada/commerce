@@ -14,7 +14,9 @@ return new class extends Migration
 
         Schema::create(config('seating.database.tables.seat_holds', 'seat_holds'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('held_by');
+            $table->string('held_by_type')->nullable();
+            $table->string('held_by_id')->nullable();
+            $table->index(['held_by_type', 'held_by_id']);
             $table->nullableMorphs('owner');
             $table->uuid('seat_id')->index();
             $table->string('reference')->nullable()->index();

@@ -6,9 +6,10 @@ namespace AIArmada\FilamentProducts\Resources\CollectionResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Products\Enums\CatalogStatus;
 use AIArmada\Products\Models\Category;
+use AIArmada\Products\Models\Collection;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Radio;
@@ -50,7 +51,7 @@ class CollectionForm
                                     ->label('URL Slug')
                                     ->required()
                                     ->maxLength(100)
-                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => ProductsOwnerScope::scopeUniqueRuleToOwner($rule)),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, Collection::class)),
 
                                 MarkdownEditor::make('description')
                                     ->label('Description')

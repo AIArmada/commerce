@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Products\Actions\GenerateVariants;
 use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
 use AIArmada\Products\Models\Product;
@@ -49,7 +49,7 @@ final class VariantsRelationManager extends RelationManager
                 TextInput::make('sku')
                     ->label('SKU')
                     ->required()
-                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => ProductsOwnerScope::scopeUniqueRuleToOwner($rule))
+                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, Variant::class))
                     ->maxLength(100),
 
                 TextInput::make('barcode')

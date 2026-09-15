@@ -87,6 +87,16 @@ it('rejects oversized and over-nested browser payloads', function (): void {
         ],
     ])->assertUnprocessable();
 
+    // Byte limits count bytes, not characters: 9 four-byte characters are
+    // 36 bytes and must fail a 32-byte limit.
+    $this->postJson('/api/signals/collect/browser-event', [
+        'write_key' => 'browser-size-key',
+        'event_name' => 'custom.large',
+        'properties' => [
+            'title' => str_repeat("\u{1F600}", 9),
+        ],
+    ])->assertUnprocessable();
+
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0);
 });
 

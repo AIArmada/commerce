@@ -9,8 +9,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
-use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use BackedEnum;
 use Closure;
@@ -102,11 +102,14 @@ final class AffiliateForm
                         Select::make('apply_template')
                             ->label('Commission Template')
                             ->helperText('Select a template to auto-fill commission type and rate.')
-                            ->getSearchResultsUsing(fn (string $search): array => OwnerUiScope::apply(
-                                AffiliateCommissionTemplate::query()->active(),
-                                includeGlobal: false,
+                            ->getSearchResultsUsing(fn (string $search): array => LikeSearch::whereLike(
+                                OwnerUiScope::apply(
+                                    AffiliateCommissionTemplate::query()->active(),
+                                    includeGlobal: false,
+                                ),
+                                'name',
+                                LikeSearch::contains($search),
                             )
-                                ->where('name', 'like', "%{$search}%")
                                 ->limit(50)
                                 ->pluck('name', 'id')
                                 ->toArray())
@@ -212,14 +215,12 @@ final class AffiliateForm
                             ->getSearchResultsUsing(function (string $search): array {
                                 $userModel = config('auth.providers.users.model', User::class);
                                 $query = $userModel::query();
-                                $operator = match (ConnectionDriver::name($query->getConnection())) {
-                                    'pgsql' => 'ilike',
-                                    default => 'like',
-                                };
+                                $pattern = LikeSearch::contains($search);
+
+                                LikeSearch::whereLike($query, 'email', $pattern);
+                                LikeSearch::orWhereLike($query, 'name', $pattern);
 
                                 return $query
-                                    ->where('email', $operator, "%{$search}%")
-                                    ->orWhere('name', $operator, "%{$search}%")
                                     ->limit(50)
                                     ->pluck('email', 'id')
                                     ->toArray();

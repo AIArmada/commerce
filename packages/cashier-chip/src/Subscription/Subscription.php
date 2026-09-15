@@ -884,6 +884,10 @@ class Subscription extends Model
             throw InvalidCustomer::missingBillable($this);
         }
 
+        if ($amount === null && $this->hasUnknownPrices()) {
+            throw new InvalidArgumentException('Cannot charge a subscription with unknown item prices. Provide unit_amount for every item.');
+        }
+
         $amount = $amount ?? $this->renewalAmount();
         Cashier::assertAmountWithinBounds($amount);
 
@@ -988,6 +992,10 @@ class Subscription extends Model
 
         if (! $coupon) {
             throw InvalidCoupon::notFound($couponId);
+        }
+
+        if ($this->hasUnknownPrices()) {
+            throw new InvalidArgumentException('Cannot apply a coupon to a subscription with unknown item prices. Provide unit_amount for every item.');
         }
 
         $totalAmount = $this->calculateSubscriptionAmount();
@@ -1324,6 +1332,11 @@ class Subscription extends Model
 
     /**
      * Calculate the total subscription amount based on items.
+     *
+     * Unknown item prices (null unit_amount) count as zero here so display
+     * and reporting paths stay total-tolerant. Money movement must never
+     * rely on this coercion: check hasUnknownPrices() first and fail
+     * closed when any price is unknown.
      */
     public function calculateSubscriptionAmount(): int
     {
@@ -1332,6 +1345,18 @@ class Subscription extends Model
         return $this->items->sum(function (SubscriptionItem $item): int {
             return ($item->unit_amount ?? 0) * ($item->quantity ?? 1);
         });
+    }
+
+    /**
+     * Whether any subscription item has an unknown price.
+     */
+    public function hasUnknownPrices(): bool
+    {
+        $this->loadMissing('items');
+
+        return $this->items->contains(
+            fn (SubscriptionItem $item): bool => $item->unit_amount === null
+        );
     }
 
     /**

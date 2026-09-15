@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Resources\SignalSegmentResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentSignals\Support\SignalFormOptionLists;
+use AIArmada\Signals\Models\SignalSegment;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 final class SignalSegmentForm
 {
@@ -35,7 +38,7 @@ final class SignalSegmentForm
                         ->placeholder('visitors-from-telegram')
                         ->helperText('Auto-filled from the name. You can edit it if you want a shorter internal key.')
                         ->alphaDash()
-                        ->unique(ignoreRecord: true),
+                        ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, SignalSegment::class)),
 
                     Forms\Components\Select::make('match_type')
                         ->options([

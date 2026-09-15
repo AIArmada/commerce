@@ -14,7 +14,9 @@ return new class extends Migration
 
         Schema::create(config('seating.database.tables.seat_maps', 'seat_maps'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('seatable');
+            $table->string('seatable_type')->nullable();
+            $table->string('seatable_id')->nullable();
+            $table->index(['seatable_type', 'seatable_id']);
             $table->nullableMorphs('owner');
             $table->string('name');
             $table->string('slug')->nullable();

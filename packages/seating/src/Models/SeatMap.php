@@ -98,6 +98,6 @@ class SeatMap extends Model
     public function scopeForHost(Builder $query, Model $host): Builder
     {
         return $query->where('seatable_type', $host->getMorphClass())
-            ->where('seatable_id', $host->getKey());
+            ->where('seatable_id', (string) $host->getKey());
     }
 }

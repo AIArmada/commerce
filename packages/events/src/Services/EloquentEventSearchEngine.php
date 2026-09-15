@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Services;
 
-use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Events\Contracts\EventSearchEngine;
 use AIArmada\Events\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Collection;
@@ -46,15 +46,12 @@ final class EloquentEventSearchEngine implements EventSearchEngine
         }
 
         if (! empty($criteria['search'])) {
-            $search = $criteria['search'];
-            $likeOperator = ConnectionDriver::name($query->getConnection()) === 'pgsql'
-                ? 'ILIKE'
-                : 'LIKE';
+            $pattern = LikeSearch::contains((string) $criteria['search']);
 
-            $query->where(function ($q) use ($search, $likeOperator): void {
-                $q->where('title', $likeOperator, "%{$search}%")
-                    ->orWhere('summary', $likeOperator, "%{$search}%")
-                    ->orWhere('description', $likeOperator, "%{$search}%");
+            $query->where(function ($q) use ($pattern): void {
+                LikeSearch::whereLike($q, 'title', $pattern);
+                LikeSearch::orWhereLike($q, 'summary', $pattern);
+                LikeSearch::orWhereLike($q, 'description', $pattern);
             });
         }
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Resources\SavedSignalReportResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\Signals\Models\SavedSignalReport;
 use AIArmada\Signals\Models\SignalGoal;
 use AIArmada\Signals\Models\SignalSegment;
 use AIArmada\Signals\Models\TrackedProperty;
@@ -16,6 +18,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 final class SavedSignalReportForm
 {
@@ -34,7 +37,7 @@ final class SavedSignalReportForm
                         ->required()
                         ->maxLength(255)
                         ->alphaDash()
-                        ->unique(ignoreRecord: true),
+                        ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, SavedSignalReport::class)),
 
                     Forms\Components\Select::make('report_type')
                         ->options(SavedSignalReportDefinition::reportTypeOptions())

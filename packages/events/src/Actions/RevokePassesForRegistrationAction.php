@@ -16,7 +16,7 @@ class RevokePassesForRegistrationAction
     {
         $passes = Pass::query()
             ->where('registration_type', $registration->getMorphClass())
-            ->where('registration_id', $registration->getKey())
+            ->where('registration_id', (string) $registration->getKey())
             ->get();
 
         foreach ($passes as $pass) {

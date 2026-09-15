@@ -62,8 +62,9 @@ final class TransferPassToHolderAction
             $holder->holder_id = $newHolder->getKey();
             $holder->name = $newHolder->getAttribute('name');
             $holder->email = $newHolder->getAttribute('email');
-            $holder->is_current = true;
-            $holder->save();
+            // Unsaved and non-current: the transfer service owns the holder
+            // switch (previous lookup, owner binding, current flip).
+            $holder->is_current = false;
 
             return $holder;
         }
@@ -80,8 +81,8 @@ final class TransferPassToHolderAction
             $holder->holder_id = $holderAttributes['holder_id'];
         }
 
-        $holder->is_current = true;
-        $holder->save();
+        // Unsaved and non-current: the transfer service owns the holder switch.
+        $holder->is_current = false;
 
         return $holder;
     }

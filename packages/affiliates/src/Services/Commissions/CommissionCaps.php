@@ -14,6 +14,13 @@ final class CommissionCaps
 {
     public static function clamp(int $amountMinor): int
     {
+        // Zero means no commission was earned (unmatched rule, zero rate,
+        // zero portion). The minimum floors earned commissions; it must not
+        // conjure one from nothing.
+        if ($amountMinor === 0) {
+            return 0;
+        }
+
         $clamped = max(0, $amountMinor);
         $minimum = max(0, (int) config('affiliates.commissions.minimum_minor', 0));
         $maximum = config('affiliates.commissions.maximum_minor');

@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Closure;
@@ -86,7 +87,10 @@ final class DatabaseAffiliateLookup implements AffiliateLookup
         return $query
             ->when(
                 $driver === 'pgsql',
-                fn (Builder $builder) => $builder->whereRaw($column . ' ILIKE ?', [$normalized]),
+                fn (Builder $builder) => $builder->whereRaw(
+                    $column . ' ILIKE ? ' . LikeSearch::escapeClause($builder),
+                    [LikeSearch::escape($normalized)]
+                ),
                 fn (Builder $builder) => $builder->whereRaw('LOWER(' . $column . ') = ?', [mb_strtolower($normalized)]),
             )
             ->first();

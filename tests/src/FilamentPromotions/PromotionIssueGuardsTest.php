@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersFromListAction;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
-use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionForm;
 use AIArmada\FilamentPromotions\Support\CachedPromotionInsights;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Support\Facades\Cache;
@@ -86,7 +86,7 @@ describe('promo code uniqueness scope', function (): void {
             'code' => 'SHARED',
         ]));
 
-        $rule = PromotionForm::scopeCodeUniqueRule(new Unique((new Promotion)->getTable(), 'code'));
+        $rule = OwnerUniqueRule::scopeToOwner(new Unique((new Promotion)->getTable(), 'code'), Promotion::class);
 
         expect(Validator::make(['code' => 'SHARED'], ['code' => $rule])->fails())->toBeTrue();
     });
@@ -105,8 +105,9 @@ describe('promo code uniqueness scope', function (): void {
 
         app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
 
-        $rule = OwnerContext::withOwner($ownerB, static fn (): Unique => PromotionForm::scopeCodeUniqueRule(
-            new Unique((new Promotion)->getTable(), 'code')
+        $rule = OwnerContext::withOwner($ownerB, static fn (): Unique => OwnerUniqueRule::scopeToOwner(
+            new Unique((new Promotion)->getTable(), 'code'),
+            Promotion::class
         ));
 
         expect(Validator::make(['code' => 'REUSABLE'], ['code' => $rule])->passes())->toBeTrue();
@@ -117,7 +118,7 @@ describe('promo code uniqueness scope', function (): void {
 
         Promotion::factory()->create(['name' => 'Global Promotion', 'code' => 'GLOBAL']);
 
-        $rule = PromotionForm::scopeCodeUniqueRule(new Unique((new Promotion)->getTable(), 'code'));
+        $rule = OwnerUniqueRule::scopeToOwner(new Unique((new Promotion)->getTable(), 'code'), Promotion::class);
 
         expect(Validator::make(['code' => 'GLOBAL'], ['code' => $rule])->fails())->toBeTrue();
     });

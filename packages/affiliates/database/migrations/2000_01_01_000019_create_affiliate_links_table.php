@@ -38,7 +38,6 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index('affiliate_id');
-            $table->index('custom_slug');
             $table->index(['affiliate_id', 'campaign']);
             $table->index(['subject_type', 'subject_key'], 'affiliate_links_subject_key_idx');
             $table->index(['subject_type', 'subject_id'], 'affiliate_links_subject_id_idx');

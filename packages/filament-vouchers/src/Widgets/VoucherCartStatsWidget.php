@@ -6,6 +6,7 @@ namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Models\Voucher;
@@ -81,10 +82,11 @@ final class VoucherCartStatsWidget extends BaseWidget
             // Search for this voucher code in cart conditions metadata
             // Vouchers are stored as conditions with the voucher code in metadata
             // Escape special LIKE characters in voucher code
-            $escapedCode = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $voucher->code);
+            $escapedCode = LikeSearch::escape($voucher->code);
             /** @var Connection $connection */
             $connection = $cartModel::query()->getConnection();
             $driver = ConnectionDriver::name($connection);
+            $escapeClause = LikeSearch::escapeClause($connection);
 
             $cartQuery = $cartModel::query();
 
@@ -98,12 +100,12 @@ final class VoucherCartStatsWidget extends BaseWidget
 
             return $cartQuery
                 ->whereNotNull('conditions')
-                ->where(function ($query) use ($voucher, $escapedCode, $driver): void {
+                ->where(function ($query) use ($voucher, $escapedCode, $driver, $escapeClause): void {
                     $query->whereJsonContains('conditions', ['voucher' => $voucher->code]);
 
                     match ($driver) {
-                        'pgsql' => $query->orWhereRaw('conditions::text ILIKE ?', ['%"code":"' . $escapedCode . '"%']),
-                        default => $query->orWhereRaw('conditions LIKE ?', ['%"code":"' . $escapedCode . '"%']),
+                        'pgsql' => $query->orWhereRaw("conditions::text ILIKE ? {$escapeClause}", ['%"code":"' . $escapedCode . '"%']),
+                        default => $query->orWhereRaw("conditions LIKE ? {$escapeClause}", ['%"code":"' . $escapedCode . '"%']),
                     };
                 })
                 ->count();

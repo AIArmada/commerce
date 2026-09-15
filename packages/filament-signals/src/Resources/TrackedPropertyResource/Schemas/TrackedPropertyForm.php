@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Resources\TrackedPropertyResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\Signals\Models\TrackedProperty;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 final class TrackedPropertyForm
 {
@@ -27,7 +30,7 @@ final class TrackedPropertyForm
                         ->required()
                         ->maxLength(255)
                         ->alphaDash()
-                        ->unique(ignoreRecord: true),
+                        ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, TrackedProperty::class)),
 
                     Forms\Components\TextInput::make('domain')
                         ->maxLength(255),

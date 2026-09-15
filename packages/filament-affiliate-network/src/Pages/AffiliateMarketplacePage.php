@@ -18,7 +18,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use BackedEnum;
@@ -117,15 +117,11 @@ final class AffiliateMarketplacePage extends Page
                 ->where('status', OfferStatus::Published)
                 ->where('visibility', OfferVisibility::Public)
                 ->when(mb_strlen((string) $search) >= 3, function (Builder $query) use ($search): Builder {
-                    $escaped = str_replace(['%', '_'], ['\%', '\_'], (string) $search);
-                    $operator = match (ConnectionDriver::name($query->getConnection())) {
-                        'pgsql' => 'ilike',
-                        default => 'like',
-                    };
+                    $pattern = LikeSearch::contains((string) $search);
 
-                    return $query->where(function (Builder $q) use ($escaped, $operator): void {
-                        $q->where('name', $operator, "%{$escaped}%")
-                            ->orWhere('description', $operator, "%{$escaped}%");
+                    return $query->where(function (Builder $q) use ($pattern): void {
+                        LikeSearch::whereLike($q, 'name', $pattern);
+                        LikeSearch::orWhereLike($q, 'description', $pattern);
                     });
                 })
                 ->when($this->categoryFilter, fn (Builder $query) => $query->where('category_id', $this->categoryFilter))

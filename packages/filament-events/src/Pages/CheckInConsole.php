@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Pages;
 
-use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventCheckInService;
 use AIArmada\Events\Models\Event;
@@ -95,20 +95,15 @@ final class CheckInConsole extends Page implements HasTable
                     ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false))
             );
 
-        $operator = match (ConnectionDriver::name($query->getConnection())) {
-            'pgsql' => 'ilike',
-            default => 'like',
-        };
-
         if ($this->passOrRegistration) {
-            $pattern = '%' . addcslashes($this->passOrRegistration, '\\%_') . '%';
+            $pattern = LikeSearch::contains($this->passOrRegistration);
 
-            $query->where(function (Builder $q) use ($operator, $pattern): void {
-                $q->whereRaw("pass_no {$operator} ? ESCAPE '\\'", [$pattern])
-                    ->orWhereHas(
-                        'registration',
-                        fn (Builder $r) => $r->whereRaw("registration_no {$operator} ? ESCAPE '\\'", [$pattern])
-                    );
+            $query->where(function (Builder $q) use ($pattern): void {
+                LikeSearch::whereLike($q, 'pass_no', $pattern);
+                $q->orWhereHas(
+                    'registration',
+                    fn (Builder $r) => LikeSearch::whereLike($r, 'registration_no', $pattern)
+                );
             });
         }
 
@@ -137,12 +132,16 @@ final class CheckInConsole extends Page implements HasTable
                     Select::make('event_id')
                         ->label('Event')
                         ->searchable()
-                        ->getSearchResultsUsing(fn (string $search): array => OwnerUiScope::apply(Event::query(), includeGlobal: false)
-                            ->where('title', 'like', '%' . addcslashes($search, '\\%_') . '%')
-                            ->orderBy('title')
-                            ->limit(50)
-                            ->pluck('title', 'id')
-                            ->all())
+                        ->getSearchResultsUsing(function (string $search): array {
+                            $query = OwnerUiScope::apply(Event::query(), includeGlobal: false);
+                            LikeSearch::whereLike($query, 'title', LikeSearch::contains($search));
+
+                            return $query
+                                ->orderBy('title')
+                                ->limit(50)
+                                ->pluck('title', 'id')
+                                ->all();
+                        })
                         ->getOptionLabelUsing(fn (mixed $value): ?string => OwnerUiScope::apply(Event::query(), includeGlobal: false)
                             ->whereKey($value)
                             ->value('title'))

@@ -15,8 +15,8 @@ return new class extends Migration
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->string('slug')->unique();
-            $table->integer('level')->unique();
+            $table->string('slug');
+            $table->integer('level');
             $table->integer('min_personal_sales')->default(0);
             $table->integer('min_team_sales')->default(0);
             $table->integer('min_active_downlines')->default(0);
@@ -31,6 +31,10 @@ return new class extends Migration
 
             $table->timestampsTz();
 
+            // Ranks are per-owner ladders: slugs and levels are unique within
+            // an owner scope, not globally.
+            $table->unique(['owner_type', 'owner_id', 'slug'], 'affiliate_ranks_owner_slug_unique');
+            $table->unique(['owner_type', 'owner_id', 'level'], 'affiliate_ranks_owner_level_unique');
         });
     }
 

@@ -6,10 +6,12 @@ namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\VoucherStatus;
 use Filament\Forms\Components\DateTimePicker;
@@ -26,6 +28,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Validation\Rules\Unique;
 
 final class VoucherForm
 {
@@ -78,7 +81,7 @@ final class VoucherForm
                                 ->required()
                                 ->maxLength(64)
                                 ->alphaDash()
-                                ->unique(ignoreRecord: true)
+                                ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, Voucher::class))
                                 ->helperText('Alphanumeric voucher code shown to customers')
                                 ->afterStateUpdated(static function (?string $state, Set $set): void {
                                     if ($state !== null) {

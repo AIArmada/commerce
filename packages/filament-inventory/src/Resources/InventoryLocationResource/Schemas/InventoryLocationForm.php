@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryLocationResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\Inventory\Models\InventoryLocation;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Unique;
 
 final class InventoryLocationForm
 {
@@ -27,7 +30,7 @@ final class InventoryLocationForm
                         TextInput::make('code')
                             ->label('Code')
                             ->required()
-                            ->unique(ignoreRecord: true)
+                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, InventoryLocation::class))
                             ->maxLength(50)
                             ->helperText('Unique identifier for this location'),
                     ]),

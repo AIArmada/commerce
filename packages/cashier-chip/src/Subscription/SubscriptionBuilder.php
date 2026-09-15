@@ -350,6 +350,10 @@ class SubscriptionBuilder
             throw new Exception('At least one price is required when starting subscriptions.');
         }
 
+        if ($this->hasUnknownPrices()) {
+            throw new InvalidArgumentException('Cannot checkout a subscription with unknown item prices. Provide unit_amount for every item.');
+        }
+
         // Calculate the total amount from items
         $amount = $this->calculateTotalAmount();
 
@@ -504,6 +508,16 @@ class SubscriptionBuilder
     public function getTotalAmount(): int
     {
         return $this->calculateTotalAmount();
+    }
+
+    /**
+     * Whether any builder item has an unknown price.
+     */
+    public function hasUnknownPrices(): bool
+    {
+        return collect($this->items)->contains(
+            fn ($item): bool => ($item['unit_amount'] ?? null) === null
+        );
     }
 
     /**

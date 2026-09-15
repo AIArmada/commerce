@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource;
 use AIArmada\FilamentSignals\Support\InteractionRuleScanner;
@@ -167,13 +168,16 @@ final class ListSignalInteractionRules extends ListRecords
                         ->label('Website or app')
                         ->required()
                         ->searchable()
-                        ->getSearchResultsUsing(static fn (string $search): array => TrackedProperty::query()
-                            ->forOwner()
-                            ->where('name', 'like', '%' . addcslashes($search, '%_\\') . '%')
-                            ->orderBy('name')
-                            ->limit(50)
-                            ->pluck('name', 'id')
-                            ->all())
+                        ->getSearchResultsUsing(static function (string $search): array {
+                            $query = TrackedProperty::query()->forOwner();
+                            LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
+
+                            return $query
+                                ->orderBy('name')
+                                ->limit(50)
+                                ->pluck('name', 'id')
+                                ->all();
+                        })
                         ->getOptionLabelUsing(static fn (mixed $value): ?string => is_scalar($value)
                             ? TrackedProperty::query()->forOwner()->whereKey($value)->value('name')
                             : null),
@@ -384,13 +388,16 @@ final class ListSignalInteractionRules extends ListRecords
                         ->label('Website or app')
                         ->required()
                         ->searchable()
-                        ->getSearchResultsUsing(static fn (string $search): array => TrackedProperty::query()
-                            ->forOwner()
-                            ->where('name', 'like', '%' . addcslashes($search, '%_\\') . '%')
-                            ->orderBy('name')
-                            ->limit(50)
-                            ->pluck('name', 'id')
-                            ->all())
+                        ->getSearchResultsUsing(static function (string $search): array {
+                            $query = TrackedProperty::query()->forOwner();
+                            LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
+
+                            return $query
+                                ->orderBy('name')
+                                ->limit(50)
+                                ->pluck('name', 'id')
+                                ->all();
+                        })
                         ->getOptionLabelUsing(static fn (mixed $value): ?string => is_scalar($value)
                             ? TrackedProperty::query()->forOwner()->whereKey($value)->value('name')
                             : null),

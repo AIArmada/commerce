@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('owner_type')->nullable()->index();
             $table->string('owner_id')->nullable()->index();
             $table->string('name');
-            $table->string('slug')->unique()->index();
+            $table->string('slug')->unique();
             $table->text('bio')->nullable();
             $table->string('status')->default('active')->index();
             $table->string('visibility')->default('public')->index();

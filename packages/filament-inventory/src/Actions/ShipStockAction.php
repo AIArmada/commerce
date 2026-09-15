@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Actions;
 
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Inventory\Actions\ShipInventory;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Models\InventoryLocation;
@@ -39,12 +40,16 @@ final class ShipStockAction
                             ->label('Shipping From')
                             ->required()
                             ->searchable()
-                            ->getSearchResultsUsing(fn (string $search): array => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                                ->where('name', 'like', '%' . addcslashes($search, '\\%_') . '%')
-                                ->orderBy('name')
-                                ->limit(50)
-                                ->pluck('name', 'id')
-                                ->all())
+                            ->getSearchResultsUsing(function (string $search): array {
+                                $query = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
+                                LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
+
+                                return $query
+                                    ->orderBy('name')
+                                    ->limit(50)
+                                    ->pluck('name', 'id')
+                                    ->all();
+                            })
                             ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
                                 ->whereKey($value)
                                 ->value('name')),

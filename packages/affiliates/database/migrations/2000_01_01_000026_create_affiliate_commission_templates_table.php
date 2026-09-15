@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->text('description')->nullable();
             $table->boolean('is_default')->default(false);
             $table->boolean('is_active')->default(true);
@@ -25,6 +25,8 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
             $table->index(['is_default', 'is_active']);
+            // Slugs are unique per owner so tenants can reuse names.
+            $table->unique(['owner_type', 'owner_id', 'slug'], 'affiliate_commission_templates_owner_slug_unique');
         });
     }
 

@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Unique;
 
@@ -16,7 +16,7 @@ function filamentDocs_scopedDocNumberRule(): Unique
 {
     $table = (string) config('docs.database.tables.docs', 'docs');
 
-    return DocsOwnerScope::scopeUniqueRuleToOwner(new Unique($table, 'doc_number'));
+    return OwnerUniqueRule::scopeToOwner(new Unique($table, 'doc_number'), Doc::class);
 }
 
 it('scopes document-number uniqueness to the current owner (H4)', function (): void {

@@ -6,7 +6,8 @@ namespace AIArmada\FilamentProducts\Resources\AttributeSetResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\Products\Models\AttributeSet;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -29,7 +30,7 @@ class AttributeSetForm
                         TextInput::make('code')
                             ->label(__('filament-products::resources.attribute_sets.fields.code'))
                             ->required()
-                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => ProductsOwnerScope::scopeUniqueRuleToOwner($rule))
+                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, AttributeSet::class))
                             ->maxLength(100)
                             ->alphaDash()
                             ->live(onBlur: true)

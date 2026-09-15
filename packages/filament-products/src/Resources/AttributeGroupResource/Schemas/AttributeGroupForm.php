@@ -6,7 +6,8 @@ namespace AIArmada\FilamentProducts\Resources\AttributeGroupResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\Products\Models\AttributeGroup;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -28,7 +29,7 @@ class AttributeGroupForm
                         TextInput::make('code')
                             ->label(__('filament-products::resources.attribute_groups.fields.code'))
                             ->required()
-                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => ProductsOwnerScope::scopeUniqueRuleToOwner($rule))
+                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, AttributeGroup::class))
                             ->maxLength(100)
                             ->alphaDash()
                             ->live(onBlur: true)

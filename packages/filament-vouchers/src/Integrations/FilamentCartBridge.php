@@ -7,6 +7,7 @@ namespace AIArmada\FilamentVouchers\Integrations;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentCart\Resources\CartResource;
@@ -285,21 +286,22 @@ final class FilamentCartBridge
         }
 
         try {
-            $escapedCode = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $voucherCode);
+            $escapedCode = LikeSearch::escape($voucherCode);
 
             /** @var Builder<Model> $query */
             $query = $model::query();
             $query = $this->scopeForOwner($query);
             $driver = ConnectionDriver::name($query->getConnection());
+            $escapeClause = LikeSearch::escapeClause($query);
 
             return $query
                 ->whereNotNull('conditions')
-                ->where(function ($q) use ($voucherCode, $escapedCode, $driver): void {
+                ->where(function ($q) use ($voucherCode, $escapedCode, $driver, $escapeClause): void {
                     $q->whereJsonContains('conditions', ['voucher' => $voucherCode]);
 
                     match ($driver) {
-                        'pgsql' => $q->orWhereRaw('conditions::text ILIKE ?', ['%"code":"' . $escapedCode . '"%']),
-                        default => $q->orWhereRaw('conditions LIKE ?', ['%"code":"' . $escapedCode . '"%']),
+                        'pgsql' => $q->orWhereRaw("conditions::text ILIKE ? {$escapeClause}", ['%"code":"' . $escapedCode . '"%']),
+                        default => $q->orWhereRaw("conditions LIKE ? {$escapeClause}", ['%"code":"' . $escapedCode . '"%']),
                     };
                 })
                 ->count();

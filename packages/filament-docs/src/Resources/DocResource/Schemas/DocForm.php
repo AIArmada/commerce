@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Docs\Enums\DocMergeTag;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Models\Doc;
@@ -14,7 +16,6 @@ use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\Support\DocRichContentStorage;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\KeyValue;
@@ -59,7 +60,7 @@ final class DocForm
                                     ->label('Document Number')
                                     ->helperText('Leave empty to auto-generate')
                                     ->disabledOn('edit')
-                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => DocsOwnerScope::scopeUniqueRuleToOwner($rule)),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, Doc::class)),
 
                                 Select::make('doc_type')
                                     ->label('Document Type')
@@ -82,9 +83,10 @@ final class DocForm
                                             $query->where('doc_type', $docType);
                                         }
 
+                                        $pattern = LikeSearch::contains($search);
+
                                         /** @var array<string, string> $results */
-                                        $results = $query
-                                            ->where('name', 'like', "%{$search}%")
+                                        $results = LikeSearch::whereLike($query, 'name', $pattern)
                                             ->orderBy('name')
                                             ->limit(50)
                                             ->pluck('name', 'id')

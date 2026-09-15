@@ -177,4 +177,13 @@ describe('SubscriptionBuilder', function (): void {
             $this->assertSame(0, Subscription::query()->withoutOwnerScope()->count());
         }
     });
+
+    it('checkout refuses unknown item prices instead of a zero checkout', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
+
+        expect($builder->hasUnknownPrices())->toBeTrue();
+
+        $builder->checkout();
+    })->throws(InvalidArgumentException::class, 'unknown item prices');
 });

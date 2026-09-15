@@ -696,20 +696,22 @@ final class RegistrationService implements RegistrationServiceInterface
     {
         EventWriteGuard::findOrFail($registration->event_id);
 
-        if ($registration->status instanceof Refunded) {
-            if ($registration->refunded_at === null) {
-                $registration->status_reason = $reason;
-                $registration->transitionStatus(Refunded::class);
+        $this->lockedRegistration($registration, function (EventRegistration $locked) use ($reason): void {
+            if ($locked->status instanceof Refunded) {
+                if ($locked->refunded_at === null) {
+                    $locked->status_reason = $reason;
+                    $locked->transitionStatus(Refunded::class);
+                }
+
+                return;
             }
 
-            return;
-        }
+            $locked->refund_pending_at = null;
+            $locked->status_reason = $reason;
+            $locked->transitionStatus(Refunded::class);
 
-        $registration->refund_pending_at = null;
-        $registration->status_reason = $reason;
-        $registration->transitionStatus(Refunded::class);
-
-        event(new EventRegistrationRefunded($registration, $reason));
+            event(new EventRegistrationRefunded($locked, $reason));
+        });
     }
 
     public function markRefundPending(EventRegistration $registration, ?string $reason = null): void
@@ -738,27 +740,46 @@ final class RegistrationService implements RegistrationServiceInterface
     {
         EventWriteGuard::findOrFail($registration->event_id);
 
-        if (! $registration->status instanceof RefundPending) {
-            return;
-        }
+        $this->lockedRegistration($registration, function (EventRegistration $locked) use ($reason): void {
+            if (! $locked->status instanceof RefundPending) {
+                return;
+            }
 
-        $originalStatus = data_get($registration->metadata ?? [], 'refund.original_status', 'confirmed');
-        $targetState = match ($originalStatus) {
-            'checked_in' => CheckedIn::class,
-            'no_show' => NoShow::class,
-            'completed' => Completed::class,
-            default => Confirmed::class,
-        };
+            $originalStatus = data_get($locked->metadata ?? [], 'refund.original_status', 'confirmed');
+            $targetState = match ($originalStatus) {
+                'checked_in' => CheckedIn::class,
+                'no_show' => NoShow::class,
+                'completed' => Completed::class,
+                default => Confirmed::class,
+            };
 
-        $metadata = $registration->metadata ?? [];
-        Arr::forget($metadata, 'refund.original_status');
+            $metadata = $locked->metadata ?? [];
+            Arr::forget($metadata, 'refund.original_status');
 
-        $registration->status_reason = $reason;
-        $registration->metadata = $metadata;
-        $registration->refund_pending_at = null;
-        $registration->transitionStatus($targetState, overwriteLifecycleTimestamp: false);
+            $locked->status_reason = $reason;
+            $locked->metadata = $metadata;
+            $locked->refund_pending_at = null;
+            $locked->transitionStatus($targetState, overwriteLifecycleTimestamp: false);
 
-        event(new EventRegistrationRefundRestored($registration, $reason));
+            event(new EventRegistrationRefundRestored($locked, $reason));
+        });
+    }
+
+    /**
+     * Run a refund-family transition against a row-locked fresh copy.
+     *
+     * Duplicate deliveries (retried order webhooks, double provider events)
+     * otherwise both pass the in-memory status check and emit the outcome
+     * twice; downstream listeners such as inventory restore are not safe
+     * under concurrent duplicates.
+     */
+    private function lockedRegistration(EventRegistration $registration, callable $callback): void
+    {
+        DB::transaction(function () use ($registration, $callback): void {
+            $locked = EventRegistration::query()->lockForUpdate()->findOrFail($registration->getKey());
+
+            $callback($locked);
+        });
     }
 
     public function createFromOrderItem(array $orderItemData): void

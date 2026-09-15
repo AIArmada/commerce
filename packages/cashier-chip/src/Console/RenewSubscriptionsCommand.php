@@ -94,7 +94,12 @@ class RenewSubscriptionsCommand extends Command
                     if ($reconciled !== null) {
                         $summary[$reconciled]++;
 
-                        if ($reconciled === 'unknown') {
+                        // Failed and skipped reconciliations terminally resolve
+                        // the current period (a failed row occupies the period
+                        // unique, or the subject is invalid / held elsewhere),
+                        // so no fresh claim can succeed. Renewed falls through
+                        // so a still-overdue subscription can catch up.
+                        if ($reconciled !== 'renewed') {
                             continue;
                         }
                     }
@@ -135,6 +140,16 @@ class RenewSubscriptionsCommand extends Command
             $this->recordSkipped($attempt, 'INVALID_RENEWAL_SUBJECT');
 
             return 'skipped';
+        }
+
+        // Unknown item prices count as zero in renewalAmount(). A zero (or
+        // reduced) frozen amount is only billable when every price is known;
+        // otherwise the subscription cannot be priced and must go past due
+        // instead of renewing for free or undercharging.
+        if ($subscription->hasUnknownPrices()) {
+            $this->recordFailure($attempt, $subscription, 'INVALID_RENEWAL_AMOUNT');
+
+            return 'failed';
         }
 
         /** @var Model&BillableContract $billable */
@@ -225,7 +240,7 @@ class RenewSubscriptionsCommand extends Command
             ->first();
 
         if (! $unknown instanceof RenewalAttempt) {
-            return null;
+            return $this->failExpiredClaim($subscriptionId);
         }
 
         if ($unknown->purchase_id === null) {
@@ -279,6 +294,54 @@ class RenewSubscriptionsCommand extends Command
         }
 
         $this->recordFailure($unknown, $subscription, 'PAYMENT_DECLINED');
+
+        return 'failed';
+    }
+
+    /**
+     * Fail a lease-expired 'claimed' attempt that no worker completed.
+     *
+     * The (subscription, period) unique blocks any fresh claim while the
+     * expired row exists, so without this the subscription would sit active
+     * but overdue forever. The charge outcome is unknowable (no purchase
+     * id was recorded), so the attempt fails closed to past-due — the
+     * same terminal state as a declined payment — and a fresh customer
+     * payment can revive the subscription through the purchase webhook.
+     * Recharging blindly here could double-charge; hosts reconcile
+     * ambiguous gateway outcomes out of band.
+     *
+     * @return string|null The outcome when an expired claim was handled, null when none blocks this subscription.
+     */
+    private function failExpiredClaim(string $subscriptionId): ?string
+    {
+        $expired = RenewalAttempt::query()
+            ->where('subscription_id', $subscriptionId)
+            ->where('status', 'claimed')
+            ->where(function ($query): void {
+                $query->whereNull('lease_expires_at')
+                    ->orWhere('lease_expires_at', '<=', CarbonImmutable::now());
+            })
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (! $expired instanceof RenewalAttempt) {
+            return null;
+        }
+
+        $subscription = $expired->subscription()->with('items')->first();
+
+        if (! $subscription instanceof Subscription) {
+            $this->recordSkipped($expired, 'INVALID_RENEWAL_SUBJECT');
+
+            return 'skipped';
+        }
+
+        Log::warning('CHIP renewal claim expired without an outcome; failing closed to past-due.', [
+            'renewal_attempt_id' => $expired->id,
+            'subscription_id' => $subscription->id,
+        ]);
+
+        $this->recordFailure($expired, $subscription, 'CLAIM_EXPIRED');
 
         return 'failed';
     }

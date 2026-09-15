@@ -7,10 +7,10 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentSeating\Pages\SeatMapEditor;
 use AIArmada\FilamentSeating\Pages\SeatMapOccupancy;
 use AIArmada\FilamentSeating\Resources\SeatMapResource;
-use AIArmada\FilamentSeating\Support\SeatingOwnerScope;
 use AIArmada\FilamentSeating\Widgets\SeatMapOverview;
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Models\Seat;
@@ -155,7 +155,7 @@ it('scopes seat map slug uniqueness to the resolved owner', function (): void {
 
     $sameOwner = Validator::make(
         ['slug' => 'taken-map'],
-        ['slug' => SeatingOwnerScope::scopeUniqueRuleToOwner(Rule::unique('seat_maps', 'slug'))]
+        ['slug' => OwnerUniqueRule::scopeToOwner(Rule::unique('seat_maps', 'slug'), SeatMapModel::class)]
     );
 
     expect($sameOwner->fails())->toBeTrue();
@@ -164,7 +164,7 @@ it('scopes seat map slug uniqueness to the resolved owner', function (): void {
 
     $otherOwner = Validator::make(
         ['slug' => 'taken-map'],
-        ['slug' => SeatingOwnerScope::scopeUniqueRuleToOwner(Rule::unique('seat_maps', 'slug'))]
+        ['slug' => OwnerUniqueRule::scopeToOwner(Rule::unique('seat_maps', 'slug'), SeatMapModel::class)]
     );
 
     expect($otherOwner->fails())->toBeFalse();

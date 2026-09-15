@@ -6,8 +6,9 @@ namespace AIArmada\FilamentProducts\Resources\CategoryResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\FilamentProducts\Support\ProductsOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Products\Enums\CatalogStatus;
+use AIArmada\Products\Models\Category;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -47,7 +48,7 @@ class CategoryForm
                                     ->required()
                                     ->maxLength(100)
                                     ->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule, Get $get): Unique {
-                                        $rule = ProductsOwnerScope::scopeUniqueRuleToOwner($rule);
+                                        $rule = OwnerUniqueRule::scopeToOwner($rule, Category::class);
                                         $parentId = $get('parent_id');
 
                                         return is_string($parentId) && $parentId !== ''

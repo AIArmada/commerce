@@ -15,6 +15,7 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class CreateChipSubscription
@@ -48,6 +49,10 @@ final class CreateChipSubscription
             $coupon = $builder->retrieveCoupon($couponId);
 
             if ($coupon) {
+                if ($builder->hasUnknownPrices()) {
+                    throw new InvalidArgumentException('Cannot price a coupon against a subscription with unknown item prices. Provide unit_amount for every item.');
+                }
+
                 $totalAmount = $builder->getTotalAmount();
                 $couponDiscount = $coupon->calculateDiscount($totalAmount);
                 $couponDuration = $coupon->duration();

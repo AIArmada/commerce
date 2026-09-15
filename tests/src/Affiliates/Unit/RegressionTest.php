@@ -13,6 +13,7 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateWebhookDelivery;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
+use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CancelledPayout;
@@ -69,7 +70,8 @@ test('commission caps clamp negative and out-of-range commissions', function ():
     expect(CommissionCaps::clamp(-50))->toBe(100)
         ->and(CommissionCaps::clamp(50))->toBe(100)
         ->and(CommissionCaps::clamp(200))->toBe(200)
-        ->and(CommissionCaps::clamp(600))->toBe(500);
+        ->and(CommissionCaps::clamp(600))->toBe(500)
+        ->and(CommissionCaps::clamp(0))->toBe(0, 'The minimum floors earned commissions; it must not conjure one from zero.');
 });
 
 test('commission calculator honors caps on fixed and percentage paths', function (): void {
@@ -158,6 +160,51 @@ test('payout cancellation refunds balance and unlinks conversions', function ():
     app(UpdatePayoutStatus::class)->handle($payout, CancelledPayout::class);
 
     expect($this->affiliate->balance()->first()->available_minor)->toBe(5000)
+        ->and(AffiliateConversion::query()->find($conversion->id)->affiliate_payout_id)->toBeNull()
+        ->and(AffiliateConversion::query()->find($conversion->id)->status)->toBeInstanceOf(ApprovedConversion::class);
+});
+
+test('reconcile completion marks conversions paid like status update', function (): void {
+    seedBalanceFor($this->affiliate, 5000);
+
+    $conversion = makeApprovedConversionFor($this->affiliate, 2000);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+
+    $changed = app(PayoutReconciliationService::class)->reconcilePayout($payout, 'completed');
+
+    expect($changed)->toBeTrue()
+        ->and($payout->fresh()->status)->toBeInstanceOf(CompletedPayout::class)
+        ->and($payout->fresh()->paid_at)->not->toBeNull()
+        ->and(AffiliateConversion::query()->find($conversion->id)->status)->toBeInstanceOf(PaidConversion::class)
+        ->and(AffiliateConversion::query()->find($conversion->id)->paid_at)->not->toBeNull();
+});
+
+test('reconcile ignores provider events that would illegally regress a terminal payout', function (): void {
+    seedBalanceFor($this->affiliate, 5000);
+
+    $conversion = makeApprovedConversionFor($this->affiliate, 2000);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+    app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::class);
+
+    $changed = app(PayoutReconciliationService::class)->reconcilePayout($payout->fresh(), 'failed');
+
+    expect($changed)->toBeFalse()
+        ->and($payout->fresh()->status)->toBeInstanceOf(CompletedPayout::class)
+        ->and($this->affiliate->balance()->first()->available_minor)->toBe(3000)
+        ->and(AffiliateConversion::query()->find($conversion->id)->status)->toBeInstanceOf(PaidConversion::class);
+});
+
+test('reconcile failure releases reserved funds and unlinks conversions', function (): void {
+    seedBalanceFor($this->affiliate, 5000);
+
+    $conversion = makeApprovedConversionFor($this->affiliate, 2000);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+
+    $changed = app(PayoutReconciliationService::class)->reconcilePayout($payout, 'failed');
+
+    expect($changed)->toBeTrue()
+        ->and($payout->fresh()->failed_at)->not->toBeNull()
+        ->and($this->affiliate->balance()->first()->available_minor)->toBe(5000)
         ->and(AffiliateConversion::query()->find($conversion->id)->affiliate_payout_id)->toBeNull()
         ->and(AffiliateConversion::query()->find($conversion->id)->status)->toBeInstanceOf(ApprovedConversion::class);
 });

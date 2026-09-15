@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocTemplateResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Docs\Enums\DocMergeTag;
+use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Support\DocRichContentStorage;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\Builder\Block;
 use Filament\Forms\Components\RichEditor;
@@ -47,7 +48,7 @@ final class DocTemplateForm
                                 TextInput::make('slug')
                                     ->label('Slug')
                                     ->required()
-                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => DocsOwnerScope::scopeUniqueRuleToOwner($rule))
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, DocTemplate::class))
                                     ->maxLength(255)
                                     ->helperText('Used for selecting this template from documents'),
                             ]),

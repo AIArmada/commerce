@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Inventory\Enums\SerialCondition;
+use AIArmada\Inventory\Models\InventorySerial;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -16,6 +18,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rules\Unique;
 
 final class InventorySerialForm
 {
@@ -30,7 +33,7 @@ final class InventorySerialForm
                                 ->label('Serial Number')
                                 ->required()
                                 ->maxLength(255)
-                                ->unique(ignoreRecord: true),
+                                ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, InventorySerial::class)),
 
                             Select::make('location_id')
                                 ->label('Location')

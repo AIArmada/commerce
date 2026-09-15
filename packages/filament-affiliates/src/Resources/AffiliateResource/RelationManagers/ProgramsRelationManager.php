@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManage
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -30,8 +31,11 @@ final class ProgramsRelationManager extends RelationManager
     {
         return $schema->schema([
             Select::make('tier_id')
-                ->getSearchResultsUsing(fn (string $search): array => AffiliateProgramTier::query()
-                    ->where('name', 'like', "%{$search}%")
+                ->getSearchResultsUsing(fn (string $search): array => LikeSearch::whereLike(
+                    AffiliateProgramTier::query(),
+                    'name',
+                    LikeSearch::contains($search),
+                )
                     ->orderBy('name')
                     ->limit(50)
                     ->pluck('name', 'id')

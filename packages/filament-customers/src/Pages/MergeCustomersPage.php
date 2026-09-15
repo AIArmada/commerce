@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Pages;
 
-use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Actions\MergeCustomersAction;
@@ -101,31 +101,23 @@ final class MergeCustomersPage extends Page implements HasForms
             ->tap(fn ($query) => OwnerUiScope::apply($query))
             ->with('contactMethods');
 
-        $keyword = match (ConnectionDriver::name($query->getConnection())) {
-            'pgsql' => 'ILIKE',
-            default => 'LIKE',
-        };
-
-        // Escape LIKE wildcards so user input matches literally. The explicit
-        // ESCAPE clause keeps this portable across MySQL, Postgres, and SQLite.
-        $pattern = '%' . addcslashes($search, '\\\\%_') . '%';
+        $pattern = LikeSearch::contains($search);
 
         return $query
-            ->where(function ($query) use ($pattern, $keyword): void {
-                $query->whereRaw("first_name {$keyword} ? ESCAPE '\\'", [$pattern])
-                    ->orWhereRaw("last_name {$keyword} ? ESCAPE '\\'", [$pattern])
-                    ->orWhereRaw("company {$keyword} ? ESCAPE '\\'", [$pattern])
-                    ->orWhereHas('contactMethods', function ($contactMethods) use ($pattern, $keyword): void {
-                        $table = $contactMethods->getModel()->getTable();
+            ->where(function ($query) use ($pattern): void {
+                LikeSearch::whereLike($query, 'first_name', $pattern);
+                LikeSearch::orWhereLike($query, 'last_name', $pattern);
+                LikeSearch::orWhereLike($query, 'company', $pattern);
+                $query->orWhereHas('contactMethods', function ($contactMethods) use ($pattern): void {
+                    $table = $contactMethods->getModel()->getTable();
 
-                        $contactMethods
-                            ->whereIn('type', ['email', 'phone', 'mobile', 'whatsapp'])
-                            ->where(function ($contactMethods) use ($pattern, $keyword, $table): void {
-                                $contactMethods
-                                    ->whereRaw("{$table}.value {$keyword} ? ESCAPE '\\'", [$pattern])
-                                    ->orWhereRaw("{$table}.normalized_value {$keyword} ? ESCAPE '\\'", [$pattern]);
-                            });
-                    });
+                    $contactMethods
+                        ->whereIn('type', ['email', 'phone', 'mobile', 'whatsapp'])
+                        ->where(function ($contactMethods) use ($pattern, $table): void {
+                            LikeSearch::whereLike($contactMethods, "{$table}.value", $pattern);
+                            LikeSearch::orWhereLike($contactMethods, "{$table}.normalized_value", $pattern);
+                        });
+                });
             })
             ->limit(20)
             ->get()

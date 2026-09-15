@@ -19,6 +19,7 @@ use AIArmada\Vouchers\Support\VoucherCartMetadata;
 use AIArmada\Vouchers\Traits\HasVouchers;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 final class ScopeWalletUser extends Model
@@ -188,5 +189,50 @@ describe('voucher expiry command', function (): void {
 
         expect($voucherA->fresh()->status)->toBeInstanceOf(Expired::class)
             ->and($voucherB->fresh()->status)->toBeInstanceOf(Expired::class);
+    });
+});
+
+describe('voucher code uniqueness', function (): void {
+    it('allows two owners to reuse the same voucher code', function (): void {
+        config()->set('vouchers.owner.enabled', true);
+        config()->set('vouchers.owner.include_global', false);
+
+        // Owner scoping snapshots at model boot; reboot models so the
+        // enabled flag takes effect, then restore boot state afterwards.
+        Voucher::clearBootedModels();
+
+        try {
+            $ownerA = scopeWalletUser('voucher-code-a');
+            $ownerB = scopeWalletUser('voucher-code-b');
+
+            $voucherA = OwnerContext::withOwner($ownerA, static fn (): Voucher => scopeVoucher(['code' => 'SHARED10']));
+            $voucherB = OwnerContext::withOwner($ownerB, static fn (): Voucher => scopeVoucher(['code' => 'SHARED10']));
+
+            expect($voucherA->owner_id)->not->toBeNull()
+                ->and($voucherB->owner_id)->not->toBeNull()
+                ->and((string) $voucherA->owner_id)->not->toBe((string) $voucherB->owner_id)
+                ->and($voucherA->code)->toBe('SHARED10')
+                ->and($voucherB->code)->toBe('SHARED10');
+        } finally {
+            Voucher::clearBootedModels();
+        }
+    });
+
+    it('rejects a duplicate voucher code within the same owner', function (): void {
+        config()->set('vouchers.owner.enabled', true);
+        config()->set('vouchers.owner.include_global', false);
+
+        Voucher::clearBootedModels();
+
+        try {
+            $owner = scopeWalletUser('voucher-code-same');
+
+            OwnerContext::withOwner($owner, static fn (): Voucher => scopeVoucher(['code' => 'ONCEONLY']));
+
+            expect(fn () => OwnerContext::withOwner($owner, static fn (): Voucher => scopeVoucher(['code' => 'ONCEONLY'])))
+                ->toThrow(QueryException::class);
+        } finally {
+            Voucher::clearBootedModels();
+        }
     });
 });

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Support;
 
-use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -57,17 +56,13 @@ final class HolderAttributesValidator
      */
     public static function validateHolderModel(Model $model): void
     {
-        if (! $model->exists) {
-            return;
+        if (! $model->exists || $model->getKey() === null) {
+            throw new InvalidArgumentException('The holder model must be persisted before it can be linked.');
         }
 
-        $modelClass = $model::class;
+        self::assertTypeAllowed($model->getMorphClass(), $model::class);
 
-        if (! in_array(HasOwner::class, class_uses_recursive($modelClass), true)) {
-            return;
-        }
-
-        $visible = $modelClass::query()->whereKey($model->getKey())->exists();
+        $visible = $model::class::query()->whereKey($model->getKey())->exists();
 
         if (! $visible) {
             throw new AuthorizationException('The holder is not accessible in the current owner scope.');
@@ -84,13 +79,9 @@ final class HolderAttributesValidator
             throw new InvalidArgumentException('Holder type must be a non-empty string and holder id a string or integer.');
         }
 
-        $allowedTypes = config('ticketing.holders.allowed_types', []);
-
-        if (is_array($allowedTypes) && $allowedTypes !== [] && ! in_array($holderType, $allowedTypes, true)) {
-            throw new InvalidArgumentException(sprintf('Holder type "%s" is not allowed.', $holderType));
-        }
-
         $relatedClass = Relation::getMorphedModel($holderType) ?? $holderType;
+
+        self::assertTypeAllowed($holderType, is_string($relatedClass) ? $relatedClass : null);
 
         if (! is_string($relatedClass) || ! class_exists($relatedClass) || ! is_a($relatedClass, Model::class, true)) {
             throw new InvalidArgumentException(sprintf('Holder type "%s" does not resolve to a model.', $holderType));
@@ -102,5 +93,29 @@ final class HolderAttributesValidator
         if (! $related instanceof Model) {
             throw new AuthorizationException('The holder is not accessible in the current owner scope.');
         }
+    }
+
+    /**
+     * Enforce the holder allowlist against both the morph alias and the
+     * resolved class name. An empty allowlist leaves both paths open,
+     * matching the documented opt-in convention.
+     */
+    private static function assertTypeAllowed(string $morphClass, ?string $class): void
+    {
+        $allowedTypes = config('ticketing.holders.allowed_types', []);
+
+        if (! is_array($allowedTypes) || $allowedTypes === []) {
+            return;
+        }
+
+        if (in_array($morphClass, $allowedTypes, true)) {
+            return;
+        }
+
+        if ($class !== null && in_array($class, $allowedTypes, true)) {
+            return;
+        }
+
+        throw new InvalidArgumentException(sprintf('Holder type "%s" is not allowed.', $morphClass));
     }
 }

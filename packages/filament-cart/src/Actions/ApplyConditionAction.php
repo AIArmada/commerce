@@ -8,6 +8,7 @@ use AIArmada\Cart\Actions\ApplyStoredCondition;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Exception;
@@ -134,12 +135,12 @@ final class ApplyConditionAction extends Action
      */
     private static function searchConditionOptions(string $search, bool $forItems): array
     {
-        $needle = '%' . addcslashes(mb_trim($search), '%_\\') . '%';
+        $needle = LikeSearch::contains(mb_trim($search));
 
         return self::getScopedConditionQuery($forItems)
             ->where(function (Builder $query) use ($needle): void {
-                $query->where('name', 'like', $needle)
-                    ->orWhere('display_name', 'like', $needle);
+                LikeSearch::whereLike($query, 'name', $needle);
+                LikeSearch::orWhereLike($query, 'display_name', $needle);
             })
             ->orderBy('type')
             ->orderBy('name')

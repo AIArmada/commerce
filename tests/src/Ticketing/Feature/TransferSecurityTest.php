@@ -8,6 +8,7 @@ use AIArmada\Ticketing\Actions\BulkTransferPassesAction;
 use AIArmada\Ticketing\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Models\PassTransfer;
 use Illuminate\Auth\Access\AuthorizationException;
 
 function createUserHolder(string $name, string $email): User
@@ -151,4 +152,66 @@ it('rejects bulk batches that mix owners', function (): void {
     } finally {
         Pass::clearBootedModels();
     }
+});
+
+it('leaves exactly one current holder with a correct from/to record', function (): void {
+    $owner = createUserHolder('Current A', 'current-a@example.com');
+    $pass = Pass::factory()->create();
+    $oldHolder = linkPassToUser($pass, $owner);
+    $newUser = createUserHolder('Current B', 'current-b@example.com');
+
+    $result = app(TransferPassToHolderAction::class)->handle($pass, $newUser);
+
+    $currents = PassHolder::query()
+        ->where('pass_id', $pass->getKey())
+        ->where('is_current', true)
+        ->get();
+
+    expect($currents)->toHaveCount(1)
+        ->and($currents->sole()->getKey())->toBe($result->getKey())
+        ->and($result->transferred_at)->toBeNull()
+        ->and($oldHolder->fresh()?->is_current)->toBeFalse()
+        ->and($oldHolder->fresh()?->transferred_at)->not->toBeNull();
+
+    $transfer = PassTransfer::query()->where('pass_id', $pass->getKey())->sole();
+
+    expect($transfer->from_holder_id)->toBe($oldHolder->getKey())
+        ->and($transfer->to_holder_id)->toBe($result->getKey());
+});
+
+it('binds the new holder and transfer record to the pass owner', function (): void {
+    $owner = createUserHolder('Pass Owner', 'pass-owner@example.com');
+    $pass = OwnerContext::withOwner($owner, fn (): Pass => Pass::factory()->create());
+    $newUser = createUserHolder('Owner Inherit', 'owner-inherit@example.com');
+
+    $result = OwnerContext::withOwner($owner, fn (): PassHolder => app(TransferPassToHolderAction::class)->handle($pass, $newUser));
+
+    expect($result->owner_type)->toBe($pass->owner_type)
+        ->and((string) $result->owner_id)->toBe((string) $pass->owner_id);
+
+    $transfer = PassTransfer::query()->withoutGlobalScopes()->where('pass_id', $pass->getKey())->sole();
+
+    expect($transfer->owner_type)->toBe($pass->owner_type)
+        ->and((string) $transfer->owner_id)->toBe((string) $pass->owner_id);
+});
+
+it('fails closed when transferring an owned pass outside its owner scope', function (): void {
+    $owner = createUserHolder('Scope Owner', 'scope-owner@example.com');
+    $pass = OwnerContext::withOwner($owner, fn (): Pass => Pass::factory()->create());
+    $newUser = createUserHolder('Scope Stranger', 'scope-stranger@example.com');
+
+    // The default test owner context does not match the pass owner.
+    expect(fn () => app(TransferPassToHolderAction::class)->handle($pass, $newUser))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('rejects model holders outside the configured allow-list', function (): void {
+    $allowedUser = createUserHolder('Allow A', 'allow-a@example.com');
+    config()->set('ticketing.holders.allowed_types', [$allowedUser->getMorphClass()]);
+
+    $pass = Pass::factory()->create();
+    $otherPass = Pass::factory()->create();
+
+    expect(fn () => app(TransferPassToHolderAction::class)->handle($pass, $otherPass))
+        ->toThrow(InvalidArgumentException::class, 'not allowed');
 });

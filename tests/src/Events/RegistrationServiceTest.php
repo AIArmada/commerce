@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Events\EventRegistrationCompleted;
+use AIArmada\Events\Events\EventRegistrationRefunded;
+use AIArmada\Events\Events\EventRegistrationRefundRestored;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
@@ -150,6 +152,46 @@ it('preserves the original lifecycle timestamp when restoring a refund-pending r
         ->and($restored->approved_at)->toEqual($approvedAt)
         ->and($restored->refund_pending_at)->toBeNull()
         ->and($restored->last_state_change_at)->not->toBeNull();
+});
+
+it('emits a single refunded event under duplicate refund calls', function (): void {
+    $event = Event::factory()->create();
+    $registration = EventRegistration::factory()->create([
+        'event_id' => $event->id,
+        'status' => 'confirmed',
+        'approved_at' => now()->subDay(),
+    ]);
+
+    EventFacade::fake([EventRegistrationRefunded::class]);
+
+    $service = app(RegistrationServiceInterface::class);
+    $service->refund($registration, 'Duplicate webhook delivery');
+    $service->refund($registration->fresh(), 'Duplicate webhook delivery');
+
+    EventFacade::assertDispatchedTimes(EventRegistrationRefunded::class, 1);
+
+    expect($registration->fresh()->status->getValue())->toBe('refunded');
+});
+
+it('restores a refund-pending registration exactly once under duplicate calls', function (): void {
+    $event = Event::factory()->create();
+    $registration = EventRegistration::factory()->create([
+        'event_id' => $event->id,
+        'status' => 'confirmed',
+        'approved_at' => now()->subDay(),
+    ]);
+
+    $service = app(RegistrationServiceInterface::class);
+    $service->markRefundPending($registration, 'Payment provider retry');
+
+    EventFacade::fake([EventRegistrationRefundRestored::class]);
+
+    $service->restoreFromRefundPending($registration->fresh(), 'Payment provider recovered');
+    $service->restoreFromRefundPending($registration->fresh(), 'Payment provider recovered');
+
+    EventFacade::assertDispatchedTimes(EventRegistrationRefundRestored::class, 1);
+
+    expect($registration->fresh()->status->getValue())->toBe('confirmed');
 });
 
 it('creates order-item registrations with session scope', function (): void {
