@@ -8,7 +8,6 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource\Schemas\A
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Schemas\AffiliatePayoutInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Tables\AffiliatePayoutsTable;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateForm;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Tables\AffiliatesTable;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;

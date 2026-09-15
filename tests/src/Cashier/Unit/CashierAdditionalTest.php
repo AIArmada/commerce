@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\Cashier;
 use AIArmada\Cashier\Contracts\GatewayContract;
-use AIArmada\Cashier\GatewayManager;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
-use AIArmada\Commerce\Tests\Cashier\Fixtures\User;
 
 uses(CashierTestCase::class);
 

@@ -9,7 +9,6 @@ use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Enums\AttributeType;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
-use AIArmada\Products\Events\ProductCreated;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\VariantsGenerated;
 use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;

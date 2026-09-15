@@ -13,7 +13,6 @@ use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\Chip\Webhooks\ProcessChipWebhook;
-use AIArmada\Chip\Webhooks\WebhookRetryManager;
 use AIArmada\Chip\Webhooks\WebhookRouter;
 use Illuminate\Support\Facades\Event;
 use Spatie\WebhookClient\Models\WebhookCall;

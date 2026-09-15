@@ -8,7 +8,6 @@ use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
-use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
 
 describe('PriceList Model', function (): void {

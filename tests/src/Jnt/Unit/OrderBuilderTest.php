@@ -6,7 +6,6 @@ use AIArmada\Jnt\Builders\OrderBuilder;
 use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\PackageInfoData;
-use AIArmada\Jnt\Exceptions\JntException;
 
 it('builds a valid order payload', function (): void {
     $sender = new AddressData(

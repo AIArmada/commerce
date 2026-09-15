@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\Data\WebhookHealth;
 use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Events\PayoutFailed;
 use AIArmada\Chip\Events\PayoutPending;

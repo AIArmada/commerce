@@ -6,7 +6,6 @@ use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;

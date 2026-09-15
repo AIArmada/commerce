@@ -7,7 +7,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
-use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;

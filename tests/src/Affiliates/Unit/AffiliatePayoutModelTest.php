@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use Illuminate\Database\Eloquent\Relations\HasMany;

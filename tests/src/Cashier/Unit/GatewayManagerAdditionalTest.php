@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Exceptions\Gateway\GatewayNotFoundException;
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;

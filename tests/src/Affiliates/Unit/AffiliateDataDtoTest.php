@@ -6,7 +6,6 @@ use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
