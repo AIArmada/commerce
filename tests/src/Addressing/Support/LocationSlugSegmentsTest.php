@@ -65,6 +65,10 @@ it('returns an empty suffix without location data', function (): void {
     expect(LocationSlugSegments::suffix([]))->toBe('');
 });
 
+it('ignores non-string area ids in the suffix', function (): void {
+    expect(LocationSlugSegments::suffix(['country_code' => 'MY'], 123, ['not-a-string']))->toBe('my');
+});
+
 it('lets the suffix prefer the referenced country over the literal', function (): void {
     $address = ['country_id' => $this->country->getKey(), 'country_code' => 'SG'];
 
