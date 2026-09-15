@@ -7,7 +7,7 @@ title: Installation
 ## Requirements
 
 - PHP 8.4 or higher
-- Laravel 11.x or higher
+- Laravel 13.x or higher
 - Database with UUID support (MySQL 8+, PostgreSQL, SQLite)
 
 ## Install via Composer

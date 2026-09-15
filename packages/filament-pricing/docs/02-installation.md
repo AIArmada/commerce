@@ -7,7 +7,7 @@ title: Installation
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11+
+- Laravel 13+
 - Filament v5
 - `aiarmada/pricing` package
 

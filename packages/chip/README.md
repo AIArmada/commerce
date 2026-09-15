@@ -1,6 +1,6 @@
 # CHIP for Laravel
 
-Laravel 12 integration for [CHIP](https://docs.chip-in.asia/) payment platform – **CHIP Collect** (payments) and **CHIP Send** (disbursements).
+Laravel 13 integration for [CHIP](https://docs.chip-in.asia/) payment platform – **CHIP Collect** (payments) and **CHIP Send** (disbursements).
 
 ## Features
 

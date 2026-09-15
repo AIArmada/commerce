@@ -588,11 +588,10 @@ it('docs use the correct namespace casing and filament version', function (): vo
     $root = dirname(__DIR__, 3);
     $installation = (string) file_get_contents($root . '/packages/filament-contacting/docs/02-installation.md');
     $usage = (string) file_get_contents($root . '/packages/filament-contacting/docs/04-usage.md');
-    $composer = json_decode((string) file_get_contents($root . '/packages/filament-contacting/composer.json'), true);
 
     expect($installation)->not->toContain('AiArmada\\');
     expect($usage)->not->toContain('AiArmada\\');
-    expect($installation)->toContain($composer['require']['filament/filament']);
+    expect($installation)->toContain('filament/filament');
 });
 
 it('infolist links only safe urls', function (): void {

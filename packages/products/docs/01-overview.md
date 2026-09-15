@@ -141,7 +141,7 @@ When `products.features.owner.enabled` is on, tenant-owned reads and writes foll
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11+
+- Laravel 13+
 - `aiarmada/commerce-support`
 - Spatie MediaLibrary
 - Spatie Sluggable

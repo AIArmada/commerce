@@ -54,7 +54,7 @@ The `aiarmada/filament-tax` package is the Filament admin adapter for `aiarmada/
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11+
+- Laravel 13+
 - Filament 5.0+
 - `aiarmada/tax` package
 

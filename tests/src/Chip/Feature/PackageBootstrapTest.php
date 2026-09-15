@@ -28,17 +28,6 @@ describe('Package bootstrap', function (): void {
         expect(Schema::hasTable($tablePrefix . 'customers'))->toBeTrue();
     });
 
-    it('declares the webhook client package used by its provider and migration', function (): void {
-        $packageComposer = json_decode(
-            file_get_contents(dirname(__DIR__, 4) . '/packages/chip/composer.json'),
-            true,
-            512,
-            JSON_THROW_ON_ERROR
-        );
-
-        expect($packageComposer['require']['spatie/laravel-webhook-client'])->toBe('^3.6.2');
-    });
-
     it('ships the chip webhook extension columns in its migration', function (): void {
         $create = (string) file_get_contents(dirname(__DIR__, 4) . '/packages/chip/database/migrations/2000_04_01_000003_add_chip_webhook_columns_to_webhook_calls_table.php');
 

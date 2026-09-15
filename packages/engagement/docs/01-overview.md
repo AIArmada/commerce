@@ -101,7 +101,7 @@ Apply to your models to add engagement capabilities:
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11+
+- Laravel 13+
 - `aiarmada/commerce-support`
 
 Engagement actors must implement `CanInteract`. Each subject passed to a manager must implement the marker contract for that primitive (`Followable`, `Bookmarkable`, `Respondable`, `Reactable`, `Remindable`, `Shareable`, or `Subscribable`).

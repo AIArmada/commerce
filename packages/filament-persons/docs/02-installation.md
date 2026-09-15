@@ -7,7 +7,7 @@ title: Installation
 ## Requirements
 
 - PHP 8.4 or newer
-- Laravel 11 or newer
+- Laravel 13 or newer
 - Filament v5
 - `aiarmada/persons`
 

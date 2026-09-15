@@ -136,7 +136,7 @@ All integrations are detected via `class_exists()` and enabled automatically.
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11+
+- Laravel 13+
 - `aiarmada/commerce-support` (for multi-tenancy primitives)
 
 ## Read next

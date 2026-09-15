@@ -5,7 +5,7 @@ title: Seating Installation
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12.x
+- Laravel 13.x
 - `aiarmada/commerce-support`
 
 ## Installation

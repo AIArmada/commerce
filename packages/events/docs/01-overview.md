@@ -107,5 +107,5 @@ Event roots use `commerce-support` owner scoping. Event-bound children inherit t
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11+
+- Laravel 13+
 - `aiarmada/commerce-support`

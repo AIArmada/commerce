@@ -82,4 +82,4 @@ of updating them because imports are insert-only.
 
 ## Filament Method Signature Mismatch
 
-If you see method signature errors, check that your installed Filament version matches `^5.7.0`. The components in this package use Filament v5 APIs.
+If you see method signature errors, check that your installed Filament version matches `^5.0`. The components in this package use Filament v5 APIs.

@@ -54,7 +54,7 @@ php artisan vendor:publish --tag=checkout-views
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11.0+
+- Laravel 13.0+
 - At least one payment gateway package (`chip`, `cashier-chip`, or `cashier`)
 
 ## Documentation

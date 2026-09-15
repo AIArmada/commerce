@@ -68,7 +68,7 @@ title: Overview
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11+
+- Laravel 13+
 - Filament 5+
 - `aiarmada/engagement`
 - `aiarmada/commerce-support`
