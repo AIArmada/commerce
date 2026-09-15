@@ -359,6 +359,10 @@ $service->waitlist($registration);
 $service->complete($registration);
 ```
 
+### Refund delivery safety
+
+`refund()` and `restoreFromRefundPending()` run against a row-locked fresh copy of the registration inside a transaction, so duplicate deliveries (retried order webhooks, double provider events) serialize per registration instead of both passing the status check: the second delivery sees the already-refunded state and becomes a no-op. This matters because the `EventRegistrationRefunded` listeners have real side effects — ticket inventory restore, seat release, and pass revocation would otherwise run twice. Keep refund-family transitions on `RegistrationServiceInterface`; reimplementing them without the lock reintroduces double-restore.
+
 ### Order-based registration
 
 ```php

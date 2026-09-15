@@ -82,10 +82,10 @@ use AIArmada\Affiliates\Services\PayoutReconciliationService;
 $service = app(PayoutReconciliationService::class);
 
 // Reconcile with provider
-$result = $service->reconcile($payout, $providerData);
+$changed = $service->reconcilePayout($payout, $externalStatus, $externalData);
 
-// Get unreconciled payouts
-$pending = $service->getUnreconciledPayouts();
+// Get payouts still needing reconciliation
+$pending = $service->getPayoutsNeedingReconciliation();
 ```
 
 ## FraudDetectionService

@@ -281,17 +281,19 @@ use AIArmada\Affiliates\Services\PayoutReconciliationService;
 
 $service = app(PayoutReconciliationService::class);
 
-// Get unreconciled payouts
-$pending = $service->getUnreconciledPayouts();
+// Get payouts still needing reconciliation
+$pending = $service->getPayoutsNeedingReconciliation();
 
-// Reconcile with provider data
-$result = $service->reconcile($payout, [
-    'transaction_id' => 'TXN-456',
-    'actual_amount' => 49850, // After fees
-    'provider_fee' => 150,
-    'settled_at' => now(),
+// Reconcile with a provider status string
+$changed = $service->reconcilePayout($payout, 'paid', [
+    'reference' => 'TXN-456',
+    'status' => 'settled',
 ]);
 ```
+
+Provider statuses map case-insensitively: `completed`/`paid`/`success`/`succeeded` → completed, `failed`/`declined`/`rejected`/`error` → failed, `pending`/`created` → pending, `processing`/`in_progress` → processing, `cancelled`/`canceled` → cancelled. Unknown strings return `false` without touching the payout.
+
+Reconciliation is guarded by the payout state machine: the payout row is locked, and only declared transitions run — stale or out-of-order provider events (including ones targeting terminal payouts) are ignored rather than forced, so a `Completed` payout can never be resurrected to `Failed`. On completion the linked conversions sync to `Paid`; on failure or cancellation reserved funds are released in the same transaction and conversions detach back to `Approved`. The boolean return tells you whether anything changed.
 
 ## Artisan Commands
 

@@ -223,6 +223,12 @@ $holders = $result; // Collection of newly current pass holders
 
 The bulk transfer respects `config('ticketing.transfers.bulk_max_size')`, fails if any requested pass ID is outside the current owner scope, and rejects batches that mix owners. Each pass receives its own holder row: a `PassHolder` template is replicated per pass, and a persisted holder that already belongs to another pass is rejected. Holder attributes (`name`, `email`, `holder_type`/`holder_id`) are validated; linked holder rows must exist within the current owner scope.
 
+### Holder switch and concurrency
+
+A transfer owns the whole current-holder switch inside one transaction: the pass row is locked (`SELECT ... FOR UPDATE`) to serialize concurrent transfers of the same pass, the new holder is saved as non-current first, every other current holder row is unset, and only then is the new holder flipped to current. A `PassTransfer` row records the previous holder (resolved deterministically by `created_at`) for the audit trail, and new holder rows inherit the pass owner explicitly so they can never land in a different owner scope than their pass.
+
+Exactly one current holder per pass is enforced by this locked sequence, not by a partial unique index: partial uniques are not portable to MySQL, and the pass-row lock already serializes the switch. Do not bypass `TransferPassToHolderAction` (or the `PassTransferServiceInterface::transfer()` boundary) with direct `is_current` writes — concurrent writers would reintroduce dual-current rows.
+
 ## Pass State Transitions
 
 States and allowed transitions:

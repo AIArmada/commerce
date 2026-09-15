@@ -36,6 +36,11 @@ fully-discounted ($0) renewals auto-complete locally — no charge is attempted,
 method is required, the billing date advances, and `SubscriptionRenewed` is dispatched
 with a `null` payment.
 
+Renewal claims that expire without an outcome fail closed instead of wedging the
+subscription: the attempt is marked failed with `last_error_code = CLAIM_EXPIRED`, the
+subscription moves to Past Due, and a warning is logged. Recovery happens through the
+webhook path, and the claim-level guard means an expired claim is never re-executed.
+
 ## Settled-period reconciliation hook
 
 When a second *distinct* purchase arrives for an already-settled billing period, the
@@ -433,6 +438,17 @@ $payment = $subscription->charge();
 // Charge with custom amount
 $payment = $subscription->charge(9900);
 ```
+
+## Unknown Prices Fail Closed
+
+A `null` item `unit_amount` means the price is *unknown*, not free. Display and reporting paths (`calculateSubscriptionAmount()`, `renewalAmount()`) coerce unknown prices to zero so totals stay total-tolerant — but every money-movement decision point refuses to act on them:
+
+- `Subscription::charge()` throws when the amount is derived from items with unknown prices. Pass an explicit amount only when you have priced the charge yourself.
+- `SubscriptionBuilder::checkout()` and `CreateChipSubscription` throw instead of starting a subscription with unknown item prices.
+- Renewal attempts with unknown prices fail with `INVALID_RENEWAL_AMOUNT` and move the subscription to Past Due instead of renewing for free or undercharging.
+- `Subscription::applyCoupon()` throws, since the discount would compute against a coerced base.
+
+An explicit `0` `unit_amount` is genuinely free and renews without payment (see Renewal idempotency above). If a charge fails with an unknown-price error, set `unit_amount` on every subscription item and retry.
 
 ## Subscription Events
 
