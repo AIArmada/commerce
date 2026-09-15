@@ -6,23 +6,19 @@ namespace AIArmada\FilamentSeating\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\FilamentSeating\Schemas\SeatMapFormSchema;
+use AIArmada\FilamentSeating\Tables\SeatMapTable;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
 final class SeatMapResource extends Resource
@@ -81,76 +77,14 @@ final class SeatMapResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema
-            ->schema([
-                Section::make('Details')
-                    ->columns(2)
-                    ->schema([
-                        TextInput::make('name')
-                            ->required()
-                            ->maxLength(255),
-                        TextInput::make('slug')
-                            ->required()
-                            ->maxLength(255)
-                            ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, SeatMapModel::class)),
-                        TextInput::make('version')
-                            ->numeric()
-                            ->integer()
-                            ->minValue(1)
-                            ->default(1),
-                        Select::make('status')
-                            ->options([
-                                'active' => 'Active',
-                                'inactive' => 'Inactive',
-                                'archived' => 'Archived',
-                            ])
-                            ->required(),
-                    ]),
-                Section::make('Metadata')
-                    ->schema([
-                        Textarea::make('layout_metadata')
-                            ->json()
-                            ->nullable()
-                            ->columnSpanFull(),
-                    ]),
-            ]);
+        return $schema->schema(SeatMapFormSchema::make());
     }
 
     public static function table(Table $table): Table
     {
         return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('slug')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('version')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('sections_count')
-                    ->label('Sections')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'active' => 'success',
-                        'inactive' => 'gray',
-                        'archived' => 'danger',
-                        default => 'gray',
-                    }),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
-                        'archived' => 'Archived',
-                    ]),
-            ])
+            ->columns(SeatMapTable::columns())
+            ->filters(SeatMapTable::filters())
             ->actions([
                 ViewAction::make(),
                 EditAction::make(),

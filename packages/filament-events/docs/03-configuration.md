@@ -73,16 +73,21 @@ The plugin reads resource toggles and navigation settings from `config/filament-
 
 ### Event form extensions
 
-The event resource accepts application-owned form extensions without coupling the package to
-application-specific fields such as media conversions or custom metadata.
+The event resource accepts form extensions without coupling the package to
+application-specific fields such as media conversions or custom metadata. It ships with
+one default, `AIArmada\FilamentEvents\Extensions\DefaultEventMediaExtension` (cover,
+poster, and gallery uploads backed by the `events` package media profile):
 
 ```php
 'resources' => [
     'event_form_extensions' => [
-        App\Filament\Resources\Events\EventMediaFormExtension::class,
+        App\Filament\Resources\Events\CustomEventExtension::class,
     ],
 ],
 ```
 
 Each extension must implement `AIArmada\FilamentEvents\Contracts\EventFormExtension` and
-return Filament schema components from `components()`.
+return Filament schema components from `components()`. Setting the list replaces the
+default entirely — re-add `DefaultEventMediaExtension::class` if you still want media.
+The default renders nothing when the resolved event model does not implement spatie's
+`HasMedia`, so custom event models without media stay safe.

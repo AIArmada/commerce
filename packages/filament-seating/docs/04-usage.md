@@ -15,6 +15,25 @@ Navigate to **Venue → Seat Maps** in the Filament admin panel to create, edit,
 
 > **Note:** Visual seat map editing and the occupancy viewer are planned but not yet available in the admin panel.
 
+### Managing seat maps on host resources
+
+`AIArmada\FilamentSeating\RelationManagers\SeatMapsRelationManager` manages seat maps
+on any host resource whose model has a `seatMaps` relationship. Register it from the
+host resource's `getRelations()` (or through the host package's relation-manager
+config seam, such as `filament-events.resources.event_relation_managers`):
+
+```php
+use AIArmada\FilamentSeating\RelationManagers\SeatMapsRelationManager;
+
+public static function getRelations(): array
+{
+    return [SeatMapsRelationManager::class];
+}
+```
+
+The form and table reuse the seat-map resource definitions. Edit and delete actions
+revalidate the record against the current owner scope.
+
 ## Authorization
 
 `SeatMapResource` gates access through `FilamentPermission` abilities under the

@@ -36,6 +36,28 @@ When `aiarmada/products` and `aiarmada/cart` are installed, you can link product
 - **Product** — Select a product from the dropdown
 - **Quantity** — How many to auto-add to cart
 
+### Managing ticket types on host resources
+
+`AIArmada\FilamentTicketing\RelationManagers\TicketTypesRelationManager` manages ticket
+types on any host resource whose model has a `ticketTypes` relationship. Register it
+from the host resource's `getRelations()` (or through the host package's
+relation-manager config seam, such as
+`filament-events.resources.event_relation_managers`):
+
+```php
+use AIArmada\FilamentTicketing\RelationManagers\TicketTypesRelationManager;
+
+public static function getRelations(): array
+{
+    return [TicketTypesRelationManager::class];
+}
+```
+
+The form and table reuse the ticket-type resource definitions. The ticketable picker is
+omitted (the owner record is the ticketable), and the code uniqueness rule scopes to
+the owner automatically. Edit and delete actions revalidate the record against the
+current owner scope.
+
 ## Viewing and Managing Passes
 
 ### Pass List

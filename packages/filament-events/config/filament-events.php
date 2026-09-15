@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\FilamentEvents\Extensions\DefaultEventMediaExtension;
+
 return [
     'navigation' => [
         'group' => 'Events',
@@ -37,7 +39,9 @@ return [
             'change_log' => 99,
             'event_template' => 98,
         ],
-        'event_form_extensions' => [],
+        'event_form_extensions' => [
+            DefaultEventMediaExtension::class,
+        ],
         'event_relation_managers' => [],
         'occurrence_relation_managers' => [],
         'session_relation_managers' => [],

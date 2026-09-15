@@ -57,3 +57,36 @@ Override navigation settings for any registered resource or page by its fully qu
 ```
 
 The settings page is removed from the panel and overrides are not applied.
+
+## Auditing related state changes
+
+`AIArmada\FilamentCommerceSupport\Concerns\AuditsRelatedStateChanges` audits
+related-state edits from Livewire pages. Capture a snapshot before the edit and audit
+the differences after it:
+
+```php
+use AIArmada\FilamentCommerceSupport\Concerns\AuditsRelatedStateChanges;
+use App\Models\Event; // your auditable model
+use Illuminate\Database\Eloquent\Model;
+
+class ManageEventSchedule
+{
+    use AuditsRelatedStateChanges;
+
+    protected function getRelatedAuditSnapshot(Model $record): array
+    {
+        return ['occurrences' => $record->occurrences()->pluck('starts_at', 'id')->all()];
+    }
+
+    public function save(Event $event): void
+    {
+        $this->captureRelatedAuditSnapshot($event);
+        // ... mutate related rows ...
+        $this->auditRelatedStateChanges($event, 'schedule_updated');
+    }
+}
+```
+
+Records that are not auditable, or snapshots without changes, record nothing. The
+snapshot shape is page-defined; the model needs `HasCommerceAudit` on a model
+implementing owen-it's `Auditable` contract.

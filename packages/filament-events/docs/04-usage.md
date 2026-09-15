@@ -139,6 +139,24 @@ All resources apply `OwnerUiScope::apply(..., includeGlobal: false)` to their ma
 
 Server-side validation in action handlers still relies on the core events package.
 
+## Embedding events on host resources
+
+`AIArmada\FilamentEvents\RelationManagers\EventsRelationManager` embeds the event table
+on any host resource whose model has an `events` relationship. Register it from the
+host resource:
+
+```php
+use AIArmada\FilamentEvents\RelationManagers\EventsRelationManager;
+
+public static function getRelations(): array
+{
+    return [EventsRelationManager::class];
+}
+```
+
+The table renders from `EventResource`, and create/edit actions link to the event
+resource pages.
+
 ## Disabling resources
 
 Individual resources can be disabled via config:
