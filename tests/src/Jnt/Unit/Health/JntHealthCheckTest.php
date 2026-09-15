@@ -42,7 +42,7 @@ describe('JntHealthCheck', function (): void {
 
         expect($result)->toBeInstanceOf(Result::class);
         expect((string) $result->status)->toBe((string) Status::warning());
-        expect($result->getShortSummary())->toBe('J&T API credentials not configured');
+        expect($result->getNotificationMessage())->toBe('J&T API credentials not configured');
     });
 
     it('returns result when API configuration is set', function (): void {
@@ -64,7 +64,7 @@ describe('JntHealthCheck', function (): void {
 
         expect($result)->toBeInstanceOf(Result::class);
         expect((string) $result->status)->toBe((string) Status::ok());
-        expect($result->getShortSummary())->toBe('J&T Express API is configured');
+        expect($result->getNotificationMessage())->toBe('J&T Express API is configured');
     });
 
     it('can be instantiated correctly', function (): void {

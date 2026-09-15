@@ -9,7 +9,6 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use PDO;
 
 beforeEach(function (): void {
     Schema::dropIfExists('like_search_probe');

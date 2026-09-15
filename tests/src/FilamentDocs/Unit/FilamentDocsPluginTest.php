@@ -108,7 +108,9 @@ it('can disable pages and widgets via fluent API', function (): void {
 });
 
 it('can use custom resource classes via fluent API', function (): void {
-    $customDocResource = get_class(new class extends DocResource {});
+    // DocResource is final by design; customization is full replacement,
+    // not subclassing. The plugin accepts any class-string replacement.
+    $customDocResource = get_class(new class {});
 
     $plugin = FilamentDocsPlugin::make()
         ->docResource($customDocResource);
