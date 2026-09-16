@@ -10,7 +10,17 @@ use Spatie\ModelStates\StateConfig;
 
 abstract class OccurrenceStatus extends State implements HasColor
 {
+    /** @var array<class-string, StateConfig> */
+    private static array $configCache = [];
+
     public static function config(): StateConfig
+    {
+        // Spatie rebuilds this config (including a directory scan) on every
+        // state instantiation, i.e. on every status attribute read.
+        return self::$configCache[static::class] ??= self::buildConfig();
+    }
+
+    private static function buildConfig(): StateConfig
     {
         return parent::config()
             ->registerStatesFromDirectory(__DIR__)

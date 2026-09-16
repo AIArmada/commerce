@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
+use AIArmada\CommerceSupport\Concerns\ParsesPostgresTimestamps;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Concerns\HasContactMethods;
@@ -111,6 +112,7 @@ class Event extends Model implements HasMedia, TicketableInterface
         RegistersEventMedia::registerMediaCollections insteadof InteractsWithMedia;
         RegistersEventMedia::registerMediaConversions insteadof InteractsWithMedia;
     }
+    use ParsesPostgresTimestamps;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 

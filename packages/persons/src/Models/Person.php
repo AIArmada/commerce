@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Models;
 
+use AIArmada\CommerceSupport\Concerns\ParsesPostgresTimestamps;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\PersonStatus;
@@ -53,6 +54,7 @@ class Person extends Model
     use HasFactory;
     use HasTitles;
     use HasUuids;
+    use ParsesPostgresTimestamps;
 
     protected $attributes = [
         'status' => PersonStatus::Active->value,
