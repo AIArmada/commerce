@@ -157,6 +157,9 @@ final class CreateRegistrationsFromOrderAction
             $registrationNotes = $this->registrationNotes($options);
 
             $lineTotal = $this->resolveOrderItemLineTotal($orderItem, $expectedCount);
+            $currency = (string) ($orderItem->currency
+                ?? $ticketType->currency
+                ?? config('events.defaults.currency', 'MYR'));
 
             foreach ($participants as $participantIndex => $participant) {
                 $allocatedTotal = $this->allocateLineTotal($lineTotal, $expectedCount, $participantIndex);
@@ -169,6 +172,7 @@ final class CreateRegistrationsFromOrderAction
                     'source' => $source,
                     'total_participants' => 1,
                     'total_amount' => $allocatedTotal,
+                    'currency' => $currency,
                     'external_order_id' => $orderItem->order_id,
                     'external_order_type' => $orderClass,
                     'payment_status' => $paymentStatus,
@@ -179,7 +183,7 @@ final class CreateRegistrationsFromOrderAction
                         'quantity' => 1,
                         'unit_price' => $orderItem->unit_price,
                         'total_price' => $allocatedTotal,
-                        'currency' => $orderItem->currency,
+                        'currency' => $currency,
                         'status' => $itemStatus,
                         'external_order_item_id' => $orderItem->getKey(),
                         'external_order_item_type' => $orderItemClass,

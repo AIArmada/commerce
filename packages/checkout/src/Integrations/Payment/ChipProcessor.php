@@ -14,6 +14,8 @@ use AIArmada\Checkout\Support\ChipPurchasePayloadBuilder;
 use AIArmada\Checkout\Support\ChipRefundGateway;
 use AIArmada\Checkout\Support\NormalizesCallbackAmounts;
 use AIArmada\Chip\Facades\Chip;
+use AIArmada\Chip\Listeners\StoreWebhookData;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 final class ChipProcessor implements PaymentCompensationInterface, PaymentProcessorInterface
@@ -113,6 +115,8 @@ final class ChipProcessor implements PaymentCompensationInterface, PaymentProces
         try {
             $purchase = Chip::getPurchase($paymentId);
 
+            $this->syncPurchaseMirror($purchase->toArray());
+
             $paymentStatus = $this->statusMapper->fromPurchaseStatus($purchase->status);
             $gatewayResponse = $purchase->toArray();
 
@@ -127,6 +131,26 @@ final class ChipProcessor implements PaymentCompensationInterface, PaymentProces
             );
         } catch (Throwable $e) {
             return PaymentResult::failed($e->getMessage(), [], $paymentId);
+        }
+    }
+
+    /**
+     * Persist the purchase payload fetched from the API so the local mirror
+     * stays current even when webhooks cannot reach the application.
+     *
+     * Mirror sync must never fail verification, so failures only log.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function syncPurchaseMirror(array $payload): void
+    {
+        try {
+            app(StoreWebhookData::class)->storePurchasePayload($payload);
+        } catch (Throwable $exception) {
+            Log::warning('CHIP purchase mirror sync failed during status check.', [
+                'purchase_id' => $payload['id'] ?? null,
+                'error' => $exception->getMessage(),
+            ]);
         }
     }
 }

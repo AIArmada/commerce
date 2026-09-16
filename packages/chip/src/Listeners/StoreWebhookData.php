@@ -83,10 +83,20 @@ final class StoreWebhookData
     {
         $owner = $this->resolveOwner();
 
-        $purchase = Purchase::query()->find($payload['id']) ?? new Purchase;
+        $purchase = Purchase::query()->find($payload['id']);
+
+        if ($purchase === null) {
+            // Promote the reservation stub written when the purchase was created
+            // so the ledger and the mirror remain a single row keyed by the CHIP id.
+            $purchase = Purchase::query()
+                ->where('metadata->chip_idempotency->response->id', $payload['id'])
+                ->first() ?? new Purchase;
+        }
+
         $purchase->forceFill(
             [
                 'id' => $payload['id'],
+                'metadata' => $this->mergeLedgerMetadata($purchase, $payload),
 
                 // Core fields
                 'type' => $payload['type'],
@@ -102,7 +112,6 @@ final class StoreWebhookData
                 'status_history' => $payload['status_history'] ?? [],
                 'currency_conversion' => $payload['currency_conversion'] ?? null,
                 'payment_method_whitelist' => $payload['payment_method_whitelist'] ?? null,
-                'metadata' => $payload['purchase']['metadata'] ?? null,
 
                 // UUID references
                 'brand_id' => $payload['brand_id'],
@@ -157,6 +166,29 @@ final class StoreWebhookData
         if ($owner !== null && ! $purchase->hasOwner()) {
             $purchase->assignOwner($owner)->save();
         }
+    }
+
+    /**
+     * Merge incoming API metadata with the local idempotency ledger entry.
+     *
+     * Syncs must not wipe the ledger: replayed creates look it up by key.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>|null
+     */
+    private function mergeLedgerMetadata(Purchase $purchase, array $payload): ?array
+    {
+        $incoming = $payload['purchase']['metadata'] ?? null;
+        $incoming = is_array($incoming) ? $incoming : null;
+
+        $existing = $purchase->metadata ?? null;
+        $ledger = is_array($existing) ? ($existing['chip_idempotency'] ?? null) : null;
+
+        if ($ledger === null) {
+            return $incoming;
+        }
+
+        return array_merge($incoming ?? [], ['chip_idempotency' => $ledger]);
     }
 
     /**
