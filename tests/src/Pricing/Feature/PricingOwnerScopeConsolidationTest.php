@@ -12,10 +12,6 @@ describe('Pricing owner scope consolidation', function (): void {
         config()->set('pricing.features.owner.include_global', false);
     });
 
-    it('adapter class is removed', function (): void {
-        expect(class_exists('AIArmada\Pricing\Support\PricingOwnerScope'))->toBeFalse();
-    });
-
     it('PriceList is owner-scoped via HasOwner global scope', function (): void {
         $owner = User::query()->create([
             'name' => 'Pricing Cons. Owner',

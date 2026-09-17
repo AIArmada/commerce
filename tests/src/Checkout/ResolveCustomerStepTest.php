@@ -310,7 +310,7 @@ describe('ResolveCustomerStep', function (): void {
             ->and($resolved?->paymentCustomer?->getShippingCountry())->toBe('AU');
     });
 
-    it('resolves email and phone from contacting rows now that native columns are removed', function (): void {
+    it('resolves email and phone from contacting rows', function (): void {
         $customer = OwnerContext::withOwner(null, function (): Customer {
             $customer = Customer::query()->create([
                 'first_name' => 'Payment',

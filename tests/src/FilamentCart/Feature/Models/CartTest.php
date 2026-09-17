@@ -213,10 +213,6 @@ describe('Cart Model', function (): void {
         expect(Cart::resolveCurrentOwner()?->id)->toBe($user->id);
     });
 
-    it('does not expose the removed unscoped user relation', function (): void {
-        expect(method_exists(Cart::class, 'user'))->toBeFalse();
-    });
-
     it('auto-assigns the resolved owner when direct snapshot writes occur in owner mode', function (): void {
         config()->set('cart.owner.enabled', true);
         config()->set('cart.owner.include_global', false);

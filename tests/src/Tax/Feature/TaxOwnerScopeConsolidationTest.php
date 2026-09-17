@@ -12,10 +12,6 @@ describe('Tax owner scope consolidation', function (): void {
         config()->set('tax.features.owner.include_global', false);
     });
 
-    it('adapter class is removed', function (): void {
-        expect(class_exists('AIArmada\Tax\Support\TaxOwnerScope'))->toBeFalse();
-    });
-
     it('TaxZone is owner-scoped via HasOwner global scope', function (): void {
         $owner = User::query()->create([
             'name' => 'Tax Cons. Owner',

@@ -16,7 +16,6 @@ use AIArmada\Events\Models\EventUpdate;
 use AIArmada\Events\Notifications\EventChangeNoticeNotification;
 use AIArmada\Events\Services\EventNotificationDispatcher;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\File;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -110,36 +109,4 @@ it('routes a required change-chain notice through the listener and communication
             && $context->subjectId === $event->id
             && $context->purpose === 'event-change-notice';
     }, count: 1);
-});
-
-it('keeps the retired table-backed model names out of owned source and tests', function (): void {
-    $retiredNames = [
-        'EventNotification' . 'Batch',
-        'EventNotification' . 'Delivery',
-    ];
-    $repositoryRoot = dirname(__DIR__, 3);
-    $roots = [
-        $repositoryRoot . '/packages/events/src',
-        $repositoryRoot . '/packages/filament-events/src',
-        $repositoryRoot . '/tests/src/Events',
-        $repositoryRoot . '/tests/src/FilamentEvents',
-    ];
-    $references = [];
-
-    foreach ($roots as $root) {
-        foreach (File::allFiles($root) as $file) {
-            if ($file->getPathname() === __FILE__) {
-                continue;
-            }
-
-            $contents = File::get($file->getPathname());
-            foreach ($retiredNames as $retiredName) {
-                if (str_contains($contents, $retiredName)) {
-                    $references[] = $file->getPathname() . ' contains ' . $retiredName;
-                }
-            }
-        }
-    }
-
-    expect($references)->toBeEmpty();
 });

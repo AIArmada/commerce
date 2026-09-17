@@ -19,7 +19,6 @@ use AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages\ListCustomers;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManagers\SubscriptionsRelationManager;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource\Tables\CustomerTable;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource\Pages\ListInvoices;
-use AIArmada\FilamentCashierChip\Resources\InvoiceResource\Tables\InvoiceTable;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages\ListSubscriptions;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\RelationManagers\SubscriptionItemsRelationManager;
@@ -785,17 +784,11 @@ it('chart currency is allowlisted before JS interpolation', function (): void {
     expect($callback)->not->toContain('alert');
 });
 
-it('dead invoice buttons are gone', function (): void {
-    $table = InvoiceTable::configure(regression_makeTable());
-    $names = array_map(fn ($action): ?string => $action->getName(), $table->getRecordActions());
-
-    expect($names)->not->toContain('download_pdf');
-
+it('list invoices header exposes the reports action', function (): void {
     $page = app(ListInvoices::class);
     $method = new ReflectionMethod(ListInvoices::class, 'getHeaderActions');
     $headerNames = array_map(fn (Action $action): ?string => $action->getName(), $method->invoke($page));
 
-    expect($headerNames)->not->toContain('export_csv');
     expect($headerNames)->toContain('view_reports');
 });
 

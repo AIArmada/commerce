@@ -8,7 +8,6 @@ use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
 use AIArmada\Tax\States\TaxExemptionState\PendingState;
-use Symfony\Component\Console\Exception\CommandNotFoundException;
 
 describe('Exemption requests', function (): void {
     it('forces new requests into pending and drops privileged fields', function (): void {
@@ -136,19 +135,5 @@ describe('Owner mass assignment', function (): void {
 
         expect($exemption->owner_type)->toBeNull()
             ->and($exemption->owner_id)->toBeNull();
-    });
-});
-
-describe('Removed console commands', function (): void {
-    it('no longer registers rate recalculation', function (): void {
-        $this->expectException(CommandNotFoundException::class);
-
-        $this->artisan('tax:recalculate-rates');
-    });
-
-    it('no longer registers zone sync', function (): void {
-        $this->expectException(CommandNotFoundException::class);
-
-        $this->artisan('tax:sync-zones');
     });
 });

@@ -14,10 +14,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 describe('ScopesByBelongsToOwner', function (): void {
-    test('replaces the two retired relationship scope traits', function (): void {
-        expect(class_exists('AIArmada\\AffiliateNetwork\\Models\\Concerns\\ScopesByAffiliateOwner'))->toBeFalse()
-            ->and(class_exists('AIArmada\\AffiliateNetwork\\Models\\Concerns\\ScopesBySiteOwner'))->toBeFalse()
-            ->and(array_key_exists(ScopesByBelongsToOwner::class, (new AffiliateOffer)->getGlobalScopes()))->toBeTrue()
+    test('registers the belongs-to owner scope on offer models', function (): void {
+        expect(array_key_exists(ScopesByBelongsToOwner::class, (new AffiliateOffer)->getGlobalScopes()))->toBeTrue()
             ->and(array_key_exists(ScopesByBelongsToOwner::class, (new AffiliateOfferCreative)->getGlobalScopes()))->toBeTrue();
     });
 

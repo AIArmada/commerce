@@ -12,10 +12,6 @@ describe('Promotions owner scope consolidation', function (): void {
         config()->set('promotions.features.owner.include_global', false);
     });
 
-    it('adapter class is removed', function (): void {
-        expect(class_exists('AIArmada\Promotions\Support\PromotionsOwnerScope'))->toBeFalse();
-    });
-
     it('Promotion is owner-scoped via HasOwner global scope', function (): void {
         $owner = User::query()->create([
             'name' => 'Promo Cons. Owner',

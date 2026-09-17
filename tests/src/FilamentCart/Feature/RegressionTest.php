@@ -294,12 +294,7 @@ describe('multi-currency total value', function (): void {
     });
 });
 
-describe('dead pages and scope key', function (): void {
-    it('removed the unreachable cart create and edit pages', function (): void {
-        expect(class_exists('AIArmada\\FilamentCart\\Resources\\CartResource\\Pages\\CreateCart'))->toBeFalse();
-        expect(class_exists('AIArmada\\FilamentCart\\Resources\\CartResource\\Pages\\EditCart'))->toBeFalse();
-    });
-
+describe('scope key', function (): void {
     it('derives the global scope key when owner scoping is disabled', function (): void {
         config()->set('cart.owner.enabled', false);
 

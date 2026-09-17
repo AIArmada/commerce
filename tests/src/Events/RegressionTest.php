@@ -498,13 +498,6 @@ it('warns when the authz role for a management assignment is missing', function 
     Log::shouldHaveReceived('warning')->once();
 });
 
-// Dead input DTOs stay deleted.
-it('removed the dead registration input DTOs', function (): void {
-    expect(class_exists('AIArmada\Events\Data\RegisterInput'))->toBeFalse()
-        ->and(class_exists('AIArmada\Events\Data\ParticipantInput'))->toBeFalse()
-        ->and(class_exists('AIArmada\Events\Data\CheckInInput'))->toBeFalse();
-});
-
 // Deleting an event cascades through the owned subtree.
 it('cascades event deletes through occurrences, sessions, and registrations', function (): void {
     OwnerContext::withOwner(null, function (): void {

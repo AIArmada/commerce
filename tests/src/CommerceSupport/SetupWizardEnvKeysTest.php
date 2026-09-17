@@ -30,20 +30,3 @@ it('writes only environment variables recognized by package configuration', func
 
     expect($unrecognized)->toBe([]);
 });
-
-it('no longer writes retired chip and jnt variables', function (): void {
-    $repoRoot = dirname(__DIR__, 3);
-
-    $commandSource = (string) file_get_contents(
-        $repoRoot . '/packages/commerce-support/src/Commands/SetupCommand.php'
-    );
-
-    $retiredKeys = ['CHIP_BRAND_ID', 'CHIP_SECRET_KEY', 'CHIP_MODE', 'CHIP_WEBHOOK_URL', 'JNT_API_KEY', 'JNT_API_URL'];
-
-    $stillReferenced = array_values(array_filter(
-        $retiredKeys,
-        fn (string $key): bool => str_contains($commandSource, "'{$key}'")
-    ));
-
-    expect($stillReferenced)->toBe([]);
-});

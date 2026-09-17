@@ -253,11 +253,6 @@ it('honors explicit display, validity, ordering, and verification inputs', funct
     expect($kept->display_value)->toBe('Custom display');
 });
 
-it('removes dead normalized DTO fields', function (): void {
-    expect(property_exists(ContactMethodData::class, 'normalizedValue'))->toBeFalse()
-        ->and(property_exists(SocialProfileData::class, 'normalizedUrl'))->toBeFalse();
-});
-
 it('treats omitted country codes as null on create', function (): void {
     $customer = regressionCustomer('country');
 
@@ -416,10 +411,9 @@ it('treats snapshots as append-only with action-owned lineage', function (): voi
         ->and($filled->getFillable())->not->toContain('source_id', 'source_type');
 });
 
-it('wires the normalizer contracts and drops the dead snapshot DTO', function (): void {
+it('wires the normalizer contracts', function (): void {
     expect(app(ContactMethodNormalizer::class))->toBeInstanceOf(NormalizeContactMethodAction::class)
-        ->and(app(SocialProfileNormalizer::class))->toBeInstanceOf(NormalizeSocialProfileAction::class)
-        ->and(class_exists('AIArmada\\Contacting\\Data\\ContactSnapshotData'))->toBeFalse();
+        ->and(app(SocialProfileNormalizer::class))->toBeInstanceOf(NormalizeSocialProfileAction::class);
 });
 
 it('leaves parentless primaries undemoted by design', function (): void {

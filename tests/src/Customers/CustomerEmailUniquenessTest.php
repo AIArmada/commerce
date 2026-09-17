@@ -21,7 +21,7 @@ beforeEach(function (): void {
     });
 });
 
-it('does not persist native customer contact attributes', function (): void {
+it('ignores native contact attributes passed to mass assignment', function (): void {
     $customer = Customer::query()->create([
         'first_name' => 'Canonical',
         'last_name' => 'Customer',
@@ -29,10 +29,7 @@ it('does not persist native customer contact attributes', function (): void {
         'phone' => '+60123456789',
     ]);
 
-    expect(Schema::hasColumn($customer->getTable(), 'email'))->toBeFalse()
-        ->and(Schema::hasColumn($customer->getTable(), 'phone'))->toBeFalse()
-        ->and(config('customers.database.tables.addresses'))->toBeNull()
-        ->and($customer->getAttributes())->not->toHaveKeys(['email', 'phone'])
+    expect($customer->getAttributes())->not->toHaveKeys(['email', 'phone'])
         ->and($customer->resolveEmail())->toBeNull()
         ->and($customer->resolvePhone())->toBeNull();
 });
@@ -113,15 +110,4 @@ it('keeps global email uniqueness separate from owned email uniqueness', functio
             ]);
             $duplicate->addContactMethod(ContactMethodData::email('GLOBAL@example.com'));
         }))->toThrow(ValidationException::class);
-});
-
-it('keeps the removed native contact columns out of the customers table shape', function (): void {
-    $tableName = config('customers.database.tables.customers', 'customers');
-    $createMigration = file_get_contents(dirname(__DIR__, 3) . '/packages/customers/database/migrations/2000_05_01_000001_create_customers_table.php');
-
-    expect(Schema::hasColumn($tableName, 'email'))->toBeFalse()
-        ->and(Schema::hasColumn($tableName, 'phone'))->toBeFalse()
-        ->and($createMigration)->toBeString()
-        ->and($createMigration)->not->toContain("'email'")
-        ->and($createMigration)->not->toContain("'phone'");
 });

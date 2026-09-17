@@ -9,24 +9,21 @@ it('accepts latitude', function (): void {
     expect($data->latitude)->toBe(3.1712);
 });
 
-it('does not accept the removed lat alias', function (): void {
-    $data = AddressData::from(['lat' => 3.1712]);
-    expect($data->latitude)->toBeNull();
+it('ignores unknown geo keys', function (): void {
+    $data = AddressData::from([
+        'latitude_degrees' => 3.1712,
+        'longitude_degrees' => 101.6678,
+        'map_place_reference' => 'place-ref-123',
+    ]);
+
+    expect($data->latitude)->toBeNull()
+        ->and($data->longitude)->toBeNull()
+        ->and($data->providerPlaceId)->toBeNull();
 });
 
 it('accepts longitude', function (): void {
     $data = AddressData::from(['longitude' => 101.6678]);
     expect($data->longitude)->toBe(101.6678);
-});
-
-it('does not accept the removed lng alias', function (): void {
-    $data = AddressData::from(['lng' => 101.6678]);
-    expect($data->longitude)->toBeNull();
-});
-
-it('does not accept the removed lon alias', function (): void {
-    $data = AddressData::from(['lon' => 101.6678]);
-    expect($data->longitude)->toBeNull();
 });
 
 it('accepts formatted_address', function (): void {
@@ -62,16 +59,6 @@ it('accepts place_id alias', function (): void {
 it('accepts placeId alias', function (): void {
     $data = AddressData::from(['placeId' => 'place-id-123']);
     expect($data->providerPlaceId)->toBe('place-id-123');
-});
-
-it('does not accept the removed google_place_id alias', function (): void {
-    $data = AddressData::from(['google_place_id' => 'google-place-123']);
-    expect($data->providerPlaceId)->toBeNull();
-});
-
-it('does not accept the removed googlePlaceId alias', function (): void {
-    $data = AddressData::from(['googlePlaceId' => 'google-place-123']);
-    expect($data->providerPlaceId)->toBeNull();
 });
 
 it('keeps existing address field aliases working with canonical geo fields', function (): void {

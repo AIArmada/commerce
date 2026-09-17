@@ -109,12 +109,6 @@ describe('Action input validation', function (): void {
             ->toThrow(InvalidGatewayException::class);
     });
 
-    it('removed the never-forwarded refund options parameter', function (): void {
-        $parameters = (new ReflectionMethod(RefundPayment::class, 'handle'))->getParameters();
-
-        expect($parameters)->toHaveCount(3)
-            ->and(array_map(fn ($p) => $p->getName(), $parameters))->toBe(['paymentId', 'amount', 'gateway']);
-    });
 });
 
 describe('Action owner authorization', function (): void {

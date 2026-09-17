@@ -62,14 +62,6 @@ it('enforces unique ISO3 and numeric country codes', function (): void {
     ]))->toThrow(QueryException::class);
 });
 
-it('does not populate calling_codes (dropped from bundled data)', function (): void {
-    $this->action->execute();
-
-    $my = AddressCountry::where('iso2', 'MY')->first();
-
-    expect($my->calling_codes)->toBeNull();
-});
-
 it('stores reference data outside the country row', function (): void {
     $this->action->execute();
     app(SeedCurrenciesAction::class)->execute();

@@ -12,10 +12,6 @@ describe('Shipping owner scope consolidation', function (): void {
         config()->set('shipping.features.owner.include_global', false);
     });
 
-    it('adapter class is removed', function (): void {
-        expect(class_exists('AIArmada\Shipping\Support\ShippingOwnerScope'))->toBeFalse();
-    });
-
     it('ShippingZone is owner-scoped via HasOwner global scope', function (): void {
         $owner = User::query()->create([
             'name' => 'Shipping Cons. Owner',

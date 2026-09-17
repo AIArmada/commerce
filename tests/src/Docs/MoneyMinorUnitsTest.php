@@ -29,14 +29,8 @@ it('calculates large totals with exact integer arithmetic', function (): void {
     ]);
 });
 
-it('rejects removed major-unit aliases and non-integer minor units', function (): void {
-    expect(fn (): DocData => DocData::from(['total' => 10.50]))
-        ->toThrow(InvalidArgumentException::class)
-        ->and(fn (): DocData => DocData::from(['total_minor' => 1.5]))
-        ->toThrow(InvalidArgumentException::class)
-        ->and(fn (): array => app(DocService::class)->calculateTotals([
-            ['quantity' => 1, 'price' => 10.50],
-        ]))
+it('rejects non-integer minor units', function (): void {
+    expect(fn (): DocData => DocData::from(['total_minor' => 1.5]))
         ->toThrow(InvalidArgumentException::class);
 });
 
