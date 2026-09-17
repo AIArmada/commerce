@@ -65,7 +65,12 @@ class AddressFormSchema
             ->maxLength(255);
 
         $fields[] = Select::make($prefix . 'state_id')
-            ->label('State / Federal Territory')
+            ->label(function (callable $get) use ($prefix): string {
+                $level = app(CountryAddressProfileResolver::class)
+                    ->stateLevel(self::nullableString($get($prefix . 'country_code')));
+
+                return $level?->label ?? 'State / Province';
+            })
             ->options(function (callable $get) use ($prefix): array {
                 $countryCode = self::nullableString($get($prefix . 'country_code'));
 
