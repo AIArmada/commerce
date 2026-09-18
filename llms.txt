@@ -1,11 +1,11 @@
 # AIArmada Commerce
 
-> Laravel commerce monorepo: 67 packages (domain + Filament admin + gateways + analytics). Money is minor units + currency. `filament-*` packages are adapters, not domain owners. Owner safety is never UI-only.
+> Laravel commerce monorepo: 69 packages (domain + Filament admin + gateways + analytics). Money is minor units + currency. `filament-*` packages are adapters, not domain owners. Owner safety is never UI-only.
 
 ## Start here (fastest first)
 
 - [CONTEXT.md](CONTEXT.md) — 30-second AI dispatch + owning-package chooser
-- [PACKAGES.md](PACKAGES.md) — 60-second picker: all 67 packages, 1 line + triggers each
+- [PACKAGES.md](PACKAGES.md) — 60-second picker: all 69 packages, 1 line + triggers each
 - [CONTEXT-MAP.md](CONTEXT-MAP.md) — detailed routing rules, invariants, family map
 - [docs/ai/package-index.json](docs/ai/package-index.json) — greppable index: keywords, use-when, pairs, owner scope
 - [docs/ai/package-manifests.json](docs/ai/package-manifests.json) — full manifest: composer names, canonical docs, related packages
@@ -25,7 +25,7 @@
 - Communications: `communications` (+ adapter)
 - Governance: `moderation` · Knowledge: `references`
 - Catalog & identity: `persons`, `customers`, `products`, `inventory`, `pricing`, `tax`, `ticketing` (+ adapters)
-- Growth: `promotions`, `vouchers`, `affiliates`, `affiliate-network`, `growth`, `engagement`, `feedback` (+ adapters)
+- Growth: `promotions`, `vouchers`, `affiliates`, `affiliate-network`, `growth`, `engagement`, `feedback`, `links` (+ adapters)
 - Checkout: `cart`, `checkout`, `orders`, `shipping`, `jnt` (+ adapters)
 - Payments & documents: `chip`, `cashier`, `cashier-chip`, `docs` (+ adapters)
 - Analytics & events: `events`, `signals` (+ adapters) · Venue: `seating` (+ adapter) · Bundle: `csuite`

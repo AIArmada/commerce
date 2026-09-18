@@ -187,7 +187,7 @@ Before shipping a change:
 The AI-oriented retrieval layer lives in:
 
 - `CONTEXT.md` — 30-second dispatch
-- `PACKAGES.md` — 60-second picker (all 67 packages, 1 line + triggers)
+- `PACKAGES.md` — 60-second picker (all 69 packages, 1 line + triggers)
 - `llms.txt` — LLM entrypoint (points here)
 - `docs/ai/package-index.json` — lightweight greppable index (keywords, triggers, pairs, owner scope)
 - `docs/ai/package-manifests.json` — full manifest (composer names, canonical docs, related)

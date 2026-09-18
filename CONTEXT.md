@@ -10,7 +10,7 @@ Use this file first. It is intentionally short and optimized for routing an AI m
 
 ## Read order
 
-1. `PACKAGES.md` — 60-second package picker (all 67 packages, 1 line each)
+1. `PACKAGES.md` — 60-second package picker (all 69 packages, 1 line each)
 2. `CONTEXT-MAP.md` — detailed routing rules, invariants, family map
 3. `docs/ai/package-index.json` — machine-greppable index (keywords, triggers, pairs)
 4. `docs/ai/package-manifests.json` — full manifest (composer names, canonical docs, related)

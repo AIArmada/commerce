@@ -49,6 +49,7 @@ jobs:
           - filament-growth
           - filament-inventory
           - filament-jnt
+          - filament-links
           - filament-orders
           - filament-organizations
           - filament-persons
@@ -64,6 +65,7 @@ jobs:
           - growth
           - inventory
           - jnt
+          - links
           - membership
           - moderation
           - orders

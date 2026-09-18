@@ -51,7 +51,7 @@ The 60-second package picker at the repo root.
 
 Use it for:
 
-- one-line summaries of all 67 packages,
+- one-line summaries of all 69 packages,
 - keyword triggers per package,
 - paired-package discovery at a glance,
 - decision shortcuts for commonly confused pairs (persons vs customers, promotions vs vouchers, events vs seating vs ticketing).
