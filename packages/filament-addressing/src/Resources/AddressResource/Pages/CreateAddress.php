@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAddressing\Resources\AddressResource\Pages;
 use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
+use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
 use LogicException;
@@ -49,8 +50,7 @@ final class CreateAddress extends CreateRecord
     {
         $rawState = $this->form->getRawState();
         $state = is_array($rawState) ? $rawState : $rawState->toArray();
-        $assignments = $state['area_assignments'] ?? [];
 
-        return is_array($assignments) ? $assignments : [];
+        return AddressFormSchema::extractAreaAssignments($state);
     }
 }

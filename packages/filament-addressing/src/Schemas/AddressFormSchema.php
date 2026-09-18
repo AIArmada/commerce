@@ -87,6 +87,11 @@ class AddressFormSchema
             ->searchable()
             ->rules(fn (callable $get): array => [new StateBelongsToCountry($get($prefix . 'country_code'))])
             ->visible(fn (callable $get): bool => self::countryHasStates($get($prefix . 'country_code')))
+            ->afterStateUpdated(function (callable $set, callable $get) use ($prefix): void {
+                foreach (self::stateDependentRoles(self::nullableString($get($prefix . 'country_code'))) as $role) {
+                    $set($prefix . 'area_assignments.' . $role, null);
+                }
+            })
             ->live();
 
         foreach ($assignmentRoles as $role) {
@@ -163,6 +168,11 @@ class AddressFormSchema
                 ->default($assignmentValues[$role] ?? null)
                 ->dehydrated(false)
                 ->visible(fn (callable $get): bool => app(CountryAddressProfileResolver::class)->definitionForRole(self::nullableString($get($prefix . 'country_code')), $role) !== null)
+                ->afterStateUpdated(function (callable $set, callable $get) use ($prefix, $role): void {
+                    foreach (self::childRoles(self::nullableString($get($prefix . 'country_code')), $role) as $childRole) {
+                        $set($prefix . 'area_assignments.' . $childRole, null);
+                    }
+                })
                 ->live();
         }
 
@@ -171,6 +181,35 @@ class AddressFormSchema
             ->maxLength(20);
 
         return $fields;
+    }
+
+    /**
+     * Read area assignments from raw form state.
+     *
+     * Area selects are dehydrated(false), so consumers must read them via
+     * `$form->getRawState()` and pass the result to
+     * SyncAddressAreaAssignmentsAction after saving the address.
+     *
+     * @param  array<string, mixed>  $rawState
+     * @return array<string, string|null>
+     */
+    public static function extractAreaAssignments(array $rawState, string $prefix = ''): array
+    {
+        $assignments = $rawState[$prefix . 'area_assignments'] ?? [];
+
+        if (! is_array($assignments)) {
+            return [];
+        }
+
+        $filtered = [];
+
+        foreach ($assignments as $role => $areaId) {
+            if (is_string($role) && ($areaId === null || is_string($areaId))) {
+                $filtered[$role] = $areaId;
+            }
+        }
+
+        return $filtered;
     }
 
     private static function nullableString(mixed $value): ?string
@@ -259,6 +298,116 @@ class AddressFormSchema
     private static function hierarchyType(array $definition): string
     {
         return $definition['level']->hierarchyType ?? $definition['hierarchy']->key;
+    }
+
+    /**
+     * Roles whose parent chain passes through the state level.
+     *
+     * @return list<string>
+     */
+    private static function stateDependentRoles(?string $countryCode): array
+    {
+        if ($countryCode === null) {
+            return [];
+        }
+
+        $resolver = app(CountryAddressProfileResolver::class);
+        $dependents = [];
+
+        foreach (self::assignmentRoles() as $role) {
+            $definition = $resolver->definitionForRole($countryCode, $role);
+
+            if ($definition === null) {
+                continue;
+            }
+
+            $isStateDependent = self::ancestorMatches(
+                $definition['hierarchy'],
+                $definition['level'],
+                static fn (AddressLevelDefinition $ancestor): bool => $ancestor->kind === 'state',
+            );
+
+            if ($isStateDependent) {
+                $dependents[] = $role;
+            }
+        }
+
+        return $dependents;
+    }
+
+    /**
+     * Roles nested under the changed role within the same hierarchy.
+     *
+     * @return list<string>
+     */
+    private static function childRoles(?string $countryCode, string $changedRole): array
+    {
+        if ($countryCode === null) {
+            return [];
+        }
+
+        $resolver = app(CountryAddressProfileResolver::class);
+        $changed = $resolver->definitionForRole($countryCode, $changedRole);
+
+        if ($changed === null) {
+            return [];
+        }
+
+        $children = [];
+
+        foreach (self::assignmentRoles() as $role) {
+            if ($role === $changedRole) {
+                continue;
+            }
+
+            $definition = $resolver->definitionForRole($countryCode, $role);
+
+            if ($definition === null || $definition['hierarchy']->key !== $changed['hierarchy']->key) {
+                continue;
+            }
+
+            $parentKey = $changed['level']->key;
+
+            if (self::ancestorMatches($definition['hierarchy'], $definition['level'], static fn (AddressLevelDefinition $ancestor): bool => $ancestor->key === $parentKey)) {
+                $children[] = $role;
+            }
+        }
+
+        return $children;
+    }
+
+    /** @param callable(AddressLevelDefinition): bool $matches */
+    private static function ancestorMatches(AddressHierarchyDefinition $hierarchy, AddressLevelDefinition $level, callable $matches): bool
+    {
+        $byKey = [];
+
+        foreach ($hierarchy->levels as $candidate) {
+            $byKey[$candidate->key] = $candidate;
+        }
+
+        $visited = [];
+        $current = $level;
+
+        while (true) {
+            $parentKey = $current->parentKey;
+
+            if ($parentKey === null || isset($visited[$current->key])) {
+                return false;
+            }
+
+            $visited[$current->key] = true;
+            $parent = $byKey[$parentKey] ?? null;
+
+            if (! $parent instanceof AddressLevelDefinition) {
+                return false;
+            }
+
+            if ($matches($parent)) {
+                return true;
+            }
+
+            $current = $parent;
+        }
     }
 
     private static function countryHasStates(mixed $countryCode): bool

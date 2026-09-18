@@ -138,6 +138,10 @@ For prefixed fields:
 ...AddressFormSchema::make(prefix: 'shipping_')
 ```
 
+For the full write path — saving assignments after the record, validation
+layers, owner scoping, and limitations — see
+[Address Forms](./05-address-forms.md).
+
 ## Use Address Relation Manager
 
 If a model uses the core `HasAddresses` trait, add the relation manager manually.

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAddressing\Resources\AddressResource\Pages;
 use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
+use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -45,8 +46,7 @@ final class EditAddress extends EditRecord
     {
         $rawState = $this->form->getRawState();
         $state = is_array($rawState) ? $rawState : $rawState->toArray();
-        $assignments = $state['area_assignments'] ?? [];
 
-        return is_array($assignments) ? $assignments : [];
+        return AddressFormSchema::extractAreaAssignments($state);
     }
 }
