@@ -1,0 +1,12 @@
+source_id,country_code,type,name,native_name,code,parent_source_id,level,latitude,longitude
+om:governorate:al-batinah-south,OM,governorate,Al Batinah South,,BJ,,1,,
+om:governorate:al-batinah-north,OM,governorate,Al Batinah North,,BS,,1,,
+om:governorate:al-buraimi,OM,governorate,Al Buraimi,,BU,,1,,
+om:governorate:ad-dakhiliyah,OM,governorate,Ad Dakhiliyah,,DA,,1,,
+om:governorate:muscat,OM,governorate,Muscat,,MA,,1,,
+om:governorate:musandam,OM,governorate,Musandam,,MU,,1,,
+om:governorate:ash-sharqiyah-south,OM,governorate,Ash Sharqiyah South,,SJ,,1,,
+om:governorate:ash-sharqiyah-north,OM,governorate,Ash Sharqiyah North,,SS,,1,,
+om:governorate:al-wusta,OM,governorate,Al Wusta,,WU,,1,,
+om:governorate:ad-dhahirah,OM,governorate,Ad Dhahirah,,ZA,,1,,
+om:governorate:dhofar,OM,governorate,Dhofar,,ZU,,1,,

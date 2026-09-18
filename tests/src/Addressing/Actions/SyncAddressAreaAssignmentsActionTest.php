@@ -104,6 +104,48 @@ it('rejects cross-owner assignment synchronization before mutating assignments',
         ->and($address->areaAssignments()->count())->toBe(1);
 });
 
+it('rejects the state_id pseudo-role even for a matching state area', function (): void {
+    $address = Address::query()->create([
+        'country_code' => 'MY',
+        'country' => 'Malaysia',
+        'state_id' => $this->state->getKey(),
+    ]);
+    $stateArea = AddressArea::query()->where('source_id', 'state')->firstOrFail();
+
+    try {
+        app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+            'state_id' => $stateArea->getKey(),
+        ]);
+
+        $this->fail('Expected a ValidationException for the state_id role.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toBe(['state_id' => ['The selected role is not an assignable area role.']]);
+    }
+
+    expect($address->areaAssignments()->exists())->toBeFalse();
+});
+
+it('rejects unknown roles as undefined by the country profile', function (): void {
+    $address = Address::query()->create([
+        'country_code' => 'MY',
+        'country' => 'Malaysia',
+        'state_id' => $this->state->getKey(),
+    ]);
+    $locality = AddressArea::query()->where('source_id', 'postal')->firstOrFail();
+
+    try {
+        app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+            'nope' => $locality->getKey(),
+        ]);
+
+        $this->fail('Expected a ValidationException for an unknown role.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toBe(['nope' => ['The selected address area role is not defined by the country address profile.']]);
+    }
+
+    expect($address->areaAssignments()->exists())->toBeFalse();
+});
+
 it('rejects areas from another hierarchy level', function (): void {
     $address = Address::query()->create([
         'country_code' => 'MY',

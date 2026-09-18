@@ -24,18 +24,115 @@ it('formats Malaysian addresses using the country formatter', function (): void 
     ]));
 });
 
-it('falls back to the generic formatter for countries without a formatter', function (): void {
+it('formats Singapore addresses with the postcode after the country', function (): void {
     $address = AddressData::from([
-        'line1' => '10 Downing Street',
-        'city' => 'London',
-        'state' => 'London',
-        'postcode' => 'SW1A 2AA',
-        'countryCode' => 'GB',
+        'line1' => 'Blk 201 Farrer Park St 1',
+        'line2' => '#20-102',
+        'postcode' => '207226',
+        'country' => 'Singapore',
+        'countryCode' => 'SG',
     ]);
 
     expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
-        '10 Downing Street',
-        'SW1A 2AA London, London',
-        'GB',
+        'Blk 201 Farrer Park St 1',
+        '#20-102',
+        'Singapore 207226',
+    ]));
+});
+
+it('omits repeated Singapore city and state lines but keeps distinctive towns', function (): void {
+    $address = AddressData::from([
+        'line1' => '10 Bukit Batok Crescent',
+        'city' => 'Singapore',
+        'state' => 'Singapore',
+        'postcode' => '658079',
+        'countryCode' => 'SG',
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+        '10 Bukit Batok Crescent',
+        'Singapore 658079',
+    ]));
+
+    $townAddress = AddressData::from([
+        'line1' => '390 Tampines Ave 7',
+        'city' => 'Tampines',
+        'postcode' => '520390',
+        'countryCode' => 'SG',
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($townAddress))->toBe(implode("\n", [
+        '390 Tampines Ave 7',
+        'Tampines',
+        'Singapore 520390',
+    ]));
+});
+
+it('formats Indonesian addresses with the postcode after the city', function (): void {
+    $address = AddressData::from([
+        'line1' => 'Jl. Surya No. 10 RT 05/RW 02',
+        'city' => 'Jakarta Pusat',
+        'state' => 'DKI Jakarta',
+        'postcode' => '10640',
+        'country' => 'Indonesia',
+        'countryCode' => 'ID',
+        'components' => ['kelurahan' => 'Cempaka Baru', 'kecamatan' => 'Cempaka Putih'],
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+        'Jl. Surya No. 10 RT 05/RW 02',
+        'Cempaka Baru',
+        'Cempaka Putih',
+        'Jakarta Pusat 10640',
+        'DKI Jakarta',
+        'Indonesia',
+    ]));
+});
+
+it('formats Brunei addresses with the town or district before the postcode', function (): void {
+    $address = AddressData::from([
+        'line1' => 'No. 7 Simpang 170, Jalan Muara',
+        'city' => 'Muara',
+        'state' => 'Brunei-Muara',
+        'postcode' => 'BT2328',
+        'country' => 'Brunei Darussalam',
+        'countryCode' => 'BN',
+        'components' => ['kampung' => 'Kampong Kapok'],
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+        'No. 7 Simpang 170, Jalan Muara',
+        'Kampong Kapok',
+        'Muara BT2328',
+        'Brunei Darussalam',
+    ]));
+
+    $districtAddress = AddressData::from([
+        'line1' => 'Pekan Bangar Lama',
+        'state' => 'Temburong',
+        'postcode' => 'PA1151',
+        'countryCode' => 'BN',
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($districtAddress))->toBe(implode("\n", [
+        'Pekan Bangar Lama',
+        'Temburong PA1151',
+        'Brunei Darussalam',
+    ]));
+});
+
+it('falls back to the generic formatter for countries without a formatter', function (): void {
+    $address = AddressData::from([
+        'line1' => '1500 Bank Street',
+        'city' => 'Ottawa',
+        'state' => 'Ontario',
+        'postcode' => 'K1H 7Z1',
+        'countryCode' => 'CA',
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+        '1500 Bank Street',
+        'K1H 7Z1 Ottawa, Ontario',
+        'CA',
     ]));
 });

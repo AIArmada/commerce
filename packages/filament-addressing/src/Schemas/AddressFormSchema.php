@@ -95,9 +95,9 @@ class AddressFormSchema
 
             $fields[] = Select::make($field)
                 ->label(function (callable $get) use ($prefix, $role): string {
-                    $definition = self::definitionForRole(self::nullableString($get($prefix . 'country_code')), $role);
+                    $definition = app(CountryAddressProfileResolver::class)->definitionForRole(self::nullableString($get($prefix . 'country_code')), $role);
 
-                    return $definition['level']->label ?? str_replace('_', ' ', ucfirst($role));
+                    return $definition === null ? str_replace('_', ' ', ucfirst($role)) : $definition['level']->label;
                 })
                 ->getSearchResultsUsing(function (string $search, callable $get) use ($prefix, $areaClass, $role): array {
                     $countryCode = $get($prefix . 'country_code');
@@ -106,7 +106,7 @@ class AddressFormSchema
                         return [];
                     }
 
-                    $definition = self::definitionForRole($countryCode, $role);
+                    $definition = app(CountryAddressProfileResolver::class)->definitionForRole($countryCode, $role);
 
                     if ($definition === null) {
                         return [];
@@ -162,7 +162,7 @@ class AddressFormSchema
                 ->rules(fn (callable $get): array => [new AddressAreasBelongToCountry($get($prefix . 'country_code'))])
                 ->default($assignmentValues[$role] ?? null)
                 ->dehydrated(false)
-                ->visible(fn (callable $get): bool => self::definitionForRole(self::nullableString($get($prefix . 'country_code')), $role) !== null)
+                ->visible(fn (callable $get): bool => app(CountryAddressProfileResolver::class)->definitionForRole(self::nullableString($get($prefix . 'country_code')), $role) !== null)
                 ->live();
         }
 
@@ -206,37 +206,12 @@ class AddressFormSchema
                         continue;
                     }
 
-                    $roles[] = self::roleForLevel($hierarchy, $level);
+                    $roles[] = CountryAddressProfileResolver::roleForLevel($hierarchy, $level);
                 }
             }
         }
 
         return array_values(array_unique($roles));
-    }
-
-    /** @return array{hierarchy: AddressHierarchyDefinition, level: AddressLevelDefinition}|null */
-    private static function definitionForRole(?string $countryCode, string $role): ?array
-    {
-        if ($countryCode === null) {
-            return null;
-        }
-
-        $hierarchies = app(CountryAddressProfileResolver::class)->hierarchies($countryCode);
-
-        foreach ($hierarchies as $hierarchy) {
-            foreach ($hierarchy->levels as $level) {
-                if ($level->kind !== 'state' && self::roleForLevel($hierarchy, $level) === $role) {
-                    return ['hierarchy' => $hierarchy, 'level' => $level];
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private static function roleForLevel(AddressHierarchyDefinition $hierarchy, AddressLevelDefinition $level): string
-    {
-        return $level->assignmentRole ?? "{$hierarchy->key}_{$level->key}";
     }
 
     /** @return list<string> */
@@ -273,7 +248,7 @@ class AddressFormSchema
                     );
                 }
 
-                return self::nullableString($get($prefix . 'area_assignments.' . self::roleForLevel($definition['hierarchy'], $level)));
+                return self::nullableString($get($prefix . 'area_assignments.' . CountryAddressProfileResolver::roleForLevel($definition['hierarchy'], $level)));
             }
         }
 

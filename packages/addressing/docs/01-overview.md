@@ -36,7 +36,7 @@ data queries are intentionally global.
 - **AddressSnapshot** — immutable point-in-time address snapshots
 - **Formatting & Normalization** — contracts and default implementations
 - **Area Import Pipeline** — import administrative areas via `AddressAreaSource`, arrays, or CSV
-- **Country geography providers** — country-specific address structures and data (Malaysia is bundled; more providers can be configured)
+- **Country geography providers** — country-specific address structures and data (Malaysia, Singapore, Indonesia, Brunei, Bahrain, Bangladesh, Egypt, India, Jordan, Kuwait, Morocco, Oman, Pakistan, Qatar, Saudi Arabia, South Africa, Türkiye, the UAE, the UK, China, Russia, Germany, France, Italy, Japan, the US, Spain, Poland, the Netherlands, Nigeria, Ethiopia, DR Congo, Tanzania, Kenya, Sudan, Uganda, and Algeria are bundled; more providers can be configured)
 
 Currency, language, and timezone reference data is owned by `commerce-support`. Addressing owns only the country relationships for currencies and timezones. Languages are not related to countries because no trusted country-language mapping dataset is bundled.
 
@@ -72,4 +72,4 @@ docs/                          Package documentation
 - Geocoding providers
 - Postcode validation by country
 - Full UPU S42 formatting engine
-- Worldwide bundled district/postcode datasets (beyond optional MY state/city seed data)
+- Worldwide bundled district/postcode datasets (beyond optional MY/SG/ID/BN seed data)

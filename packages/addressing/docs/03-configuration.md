@@ -99,6 +99,42 @@ geography tables remain global and are not owner-scoped.
 'geography' => [
     'providers' => [
         AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider::class,
+        AIArmada\Addressing\Geography\Singapore\SingaporeGeographyProvider::class,
+        AIArmada\Addressing\Geography\Indonesia\IndonesiaGeographyProvider::class,
+        AIArmada\Addressing\Geography\Brunei\BruneiGeographyProvider::class,
+        AIArmada\Addressing\Geography\Bahrain\BahrainGeographyProvider::class,
+        AIArmada\Addressing\Geography\Bangladesh\BangladeshGeographyProvider::class,
+        AIArmada\Addressing\Geography\Egypt\EgyptGeographyProvider::class,
+        AIArmada\Addressing\Geography\India\IndiaGeographyProvider::class,
+        AIArmada\Addressing\Geography\Jordan\JordanGeographyProvider::class,
+        AIArmada\Addressing\Geography\Kuwait\KuwaitGeographyProvider::class,
+        AIArmada\Addressing\Geography\Morocco\MoroccoGeographyProvider::class,
+        AIArmada\Addressing\Geography\Oman\OmanGeographyProvider::class,
+        AIArmada\Addressing\Geography\Pakistan\PakistanGeographyProvider::class,
+        AIArmada\Addressing\Geography\Qatar\QatarGeographyProvider::class,
+        AIArmada\Addressing\Geography\SaudiArabia\SaudiArabiaGeographyProvider::class,
+        AIArmada\Addressing\Geography\SouthAfrica\SouthAfricaGeographyProvider::class,
+        AIArmada\Addressing\Geography\Turkiye\TurkiyeGeographyProvider::class,
+        AIArmada\Addressing\Geography\UnitedArabEmirates\UnitedArabEmiratesGeographyProvider::class,
+        AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomGeographyProvider::class,
+        AIArmada\Addressing\Geography\China\ChinaGeographyProvider::class,
+        AIArmada\Addressing\Geography\Russia\RussiaGeographyProvider::class,
+        AIArmada\Addressing\Geography\Germany\GermanyGeographyProvider::class,
+        AIArmada\Addressing\Geography\France\FranceGeographyProvider::class,
+        AIArmada\Addressing\Geography\Italy\ItalyGeographyProvider::class,
+        AIArmada\Addressing\Geography\Japan\JapanGeographyProvider::class,
+        AIArmada\Addressing\Geography\UnitedStates\UnitedStatesGeographyProvider::class,
+        AIArmada\Addressing\Geography\Spain\SpainGeographyProvider::class,
+        AIArmada\Addressing\Geography\Poland\PolandGeographyProvider::class,
+        AIArmada\Addressing\Geography\Netherlands\NetherlandsGeographyProvider::class,
+        AIArmada\Addressing\Geography\Nigeria\NigeriaGeographyProvider::class,
+        AIArmada\Addressing\Geography\Ethiopia\EthiopiaGeographyProvider::class,
+        AIArmada\Addressing\Geography\DemocraticRepublicOfCongo\DemocraticRepublicOfCongoGeographyProvider::class,
+        AIArmada\Addressing\Geography\Tanzania\TanzaniaGeographyProvider::class,
+        AIArmada\Addressing\Geography\Kenya\KenyaGeographyProvider::class,
+        AIArmada\Addressing\Geography\Sudan\SudanGeographyProvider::class,
+        AIArmada\Addressing\Geography\Uganda\UgandaGeographyProvider::class,
+        AIArmada\Addressing\Geography\Algeria\AlgeriaGeographyProvider::class,
     ],
 ],
 ```
@@ -114,6 +150,42 @@ Country-specific formatters are configured separately from geography providers:
 ```php
 'formatters' => [
     AIArmada\Addressing\Geography\Malaysia\MalaysiaAddressFormatter::class,
+    AIArmada\Addressing\Geography\Singapore\SingaporeAddressFormatter::class,
+    AIArmada\Addressing\Geography\Indonesia\IndonesiaAddressFormatter::class,
+    AIArmada\Addressing\Geography\Brunei\BruneiAddressFormatter::class,
+    AIArmada\Addressing\Geography\Bahrain\BahrainAddressFormatter::class,
+    AIArmada\Addressing\Geography\Bangladesh\BangladeshAddressFormatter::class,
+    AIArmada\Addressing\Geography\Egypt\EgyptAddressFormatter::class,
+    AIArmada\Addressing\Geography\India\IndiaAddressFormatter::class,
+    AIArmada\Addressing\Geography\Jordan\JordanAddressFormatter::class,
+    AIArmada\Addressing\Geography\Kuwait\KuwaitAddressFormatter::class,
+    AIArmada\Addressing\Geography\Morocco\MoroccoAddressFormatter::class,
+    AIArmada\Addressing\Geography\Oman\OmanAddressFormatter::class,
+    AIArmada\Addressing\Geography\Pakistan\PakistanAddressFormatter::class,
+    AIArmada\Addressing\Geography\Qatar\QatarAddressFormatter::class,
+    AIArmada\Addressing\Geography\SaudiArabia\SaudiArabiaAddressFormatter::class,
+    AIArmada\Addressing\Geography\SouthAfrica\SouthAfricaAddressFormatter::class,
+    AIArmada\Addressing\Geography\Turkiye\TurkiyeAddressFormatter::class,
+    AIArmada\Addressing\Geography\UnitedArabEmirates\UnitedArabEmiratesAddressFormatter::class,
+    AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomAddressFormatter::class,
+    AIArmada\Addressing\Geography\China\ChinaAddressFormatter::class,
+    AIArmada\Addressing\Geography\Russia\RussiaAddressFormatter::class,
+    AIArmada\Addressing\Geography\Germany\GermanyAddressFormatter::class,
+    AIArmada\Addressing\Geography\France\FranceAddressFormatter::class,
+    AIArmada\Addressing\Geography\Italy\ItalyAddressFormatter::class,
+    AIArmada\Addressing\Geography\Japan\JapanAddressFormatter::class,
+    AIArmada\Addressing\Geography\UnitedStates\UnitedStatesAddressFormatter::class,
+    AIArmada\Addressing\Geography\Spain\SpainAddressFormatter::class,
+    AIArmada\Addressing\Geography\Poland\PolandAddressFormatter::class,
+    AIArmada\Addressing\Geography\Netherlands\NetherlandsAddressFormatter::class,
+    AIArmada\Addressing\Geography\Nigeria\NigeriaAddressFormatter::class,
+    AIArmada\Addressing\Geography\Ethiopia\EthiopiaAddressFormatter::class,
+    AIArmada\Addressing\Geography\DemocraticRepublicOfCongo\DemocraticRepublicOfCongoAddressFormatter::class,
+    AIArmada\Addressing\Geography\Tanzania\TanzaniaAddressFormatter::class,
+    AIArmada\Addressing\Geography\Kenya\KenyaAddressFormatter::class,
+    AIArmada\Addressing\Geography\Sudan\SudanAddressFormatter::class,
+    AIArmada\Addressing\Geography\Uganda\UgandaAddressFormatter::class,
+    AIArmada\Addressing\Geography\Algeria\AlgeriaAddressFormatter::class,
 ],
 ```
 
@@ -159,3 +231,22 @@ applied consistently.
 ```
 
 Register your `AddressAreaSource` implementations here. They become available to the `address:import-areas` command.
+
+## OneMap Postcodes
+
+```php
+'onemap' => [
+    'base_url' => env('ONEMAP_BASE_URL', 'https://www.onemap.gov.sg/api'),
+    'email' => env('ONEMAP_EMAIL'),
+    'password' => env('ONEMAP_PASSWORD'),
+    'timeout' => 10,
+    'retries' => 2,
+],
+```
+
+Singapore postcodes are resolved on demand through SLA's OneMap API instead
+of being bundled. Register for a OneMap account, then set `ONEMAP_EMAIL` and
+`ONEMAP_PASSWORD`. The client caches the access token until shortly before
+its reported expiry, refreshes it once on a 401, and retries 429/5xx
+responses with backoff. OneMap usage requires attribution; see
+`05-country-data.md`.

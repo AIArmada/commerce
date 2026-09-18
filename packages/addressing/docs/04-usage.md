@@ -106,6 +106,155 @@ This uses the bundled Malaysia country provider. Other country providers can def
 
 Malaysia exposes one first-level region type whose values are either a state or a federal territory. The provider then exposes two separate hierarchies: postal/address geography (`region → locality / precinct / kampung`) and administrative/land geography (`region → district / division / jajahan → mukim / subdistrict / bandar / pekan`). A federal territory is never wrapped in a duplicate postal-town node.
 
+### Seed Singapore geography
+
+```php
+use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+
+// After address:seed-countries
+app(SeedCountryGeographiesAction::class)->execute('SG');
+```
+
+Singapore exposes two separate hierarchies: postal/delivery geography (`postal district → postal sector`, 28 districts and 81 sectors) and administrative/planning geography (`planning region → planning area`, 5 URA regions and 55 planning areas). The five `State` rows are the ISO 3166-2 community development council districts; they link to matching district areas but are not roots of either hierarchy, because CDC boundaries do not nest inside URA or postal boundaries.
+
+### Seed Indonesia geography
+
+```php
+use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+
+// After address:seed-countries
+app(SeedCountryGeographiesAction::class)->execute('ID');
+```
+
+Indonesia exposes one administrative hierarchy: `province → regency / city → district` (38 provinces, 514 regencies and cities, 7,285 districts). Provinces are the ISO 3166-2 states, so the first level resolves through the selected `State` and only regencies and districts are directly assignable. Villages and postcodes are intentionally not bundled; see `05-country-data.md`.
+
+### Seed Brunei geography
+
+```php
+use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+
+// After address:seed-countries
+app(SeedCountryGeographiesAction::class)->execute('BN');
+```
+
+Brunei exposes one administrative hierarchy: `district → mukim` (4 districts, 39 mukims). Districts are the ISO 3166-2 states, so the first level resolves through the selected `State` and only mukims are directly assignable. Villages and postcodes are intentionally not bundled; see `05-country-data.md`.
+
+### Seed Gulf geography
+
+```php
+use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+
+// After address:seed-countries; repeat per country.
+app(SeedCountryGeographiesAction::class)->execute('BH');
+```
+
+Bahrain (4 governorates), Qatar (8 municipalities), Kuwait
+(6 governorates), Oman (11 governorates), and the UAE (7 emirates)
+each expose a single-level administrative hierarchy whose values are
+the ISO 3166-2 states. The first level resolves through the selected
+`State`, so there are no assignable area roles. Qatar and the UAE have
+no postcode system; their formatters stack street lines, city, and
+country.
+
+### Seed Levant and North Africa geography
+
+Jordan (12 governorates), Saudi Arabia (13 regions), and Egypt
+(27 governorates) each expose a single-level administrative hierarchy
+of ISO 3166-2 states, seeded with `execute('JO')`, `execute('SA')`,
+and `execute('EG')`. Morocco exposes `region → province / prefecture`
+(12 regions, 62 provinces, 13 prefectures) via `execute('MA')`: only
+regions link to states, and provinces/prefectures are assignable
+through the `province` role with their region selected first.
+
+### Seed South Asia and Türkiye geography
+
+Pakistan (4 provinces + 3 federal territories), India (28 states +
+8 union territories), and Türkiye (81 provinces) each expose a
+single-level administrative hierarchy of ISO 3166-2 states, seeded
+with `execute('PK')`, `execute('IN')`, and `execute('TR')`.
+Bangladesh exposes `division → district` (8 divisions, 64 districts)
+via `execute('BD')`: only divisions link to states, and districts are
+assignable through the `district` role with their division selected
+first. Lower levels (districts of Pakistan/India/Türkiye — around
+170/780/970 respectively — and Bangladeshi upazilas) are intentionally
+not bundled.
+
+### Seed British and South African geography
+
+The UK exposes a single-level hierarchy of the four nations via
+`execute('GB')`; the 221 ISO subdivisions stay global `State` rows
+and are not imported as areas. South Africa exposes its nine provinces
+via `execute('ZA')`. Both formatters omit the county/province line
+when a postcode is present, per the UPU rule.
+
+### Seed East Asia geography
+
+China exposes 33 provincial-level divisions (22 provinces, 5
+autonomous regions, 4 municipalities, Hong Kong, Macao) via
+`execute('CN')`; Taiwan is its own country, not a CN area. Japan
+exposes 47 prefectures via `execute('JP')`. Both are single-level
+hierarchies. The Chinese formatter prints `{postcode} {province}`;
+the Japanese formatter prints `{city}, {prefecture}` with the
+`NNN-NNNN` postcode below.
+
+### Seed European geography
+
+Germany (16 Länder), France (18 regions), Italy (20 regions), Poland
+(16 voivodeships), and the Netherlands (12 provinces) each expose a
+single-level hierarchy via `execute('DE')`, `execute('FR')`,
+`execute('IT')`, `execute('PL')`, and `execute('NL')`. France's 101
+departments and Italy's provinces are intentionally not areas (see
+`05-country-data.md`). Spain exposes 19 communities/cities → 50
+provinces via `execute('ES')`, with provinces assignable through the
+`province` role. The Italian formatter takes the province abbreviation
+from the optional `province_code` address component.
+
+### Seed United States geography
+
+`execute('US')` imports 50 states, the District of Columbia, and 5
+inhabited territories. Military postal regions (`AA`/`AE`/`AP`) and
+the Minor Outlying Islands are intentionally not areas. The formatter
+renders `{locality} {ST} {ZIP}` per USPS Publication 28, resolving
+full state names to abbreviations.
+
+### Seed Russian geography
+
+`execute('RU')` imports the 83 ISO federal subjects (46 oblasts, 21
+republics, 9 krais, 4 okrugs, 2 federal cities, 1 autonomous oblast).
+Crimea, Sevastopol, and the territories claimed in 2022 are not
+ISO-recognized and are absent. The formatter keeps the country last,
+per the UPU IB recommendation, deviating from domestic Russian layout.
+
+### Seed African geography, second batch
+
+Nigeria (36 states + FCT), Ethiopia (14 regions/cities),
+DR Congo (26 provinces), Tanzania (31 regions), Kenya (47 counties),
+Sudan (18 states), Uganda (4 regions), and Algeria (58 wilayas) each
+expose a single-level hierarchy via `execute('NG')`, `execute('ET')`,
+`execute('CD')`, `execute('TZ')`, `execute('KE')`, `execute('SD')`,
+`execute('UG')`, and `execute('DZ')`. Ethiopia's dissolved SNNPR
+(`SN`) is deleted on seed; Uganda's volatile districts are
+intentionally not bundled.
+
+### Resolve Singapore postcodes
+
+```php
+use AIArmada\Addressing\Actions\ResolveSingaporePostalCodesAction;
+
+// Requires ONEMAP_EMAIL and ONEMAP_PASSWORD; seed SG geographies first.
+$result = app(ResolveSingaporePostalCodesAction::class)->execute(['569933', '999999']);
+
+$result->resolved; // ['569933']
+$result->invalid;  // ['999999']
+```
+
+Postcodes already stored in `postal_codes` are served from the database
+without an API call. Missing postcodes are looked up on OneMap, persisted
+with their canonical address and coordinates, and linked to their postal
+sector. Malformed codes and codes OneMap does not know are reported as
+invalid; transport and authentication failures throw instead of returning
+partial data.
+
 ## Search Areas
 
 ~~~php
@@ -164,6 +313,24 @@ app(SyncAddressAreaAssignmentsAction::class)->execute(
 ~~~
 
 Assignment sync is authoritative: pass the complete current role map. Passing an empty map removes all area assignments from the address. Each selected area is checked against the country profile and its typed containment hierarchy.
+
+Only area-kind roles are accepted as assignment keys. The `state_id` pseudo-role and any other non-area role are rejected — state travels through the `stateId` parameter and the `addresses.state_id` column, never as an assignment. Unknown roles are rejected as not defined by the country profile. All validation runs before any write, so a rejected payload persists nothing.
+
+### Resolving assignment roles
+
+```php
+use AIArmada\Addressing\Support\CountryAddressProfileResolver;
+
+$resolver = app(CountryAddressProfileResolver::class);
+
+// Full definition (hierarchy + level) or null.
+$definition = $resolver->definitionForRole($countryId, 'administrative_district');
+
+// Level only, for labels and feature checks.
+$level = $resolver->levelForRole($countryId, 'state_id');
+```
+
+Roles match `$level->assignmentRole ?? "{hierarchyKey}_{levelKey}"` against the first non-state level in hierarchy order. `state_id` resolves to the first state-kind level instead, since those levels carry no assignment role. Unknown countries, unknown roles, and `state_id` for profiles without a state level all return null. The `$country` parameter accepts a country ID, an ISO code, or a country model.
 
 ## Import Areas
 

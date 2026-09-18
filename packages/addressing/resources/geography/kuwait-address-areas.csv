@@ -1,0 +1,7 @@
+source_id,country_code,type,name,native_name,code,parent_source_id,level,latitude,longitude
+kw:governorate:al-ahmadi,KW,governorate,Al Ahmadi,,AH,,1,,
+kw:governorate:al-farwaniyah,KW,governorate,Al Farwaniyah,,FA,,1,,
+kw:governorate:hawalli,KW,governorate,Hawalli,,HA,,1,,
+kw:governorate:al-jahra,KW,governorate,Al Jahra,,JA,,1,,
+kw:governorate:al-asimah,KW,governorate,Al Asimah,,KU,,1,,
+kw:governorate:mubarak-al-kabeer,KW,governorate,Mubarak Al-Kabeer,,MU,,1,,

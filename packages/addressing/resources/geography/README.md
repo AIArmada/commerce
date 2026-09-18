@@ -1,0 +1,41 @@
+# Addressing Geography Resources
+
+Country-specific `AddressArea` trees imported by the bundled geography providers.
+
+- `malaysia-address-areas.csv`, `malaysia-postal-codes.csv`, `malaysia-postal-code-areas.csv` — used by `MalaysiaGeographyProvider`.
+- `singapore-address-areas.csv` — used by `SingaporeGeographyProvider`.
+- `indonesia-address-areas.csv` — used by `IndonesiaGeographyProvider`. Derived from [lokabisa-oss/region-id v1.0.1](https://github.com/lokabisa-oss/region-id/releases/tag/v1.0.1) (MIT, © 2025 lokabisa), keeping Kemendagri codes, official names, and parent links for provinces, regencies/cities, and districts. Province 31 is named `DKI Jakarta` and province 34 `DI Yogyakarta` to match the seeded states; see `docs/05-country-data.md`.
+- `brunei-address-areas.csv` — used by `BruneiGeographyProvider`. Districts per ISO 3166-2:BN; 39 mukims per the government-cited mukim list (18/8/8/5 split). Mukim spelling `Pengkalan Batu` follows Brunei government sources.
+- `bahrain-address-areas.csv` — used by `BahrainGeographyProvider`. 4 governorates per ISO 3166-2:BH.
+- `qatar-address-areas.csv` — used by `QatarGeographyProvider`. 8 municipalities; official English spellings with ISO names aliased.
+- `kuwait-address-areas.csv` — used by `KuwaitGeographyProvider`. 6 governorates per ISO 3166-2:KW.
+- `jordan-address-areas.csv` — used by `JordanGeographyProvider`. 12 governorates per ISO 3166-2:JO.
+- `oman-address-areas.csv` — used by `OmanGeographyProvider`. 11 governorates per ISO 3166-2:OM.
+- `united-arab-emirates-address-areas.csv` — used by `UnitedArabEmiratesGeographyProvider`. 7 emirates.
+- `saudi-arabia-address-areas.csv` — used by `SaudiArabiaGeographyProvider`. 13 regions per ISO 3166-2:SA.
+- `egypt-address-areas.csv` — used by `EgyptGeographyProvider`. 27 governorates per ISO 3166-2:EG.
+- `south-africa-address-areas.csv` — used by `SouthAfricaGeographyProvider`. 9 provinces per ISO 3166-2:ZA.
+- `turkiye-address-areas.csv` — used by `TurkiyeGeographyProvider`. 81 provinces per ISO 3166-2:TR.
+- `pakistan-address-areas.csv` — used by `PakistanGeographyProvider`. 4 provinces + 3 federal territories per ISO 3166-2:PK.
+- `india-address-areas.csv` — used by `IndiaGeographyProvider`. 28 states + 8 union territories per ISO 3166-2:IN.
+- `united-kingdom-address-areas.csv` — used by `UnitedKingdomGeographyProvider`. 4 nations only; the 221 subdivisions stay global states.
+- `bangladesh-address-areas.csv` — used by `BangladeshGeographyProvider`. 8 divisions + 64 districts per ISO 3166-2:BD with post-2018 spellings; parents verified against the division/district table.
+- `morocco-address-areas.csv` — used by `MoroccoGeographyProvider`. 12 regions + 62 provinces + 13 prefectures per the post-2015 division; parents verified against the prefecture/province table.
+- `china-address-areas.csv` — used by `ChinaGeographyProvider`. 33 provincial-level divisions per ISO 3166-2:CN; Taiwan excluded (own TW country).
+- `russia-address-areas.csv` — used by `RussiaGeographyProvider`. 83 federal subjects per ISO 3166-2:RU; names per the UPU province list.
+- `germany-address-areas.csv` — used by `GermanyGeographyProvider`. 16 Länder with German official names; English exonyms aliased.
+- `france-address-areas.csv` — used by `FranceGeographyProvider`. 18 regions only; departments intentionally not areas.
+- `italy-address-areas.csv` — used by `ItalyGeographyProvider`. 20 regions with Italian official names; English exonyms aliased; provinces intentionally not areas.
+- `japan-address-areas.csv` — used by `JapanGeographyProvider`. 47 prefectures with unmacroned romanization per the UPU list.
+- `united-states-address-areas.csv` — used by `UnitedStatesGeographyProvider`. 50 states + DC + 5 inhabited territories; military codes and UM excluded.
+- `spain-address-areas.csv` — used by `SpainGeographyProvider`. 19 communities/cities + 50 provinces with official local spellings.
+- `poland-address-areas.csv` — used by `PolandGeographyProvider`. 16 voivodeships with English exonyms.
+- `netherlands-address-areas.csv` — used by `NetherlandsGeographyProvider`. 12 provinces with Dutch official names.
+- `nigeria-address-areas.csv` — used by `NigeriaGeographyProvider`. 36 states + FCT.
+- `ethiopia-address-areas.csv` — used by `EthiopiaGeographyProvider`. 14 regions/cities post-SNNPR; CE/SE codes provisional.
+- `democratic-republic-of-congo-address-areas.csv` — used by `DemocraticRepublicOfCongoGeographyProvider`. 26 provinces.
+- `tanzania-address-areas.csv` — used by `TanzaniaGeographyProvider`. 31 regions including Songwe.
+- `kenya-address-areas.csv` — used by `KenyaGeographyProvider`. 47 counties.
+- `sudan-address-areas.csv` — used by `SudanGeographyProvider`. 18 states.
+- `uganda-address-areas.csv` — used by `UgandaGeographyProvider`. 4 regions only; volatile districts intentionally not bundled.
+- `algeria-address-areas.csv` — used by `AlgeriaGeographyProvider`. 58 wilayas including the 2019 batch.

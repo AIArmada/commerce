@@ -10,6 +10,7 @@ use AIArmada\Addressing\Actions\FormatAddressAction;
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Actions\ImportPostalCodesAction;
 use AIArmada\Addressing\Actions\NormalizeAddressDataAction;
+use AIArmada\Addressing\Actions\ResolveSingaporePostalCodesAction;
 use AIArmada\Addressing\Actions\SearchAddressAreasAction;
 use AIArmada\Addressing\Actions\SeedAddressCitiesAction;
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
@@ -30,6 +31,7 @@ use AIArmada\Addressing\Contracts\CountryAddressFormatter;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Support\CountryAddressFormatterResolver;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
+use AIArmada\Addressing\Support\OneMapClient;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -71,6 +73,8 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(NormalizeAddressDataAction::class);
         $this->app->singleton(FormatAddressAction::class);
         $this->app->singleton(BuildAddressNavigationLinksAction::class);
+        $this->app->singleton(OneMapClient::class);
+        $this->app->singleton(ResolveSingaporePostalCodesAction::class);
 
         $this->app->bind(AddressNormalizer::class, NormalizeAddressDataAction::class);
         $this->app->bind(AddressFormatter::class, FormatAddressAction::class);
