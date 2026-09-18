@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
+use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -27,6 +28,7 @@ it('uses the canonical configured table names for runtime models and every addre
         'postal_codes' => 'addressing_custom_postal_codes',
         'area_postal_codes' => 'addressing_custom_area_postal_codes',
         'address_area_assignments' => 'addressing_custom_address_area_assignments',
+        'resolution_gaps' => 'addressing_custom_resolution_gaps',
     ];
     $originalTables = config('addressing.database.tables');
     $originalDefaultConnection = config('database.default');
@@ -56,7 +58,8 @@ it('uses the canonical configured table names for runtime models and every addre
         }
 
         expect((new Address)->getTable())->toBe($tables['addresses'])
-            ->and((new Addressable)->getTable())->toBe($tables['addressables']);
+            ->and((new Addressable)->getTable())->toBe($tables['addressables'])
+            ->and((new ResolutionGap)->getTable())->toBe($tables['resolution_gaps']);
 
         foreach (['addresses', 'addressables', 'snapshots'] as $tableKey) {
             expect(Schema::hasColumn($tables[$tableKey], 'owner_type'))->toBeTrue()

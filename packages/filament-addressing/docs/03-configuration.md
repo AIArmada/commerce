@@ -55,6 +55,7 @@ Each resource reads its icon from `navigation.icons.*`.
     'show_source_payload' => false,
     'postal_code_import' => false,
     'postal_code_export' => false,
+    'gap_actions' => true,
 ],
 ```
 
@@ -79,6 +80,10 @@ Both default to disabled. Enable them to show import/export header actions on th
 ### Source And Provider Payloads
 
 Payloads can be large and may contain provider-specific data. Keep hidden unless an admin/debug panel needs them.
+
+### Gap Actions
+
+Enabled by default. Disable to hide the match-to-area and ignore row actions (plus bulk ignore) on the resolution gap list. The actions are also hidden when `resources.resolution_gaps.read_only` is `true`.
 
 ## Resources
 
@@ -115,6 +120,12 @@ Payloads can be large and may contain provider-specific data. Keep hidden unless
     'enabled' => true,
     'read_only' => false,
     'model' => \AIArmada\Addressing\Models\PostalCode::class,
+],
+
+'resolution_gaps' => [
+    'enabled' => true,
+    'read_only' => false,
+    'model' => \AIArmada\Addressing\Models\ResolutionGap::class,
 ],
 ```
 

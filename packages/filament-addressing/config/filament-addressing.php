@@ -8,6 +8,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\AddressSnapshot;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
+use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Models\State;
 
 return [
@@ -23,6 +24,7 @@ return [
             'addresses' => 'heroicon-o-map-pin',
             'snapshots' => 'heroicon-o-document-text',
             'postal_codes' => 'heroicon-o-envelope',
+            'resolution_gaps' => 'heroicon-o-exclamation-circle',
         ],
     ],
 
@@ -35,6 +37,7 @@ return [
         'show_source_payload' => false,
         'postal_code_import' => false,
         'postal_code_export' => false,
+        'gap_actions' => true,
     ],
 
     'resources' => [
@@ -66,6 +69,12 @@ return [
             'enabled' => true,
             'read_only' => false,
             'model' => PostalCode::class,
+        ],
+
+        'resolution_gaps' => [
+            'enabled' => true,
+            'read_only' => false,
+            'model' => ResolutionGap::class,
         ],
 
         'addresses' => [

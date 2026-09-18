@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAddressing\Support;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Models\ResolutionGap;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -79,6 +80,23 @@ final class AddressingFilterOptions
             self::key('area-roles', AddressAreaRole::class),
             self::TTL_SECONDS,
             static fn (): array => AddressAreaRole::query()
+                ->distinct()
+                ->orderBy('role')
+                ->pluck('role', 'role')
+                ->mapWithKeys(static fn (string $role): array => [$role => str_replace('_', ' ', ucfirst($role))])
+                ->all(),
+        );
+    }
+
+    /** @return array<string, string> */
+    public static function gapRoles(): array
+    {
+        $gapClass = config('filament-addressing.resources.resolution_gaps.model', ResolutionGap::class);
+
+        return Cache::remember(
+            self::key('gap-roles', $gapClass),
+            self::TTL_SECONDS,
+            static fn (): array => $gapClass::query()
                 ->distinct()
                 ->orderBy('role')
                 ->pluck('role', 'role')

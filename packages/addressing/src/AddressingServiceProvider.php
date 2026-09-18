@@ -6,9 +6,13 @@ namespace AIArmada\Addressing;
 
 use AIArmada\Addressing\Actions\BuildAddressNavigationLinksAction;
 use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\Addressing\Actions\FormatAddressAction;
+use AIArmada\Addressing\Actions\IgnoreResolutionGapAction;
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Actions\ImportPostalCodesAction;
+use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
+use AIArmada\Addressing\Actions\MatchGapToAreaAction;
 use AIArmada\Addressing\Actions\NormalizeAddressDataAction;
 use AIArmada\Addressing\Actions\ResolveSingaporePostalCodesAction;
 use AIArmada\Addressing\Actions\SearchAddressAreasAction;
@@ -18,8 +22,10 @@ use AIArmada\Addressing\Actions\SeedAddressCountryReferencesAction;
 use AIArmada\Addressing\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Commands\ExportResolutionGapAliasesCommand;
 use AIArmada\Addressing\Commands\ImportAddressAreasCommand;
 use AIArmada\Addressing\Commands\ImportAddressAreasCsvCommand;
+use AIArmada\Addressing\Commands\ReportResolutionGapsCommand;
 use AIArmada\Addressing\Commands\SeedAddressCitiesCommand;
 use AIArmada\Addressing\Commands\SeedAddressCountriesCommand;
 use AIArmada\Addressing\Commands\SeedAddressCountryReferencesCommand;
@@ -53,6 +59,8 @@ final class AddressingServiceProvider extends PackageServiceProvider
                 SeedCountryGeographiesCommand::class,
                 ImportAddressAreasCommand::class,
                 ImportAddressAreasCsvCommand::class,
+                ReportResolutionGapsCommand::class,
+                ExportResolutionGapAliasesCommand::class,
             );
     }
 
@@ -75,6 +83,10 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(BuildAddressNavigationLinksAction::class);
         $this->app->singleton(OneMapClient::class);
         $this->app->singleton(ResolveSingaporePostalCodesAction::class);
+        $this->app->singleton(LogAddressResolutionGapAction::class);
+        $this->app->singleton(MatchGapToAreaAction::class);
+        $this->app->singleton(IgnoreResolutionGapAction::class);
+        $this->app->singleton(ExportResolutionGapAliasesAction::class);
 
         $this->app->bind(AddressNormalizer::class, NormalizeAddressDataAction::class);
         $this->app->bind(AddressFormatter::class, FormatAddressAction::class);

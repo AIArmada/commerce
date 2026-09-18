@@ -8,6 +8,7 @@ use AIArmada\FilamentAddressing\Tables\AddressCountryTable;
 use AIArmada\FilamentAddressing\Tables\AddressSnapshotTable;
 use AIArmada\FilamentAddressing\Tables\AddressStateTable;
 use AIArmada\FilamentAddressing\Tables\AddressTable;
+use AIArmada\FilamentAddressing\Tables\ResolutionGapTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 
@@ -19,6 +20,7 @@ it('starts each addressing table with its primary identity column', function ():
         AddressSnapshotTable::class => 'formatted_address',
         AddressStateTable::class => 'name',
         AddressTable::class => 'label',
+        ResolutionGapTable::class => 'value',
     ];
 
     foreach ($tables as $tableClass => $expectedColumn) {

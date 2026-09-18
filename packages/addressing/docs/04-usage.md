@@ -336,6 +336,70 @@ $allAncestors = app(AddressAreaHierarchyResolver::class)->ancestorsOf(
 // Nearest first: district, state, ... for this provider's hierarchy.
 ~~~
 
+## Resolution gaps
+
+External sources (place pickers, geocoders, imports) return names that do not
+always match a shipped area name or alias: `Jakarta Pusat` vs `Kota Jakarta
+Pusat`, `West Java` vs `Jawa Barat`. Log every attempted-but-unmatched value
+so the naming gap is visible instead of silently degrading to a partial match.
+
+~~~php
+use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
+
+app(LogAddressResolutionGapAction::class)->execute(
+    source: 'google-picker',
+    countryCode: 'ID',
+    role: 'regency',
+    value: 'Jakarta Pusat',
+    reason: 'unmatched', // or 'ambiguous' when several areas could match
+    context: ['place_id' => 'ChIJ...', 'attempted' => ['Jakarta Pusat']],
+);
+~~~
+
+Logging upserts on `(source, country_code, role, normalized)`: repeats bump
+`hits` and refresh the `context` sample instead of duplicating rows.
+Normalization is minimal (lowercase + collapsed whitespace); provider-specific
+translation stays in the integration. Use the `state` role for state-level
+misses. Gaps are global reference data with no owner scoping.
+
+A package admin matches open gaps to the correct area (Filament adapter or
+action below). Matching creates a `manual` alias, so geography reseeds
+preserve it — only provider-sourced names are refreshed on reseed. Gaps never
+auto-fill: a failed match cannot know *which* area the string maps to.
+
+~~~php
+use AIArmada\Addressing\Actions\IgnoreResolutionGapAction;
+use AIArmada\Addressing\Actions\MatchGapToAreaAction;
+
+app(MatchGapToAreaAction::class)->execute($gap, $area, matchedBy: $admin->email);
+
+// Junk values can be ignored; ignored gaps stay terminal on recurrence.
+app(IgnoreResolutionGapAction::class)->execute($gap);
+~~~
+
+Matching refuses `ambiguous` gaps (they need data cleanup, not another alias),
+`state`-role gaps (states have no alias table — fix the integration prefix
+rules or rename the provider state), cross-country areas, areas that miss the
+role's profile type/level, and values that already resolve to a different area.
+Recurrence of a `matched` gap reopens it to `open` as a regression signal.
+
+Report the most-hit gaps and the promotion backlog:
+
+~~~bash
+php artisan address:resolution-gaps --country=ID --days=30 --reason=unmatched --status=open --limit=20
+~~~
+
+Periodically promote admin-matched aliases back into providers so fresh
+installs seed complete data. The export emits copy-paste-ready `areaNames()`
+entries grouped per provider file; the paste stays human as the quality gate.
+After a reseed lands the provider rows, `--prune` deletes `manual` aliases
+exactly duplicated by a provider-sourced pair.
+
+~~~bash
+php artisan address:export-gap-aliases --country=ID
+php artisan address:export-gap-aliases --country=ID --prune
+~~~
+
 ## Address area assignments
 
 ~~~php

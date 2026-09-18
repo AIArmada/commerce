@@ -11,6 +11,7 @@ It gives applications admin UI for:
 - Address countries.
 - Address areas with searchable roles, aliases, and hierarchy filters.
 - Postal codes and their served-area relationships.
+- Resolution gaps with match-to-area and ignore actions.
 - Optional central address inspection.
 - Optional read-only address snapshot inspection.
 - CSV import/export surfaces for area reference data.
@@ -29,13 +30,15 @@ Enabled by default:
 - Address states.
 - Address cities.
 - Address areas.
+- Postal codes.
+- Resolution gaps.
 
 Disabled by default:
 
 - Addresses.
 - Address snapshots.
 
-Countries, states, cities, areas, and postcodes can be made read-only through their resource configuration. Countries are read-only by default. Snapshots are read-only by design.
+Countries, states, cities, areas, postcodes, and resolution gaps can be made read-only through their resource configuration. Countries are read-only by default. Snapshots are read-only by design.
 
 ## Why Addresses Are Disabled By Default
 
