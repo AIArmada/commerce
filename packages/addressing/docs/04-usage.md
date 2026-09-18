@@ -276,6 +276,50 @@ seeds Atauro under provisional code `AT`. The formatters print
 `{province} {postcode}` (KH, 6-digit), `{postcode} {locality}` (LA,
 5-digit), and `{locality} {postcode}` (TL, `TL` + 5 digits).
 
+### Seed Asia remainder geography
+
+Armenia (10 regions + Yerevan), Azerbaijan (66 districts + 11
+municipalities + Nakhchivan AR), Bhutan (20 dzongkhags), Cyprus (6
+districts), Georgia (9 regions + 2 ARs + Tbilisi), Hong Kong (18
+districts), Iran (31 provinces), Israel (6 districts), Kazakhstan (17
+regions + 3 cities), Kyrgyzstan (7 regions + 2 cities), Lebanon (8
+governorates), Maldives (20 atolls + Addu City), Mongolia (21 aimags +
+Ulaanbaatar), Nepal (7 provinces), North Korea (9 provinces + 4
+cities), Palestine (16 governorates), Sri Lanka (9 provinces + 25
+districts flat), Syria (14 provinces), Tajikistan (5 divisions),
+Turkmenistan (5 regions + Ashgabat), and Yemen (21 governorates +
+Amanat Al Asimah) each expose a single-level hierarchy via
+`execute()` with their ISO code, completing Asia coverage alongside
+the earlier batches. Hong Kong, North Korea, Syria, and Yemen have no
+postcode system; their formatters print any supplied code on its own
+line.
+
+### Seed Africa remainder geography
+
+Benin (12 departments), Botswana (10 districts + 2 cities + 4
+towns), Burkina Faso (13 regions + 45 provinces flat), Burundi (18
+provinces), Cape Verde (22 municipalities + 2 island groups), Central
+African Republic (15 prefectures + Bangui + Nana-Grébizi), Chad (23
+provinces), Comoros (3 islands), Congo (12 departments), Ivory Coast
+(12 districts + 2 autonomous districts), Djibouti (5 regions +
+Djibouti City), Equatorial Guinea (2 regions + 8 provinces flat),
+Eritrea (6 regions), Gabon (9 provinces), Gambia (5 divisions +
+Banjul), Guinea (7 regions + Conakry + 33 prefectures flat),
+Guinea-Bissau (3 provinces + 8 regions + Bissau sector), Lesotho (10
+districts), Liberia (15 counties), Libya (22 popularates), Malawi (3
+regions + 28 districts flat), Mali (10 regions + Bamako), Mauritania
+(15 regions), Mauritius (9 districts + 3 dependencies), Namibia (14
+regions), Niger (7 regions + Niamey), Rwanda (4 provinces + Kigali),
+Sao Tome and Principe (6 districts + Príncipe AR), Senegal (14
+regions), Seychelles (27 districts), Sierra Leone (4 provinces +
+Western Area), Somalia (18 regions), South Sudan (10 states),
+Eswatini (4 regions), Togo (5 regions), Tunisia (24 governorates),
+Zambia (10 provinces), and Zimbabwe (10 provinces) each expose a
+single-level hierarchy via `execute()` with their ISO code,
+completing Africa coverage alongside the earlier batches. Most of
+the batch has no postcode system; those formatters print any supplied
+code on its own line.
+
 ### Seed Africa, Central Asia, and Middle East geography
 
 Ghana (16 regions), Angola (18 provinces), Cameroon (10 regions),

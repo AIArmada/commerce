@@ -964,11 +964,645 @@ Timorese addresses are formatted per the UPU layout: street lines,
 Distinct city and municipality join as `{city} - {municipality}
 {postcode}`; equal values print once.
 
+## Armenia
+
+The bundled `ArmeniaGeographyProvider` supplies the 10 regions plus
+Yerevan as `State` rows and a single-level administrative hierarchy.
+It is selected with
+`SeedCountryGeographiesAction::execute('AM')` after countries are seeded.
+
+Armenian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, the region on its
+own line when both are set, and country.
+
+## Azerbaijan
+
+The bundled `AzerbaijanGeographyProvider` supplies the 66 districts,
+11 municipalities, and the Nakhchivan Autonomous Republic as `State`
+rows and a single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('AZ')` after countries are seeded.
+
+The Lankaran, Shaki, Yevlakh, and Nakhchivan municipality/district
+pairs share names by design; filter by type.
+
+Azerbaijani addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with an `AZ` + 4-digit postcode, the district
+or region on its own line when both are set, and country.
+
+## Bhutan
+
+The bundled `BhutanGeographyProvider` supplies the 20 dzongkhags as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('BT')` after
+countries are seeded. Gewogs are intentionally not bundled.
+
+Bhutanese addresses are formatted per the UPU layout: street lines,
+`{locality} {postcode}` with a 5-digit postcode, the dzongkhag on its
+own line when it differs, and country.
+
+## Cyprus
+
+The bundled `CyprusGeographyProvider` supplies the 6 districts with
+bilingual names as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('CY')` after countries are seeded.
+
+Cypriot addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, and country.
+Inbound international mail prefixes `CY-`; the formatter prints the
+postcode exactly as supplied.
+
+## Georgia
+
+The bundled `GeorgiaGeographyProvider` supplies the 9 regions plus
+the Abkhazia and Adjara autonomous republics and Tbilisi as `State`
+rows and a single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('GE')` after countries are seeded.
+
+Georgian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, the region on its
+own line when both are set, and country.
+
+## Hong Kong
+
+The bundled `HongKongGeographyProvider` supplies the 18 districts as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('HK')` after
+countries are seeded.
+
+Hong Kong has no postcode system. Addresses are formatted per the UPU
+layout: street lines, the district, and country; any supplied code
+prints on its own line for form-compatibility.
+
+## Iran
+
+The bundled `IranGeographyProvider` supplies the 31 ostans
+(provinces) as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('IR')` after countries are seeded.
+Counties (shahrestan) are intentionally not bundled.
+
+Iranian addresses are formatted per the UPU layout: street lines,
+the locality, the province, the 10-digit postcode on its own line,
+and country.
+
+## Israel
+
+The bundled `IsraelGeographyProvider` supplies the 6 districts as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('IL')` after
+countries are seeded. Sub-districts are intentionally not bundled.
+
+Israeli addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 7-digit postcode (legacy 5-digit codes
+pass through), and country.
+
+## Kazakhstan
+
+The bundled `KazakhstanGeographyProvider` supplies the 17 regions
+plus Almaty, Astana, and Shymkent as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('KZ')` after countries are seeded.
+
+The Almaty region and Almaty city share a name by design; filter by
+type.
+
+Kazakh addresses are formatted per the UPU layout: street lines,
+`{postcode}, {locality}` with either the legacy 6-digit or the new
+`A99A9A9` postcode, the region on its own line when both are set, and
+country.
+
+## Kyrgyzstan
+
+The bundled `KyrgyzstanGeographyProvider` supplies the 7 regions plus
+Bishkek and Osh as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('KG')` after countries are seeded.
+
+The Osh region and Osh city share a name by design; filter by type.
+
+Kyrgyz addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 6-digit postcode, the region on its
+own line when both are set, and country.
+
+## Lebanon
+
+The bundled `LebanonGeographyProvider` supplies the 8 governorates
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('LB')` after
+countries are seeded. Cazas are intentionally not bundled.
+
+Lebanese addresses are formatted per the UPU layout: street lines,
+`{locality} {postcode}` with the optional 4+4-digit LibanPost code,
+the governorate on its own line when both are set, and country.
+
+## Maldives
+
+The bundled `MaldivesGeographyProvider` supplies the 20 atolls plus
+Addu City as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('MV')` after countries are seeded.
+
+Maldivian addresses are formatted per the UPU layout: street lines,
+`{locality} {postcode}` with a 5-digit postcode, the atoll on its own
+line when both are set, and country.
+
+## Mongolia
+
+The bundled `MongoliaGeographyProvider` supplies the 21 aimags
+(provinces) plus Ulaanbaatar as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('MN')` after countries are seeded.
+
+Mongolian addresses are formatted per the UPU layout: street lines,
+the district above `{province} {postcode}` with a 5-digit postcode
+(`-NNNN` extensions pass through), and country.
+
+## Nepal
+
+The bundled `NepalGeographyProvider` supplies the 7 federal provinces
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('NP')` after
+countries are seeded. Districts are intentionally not bundled.
+
+Nepali addresses are formatted per the UPU layout: street lines,
+`{locality} {postcode}` with a 5-digit postcode, the province on its
+own line when both are set, and country.
+
+## North Korea
+
+The bundled `NorthKoreaGeographyProvider` supplies the 9 provinces
+plus Kaesong, Nampho, Pyongyang, and Rason as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('KP')` after countries are seeded.
+
+North Korea has no postcode system. Addresses are formatted per the
+UPU layout: street lines, the locality, and country; any supplied
+code prints on its own line.
+
+## Palestine
+
+The bundled `PalestineGeographyProvider` supplies the 16 West Bank
+and Gaza governorates as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('PS')` after countries are seeded.
+
+Palestinian addresses are formatted per the UPU layout: street lines,
+`{locality} {postcode}` with a `P` + 7-digit postcode (short `P` + 3
+passes through), and country.
+
+## Sri Lanka
+
+The bundled `SriLankaGeographyProvider` supplies the 9 provinces and
+25 districts flat at level 1 as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('LK')` after countries are seeded.
+A province -> district depth-2 split is a future candidate.
+
+Sri Lankan addresses are formatted per the UPU layout: street lines,
+the locality, the province when it differs, the 5-digit postcode on
+its own line, and country.
+
+## Syria
+
+The bundled `SyriaGeographyProvider` supplies the 14 provinces as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('SY')` after
+countries are seeded.
+
+Syria has no live postcode system (a 4-digit scheme was announced but
+never confirmed). Addresses print street lines, the locality, and
+country; any supplied code prints on its own line.
+
+## Tajikistan
+
+The bundled `TajikistanGeographyProvider` supplies Khatlon, Sughd,
+Gorno-Badakhshan, Dushanbe, and the Districts under Republic
+Administration as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('TJ')` after countries are seeded.
+
+Tajik addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 6-digit postcode, the region on its
+own line when both are set, and country.
+
+## Turkmenistan
+
+The bundled `TurkmenistanGeographyProvider` supplies the 5 regions
+plus Ashgabat as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('TM')` after countries are seeded.
+
+Turkmen addresses are formatted per the UPU layout: street lines,
+the locality, the region when it differs, the 6-digit postcode on
+its own line, and country.
+
+## Yemen
+
+The bundled `YemenGeographyProvider` supplies the 21 governorates
+plus Amanat Al Asimah (the Sanaa municipality) as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('YE')` after countries are seeded.
+
+Yemen has no postcode system. Addresses are formatted per the UPU
+layout: street lines, the locality, the governorate when it differs,
+and country; any supplied code prints on its own line.
+
+## Benin
+
+The bundled `BeninGeographyProvider` supplies the 12 departments
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('BJ')` after
+countries are seeded.
+
+Benin has no postcode system. Addresses are formatted per the UPU
+layout: P.O. box lines, the locality, and country; any supplied code
+prints on its own line.
+## Botswana
+
+The bundled `BotswanaGeographyProvider` supplies the 10 districts,
+Gaborone, Francistown, and 4 towns as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('BW')` after countries are seeded.
+
+Botswana has no postcode system. Addresses are formatted per the UPU
+layout: P.O. box or private bag lines, the town, and country; any
+supplied code prints on its own line.
+## Burkina Faso
+
+The bundled `BurkinaFasoGeographyProvider` supplies the 13 regions
+and 45 provinces flat at level 1 as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('BF')` after countries are seeded.
+A region -> province depth-2 split is a future candidate.
+
+Burkinabe addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode, the region on its
+own line when both are set, and country.
+## Burundi
+
+The bundled `BurundiGeographyProvider` supplies the 18 provinces
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('BI')` after
+countries are seeded. Burundi reformed to 5 provinces in September
+2025; the bundled data still reflects the 18-province list pending
+an ISO/states.json update.
+
+Burundi has no postcode system. Addresses are formatted per the UPU
+layout: P.O. box lines, the commune, the province, and country; any
+supplied code prints on its own line.
+## Cape Verde
+
+The bundled `CapeVerdeGeographyProvider` supplies the 22
+municipalities plus the Barlavento and Sotavento island groups as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('CV')` after
+countries are seeded. Cabo Verde is the official name since 2013;
+the bundled data keeps the `Cape Verde` spelling.
+
+Cape Verdean addresses are formatted per the UPU layout: street
+lines, `{postcode} {locality}` with a 4-digit (or 7-digit
+`NNNN-NNN`) postcode, and country.
+## Central African Republic
+
+The bundled `CentralAfricanRepublicGeographyProvider` supplies the
+15 prefectures plus the Bangui commune and Nana-Grébizi as `State`
+rows and a single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('CF')` after countries are seeded.
+
+The country has no postcode system. Addresses are formatted per the
+UPU layout: P.O. box lines, the locality, and country; any supplied
+code prints on its own line.
+## Chad
+
+The bundled `ChadGeographyProvider` supplies the 23 provinces as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('TD')` after
+countries are seeded.
+
+Chad has no postcode system. Addresses are formatted per the UPU
+layout: P.O. box lines, the locality, the province when it differs,
+and country; any supplied code prints on its own line.
+## Comoros
+
+The bundled `ComorosGeographyProvider` supplies the 3 islands as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('KM')` after
+countries are seeded.
+
+Comoros has no postcode system. Addresses are formatted per the UPU
+layout: P.O. box lines, the locality, the island when it differs,
+and country; any supplied code prints on its own line.
+## Congo
+
+The bundled `CongoGeographyProvider` supplies the 12 departments
+of the Republic of Congo as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('CG')` after countries are seeded.
+
+Congo has no postcode system. Addresses are formatted per the UPU
+layout: street lines, the locality, and country; any supplied code
+prints on its own line.
+## Ivory Coast
+
+The bundled `IvoryCoastGeographyProvider` supplies the 12 districts
+plus the Abidjan and Yamoussoukro autonomous districts as `State`
+rows and a single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('CI')` after countries are seeded.
+
+Ivory Coast has no postcode system; the 2-digit office code on box
+lines is routing, not a postcode. Addresses print street lines, the
+locality, and country; any supplied code prints on its own line.
+## Djibouti
+
+The bundled `DjiboutiGeographyProvider` supplies the 5 regions
+plus Djibouti City as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('DJ')` after countries are seeded.
+
+Djiboutian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode, and country.
+## Equatorial Guinea
+
+The bundled `EquatorialGuineaGeographyProvider` supplies the 2
+regions and 8 provinces flat at level 1 as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('GQ')` after countries are seeded.
+
+Equatorial Guinea has no postcode system. Addresses are formatted
+per the UPU layout: street lines, the locality, the province when it
+differs, and country; any supplied code prints on its own line.
+## Eritrea
+
+The bundled `EritreaGeographyProvider` supplies the 6 regions as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('ER')` after
+countries are seeded.
+
+Eritrea has no postcode system. Addresses are formatted per the UPU
+layout: street lines, the locality, and country; any supplied code
+prints on its own line.
+## Gabon
+
+The bundled `GabonGeographyProvider` supplies the 9 provinces as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('GA')` after
+countries are seeded.
+
+Gabonese addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 2-digit zone, and country. The full
+UPU line adds the delivery-office code right (`NN LOCALITY NN`);
+only the zone is represented since the office half has no field.
+## Gambia
+
+The bundled `GambiaGeographyProvider` supplies the 5 divisions
+plus Banjul as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('GM')` after countries are seeded.
+
+Gambia has no postcode system. Addresses are formatted per the UPU
+layout: street lines, the locality, the division when it differs,
+and country; any supplied code prints on its own line.
+## Guinea
+
+The bundled `GuineaGeographyProvider` supplies the 7 regions,
+Conakry, and 33 prefectures flat at level 1 as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('GN')` after countries are seeded.
+Region/prefecture name twins (Boké, Faranah, Kankan, Kindia, Labé,
+Mamou, Nzérékoré) share names by design; filter by type.
+
+Guinean addresses are formatted per the UPU layout: P.O. box lines,
+`{postcode} {locality}` with a 3-digit radical, and country.
+## Guinea-Bissau
+
+The bundled `GuineaBissauGeographyProvider` supplies the 3
+provinces, 8 regions, and the Bissau sector as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('GW')` after countries are seeded.
+
+Bissau-Guinean addresses are formatted per the UPU layout: street
+lines, `{postcode} {locality}` with a 4-digit postcode, and country.
+## Lesotho
+
+The bundled `LesothoGeographyProvider` supplies the 10 districts
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('LS')` after
+countries are seeded.
+
+Basotho addresses are formatted per the UPU layout: P.O. box lines,
+`{locality} {postcode}` with a 3-digit postcode, and country.
+## Liberia
+
+The bundled `LiberiaGeographyProvider` supplies the 15 counties
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('LR')` after
+countries are seeded.
+
+Liberian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, and country. The
+system is officially defined but flagged not-in-use by UPU, so codes
+stay optional; Monrovia zone suffixes pass through as supplied.
+## Libya
+
+The bundled `LibyaGeographyProvider` supplies the 22 popularates
+(sha'biyat) as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('LY')` after countries are seeded.
+
+Libya has no postcode system. Addresses are formatted per the UPU
+layout: street lines, the locality, and country; any supplied code
+prints on its own line.
+## Malawi
+
+The bundled `MalawiGeographyProvider` supplies the 3 regions and
+28 districts flat at level 1 as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('MW')` after countries are seeded.
+A region -> district depth-2 split is a future candidate.
+
+Malawian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 6-digit postcode, the region on its
+own line when both are set, and country.
+## Mali
+
+The bundled `MaliGeographyProvider` supplies the 10 regions plus
+the Bamako district as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('ML')` after countries are seeded.
+
+Mali has no postcode system. Addresses are formatted per the UPU
+layout: street lines, the quarter, the locality, and country; any
+supplied code prints on its own line.
+## Mauritania
+
+The bundled `MauritaniaGeographyProvider` supplies the 15 regions
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('MR')` after
+countries are seeded.
+
+Mauritania has no postcode system. Addresses are formatted per the
+UPU layout: P.O. box lines, the locality, and country; any supplied
+code prints on its own line.
+## Mauritius
+
+The bundled `MauritiusGeographyProvider` supplies the 9 districts
+plus Agaléga, Rodrigues, and Saint Brandon as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('MU')` after countries are seeded.
+
+Mauritian addresses are formatted per the UPU layout: street lines,
+`{locality} {postcode}` with a 5-digit postcode (`R` + 4 digits on
+Rodrigues), and country.
+## Namibia
+
+The bundled `NamibiaGeographyProvider` supplies the 14 regions as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('NA')` after
+countries are seeded.
+
+Namibian addresses are formatted per the UPU layout: street or box
+lines, the locality, the 5-digit postcode on its own line, and
+country.
+## Niger
+
+The bundled `NigerGeographyProvider` supplies the 7 regions plus
+the Niamey urban community as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('NE')` after countries are seeded.
+
+Nigerien addresses are formatted per the UPU layout: P.O. box lines,
+`{postcode} {locality}` with a 4-digit postcode, and country.
+## Rwanda
+
+The bundled `RwandaGeographyProvider` supplies the 4 provinces
+plus Kigali as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('RW')` after countries are seeded.
+
+Rwanda has no postcode system. Addresses are formatted per the UPU
+layout: P.O. box lines, the locality, the province when it differs,
+and country; any supplied code prints on its own line.
+## Sao Tome and Principe
+
+The bundled `SaoTomeAndPrincipeGeographyProvider` supplies the 6
+districts plus the Príncipe autonomous region as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('ST')` after countries are seeded.
+
+The country has no postcode system. Addresses are formatted per the
+UPU layout: street lines, the locality, and country; any supplied
+code prints on its own line.
+## Senegal
+
+The bundled `SenegalGeographyProvider` supplies the 14 regions as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('SN')` after
+countries are seeded.
+
+Senegalese addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode (often written `CP
+NNNNN`), and country.
+## Seychelles
+
+The bundled `SeychellesGeographyProvider` supplies the 27 districts
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('SC')` after
+countries are seeded.
+
+Seychelles has no postcode system. Addresses are formatted per the
+UPU layout: street lines, the locality, the island, and country; any
+supplied code prints on its own line.
+## Sierra Leone
+
+The bundled `SierraLeoneGeographyProvider` supplies the 4 provinces
+plus the Western Area as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('SL')` after countries are seeded.
+
+Sierra Leone has no postcode system. Addresses are formatted per the
+UPU layout: street lines, the locality, the province when it differs,
+and country; any supplied code prints on its own line.
+## Somalia
+
+The bundled `SomaliaGeographyProvider` supplies the 18 regions
+(gobolka) as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('SO')` after countries are seeded.
+
+Somalia has no operational postcode system; the UPU paper format
+(`AA NNNNN` right of the locality) was never taken into use.
+Addresses print P.O. box lines, the locality, and country; any
+supplied code prints on its own line.
+## South Sudan
+
+The bundled `SouthSudanGeographyProvider` supplies the 10 states
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('SS')` after
+countries are seeded.
+
+South Sudan has no postcode system. Addresses are formatted per the
+UPU layout: street or box lines, the town, the state when it differs,
+and country; any supplied code prints on its own line.
+## Eswatini
+
+The bundled `EswatiniGeographyProvider` supplies the 4 regions as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('SZ')` after
+countries are seeded.
+
+Eswatini addresses are formatted per the UPU layout: P.O. box lines,
+the locality, the region-letter + 3-digit postcode on its own line,
+and country.
+## Togo
+
+The bundled `TogoGeographyProvider` supplies the 5 regions as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('TG')` after
+countries are seeded.
+
+Togo has no postcode system. Addresses are formatted per the UPU
+layout: P.O. box or street lines, the locality, the region when it
+differs, and country; any supplied code prints on its own line.
+## Tunisia
+
+The bundled `TunisiaGeographyProvider` supplies the 24 governorates
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('TN')` after
+countries are seeded.
+
+Tunisian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, and country.
+## Zambia
+
+The bundled `ZambiaGeographyProvider` supplies the 10 provinces as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('ZM')` after
+countries are seeded.
+
+Zambian addresses are formatted per the UPU layout: street lines,
+`{locality} {postcode}` with a 5-digit postcode, and country. Codes
+are routinely omitted in practice, so the formatter never requires
+one.
+## Zimbabwe
+
+The bundled `ZimbabweGeographyProvider` supplies the 10 provinces
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('ZW')` after
+countries are seeded.
+
+Zimbabwe has no postcode system. Addresses are formatted per the UPU
+layout: street lines, the suburb, the city, and country; any supplied
+code prints on its own line.
+
 ## Numeric state codes
 
 Bahrain, Italy, South Korea, Saudi Arabia, Türkiye, Morocco, France,
 Japan, Poland, Kenya, Tanzania, Algeria, Thailand, Vietnam, Ukraine,
-and Myanmar use numeric ISO subdivision codes
+Myanmar, Bhutan, Cyprus, Iran, Kazakhstan, Sri Lanka, Mongolia,
+Maldives, North Korea, Burkina Faso, Congo, Gabon, Mali,
+Mauritania, Niger, Rwanda, Sao Tome and Principe, Seychelles,
+Tunisia, and Zambia use numeric ISO subdivision codes
 at the state-mapping level. PHP casts numeric-string array keys to
 int, so
 `stateAreaMappings()` returns int keys for those countries and the

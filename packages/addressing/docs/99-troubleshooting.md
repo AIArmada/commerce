@@ -88,6 +88,27 @@ Vientiane areas (province `VI`, prefecture `VT`) share a name by
 design; filter by type. Atauro seeds under provisional code `AT`
 pending ISO assignment.
 
+## Missing States for the Asia Batch
+
+Same cause with the matching `execute()` code. All 21 are
+single-level. Name twins share names by design — filter by type or
+code: Azerbaijan's Lankaran/Shaki/Yevlakh/Nakhchivan pairs,
+Kazakhstan's Almaty pair, and Kyrgyzstan's Osh pair. Sri Lanka seeds
+provinces and districts flat at level 1. Hong Kong, North Korea,
+Syria, and Yemen have no postcode system, so a missing postcode there
+is correct.
+
+## Missing States for the Africa Batch
+
+Same cause with the matching `execute()` code. All 38 are
+single-level. Guinea's seven region/prefecture name twins (Boké,
+Faranah, Kankan, Kindia, Labé, Mamou, Nzérékoré) share names by
+design; filter by type. Burkina Faso, Equatorial Guinea, Guinea, and
+Malawi seed two tiers flat at level 1. Most of the batch has no
+postcode system, so a missing postcode there is correct; Gabon's
+trailing office code and Liberia's Monrovia zone suffix have no
+dedicated field and pass through only as supplied.
+
 ## Area Assignment Role Rejected
 
 `SyncAddressAreaAssignmentsAction` throws `The selected address area role is not defined by the country address profile.` for unknown roles — check the role against `CountryAddressProfileResolver::definitionForRole()` for that country. It throws `The selected role is not an assignable area role.` for `state_id` and other non-area roles: pass state through the action's `stateId` parameter instead of the assignments map.

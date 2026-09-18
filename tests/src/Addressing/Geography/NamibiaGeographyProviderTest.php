@@ -1,0 +1,62 @@
+<?php
+
+declare(strict_types=1);
+
+use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Geography\Namibia\NamibiaGeographyProvider;
+use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Models\State;
+
+it('seeds all 14 Namibian states', function (): void {
+    app(SeedAddressCountriesAction::class)->execute();
+
+    $country = AddressCountry::query()->where('iso2', 'NA')->firstOrFail();
+    $state = State::query()->create([
+        'country_id' => $country->id,
+        'code' => 'ER',
+        'name' => 'Erongo (legacy)',
+        'label' => 'Erongo (legacy)',
+    ]);
+
+    app(NamibiaGeographyProvider::class)->seed($country);
+
+    $state->refresh();
+
+    expect($state->name)->toBe('Erongo')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(14);
+});
+
+it('maps every Namibian state code to its area', function (): void {
+    $mappings = app(NamibiaGeographyProvider::class)->stateAreaMappings();
+
+    expect($mappings)->toHaveCount(14)
+        ->and(array_map('strval', array_keys($mappings)))->toBe(['ER', 'HA', 'KA', 'KE', 'KW', 'KH', 'KU', 'OW', 'OH', 'OS', 'ON', 'OT', 'OD', 'CA']);
+});
+
+it('defines a single-level administrative hierarchy', function (): void {
+    $hierarchies = app(NamibiaGeographyProvider::class)->addressHierarchies();
+
+    expect($hierarchies)->toHaveCount(1)
+        ->and($hierarchies[0]->key)->toBe('administrative')
+        ->and($hierarchies[0]->levels)->toHaveCount(1)
+        ->and($hierarchies[0]->levels[0]->key)->toBe('region')
+        ->and($hierarchies[0]->levels[0]->kind)->toBe('state');
+});
+
+it('imports the Namibian tree with state links', function (): void {
+    app(SeedAddressCountriesAction::class)->execute();
+
+    $result = app(SeedCountryGeographiesAction::class)->execute('NA');
+    $country = AddressCountry::query()->where('iso2', 'NA')->firstOrFail();
+
+    expect($result['seeded'])->toContain('NA')
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(14)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'region')->count())->toBe(14)
+        ->and(AddressAreaStateLink::query()->whereHas(
+            'addressArea',
+            fn ($query) => $query->where('country_id', $country->id),
+        )->count())->toBe(14);
+});

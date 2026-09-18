@@ -1,0 +1,11 @@
+source_id,country_code,type,name,native_name,code,parent_source_id,level,latitude,longitude
+gq:province:annobon,GQ,province,Annobón,,AN,,1,,
+gq:province:bioko-norte,GQ,province,Bioko Norte,,BN,,1,,
+gq:province:bioko-sur,GQ,province,Bioko Sur,,BS,,1,,
+gq:province:centro-sur,GQ,province,Centro Sur,,CS,,1,,
+gq:province:djibloho,GQ,province,Djibloho,,DJ,,1,,
+gq:region:insular,GQ,region,Insular,,I,,1,,
+gq:province:kie-ntem,GQ,province,Kié-Ntem,,KN,,1,,
+gq:province:litoral,GQ,province,Litoral,,LI,,1,,
+gq:region:rio-muni,GQ,region,Río Muni,,C,,1,,
+gq:province:wele-nzas,GQ,province,Wele-Nzas,,WN,,1,,
