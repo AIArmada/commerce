@@ -62,6 +62,16 @@ class PakistanGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['province', 'territory'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class PakistanGeographyProvider implements CountryAddressAreaMetadataProvider, C
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
                 'territory' => ['province'],
+                'district' => ['district'],
                 default => [],
             };
 

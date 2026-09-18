@@ -49,8 +49,9 @@ Same cause with the matching `execute()` code (`BH`, `QA`, `KW`, `OM`,
 `AE`, `JO`, `SA`, `EG`, `MA`, `PK`, `BD`, `IN`, `TR`, `GB`, `ZA`).
 Single-level providers expose no assignable area roles — the state *is*
 the area — so an empty assignment list there is expected, not a seeding
-failure. Bangladesh and Morocco are the only two with a second level
-(`district` and `province` roles respectively). A `firstOrFail` on the
+failure. Bangladesh, Morocco, Pakistan, and Oman have a second level
+(`district`, `province`, `district`, and `wilayat` roles respectively).
+A `firstOrFail` on the
 state link for Bahrain, Saudi Arabia, Türkiye, or Morocco
 means the numeric ISO code lookup missed; those codes are correct as
 shipped (BH has no `16`, SA has no `13`).
@@ -77,6 +78,15 @@ territories stay global-only by design. Iraq deletes the overlapping
 data loss. Vietnam shows the post-merger 34: old
 province names (Bình Dương, Long An) resolving nowhere is expected
 after the 2025 reform.
+
+## Missing States for the ASEAN Batch
+
+Same cause with the matching `execute()` code (`KH`, `LA`, `TL`). All
+three are single-level. Cambodia seeds the official `Preah Sihanouk`
+name — look up `Sihanoukville` through area names instead. The two
+Vientiane areas (province `VI`, prefecture `VT`) share a name by
+design; filter by type. Atauro seeds under provisional code `AT`
+pending ISO assignment.
 
 ## Area Assignment Role Rejected
 

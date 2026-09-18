@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Geography\Oman;
+namespace AIArmada\Addressing\Geography\Laos;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
@@ -14,11 +14,11 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 
-class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
+class LaosGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
-    public const string AREA_SOURCE = 'aiarmada_addressing_oman_v1';
+    public const string AREA_SOURCE = 'aiarmada_addressing_laos_v1';
 
-    private const string PROVIDER_KEY = 'aiarmada.addressing.oman';
+    private const string PROVIDER_KEY = 'aiarmada.addressing.laos';
 
     public function providerKey(): string
     {
@@ -27,7 +27,7 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
 
     public function countryCode(): string
     {
-        return 'OM';
+        return 'LA';
     }
 
     public function seed(AddressCountry $country): void
@@ -55,22 +55,12 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
                 label: 'Administrative / Territorial Geography',
                 levels: [
                     new AddressLevelDefinition(
-                        key: 'governorate',
-                        label: 'Governorate',
+                        key: 'province',
+                        label: 'Province / Prefecture',
                         kind: 'state',
                         hierarchyType: 'administrative',
-                        areaTypes: ['governorate'],
+                        areaTypes: ['province', 'prefecture'],
                         areaLevel: 1,
-                    ),
-                    new AddressLevelDefinition(
-                        key: 'wilayat',
-                        label: 'Wilayat',
-                        kind: 'area',
-                        hierarchyType: 'administrative',
-                        areaTypes: ['wilayat'],
-                        areaLevels: [2],
-                        parentKey: 'governorate',
-                        assignmentRole: 'wilayat',
                     ),
                 ],
             ),
@@ -84,13 +74,13 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
 
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
-                'governorate' => ['governorate'],
-                'wilayat' => ['wilayat'],
+                'province' => ['province'],
+                'prefecture' => ['province'],
                 default => [],
             };
 
             $roles[$area->sourceId] = array_map(
-                static fn (string $role): array => ['role' => $role, 'country_code' => 'OM', 'is_primary' => true],
+                static fn (string $role): array => ['role' => $role, 'country_code' => 'LA', 'is_primary' => true],
                 $areaRoles,
             );
         }
@@ -127,7 +117,7 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
     public function addressAreaSource(): AddressAreaSource
     {
         return new CsvAddressAreaSource(
-            __DIR__ . '/../../../resources/geography/oman-address-areas.csv',
+            __DIR__ . '/../../../resources/geography/laos-address-areas.csv',
             self::AREA_SOURCE,
         );
     }
@@ -139,17 +129,24 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
     {
         /** @var array<string, string> */
         $areaCodes = [
-            'BJ' => 'BJ',
-            'BS' => 'BS',
-            'BU' => 'BU',
-            'DA' => 'DA',
-            'MA' => 'MA',
-            'MU' => 'MU',
-            'SJ' => 'SJ',
-            'SS' => 'SS',
-            'WU' => 'WU',
-            'ZA' => 'ZA',
-            'ZU' => 'ZU',
+            'AT' => 'AT',
+            'BK' => 'BK',
+            'BL' => 'BL',
+            'CH' => 'CH',
+            'HO' => 'HO',
+            'KH' => 'KH',
+            'LM' => 'LM',
+            'LP' => 'LP',
+            'OU' => 'OU',
+            'PH' => 'PH',
+            'XA' => 'XA',
+            'SL' => 'SL',
+            'SV' => 'SV',
+            'XE' => 'XE',
+            'VI' => 'VI',
+            'VT' => 'VT',
+            'XS' => 'XS',
+            'XI' => 'XI',
         ];
 
         return array_map(
@@ -169,17 +166,24 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
     private function stateDefinitions(): array
     {
         return [
-            ['name' => 'Al Batinah South', 'code' => 'BJ'],
-            ['name' => 'Al Batinah North', 'code' => 'BS'],
-            ['name' => 'Al Buraimi', 'code' => 'BU'],
-            ['name' => 'Ad Dakhiliyah', 'code' => 'DA'],
-            ['name' => 'Muscat', 'code' => 'MA'],
-            ['name' => 'Musandam', 'code' => 'MU'],
-            ['name' => 'Ash Sharqiyah South', 'code' => 'SJ'],
-            ['name' => 'Ash Sharqiyah North', 'code' => 'SS'],
-            ['name' => 'Al Wusta', 'code' => 'WU'],
-            ['name' => 'Ad Dhahirah', 'code' => 'ZA'],
-            ['name' => 'Dhofar', 'code' => 'ZU'],
+            ['name' => 'Attapeu', 'code' => 'AT'],
+            ['name' => 'Bokeo', 'code' => 'BK'],
+            ['name' => 'Bolikhamsai', 'code' => 'BL'],
+            ['name' => 'Champasak', 'code' => 'CH'],
+            ['name' => 'Houaphanh', 'code' => 'HO'],
+            ['name' => 'Khammouane', 'code' => 'KH'],
+            ['name' => 'Luang Namtha', 'code' => 'LM'],
+            ['name' => 'Luang Prabang', 'code' => 'LP'],
+            ['name' => 'Oudomxay', 'code' => 'OU'],
+            ['name' => 'Phongsaly', 'code' => 'PH'],
+            ['name' => 'Sainyabuli', 'code' => 'XA'],
+            ['name' => 'Salavan', 'code' => 'SL'],
+            ['name' => 'Savannakhet', 'code' => 'SV'],
+            ['name' => 'Sekong', 'code' => 'XE'],
+            ['name' => 'Vientiane', 'code' => 'VI'],
+            ['name' => 'Vientiane', 'code' => 'VT'],
+            ['name' => 'Xaisomboun', 'code' => 'XS'],
+            ['name' => 'Xiangkhouang', 'code' => 'XI'],
         ];
     }
 }

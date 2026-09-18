@@ -4,6 +4,9 @@ title: Country Data
 
 # Country Data
 
+For per-provider depth and dataset status at a glance, see the
+[Provider Coverage Registry](./14-provider-coverage.md).
+
 ## Bundled Dataset
 
 The package always bundles ISO 3166-1 country/territory data.
@@ -181,8 +184,8 @@ Jordanian addresses are formatted per the UPU layout: street lines,
 ## Oman
 
 The bundled `OmanGeographyProvider` supplies the eleven ISO 3166-2
-governorates as `State` rows and a single-level administrative
-hierarchy. It is selected with
+governorates as `State` rows and a two-level administrative hierarchy
+(governorate → 63 wilayats). It is selected with
 `SeedCountryGeographiesAction::execute('OM')` after countries are seeded.
 
 Omani addresses are formatted per the UPU layout: street lines, a
@@ -250,14 +253,24 @@ Sub-locality postcode suffixes (`06050-01` style) are not generated.
 The bundled `PakistanGeographyProvider` supplies the seven ISO 3166-2
 subdivisions as `State` rows — four provinces plus the Islamabad
 Capital Territory, Gilgit-Baltistan, and Azad Jammu and Kashmir
-(`Azad Kashmir` is aliased) — and a single-level administrative
-hierarchy. It is selected with
+(`Azad Kashmir` is aliased) — and a two-level administrative hierarchy
+(province/territory → 174 districts). It is selected with
 `SeedCountryGeographiesAction::execute('PK')` after countries are seeded.
+
+Districts follow the late-2025 reorganization state: Punjab counts 42
+(`Jampur` and `Taunsa` included), Khyber Pakhtunkhwa counts 40
+(Chitral split into Lower/Upper plus `Central Dir`, `Paharpur`, and
+`Upper Swat` from the October 2025 batch), and Balochistan includes
+`Hub`, `Karezat`, and `Surab`. The January/May 2026 Balochistan batch
+(`Tump`, Upper Dera Bugti, `Taftan`, `Wadh`, `Barshor`, Quetta
+East/West) is intentionally excluded: unlike the clean October 2025
+Khyber Pakhtunkhwa adds, its January Quetta City/Saddar and May Quetta
+East/West notifications contradict each other. Tehsils are
+intentionally not bundled.
 
 Pakistani addresses are formatted per the UPU layout: street lines,
 `{locality}-{postcode}` with a 5-digit dash-separated postcode, and
-country. Districts (around 170 and still being split) are
-intentionally not bundled.
+country.
 
 ## India
 
@@ -903,6 +916,53 @@ Townships and districts are intentionally not bundled.
 Myanmar addresses are formatted per the UPU layout: street lines,
 `{locality}, {postcode}` with a 7-digit postcode, the region or state
 on its own line, and country.
+
+## Cambodia
+
+The bundled `CambodiaGeographyProvider` supplies the 24 provinces plus
+Phnom Penh municipality as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('KH')` after countries are seeded.
+
+Code `18` seeds the official `Preah Sihanouk` name with `Sihanoukville`
+kept as an alternative area name. Districts (srok/khan) and communes
+are intentionally not bundled.
+
+Cambodian addresses are formatted per the UPU layout: street lines,
+the city above `{province} {postcode}` with a 6-digit postcode, and
+country.
+
+## Laos
+
+The bundled `LaosGeographyProvider` supplies the 17 provinces plus the
+Vientiane Prefecture as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('LA')` after countries are seeded.
+
+The Vientiane province (`VI`) and Vientiane Prefecture (`VT`) are
+separate areas sharing a name; districts (muang) are intentionally not
+bundled.
+
+Laotian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode, the province on its
+own line when both are set, and country.
+
+## Timor-Leste
+
+The bundled `TimorLesteGeographyProvider` supplies the 13 ISO 3166-2
+municipalities (Oecusse is a special administrative region) plus
+Atauro — split from Dili in 2022 with provisional code `AT`, since
+ISO has not assigned one yet — as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('TL')` after countries are seeded.
+
+Timor-Leste joined ASEAN as the 11th member in October 2025.
+Administrative posts are intentionally not bundled.
+
+Timorese addresses are formatted per the UPU layout: street lines,
+`{locality} {postcode}` with a `TL` + 5-digit postcode, and country.
+Distinct city and municipality join as `{city} - {municipality}
+{postcode}`; equal values print once.
 
 ## Numeric state codes
 

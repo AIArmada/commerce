@@ -11,6 +11,7 @@ use AIArmada\Addressing\Geography\Australia\AustraliaAddressFormatter;
 use AIArmada\Addressing\Geography\Bahrain\BahrainAddressFormatter;
 use AIArmada\Addressing\Geography\Bangladesh\BangladeshAddressFormatter;
 use AIArmada\Addressing\Geography\Brazil\BrazilAddressFormatter;
+use AIArmada\Addressing\Geography\Cambodia\CambodiaAddressFormatter;
 use AIArmada\Addressing\Geography\Cameroon\CameroonAddressFormatter;
 use AIArmada\Addressing\Geography\Canada\CanadaAddressFormatter;
 use AIArmada\Addressing\Geography\China\ChinaAddressFormatter;
@@ -28,6 +29,7 @@ use AIArmada\Addressing\Geography\Japan\JapanAddressFormatter;
 use AIArmada\Addressing\Geography\Jordan\JordanAddressFormatter;
 use AIArmada\Addressing\Geography\Kenya\KenyaAddressFormatter;
 use AIArmada\Addressing\Geography\Kuwait\KuwaitAddressFormatter;
+use AIArmada\Addressing\Geography\Laos\LaosAddressFormatter;
 use AIArmada\Addressing\Geography\Madagascar\MadagascarAddressFormatter;
 use AIArmada\Addressing\Geography\Mexico\MexicoAddressFormatter;
 use AIArmada\Addressing\Geography\Morocco\MoroccoAddressFormatter;
@@ -50,6 +52,7 @@ use AIArmada\Addressing\Geography\Sudan\SudanAddressFormatter;
 use AIArmada\Addressing\Geography\Taiwan\TaiwanAddressFormatter;
 use AIArmada\Addressing\Geography\Tanzania\TanzaniaAddressFormatter;
 use AIArmada\Addressing\Geography\Thailand\ThailandAddressFormatter;
+use AIArmada\Addressing\Geography\TimorLeste\TimorLesteAddressFormatter;
 use AIArmada\Addressing\Geography\Turkiye\TurkiyeAddressFormatter;
 use AIArmada\Addressing\Geography\Uganda\UgandaAddressFormatter;
 use AIArmada\Addressing\Geography\Ukraine\UkraineAddressFormatter;
@@ -831,4 +834,85 @@ it('formats Myanmar addresses with the locality, postcode and region', function 
     ]));
 
     expect($formatted)->toBe("No. 7(A) 58 Street, Between 40 x 41\nPyigyitagon Township, 0505001\nMandalay\nMyanmar");
+});
+
+it('formats Cambodian addresses with the postcode right of the province', function (): void {
+    $formatted = app(CambodiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '100E0 Street 118',
+        'state' => 'PHNOM PENH',
+        'postcode' => '120209',
+        'country_code' => 'KH',
+    ]));
+
+    expect($formatted)->toBe("100E0 Street 118\nPHNOM PENH 120209\nCambodia");
+});
+
+it('formats Cambodian addresses with the city above the postcode province line', function (): void {
+    $formatted = app(CambodiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '100E0 Street 118',
+        'city' => 'Krong Siem Reap',
+        'state' => 'Siem Reap',
+        'postcode' => '17000',
+        'country_code' => 'KH',
+    ]));
+
+    expect($formatted)->toBe("100E0 Street 118\nKrong Siem Reap\nSiem Reap 17000\nCambodia");
+});
+
+it('formats Laotian addresses with the postcode left of the locality', function (): void {
+    $formatted = app(LaosAddressFormatter::class)->format(AddressData::from([
+        'line1' => '14, rue That Louang',
+        'city' => 'XAYSETHA',
+        'postcode' => '01160',
+        'country_code' => 'LA',
+    ]));
+
+    expect($formatted)->toBe("14, rue That Louang\n01160 XAYSETHA\nLaos");
+});
+
+it('formats Laotian addresses with the province below the postcode locality line', function (): void {
+    $formatted = app(LaosAddressFormatter::class)->format(AddressData::from([
+        'line1' => '14, rue That Louang',
+        'city' => 'Xaysetha',
+        'state' => 'Vientiane',
+        'postcode' => '01160',
+        'country_code' => 'LA',
+    ]));
+
+    expect($formatted)->toBe("14, rue That Louang\n01160 Xaysetha\nVientiane\nLaos");
+});
+
+it('formats Timorese addresses with the postcode right of the municipality', function (): void {
+    $formatted = app(TimorLesteAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'AVENIDA CAPITA SINMAU',
+        'state' => 'AINARO',
+        'postcode' => 'TL42000',
+        'country_code' => 'TL',
+    ]));
+
+    expect($formatted)->toBe("AVENIDA CAPITA SINMAU\nAINARO TL42000\nTimor-Leste");
+});
+
+it('formats Timorese addresses joining distinct city and municipality', function (): void {
+    $formatted = app(TimorLesteAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'TRAVESSA LAVANDARIA NO.12',
+        'city' => 'Bairo Pite',
+        'state' => 'DILI',
+        'postcode' => 'TL11212',
+        'country_code' => 'TL',
+    ]));
+
+    expect($formatted)->toBe("TRAVESSA LAVANDARIA NO.12\nBairo Pite - DILI TL11212\nTimor-Leste");
+});
+
+it('prints Timorese city-municipalities once when city and state match', function (): void {
+    $formatted = app(TimorLesteAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Avenida Presidente Nicolau Lobato',
+        'city' => 'DILI',
+        'state' => 'DILI',
+        'postcode' => 'TL10901',
+        'country_code' => 'TL',
+    ]));
+
+    expect($formatted)->toBe("Avenida Presidente Nicolau Lobato\nDILI TL10901\nTimor-Leste");
 });

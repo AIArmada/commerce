@@ -20,6 +20,8 @@ use AIArmada\Addressing\Geography\Brazil\BrazilAddressFormatter;
 use AIArmada\Addressing\Geography\Brazil\BrazilGeographyProvider;
 use AIArmada\Addressing\Geography\Brunei\BruneiAddressFormatter;
 use AIArmada\Addressing\Geography\Brunei\BruneiGeographyProvider;
+use AIArmada\Addressing\Geography\Cambodia\CambodiaAddressFormatter;
+use AIArmada\Addressing\Geography\Cambodia\CambodiaGeographyProvider;
 use AIArmada\Addressing\Geography\Cameroon\CameroonAddressFormatter;
 use AIArmada\Addressing\Geography\Cameroon\CameroonGeographyProvider;
 use AIArmada\Addressing\Geography\Canada\CanadaAddressFormatter;
@@ -56,6 +58,8 @@ use AIArmada\Addressing\Geography\Kenya\KenyaAddressFormatter;
 use AIArmada\Addressing\Geography\Kenya\KenyaGeographyProvider;
 use AIArmada\Addressing\Geography\Kuwait\KuwaitAddressFormatter;
 use AIArmada\Addressing\Geography\Kuwait\KuwaitGeographyProvider;
+use AIArmada\Addressing\Geography\Laos\LaosAddressFormatter;
+use AIArmada\Addressing\Geography\Laos\LaosGeographyProvider;
 use AIArmada\Addressing\Geography\Madagascar\MadagascarAddressFormatter;
 use AIArmada\Addressing\Geography\Madagascar\MadagascarGeographyProvider;
 use AIArmada\Addressing\Geography\Malaysia\MalaysiaAddressFormatter;
@@ -104,6 +108,8 @@ use AIArmada\Addressing\Geography\Tanzania\TanzaniaAddressFormatter;
 use AIArmada\Addressing\Geography\Tanzania\TanzaniaGeographyProvider;
 use AIArmada\Addressing\Geography\Thailand\ThailandAddressFormatter;
 use AIArmada\Addressing\Geography\Thailand\ThailandGeographyProvider;
+use AIArmada\Addressing\Geography\TimorLeste\TimorLesteAddressFormatter;
+use AIArmada\Addressing\Geography\TimorLeste\TimorLesteGeographyProvider;
 use AIArmada\Addressing\Geography\Turkiye\TurkiyeAddressFormatter;
 use AIArmada\Addressing\Geography\Turkiye\TurkiyeGeographyProvider;
 use AIArmada\Addressing\Geography\Uganda\UgandaAddressFormatter;
@@ -213,6 +219,9 @@ return [
             MozambiqueGeographyProvider::class,
             UzbekistanGeographyProvider::class,
             MyanmarGeographyProvider::class,
+            CambodiaGeographyProvider::class,
+            LaosGeographyProvider::class,
+            TimorLesteGeographyProvider::class,
         ],
     ],
 
@@ -276,6 +285,9 @@ return [
         MozambiqueAddressFormatter::class,
         UzbekistanAddressFormatter::class,
         MyanmarAddressFormatter::class,
+        CambodiaAddressFormatter::class,
+        LaosAddressFormatter::class,
+        TimorLesteAddressFormatter::class,
     ],
 
     'defaults' => [

@@ -149,12 +149,15 @@ app(SeedCountryGeographiesAction::class)->execute('BH');
 ```
 
 Bahrain (4 governorates), Qatar (8 municipalities), Kuwait
-(6 governorates), Oman (11 governorates), and the UAE (7 emirates)
-each expose a single-level administrative hierarchy whose values are
-the ISO 3166-2 states. The first level resolves through the selected
-`State`, so there are no assignable area roles. Qatar and the UAE have
-no postcode system; their formatters stack street lines, city, and
-country.
+(6 governorates), and the UAE (7 emirates) each expose a single-level
+administrative hierarchy whose values are the ISO 3166-2 states. The
+first level resolves through the selected `State`, so there are no
+assignable area roles. Qatar and the UAE have no postcode system;
+their formatters stack street lines, city, and country. Oman exposes
+`governorate → wilayat` (11 governorates, 63 wilayats) via
+`execute('OM')`: only governorates link to states, and wilayats are
+assignable through the `wilayat` role with their governorate selected
+first.
 
 ### Seed Levant and North Africa geography
 
@@ -168,16 +171,18 @@ through the `province` role with their region selected first.
 
 ### Seed South Asia and Türkiye geography
 
-Pakistan (4 provinces + 3 federal territories), India (28 states +
-8 union territories), and Türkiye (81 provinces) each expose a
-single-level administrative hierarchy of ISO 3166-2 states, seeded
-with `execute('PK')`, `execute('IN')`, and `execute('TR')`.
-Bangladesh exposes `division → district` (8 divisions, 64 districts)
-via `execute('BD')`: only divisions link to states, and districts are
-assignable through the `district` role with their division selected
-first. Lower levels (districts of Pakistan/India/Türkiye — around
-170/780/970 respectively — and Bangladeshi upazilas) are intentionally
-not bundled.
+India (28 states + 8 union territories) and Türkiye (81 provinces)
+each expose a single-level administrative hierarchy of ISO 3166-2
+states, seeded with `execute('IN')` and `execute('TR')`. Pakistan
+exposes `province / territory → district` (7 states, 174 districts)
+via `execute('PK')`: only provinces/territories link to states, and
+districts are assignable through the `district` role with their
+province selected first. Bangladesh exposes `division → district`
+(8 divisions, 64 districts) via `execute('BD')`: only divisions link
+to states, and districts are assignable through the `district` role
+with their division selected first. Lower levels (districts of
+India/Türkiye — around 780/970 respectively, Pakistani tehsils, and
+Bangladeshi upazilas) are intentionally not bundled.
 
 ### Seed British and South African geography
 
@@ -259,6 +264,17 @@ Crimea) each expose a single-level hierarchy via `execute('AU')`,
 `execute('TW')`, and `execute('UA')`. The Philippines ships provinces
 only — its 17 regions stay global states. Australia's formatter uses
 double-spaced `{locality}  {ST}  {postcode}`.
+
+### Seed ASEAN remainder geography
+
+Cambodia (24 provinces + Phnom Penh), Laos (17 provinces + Vientiane
+Prefecture), and Timor-Leste (14 municipalities) each expose a
+single-level hierarchy via `execute('KH')`, `execute('LA')`, and
+`execute('TL')`, completing ASEAN at 11 members. Cambodia seeds the
+official `Preah Sihanouk` with `Sihanoukville` aliased; Timor-Leste
+seeds Atauro under provisional code `AT`. The formatters print
+`{province} {postcode}` (KH, 6-digit), `{postcode} {locality}` (LA,
+5-digit), and `{locality} {postcode}` (TL, `TL` + 5 digits).
 
 ### Seed Africa, Central Asia, and Middle East geography
 

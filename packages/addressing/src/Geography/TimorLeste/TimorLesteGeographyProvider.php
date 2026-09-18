@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Geography\Oman;
+namespace AIArmada\Addressing\Geography\TimorLeste;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
@@ -14,11 +14,11 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 
-class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
+class TimorLesteGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
-    public const string AREA_SOURCE = 'aiarmada_addressing_oman_v1';
+    public const string AREA_SOURCE = 'aiarmada_addressing_timor_leste_v1';
 
-    private const string PROVIDER_KEY = 'aiarmada.addressing.oman';
+    private const string PROVIDER_KEY = 'aiarmada.addressing.timor_leste';
 
     public function providerKey(): string
     {
@@ -27,7 +27,7 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
 
     public function countryCode(): string
     {
-        return 'OM';
+        return 'TL';
     }
 
     public function seed(AddressCountry $country): void
@@ -55,22 +55,12 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
                 label: 'Administrative / Territorial Geography',
                 levels: [
                     new AddressLevelDefinition(
-                        key: 'governorate',
-                        label: 'Governorate',
+                        key: 'municipality',
+                        label: 'Municipality',
                         kind: 'state',
                         hierarchyType: 'administrative',
-                        areaTypes: ['governorate'],
+                        areaTypes: ['municipality', 'special_administrative_region'],
                         areaLevel: 1,
-                    ),
-                    new AddressLevelDefinition(
-                        key: 'wilayat',
-                        label: 'Wilayat',
-                        kind: 'area',
-                        hierarchyType: 'administrative',
-                        areaTypes: ['wilayat'],
-                        areaLevels: [2],
-                        parentKey: 'governorate',
-                        assignmentRole: 'wilayat',
                     ),
                 ],
             ),
@@ -84,13 +74,13 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
 
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
-                'governorate' => ['governorate'],
-                'wilayat' => ['wilayat'],
+                'municipality' => ['municipality'],
+                'special_administrative_region' => ['municipality'],
                 default => [],
             };
 
             $roles[$area->sourceId] = array_map(
-                static fn (string $role): array => ['role' => $role, 'country_code' => 'OM', 'is_primary' => true],
+                static fn (string $role): array => ['role' => $role, 'country_code' => 'TL', 'is_primary' => true],
                 $areaRoles,
             );
         }
@@ -127,7 +117,7 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
     public function addressAreaSource(): AddressAreaSource
     {
         return new CsvAddressAreaSource(
-            __DIR__ . '/../../../resources/geography/oman-address-areas.csv',
+            __DIR__ . '/../../../resources/geography/timor-leste-address-areas.csv',
             self::AREA_SOURCE,
         );
     }
@@ -139,17 +129,21 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
     {
         /** @var array<string, string> */
         $areaCodes = [
-            'BJ' => 'BJ',
-            'BS' => 'BS',
-            'BU' => 'BU',
-            'DA' => 'DA',
-            'MA' => 'MA',
-            'MU' => 'MU',
-            'SJ' => 'SJ',
-            'SS' => 'SS',
-            'WU' => 'WU',
-            'ZA' => 'ZA',
-            'ZU' => 'ZU',
+            'AL' => 'AL',
+            'AN' => 'AN',
+            'BA' => 'BA',
+            'BO' => 'BO',
+            'CO' => 'CO',
+            'DI' => 'DI',
+            'ER' => 'ER',
+            'LA' => 'LA',
+            'LI' => 'LI',
+            'MT' => 'MT',
+            'MF' => 'MF',
+            'OE' => 'OE',
+            'VI' => 'VI',
+            // Atauro has no ISO 3166-2 code yet; AT is provisional.
+            'AT' => 'AT',
         ];
 
         return array_map(
@@ -169,17 +163,21 @@ class OmanGeographyProvider implements CountryAddressAreaMetadataProvider, Count
     private function stateDefinitions(): array
     {
         return [
-            ['name' => 'Al Batinah South', 'code' => 'BJ'],
-            ['name' => 'Al Batinah North', 'code' => 'BS'],
-            ['name' => 'Al Buraimi', 'code' => 'BU'],
-            ['name' => 'Ad Dakhiliyah', 'code' => 'DA'],
-            ['name' => 'Muscat', 'code' => 'MA'],
-            ['name' => 'Musandam', 'code' => 'MU'],
-            ['name' => 'Ash Sharqiyah South', 'code' => 'SJ'],
-            ['name' => 'Ash Sharqiyah North', 'code' => 'SS'],
-            ['name' => 'Al Wusta', 'code' => 'WU'],
-            ['name' => 'Ad Dhahirah', 'code' => 'ZA'],
-            ['name' => 'Dhofar', 'code' => 'ZU'],
+            ['name' => 'Aileu', 'code' => 'AL'],
+            ['name' => 'Ainaro', 'code' => 'AN'],
+            ['name' => 'Baucau', 'code' => 'BA'],
+            ['name' => 'Bobonaro', 'code' => 'BO'],
+            ['name' => 'Cova Lima', 'code' => 'CO'],
+            ['name' => 'Dili', 'code' => 'DI'],
+            ['name' => 'Ermera', 'code' => 'ER'],
+            ['name' => 'Lautém', 'code' => 'LA'],
+            ['name' => 'Liquiçá', 'code' => 'LI'],
+            ['name' => 'Manatuto', 'code' => 'MT'],
+            ['name' => 'Manufahi', 'code' => 'MF'],
+            ['name' => 'Oecusse', 'code' => 'OE'],
+            ['name' => 'Viqueque', 'code' => 'VI'],
+            // Split from Dili 2022; ISO has not assigned a code yet.
+            ['name' => 'Atauro', 'code' => 'AT'],
         ];
     }
 }

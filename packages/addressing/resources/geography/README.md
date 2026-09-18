@@ -10,13 +10,13 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `qatar-address-areas.csv` — used by `QatarGeographyProvider`. 8 municipalities; official English spellings with ISO names aliased.
 - `kuwait-address-areas.csv` — used by `KuwaitGeographyProvider`. 6 governorates per ISO 3166-2:KW.
 - `jordan-address-areas.csv` — used by `JordanGeographyProvider`. 12 governorates per ISO 3166-2:JO.
-- `oman-address-areas.csv` — used by `OmanGeographyProvider`. 11 governorates per ISO 3166-2:OM.
+- `oman-address-areas.csv` — used by `OmanGeographyProvider`. 11 governorates per ISO 3166-2:OM plus 63 wilayats.
 - `united-arab-emirates-address-areas.csv` — used by `UnitedArabEmiratesGeographyProvider`. 7 emirates.
 - `saudi-arabia-address-areas.csv` — used by `SaudiArabiaGeographyProvider`. 13 regions per ISO 3166-2:SA.
 - `egypt-address-areas.csv` — used by `EgyptGeographyProvider`. 27 governorates per ISO 3166-2:EG.
 - `south-africa-address-areas.csv` — used by `SouthAfricaGeographyProvider`. 9 provinces per ISO 3166-2:ZA.
 - `turkiye-address-areas.csv` — used by `TurkiyeGeographyProvider`. 81 provinces per ISO 3166-2:TR.
-- `pakistan-address-areas.csv` — used by `PakistanGeographyProvider`. 4 provinces + 3 federal territories per ISO 3166-2:PK.
+- `pakistan-address-areas.csv` — used by `PakistanGeographyProvider`. 4 provinces + 3 federal territories per ISO 3166-2:PK plus 174 districts (late-2025 reorganization state; contradictory 2026 Balochistan batch excluded).
 - `india-address-areas.csv` — used by `IndiaGeographyProvider`. 28 states + 8 union territories per ISO 3166-2:IN.
 - `united-kingdom-address-areas.csv` — used by `UnitedKingdomGeographyProvider`. 4 nations only; the 221 subdivisions stay global states.
 - `bangladesh-address-areas.csv` — used by `BangladeshGeographyProvider`. 8 divisions + 64 districts per ISO 3166-2:BD with post-2018 spellings; parents verified against the division/district table.
@@ -61,3 +61,6 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `mozambique-address-areas.csv` — used by `MozambiqueGeographyProvider`. 10 provinces + Maputo City, disambiguated.
 - `uzbekistan-address-areas.csv` — used by `UzbekistanGeographyProvider`. 12 regions + Karakalpakstan + Tashkent City, disambiguated.
 - `myanmar-address-areas.csv` — used by `MyanmarGeographyProvider`. 7 regions + 7 states + Naypyidaw; Mon normalized.
+- `cambodia-address-areas.csv` — used by `CambodiaGeographyProvider`. 24 provinces + Phnom Penh; official `Preah Sihanouk` with `Sihanoukville` aliased.
+- `laos-address-areas.csv` — used by `LaosGeographyProvider`. 17 provinces + Vientiane Prefecture; Vientiane province/prefecture share a name.
+- `timor-leste-address-areas.csv` — used by `TimorLesteGeographyProvider`. 13 ISO municipalities + Atauro (`AT` provisional, no ISO code yet).
