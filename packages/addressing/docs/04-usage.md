@@ -236,6 +236,44 @@ expose a single-level hierarchy via `execute('NG')`, `execute('ET')`,
 (`SN`) is deleted on seed; Uganda's volatile districts are
 intentionally not bundled.
 
+### Seed Americas geography
+
+Brazil (26 states + DF), Mexico (32 entities), Canada (10 provinces +
+3 territories), Argentina (23 provinces + CABA), Colombia (32
+departments + Bogotá D.C.), and Peru (25 regions + Lima municipality)
+each expose a single-level hierarchy via `execute('BR')`,
+`execute('MX')`, `execute('CA')`, `execute('AR')`, `execute('CO')`,
+and `execute('PE')`. Brazil, Mexico, Canada, and Australia resolve
+state names to abbreviations in the formatter
+(`{locality} - {ST}`, `{postcode} {locality}, {abbrev}`,
+`{locality} {PR} {postcode}`).
+
+### Seed Asia-Pacific geography, second batch
+
+Australia (6 states + 2 territories), Vietnam (28 provinces + 6
+municipalities post-2025 merger), Thailand (76 provinces + Bangkok +
+Pattaya), the Philippines (82 provinces), South Korea (17 divisions),
+Taiwan (22 divisions), and Ukraine (24 oblasts + Kyiv + Sevastopol +
+Crimea) each expose a single-level hierarchy via `execute('AU')`,
+`execute('VN')`, `execute('TH')`, `execute('PH')`, `execute('KR')`,
+`execute('TW')`, and `execute('UA')`. The Philippines ships provinces
+only — its 17 regions stay global states. Australia's formatter uses
+double-spaced `{locality}  {ST}  {postcode}`.
+
+### Seed Africa, Central Asia, and Middle East geography
+
+Ghana (16 regions), Angola (18 provinces), Cameroon (10 regions),
+Madagascar (6 provinces), Afghanistan (34 provinces), Mozambique (10
+provinces + Maputo City), Uzbekistan (12 regions + Karakalpakstan +
+Tashkent City), Myanmar (7 regions + 7 states + Naypyidaw), and Iraq
+(19 governorates) each expose a single-level hierarchy via
+`execute('GH')`, `execute('AO')`, `execute('CM')`, `execute('MG')`,
+`execute('AF')`, `execute('MZ')`, `execute('UZ')`, `execute('MM')`,
+and `execute('IQ')`. Iraq deletes non-governorate `KR` rows on seed;
+Angola's unimplemented 2024 split and Madagascar's codeless regions
+are documented in `05-country-data.md`. Angola and Cameroon have no
+postcode system.
+
 ### Resolve Singapore postcodes
 
 ```php

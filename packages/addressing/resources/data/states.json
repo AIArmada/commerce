@@ -370,7 +370,7 @@
   },
   {
     "id": 3888,
-    "name": "Ghōr",
+    "name": "Ghor",
     "country_id": 1,
     "country_code": "AF",
     "country_name": "Afghanistan",
@@ -739,7 +739,7 @@
   },
   {
     "id": 3900,
-    "name": "Kunduz Province",
+    "name": "Kunduz",
     "country_id": 1,
     "country_code": "AF",
     "country_name": "Afghanistan",
@@ -78594,7 +78594,7 @@
   },
   {
     "id": 3956,
-    "name": "Al-Qādisiyyah",
+    "name": "Al-Qadisiyyah",
     "country_id": 104,
     "country_code": "IQ",
     "country_name": "Iraq",
@@ -78919,51 +78919,6 @@
     "wikiDataId": "Q213189",
     "population": null,
     "state_code": "AR"
-  },
-  {
-    "id": 5625,
-    "name": "Iqlim Kurdistan",
-    "country_id": 104,
-    "country_code": "IQ",
-    "country_name": "Iraq",
-    "iso2": "KR",
-    "iso3166_2": "IQ-KR",
-    "fips_code": null,
-    "type": "region",
-    "level": null,
-    "parent_id": null,
-    "native": "ھەرێمی کوردستان",
-    "latitude": "36.18333333",
-    "longitude": "44.00000000",
-    "timezone": "Asia/Baghdad",
-    "translations": {
-      "ar": "إقليم كردستان العراق",
-      "bn": "ইরাকি কুর্দিস্তান",
-      "de": "Autonome Region Kurdistan",
-      "es": "Kurdistán iraquí",
-      "fr": "Kurdistan irakien",
-      "hi": "इराकी कुर्दिस्तान",
-      "id": "Daerah Kurdistan",
-      "it": "Regione del Kurdistan",
-      "ja": "クルディスタン地域",
-      "ko": "쿠르드 자치구",
-      "nl": "Koerdische Autonome Regio",
-      "pl": "Kurdystan (region autonomiczny)",
-      "pt": "Curdistão iraquiano",
-      "ru": "Регион Курдистан",
-      "tr": "Kürdistan Bölgesel Yönetimi",
-      "uk": "Іракський Курдистан",
-      "vi": "Kurdistan thuộc Iraq",
-      "zh": "伊拉克库尔德斯坦",
-      "br": "Iqlim Kurdistan",
-      "pt-BR": "Iqlim Curdistão",
-      "hr": "Iklimski Kurdistan",
-      "fa": "اقلیم کردستان",
-      "zh-CN": "伊克利姆库尔德斯坦"
-    },
-    "wikiDataId": "Q205047",
-    "population": null,
-    "state_code": "KR"
   },
   {
     "id": 3957,
@@ -121435,7 +121390,7 @@
   },
   {
     "id": 3332,
-    "name": "Maputo",
+    "name": "Maputo Province",
     "country_id": 150,
     "country_code": "MZ",
     "country_name": "Mozambique",
@@ -121476,7 +121431,7 @@
   },
   {
     "id": 3335,
-    "name": "Maputo",
+    "name": "Maputo City",
     "country_id": 150,
     "country_code": "MZ",
     "country_name": "Mozambique",
@@ -122050,7 +122005,7 @@
   },
   {
     "id": 2147,
-    "name": "Mon State",
+    "name": "Mon",
     "country_id": 151,
     "country_code": "MM",
     "country_name": "Myanmar",
@@ -137349,7 +137304,7 @@
   },
   {
     "id": 3687,
-    "name": "Huanuco",
+    "name": "Huánuco",
     "country_id": 173,
     "country_code": "PE",
     "country_name": "Peru",
@@ -138374,7 +138329,7 @@
   },
   {
     "id": 1316,
-    "name": "Autonomous Region in Muslim Mindanao",
+    "name": "Bangsamoro",
     "country_id": 174,
     "country_code": "PH",
     "country_name": "Philippines",
@@ -139358,7 +139313,7 @@
   },
   {
     "id": 1335,
-    "name": "Cordillera Administrative",
+    "name": "Cordillera Administrative Region",
     "country_id": 174,
     "country_code": "PH",
     "country_name": "Philippines",
@@ -141818,7 +141773,7 @@
   },
   {
     "id": 5115,
-    "name": "Western Samar",
+    "name": "Samar",
     "country_id": 174,
     "country_code": "PH",
     "country_name": "Philippines",
@@ -170031,7 +169986,7 @@
   },
   {
     "id": 3862,
-    "name": "Gangwon",
+    "name": "Gangwon State",
     "country_id": 116,
     "country_code": "KR",
     "country_name": "South Korea",
@@ -170318,7 +170273,7 @@
   },
   {
     "id": 3851,
-    "name": "North Jeolla",
+    "name": "Jeonbuk State",
     "country_id": 116,
     "country_code": "KR",
     "country_name": "South Korea",
@@ -212961,7 +212916,7 @@
   },
   {
     "id": 2536,
-    "name": "Tashkent",
+    "name": "Tashkent City",
     "country_id": 236,
     "country_code": "UZ",
     "country_name": "Uzbekistan",
@@ -213002,7 +212957,7 @@
   },
   {
     "id": 2549,
-    "name": "Tashkent",
+    "name": "Tashkent Region",
     "country_id": 236,
     "country_code": "UZ",
     "country_name": "Uzbekistan",
@@ -215626,7 +215581,7 @@
   },
   {
     "id": 3798,
-    "name": "Thừa Thiên-Huế",
+    "name": "Huế",
     "country_id": 240,
     "country_code": "VN",
     "country_name": "Vietnam",

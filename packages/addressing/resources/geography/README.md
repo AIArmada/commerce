@@ -39,3 +39,25 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `sudan-address-areas.csv` — used by `SudanGeographyProvider`. 18 states.
 - `uganda-address-areas.csv` — used by `UgandaGeographyProvider`. 4 regions only; volatile districts intentionally not bundled.
 - `algeria-address-areas.csv` — used by `AlgeriaGeographyProvider`. 58 wilayas including the 2019 batch.
+- `brazil-address-areas.csv` — used by `BrazilGeographyProvider`. 26 states + DF per ISO 3166-2:BR.
+- `mexico-address-areas.csv` — used by `MexicoGeographyProvider`. 32 federal entities; CDMX typed state.
+- `canada-address-areas.csv` — used by `CanadaGeographyProvider`. 10 provinces + 3 territories.
+- `australia-address-areas.csv` — used by `AustraliaGeographyProvider`. 6 states + 2 mainland territories.
+- `argentina-address-areas.csv` — used by `ArgentinaGeographyProvider`. 23 provinces + CABA.
+- `colombia-address-areas.csv` — used by `ColombiaGeographyProvider`. 32 departments + Bogotá D.C.
+- `peru-address-areas.csv` — used by `PeruGeographyProvider`. 25 regions + Lima municipality; Huánuco accent fixed.
+- `vietnam-address-areas.csv` — used by `VietnamGeographyProvider`. Post-merger 34 (28 provinces + 6 cities); Huế renamed and retyped.
+- `thailand-address-areas.csv` — used by `ThailandGeographyProvider`. 76 provinces + Bangkok + Pattaya.
+- `philippines-address-areas.csv` — used by `PhilippinesGeographyProvider`. 82 provinces only; Samar renamed with Western Samar aliased.
+- `south-korea-address-areas.csv` — used by `SouthKoreaGeographyProvider`. 17 divisions incl. self-governing Gangwon/Jeju/Jeonbuk.
+- `taiwan-address-areas.csv` — used by `TaiwanGeographyProvider`. 6 municipalities + 3 cities + 13 counties.
+- `ukraine-address-areas.csv` — used by `UkraineGeographyProvider`. 24 oblasts + Kyiv + Sevastopol + Crimea; ISO adjectival names.
+- `iraq-address-areas.csv` — used by `IraqGeographyProvider`. 19 governorates incl. Halabja (HL per UK usage, provisional); overlapping KR region excluded.
+- `ghana-address-areas.csv` — used by `GhanaGeographyProvider`. 16 regions including the 2019 batch.
+- `angola-address-areas.csv` — used by `AngolaGeographyProvider`. 18 ISO provinces; 2024 split pending implementation.
+- `cameroon-address-areas.csv` — used by `CameroonGeographyProvider`. 10 regions.
+- `madagascar-address-areas.csv` — used by `MadagascarGeographyProvider`. 6 provinces per ISO; codeless 23 regions excluded.
+- `afghanistan-address-areas.csv` — used by `AfghanistanGeographyProvider`. 34 provinces; Ghor/Kunduz spellings fixed.
+- `mozambique-address-areas.csv` — used by `MozambiqueGeographyProvider`. 10 provinces + Maputo City, disambiguated.
+- `uzbekistan-address-areas.csv` — used by `UzbekistanGeographyProvider`. 12 regions + Karakalpakstan + Tashkent City, disambiguated.
+- `myanmar-address-areas.csv` — used by `MyanmarGeographyProvider`. 7 regions + 7 states + Naypyidaw; Mon normalized.

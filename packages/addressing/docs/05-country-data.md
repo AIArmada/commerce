@@ -584,10 +584,331 @@ Communes are intentionally not bundled.
 Algerian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, and country.
 
+## Brazil
+
+The bundled `BrazilGeographyProvider` supplies the 26 states plus the
+Distrito Federal as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('BR')` after countries are seeded.
+
+Municipalities (5,500+) are intentionally not bundled.
+
+Brazilian addresses are formatted per the UPU layout: street lines,
+`{locality} - {ST}` with the two-letter state abbreviation resolved
+from a full-name map, the `NNNNN-NNN` postcode on its own line, and
+country.
+
+## Mexico
+
+The bundled `MexicoGeographyProvider` supplies the 32 federal
+entities as `State` rows (all typed `state`, including Ciudad de
+México, which has been state-equivalent since 2016) and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('MX')` after countries are seeded.
+
+Municipalities are intentionally not bundled.
+
+Mexican addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}, {abbrev}` with the state abbreviation from
+the UPU list (`CDMX`, `EDOMEX`, `Q. ROO`, `TAMPS`), and country.
+
+## Canada
+
+The bundled `CanadaGeographyProvider` supplies the 10 provinces plus
+the 3 territories as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('CA')` after countries are seeded.
+
+Canadian addresses are formatted per the UPU layout: street lines,
+`{locality} {PR} {postcode}` with the two-letter province abbreviation
+and uppercased `ANA NAN` postcode, and country.
+
+## Australia
+
+The bundled `AustraliaGeographyProvider` supplies the 6 states plus
+the 2 mainland territories as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('AU')` after countries are seeded.
+
+External territories (Norfolk Island, Christmas Island, Cocos
+Islands) carry their own postcodes and are intentionally not areas.
+
+Australian addresses are formatted per the UPU layout: street lines,
+`{locality}  {ST}  {postcode}` with two spaces between each part, and
+country.
+
+## Argentina
+
+The bundled `ArgentinaGeographyProvider` supplies the 23 provinces
+plus the Autonomous City of Buenos Aires as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('AR')` after countries are seeded.
+
+Departments and municipalities are intentionally not bundled.
+
+Argentine addresses are formatted per the UPU layout: street lines,
+`{CPA} {locality}` with the `XNNNNLLL` postcode left of the locality,
+and country.
+
+## Colombia
+
+The bundled `ColombiaGeographyProvider` supplies the 32 departments
+plus Bogotá D.C. as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('CO')` after countries are seeded.
+
+Municipalities are intentionally not bundled.
+
+Colombian addresses are formatted per the UPU layout: street lines,
+`{locality} {postcode}` with a 6-digit postcode, the department on
+its own line, and country.
+
+## Peru
+
+The bundled `PeruGeographyProvider` supplies the 25 regions plus the
+Lima metropolitan municipality as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('PE')` after countries are seeded.
+
+Provinces and districts are intentionally not bundled. The `Huánuco`
+spelling is corrected at seed.
+
+Peruvian addresses are formatted per the UPU layout: street lines, a
+5-digit postcode on its own line, the department on its own line, and
+country.
+
+## Vietnam
+
+The bundled `VietnamGeographyProvider` supplies the post-merger 34
+provincial-level divisions (28 provinces, 6 municipalities:
+Hà Nội, Hải Phòng, Huế, Đà Nẵng, Cần Thơ, Hồ Chí Minh City) as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('VN')` after
+countries are seeded.
+
+The June 2025 merger (63 → 34, districts eliminated) is reflected as
+shipped; seeding renames `Thừa Thiên-Huế` to `Huế` and retypes Hải
+Phòng, Hồ Chí Minh City, and Huế as municipalities. Communes and
+wards are intentionally not bundled.
+
+Vietnamese addresses are formatted per the UPU layout: street and
+ward lines, `{province} {postcode}` with a 5-digit postcode, and
+country.
+
+## Thailand
+
+The bundled `ThailandGeographyProvider` supplies the 76 provinces
+plus Bangkok and Pattaya as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('TH')` after countries are seeded.
+
+Districts (amphoe) and sub-districts are intentionally not bundled.
+
+Thai addresses are formatted per the UPU layout: street lines,
+`{district}, {province}`, the 5-digit postcode on its own line, and
+country.
+
+## Philippines
+
+The bundled `PhilippinesGeographyProvider` supplies the 82 provinces
+as areas in a single-level administrative hierarchy, including the
+2022 Maguindanao split (`Maguindanao del Norte` / `Maguindanao del
+Sur`) and `Davao de Oro`. It is selected with
+`SeedCountryGeographiesAction::execute('PH')` after countries are seeded.
+
+The 17 regions stay global `State` rows only (with `Bangsamoro` and
+`Cordillera Administrative Region` name corrections at seed): regions
+are churny (ARMM→BARMM in 2019, Negros Island Region re-created in
+2024 without an ISO code), while provinces are the address-relevant
+unit. Cities and barangays are intentionally not bundled.
+`Samar` keeps `Western Samar` as an alias.
+
+Filipino addresses are formatted per the UPU layout: street lines,
+the municipality on its own line with `{postcode} {province}` below
+it for provincial addresses (`{postcode} {municipality}, METRO MANILA`
+for Metro Manila, `{postcode} {locality}` when no province is set),
+and country.
+
+## South Korea
+
+The bundled `SouthKoreaGeographyProvider` supplies the 17
+provincial-level divisions as `State` rows (8 provinces including the
+special self-governing Gangwon State, Jeju, and Jeonbuk State — the
+2023/2024 official renames, with `Gangwon` and `North Jeolla` aliased
+— 6 metropolitan cities, Seoul, and Sejong) and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('KR')` after countries are seeded.
+
+Cities, districts, and dongs are intentionally not bundled.
+
+South Korean addresses are formatted per the UPU layout: street
+lines, `{province or city} {postcode}` with a 5-digit postcode, and
+country.
+
+## Taiwan
+
+The bundled `TaiwanGeographyProvider` supplies the 22 divisions (6
+special municipalities, 3 cities, 13 counties) as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('TW')` after countries are seeded.
+
+Townships, districts, and villages are intentionally not bundled.
+
+Taiwanese addresses are formatted per Chunghwa Post (no UPU sheet is
+published for Taiwan): street lines, `{locality} {postcode}` with the
+6-digit 3+3 postcode, and country.
+
+## Ukraine
+
+The bundled `UkraineGeographyProvider` supplies the 24 oblasts plus
+Kyiv, Sevastopol, and the Autonomous Republic of Crimea as `State`
+rows and a single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('UA')` after countries are seeded.
+
+Raions and hromadas are intentionally not bundled. Oblast names use
+the ISO adjectival forms (`Kyivska`, `Lvivska`).
+
+Ukrainian addresses are formatted per the UPU layout: street lines,
+locality, oblast, a 5-digit postcode on its own line, and country.
+
+## Iraq
+
+The bundled `IraqGeographyProvider` supplies the 19 governorates as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('IQ')` after
+countries are seeded.
+
+`Iqlim Kurdistan` is ISO-listed as a region (`IQ-KR`) overlapping
+Erbil, Dohuk, Sulaymaniyah, and Halabja — not a governorate. Since
+governorates are the address-relevant unit, seeding deletes any `KR`
+straggler rows and the bundled state data no longer ships the code.
+Halabja (governorate in Kurdistan since 2014, federally since April
+2025) has no ISO code yet; `HL` follows UK government usage pending
+ISO assignment. Districts are intentionally not bundled.
+
+Iraqi addresses are formatted per the UPU layout: street lines,
+`{city}, {governorate}`, the 5-digit postcode on its own line, and
+country.
+
+## Ghana
+
+The bundled `GhanaGeographyProvider` supplies the 16 regions
+(including the six created in 2019) as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('GH')` after countries are seeded.
+
+Districts are intentionally not bundled.
+
+Ghanaian addresses are formatted per the UPU layout: street or P.O.
+Box lines, `{locality} {postcode}` (accepting both short and digital
+`GA-183-8164` forms as given), the region on its own line, and
+country.
+
+## Angola
+
+The bundled `AngolaGeographyProvider` supplies the 18 ISO provinces
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('AO')` after
+countries are seeded.
+
+The September 2024 law creating three more provinces (Icolo e Bengo,
+Moxico Leste, and the Cuando/Cubango split, 21 total) is enacted but,
+per official sources, not yet implemented — so the shipped 18 track
+implemented reality, and the new units will be added once live.
+Municipalities are intentionally not bundled.
+
+Angola has no postcode system, so the formatter stacks street lines,
+city, and country with no postcode line.
+
+## Cameroon
+
+The bundled `CameroonGeographyProvider` supplies the 10 regions as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('CM')` after
+countries are seeded.
+
+Departments and communes are intentionally not bundled.
+
+Cameroon has no postcode system, so the formatter stacks street
+lines, city, and country with no postcode line.
+
+## Madagascar
+
+The bundled `MadagascarGeographyProvider` supplies the 6 provinces
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('MG')` after
+countries are seeded.
+
+The 23 post-2009 regions have no ISO codes (ISO 3166-2:MG still lists
+the 6 former faritany) and are intentionally not bundled; the 6
+remain postally relevant since the postcode's first digit routes by
+old province.
+
+Malagasy addresses are formatted per the UPU layout: street lines,
+`{postcode} {town}` with a 3-digit postcode, and country.
+
+## Afghanistan
+
+The bundled `AfghanistanGeographyProvider` supplies the 34 provinces
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('AF')` after
+countries are seeded.
+
+Districts are intentionally not bundled. The `Ghor` and `Kunduz`
+spellings are corrected at seed.
+
+Afghan addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 6-digit postcode, the province on its
+own line, and country.
+
+## Mozambique
+
+The bundled `MozambiqueGeographyProvider` supplies the 10 provinces
+plus Maputo City as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('MZ')` after countries are seeded.
+
+Districts are intentionally not bundled. `Maputo Province` and
+`Maputo City` are disambiguated at seed.
+
+Mozambican addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, the province on its
+own line, and country.
+
+## Uzbekistan
+
+The bundled `UzbekistanGeographyProvider` supplies the 12 regions
+plus Karakalpakstan and Tashkent City as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('UZ')` after countries are seeded.
+
+Region names use official Uzbek Latin forms (`Qashqadaryo`,
+`Samarqand`, `Sirdaryo`, `Surxondaryo`, `Navoiy`, `Xorazm`).
+`Tashkent Region` and `Tashkent City` are disambiguated at seed.
+Districts are intentionally not bundled.
+
+Uzbek addresses are formatted per the UPU layout: street lines,
+`{postcode}, {locality}` with a 6-digit postcode, the region on its
+own line (omitted when it duplicates the city), and country.
+
+## Myanmar
+
+The bundled `MyanmarGeographyProvider` supplies the 7 regions, 7
+states, and Naypyidaw as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('MM')` after countries are seeded.
+
+Townships and districts are intentionally not bundled.
+
+Myanmar addresses are formatted per the UPU layout: street lines,
+`{locality}, {postcode}` with a 7-digit postcode, the region or state
+on its own line, and country.
+
 ## Numeric state codes
 
-Bahrain, Italy, Saudi Arabia, Türkiye, Morocco, France, Japan,
-Poland, Kenya, Tanzania, and Algeria use numeric ISO subdivision codes
+Bahrain, Italy, South Korea, Saudi Arabia, Türkiye, Morocco, France,
+Japan, Poland, Kenya, Tanzania, Algeria, Thailand, Vietnam, Ukraine,
+and Myanmar use numeric ISO subdivision codes
 at the state-mapping level. PHP casts numeric-string array keys to
 int, so
 `stateAreaMappings()` returns int keys for those countries and the

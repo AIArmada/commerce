@@ -102,39 +102,7 @@ geography tables remain global and are not owner-scoped.
         AIArmada\Addressing\Geography\Singapore\SingaporeGeographyProvider::class,
         AIArmada\Addressing\Geography\Indonesia\IndonesiaGeographyProvider::class,
         AIArmada\Addressing\Geography\Brunei\BruneiGeographyProvider::class,
-        AIArmada\Addressing\Geography\Bahrain\BahrainGeographyProvider::class,
-        AIArmada\Addressing\Geography\Bangladesh\BangladeshGeographyProvider::class,
-        AIArmada\Addressing\Geography\Egypt\EgyptGeographyProvider::class,
-        AIArmada\Addressing\Geography\India\IndiaGeographyProvider::class,
-        AIArmada\Addressing\Geography\Jordan\JordanGeographyProvider::class,
-        AIArmada\Addressing\Geography\Kuwait\KuwaitGeographyProvider::class,
-        AIArmada\Addressing\Geography\Morocco\MoroccoGeographyProvider::class,
-        AIArmada\Addressing\Geography\Oman\OmanGeographyProvider::class,
-        AIArmada\Addressing\Geography\Pakistan\PakistanGeographyProvider::class,
-        AIArmada\Addressing\Geography\Qatar\QatarGeographyProvider::class,
-        AIArmada\Addressing\Geography\SaudiArabia\SaudiArabiaGeographyProvider::class,
-        AIArmada\Addressing\Geography\SouthAfrica\SouthAfricaGeographyProvider::class,
-        AIArmada\Addressing\Geography\Turkiye\TurkiyeGeographyProvider::class,
-        AIArmada\Addressing\Geography\UnitedArabEmirates\UnitedArabEmiratesGeographyProvider::class,
-        AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomGeographyProvider::class,
-        AIArmada\Addressing\Geography\China\ChinaGeographyProvider::class,
-        AIArmada\Addressing\Geography\Russia\RussiaGeographyProvider::class,
-        AIArmada\Addressing\Geography\Germany\GermanyGeographyProvider::class,
-        AIArmada\Addressing\Geography\France\FranceGeographyProvider::class,
-        AIArmada\Addressing\Geography\Italy\ItalyGeographyProvider::class,
-        AIArmada\Addressing\Geography\Japan\JapanGeographyProvider::class,
-        AIArmada\Addressing\Geography\UnitedStates\UnitedStatesGeographyProvider::class,
-        AIArmada\Addressing\Geography\Spain\SpainGeographyProvider::class,
-        AIArmada\Addressing\Geography\Poland\PolandGeographyProvider::class,
-        AIArmada\Addressing\Geography\Netherlands\NetherlandsGeographyProvider::class,
-        AIArmada\Addressing\Geography\Nigeria\NigeriaGeographyProvider::class,
-        AIArmada\Addressing\Geography\Ethiopia\EthiopiaGeographyProvider::class,
-        AIArmada\Addressing\Geography\DemocraticRepublicOfCongo\DemocraticRepublicOfCongoGeographyProvider::class,
-        AIArmada\Addressing\Geography\Tanzania\TanzaniaGeographyProvider::class,
-        AIArmada\Addressing\Geography\Kenya\KenyaGeographyProvider::class,
-        AIArmada\Addressing\Geography\Sudan\SudanGeographyProvider::class,
-        AIArmada\Addressing\Geography\Uganda\UgandaGeographyProvider::class,
-        AIArmada\Addressing\Geography\Algeria\AlgeriaGeographyProvider::class,
+        // ... remaining bundled providers; see 05-country-data.md for the full set.
     ],
 ],
 ```
@@ -153,43 +121,30 @@ Country-specific formatters are configured separately from geography providers:
     AIArmada\Addressing\Geography\Singapore\SingaporeAddressFormatter::class,
     AIArmada\Addressing\Geography\Indonesia\IndonesiaAddressFormatter::class,
     AIArmada\Addressing\Geography\Brunei\BruneiAddressFormatter::class,
-    AIArmada\Addressing\Geography\Bahrain\BahrainAddressFormatter::class,
-    AIArmada\Addressing\Geography\Bangladesh\BangladeshAddressFormatter::class,
-    AIArmada\Addressing\Geography\Egypt\EgyptAddressFormatter::class,
-    AIArmada\Addressing\Geography\India\IndiaAddressFormatter::class,
-    AIArmada\Addressing\Geography\Jordan\JordanAddressFormatter::class,
-    AIArmada\Addressing\Geography\Kuwait\KuwaitAddressFormatter::class,
-    AIArmada\Addressing\Geography\Morocco\MoroccoAddressFormatter::class,
-    AIArmada\Addressing\Geography\Oman\OmanAddressFormatter::class,
-    AIArmada\Addressing\Geography\Pakistan\PakistanAddressFormatter::class,
-    AIArmada\Addressing\Geography\Qatar\QatarAddressFormatter::class,
-    AIArmada\Addressing\Geography\SaudiArabia\SaudiArabiaAddressFormatter::class,
-    AIArmada\Addressing\Geography\SouthAfrica\SouthAfricaAddressFormatter::class,
-    AIArmada\Addressing\Geography\Turkiye\TurkiyeAddressFormatter::class,
-    AIArmada\Addressing\Geography\UnitedArabEmirates\UnitedArabEmiratesAddressFormatter::class,
-    AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomAddressFormatter::class,
-    AIArmada\Addressing\Geography\China\ChinaAddressFormatter::class,
-    AIArmada\Addressing\Geography\Russia\RussiaAddressFormatter::class,
-    AIArmada\Addressing\Geography\Germany\GermanyAddressFormatter::class,
-    AIArmada\Addressing\Geography\France\FranceAddressFormatter::class,
-    AIArmada\Addressing\Geography\Italy\ItalyAddressFormatter::class,
-    AIArmada\Addressing\Geography\Japan\JapanAddressFormatter::class,
-    AIArmada\Addressing\Geography\UnitedStates\UnitedStatesAddressFormatter::class,
-    AIArmada\Addressing\Geography\Spain\SpainAddressFormatter::class,
-    AIArmada\Addressing\Geography\Poland\PolandAddressFormatter::class,
-    AIArmada\Addressing\Geography\Netherlands\NetherlandsAddressFormatter::class,
-    AIArmada\Addressing\Geography\Nigeria\NigeriaAddressFormatter::class,
-    AIArmada\Addressing\Geography\Ethiopia\EthiopiaAddressFormatter::class,
-    AIArmada\Addressing\Geography\DemocraticRepublicOfCongo\DemocraticRepublicOfCongoAddressFormatter::class,
-    AIArmada\Addressing\Geography\Tanzania\TanzaniaAddressFormatter::class,
-    AIArmada\Addressing\Geography\Kenya\KenyaAddressFormatter::class,
-    AIArmada\Addressing\Geography\Sudan\SudanAddressFormatter::class,
-    AIArmada\Addressing\Geography\Uganda\UgandaAddressFormatter::class,
-    AIArmada\Addressing\Geography\Algeria\AlgeriaAddressFormatter::class,
+    // ... remaining bundled formatters; see 05-country-data.md for the full set.
 ],
 ```
 
 `FormatAddressAction` resolves a formatter by `AddressData::countryCode` and falls back to the generic formatter when no country formatter is registered. This keeps formatting independent from geography seeding.
+
+### Provider registration
+
+Shipping a provider class is not enough to use it: a provider takes effect only when its class is listed in `addressing.geography.providers` (and its formatter in `addressing.formatters`). To enable a country, add both classes to the consuming app's published `config/addressing.php`:
+
+```php
+'geography' => [
+    'providers' => [
+        // ...
+        AIArmada\Addressing\Geography\Vietnam\VietnamGeographyProvider::class,
+    ],
+],
+'formatters' => [
+    // ...
+    AIArmada\Addressing\Geography\Vietnam\VietnamAddressFormatter::class,
+],
+```
+
+Registration gates everything. Seeding iterates registered providers only, so `SeedCountryGeographiesAction::execute('VN')` silently seeds nothing when Vietnam is absent. `CountryAddressProfileResolver` likewise resolves registered providers only: for an unregistered country it returns no profile, `hierarchies()` is empty, and `definitionForRole()` returns null for every role — which makes `SyncAddressAreaAssignmentsAction` reject any non-empty assignment map with "The selected address area role is not defined by the country address profile." Only the empty map (delete-all) succeeds without a profile. Boot validation rejects configured entries that do not exist or do not implement `CountryGeographyProvider`, so a typo fails fast instead of seeding silently.
 
 ## Navigation Links
 

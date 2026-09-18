@@ -3,26 +3,41 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Afghanistan\AfghanistanAddressFormatter;
 use AIArmada\Addressing\Geography\Algeria\AlgeriaAddressFormatter;
+use AIArmada\Addressing\Geography\Angola\AngolaAddressFormatter;
+use AIArmada\Addressing\Geography\Argentina\ArgentinaAddressFormatter;
+use AIArmada\Addressing\Geography\Australia\AustraliaAddressFormatter;
 use AIArmada\Addressing\Geography\Bahrain\BahrainAddressFormatter;
 use AIArmada\Addressing\Geography\Bangladesh\BangladeshAddressFormatter;
+use AIArmada\Addressing\Geography\Brazil\BrazilAddressFormatter;
+use AIArmada\Addressing\Geography\Cameroon\CameroonAddressFormatter;
+use AIArmada\Addressing\Geography\Canada\CanadaAddressFormatter;
 use AIArmada\Addressing\Geography\China\ChinaAddressFormatter;
+use AIArmada\Addressing\Geography\Colombia\ColombiaAddressFormatter;
 use AIArmada\Addressing\Geography\DemocraticRepublicOfCongo\DemocraticRepublicOfCongoAddressFormatter;
 use AIArmada\Addressing\Geography\Egypt\EgyptAddressFormatter;
 use AIArmada\Addressing\Geography\Ethiopia\EthiopiaAddressFormatter;
 use AIArmada\Addressing\Geography\France\FranceAddressFormatter;
 use AIArmada\Addressing\Geography\Germany\GermanyAddressFormatter;
+use AIArmada\Addressing\Geography\Ghana\GhanaAddressFormatter;
 use AIArmada\Addressing\Geography\India\IndiaAddressFormatter;
+use AIArmada\Addressing\Geography\Iraq\IraqAddressFormatter;
 use AIArmada\Addressing\Geography\Italy\ItalyAddressFormatter;
 use AIArmada\Addressing\Geography\Japan\JapanAddressFormatter;
 use AIArmada\Addressing\Geography\Jordan\JordanAddressFormatter;
 use AIArmada\Addressing\Geography\Kenya\KenyaAddressFormatter;
 use AIArmada\Addressing\Geography\Kuwait\KuwaitAddressFormatter;
+use AIArmada\Addressing\Geography\Madagascar\MadagascarAddressFormatter;
+use AIArmada\Addressing\Geography\Mexico\MexicoAddressFormatter;
 use AIArmada\Addressing\Geography\Morocco\MoroccoAddressFormatter;
+use AIArmada\Addressing\Geography\Mozambique\MozambiqueAddressFormatter;
+use AIArmada\Addressing\Geography\Myanmar\MyanmarAddressFormatter;
 use AIArmada\Addressing\Geography\Netherlands\NetherlandsAddressFormatter;
 use AIArmada\Addressing\Geography\Nigeria\NigeriaAddressFormatter;
 use AIArmada\Addressing\Geography\Oman\OmanAddressFormatter;
 use AIArmada\Addressing\Geography\Pakistan\PakistanAddressFormatter;
+use AIArmada\Addressing\Geography\Peru\PeruAddressFormatter;
 use AIArmada\Addressing\Geography\Philippines\PhilippinesAddressFormatter;
 use AIArmada\Addressing\Geography\Poland\PolandAddressFormatter;
 use AIArmada\Addressing\Geography\Qatar\QatarAddressFormatter;
@@ -32,12 +47,17 @@ use AIArmada\Addressing\Geography\SouthAfrica\SouthAfricaAddressFormatter;
 use AIArmada\Addressing\Geography\SouthKorea\SouthKoreaAddressFormatter;
 use AIArmada\Addressing\Geography\Spain\SpainAddressFormatter;
 use AIArmada\Addressing\Geography\Sudan\SudanAddressFormatter;
+use AIArmada\Addressing\Geography\Taiwan\TaiwanAddressFormatter;
 use AIArmada\Addressing\Geography\Tanzania\TanzaniaAddressFormatter;
+use AIArmada\Addressing\Geography\Thailand\ThailandAddressFormatter;
 use AIArmada\Addressing\Geography\Turkiye\TurkiyeAddressFormatter;
 use AIArmada\Addressing\Geography\Uganda\UgandaAddressFormatter;
+use AIArmada\Addressing\Geography\Ukraine\UkraineAddressFormatter;
 use AIArmada\Addressing\Geography\UnitedArabEmirates\UnitedArabEmiratesAddressFormatter;
 use AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomAddressFormatter;
 use AIArmada\Addressing\Geography\UnitedStates\UnitedStatesAddressFormatter;
+use AIArmada\Addressing\Geography\Uzbekistan\UzbekistanAddressFormatter;
+use AIArmada\Addressing\Geography\Vietnam\VietnamAddressFormatter;
 
 it('formats Pakistani addresses with dash-separated postcodes', function (): void {
     $formatted = app(PakistanAddressFormatter::class)->format(AddressData::from([
@@ -457,6 +477,124 @@ it('formats Algerian addresses with the postcode left of the locality', function
 
     expect($formatted)->toBe("2, rue de l'Indépendance\n16027 ALGIERS\nAlgeria");
 });
+
+it('formats Brazilian addresses with the state abbreviation and postcode below', function (): void {
+    $formatted = app(BrazilAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'RUA XV DE NOVEMBRO, 1751',
+        'city' => 'GUARAPUAVA',
+        'state' => 'Paraná',
+        'postcode' => '85070-200',
+        'country_code' => 'BR',
+    ]));
+
+    expect($formatted)->toBe("RUA XV DE NOVEMBRO, 1751\nGUARAPUAVA - PR\n85070-200\nBrazil");
+});
+
+it('formats Mexican addresses with the postcode left and abbreviation after', function (): void {
+    $formatted = app(MexicoAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Insurgentes Sur 1602',
+        'city' => 'MEXICO',
+        'state' => 'Ciudad de México',
+        'postcode' => '02860',
+        'country_code' => 'MX',
+    ]));
+
+    expect($formatted)->toBe("Insurgentes Sur 1602\n02860 MEXICO, CDMX\nMexico");
+});
+
+it('formats Canadian addresses with the province abbreviation and postcode', function (): void {
+    $formatted = app(CanadaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '8450 Newman Blvd.',
+        'city' => 'MONTREAL',
+        'state' => 'Quebec',
+        'postcode' => 'h3z 2y7',
+        'country_code' => 'CA',
+    ]));
+
+    expect($formatted)->toBe("8450 Newman Blvd.\nMONTREAL QC H3Z 2Y7\nCanada");
+});
+
+it('formats Australian addresses with double-spaced parts', function (): void {
+    $formatted = app(AustraliaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '113 BOND ST',
+        'city' => 'MELBOURNE',
+        'state' => 'Victoria',
+        'postcode' => '3000',
+        'country_code' => 'AU',
+    ]));
+
+    expect($formatted)->toBe("113 BOND ST\nMELBOURNE  VIC  3000\nAustralia");
+});
+
+it('formats Argentine addresses with the CPA postcode left of the locality', function (): void {
+    $formatted = app(ArgentinaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'TUCUMAN 1560',
+        'city' => 'VILLA MARIA',
+        'postcode' => 'Y5900FNF',
+        'country_code' => 'AR',
+    ]));
+
+    expect($formatted)->toBe("TUCUMAN 1560\nY5900FNF VILLA MARIA\nArgentina");
+});
+
+it('formats Colombian addresses with the postcode right and department below', function (): void {
+    $formatted = app(ColombiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'CARRERA 7 NO. 27-18',
+        'city' => 'PLANETA RICA',
+        'state' => 'CORDOBA',
+        'postcode' => '233057',
+        'country_code' => 'CO',
+    ]));
+
+    expect($formatted)->toBe("CARRERA 7 NO. 27-18\nPLANETA RICA 233057\nCORDOBA\nColombia");
+});
+
+it('formats Peruvian addresses with the postcode above the province', function (): void {
+    $formatted = app(PeruAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Jr. Jorge Salazar Araoz. N° 171',
+        'state' => 'LIMA',
+        'postcode' => '15074',
+        'country_code' => 'PE',
+    ]));
+
+    expect($formatted)->toBe("Jr. Jorge Salazar Araoz. N° 171\n15074\nLIMA\nPeru");
+});
+
+it('formats Vietnamese addresses with the postcode right of the province', function (): void {
+    $formatted = app(VietnamAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'No 5, Pham Hung Road',
+        'city' => 'My Dinh 2 Ward',
+        'state' => 'HANOI',
+        'postcode' => '11517',
+        'country_code' => 'VN',
+    ]));
+
+    expect($formatted)->toBe("No 5, Pham Hung Road\nMy Dinh 2 Ward\nHANOI 11517\nVietnam");
+});
+
+it('formats Thai addresses with district, province and postcode below', function (): void {
+    $formatted = app(ThailandAddressFormatter::class)->format(AddressData::from([
+        'line1' => '199/63 Moo 1, Tumbol Bangtalad',
+        'city' => 'Amphoe Pak Kret',
+        'state' => 'Nonthaburi',
+        'postcode' => '11120',
+        'country_code' => 'TH',
+    ]));
+
+    expect($formatted)->toBe("199/63 Moo 1, Tumbol Bangtalad\nAmphoe Pak Kret, Nonthaburi\n11120\nThailand");
+});
+
+it('formats Filipino addresses with the postcode left of the locality', function (): void {
+    $formatted = app(PhilippinesAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Rm 602 FUBC Bldg, Escolta',
+        'city' => 'MANILA',
+        'postcode' => '1008',
+        'country_code' => 'PH',
+    ]));
+
+    expect($formatted)->toBe("Rm 602 FUBC Bldg, Escolta\n1008 MANILA\nPhilippines");
+});
+
 it('formats Filipino provincial addresses with the postcode on the province line', function (): void {
     $formatted = app(PhilippinesAddressFormatter::class)->format(AddressData::from([
         'line1' => '96 Hermogenes St., Sofa Subdivision',
@@ -502,6 +640,17 @@ it('prints Filipino city-states once when city and state match', function (): vo
     ]));
 
     expect($formatted)->toBe("Rm 602 FUBC Bldg, Escolta\n1008 MANILA\nPhilippines");
+});
+
+it('formats South Korean addresses with the postcode right of the city', function (): void {
+    $formatted = app(SouthKoreaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '97-1 Toegye-ro, Jung-gu',
+        'state' => 'DAEGU',
+        'postcode' => '42007',
+        'country_code' => 'KR',
+    ]));
+
+    expect($formatted)->toBe("97-1 Toegye-ro, Jung-gu\nDAEGU 42007\nSouth Korea");
 });
 
 it('prints South Korean city-states once when city and state match', function (): void {
@@ -558,4 +707,128 @@ it('prints South Korean city-states once without a postcode', function (): void 
     ]));
 
     expect($formatted)->toBe("97-1 Toegye-ro, Jung-gu\nSeoul\nSouth Korea");
+});
+
+it('formats Taiwanese addresses with the 3+3 postcode right of the locality', function (): void {
+    $formatted = app(TaiwanAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'No. 55, Sec. 2, Jinshan S. Rd.',
+        'city' => 'Taipei City',
+        'postcode' => '106409',
+        'country_code' => 'TW',
+    ]));
+
+    expect($formatted)->toBe("No. 55, Sec. 2, Jinshan S. Rd.\nTaipei City 106409\nTaiwan");
+});
+
+it('formats Ukrainian addresses with locality, oblast and postcode lines', function (): void {
+    $formatted = app(UkraineAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'vul. Khreshchatyk, 22',
+        'city' => 'KYIV',
+        'postcode' => '01055',
+        'country_code' => 'UA',
+    ]));
+
+    expect($formatted)->toBe("vul. Khreshchatyk, 22\nKYIV\n01055\nUkraine");
+});
+
+it('formats Iraqi addresses with city, governorate and postcode below', function (): void {
+    $formatted = app(IraqAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Hay AL Asmaee, Zukak 2',
+        'city' => 'AL ASMAEE',
+        'state' => 'AL BASRAH',
+        'postcode' => '61002',
+        'country_code' => 'IQ',
+    ]));
+
+    expect($formatted)->toBe("Hay AL Asmaee, Zukak 2\nAL ASMAEE, AL BASRAH\n61002\nIraq");
+});
+
+it('formats Ghanaian addresses with the postcode right and region below', function (): void {
+    $formatted = app(GhanaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P. O. BOX GP 224',
+        'city' => 'Accra-Central',
+        'state' => 'GREATER ACCRA',
+        'postcode' => 'GA-183-8164',
+        'country_code' => 'GH',
+    ]));
+
+    expect($formatted)->toBe("P. O. BOX GP 224\nAccra-Central GA-183-8164\nGREATER ACCRA\nGhana");
+});
+
+it('formats Angolan addresses without a postcode line', function (): void {
+    $formatted = app(AngolaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Rua Ndunduma 51',
+        'city' => 'LUANDA',
+        'country_code' => 'AO',
+    ]));
+
+    expect($formatted)->toBe("Rua Ndunduma 51\nLUANDA\nAngola");
+});
+
+it('formats Cameroonian addresses without a postcode line', function (): void {
+    $formatted = app(CameroonAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'B.P. 8035',
+        'city' => 'YAOUNDE',
+        'country_code' => 'CM',
+    ]));
+
+    expect($formatted)->toBe("B.P. 8035\nYAOUNDE\nCameroon");
+});
+
+it('formats Malagasy addresses with the postcode left of the town', function (): void {
+    $formatted = app(MadagascarAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Lot II M 85 D Antsahameva',
+        'city' => 'TOAMASINA',
+        'postcode' => '501',
+        'country_code' => 'MG',
+    ]));
+
+    expect($formatted)->toBe("Lot II M 85 D Antsahameva\n501 TOAMASINA\nMadagascar");
+});
+
+it('formats Afghan addresses with the postcode left and province below', function (): void {
+    $formatted = app(AfghanistanAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'House No 123, Street 5',
+        'city' => 'HESARAK',
+        'state' => 'NANGARHAR',
+        'postcode' => '265101',
+        'country_code' => 'AF',
+    ]));
+
+    expect($formatted)->toBe("House No 123, Street 5\n265101 HESARAK\nNANGARHAR\nAfghanistan");
+});
+
+it('formats Mozambican addresses with the postcode left and province below', function (): void {
+    $formatted = app(MozambiqueAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'AV. Julius Nyerere 3412',
+        'city' => 'MAPUTO',
+        'state' => 'MAPUTO',
+        'postcode' => '1100',
+        'country_code' => 'MZ',
+    ]));
+
+    expect($formatted)->toBe("AV. Julius Nyerere 3412\n1100 MAPUTO\nMAPUTO\nMozambique");
+});
+
+it('formats Uzbek addresses with the postcode and comma left of the locality', function (): void {
+    $formatted = app(UzbekistanAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'pr-t Mustakillik, d. 5, kv. 12',
+        'city' => 'g. Tashkent 123',
+        'postcode' => '100123',
+        'country_code' => 'UZ',
+    ]));
+
+    expect($formatted)->toBe("pr-t Mustakillik, d. 5, kv. 12\n100123, g. Tashkent 123\nUzbekistan");
+});
+
+it('formats Myanmar addresses with the locality, postcode and region', function (): void {
+    $formatted = app(MyanmarAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'No. 7(A) 58 Street, Between 40 x 41',
+        'city' => 'Pyigyitagon Township',
+        'state' => 'Mandalay',
+        'postcode' => '0505001',
+        'country_code' => 'MM',
+    ]));
+
+    expect($formatted)->toBe("No. 7(A) 58 Street, Between 40 x 41\nPyigyitagon Township, 0505001\nMandalay\nMyanmar");
 });

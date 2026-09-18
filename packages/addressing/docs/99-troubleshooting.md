@@ -66,6 +66,18 @@ missing Taiwan under China is also correct: it carries its own `TW`
 country code. The US military codes (`AA`/`AE`/`AP`) and `UM` are
 intentionally not areas even though they exist as global states.
 
+## Missing States for the Third Batch
+
+Same cause with the matching `execute()` code (`BR`, `MX`, `CA`,
+`AU`, `AR`, `CO`, `PE`, `VN`, `TH`, `PH`, `KR`, `TW`, `UA`, `IQ`,
+`GH`, `AO`, `CM`, `MG`, `AF`, `MZ`, `UZ`, `MM`). All of these are
+single-level; the Philippines' regions and Australia's external
+territories stay global-only by design. Iraq deletes the overlapping
+`KR` region row on seed — a missing Iqlim Kurdistan is correct, not
+data loss. Vietnam shows the post-merger 34: old
+province names (Bình Dương, Long An) resolving nowhere is expected
+after the 2025 reform.
+
 ## Area Assignment Role Rejected
 
 `SyncAddressAreaAssignmentsAction` throws `The selected address area role is not defined by the country address profile.` for unknown roles — check the role against `CountryAddressProfileResolver::definitionForRole()` for that country. It throws `The selected role is not an assignable area role.` for `state_id` and other non-area roles: pass state through the action's `stateId` parameter instead of the assignments map.

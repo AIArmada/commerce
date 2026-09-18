@@ -123,16 +123,15 @@ it('formats Brunei addresses with the town or district before the postcode', fun
 
 it('falls back to the generic formatter for countries without a formatter', function (): void {
     $address = AddressData::from([
-        'line1' => '1500 Bank Street',
-        'city' => 'Ottawa',
-        'state' => 'Ontario',
-        'postcode' => 'K1H 7Z1',
-        'countryCode' => 'CA',
+        'line1' => '100 Queen Street',
+        'city' => 'Auckland',
+        'postcode' => '1010',
+        'countryCode' => 'NZ',
     ]);
 
     expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
-        '1500 Bank Street',
-        'K1H 7Z1 Ottawa, Ontario',
-        'CA',
+        '100 Queen Street',
+        '1010 Auckland',
+        'NZ',
     ]));
 });
