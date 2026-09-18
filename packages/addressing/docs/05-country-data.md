@@ -1595,6 +1595,406 @@ Zimbabwe has no postcode system. Addresses are formatted per the UPU
 layout: street lines, the suburb, the city, and country; any supplied
 code prints on its own line.
 
+## Albania
+
+The bundled `AlbaniaGeographyProvider` supplies the 12 counties
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('AL')` after
+countries are seeded.
+
+Albanian addresses are formatted per the UPU layout: street lines,
+the 4-digit postcode on its own line above the locality, the county
+when it differs, and country.
+## Andorra
+
+The bundled `AndorraGeographyProvider` supplies the 7 parishes
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('AD')` after
+countries are seeded.
+
+Andorran addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with an `AD` + 3-digit postcode, and country.
+## Austria
+
+The bundled `AustriaGeographyProvider` supplies the 9 states as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('AT')` after
+countries are seeded.
+
+Austrian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, and country.
+## Belarus
+
+The bundled `BelarusGeographyProvider` supplies the 6 oblasts
+plus Minsk as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('BY')` after countries are seeded.
+The Minsk oblast and Minsk city share a name by design; filter by type.
+
+Belarusian addresses are formatted per the UPU layout: street lines,
+`{postcode}, {locality}` with a 6-digit postcode, the oblast on its
+own line when both are set, and country.
+## Belgium
+
+The bundled `BelgiumGeographyProvider` supplies the 3 regions and
+10 provinces flat at level 1 as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('BE')` after countries are seeded.
+A region -> province depth-2 split is a future candidate.
+
+Belgian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, and country. `B-`
+and `BE-` prefixes are forbidden by bpost and are never added.
+## Bosnia and Herzegovina
+
+The bundled `BosniaAndHerzegovinaGeographyProvider` supplies the
+Federation, Republika Srpska, and Brčko District as `State` rows
+and a single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('BA')` after countries are seeded.
+
+Bosnian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode, and country.
+## Bulgaria
+
+The bundled `BulgariaGeographyProvider` supplies the 28 districts
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('BG')` after
+countries are seeded.
+
+Bulgarian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, and country.
+## Croatia
+
+The bundled `CroatiaGeographyProvider` supplies the 20 counties
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('HR')` after
+countries are seeded.
+
+Croatian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode, and country.
+Inbound international mail prefixes `HR-`; the formatter prints the
+postcode exactly as supplied.
+## Czech Republic
+
+The bundled `CzechRepublicGeographyProvider` supplies the 13
+regions, 76 districts, and Prague flat at level 1 as `State` rows
+and a single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('CZ')` after countries are seeded.
+A region -> district depth-2 split is a future candidate.
+
+Czech addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode written `NNN NN`
+(Prague delivery-district suffixes pass through), and country.
+## Denmark
+
+The bundled `DenmarkGeographyProvider` supplies the 5 regions as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('DK')` after
+countries are seeded.
+
+Danish addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, and country. The
+optional `DK-` prefix passes through when supplied.
+## Estonia
+
+The bundled `EstoniaGeographyProvider` supplies the 15 counties
+and 79 municipalities flat at level 1 as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('EE')` after countries are seeded.
+County/municipality name twins share names by design; filter by type.
+
+Estonian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode, and country.
+## Finland
+
+The bundled `FinlandGeographyProvider` supplies the 18 regions
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('FI')` after
+countries are seeded.
+
+Finnish addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode, and country. The
+optional `FI-` prefix passes through when supplied.
+## Greece
+
+The bundled `GreeceGeographyProvider` supplies the 13
+administrative regions plus 2 regional units as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('GR')` after countries are seeded.
+
+Greek addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode written `NNN NN`,
+and country.
+## Hungary
+
+The bundled `HungaryGeographyProvider` supplies the 20 counties,
+22 cities with county rights, and Budapest as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('HU')` after countries are seeded.
+
+Hungarian addresses follow international one-line practice: street
+lines, `{postcode} {locality}` with a 4-digit postcode, and country.
+(Domestic Hungarian order prints the postcode on its own line below
+the street, but the locality-before-street domestic layout does not
+fit the package's lines-first convention.)
+## Iceland
+
+The bundled `IcelandGeographyProvider` supplies the 8 regions and
+64 municipalities flat at level 1 as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('IS')` after countries are seeded.
+
+Icelandic addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 3-digit postcode, and country.
+## Ireland
+
+The bundled `IrelandGeographyProvider` supplies the 4 provinces
+and 26 counties flat at level 1 as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('IE')` after countries are seeded.
+A province -> county depth-2 split is a future candidate.
+
+Irish addresses are formatted per the UPU layout: street lines, the
+locality, the county, the Eircode on its own line, and country.
+## Kosovo
+
+The bundled `KosovoGeographyProvider` supplies the 7 districts
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('XK')` after
+countries are seeded.
+
+Kosovar addresses are formatted per the postal convention: street
+lines, `{postcode} {locality}` with a 5-digit postcode, and country.
+## Latvia
+
+The bundled `LatviaGeographyProvider` supplies the 36
+municipalities plus 7 state cities as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('LV')` after countries are seeded.
+The Jelgava, Rēzekne, and Ventspils municipality/city pairs share
+names by design; filter by type.
+
+Latvian addresses are formatted per the UPU layout: street lines,
+`{locality}, {postcode}` with an `LV-NNNN` postcode, and country.
+## Liechtenstein
+
+The bundled `LiechtensteinGeographyProvider` supplies the 11
+communes as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('LI')` after countries are seeded.
+Postal services follow Swiss rules.
+
+Liechtenstein addresses are formatted per the UPU layout: street
+lines, `{postcode} {locality}` with a 4-digit postcode, and country.
+## Lithuania
+
+The bundled `LithuaniaGeographyProvider` supplies the 10 counties
+and 60 municipalities flat at level 1 as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('LT')` after countries are seeded.
+The Alytus, Kaunas, Šiauliai, and Vilnius city/district pairs share
+both name and type in the source data, so their area slugs carry a
+code suffix (e.g. `alytus-02`).
+
+Lithuanian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode, and country.
+International mail prefixes `LT-`; the formatter prints the postcode
+exactly as supplied.
+## Luxembourg
+
+The bundled `LuxembourgGeographyProvider` supplies the 12 cantons
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('LU')` after
+countries are seeded.
+
+Luxembourg addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with an `L-NNNN` postcode, and country.
+## Malta
+
+The bundled `MaltaGeographyProvider` supplies the 68 local
+councils as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('MT')` after countries are seeded.
+
+Maltese addresses are formatted per the UPU layout: street lines,
+the locality, the `AAA NNNN` postcode on its own line, and country.
+## Moldova
+
+The bundled `MoldovaGeographyProvider` supplies the 32 districts,
+3 cities, Gagauzia, and Transnistria as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('MD')` after countries are seeded.
+
+Moldovan addresses are formatted per the UPU layout: street lines,
+`{postcode}, {locality}` with an `MD-NNNN` postcode, and country.
+The prefix passes through as supplied.
+## Monaco
+
+The bundled `MonacoGeographyProvider` supplies the 17 quarters
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('MC')` after
+countries are seeded.
+
+Monegasque addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit `98xxx` postcode, and country.
+## Montenegro
+
+The bundled `MontenegroGeographyProvider` supplies the 25
+municipalities as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('ME')` after countries are seeded.
+
+Montenegrin addresses are formatted per the UPU layout: street
+lines, `{postcode} {locality}` with a 5-digit postcode, and country.
+## North Macedonia
+
+The bundled `NorthMacedoniaGeographyProvider` supplies the 80
+municipalities as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('MK')` after countries are seeded.
+
+Macedonian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, and country.
+## Norway
+
+The bundled `NorwayGeographyProvider` supplies the 15 counties
+plus Svalbard and Jan Mayen as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('NO')` after countries are seeded.
+The old 4-digit `N-` prefix is obsolete and never added.
+
+Norwegian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, and country.
+## Portugal
+
+The bundled `PortugalGeographyProvider` supplies the 18
+districts plus the Azores and Madeira as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('PT')` after countries are seeded.
+
+Portuguese addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 7-digit `NNNN-NNN` postcode, and country.
+## Romania
+
+The bundled `RomaniaGeographyProvider` supplies the 41 departments
+plus Bucharest as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('RO')` after countries are seeded.
+
+Romanian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 6-digit postcode, and country.
+## San Marino
+
+The bundled `SanMarinoGeographyProvider` supplies the 9
+municipalities as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('SM')` after countries are seeded.
+
+Sammarinese addresses are formatted per the UPU layout (Italian CAP
+system): street lines, `{postcode} {locality}` with a `47890–47899`
+postcode, and country.
+## Serbia
+
+The bundled `SerbiaGeographyProvider` supplies the 29 districts,
+2 provinces, and Belgrade as `State` rows and a single-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('RS')` after countries are seeded.
+
+Serbian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit delivery-office number, and
+country. The street-level 6-digit PAK has no field and is not printed.
+## Slovakia
+
+The bundled `SlovakiaGeographyProvider` supplies the 8 regions as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('SK')` after
+countries are seeded.
+
+Slovak addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode written `XXX XX`,
+and country.
+## Slovenia
+
+The bundled `SloveniaGeographyProvider` supplies the 200
+municipalities plus 12 urban municipalities as `State` rows and a
+single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('SI')` after countries are seeded.
+
+Slovenian addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode, and country. An
+`SI-` prefix passes through when supplied.
+## Sweden
+
+The bundled `SwedenGeographyProvider` supplies the 21 counties as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('SE')` after
+countries are seeded.
+
+Swedish addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode written `XXX XX`,
+and country. An `SE-` prefix passes through when supplied.
+## Switzerland
+
+The bundled `SwitzerlandGeographyProvider` supplies the 26
+cantons as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('CH')` after countries are seeded.
+
+Swiss addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 4-digit postcode (office numbers and
+canton abbreviations pass through), and country.
+## Aland
+
+The bundled `AlandGeographyProvider` supplies the 16
+municipalities as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('AX')` after countries are seeded.
+
+Åland addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit `22xxx` postcode, and country.
+International mail prefixes `AX-`; the formatter prints the postcode
+exactly as supplied.
+## Faroe Islands
+
+The bundled `FaroeIslandsGeographyProvider` supplies the 6
+regions as `State` rows and a single-level administrative
+hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('FO')` after countries are seeded.
+
+Faroese addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with an `FO-NNN` postcode, and country. Old
+Danish `38xx` codes are obsolete.
+## Guernsey
+
+The bundled `GuernseyGeographyProvider` supplies the 12 parishes
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('GG')` after
+countries are seeded.
+
+Guernsey follows the UK postcode system (`GY` prefix, not `GG`).
+Addresses print street lines, the post town, the postcode on its own
+line, and country.
+## Jersey
+
+The bundled `JerseyGeographyProvider` supplies the 12 parishes as
+`State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('JE')` after
+countries are seeded.
+
+Jersey follows the UK postcode system (`JE` prefix). Addresses print
+street lines, the post town, the postcode on its own line, and country.
+## Isle of Man
+
+The bundled `IsleOfManGeographyProvider` supplies the 6 sheadings
+as `State` rows and a single-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('IM')` after
+countries are seeded.
+
+The Isle of Man follows the UK postcode system (`IM` prefix).
+Addresses print street lines, the post town, the postcode on its own
+line, and country. The formatter prints `Isle of Man` rather than
+the database's inverted `Man (Isle of)` spelling.
+
 ## Numeric state codes
 
 Bahrain, Italy, South Korea, Saudi Arabia, Türkiye, Morocco, France,
@@ -1602,7 +2002,11 @@ Japan, Poland, Kenya, Tanzania, Algeria, Thailand, Vietnam, Ukraine,
 Myanmar, Bhutan, Cyprus, Iran, Kazakhstan, Sri Lanka, Mongolia,
 Maldives, North Korea, Burkina Faso, Congo, Gabon, Mali,
 Mauritania, Niger, Rwanda, Sao Tome and Principe, Seychelles,
-Tunisia, and Zambia use numeric ISO subdivision codes
+Tunisia, Zambia, Albania, Andorra, Austria, Bulgaria, Croatia,
+Czech Republic, Denmark, Estonia, Finland, Greece, Iceland, Latvia,
+Liechtenstein, Lithuania, Malta, Montenegro, North Macedonia,
+Norway, Portugal, San Marino, Serbia, Slovenia, Aland, Guernsey,
+Jersey, and Isle of Man use numeric ISO subdivision codes
 at the state-mapping level. PHP casts numeric-string array keys to
 int, so
 `stateAreaMappings()` returns int keys for those countries and the

@@ -320,6 +320,34 @@ completing Africa coverage alongside the earlier batches. Most of
 the batch has no postcode system; those formatters print any supplied
 code on its own line.
 
+### Seed Europe remainder geography
+
+Albania (12 counties), Andorra (7 parishes), Austria (9 states),
+Belarus (6 oblasts + Minsk), Belgium (3 regions + 10 provinces
+flat), Bosnia and Herzegovina (2 entities + Brčko District),
+Bulgaria (28 districts), Croatia (20 counties), Czech Republic (13
+regions + 76 districts + Prague flat), Denmark (5 regions), Estonia
+(15 counties + 79 municipalities flat), Finland (18 regions), Greece
+(13 regions + 2 regional units), Hungary (20 counties + 22
+county-rights cities + Budapest), Iceland (8 regions + 64
+municipalities flat), Ireland (4 provinces + 26 counties flat),
+Kosovo (7 districts), Latvia (36 municipalities + 7 state cities),
+Liechtenstein (11 communes), Lithuania (10 counties + 60
+municipalities flat), Luxembourg (12 cantons), Malta (68 local
+councils), Moldova (32 districts + 3 cities + 2 units), Monaco (17
+quarters), Montenegro (25 municipalities), North Macedonia (80
+municipalities), Norway (15 counties + Svalbard/Jan Mayen), Portugal
+(18 districts + Azores/Madeira), Romania (41 departments +
+Bucharest), San Marino (9 municipalities), Serbia (29 districts + 2
+provinces + Belgrade), Slovakia (8 regions), Slovenia (200
+municipalities + 12 urban municipalities), Sweden (21 counties),
+Switzerland (26 cantons), Aland (16 municipalities), Faroe Islands (6
+regions), Guernsey (12 parishes), Jersey (12 parishes), and Isle of
+Man (6 sheadings) each expose a single-level hierarchy via
+`execute()` with their ISO code, completing Europe coverage
+alongside the earlier batches. Every country in the batch has a
+postcode system.
+
 ### Seed Africa, Central Asia, and Middle East geography
 
 Ghana (16 regions), Angola (18 provinces), Cameroon (10 regions),

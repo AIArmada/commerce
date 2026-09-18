@@ -123,3 +123,43 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `tunisia-address-areas.csv` — used by `TunisiaGeographyProvider`. 24 governorates.
 - `zambia-address-areas.csv` — used by `ZambiaGeographyProvider`. 10 provinces.
 - `zimbabwe-address-areas.csv` — used by `ZimbabweGeographyProvider`. 10 provinces incl. Harare/Bulawayo.
+- `albania-address-areas.csv` — used by `AlbaniaGeographyProvider`. 12 counties.
+- `andorra-address-areas.csv` — used by `AndorraGeographyProvider`. 7 parishes.
+- `austria-address-areas.csv` — used by `AustriaGeographyProvider`. 9 states.
+- `belarus-address-areas.csv` — used by `BelarusGeographyProvider`. 6 oblasts + Minsk; oblast/city Minsk share a name.
+- `belgium-address-areas.csv` — used by `BelgiumGeographyProvider`. 3 regions + 10 provinces flat at L1.
+- `bosnia-and-herzegovina-address-areas.csv` — used by `BosniaAndHerzegovinaGeographyProvider`. 2 entities + Brčko District.
+- `bulgaria-address-areas.csv` — used by `BulgariaGeographyProvider`. 28 districts.
+- `croatia-address-areas.csv` — used by `CroatiaGeographyProvider`. 20 counties incl. Zagreb.
+- `czech-republic-address-areas.csv` — used by `CzechRepublicGeographyProvider`. 13 regions + 76 districts + Prague flat at L1.
+- `denmark-address-areas.csv` — used by `DenmarkGeographyProvider`. 5 regions.
+- `estonia-address-areas.csv` — used by `EstoniaGeographyProvider`. 15 counties + 79 municipalities flat at L1; county/municipality twins share names.
+- `finland-address-areas.csv` — used by `FinlandGeographyProvider`. 18 regions.
+- `greece-address-areas.csv` — used by `GreeceGeographyProvider`. 13 regions + 2 regional units.
+- `hungary-address-areas.csv` — used by `HungaryGeographyProvider`. 20 counties + 22 county-rights cities + Budapest.
+- `iceland-address-areas.csv` — used by `IcelandGeographyProvider`. 8 regions + 64 municipalities flat at L1.
+- `ireland-address-areas.csv` — used by `IrelandGeographyProvider`. 4 provinces + 26 counties flat at L1.
+- `kosovo-address-areas.csv` — used by `KosovoGeographyProvider`. 7 districts.
+- `latvia-address-areas.csv` — used by `LatviaGeographyProvider`. 36 municipalities + 7 state cities; Jelgava/Rēzekne/Ventspils twins share names.
+- `liechtenstein-address-areas.csv` — used by `LiechtensteinGeographyProvider`. 11 communes.
+- `lithuania-address-areas.csv` — used by `LithuaniaGeographyProvider`. 10 counties + 60 municipalities flat at L1; Alytus/Kaunas/Šiauliai/Vilnius same-type twins suffixed by code.
+- `luxembourg-address-areas.csv` — used by `LuxembourgGeographyProvider`. 12 cantons.
+- `malta-address-areas.csv` — used by `MaltaGeographyProvider`. 68 local councils.
+- `moldova-address-areas.csv` — used by `MoldovaGeographyProvider`. 32 districts + 3 cities + Gagauzia/Transnistria units.
+- `monaco-address-areas.csv` — used by `MonacoGeographyProvider`. 17 quarters incl. Monte-Carlo.
+- `montenegro-address-areas.csv` — used by `MontenegroGeographyProvider`. 25 municipalities.
+- `north-macedonia-address-areas.csv` — used by `NorthMacedoniaGeographyProvider`. 80 municipalities.
+- `norway-address-areas.csv` — used by `NorwayGeographyProvider`. 15 counties + Svalbard/Jan Mayen.
+- `portugal-address-areas.csv` — used by `PortugalGeographyProvider`. 18 districts + Azores/Madeira.
+- `romania-address-areas.csv` — used by `RomaniaGeographyProvider`. 41 departments + Bucharest.
+- `san-marino-address-areas.csv` — used by `SanMarinoGeographyProvider`. 9 municipalities.
+- `serbia-address-areas.csv` — used by `SerbiaGeographyProvider`. 29 districts + 2 provinces + Belgrade.
+- `slovakia-address-areas.csv` — used by `SlovakiaGeographyProvider`. 8 regions.
+- `slovenia-address-areas.csv` — used by `SloveniaGeographyProvider`. 200 municipalities + 12 urban municipalities.
+- `sweden-address-areas.csv` — used by `SwedenGeographyProvider`. 21 counties.
+- `switzerland-address-areas.csv` — used by `SwitzerlandGeographyProvider`. 26 cantons.
+- `aland-address-areas.csv` — used by `AlandGeographyProvider`. 16 municipalities.
+- `faroe-islands-address-areas.csv` — used by `FaroeIslandsGeographyProvider`. 6 regions.
+- `guernsey-address-areas.csv` — used by `GuernseyGeographyProvider`. 12 parishes.
+- `jersey-address-areas.csv` — used by `JerseyGeographyProvider`. 12 parishes.
+- `isle-of-man-address-areas.csv` — used by `IsleOfManGeographyProvider`. 6 sheadings.

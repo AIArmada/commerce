@@ -109,6 +109,19 @@ postcode system, so a missing postcode there is correct; Gabon's
 trailing office code and Liberia's Monrovia zone suffix have no
 dedicated field and pass through only as supplied.
 
+## Missing States for the Europe Batch
+
+Same cause with the matching `execute()` code. All 40 are
+single-level. Name twins share names by design — filter by type or
+code: Belarus's Minsk pair, Estonia's county/municipality pairs,
+Latvia's Jelgava/Rēzekne/Ventspils pairs, and Lithuania's
+Alytus/Kaunas/Šiauliai/Vilnius pairs (same-type twins whose slugs
+carry a code suffix). Belgium, Czech Republic, Estonia, Iceland,
+Ireland, and Lithuania seed two tiers flat at level 1. Serbia's
+street-level PAK has no field and is never printed; Hungary follows
+international one-line practice rather than the domestic postcode
+line.
+
 ## Area Assignment Role Rejected
 
 `SyncAddressAreaAssignmentsAction` throws `The selected address area role is not defined by the country address profile.` for unknown roles — check the role against `CountryAddressProfileResolver::definitionForRole()` for that country. It throws `The selected role is not an assignable area role.` for `state_id` and other non-area roles: pass state through the action's `stateId` parameter instead of the assignments map.
