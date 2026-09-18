@@ -78,6 +78,8 @@ Machine index: `docs/ai/package-index.json` (grep keywords/triggers). Full manif
 | `filament-promotions` | Filament admin for promotions + issue-vouchers actions. | filament, promotions-ui | `promotions` |
 | `filament-vouchers` | Filament admin for vouchers/usage/wallets + stacking/targeting pages. | filament, vouchers-ui, wallets, stacking | `vouchers` |
 | `growth` | Revenue experimentation: experiments/variants, sticky assignments, presets, winner metrics on Signals. | experiment, ab-test, variant, assignment, preset | `filament-growth` |
+| `links` | Generic tracked links: cloaked redirects, click capture, expiry/limits, domain events. | link, short-link, redirect, click-tracking, cloaked-url, utm | `filament-links` |
+| `filament-links` | Filament admin for tracked links: link management, click history, lifecycle actions. | filament, links-ui, redirect, click-tracking | `links` |
 | `promotions` | Automatic and code-based discount campaigns with targeting evaluation. | promotion, discount, campaign, targeting | `filament-promotions` |
 | `vouchers` | Voucher issuance, cart-condition redemption, wallets, stacking, usage tracking. | voucher, coupon, wallet, redemption, stacking | `filament-vouchers` |
 

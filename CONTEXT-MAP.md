@@ -151,6 +151,7 @@ Use these routing rules before editing code or docs.
 | blocks, bans, and moderation actions | `moderation` | `events`, `commerce-support` |
 | reference sources, slugs, and hierarchical citation parts | `references` | `events`, `commerce-support` |
 | analytics, alerts, reports, tracker ingestion | `signals` | `filament-signals`, `growth` |
+| cloaked links, click tracking, short URLs, UTM links | `links` | `filament-links`, `signals` |
 | bundle installation and package selection | `csuite` | `docs/index.md`, `docs/ai/package-manifests.json` |
 | affiliate routing across package boundaries | `docs/affiliates.md` | `affiliates`, `vouchers`, `checkout`, `filament-affiliates` |
 
@@ -161,7 +162,7 @@ Use these routing rules before editing code or docs.
 - **Governance and safety**: `moderation`
 - **Knowledge and references**: `references`
 - **Catalog and identity**: `persons`, `filament-persons`, `customers`, `filament-customers`, `products`, `filament-products`, `inventory`, `filament-inventory`, `pricing`, `filament-pricing`, `tax`, `filament-tax`, `ticketing`, `filament-ticketing`
-- **Growth and incentives**: `promotions`, `filament-promotions`, `vouchers`, `filament-vouchers`, `affiliates`, `filament-affiliates`, `affiliate-network`, `filament-affiliate-network`, `growth`, `filament-growth`, `engagement`, `filament-engagement`
+- **Growth and incentives**: `promotions`, `filament-promotions`, `vouchers`, `filament-vouchers`, `affiliates`, `filament-affiliates`, `affiliate-network`, `filament-affiliate-network`, `growth`, `filament-growth`, `engagement`, `filament-engagement`, `links`, `filament-links`
 - **Checkout flow**: `cart`, `filament-cart`, `checkout`, `orders`, `filament-orders`, `shipping`, `filament-shipping`, `jnt`, `filament-jnt`
 - **Payments and documents**: `chip`, `filament-chip`, `cashier`, `filament-cashier`, `cashier-chip`, `filament-cashier-chip`, `docs`, `filament-docs`
 - **Analytics and events**: `events`, `filament-events`, `signals`, `filament-signals`

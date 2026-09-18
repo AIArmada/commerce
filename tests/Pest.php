@@ -91,6 +91,8 @@ pest()->extend(TestCase::class)->in(
     'src/FilamentPersons',
     'src/Moderation',
     'src/References',
+    'src/Links',
+    'src/FilamentLinks',
 );
 
 pest()->extend(PersonsTestCase::class)->in('src/Persons');

@@ -44,7 +44,9 @@ use AIArmada\FilamentSignals\FilamentSignalsServiceProvider;
 use AIArmada\FilamentTicketing\FilamentTicketingServiceProvider;
 use AIArmada\FilamentVouchers\FilamentVouchersServiceProvider;
 use AIArmada\Growth\GrowthServiceProvider;
+use AIArmada\FilamentLinks\FilamentLinksServiceProvider;
 use AIArmada\Jnt\JntServiceProvider;
+use AIArmada\Links\LinksServiceProvider;
 use AIArmada\Moderation\ModerationServiceProvider;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -204,6 +206,8 @@ abstract class TestCase extends Orchestra
             FilamentCommunicationsServiceProvider::class,
             ModerationServiceProvider::class,
             ReferencesServiceProvider::class,
+            LinksServiceProvider::class,
+            FilamentLinksServiceProvider::class,
             FilamentShippingServiceProvider::class,
             FilamentCashierServiceProvider::class,
             TicketingServiceProvider::class,
@@ -401,6 +405,11 @@ abstract class TestCase extends Orchestra
         // Configure moderation settings for testing
         $app['config']->set('moderation.owner.enabled', true);
 
+        // Configure links settings for testing
+        $app['config']->set('links.owner.enabled', true);
+        $app['config']->set('links.owner.include_global', false);
+        $app['config']->set('links.owner.auto_assign_on_create', true);
+
         // Configure references settings for testing
         // Configure seating owner scoping for testing
         $app['config']->set('seating.owner.enabled', true);
@@ -497,6 +506,7 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/references/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/seating/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/ticketing/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/links/database/migrations');
     }
 
     protected function setUpDatabase(): void

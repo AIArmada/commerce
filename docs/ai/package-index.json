@@ -770,6 +770,26 @@
   "overview": "packages/filament-jnt/docs/01-overview.md"
  },
  {
+  "package": "filament-links",
+  "composer": "aiarmada/filament-links",
+  "surface": "filament",
+  "family": "growth-and-incentives",
+  "status": "current",
+  "summary": "Filament admin for tracked links: link management, click history, lifecycle actions.",
+  "keywords": [
+   "filament",
+   "links-ui",
+   "redirect",
+   "click-tracking"
+  ],
+  "use_when": "Admin UI for tracked links and click history.",
+  "skip_when": "Redirects or click capture \u2014 see links.",
+  "owner": "Owner-scoped reads via OwnerUiScope.",
+  "paired": "links",
+  "context": "packages/filament-links/CONTEXT.md",
+  "overview": "packages/filament-links/docs/01-overview.md"
+ },
+ {
   "package": "filament-orders",
   "composer": "aiarmada/filament-orders",
   "surface": "filament",
@@ -1064,6 +1084,28 @@
   "paired": "filament-jnt",
   "context": "packages/jnt/CONTEXT.md",
   "overview": "packages/jnt/docs/01-overview.md"
+ },
+ {
+  "package": "links",
+  "composer": "aiarmada/links",
+  "surface": "domain",
+  "family": "growth-and-incentives",
+  "status": "current",
+  "summary": "Generic tracked-link management: cloaked redirects, click capture, expiry and limits, domain events.",
+  "keywords": [
+   "link",
+   "short-link",
+   "redirect",
+   "click-tracking",
+   "cloaked-url",
+   "utm"
+  ],
+  "use_when": "Cloaked links, click counting, UTM management, link expiry or limits.",
+  "skip_when": "Inbound affiliate programs \u2014 see affiliates; analytics dashboards \u2014 see signals.",
+  "owner": "Owner-scoped models, global slug namespace.",
+  "paired": "filament-links",
+  "context": "packages/links/CONTEXT.md",
+  "overview": "packages/links/docs/01-overview.md"
  },
  {
   "package": "membership",

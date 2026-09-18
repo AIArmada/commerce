@@ -53,9 +53,11 @@
       "filament-affiliates",
       "filament-engagement",
       "filament-growth",
+      "filament-links",
       "filament-promotions",
       "filament-vouchers",
       "growth",
+      "links",
       "promotions",
       "vouchers"
     ],
@@ -1357,6 +1359,61 @@
         "tracking"
       ],
       "use_when": "J&T operations UI.",
+      "owner_scoped": true
+    },
+    "links": {
+      "composer": "aiarmada/links",
+      "surface": "domain",
+      "family": "growth-and-incentives",
+      "paired_package": "filament-links",
+      "summary": "Generic tracked-link management: cloaked redirects, click capture, expiry and limits, domain events.",
+      "canonical_docs": {
+        "overview": "packages/links/docs/01-overview.md",
+        "installation": "packages/links/docs/02-installation.md",
+        "configuration": "packages/links/docs/03-configuration.md",
+        "usage": "packages/links/docs/04-usage.md",
+        "troubleshooting": "packages/links/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-links",
+        "signals",
+        "affiliates"
+      ],
+      "keywords": [
+        "link",
+        "short-link",
+        "redirect",
+        "click-tracking",
+        "cloaked-url",
+        "utm"
+      ],
+      "use_when": "Cloaked links, click counting, UTM management, link expiry or limits.",
+      "owner_scoped": true
+    },
+    "filament-links": {
+      "composer": "aiarmada/filament-links",
+      "surface": "filament",
+      "family": "growth-and-incentives",
+      "paired_package": "links",
+      "summary": "Filament admin UI for tracked links, click history, and lifecycle actions.",
+      "canonical_docs": {
+        "overview": "packages/filament-links/docs/01-overview.md",
+        "installation": "packages/filament-links/docs/02-installation.md",
+        "configuration": "packages/filament-links/docs/03-configuration.md",
+        "usage": "packages/filament-links/docs/04-usage.md",
+        "troubleshooting": "packages/filament-links/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "links",
+        "filament-signals"
+      ],
+      "keywords": [
+        "filament",
+        "links-ui",
+        "redirect",
+        "click-tracking"
+      ],
+      "use_when": "Admin UI for tracked links and click history.",
       "owner_scoped": true
     },
     "chip": {

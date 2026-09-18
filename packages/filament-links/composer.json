@@ -1,0 +1,42 @@
+{
+  "name": "aiarmada/filament-links",
+  "description": "Filament admin adapter for the AIArmada links package - link management, click history, and lifecycle actions",
+  "license": "MIT",
+  "type": "library",
+  "keywords": [
+    "laravel",
+    "filament",
+    "links",
+    "redirect",
+    "click-tracking"
+  ],
+  "authors": [
+    {
+      "name": "AIArmada",
+      "email": "dev@aiarmada.com"
+    }
+  ],
+  "require": {
+    "aiarmada/commerce-support": "self.version",
+    "aiarmada/links": "self.version",
+    "filament/filament": "^5.8.1",
+    "php": "^8.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\FilamentLinks\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\FilamentLinks\\FilamentLinksServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
