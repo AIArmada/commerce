@@ -31,7 +31,7 @@ final class UnitedArabEmiratesAddressFormatter implements CountryAddressFormatte
             $lines[] = $city;
         }
 
-        if ($state !== null) {
+        if ($state !== null && ($city === null || ! self::sameText($city, $state))) {
             $lines[] = $state;
         }
 
@@ -57,5 +57,10 @@ final class UnitedArabEmiratesAddressFormatter implements CountryAddressFormatte
         $value = mb_trim($value);
 
         return $value === '' ? null : $value;
+    }
+
+    private static function sameText(string $a, string $b): bool
+    {
+        return mb_strtolower($a) === mb_strtolower($b);
     }
 }

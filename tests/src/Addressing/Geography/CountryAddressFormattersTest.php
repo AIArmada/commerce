@@ -23,11 +23,13 @@ use AIArmada\Addressing\Geography\Netherlands\NetherlandsAddressFormatter;
 use AIArmada\Addressing\Geography\Nigeria\NigeriaAddressFormatter;
 use AIArmada\Addressing\Geography\Oman\OmanAddressFormatter;
 use AIArmada\Addressing\Geography\Pakistan\PakistanAddressFormatter;
+use AIArmada\Addressing\Geography\Philippines\PhilippinesAddressFormatter;
 use AIArmada\Addressing\Geography\Poland\PolandAddressFormatter;
 use AIArmada\Addressing\Geography\Qatar\QatarAddressFormatter;
 use AIArmada\Addressing\Geography\Russia\RussiaAddressFormatter;
 use AIArmada\Addressing\Geography\SaudiArabia\SaudiArabiaAddressFormatter;
 use AIArmada\Addressing\Geography\SouthAfrica\SouthAfricaAddressFormatter;
+use AIArmada\Addressing\Geography\SouthKorea\SouthKoreaAddressFormatter;
 use AIArmada\Addressing\Geography\Spain\SpainAddressFormatter;
 use AIArmada\Addressing\Geography\Sudan\SudanAddressFormatter;
 use AIArmada\Addressing\Geography\Tanzania\TanzaniaAddressFormatter;
@@ -139,6 +141,38 @@ it('formats Emirati addresses without a postcode line', function (): void {
     expect($formatted)->toBe("PO BOX 111\nDUBAI\nUnited Arab Emirates");
 });
 
+it('prints Emirati city-states once when city and emirate match', function (): void {
+    $formatted = app(UnitedArabEmiratesAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO BOX 111',
+        'city' => 'Dubai',
+        'state' => 'Dubai',
+        'country_code' => 'AE',
+    ]));
+
+    expect($formatted)->toBe("PO BOX 111\nDubai\nUnited Arab Emirates");
+});
+
+it('formats Emirati addresses with emirate only', function (): void {
+    $formatted = app(UnitedArabEmiratesAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO BOX 111',
+        'state' => 'Dubai',
+        'country_code' => 'AE',
+    ]));
+
+    expect($formatted)->toBe("PO BOX 111\nDubai\nUnited Arab Emirates");
+});
+
+it('keeps distinct Emirati city and emirate lines', function (): void {
+    $formatted = app(UnitedArabEmiratesAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO BOX 111',
+        'city' => 'Al Ain',
+        'state' => 'Abu Dhabi',
+        'country_code' => 'AE',
+    ]));
+
+    expect($formatted)->toBe("PO BOX 111\nAl Ain\nAbu Dhabi\nUnited Arab Emirates");
+});
+
 it('formats Qatari addresses without a postcode line', function (): void {
     $formatted = app(QatarAddressFormatter::class)->format(AddressData::from([
         'line1' => 'P.O. Box 3263',
@@ -215,6 +249,18 @@ it('formats Chinese addresses with the postcode left of the province', function 
     ]));
 
     expect($formatted)->toBe("No.1 Jianguomenwai Avenue\n100004 BEIJING\nChina");
+});
+
+it('formats Chinese addresses with the sub-province above the postcode province line', function (): void {
+    $formatted = app(ChinaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'No.12 Zhichun Road',
+        'city' => 'Haidian District',
+        'state' => 'BEIJING',
+        'postcode' => '100191',
+        'country_code' => 'CN',
+    ]));
+
+    expect($formatted)->toBe("No.12 Zhichun Road\nHaidian District\n100191 BEIJING\nChina");
 });
 
 it('formats Russian addresses with the postcode below, country last', function (): void {
@@ -410,4 +456,106 @@ it('formats Algerian addresses with the postcode left of the locality', function
     ]));
 
     expect($formatted)->toBe("2, rue de l'Indépendance\n16027 ALGIERS\nAlgeria");
+});
+it('formats Filipino provincial addresses with the postcode on the province line', function (): void {
+    $formatted = app(PhilippinesAddressFormatter::class)->format(AddressData::from([
+        'line1' => '96 Hermogenes St., Sofa Subdivision',
+        'city' => 'San Fernando',
+        'state' => 'PAMPANGA',
+        'postcode' => '2000',
+        'country_code' => 'PH',
+    ]));
+
+    expect($formatted)->toBe("96 Hermogenes St., Sofa Subdivision\nSan Fernando\n2000 PAMPANGA\nPhilippines");
+});
+
+it('formats Filipino provincial addresses with province only', function (): void {
+    $formatted = app(PhilippinesAddressFormatter::class)->format(AddressData::from([
+        'line1' => '96 Hermogenes St., Sofa Subdivision',
+        'state' => 'PAMPANGA',
+        'postcode' => '2000',
+        'country_code' => 'PH',
+    ]));
+
+    expect($formatted)->toBe("96 Hermogenes St., Sofa Subdivision\n2000 PAMPANGA\nPhilippines");
+});
+
+it('formats Filipino Metro Manila addresses on a single postcode line', function (): void {
+    $formatted = app(PhilippinesAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P.O. Box 1121, Araneta Center P.O.',
+        'city' => 'Quezon City',
+        'state' => 'METRO MANILA',
+        'postcode' => '1135',
+        'country_code' => 'PH',
+    ]));
+
+    expect($formatted)->toBe("P.O. Box 1121, Araneta Center P.O.\n1135 Quezon City, METRO MANILA\nPhilippines");
+});
+
+it('prints Filipino city-states once when city and state match', function (): void {
+    $formatted = app(PhilippinesAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Rm 602 FUBC Bldg, Escolta',
+        'city' => 'manila',
+        'state' => 'MANILA',
+        'postcode' => '1008',
+        'country_code' => 'PH',
+    ]));
+
+    expect($formatted)->toBe("Rm 602 FUBC Bldg, Escolta\n1008 MANILA\nPhilippines");
+});
+
+it('prints South Korean city-states once when city and state match', function (): void {
+    $formatted = app(SouthKoreaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '97-1 Toegye-ro, Jung-gu',
+        'city' => 'Seoul',
+        'state' => 'Seoul',
+        'postcode' => '03187',
+        'country_code' => 'KR',
+    ]));
+
+    expect($formatted)->toBe("97-1 Toegye-ro, Jung-gu\nSeoul 03187\nSouth Korea");
+});
+
+it('keeps distinct South Korean district and city lines', function (): void {
+    $formatted = app(SouthKoreaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '97-1 Toegye-ro',
+        'city' => 'Jung-gu',
+        'state' => 'Seoul',
+        'postcode' => '04547',
+        'country_code' => 'KR',
+    ]));
+
+    expect($formatted)->toBe("97-1 Toegye-ro\nJung-gu\nSeoul 04547\nSouth Korea");
+});
+
+it('keeps distinct South Korean district and city lines without a postcode', function (): void {
+    $formatted = app(SouthKoreaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '97-1 Toegye-ro',
+        'city' => 'Jung-gu',
+        'state' => 'Seoul',
+        'country_code' => 'KR',
+    ]));
+
+    expect($formatted)->toBe("97-1 Toegye-ro\nJung-gu\nSeoul\nSouth Korea");
+});
+
+it('formats South Korean addresses with state only and no postcode', function (): void {
+    $formatted = app(SouthKoreaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '97-1 Toegye-ro, Jung-gu',
+        'state' => 'Seoul',
+        'country_code' => 'KR',
+    ]));
+
+    expect($formatted)->toBe("97-1 Toegye-ro, Jung-gu\nSeoul\nSouth Korea");
+});
+
+it('prints South Korean city-states once without a postcode', function (): void {
+    $formatted = app(SouthKoreaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '97-1 Toegye-ro, Jung-gu',
+        'city' => 'Seoul',
+        'state' => 'Seoul',
+        'country_code' => 'KR',
+    ]));
+
+    expect($formatted)->toBe("97-1 Toegye-ro, Jung-gu\nSeoul\nSouth Korea");
 });

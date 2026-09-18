@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Geography\China;
+namespace AIArmada\Addressing\Geography\SouthKorea;
 
 use AIArmada\Addressing\Contracts\CountryAddressFormatter;
 use AIArmada\Addressing\Data\AddressData;
 
-final class ChinaAddressFormatter implements CountryAddressFormatter
+final class SouthKoreaAddressFormatter implements CountryAddressFormatter
 {
     public function countryCode(): string
     {
-        return 'CN';
+        return 'KR';
     }
 
     public function format(AddressData $address): string
@@ -22,21 +22,20 @@ final class ChinaAddressFormatter implements CountryAddressFormatter
             $address->line3,
         ]);
 
-        // UPU: 6-digit postcode left of the province name, with the
-        // district/county/city (sub-province) on its own line above.
+        // UPU: 5-digit postcode right of the province/city name.
         $city = self::textOrNull($address->city);
         $state = self::textOrNull($address->state);
         $postcode = self::textOrNull($address->postcode);
 
         if ($postcode !== null) {
             if ($state !== null) {
-                if ($city !== null) {
+                if ($city !== null && ! self::sameText($city, $state)) {
                     $lines[] = $city;
                 }
 
-                $lines[] = $postcode . ' ' . $state;
+                $lines[] = $state . ' ' . $postcode;
             } elseif ($city !== null) {
-                $lines[] = $postcode . ' ' . $city;
+                $lines[] = $city . ' ' . $postcode;
             } else {
                 $lines[] = $postcode;
             }
@@ -45,7 +44,7 @@ final class ChinaAddressFormatter implements CountryAddressFormatter
                 $lines[] = $city;
             }
 
-            if ($state !== null) {
+            if ($state !== null && ($city === null || ! self::sameText($city, $state))) {
                 $lines[] = $state;
             }
         }
@@ -53,7 +52,7 @@ final class ChinaAddressFormatter implements CountryAddressFormatter
         if ($address->country !== null && $address->country !== '') {
             $lines[] = $address->country;
         } elseif ($address->countryCode !== null && $address->countryCode !== '') {
-            $lines[] = mb_strtoupper($address->countryCode) === 'CN' ? 'China' : $address->countryCode;
+            $lines[] = mb_strtoupper($address->countryCode) === 'KR' ? 'South Korea' : $address->countryCode;
         }
 
         return implode("\n", $lines);
@@ -68,5 +67,10 @@ final class ChinaAddressFormatter implements CountryAddressFormatter
         $value = mb_trim($value);
 
         return $value === '' ? null : $value;
+    }
+
+    private static function sameText(string $a, string $b): bool
+    {
+        return mb_strtolower($a) === mb_strtolower($b);
     }
 }
