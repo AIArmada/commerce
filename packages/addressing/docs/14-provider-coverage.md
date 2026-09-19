@@ -10,8 +10,8 @@ counts, or changes scope. See [Country Data](./05-country-data.md)
 for per-country narrative and [Provider Authoring](./13-provider-authoring.md)
 for how to add a level.
 
-Current shape: 229 providers — 2 dual-hierarchy, 1 depth-3, 10 depth-2,
-216 depth-1.
+Current shape: 229 providers — 2 dual-hierarchy, 1 depth-3, 16 depth-2,
+210 depth-1.
 All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 above6 below28 after country1), 48 codeless.
 
 ## Legend
@@ -69,7 +69,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Brazil | BR | 27 | 27 | 27 | 1 | administrative: state | — | below | L1 — 26 states + DF |
 | Brunei | BN | 4 | 4 | 43 | 2 | administrative: district > mukim | mukim | → | Complete; kampungs via components |
 | Bulgaria | BG | 28 | 28 | 28 | 1 | administrative: district | — | ← | L1 |
-| Burkina Faso | BF | 58 | 58 | 58 | 1 | administrative: region | — | ← | L1 — 13 regions + 45 provinces flat; depth-2 candidate |
+| Burkina Faso | BF | 58 | 58 | 58 | 1 | administrative: region | — | ← | L1 — 13 regions + 45 provinces flat (pre-2025); July 2025 reform → 17 regions + 47 provinces, needs resourcing |
 | Burundi | BI | 18 | 18 | 18 | 1 | administrative: province | — | none | L1 |
 | Cambodia | KH | 25 | 25 | 25 | 1 | administrative: province | — | → | L1 — 24 provinces + Phnom Penh; districts/communes out of scope |
 | Cameroon | CM | 10 | 10 | 10 | 1 | administrative: region | — | none | L1 |
@@ -88,11 +88,11 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Croatia | HR | 20 | 20 | 20 | 1 | administrative: county | — | ← | L1 |
 | Cuba | CU | 16 | 16 | 16 | 1 | administrative: province | — | ← | L1 — 15 provinces + Isla de la Juventud |
 | Cyprus | CY | 6 | 6 | 6 | 1 | administrative: district | — | ← | L1 |
-| Czech Republic | CZ | 90 | 90 | 90 | 1 | administrative: region | — | ← | L1 — 13 regions + 76 districts + Prague flat; depth-2 candidate |
+| Czech Republic | CZ | 14 | 14 | 90 | 2 | administrative: region > district | district | ← | Complete — 13 regions + Praha + 76 districts; Praha childless |
 | Denmark | DK | 5 | 5 | 5 | 1 | administrative: region | — | ← | L1 |
 | Djibouti | DJ | 6 | 6 | 6 | 1 | administrative: region | — | ← | L1 — 5 regions + Djibouti City |
 | Dominica | DM | 10 | 10 | 10 | 1 | administrative: parish | — | none | L1 |
-| Dominican Republic | DO | 42 | 42 | 42 | 1 | administrative: region | — | ← | L1 — 10 regions + 31 provinces + DN flat; depth-2 candidate |
+| Dominican Republic | DO | 10 | 10 | 42 | 2 | administrative: region > province | province | ← | Complete — 10 regions + 31 provinces + DN; DN under Ozama |
 | DR Congo | CD | 26 | 26 | 26 | 1 | administrative: province | — | ← | L1 |
 | Ecuador | EC | 24 | 24 | 24 | 1 | administrative: province | — | ← | L1 |
 | Egypt | EG | 27 | 27 | 27 | 1 | administrative: governorate | — | below | L1; markaz (~350) candidate, Arabic-first |
@@ -103,7 +103,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Eswatini | SZ | 4 | 4 | 4 | 1 | administrative: region | — | below | L1 |
 | Ethiopia | ET | 14 | 14 | 14 | 1 | administrative: region | — | ← | L1; SN dissolved on seed |
 | Faroe Islands | FO | 6 | 6 | 6 | 1 | administrative: region | — | ← | L1 — 6 regions |
-| Fiji | FJ | 19 | 19 | 19 | 1 | administrative: division | — | none | L1 — 4 divisions + 14 provinces + Rotuma |
+| Fiji | FJ | 5 | 5 | 19 | 2 | administrative: division > province | province | none | Complete — 4 divisions + Rotuma + 14 provinces; Rotuma standalone |
 | Finland | FI | 18 | 18 | 18 | 1 | administrative: region | — | ← | L1 |
 | France | FR | 18 | 18 | 18 | 1 | administrative: region | — | ← | L1 |
 | French Guiana | GF | 1 | 1 | 1 | 1 | administrative: overseas_region | — | ← | L1 — single region |
@@ -121,7 +121,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Guam | GU | 19 | 19 | 19 | 1 | administrative: village | — | US → | L1 — 19 villages |
 | Guatemala | GT | 22 | 22 | 22 | 1 | administrative: department | — | ← | L1 |
 | Guernsey | GG | 12 | 12 | 12 | 1 | administrative: parish | — | below | L1 — 12 parishes |
-| Guinea | GN | 41 | 41 | 41 | 1 | administrative: administrative_region | — | ← | L1 — 7 regions + Conakry + 33 prefectures flat; depth-2 candidate |
+| Guinea | GN | 8 | 8 | 41 | 2 | administrative: administrative_region > prefecture | prefecture | ← | Complete — 7 regions + Conakry + 33 prefectures; Conakry childless |
 | Guinea-Bissau | GW | 12 | 12 | 12 | 1 | administrative: province | — | ← | L1 — 3 provinces + 8 regions + Bissau sector |
 | Guyana | GY | 10 | 10 | 10 | 1 | administrative: region | — | below | L1 |
 | Haiti | HT | 10 | 10 | 10 | 1 | administrative: department | — | ← | L1 |
@@ -158,7 +158,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Lithuania | LT | 70 | 70 | 70 | 1 | administrative: county | — | ← | L1 — 10 counties + 60 municipalities flat; 4 city/district twins suffixed by code |
 | Luxembourg | LU | 12 | 12 | 12 | 1 | administrative: canton | — | ← | L1 |
 | Madagascar | MG | 6 | 6 | 6 | 1 | administrative: province | — | ← | L1; codeless 23 regions omitted |
-| Malawi | MW | 31 | 31 | 31 | 1 | administrative: region | — | ← | L1 — 3 regions + 28 districts flat; depth-2 candidate |
+| Malawi | MW | 3 | 3 | 31 | 2 | administrative: region > district | district | ← | Complete — 3 regions + 28 districts |
 | Malaysia | MY | 16 | 16 | 1842 | dual 2+4 | postal: region > locality; administrative: region > division > district > subdivision | administrative_district, administrative_division, administrative_subdivision, postal_locality | ← | Complete; postal CSVs bundled |
 | Maldives | MV | 21 | 21 | 21 | 1 | administrative: atoll | — | → | L1 — 20 atolls + Addu City |
 | Mali | ML | 11 | 11 | 11 | 1 | administrative: region | — | none | L1 — 10 regions + Bamako |
@@ -232,7 +232,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | South Korea | KR | 17 | 17 | 17 | 1 | administrative: province | — | → | L1 |
 | South Sudan | SS | 10 | 10 | 10 | 1 | administrative: state | — | none | L1 — 10 states |
 | Spain | ES | 69 | 19 | 69 | 2 | administrative: community > province | province | ← | Complete — communities + 50 provinces |
-| Sri Lanka | LK | 34 | 34 | 34 | 1 | administrative: province | — | below | L1 — 9 provinces + 25 districts flat; depth-2 candidate |
+| Sri Lanka | LK | 9 | 9 | 34 | 2 | administrative: province > district | district | below | Complete — 9 provinces + 25 districts |
 | Sudan | SD | 18 | 18 | 18 | 1 | administrative: state | — | above | L1 |
 | Suriname | SR | 10 | 10 | 10 | 1 | administrative: district | — | none | L1 |
 | Sweden | SE | 21 | 21 | 21 | 1 | administrative: county | — | ← | L1 |

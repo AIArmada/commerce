@@ -1153,11 +1153,12 @@ passes through), and country.
 
 ## Sri Lanka
 
-The bundled `SriLankaGeographyProvider` supplies the 9 provinces and
-25 districts flat at level 1 as `State` rows and a single-level
-administrative hierarchy. It is selected with
-`SeedCountryGeographiesAction::execute('LK')` after countries are seeded.
-A province -> district depth-2 split is a future candidate.
+The bundled `SriLankaGeographyProvider` supplies the 9 provinces
+as `State` rows with the 25 districts as level-2 areas (5 Northern,
+3 each Western/Central/Southern/Eastern, 2 each North Western/North
+Central/Uva/Sabaragamuwa) in a two-level administrative hierarchy.
+It is selected with `SeedCountryGeographiesAction::execute('LK')`
+after countries are seeded.
 
 Sri Lankan addresses are formatted per the UPU layout: street lines,
 the locality, the province when it differs, the 5-digit postcode on
@@ -1234,7 +1235,9 @@ The bundled `BurkinaFasoGeographyProvider` supplies the 13 regions
 and 45 provinces flat at level 1 as `State` rows and a single-level
 administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('BF')` after countries are seeded.
-A region -> province depth-2 split is a future candidate.
+Burkina Faso restructured to 17 regions and 47 provinces in July 2025;
+the bundled data still reflects the pre-2025 list pending resourcing,
+so the region -> province split stays deferred.
 
 Burkinabe addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, the region on its
@@ -1322,6 +1325,18 @@ hierarchy. It is selected with
 
 Djiboutian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, and country.
+## Dominican Republic
+
+The bundled `DominicanRepublicGeographyProvider` supplies the 10
+planning regions as `State` rows with the 31 provinces plus the
+Distrito Nacional as level-2 areas (4 each Cibao Nordeste/Cibao
+Noroeste/Valdesia/Enriquillo, 3 each Cibao Norte/Cibao Sur/Higuamo/Yuma,
+2 each El Valle/Ozama; Distrito Nacional under Ozama) in a two-level
+administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('DO')` after countries are seeded.
+
+Dominican addresses are formatted per the UPU layout: street lines,
+`{postcode} {locality}` with a 5-digit postcode, and country.
 ## Equatorial Guinea
 
 The bundled `EquatorialGuineaGeographyProvider` supplies the 2
@@ -1366,9 +1381,11 @@ layout: street lines, the locality, the division when it differs,
 and country; any supplied code prints on its own line.
 ## Guinea
 
-The bundled `GuineaGeographyProvider` supplies the 7 regions,
-Conakry, and 33 prefectures flat at level 1 as `State` rows and a
-single-level administrative hierarchy. It is selected with
+The bundled `GuineaGeographyProvider` supplies the 7 regions
+plus Conakry as `State` rows with the 33 prefectures as level-2
+areas (6 Nzérékoré, 5 each Boké/Kankan/Kindia/Labé, 4 Faranah,
+3 Mamou; Conakry childless) in a two-level administrative
+hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('GN')` after countries are seeded.
 Region/prefecture name twins (Boké, Faranah, Kankan, Kindia, Labé,
 Mamou, Nzérékoré) share names by design; filter by type.
@@ -1416,11 +1433,11 @@ layout: street lines, the locality, and country; any supplied code
 prints on its own line.
 ## Malawi
 
-The bundled `MalawiGeographyProvider` supplies the 3 regions and
-28 districts flat at level 1 as `State` rows and a single-level
-administrative hierarchy. It is selected with
-`SeedCountryGeographiesAction::execute('MW')` after countries are seeded.
-A region -> district depth-2 split is a future candidate.
+The bundled `MalawiGeographyProvider` supplies the 3 regions
+as `State` rows with the 28 districts as level-2 areas (13 Southern,
+9 Central, 6 Northern) in a two-level administrative hierarchy. It
+is selected with `SeedCountryGeographiesAction::execute('MW')` after
+countries are seeded.
 
 Malawian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 6-digit postcode, the region on its
@@ -1678,10 +1695,12 @@ postcode exactly as supplied.
 ## Czech Republic
 
 The bundled `CzechRepublicGeographyProvider` supplies the 13
-regions, 76 districts, and Prague flat at level 1 as `State` rows
-and a single-level administrative hierarchy. It is selected with
+regions plus Praha as `State` rows with the 76 districts as level-2
+areas (12 Středočeský, 7 each Jihomoravský/Jihočeský/Ústecký/Plzeňský,
+6 Moravskoslezský, 5 each Vysočina/Královéhradecký/Olomoucký, 4 each
+Liberecký/Pardubický/Zlínský, 3 Karlovarský; Praha childless) in a
+two-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('CZ')` after countries are seeded.
-A region -> district depth-2 split is a future candidate.
 
 Czech addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode written `NNN NN`
@@ -1706,6 +1725,16 @@ County/municipality name twins share names by design; filter by type.
 
 Estonian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, and country.
+## Fiji
+
+The bundled `FijiGeographyProvider` supplies the 4 divisions plus
+Rotuma as `State` rows with the 14 provinces as level-2 areas (5
+Central, 3 each Eastern/Northern/Western; Rotuma standalone) in a
+two-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('FJ')` after countries are seeded.
+
+Fiji has no postcode system. Addresses print street lines, the
+locality, and country; any supplied code prints on its own line.
 ## Finland
 
 The bundled `FinlandGeographyProvider` supplies the 18 regions

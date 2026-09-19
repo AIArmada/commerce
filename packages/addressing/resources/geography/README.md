@@ -80,7 +80,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `nepal-address-areas.csv` — used by `NepalGeographyProvider`. 7 provinces per 2015 constitution.
 - `north-korea-address-areas.csv` — used by `NorthKoreaGeographyProvider`. 9 provinces + 4 cities; no postcode system.
 - `palestine-address-areas.csv` — used by `PalestineGeographyProvider`. 16 governorates (West Bank + Gaza).
-- `sri-lanka-address-areas.csv` — used by `SriLankaGeographyProvider`. 9 provinces + 25 districts flat at L1.
+- `sri-lanka-address-areas.csv` — used by `SriLankaGeographyProvider`. 9 provinces with 25 districts at L2 (5/3/3/3/3/2/2/2/2).
 - `syria-address-areas.csv` — used by `SyriaGeographyProvider`. 14 provinces.
 - `tajikistan-address-areas.csv` — used by `TajikistanGeographyProvider`. 2 regions + GBAR + Dushanbe + republican-subordination districts.
 - `turkmenistan-address-areas.csv` — used by `TurkmenistanGeographyProvider`. 5 regions + Ashgabat.
@@ -100,12 +100,12 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `eritrea-address-areas.csv` — used by `EritreaGeographyProvider`. 6 regions.
 - `gabon-address-areas.csv` — used by `GabonGeographyProvider`. 9 provinces.
 - `gambia-address-areas.csv` — used by `GambiaGeographyProvider`. 5 divisions + Banjul.
-- `guinea-address-areas.csv` — used by `GuineaGeographyProvider`. 7 regions + Conakry + 33 prefectures flat at L1; region/prefecture name twins share names.
+- `guinea-address-areas.csv` — used by `GuineaGeographyProvider`. 7 regions + Conakry with 33 prefectures at L2 (6/5/5/5/5/4/3; Conakry childless); region/prefecture name twins share names.
 - `guinea-bissau-address-areas.csv` — used by `GuineaBissauGeographyProvider`. 3 provinces + 8 regions + Bissau sector.
 - `lesotho-address-areas.csv` — used by `LesothoGeographyProvider`. 10 districts.
 - `liberia-address-areas.csv` — used by `LiberiaGeographyProvider`. 15 counties.
 - `libya-address-areas.csv` — used by `LibyaGeographyProvider`. 22 popularates (sha'biyat).
-- `malawi-address-areas.csv` — used by `MalawiGeographyProvider`. 3 regions + 28 districts flat at L1.
+- `malawi-address-areas.csv` — used by `MalawiGeographyProvider`. 3 regions with 28 districts at L2 (13/9/6).
 - `mali-address-areas.csv` — used by `MaliGeographyProvider`. 10 regions + Bamako district.
 - `mauritania-address-areas.csv` — used by `MauritaniaGeographyProvider`. 15 regions incl. 3 Nouakchott regions.
 - `mauritius-address-areas.csv` — used by `MauritiusGeographyProvider`. 9 districts + Agaléga/Rodrigues/Saint Brandon.
@@ -131,7 +131,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `bosnia-and-herzegovina-address-areas.csv` — used by `BosniaAndHerzegovinaGeographyProvider`. 2 entities + Brčko District.
 - `bulgaria-address-areas.csv` — used by `BulgariaGeographyProvider`. 28 districts.
 - `croatia-address-areas.csv` — used by `CroatiaGeographyProvider`. 20 counties incl. Zagreb.
-- `czech-republic-address-areas.csv` — used by `CzechRepublicGeographyProvider`. 13 regions + 76 districts + Prague flat at L1.
+- `czech-republic-address-areas.csv` — used by `CzechRepublicGeographyProvider`. 13 regions + Praha with 76 districts at L2 (12/7/7/7/7/6/5/5/5/4/4/4/3; Praha childless).
 - `denmark-address-areas.csv` — used by `DenmarkGeographyProvider`. 5 regions.
 - `estonia-address-areas.csv` — used by `EstoniaGeographyProvider`. 15 counties + 79 municipalities flat at L1; county/municipality twins share names.
 - `finland-address-areas.csv` — used by `FinlandGeographyProvider`. 18 regions.
@@ -178,10 +178,10 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `costa-rica-address-areas.csv` — used by `CostaRicaGeographyProvider`. 7 provinces.
 - `cuba-address-areas.csv` — used by `CubaGeographyProvider`. 15 provinces + Isla de la Juventud.
 - `dominica-address-areas.csv` — used by `DominicaGeographyProvider`. 10 parishes.
-- `dominican-republic-address-areas.csv` — used by `DominicanRepublicGeographyProvider`. 10 regions + 31 provinces + DN flat at L1.
+- `dominican-republic-address-areas.csv` — used by `DominicanRepublicGeographyProvider`. 10 regions with 31 provinces + DN at L2 (4/4/4/4/3/3/3/3/2/2; DN under Ozama).
 - `ecuador-address-areas.csv` — used by `EcuadorGeographyProvider`. 24 provinces.
 - `el-salvador-address-areas.csv` — used by `ElSalvadorGeographyProvider`. 14 departments.
-- `fiji-address-areas.csv` — used by `FijiGeographyProvider`. 4 divisions + 14 provinces + Rotuma.
+- `fiji-address-areas.csv` — used by `FijiGeographyProvider`. 4 divisions + Rotuma with 14 provinces at L2 (5/3/3/3; Rotuma standalone).
 - `micronesia-address-areas.csv` — used by `MicronesiaGeographyProvider`. 4 states.
 - `grenada-address-areas.csv` — used by `GrenadaGeographyProvider`. 6 parishes + Carriacou.
 - `french-guiana-address-areas.csv` — used by `FrenchGuianaGeographyProvider`. Single overseas region.

@@ -56,11 +56,21 @@ class FijiGeographyProvider implements CountryAddressAreaMetadataProvider, Count
                 levels: [
                     new AddressLevelDefinition(
                         key: 'division',
-                        label: 'Division / Province / Dependency',
+                        label: 'Division / Dependency',
                         kind: 'state',
                         hierarchyType: 'administrative',
-                        areaTypes: ['division', 'province', 'dependency'],
+                        areaTypes: ['division', 'dependency'],
                         areaLevel: 1,
+                    ),
+                    new AddressLevelDefinition(
+                        key: 'province',
+                        label: 'Province',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['province'],
+                        areaLevels: [2],
+                        parentKey: 'division',
+                        assignmentRole: 'province',
                     ),
                 ],
             ),
@@ -130,24 +140,10 @@ class FijiGeographyProvider implements CountryAddressAreaMetadataProvider, Count
     {
         /** @var array<int|string, string> */
         $areaCodes = [
-            '01' => '01',
-            '02' => '02',
-            '03' => '03',
             'C' => 'C',
             'E' => 'E',
-            '04' => '04',
-            '05' => '05',
-            '06' => '06',
-            '07' => '07',
-            '08' => '08',
-            '09' => '09',
-            '10' => '10',
             'N' => 'N',
-            '11' => '11',
-            '12' => '12',
             'R' => 'R',
-            '13' => '13',
-            '14' => '14',
             'W' => 'W',
         ];
 
@@ -168,24 +164,10 @@ class FijiGeographyProvider implements CountryAddressAreaMetadataProvider, Count
     private function stateDefinitions(): array
     {
         return [
-            ['name' => 'Ba', 'code' => '01'],
-            ['name' => 'Bua', 'code' => '02'],
-            ['name' => 'Cakaudrove', 'code' => '03'],
             ['name' => 'Central', 'code' => 'C'],
             ['name' => 'Eastern', 'code' => 'E'],
-            ['name' => 'Kadavu', 'code' => '04'],
-            ['name' => 'Lau', 'code' => '05'],
-            ['name' => 'Lomaiviti', 'code' => '06'],
-            ['name' => 'Macuata', 'code' => '07'],
-            ['name' => 'Nadroga-Navosa', 'code' => '08'],
-            ['name' => 'Naitasiri', 'code' => '09'],
-            ['name' => 'Namosi', 'code' => '10'],
             ['name' => 'Northern', 'code' => 'N'],
-            ['name' => 'Ra', 'code' => '11'],
-            ['name' => 'Rewa', 'code' => '12'],
             ['name' => 'Rotuma', 'code' => 'R'],
-            ['name' => 'Serua', 'code' => '13'],
-            ['name' => 'Tailevu', 'code' => '14'],
             ['name' => 'Western', 'code' => 'W'],
         ];
     }
