@@ -10,8 +10,8 @@ counts, or changes scope. See [Country Data](./05-country-data.md)
 for per-country narrative and [Provider Authoring](./13-provider-authoring.md)
 for how to add a level.
 
-Current shape: 229 providers — 2 dual-hierarchy, 1 depth-3, 6 depth-2,
-220 depth-1.
+Current shape: 229 providers — 2 dual-hierarchy, 1 depth-3, 10 depth-2,
+216 depth-1.
 All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 above6 below28 after country1), 48 codeless.
 
 ## Legend
@@ -58,7 +58,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Bangladesh | BD | 72 | 8 | 72 | 2 | administrative: division > district | district | → | Complete to district; upazilas out of scope |
 | Barbados | BB | 11 | 11 | 11 | 1 | administrative: parish | — | → | L1 |
 | Belarus | BY | 7 | 7 | 7 | 1 | administrative: oblast | — | ← | L1 — 6 oblasts + Minsk; oblast/city Minsk share a name |
-| Belgium | BE | 13 | 13 | 13 | 1 | administrative: region | — | ← | L1 — 3 regions + 10 provinces flat; depth-2 candidate |
+| Belgium | BE | 3 | 3 | 13 | 2 | administrative: region > province | province | ← | Complete — 3 regions + 10 provinces; Brussels childless |
 | Belize | BZ | 6 | 6 | 6 | 1 | administrative: district | — | none | L1 |
 | Benin | BJ | 12 | 12 | 12 | 1 | administrative: department | — | none | L1 |
 | Bermuda | BM | 9 | 9 | 9 | 1 | administrative: municipality | — | → | L1 |
@@ -97,7 +97,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Ecuador | EC | 24 | 24 | 24 | 1 | administrative: province | — | ← | L1 |
 | Egypt | EG | 27 | 27 | 27 | 1 | administrative: governorate | — | below | L1; markaz (~350) candidate, Arabic-first |
 | El Salvador | SV | 14 | 14 | 14 | 1 | administrative: department | — | ← | L1 |
-| Equatorial Guinea | GQ | 10 | 10 | 10 | 1 | administrative: region | — | none | L1 — 2 regions + 8 provinces flat |
+| Equatorial Guinea | GQ | 2 | 2 | 10 | 2 | administrative: region > province | province | none | Complete — 2 regions + 8 provinces |
 | Eritrea | ER | 6 | 6 | 6 | 1 | administrative: region | — | none | L1 |
 | Estonia | EE | 94 | 94 | 94 | 1 | administrative: county | — | ← | L1 — 15 counties + 79 municipalities flat; depth-2 candidate |
 | Eswatini | SZ | 4 | 4 | 4 | 1 | administrative: region | — | below | L1 |
@@ -133,7 +133,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Indonesia | ID | 38 | 38 | 7837 | 3 | administrative: province > regency > district | district, regency | → | Complete to kecamatan; desa (~83k) out of scope |
 | Iran | IR | 31 | 31 | 31 | 1 | administrative: province | — | below | L1 — 31 ostans; counties out of scope |
 | Iraq | IQ | 19 | 19 | 19 | 1 | administrative: governorate | — | below | L1 incl. Halabja; KR region removed; qada (~120) candidate |
-| Ireland | IE | 30 | 30 | 30 | 1 | administrative: province | — | below | L1 — 4 provinces + 26 counties flat; depth-2 candidate |
+| Ireland | IE | 4 | 4 | 30 | 2 | administrative: province > county | county | below | Complete — 4 provinces + 26 counties |
 | Isle of Man | IM | 6 | 6 | 6 | 1 | administrative: sheadings | — | below | L1 — 6 sheadings |
 | Israel | IL | 6 | 6 | 6 | 1 | administrative: district | — | ← | L1 — 6 districts; sub-districts out of scope |
 | Italy | IT | 20 | 20 | 20 | 1 | administrative: region | — | ← | L1 |
@@ -210,7 +210,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Rwanda | RW | 5 | 5 | 5 | 1 | administrative: province | — | none | L1 — 4 provinces + Kigali |
 | Saint Barthelemy | BL | 1 | 1 | 1 | 1 | administrative: overseas_collectivity | — | ← | L1 — single collectivity |
 | Saint Helena | SH | 8 | 8 | 8 | 1 | administrative: district | — | → | L1 — 8 districts |
-| Saint Kitts and Nevis | KN | 16 | 16 | 16 | 1 | administrative: state | — | below | L1 — 2 islands + 14 parishes flat |
+| Saint Kitts and Nevis | KN | 2 | 2 | 16 | 2 | administrative: island > parish | parish | below | Complete — 2 islands + 14 parishes |
 | Saint Lucia | LC | 10 | 10 | 10 | 1 | administrative: district | — | → | L1 |
 | Saint Martin | MF | 1 | 1 | 1 | 1 | administrative: overseas_collectivity | — | ← | L1 — single collectivity |
 | Saint Pierre and Miquelon | PM | 1 | 1 | 1 | 1 | administrative: overseas_collectivity | — | ← | L1 — single collectivity |

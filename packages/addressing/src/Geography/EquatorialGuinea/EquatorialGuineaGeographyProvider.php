@@ -56,11 +56,21 @@ class EquatorialGuineaGeographyProvider implements CountryAddressAreaMetadataPro
                 levels: [
                     new AddressLevelDefinition(
                         key: 'region',
-                        label: 'Region / Province',
+                        label: 'Region',
                         kind: 'state',
                         hierarchyType: 'administrative',
-                        areaTypes: ['region', 'province'],
+                        areaTypes: ['region'],
                         areaLevel: 1,
+                    ),
+                    new AddressLevelDefinition(
+                        key: 'province',
+                        label: 'Province',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['province'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'province',
                     ),
                 ],
             ),
@@ -129,16 +139,8 @@ class EquatorialGuineaGeographyProvider implements CountryAddressAreaMetadataPro
     {
         /** @var array<string, string> */
         $areaCodes = [
-            'AN' => 'AN',
-            'BN' => 'BN',
-            'BS' => 'BS',
-            'CS' => 'CS',
-            'DJ' => 'DJ',
-            'I' => 'I',
-            'KN' => 'KN',
-            'LI' => 'LI',
             'C' => 'C',
-            'WN' => 'WN',
+            'I' => 'I',
         ];
 
         return array_map(
@@ -158,16 +160,8 @@ class EquatorialGuineaGeographyProvider implements CountryAddressAreaMetadataPro
     private function stateDefinitions(): array
     {
         return [
-            ['name' => 'Annobón', 'code' => 'AN'],
-            ['name' => 'Bioko Norte', 'code' => 'BN'],
-            ['name' => 'Bioko Sur', 'code' => 'BS'],
-            ['name' => 'Centro Sur', 'code' => 'CS'],
-            ['name' => 'Djibloho', 'code' => 'DJ'],
             ['name' => 'Insular', 'code' => 'I'],
-            ['name' => 'Kié-Ntem', 'code' => 'KN'],
-            ['name' => 'Litoral', 'code' => 'LI'],
             ['name' => 'Río Muni', 'code' => 'C'],
-            ['name' => 'Wele-Nzas', 'code' => 'WN'],
         ];
     }
 }

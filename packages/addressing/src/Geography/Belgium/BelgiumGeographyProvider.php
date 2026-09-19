@@ -56,11 +56,21 @@ class BelgiumGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                 levels: [
                     new AddressLevelDefinition(
                         key: 'region',
-                        label: 'Region / Province',
+                        label: 'Region',
                         kind: 'state',
                         hierarchyType: 'administrative',
-                        areaTypes: ['region', 'province'],
+                        areaTypes: ['region'],
                         areaLevel: 1,
+                    ),
+                    new AddressLevelDefinition(
+                        key: 'province',
+                        label: 'Province',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['province'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'province',
                     ),
                 ],
             ),
@@ -129,19 +139,9 @@ class BelgiumGeographyProvider implements CountryAddressAreaMetadataProvider, Co
     {
         /** @var array<string, string> */
         $areaCodes = [
-            'VAN' => 'VAN',
             'BRU' => 'BRU',
-            'VOV' => 'VOV',
             'VLG' => 'VLG',
-            'VBR' => 'VBR',
-            'WHT' => 'WHT',
-            'WLG' => 'WLG',
-            'VLI' => 'VLI',
-            'WLX' => 'WLX',
-            'WNA' => 'WNA',
             'WAL' => 'WAL',
-            'WBR' => 'WBR',
-            'VWV' => 'VWV',
         ];
 
         return array_map(
@@ -161,19 +161,9 @@ class BelgiumGeographyProvider implements CountryAddressAreaMetadataProvider, Co
     private function stateDefinitions(): array
     {
         return [
-            ['name' => 'Antwerp', 'code' => 'VAN'],
             ['name' => 'Brussels-Capital', 'code' => 'BRU'],
-            ['name' => 'East Flanders', 'code' => 'VOV'],
             ['name' => 'Flanders', 'code' => 'VLG'],
-            ['name' => 'Flemish Brabant', 'code' => 'VBR'],
-            ['name' => 'Hainaut', 'code' => 'WHT'],
-            ['name' => 'Liège', 'code' => 'WLG'],
-            ['name' => 'Limburg', 'code' => 'VLI'],
-            ['name' => 'Luxembourg', 'code' => 'WLX'],
-            ['name' => 'Namur', 'code' => 'WNA'],
             ['name' => 'Wallonia', 'code' => 'WAL'],
-            ['name' => 'Walloon Brabant', 'code' => 'WBR'],
-            ['name' => 'West Flanders', 'code' => 'VWV'],
         ];
     }
 }

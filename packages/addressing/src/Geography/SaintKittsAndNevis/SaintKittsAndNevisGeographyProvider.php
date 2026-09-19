@@ -55,12 +55,22 @@ class SaintKittsAndNevisGeographyProvider implements CountryAddressAreaMetadataP
                 label: 'Administrative / Territorial Geography',
                 levels: [
                     new AddressLevelDefinition(
-                        key: 'state',
-                        label: 'State / Parish',
+                        key: 'island',
+                        label: 'Island',
                         kind: 'state',
                         hierarchyType: 'administrative',
-                        areaTypes: ['state', 'parish'],
+                        areaTypes: ['state'],
                         areaLevel: 1,
+                    ),
+                    new AddressLevelDefinition(
+                        key: 'parish',
+                        label: 'Parish',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['parish'],
+                        areaLevels: [2],
+                        parentKey: 'island',
+                        assignmentRole: 'parish',
                     ),
                 ],
             ),
@@ -129,22 +139,8 @@ class SaintKittsAndNevisGeographyProvider implements CountryAddressAreaMetadataP
     {
         /** @var array<int|string, string> */
         $areaCodes = [
-            '01' => '01',
-            'N' => 'N',
-            '02' => '02',
-            '03' => '03',
-            '04' => '04',
-            '05' => '05',
-            '06' => '06',
-            '07' => '07',
             'K' => 'K',
-            '08' => '08',
-            '09' => '09',
-            '10' => '10',
-            '11' => '11',
-            '12' => '12',
-            '13' => '13',
-            '15' => '15',
+            'N' => 'N',
         ];
 
         return array_map(
@@ -164,22 +160,8 @@ class SaintKittsAndNevisGeographyProvider implements CountryAddressAreaMetadataP
     private function stateDefinitions(): array
     {
         return [
-            ['name' => 'Christ Church Nichola Town', 'code' => '01'],
-            ['name' => 'Nevis', 'code' => 'N'],
-            ['name' => 'Saint Anne Sandy Point', 'code' => '02'],
-            ['name' => 'Saint George Basseterre', 'code' => '03'],
-            ['name' => 'Saint George Gingerland', 'code' => '04'],
-            ['name' => 'Saint James Windward', 'code' => '05'],
-            ['name' => 'Saint John Capisterre', 'code' => '06'],
-            ['name' => 'Saint John Figtree', 'code' => '07'],
             ['name' => 'Saint Kitts', 'code' => 'K'],
-            ['name' => 'Saint Mary Cayon', 'code' => '08'],
-            ['name' => 'Saint Paul Capisterre', 'code' => '09'],
-            ['name' => 'Saint Paul Charlestown', 'code' => '10'],
-            ['name' => 'Saint Peter Basseterre', 'code' => '11'],
-            ['name' => 'Saint Thomas Lowland', 'code' => '12'],
-            ['name' => 'Saint Thomas Middle Island', 'code' => '13'],
-            ['name' => 'Trinity Palmetto Point', 'code' => '15'],
+            ['name' => 'Nevis', 'code' => 'N'],
         ];
     }
 }

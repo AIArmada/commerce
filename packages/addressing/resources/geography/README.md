@@ -96,7 +96,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `congo-address-areas.csv` — used by `CongoGeographyProvider`. 12 departments incl. Brazzaville/Pointe-Noire.
 - `ivory-coast-address-areas.csv` — used by `IvoryCoastGeographyProvider`. 12 districts + Abidjan/Yamoussoukro autonomous districts.
 - `djibouti-address-areas.csv` — used by `DjiboutiGeographyProvider`. 5 regions + Djibouti City.
-- `equatorial-guinea-address-areas.csv` — used by `EquatorialGuineaGeographyProvider`. 2 regions + 8 provinces flat at L1.
+- `equatorial-guinea-address-areas.csv` — used by `EquatorialGuineaGeographyProvider`. 2 regions with 8 provinces at L2 (3 Insular, 5 Río Muni).
 - `eritrea-address-areas.csv` — used by `EritreaGeographyProvider`. 6 regions.
 - `gabon-address-areas.csv` — used by `GabonGeographyProvider`. 9 provinces.
 - `gambia-address-areas.csv` — used by `GambiaGeographyProvider`. 5 divisions + Banjul.
@@ -127,7 +127,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `andorra-address-areas.csv` — used by `AndorraGeographyProvider`. 7 parishes.
 - `austria-address-areas.csv` — used by `AustriaGeographyProvider`. 9 states.
 - `belarus-address-areas.csv` — used by `BelarusGeographyProvider`. 6 oblasts + Minsk; oblast/city Minsk share a name.
-- `belgium-address-areas.csv` — used by `BelgiumGeographyProvider`. 3 regions + 10 provinces flat at L1.
+- `belgium-address-areas.csv` — used by `BelgiumGeographyProvider`. 3 regions with 10 provinces at L2 (5 Flanders, 5 Wallonia; Brussels childless).
 - `bosnia-and-herzegovina-address-areas.csv` — used by `BosniaAndHerzegovinaGeographyProvider`. 2 entities + Brčko District.
 - `bulgaria-address-areas.csv` — used by `BulgariaGeographyProvider`. 28 districts.
 - `croatia-address-areas.csv` — used by `CroatiaGeographyProvider`. 20 counties incl. Zagreb.
@@ -138,7 +138,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `greece-address-areas.csv` — used by `GreeceGeographyProvider`. 13 regions + 2 regional units.
 - `hungary-address-areas.csv` — used by `HungaryGeographyProvider`. 20 counties + 22 county-rights cities + Budapest.
 - `iceland-address-areas.csv` — used by `IcelandGeographyProvider`. 8 regions + 64 municipalities flat at L1.
-- `ireland-address-areas.csv` — used by `IrelandGeographyProvider`. 4 provinces + 26 counties flat at L1.
+- `ireland-address-areas.csv` — used by `IrelandGeographyProvider`. 4 provinces with 26 counties at L2 (12/6/5/3).
 - `kosovo-address-areas.csv` — used by `KosovoGeographyProvider`. 7 districts.
 - `latvia-address-areas.csv` — used by `LatviaGeographyProvider`. 36 municipalities + 7 state cities; Jelgava/Rēzekne/Ventspils twins share names.
 - `liechtenstein-address-areas.csv` — used by `LiechtensteinGeographyProvider`. 11 communes.
@@ -194,7 +194,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `haiti-address-areas.csv` — used by `HaitiGeographyProvider`. 10 departments.
 - `jamaica-address-areas.csv` — used by `JamaicaGeographyProvider`. 14 parishes.
 - `kiribati-address-areas.csv` — used by `KiribatiGeographyProvider`. 3 island groups.
-- `saint-kitts-and-nevis-address-areas.csv` — used by `SaintKittsAndNevisGeographyProvider`. 2 islands + 14 parishes flat at L1.
+- `saint-kitts-and-nevis-address-areas.csv` — used by `SaintKittsAndNevisGeographyProvider`. 2 islands with 14 parishes at L2 (9 Saint Kitts, 5 Nevis).
 - `saint-lucia-address-areas.csv` — used by `SaintLuciaGeographyProvider`. 10 districts.
 - `saint-martin-address-areas.csv` — used by `SaintMartinGeographyProvider`. Single overseas collectivity (French part).
 - `marshall-islands-address-areas.csv` — used by `MarshallIslandsGeographyProvider`. 24 municipalities + Ralik/Ratak chains.

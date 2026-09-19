@@ -1325,9 +1325,10 @@ Djiboutian addresses are formatted per the UPU layout: street lines,
 ## Equatorial Guinea
 
 The bundled `EquatorialGuineaGeographyProvider` supplies the 2
-regions and 8 provinces flat at level 1 as `State` rows and a
-single-level administrative hierarchy. It is selected with
-`SeedCountryGeographiesAction::execute('GQ')` after countries are seeded.
+regions as `State` rows with the 8 provinces as level-2 areas
+(3 Insular, 5 Río Muni) in a two-level administrative hierarchy.
+It is selected with `SeedCountryGeographiesAction::execute('GQ')`
+after countries are seeded.
 
 Equatorial Guinea has no postcode system. Addresses are formatted
 per the UPU layout: street lines, the locality, the province when it
@@ -1636,11 +1637,11 @@ Belarusian addresses are formatted per the UPU layout: street lines,
 own line when both are set, and country.
 ## Belgium
 
-The bundled `BelgiumGeographyProvider` supplies the 3 regions and
-10 provinces flat at level 1 as `State` rows and a single-level
+The bundled `BelgiumGeographyProvider` supplies the 3 regions
+as `State` rows with the 10 provinces as level-2 areas (5 Flanders,
+5 Wallonia; Brussels-Capital childless) in a two-level
 administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('BE')` after countries are seeded.
-A region -> province depth-2 split is a future candidate.
 
 Belgian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 4-digit postcode, and country. `B-`
@@ -1749,10 +1750,10 @@ Icelandic addresses are formatted per the UPU layout: street lines,
 ## Ireland
 
 The bundled `IrelandGeographyProvider` supplies the 4 provinces
-and 26 counties flat at level 1 as `State` rows and a single-level
-administrative hierarchy. It is selected with
+as `State` rows with the 26 counties as level-2 areas (12 Leinster,
+6 Munster, 5 Connacht, 3 Ulster) in a two-level administrative
+hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('IE')` after countries are seeded.
-A province -> county depth-2 split is a future candidate.
 
 Irish addresses are formatted per the UPU layout: street lines, the
 locality, the county, the Eircode on its own line, and country.
@@ -1883,6 +1884,17 @@ hierarchy. It is selected with
 
 Romanian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 6-digit postcode, and country.
+## Saint Kitts and Nevis
+
+The bundled `SaintKittsAndNevisGeographyProvider` supplies the 2
+islands as `State` rows with the 14 parishes as level-2 areas (9
+Saint Kitts, 5 Nevis) in a two-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('KN')` after
+countries are seeded.
+
+Kittitian and Nevisian addresses are formatted per the UPU layout:
+street lines, the locality, the island, the `KN`-prefixed postcode
+on its own line, and country.
 ## San Marino
 
 The bundled `SanMarinoGeographyProvider` supplies the 9
