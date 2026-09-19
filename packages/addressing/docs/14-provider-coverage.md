@@ -42,7 +42,7 @@ Current shape: 229 providers — 2 dual-hierarchy, 1 depth-3, 6 depth-2,
 | Antigua and Barbuda | AG | 8 | 8 | 8 | 1 | administrative: parish | — | L1 — 6 parishes + Barbuda/Redonda |
 | Argentina | AR | 24 | 24 | 24 | 1 | administrative: province | — | L1 — 23 provinces + CABA |
 | Armenia | AM | 11 | 11 | 11 | 1 | administrative: region | — | L1 — 10 regions + Yerevan |
-| Aruba | AW | 8 | 8 | 8 | 1 | administrative: region | — | L1 — 7 regions + Oranjestad |
+| Aruba | AW | 9 | 9 | 9 | 1 | administrative: region | — | L1 — 8 regions + Oranjestad |
 | Australia | AU | 8 | 8 | 8 | 1 | administrative: state | — | L1 — 6 states + 2 territories; externals global-only |
 | Austria | AT | 9 | 9 | 9 | 1 | administrative: state | — | L1 — 9 states |
 | Azerbaijan | AZ | 78 | 78 | 78 | 1 | administrative: district | — | L1 — 66 districts + 11 municipalities + Nakhchivan AR |
@@ -96,7 +96,7 @@ Current shape: 229 providers — 2 dual-hierarchy, 1 depth-3, 6 depth-2,
 | Eswatini | SZ | 4 | 4 | 4 | 1 | administrative: region | — | L1 |
 | Ethiopia | ET | 14 | 14 | 14 | 1 | administrative: region | — | L1; SN dissolved on seed |
 | Faroe Islands | FO | 6 | 6 | 6 | 1 | administrative: region | — | L1 — 6 regions |
-| Fiji | FJ | 18 | 18 | 18 | 1 | administrative: division | — | L1 — 4 divisions + 13 provinces + Rotuma |
+| Fiji | FJ | 19 | 19 | 19 | 1 | administrative: division | — | L1 — 4 divisions + 14 provinces + Rotuma |
 | Finland | FI | 18 | 18 | 18 | 1 | administrative: region | — | L1 |
 | France | FR | 18 | 18 | 18 | 1 | administrative: region | — | L1 |
 | French Guiana | GF | 1 | 1 | 1 | 1 | administrative: overseas_region | — | L1 — single region |
@@ -188,7 +188,7 @@ Current shape: 229 providers — 2 dual-hierarchy, 1 depth-3, 6 depth-2,
 | Pakistan | PK | 7 | 7 | 181 | 2 | administrative: province > district | district | Complete to district (174, late-2025); tehsils out; 2026 Balochistan batch excluded |
 | Palau | PW | 16 | 16 | 16 | 1 | administrative: state | — | L1 — 16 states |
 | Palestine | PS | 16 | 16 | 16 | 1 | administrative: governorate | — | L1 |
-| Panama | PA | 13 | 13 | 13 | 1 | administrative: province | — | L1 — 10 provinces + 3 comarcas |
+| Panama | PA | 14 | 14 | 14 | 1 | administrative: province | — | L1 — 10 provinces + 4 comarcas |
 | Papua New Guinea | PG | 22 | 22 | 22 | 1 | administrative: province | — | L1 — 20 provinces + Bougainville + Port Moresby |
 | Paraguay | PY | 18 | 18 | 18 | 1 | administrative: department | — | L1 — 17 departments + Asunción |
 | Peru | PE | 26 | 26 | 26 | 1 | administrative: region | — | L1 — 25 regions + Lima |

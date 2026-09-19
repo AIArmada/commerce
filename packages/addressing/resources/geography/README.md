@@ -166,7 +166,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `american-samoa-address-areas.csv` — used by `AmericanSamoaGeographyProvider`. 3 districts + Rose/Swains atolls.
 - `antigua-and-barbuda-address-areas.csv` — used by `AntiguaAndBarbudaGeographyProvider`. 6 parishes + Barbuda/Redonda.
 - `anguilla-address-areas.csv` — used by `AnguillaGeographyProvider`. 14 districts.
-- `aruba-address-areas.csv` — used by `ArubaGeographyProvider`. 7 regions + Oranjestad.
+- `aruba-address-areas.csv` — used by `ArubaGeographyProvider`. 8 regions + Oranjestad.
 - `bahamas-address-areas.csv` — used by `BahamasGeographyProvider`. 31 districts + New Providence island.
 - `barbados-address-areas.csv` — used by `BarbadosGeographyProvider`. 11 parishes.
 - `belize-address-areas.csv` — used by `BelizeGeographyProvider`. 6 districts.
@@ -181,7 +181,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `dominican-republic-address-areas.csv` — used by `DominicanRepublicGeographyProvider`. 10 regions + 31 provinces + DN flat at L1.
 - `ecuador-address-areas.csv` — used by `EcuadorGeographyProvider`. 24 provinces.
 - `el-salvador-address-areas.csv` — used by `ElSalvadorGeographyProvider`. 14 departments.
-- `fiji-address-areas.csv` — used by `FijiGeographyProvider`. 4 divisions + 13 provinces + Rotuma.
+- `fiji-address-areas.csv` — used by `FijiGeographyProvider`. 4 divisions + 14 provinces + Rotuma.
 - `micronesia-address-areas.csv` — used by `MicronesiaGeographyProvider`. 4 states.
 - `grenada-address-areas.csv` — used by `GrenadaGeographyProvider`. 6 parishes + Carriacou.
 - `french-guiana-address-areas.csv` — used by `FrenchGuianaGeographyProvider`. Single overseas region.
@@ -205,7 +205,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `nauru-address-areas.csv` — used by `NauruGeographyProvider`. 14 districts.
 - `niue-address-areas.csv` — used by `NiueGeographyProvider`. 14 villages.
 - `new-zealand-address-areas.csv` — used by `NewZealandGeographyProvider`. 16 regions + Chatham Islands.
-- `panama-address-areas.csv` — used by `PanamaGeographyProvider`. 10 provinces + 3 comarcas.
+- `panama-address-areas.csv` — used by `PanamaGeographyProvider`. 10 provinces + 4 comarcas.
 - `french-polynesia-address-areas.csv` — used by `FrenchPolynesiaGeographyProvider`. 5 divisions.
 - `papua-new-guinea-address-areas.csv` — used by `PapuaNewGuineaGeographyProvider`. 20 provinces + Bougainville + Port Moresby.
 - `saint-pierre-and-miquelon-address-areas.csv` — used by `SaintPierreAndMiquelonGeographyProvider`. Single overseas collectivity.
