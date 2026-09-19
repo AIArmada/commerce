@@ -325,7 +325,8 @@ code on its own line.
 Albania (12 counties), Andorra (7 parishes), Austria (9 states),
 Belarus (6 oblasts + Minsk), Belgium (3 regions + 10 provinces
 flat), Bosnia and Herzegovina (2 entities + Brčko District),
-Bulgaria (28 districts), Croatia (20 counties), Czech Republic (13
+Bulgaria (28 districts), Croatia (20 counties + City of Zagreb),
+Czech Republic (13
 regions + 76 districts + Prague flat), Denmark (5 regions), Estonia
 (15 counties + 78 municipalities flat), Finland (18 regions), Greece
 (13 regions + Mount Athos), Hungary (20 counties + 22
