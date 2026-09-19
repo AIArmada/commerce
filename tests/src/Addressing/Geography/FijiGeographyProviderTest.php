@@ -21,7 +21,8 @@ it('defines a two-level division and province hierarchy', function (): void {
         ->and($hierarchies[0]->levels[0]->key)->toBe('division')
         ->and($hierarchies[0]->levels[0]->kind)->toBe('state')
         ->and($hierarchies[0]->levels[1]->key)->toBe('province')
-        ->and($hierarchies[0]->levels[1]->parentKey)->toBe('division');
+        ->and($hierarchies[0]->levels[1]->parentKey)->toBe('division')
+        ->and($hierarchies[0]->levels[1]->assignmentRole)->toBe('province');
 });
 
 it('imports the division and province trees with state links', function (): void {

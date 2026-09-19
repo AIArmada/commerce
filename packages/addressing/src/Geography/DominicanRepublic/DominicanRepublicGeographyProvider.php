@@ -86,7 +86,7 @@ class DominicanRepublicGeographyProvider implements CountryAddressAreaMetadataPr
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
                 'province' => ['province'],
-                'district' => ['district'],
+                'district' => ['province'],
                 default => [],
             };
 

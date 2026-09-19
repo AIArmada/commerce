@@ -104,7 +104,7 @@ class IndonesiaGeographyProvider implements CountryAddressAreaMetadataProvider, 
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
                 'regency' => ['regency'],
-                'city' => ['city'],
+                'city' => ['regency'],
                 'district' => ['district'],
                 default => [],
             };

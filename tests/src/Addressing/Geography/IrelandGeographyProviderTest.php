@@ -21,7 +21,8 @@ it('defines a two-level province and county hierarchy', function (): void {
         ->and($hierarchies[0]->levels[0]->key)->toBe('province')
         ->and($hierarchies[0]->levels[0]->kind)->toBe('state')
         ->and($hierarchies[0]->levels[1]->key)->toBe('county')
-        ->and($hierarchies[0]->levels[1]->parentKey)->toBe('province');
+        ->and($hierarchies[0]->levels[1]->parentKey)->toBe('province')
+        ->and($hierarchies[0]->levels[1]->assignmentRole)->toBe('county');
 });
 
 it('imports the province and county trees with state links', function (): void {

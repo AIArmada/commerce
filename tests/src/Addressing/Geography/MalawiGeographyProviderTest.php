@@ -21,7 +21,8 @@ it('defines a two-level region and district hierarchy', function (): void {
         ->and($hierarchies[0]->levels[0]->key)->toBe('region')
         ->and($hierarchies[0]->levels[0]->kind)->toBe('state')
         ->and($hierarchies[0]->levels[1]->key)->toBe('district')
-        ->and($hierarchies[0]->levels[1]->parentKey)->toBe('region');
+        ->and($hierarchies[0]->levels[1]->parentKey)->toBe('region')
+        ->and($hierarchies[0]->levels[1]->assignmentRole)->toBe('district');
 });
 
 it('imports the region and district trees with state links', function (): void {

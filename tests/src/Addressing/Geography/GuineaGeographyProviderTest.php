@@ -21,7 +21,8 @@ it('defines a two-level region and prefecture hierarchy', function (): void {
         ->and($hierarchies[0]->levels[0]->key)->toBe('administrative_region')
         ->and($hierarchies[0]->levels[0]->kind)->toBe('state')
         ->and($hierarchies[0]->levels[1]->key)->toBe('prefecture')
-        ->and($hierarchies[0]->levels[1]->parentKey)->toBe('administrative_region');
+        ->and($hierarchies[0]->levels[1]->parentKey)->toBe('administrative_region')
+        ->and($hierarchies[0]->levels[1]->assignmentRole)->toBe('prefecture');
 });
 
 it('imports the region and prefecture trees with state links', function (): void {

@@ -21,7 +21,8 @@ it('defines a two-level island and parish hierarchy', function (): void {
         ->and($hierarchies[0]->levels[0]->key)->toBe('island')
         ->and($hierarchies[0]->levels[0]->kind)->toBe('state')
         ->and($hierarchies[0]->levels[1]->key)->toBe('parish')
-        ->and($hierarchies[0]->levels[1]->parentKey)->toBe('island');
+        ->and($hierarchies[0]->levels[1]->parentKey)->toBe('island')
+        ->and($hierarchies[0]->levels[1]->assignmentRole)->toBe('parish');
 });
 
 it('imports the island and parish trees with state links', function (): void {
