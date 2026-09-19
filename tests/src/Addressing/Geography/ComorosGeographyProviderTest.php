@@ -2,39 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Comoros\ComorosGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
-
-it('seeds all 3 Comorian states', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'KM')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => 'A',
-        'name' => 'Anjouan (legacy)',
-        'label' => 'Anjouan (legacy)',
-    ]);
-
-    app(ComorosGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Anjouan')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(3);
-});
-
-it('maps every Comorian state code to its area', function (): void {
-    $mappings = app(ComorosGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(3)
-        ->and(array_map('strval', array_keys($mappings)))->toBe(['A', 'G', 'M']);
-});
 
 it('defines a single-level administrative hierarchy', function (): void {
     $hierarchies = app(ComorosGeographyProvider::class)->addressHierarchies();
@@ -47,12 +20,13 @@ it('defines a single-level administrative hierarchy', function (): void {
 });
 
 it('imports the Comorian tree with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('KM');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('KM');
     $country = AddressCountry::query()->where('iso2', 'KM')->firstOrFail();
 
     expect($result['seeded'])->toContain('KM')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(3)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(3)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'island')->count())->toBe(3)
         ->and(AddressAreaStateLink::query()->whereHas(

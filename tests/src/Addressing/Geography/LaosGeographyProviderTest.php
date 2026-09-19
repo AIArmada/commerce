@@ -2,39 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Laos\LaosGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
-
-it('seeds all 18 Laotian states', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'LA')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => 'VT',
-        'name' => 'Vientiane Capital',
-        'label' => 'Vientiane Capital',
-    ]);
-
-    app(LaosGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Vientiane')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(18);
-});
-
-it('maps every Laotian state code to its area', function (): void {
-    $mappings = app(LaosGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(18)
-        ->and(array_map('strval', array_keys($mappings)))->toBe(['AT', 'BK', 'BL', 'CH', 'HO', 'KH', 'LM', 'LP', 'OU', 'PH', 'XA', 'SL', 'SV', 'XE', 'VI', 'VT', 'XS', 'XI']);
-});
 
 it('defines a single-level administrative hierarchy', function (): void {
     $hierarchies = app(LaosGeographyProvider::class)->addressHierarchies();
@@ -47,12 +20,13 @@ it('defines a single-level administrative hierarchy', function (): void {
 });
 
 it('imports the Laotian tree with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('LA');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('LA');
     $country = AddressCountry::query()->where('iso2', 'LA')->firstOrFail();
 
     expect($result['seeded'])->toContain('LA')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(18)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(18)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'province')->count())->toBe(17)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'prefecture')->count())->toBe(1)

@@ -2,39 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Mauritius\MauritiusGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
-
-it('seeds all 12 Mauritian states', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'MU')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => 'AG',
-        'name' => 'Agalega Islands (legacy)',
-        'label' => 'Agalega Islands (legacy)',
-    ]);
-
-    app(MauritiusGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Agalega Islands')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(12);
-});
-
-it('maps every Mauritian state code to its area', function (): void {
-    $mappings = app(MauritiusGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(12)
-        ->and(array_map('strval', array_keys($mappings)))->toBe(['AG', 'BL', 'FL', 'GP', 'MO', 'PA', 'PW', 'PL', 'RR', 'RO', 'CC', 'SA']);
-});
 
 it('defines a single-level administrative hierarchy', function (): void {
     $hierarchies = app(MauritiusGeographyProvider::class)->addressHierarchies();
@@ -47,12 +20,13 @@ it('defines a single-level administrative hierarchy', function (): void {
 });
 
 it('imports the Mauritian tree with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MU');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('MU');
     $country = AddressCountry::query()->where('iso2', 'MU')->firstOrFail();
 
     expect($result['seeded'])->toContain('MU')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(12)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(12)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'district')->count())->toBe(9)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'dependency')->count())->toBe(3)

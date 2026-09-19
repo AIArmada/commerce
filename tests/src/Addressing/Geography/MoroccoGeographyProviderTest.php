@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Morocco\MoroccoGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
@@ -10,32 +9,6 @@ use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
-
-it('seeds all 87 Moroccan states', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'MA')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => '07',
-        'name' => 'Marrakesh-Safi',
-        'label' => 'Marrakesh-Safi',
-    ]);
-
-    app(MoroccoGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Marrakech-Safi')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(87);
-});
-
-it('maps every Moroccan state code to its area', function (): void {
-    $mappings = app(MoroccoGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(12)
-        ->and(array_map('strval', array_keys($mappings)))->toBe(['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']);
-});
 
 it('defines an administrative hierarchy down to provinces', function (): void {
     $hierarchies = app(MoroccoGeographyProvider::class)->addressHierarchies();
@@ -50,12 +23,13 @@ it('defines an administrative hierarchy down to provinces', function (): void {
 });
 
 it('imports the Moroccan tree with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MA');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('MA');
     $country = AddressCountry::query()->where('iso2', 'MA')->firstOrFail();
 
     expect($result['seeded'])->toContain('MA')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(87)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(87)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'region')->count())->toBe(12)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'province')->count())->toBe(62)

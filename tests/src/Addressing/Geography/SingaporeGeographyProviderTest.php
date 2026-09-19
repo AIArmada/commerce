@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Singapore\SingaporeGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
@@ -13,9 +12,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
 
 it('preserves globally seeded states and adds missing Singapore districts', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'SG')->firstOrFail();
+    $country = $this->seedCountry('SG');
     $state = State::query()->create([
         'country_id' => $country->id,
         'code' => '01',
@@ -59,7 +56,7 @@ it('defines separate postal and administrative hierarchies', function (): void {
 });
 
 it('imports the Singapore planning and postal trees with CDC state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('SG');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('SG');
     $country = AddressCountry::query()->where('iso2', 'SG')->firstOrFail();

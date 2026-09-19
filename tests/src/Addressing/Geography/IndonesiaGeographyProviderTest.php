@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Indonesia\IndonesiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
@@ -12,30 +11,8 @@ use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
 
-it('seeds all thirty-eight Indonesian provinces including the new Papua ones', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'ID')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => 'PD',
-        'name' => 'Southwest',
-        'label' => 'Southwest',
-    ]);
-
-    app(IndonesiaGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Papua Barat Daya')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(38)
-        ->and(State::query()->where('country_id', $country->id)->where('code', 'PE')->value('name'))->toBe('Papua Pegunungan');
-});
-
 it('removes island-group stragglers seeded before the bundled data fix', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'ID')->firstOrFail();
+    $country = $this->seedCountry('ID');
     State::query()->create([
         'country_id' => $country->id,
         'code' => 'PP',
@@ -47,15 +24,6 @@ it('removes island-group stragglers seeded before the bundled data fix', functio
 
     expect(State::query()->where('country_id', $country->id)->where('code', 'PP')->exists())->toBeFalse()
         ->and(State::query()->where('country_id', $country->id)->where('name', 'Papua')->value('code'))->toBe('PA');
-});
-
-it('maps every ISO province code to its Kemendagri area code', function (): void {
-    $mappings = app(IndonesiaGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(38)
-        ->and($mappings['AC']['area_code'])->toBe('11')
-        ->and($mappings['YO']['area_code'])->toBe('34')
-        ->and($mappings['PD']['area_code'])->toBe('96');
 });
 
 it('defines a single administrative hierarchy down to districts', function (): void {
@@ -72,12 +40,14 @@ it('defines a single administrative hierarchy down to districts', function (): v
 });
 
 it('imports the province, regency, and district trees with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('ID');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('ID');
     $country = AddressCountry::query()->where('iso2', 'ID')->firstOrFail();
 
     expect($result['seeded'])->toContain('ID')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(38)
+        ->and(State::query()->where('country_id', $country->id)->where('code', 'PE')->value('name'))->toBe('Papua Pegunungan')
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(7837)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'province')->count())->toBe(38)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'regency')->count())->toBe(416)

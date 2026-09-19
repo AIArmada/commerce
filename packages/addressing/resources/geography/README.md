@@ -163,3 +163,70 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `guernsey-address-areas.csv` — used by `GuernseyGeographyProvider`. 12 parishes.
 - `jersey-address-areas.csv` — used by `JerseyGeographyProvider`. 12 parishes.
 - `isle-of-man-address-areas.csv` — used by `IsleOfManGeographyProvider`. 6 sheadings.
+- `american-samoa-address-areas.csv` — used by `AmericanSamoaGeographyProvider`. 3 districts + Rose/Swains atolls.
+- `antigua-and-barbuda-address-areas.csv` — used by `AntiguaAndBarbudaGeographyProvider`. 6 parishes + Barbuda/Redonda.
+- `anguilla-address-areas.csv` — used by `AnguillaGeographyProvider`. 14 districts.
+- `aruba-address-areas.csv` — used by `ArubaGeographyProvider`. 7 regions + Oranjestad.
+- `bahamas-address-areas.csv` — used by `BahamasGeographyProvider`. 31 districts + New Providence island.
+- `barbados-address-areas.csv` — used by `BarbadosGeographyProvider`. 11 parishes.
+- `belize-address-areas.csv` — used by `BelizeGeographyProvider`. 6 districts.
+- `bermuda-address-areas.csv` — used by `BermudaGeographyProvider`. 9 municipalities.
+- `bolivia-address-areas.csv` — used by `BoliviaGeographyProvider`. 9 departments.
+- `caribbean-netherlands-address-areas.csv` — used by `CaribbeanNetherlandsGeographyProvider`. 3 special municipalities.
+- `cayman-islands-address-areas.csv` — used by `CaymanIslandsGeographyProvider`. 3 islands (source ships no types; normalized to island).
+- `chile-address-areas.csv` — used by `ChileGeographyProvider`. 16 regions.
+- `costa-rica-address-areas.csv` — used by `CostaRicaGeographyProvider`. 7 provinces.
+- `cuba-address-areas.csv` — used by `CubaGeographyProvider`. 15 provinces + Isla de la Juventud.
+- `dominica-address-areas.csv` — used by `DominicaGeographyProvider`. 10 parishes.
+- `dominican-republic-address-areas.csv` — used by `DominicanRepublicGeographyProvider`. 10 regions + 31 provinces + DN flat at L1.
+- `ecuador-address-areas.csv` — used by `EcuadorGeographyProvider`. 24 provinces.
+- `el-salvador-address-areas.csv` — used by `ElSalvadorGeographyProvider`. 14 departments.
+- `fiji-address-areas.csv` — used by `FijiGeographyProvider`. 4 divisions + 13 provinces + Rotuma.
+- `micronesia-address-areas.csv` — used by `MicronesiaGeographyProvider`. 4 states.
+- `grenada-address-areas.csv` — used by `GrenadaGeographyProvider`. 6 parishes + Carriacou.
+- `french-guiana-address-areas.csv` — used by `FrenchGuianaGeographyProvider`. Single overseas region.
+- `greenland-address-areas.csv` — used by `GreenlandGeographyProvider`. 5 municipalities.
+- `guadeloupe-address-areas.csv` — used by `GuadeloupeGeographyProvider`. 2 districts.
+- `guatemala-address-areas.csv` — used by `GuatemalaGeographyProvider`. 22 departments.
+- `guam-address-areas.csv` — used by `GuamGeographyProvider`. 19 villages.
+- `guyana-address-areas.csv` — used by `GuyanaGeographyProvider`. 10 regions.
+- `honduras-address-areas.csv` — used by `HondurasGeographyProvider`. 18 departments.
+- `haiti-address-areas.csv` — used by `HaitiGeographyProvider`. 10 departments.
+- `jamaica-address-areas.csv` — used by `JamaicaGeographyProvider`. 14 parishes.
+- `kiribati-address-areas.csv` — used by `KiribatiGeographyProvider`. 3 island groups.
+- `saint-kitts-and-nevis-address-areas.csv` — used by `SaintKittsAndNevisGeographyProvider`. 2 islands + 14 parishes flat at L1.
+- `saint-lucia-address-areas.csv` — used by `SaintLuciaGeographyProvider`. 10 districts.
+- `saint-martin-address-areas.csv` — used by `SaintMartinGeographyProvider`. Single overseas collectivity (French part).
+- `marshall-islands-address-areas.csv` — used by `MarshallIslandsGeographyProvider`. 24 municipalities + Ralik/Ratak chains.
+- `martinique-address-areas.csv` — used by `MartiniqueGeographyProvider`. 4 districts.
+- `montserrat-address-areas.csv` — used by `MontserratGeographyProvider`. 3 parishes.
+- `new-caledonia-address-areas.csv` — used by `NewCaledoniaGeographyProvider`. 3 provinces.
+- `nicaragua-address-areas.csv` — used by `NicaraguaGeographyProvider`. 15 departments + 2 autonomous regions.
+- `nauru-address-areas.csv` — used by `NauruGeographyProvider`. 14 districts.
+- `niue-address-areas.csv` — used by `NiueGeographyProvider`. 14 villages.
+- `new-zealand-address-areas.csv` — used by `NewZealandGeographyProvider`. 16 regions + Chatham Islands.
+- `panama-address-areas.csv` — used by `PanamaGeographyProvider`. 10 provinces + 3 comarcas.
+- `french-polynesia-address-areas.csv` — used by `FrenchPolynesiaGeographyProvider`. 5 divisions.
+- `papua-new-guinea-address-areas.csv` — used by `PapuaNewGuineaGeographyProvider`. 20 provinces + Bougainville + Port Moresby.
+- `saint-pierre-and-miquelon-address-areas.csv` — used by `SaintPierreAndMiquelonGeographyProvider`. Single overseas collectivity.
+- `puerto-rico-address-areas.csv` — used by `PuertoRicoGeographyProvider`. 78 municipios (10 typed region in source data).
+- `palau-address-areas.csv` — used by `PalauGeographyProvider`. 16 states.
+- `paraguay-address-areas.csv` — used by `ParaguayGeographyProvider`. 17 departments + Asunción.
+- `reunion-address-areas.csv` — used by `ReunionGeographyProvider`. 4 districts.
+- `solomon-islands-address-areas.csv` — used by `SolomonIslandsGeographyProvider`. 9 provinces + Honiara.
+- `saint-helena-address-areas.csv` — used by `SaintHelenaGeographyProvider`. 8 districts.
+- `suriname-address-areas.csv` — used by `SurinameGeographyProvider`. 10 districts.
+- `turks-and-caicos-address-areas.csv` — used by `TurksAndCaicosGeographyProvider`. 6 districts.
+- `french-southern-territories-address-areas.csv` — used by `FrenchSouthernTerritoriesGeographyProvider`. 5 districts; uninhabited.
+- `tonga-address-areas.csv` — used by `TongaGeographyProvider`. 5 divisions.
+- `trinidad-and-tobago-address-areas.csv` — used by `TrinidadAndTobagoGeographyProvider`. 12 regions + 3 boroughs + Port of Spain + Tobago.
+- `tuvalu-address-areas.csv` — used by `TuvaluGeographyProvider`. 7 island + 1 town council.
+- `us-minor-outlying-islands-address-areas.csv` — used by `USMinorOutlyingIslandsGeographyProvider`. 9 islands; uninhabited.
+- `uruguay-address-areas.csv` — used by `UruguayGeographyProvider`. 19 departments.
+- `saint-vincent-and-the-grenadines-address-areas.csv` — used by `SaintVincentAndTheGrenadinesGeographyProvider`. 6 parishes.
+- `venezuela-address-areas.csv` — used by `VenezuelaGeographyProvider`. 23 states + Caracas + federal dependencies.
+- `us-virgin-islands-address-areas.csv` — used by `USVirginIslandsGeographyProvider`. 3 districts.
+- `vanuatu-address-areas.csv` — used by `VanuatuGeographyProvider`. 6 provinces.
+- `wallis-and-futuna-address-areas.csv` — used by `WallisAndFutunaGeographyProvider`. 3 administrative precincts.
+- `samoa-address-areas.csv` — used by `SamoaGeographyProvider`. 11 districts.
+- `mayotte-address-areas.csv` — used by `MayotteGeographyProvider`. 17 communes.

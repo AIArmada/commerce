@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
@@ -19,9 +18,7 @@ use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use Illuminate\Support\Str;
 
 it('preserves globally seeded states and adds missing Malaysian states', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $country = $this->seedCountry('MY');
     $state = State::query()->create([
         'country_id' => $country->id,
         'code' => '14',
@@ -72,9 +69,7 @@ it('defines separate postal and administrative hierarchies with a shared first-l
 });
 
 it('removes obsolete provider-owned state links when reseeding', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $country = $this->seedCountry('MY');
     app(MalaysiaGeographyProvider::class)->seed($country);
     $state = State::query()->where('country_id', $country->id)->where('code', '01')->firstOrFail();
     $oldArea = AddressArea::query()->create([
@@ -99,7 +94,7 @@ it('removes obsolete provider-owned state links when reseeding', function (): vo
 });
 
 it('deactivates prior areas when a provider changes its imported source key', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
 
     $provider = new class implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
     {

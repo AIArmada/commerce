@@ -9,6 +9,7 @@ if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSig
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Authz\Models\Role;
 use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\Commerce\Tests\Addressing\AddressingGeographyTestCase;
 use AIArmada\Commerce\Tests\Feedback\FeedbackTestCase;
 use AIArmada\Commerce\Tests\FilamentAuthz\FilamentAuthzTestCase;
 use AIArmada\Commerce\Tests\FilamentInventory\FilamentInventoryTestCase;
@@ -52,7 +53,17 @@ pest()->extend(TestCase::class)->in(
     'src/FilamentTicketing',
     'src/FilamentSeating',
     'src/Seating',
-    'src/Addressing',
+    'src/Addressing/Actions',
+    'src/Addressing/Casts',
+    'src/Addressing/Data',
+    'src/Addressing/Database',
+    'src/Addressing/Models',
+    'src/Addressing/Support',
+    'src/Addressing/Traits',
+    // NOTE: 'src/Addressing' is bound per-subdir (not blanket) so that
+    // 'src/Addressing/Geography' can use the slim AddressingGeographyTestCase
+    // below. New subdirs under src/Addressing MUST be added here.
+    'src/Addressing/*.php',
     'src/Authz',
     'src/FilamentAddressing',
     'src/Cart',
@@ -110,6 +121,8 @@ pest()->extend(FilamentInventoryTestCase::class)->in('src/FilamentInventory');
 pest()->extend(FilamentAuthzTestCase::class)->in('src/FilamentAuthzScoped');
 
 pest()->extend(FeedbackTestCase::class)->in('src/Feedback');
+
+pest()->extend(AddressingGeographyTestCase::class)->in('src/Addressing/Geography');
 
 // CashierChip tests use their own CashierChipTestCase via uses() in each test file
 // Cashier (unified) tests use their own CashierTestCase via uses() in each test file

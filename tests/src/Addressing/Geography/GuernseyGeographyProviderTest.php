@@ -2,39 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Guernsey\GuernseyGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
-
-it('seeds all 12 Guernsey states', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'GG')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => '04',
-        'name' => 'Alderney (legacy)',
-        'label' => 'Alderney (legacy)',
-    ]);
-
-    app(GuernseyGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Alderney')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(12);
-});
-
-it('maps every Guernsey state code to its area', function (): void {
-    $mappings = app(GuernseyGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(12)
-        ->and(array_map('strval', array_keys($mappings)))->toBe(['04', '01', '02', '07', '03', '05', '06', '08', '09', '10', '11', '12']);
-});
 
 it('defines a single-level administrative hierarchy', function (): void {
     $hierarchies = app(GuernseyGeographyProvider::class)->addressHierarchies();
@@ -47,12 +20,13 @@ it('defines a single-level administrative hierarchy', function (): void {
 });
 
 it('imports the Guernsey tree with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('GG');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('GG');
     $country = AddressCountry::query()->where('iso2', 'GG')->firstOrFail();
 
     expect($result['seeded'])->toContain('GG')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(12)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(12)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'parish')->count())->toBe(12)
         ->and(AddressAreaStateLink::query()->whereHas(

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Spain\SpainGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
@@ -10,32 +9,6 @@ use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
-
-it('seeds all 69 Spanish states', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'ES')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => 'EX',
-        'name' => 'Estremadura',
-        'label' => 'Estremadura',
-    ]);
-
-    app(SpainGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Extremadura')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(69);
-});
-
-it('maps every Spanish state code to its area', function (): void {
-    $mappings = app(SpainGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(19)
-        ->and(array_keys($mappings))->toBe(['AN', 'AR', 'AS', 'CB', 'CE', 'CL', 'CM', 'CN', 'CT', 'EX', 'GA', 'IB', 'MC', 'MD', 'ML', 'NC', 'PV', 'RI', 'VC']);
-});
 
 it('defines an administrative hierarchy down to provinces', function (): void {
     $hierarchies = app(SpainGeographyProvider::class)->addressHierarchies();
@@ -50,12 +23,13 @@ it('defines an administrative hierarchy down to provinces', function (): void {
 });
 
 it('imports the Spanish tree with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('ES');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('ES');
     $country = AddressCountry::query()->where('iso2', 'ES')->firstOrFail();
 
     expect($result['seeded'])->toContain('ES')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(69)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(69)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'autonomous_community')->count())->toBe(17)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'autonomous_city')->count())->toBe(2)

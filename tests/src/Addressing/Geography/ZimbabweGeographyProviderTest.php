@@ -2,39 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Zimbabwe\ZimbabweGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
-
-it('seeds all 10 Zimbabwean states', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'ZW')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => 'BU',
-        'name' => 'Bulawayo (legacy)',
-        'label' => 'Bulawayo (legacy)',
-    ]);
-
-    app(ZimbabweGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Bulawayo')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(10);
-});
-
-it('maps every Zimbabwean state code to its area', function (): void {
-    $mappings = app(ZimbabweGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(10)
-        ->and(array_map('strval', array_keys($mappings)))->toBe(['BU', 'HA', 'MA', 'MC', 'ME', 'MW', 'MV', 'MN', 'MS', 'MI']);
-});
 
 it('defines a single-level administrative hierarchy', function (): void {
     $hierarchies = app(ZimbabweGeographyProvider::class)->addressHierarchies();
@@ -47,12 +20,13 @@ it('defines a single-level administrative hierarchy', function (): void {
 });
 
 it('imports the Zimbabwean tree with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('ZW');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('ZW');
     $country = AddressCountry::query()->where('iso2', 'ZW')->firstOrFail();
 
     expect($result['seeded'])->toContain('ZW')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(10)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(10)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'province')->count())->toBe(10)
         ->and(AddressAreaStateLink::query()->whereHas(

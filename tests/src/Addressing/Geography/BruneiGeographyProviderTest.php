@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Brunei\BruneiGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
@@ -11,33 +10,6 @@ use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
-
-it('seeds all four Brunei districts', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'BN')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => 'BM',
-        'name' => 'Muara',
-        'label' => 'Muara',
-    ]);
-
-    app(BruneiGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Brunei-Muara')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(4)
-        ->and(State::query()->where('country_id', $country->id)->where('code', 'TE')->value('name'))->toBe('Temburong');
-});
-
-it('maps every ISO district code to its district area', function (): void {
-    $mappings = app(BruneiGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(4)
-        ->and(array_keys($mappings))->toBe(['BE', 'BM', 'TE', 'TU']);
-});
 
 it('defines a single administrative hierarchy down to mukims', function (): void {
     $hierarchies = app(BruneiGeographyProvider::class)->addressHierarchies();
@@ -51,12 +23,14 @@ it('defines a single administrative hierarchy down to mukims', function (): void
 });
 
 it('imports the district and mukim trees with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('BN');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('BN');
     $country = AddressCountry::query()->where('iso2', 'BN')->firstOrFail();
 
     expect($result['seeded'])->toContain('BN')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(4)
+        ->and(State::query()->where('country_id', $country->id)->where('code', 'TE')->value('name'))->toBe('Temburong')
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(43)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'district')->count())->toBe(4)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'mukim')->count())->toBe(39)

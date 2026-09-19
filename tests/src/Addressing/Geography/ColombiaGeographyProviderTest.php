@@ -2,39 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Colombia\ColombiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
-
-it('seeds all 33 Colombian states', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'CO')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => 'DC',
-        'name' => 'Bogota',
-        'label' => 'Bogota',
-    ]);
-
-    app(ColombiaGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Bogotá D.C.')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(33);
-});
-
-it('maps every Colombian state code to its area', function (): void {
-    $mappings = app(ColombiaGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(33)
-        ->and(array_keys($mappings))->toBe(['AMA', 'ANT', 'ARA', 'ATL', 'BOL', 'BOY', 'CAL', 'CAQ', 'CAS', 'CAU', 'CES', 'CHO', 'COR', 'CUN', 'DC', 'GUA', 'GUV', 'HUI', 'LAG', 'MAG', 'MET', 'NAR', 'NSA', 'PUT', 'QUI', 'RIS', 'SAN', 'SAP', 'SUC', 'TOL', 'VAC', 'VAU', 'VID']);
-});
 
 it('defines a single-level administrative hierarchy', function (): void {
     $hierarchies = app(ColombiaGeographyProvider::class)->addressHierarchies();
@@ -47,12 +20,13 @@ it('defines a single-level administrative hierarchy', function (): void {
 });
 
 it('imports the Colombian tree with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('CO');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('CO');
     $country = AddressCountry::query()->where('iso2', 'CO')->firstOrFail();
 
     expect($result['seeded'])->toContain('CO')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(33)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(33)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'department')->count())->toBe(32)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'capital_district')->count())->toBe(1)

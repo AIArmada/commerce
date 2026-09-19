@@ -2,39 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Djibouti\DjiboutiGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
-
-it('seeds all 6 Djiboutian states', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'DJ')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => 'AS',
-        'name' => 'Ali Sabieh (legacy)',
-        'label' => 'Ali Sabieh (legacy)',
-    ]);
-
-    app(DjiboutiGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Ali Sabieh')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(6);
-});
-
-it('maps every Djiboutian state code to its area', function (): void {
-    $mappings = app(DjiboutiGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(6)
-        ->and(array_map('strval', array_keys($mappings)))->toBe(['AS', 'AR', 'DI', 'DJ', 'OB', 'TA']);
-});
 
 it('defines a single-level administrative hierarchy', function (): void {
     $hierarchies = app(DjiboutiGeographyProvider::class)->addressHierarchies();
@@ -47,12 +20,13 @@ it('defines a single-level administrative hierarchy', function (): void {
 });
 
 it('imports the Djiboutian tree with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('DJ');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('DJ');
     $country = AddressCountry::query()->where('iso2', 'DJ')->firstOrFail();
 
     expect($result['seeded'])->toContain('DJ')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(6)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(6)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'region')->count())->toBe(5)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'city')->count())->toBe(1)

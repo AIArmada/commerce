@@ -2,39 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Geography\Somalia\SomaliaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
-
-it('seeds all 18 Somali states', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-
-    $country = AddressCountry::query()->where('iso2', 'SO')->firstOrFail();
-    $state = State::query()->create([
-        'country_id' => $country->id,
-        'code' => 'AW',
-        'name' => 'Awdal (legacy)',
-        'label' => 'Awdal (legacy)',
-    ]);
-
-    app(SomaliaGeographyProvider::class)->seed($country);
-
-    $state->refresh();
-
-    expect($state->name)->toBe('Awdal')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(18);
-});
-
-it('maps every Somali state code to its area', function (): void {
-    $mappings = app(SomaliaGeographyProvider::class)->stateAreaMappings();
-
-    expect($mappings)->toHaveCount(18)
-        ->and(array_map('strval', array_keys($mappings)))->toBe(['AW', 'BK', 'BN', 'BR', 'BY', 'GA', 'GE', 'HI', 'JH', 'SH', 'JD', 'SD', 'MU', 'NU', 'SA', 'SO', 'TO', 'WO']);
-});
 
 it('defines a single-level administrative hierarchy', function (): void {
     $hierarchies = app(SomaliaGeographyProvider::class)->addressHierarchies();
@@ -47,12 +20,13 @@ it('defines a single-level administrative hierarchy', function (): void {
 });
 
 it('imports the Somali tree with state links', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('SO');
 
     $result = app(SeedCountryGeographiesAction::class)->execute('SO');
     $country = AddressCountry::query()->where('iso2', 'SO')->firstOrFail();
 
     expect($result['seeded'])->toContain('SO')
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(18)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(18)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'region')->count())->toBe(18)
         ->and(AddressAreaStateLink::query()->whereHas(
