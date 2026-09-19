@@ -62,6 +62,16 @@ class KuwaitGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['governorate'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'area',
+                        label: 'Area',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['area'],
+                        areaLevels: [2],
+                        parentKey: 'governorate',
+                        assignmentRole: 'area',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class KuwaitGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'governorate' => ['governorate'],
+                'area' => ['area'],
                 default => [],
             };
 

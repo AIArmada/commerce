@@ -8,7 +8,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `brunei-address-areas.csv` — used by `BruneiGeographyProvider`. Districts per ISO 3166-2:BN; 39 mukims per the government-cited mukim list (18/8/8/5 split). Mukim spelling `Pengkalan Batu` follows Brunei government sources.
 - `bahrain-address-areas.csv` — used by `BahrainGeographyProvider`. 4 governorates per ISO 3166-2:BH.
 - `qatar-address-areas.csv` — used by `QatarGeographyProvider`. 8 municipalities; official English spellings with ISO names aliased.
-- `kuwait-address-areas.csv` — used by `KuwaitGeographyProvider`. 6 governorates per ISO 3166-2:KW.
+- `kuwait-address-areas.csv` — used by `KuwaitGeographyProvider`. 6 governorates per ISO 3166-2:KW with 134 areas at L2 (31/29/24/20/17/13); uninhabited islands excluded.
 - `jordan-address-areas.csv` — used by `JordanGeographyProvider`. 12 governorates per ISO 3166-2:JO.
 - `oman-address-areas.csv` — used by `OmanGeographyProvider`. 11 governorates per ISO 3166-2:OM plus 63 wilayats.
 - `united-arab-emirates-address-areas.csv` — used by `UnitedArabEmiratesGeographyProvider`. 7 emirates.
@@ -133,7 +133,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `croatia-address-areas.csv` — used by `CroatiaGeographyProvider`. 20 counties incl. Zagreb.
 - `czech-republic-address-areas.csv` — used by `CzechRepublicGeographyProvider`. 13 regions + Praha with 76 districts at L2 (12/7/7/7/7/6/5/5/5/4/4/4/3; Praha childless).
 - `denmark-address-areas.csv` — used by `DenmarkGeographyProvider`. 5 regions.
-- `estonia-address-areas.csv` — used by `EstoniaGeographyProvider`. 15 counties + 79 municipalities flat at L1; county/municipality twins share names.
+- `estonia-address-areas.csv` — used by `EstoniaGeographyProvider`. 15 counties with 79 municipalities at L2 (16/8/8/8/7/5/4/4/3/3/3/3/3/3/1; Toila merged into Jõhvi 2025); county/municipality twins share names.
 - `finland-address-areas.csv` — used by `FinlandGeographyProvider`. 18 regions.
 - `greece-address-areas.csv` — used by `GreeceGeographyProvider`. 13 regions + 2 regional units.
 - `hungary-address-areas.csv` — used by `HungaryGeographyProvider`. 20 counties + 22 county-rights cities + Budapest.

@@ -163,9 +163,14 @@ city, and country with no postcode line.
 ## Kuwait
 
 The bundled `KuwaitGeographyProvider` supplies the six ISO 3166-2
-governorates as `State` rows and a single-level administrative
-hierarchy. It is selected with
+governorates as `State` rows with 134 postal areas as level-2 areas
+(31 Capital, 29 Ahmadi, 24 Jahra, 20 Farwaniya, 17 Hawalli, 13 Mubarak
+Al-Kabeer) in a two-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('KW')` after countries are seeded.
+Uninhabited islands (Miskan, Umm an Namil, Bubiyan, Warbah) are excluded;
+blocks and per-area postcodes stay out of scope, and governorate/area
+name twins (Farwaniya, Ahmadi, Jahra, Hawalli, Mubarak Al-Kabeer) share
+names by design; filter by type.
 
 Kuwaiti addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode left of the locality,
@@ -1718,9 +1723,13 @@ optional `DK-` prefix passes through when supplied.
 ## Estonia
 
 The bundled `EstoniaGeographyProvider` supplies the 15 counties
-and 79 municipalities flat at level 1 as `State` rows and a
-single-level administrative hierarchy. It is selected with
+as `State` rows with the 79 municipalities as level-2 areas (16 Harju,
+8 each Ida-Viru/Tartu/Lääne-Viru, 7 Pärnu, 5 Võru, 4 each Rapla/Viljandi,
+3 each Lääne/Järva/Jõgeva/Põlva/Saare/Valga, 1 Hiiu) in a two-level
+administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('EE')` after countries are seeded.
+Toila merged into Jõhvi in 2025; the bundled data still lists 79
+municipalities pending a states.json refresh.
 County/municipality name twins share names by design; filter by type.
 
 Estonian addresses are formatted per the UPU layout: street lines,

@@ -10,8 +10,8 @@ counts, or changes scope. See [Country Data](./05-country-data.md)
 for per-country narrative and [Provider Authoring](./13-provider-authoring.md)
 for how to add a level.
 
-Current shape: 229 providers — 2 dual-hierarchy, 1 depth-3, 16 depth-2,
-210 depth-1.
+Current shape: 229 providers — 2 dual-hierarchy, 1 depth-3, 18 depth-2,
+208 depth-1.
 All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 above6 below28 after country1), 48 codeless.
 
 ## Legend
@@ -99,7 +99,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | El Salvador | SV | 14 | 14 | 14 | 1 | administrative: department | — | ← | L1 |
 | Equatorial Guinea | GQ | 2 | 2 | 10 | 2 | administrative: region > province | province | none | Complete — 2 regions + 8 provinces |
 | Eritrea | ER | 6 | 6 | 6 | 1 | administrative: region | — | none | L1 |
-| Estonia | EE | 94 | 94 | 94 | 1 | administrative: county | — | ← | L1 — 15 counties + 79 municipalities flat; depth-2 candidate |
+| Estonia | EE | 15 | 15 | 94 | 2 | administrative: county > municipality | municipality | ← | Complete — 15 counties + 79 municipalities (Toila merged into Jõhvi 2025, refresh pending) |
 | Eswatini | SZ | 4 | 4 | 4 | 1 | administrative: region | — | below | L1 |
 | Ethiopia | ET | 14 | 14 | 14 | 1 | administrative: region | — | ← | L1; SN dissolved on seed |
 | Faroe Islands | FO | 6 | 6 | 6 | 1 | administrative: region | — | ← | L1 — 6 regions |
@@ -146,7 +146,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Kenya | KE | 47 | 47 | 47 | 1 | administrative: county | — | below | L1 |
 | Kiribati | KI | 3 | 3 | 3 | 1 | administrative: island | — | → | L1 — 3 island groups |
 | Kosovo | XK | 7 | 7 | 7 | 1 | administrative: district | — | ← | L1 |
-| Kuwait | KW | 6 | 6 | 6 | 1 | administrative: governorate | — | ← | L1; postal areas (~100) candidate |
+| Kuwait | KW | 6 | 6 | 140 | 2 | administrative: governorate > area | area | ← | Complete — 6 governorates + 134 areas; blocks and per-area postcodes out of scope |
 | Kyrgyzstan | KG | 9 | 9 | 9 | 1 | administrative: region | — | ← | L1 — 7 regions + Bishkek/Osh |
 | Laos | LA | 18 | 18 | 18 | 1 | administrative: province | — | ← | L1 — 17 provinces + Vientiane Prefecture; muang out of scope |
 | Latvia | LV | 43 | 43 | 43 | 1 | administrative: municipality | — | → | L1 — 36 municipalities + 7 state cities; 3 twins share names |
