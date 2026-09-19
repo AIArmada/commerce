@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Botswana\BotswanaAddressFormatter;
 use AIArmada\Addressing\Geography\Botswana\BotswanaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -35,4 +37,23 @@ it('imports the Botswanan tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(16);
+});
+
+it('formats Botswanan addresses without a postcode system', function (): void {
+    $formatted = app(BotswanaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P.O. Box 231',
+        'city' => 'HUKUNTSI',
+        'country_code' => 'BW',
+    ]));
+
+    expect($formatted)->toBe("P.O. Box 231\nHUKUNTSI\nBotswana");
+});
+it('formats Botswanan private bag addresses with the town only', function (): void {
+    $formatted = app(BotswanaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P/Bag 1061',
+        'city' => 'GABORONE',
+        'country_code' => 'BW',
+    ]));
+
+    expect($formatted)->toBe("P/Bag 1061\nGABORONE\nBotswana");
 });

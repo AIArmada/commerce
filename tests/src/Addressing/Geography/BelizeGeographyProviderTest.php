@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Belize\BelizeAddressFormatter;
 use AIArmada\Addressing\Geography\Belize\BelizeGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,24 @@ it('imports the Belizean tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(6);
+});
+
+it('formats Belizean addresses without a postcode system', function (): void {
+    $formatted = app(BelizeAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'C Street  Apt 2',
+        'city' => 'KINGS PARK, BELIZE CITY',
+        'country_code' => 'BZ',
+    ]));
+
+    expect($formatted)->toBe("C Street  Apt 2\nKINGS PARK, BELIZE CITY\nBelize");
+});
+it('prints any supplied Belizean code on its own line', function (): void {
+    $formatted = app(BelizeAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'C Street  Apt 2',
+        'city' => 'BELIZE CITY',
+        'postcode' => '99999',
+        'country_code' => 'BZ',
+    ]));
+
+    expect($formatted)->toBe("C Street  Apt 2\nBELIZE CITY\n99999\nBelize");
 });

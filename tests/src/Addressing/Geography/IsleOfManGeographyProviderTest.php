@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\IsleOfMan\IsleOfManAddressFormatter;
 use AIArmada\Addressing\Geography\IsleOfMan\IsleOfManGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,26 @@ it('imports the Manx tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(6);
+});
+
+it('formats Manx addresses with the postcode below the post town', function (): void {
+    $formatted = app(IsleOfManAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P.O. Box 177',
+        'city' => 'DOUGLAS',
+        'postcode' => 'IM99 1PS',
+        'country_code' => 'IM',
+    ]));
+
+    expect($formatted)->toBe("P.O. Box 177\nDOUGLAS\nIM99 1PS\nIsle of Man");
+});
+it('formats Manx street addresses with the sheading below the town', function (): void {
+    $formatted = app(IsleOfManAddressFormatter::class)->format(AddressData::from([
+        'line1' => '50 Athol Street',
+        'city' => 'Douglas',
+        'state' => 'Middle',
+        'postcode' => 'IM1 1JB',
+        'country_code' => 'IM',
+    ]));
+
+    expect($formatted)->toBe("50 Athol Street\nDouglas\nMiddle\nIM1 1JB\nIsle of Man");
 });

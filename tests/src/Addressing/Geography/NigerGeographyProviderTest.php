@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Niger\NigerAddressFormatter;
 use AIArmada\Addressing\Geography\Niger\NigerGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,26 @@ it('imports the Nigerien tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(8);
+});
+
+it('formats Nigerien addresses with the postcode left of the locality', function (): void {
+    $formatted = app(NigerAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'BP 502',
+        'city' => 'NIAMEY',
+        'postcode' => '8001',
+        'country_code' => 'NE',
+    ]));
+
+    expect($formatted)->toBe("BP 502\n8001 NIAMEY\nNiger");
+});
+it('formats Nigerien addresses keeping the abbreviated capital above the region', function (): void {
+    $formatted = app(NigerAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'BP 502',
+        'city' => 'NY',
+        'state' => 'Niamey',
+        'postcode' => '8000',
+        'country_code' => 'NE',
+    ]));
+
+    expect($formatted)->toBe("BP 502\n8000 NY\nNiamey\nNiger");
 });

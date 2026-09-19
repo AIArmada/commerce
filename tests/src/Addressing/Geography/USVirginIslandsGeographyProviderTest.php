@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\USVirginIslands\USVirginIslandsAddressFormatter;
 use AIArmada\Addressing\Geography\USVirginIslands\USVirginIslandsGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the US Virgin Islander tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(3);
+});
+
+it('formats US Virgin Islander addresses as locality VI ZIP', function (): void {
+    $formatted = app(USVirginIslandsAddressFormatter::class)->format(AddressData::from([
+        'line1' => '123 Main St.',
+        'city' => 'ST THOMAS',
+        'postcode' => '00802-1222',
+        'country_code' => 'VI',
+    ]));
+
+    expect($formatted)->toBe("123 Main St.\nST THOMAS VI 00802-1222\nVirgin Islands (US)");
+});
+it('formats Kingshill addresses with the rural route ZIP', function (): void {
+    $formatted = app(USVirginIslandsAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'RR 1 BOX 6601',
+        'city' => 'KINGSHILL',
+        'postcode' => '00850-9802',
+        'country_code' => 'VI',
+    ]));
+
+    expect($formatted)->toBe("RR 1 BOX 6601\nKINGSHILL VI 00850-9802\nVirgin Islands (US)");
 });

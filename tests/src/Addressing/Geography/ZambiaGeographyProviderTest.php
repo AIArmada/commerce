@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Zambia\ZambiaAddressFormatter;
 use AIArmada\Addressing\Geography\Zambia\ZambiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the Zambian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(10);
+});
+
+it('formats Zambian addresses with the postcode right of the locality', function (): void {
+    $formatted = app(ZambiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '21 Independence Avenue',
+        'city' => 'KITWE',
+        'postcode' => '23456',
+        'country_code' => 'ZM',
+    ]));
+
+    expect($formatted)->toBe("21 Independence Avenue\nKITWE 23456\nZambia");
+});
+it('formats Zambian addresses omitting the routinely skipped postcode', function (): void {
+    $formatted = app(ZambiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '21 Independence Avenue',
+        'city' => 'LUSAKA',
+        'state' => 'Lusaka',
+        'country_code' => 'ZM',
+    ]));
+
+    expect($formatted)->toBe("21 Independence Avenue\nLUSAKA\nZambia");
 });

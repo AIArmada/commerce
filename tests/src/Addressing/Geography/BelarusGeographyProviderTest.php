@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Belarus\BelarusAddressFormatter;
 use AIArmada\Addressing\Geography\Belarus\BelarusGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,26 @@ it('imports the Belarusian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(7);
+});
+
+it('formats Belarusian addresses with the postcode and comma left of the locality', function (): void {
+    $formatted = app(BelarusAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'pr-t Masherova, d.1, kv.12',
+        'city' => 'Minsk',
+        'postcode' => '220005',
+        'country_code' => 'BY',
+    ]));
+
+    expect($formatted)->toBe("pr-t Masherova, d.1, kv.12\n220005, Minsk\nBelarus");
+});
+it('formats Belarusian rural addresses with the oblast below the postcode line', function (): void {
+    $formatted = app(BelarusAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'ul. Lenina, d.3',
+        'city' => 'Brest',
+        'state' => 'Brest',
+        'postcode' => '224000',
+        'country_code' => 'BY',
+    ]));
+
+    expect($formatted)->toBe("ul. Lenina, d.3\n224000, Brest\nBelarus");
 });

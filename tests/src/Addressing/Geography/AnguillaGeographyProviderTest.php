@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Anguilla\AnguillaAddressFormatter;
 use AIArmada\Addressing\Geography\Anguilla\AnguillaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,24 @@ it('imports the Anguillan tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(14);
+});
+
+it('formats Anguillan addresses with the single code below the locality', function (): void {
+    $formatted = app(AnguillaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P.O. Box 60',
+        'city' => 'The Valley',
+        'postcode' => 'AI-2640',
+        'country_code' => 'AI',
+    ]));
+
+    expect($formatted)->toBe("P.O. Box 60\nThe Valley\nAI-2640\nAnguilla");
+});
+it('formats Anguillan addresses without a postcode when missing', function (): void {
+    $formatted = app(AnguillaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P.O. Box 60',
+        'city' => 'The Valley',
+        'country_code' => 'AI',
+    ]));
+
+    expect($formatted)->toBe("P.O. Box 60\nThe Valley\nAnguilla");
 });

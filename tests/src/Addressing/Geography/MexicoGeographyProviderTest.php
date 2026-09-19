@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Mexico\MexicoAddressFormatter;
 use AIArmada\Addressing\Geography\Mexico\MexicoGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,16 @@ it('imports the Mexican tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(32);
+});
+
+it('formats Mexican addresses with the postcode left and abbreviation after', function (): void {
+    $formatted = app(MexicoAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Insurgentes Sur 1602',
+        'city' => 'MEXICO',
+        'state' => 'Ciudad de México',
+        'postcode' => '02860',
+        'country_code' => 'MX',
+    ]));
+
+    expect($formatted)->toBe("Insurgentes Sur 1602\n02860 MEXICO, CDMX\nMexico");
 });

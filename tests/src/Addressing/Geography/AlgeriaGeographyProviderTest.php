@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Algeria\AlgeriaAddressFormatter;
 use AIArmada\Addressing\Geography\Algeria\AlgeriaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,15 @@ it('imports the Algerian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(58);
+});
+
+it('formats Algerian addresses with the postcode left of the locality', function (): void {
+    $formatted = app(AlgeriaAddressFormatter::class)->format(AddressData::from([
+        'line1' => "2, rue de l'Indépendance",
+        'city' => 'ALGIERS',
+        'postcode' => '16027',
+        'country_code' => 'DZ',
+    ]));
+
+    expect($formatted)->toBe("2, rue de l'Indépendance\n16027 ALGIERS\nAlgeria");
 });

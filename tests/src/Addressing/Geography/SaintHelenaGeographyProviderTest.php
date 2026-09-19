@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\SaintHelena\SaintHelenaAddressFormatter;
 use AIArmada\Addressing\Geography\SaintHelena\SaintHelenaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,26 @@ it('imports the Saint Helenian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(8);
+});
+
+it('formats Saint Helena addresses with the code right of the locality', function (): void {
+    $formatted = app(SaintHelenaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '95 MARKET STREET',
+        'city' => 'JAMESTOWN',
+        'postcode' => 'STHL 1ZZ',
+        'country_code' => 'SH',
+    ]));
+
+    expect($formatted)->toBe("95 MARKET STREET\nJAMESTOWN STHL 1ZZ\nSaint Helena");
+});
+
+it('formats Ascension addresses with their own code', function (): void {
+    $formatted = app(SaintHelenaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO Box 1',
+        'city' => 'Georgetown',
+        'postcode' => 'ASCN 1ZZ',
+        'country_code' => 'SH',
+    ]));
+
+    expect($formatted)->toBe("PO Box 1\nGeorgetown ASCN 1ZZ\nSaint Helena");
 });

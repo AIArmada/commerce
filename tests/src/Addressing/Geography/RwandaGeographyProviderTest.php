@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Rwanda\RwandaAddressFormatter;
 use AIArmada\Addressing\Geography\Rwanda\RwandaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,24 @@ it('imports the Rwandan tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(5);
+});
+
+it('formats Rwandan addresses without a postcode system', function (): void {
+    $formatted = app(RwandaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'B.P. 3425',
+        'city' => 'KIGALI',
+        'country_code' => 'RW',
+    ]));
+
+    expect($formatted)->toBe("B.P. 3425\nKIGALI\nRwanda");
+});
+it('formats Rwandan addresses with the province below the locality', function (): void {
+    $formatted = app(RwandaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'KN 3 Road',
+        'city' => 'Butare',
+        'state' => 'Southern',
+        'country_code' => 'RW',
+    ]));
+
+    expect($formatted)->toBe("KN 3 Road\nButare\nSouthern\nRwanda");
 });

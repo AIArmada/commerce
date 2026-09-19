@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Jordan\JordanAddressFormatter;
 use AIArmada\Addressing\Geography\Jordan\JordanGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,15 @@ it('imports the Jordanian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(12);
+});
+
+it('formats Jordanian addresses with the postcode right of the locality', function (): void {
+    $formatted = app(JordanAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Al Mohazab Al Halabi',
+        'city' => 'AMMAN',
+        'postcode' => '11937',
+        'country_code' => 'JO',
+    ]));
+
+    expect($formatted)->toBe("Al Mohazab Al Halabi\nAMMAN 11937\nJordan");
 });

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Bangladesh\BangladeshAddressFormatter;
 use AIArmada\Addressing\Geography\Bangladesh\BangladeshGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
@@ -46,4 +48,16 @@ it('imports the Bangladeshi tree with state links', function (): void {
         ->where('child_address_area_id', $child->getKey())
         ->where('hierarchy_type', 'administrative')
         ->exists())->toBeTrue();
+});
+
+it('formats Bangladeshi addresses with spaced dash postcodes and thana', function (): void {
+    $formatted = app(BangladeshAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Vil Genda',
+        'components' => ['thana' => 'Savar'],
+        'city' => 'DHAKA',
+        'postcode' => '1340',
+        'country_code' => 'BD',
+    ]));
+
+    expect($formatted)->toBe("Vil Genda\nSavar\nDHAKA - 1340\nBangladesh");
 });

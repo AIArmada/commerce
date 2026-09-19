@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Benin\BeninAddressFormatter;
 use AIArmada\Addressing\Geography\Benin\BeninGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,24 @@ it('imports the Beninese tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(12);
+});
+
+it('formats Beninese addresses without a postcode system', function (): void {
+    $formatted = app(BeninAddressFormatter::class)->format(AddressData::from([
+        'line1' => '10 BP 648',
+        'city' => 'COTONOU',
+        'country_code' => 'BJ',
+    ]));
+
+    expect($formatted)->toBe("10 BP 648\nCOTONOU\nBenin");
+});
+it('prints any supplied Beninese code on its own line', function (): void {
+    $formatted = app(BeninAddressFormatter::class)->format(AddressData::from([
+        'line1' => '10 BP 648',
+        'city' => 'COTONOU',
+        'postcode' => '99999',
+        'country_code' => 'BJ',
+    ]));
+
+    expect($formatted)->toBe("10 BP 648\nCOTONOU\n99999\nBenin");
 });

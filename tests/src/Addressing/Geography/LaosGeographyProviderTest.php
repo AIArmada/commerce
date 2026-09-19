@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Laos\LaosAddressFormatter;
 use AIArmada\Addressing\Geography\Laos\LaosGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,26 @@ it('imports the Laotian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(18);
+});
+
+it('formats Laotian addresses with the postcode left of the locality', function (): void {
+    $formatted = app(LaosAddressFormatter::class)->format(AddressData::from([
+        'line1' => '14, rue That Louang',
+        'city' => 'XAYSETHA',
+        'postcode' => '01160',
+        'country_code' => 'LA',
+    ]));
+
+    expect($formatted)->toBe("14, rue That Louang\n01160 XAYSETHA\nLaos");
+});
+it('formats Laotian addresses with the province below the postcode locality line', function (): void {
+    $formatted = app(LaosAddressFormatter::class)->format(AddressData::from([
+        'line1' => '14, rue That Louang',
+        'city' => 'Xaysetha',
+        'state' => 'Vientiane',
+        'postcode' => '01160',
+        'country_code' => 'LA',
+    ]));
+
+    expect($formatted)->toBe("14, rue That Louang\n01160 Xaysetha\nVientiane\nLaos");
 });

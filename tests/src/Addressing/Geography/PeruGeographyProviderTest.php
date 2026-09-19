@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Peru\PeruAddressFormatter;
 use AIArmada\Addressing\Geography\Peru\PeruGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,15 @@ it('imports the Peruvian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(26);
+});
+
+it('formats Peruvian addresses with the postcode above the province', function (): void {
+    $formatted = app(PeruAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Jr. Jorge Salazar Araoz. N° 171',
+        'state' => 'LIMA',
+        'postcode' => '15074',
+        'country_code' => 'PE',
+    ]));
+
+    expect($formatted)->toBe("Jr. Jorge Salazar Araoz. N° 171\n15074\nLIMA\nPeru");
 });

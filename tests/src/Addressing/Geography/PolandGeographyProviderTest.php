@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Poland\PolandAddressFormatter;
 use AIArmada\Addressing\Geography\Poland\PolandGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,15 @@ it('imports the Polish tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(16);
+});
+
+it('formats Polish addresses with the dashed postcode left of the locality', function (): void {
+    $formatted = app(PolandAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Ul. Kręta 15m 10',
+        'city' => 'WARSZAWA',
+        'postcode' => '00-950',
+        'country_code' => 'PL',
+    ]));
+
+    expect($formatted)->toBe("Ul. Kręta 15m 10\n00-950 WARSZAWA\nPoland");
 });

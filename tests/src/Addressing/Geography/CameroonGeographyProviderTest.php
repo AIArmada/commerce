@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Cameroon\CameroonAddressFormatter;
 use AIArmada\Addressing\Geography\Cameroon\CameroonGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,14 @@ it('imports the Cameroonian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(10);
+});
+
+it('formats Cameroonian addresses without a postcode line', function (): void {
+    $formatted = app(CameroonAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'B.P. 8035',
+        'city' => 'YAOUNDE',
+        'country_code' => 'CM',
+    ]));
+
+    expect($formatted)->toBe("B.P. 8035\nYAOUNDE\nCameroon");
 });

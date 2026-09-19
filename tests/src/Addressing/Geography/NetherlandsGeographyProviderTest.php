@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Netherlands\NetherlandsAddressFormatter;
 use AIArmada\Addressing\Geography\Netherlands\NetherlandsGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,15 @@ it('imports the Dutch tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(12);
+});
+
+it('formats Dutch addresses with two spaces after the postcode', function (): void {
+    $formatted = app(NetherlandsAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Drieslag 5-1',
+        'city' => 'ARNHEM',
+        'postcode' => '6832 am',
+        'country_code' => 'NL',
+    ]));
+
+    expect($formatted)->toBe("Drieslag 5-1\n6832 AM  ARNHEM\nNetherlands");
 });

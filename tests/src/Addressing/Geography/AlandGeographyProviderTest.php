@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Aland\AlandAddressFormatter;
 use AIArmada\Addressing\Geography\Aland\AlandGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the Alander tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(16);
+});
+
+it('formats Alander addresses with the prefixed postcode left of the town', function (): void {
+    $formatted = app(AlandAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Stadshusparken',
+        'city' => 'MARIEHAMN',
+        'postcode' => 'AX-22100',
+        'country_code' => 'AX',
+    ]));
+
+    expect($formatted)->toBe("Stadshusparken\nAX-22100 MARIEHAMN\nAland Islands");
+});
+it('formats Alander domestic addresses with a bare postcode', function (): void {
+    $formatted = app(AlandAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Stadshusparken',
+        'city' => 'MARIEHAMN',
+        'postcode' => '22100',
+        'country_code' => 'AX',
+    ]));
+
+    expect($formatted)->toBe("Stadshusparken\n22100 MARIEHAMN\nAland Islands");
 });

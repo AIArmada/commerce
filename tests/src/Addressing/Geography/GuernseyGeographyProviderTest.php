@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Guernsey\GuernseyAddressFormatter;
 use AIArmada\Addressing\Geography\Guernsey\GuernseyGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,27 @@ it('imports the Guernsey tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(12);
+});
+
+it('formats Guernsey addresses with the postcode below the post town', function (): void {
+    $formatted = app(GuernseyAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Anybank House',
+        'line2' => 'Le Pollet',
+        'line3' => 'St Peter Port',
+        'city' => 'GUERNSEY',
+        'postcode' => 'GY1 1AA',
+        'country_code' => 'GG',
+    ]));
+
+    expect($formatted)->toBe("Anybank House\nLe Pollet\nSt Peter Port\nGUERNSEY\nGY1 1AA\nGuernsey");
+});
+it('formats Sark addresses with the two-digit district postcode', function (): void {
+    $formatted = app(GuernseyAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'La Seigneurie',
+        'city' => 'SARK',
+        'postcode' => 'GY10 1SF',
+        'country_code' => 'GG',
+    ]));
+
+    expect($formatted)->toBe("La Seigneurie\nSARK\nGY10 1SF\nGuernsey");
 });

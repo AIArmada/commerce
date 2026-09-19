@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Pakistan\PakistanAddressFormatter;
 use AIArmada\Addressing\Geography\Pakistan\PakistanGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
@@ -55,4 +57,15 @@ it('imports the Pakistani tree with state links', function (): void {
         ->where('child_address_area_id', $child->getKey())
         ->where('hierarchy_type', 'administrative')
         ->exists())->toBeTrue();
+});
+
+it('formats Pakistani addresses with dash-separated postcodes', function (): void {
+    $formatted = app(PakistanAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'House No 17-B',
+        'city' => 'ISLAMABAD',
+        'postcode' => '44000',
+        'country_code' => 'PK',
+    ]));
+
+    expect($formatted)->toBe("House No 17-B\nISLAMABAD-44000\nPakistan");
 });

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Syria\SyriaAddressFormatter;
 use AIArmada\Addressing\Geography\Syria\SyriaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the Syrian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(14);
+});
+
+it('formats Syrian addresses without a postcode system', function (): void {
+    $formatted = app(SyriaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Rue Youssef Al Azamah, no 25',
+        'city' => 'DAMASCUS',
+        'state' => 'Damascus',
+        'country_code' => 'SY',
+    ]));
+
+    expect($formatted)->toBe("Rue Youssef Al Azamah, no 25\nDAMASCUS\nSyria");
+});
+it('prints any supplied Syrian code on its own line', function (): void {
+    $formatted = app(SyriaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Rue Youssef Al Azamah, no 25',
+        'city' => 'DAMASCUS',
+        'postcode' => '0100',
+        'country_code' => 'SY',
+    ]));
+
+    expect($formatted)->toBe("Rue Youssef Al Azamah, no 25\nDAMASCUS\n0100\nSyria");
 });

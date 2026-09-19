@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Somalia\SomaliaAddressFormatter;
 use AIArmada\Addressing\Geography\Somalia\SomaliaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,24 @@ it('imports the Somali tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(18);
+});
+
+it('formats Somali addresses without an operational postcode', function (): void {
+    $formatted = app(SomaliaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P.O. Box 1001',
+        'city' => 'KISMAYU',
+        'country_code' => 'SO',
+    ]));
+
+    expect($formatted)->toBe("P.O. Box 1001\nKISMAYU\nSomalia");
+});
+it('prints any supplied Somali paper code on its own line', function (): void {
+    $formatted = app(SomaliaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P.O. Box 1001',
+        'city' => 'KISMAYU',
+        'postcode' => 'JH 09010',
+        'country_code' => 'SO',
+    ]));
+
+    expect($formatted)->toBe("P.O. Box 1001\nKISMAYU\nJH 09010\nSomalia");
 });

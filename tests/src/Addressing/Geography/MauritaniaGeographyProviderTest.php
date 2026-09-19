@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Mauritania\MauritaniaAddressFormatter;
 use AIArmada\Addressing\Geography\Mauritania\MauritaniaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,24 @@ it('imports the Mauritanian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(15);
+});
+
+it('formats Mauritanian addresses without a postcode system', function (): void {
+    $formatted = app(MauritaniaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'B.P. 35',
+        'city' => 'NOUAKCHOTT',
+        'country_code' => 'MR',
+    ]));
+
+    expect($formatted)->toBe("B.P. 35\nNOUAKCHOTT\nMauritania");
+});
+it('prints any supplied Mauritanian code on its own line', function (): void {
+    $formatted = app(MauritaniaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'B.P. 35',
+        'city' => 'NOUAKCHOTT',
+        'postcode' => '99999',
+        'country_code' => 'MR',
+    ]));
+
+    expect($formatted)->toBe("B.P. 35\nNOUAKCHOTT\n99999\nMauritania");
 });

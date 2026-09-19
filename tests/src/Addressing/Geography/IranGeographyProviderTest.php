@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Iran\IranAddressFormatter;
 use AIArmada\Addressing\Geography\Iran\IranGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,27 @@ it('imports the Iranian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(31);
+});
+
+it('formats Iranian addresses with the postcode below the province', function (): void {
+    $formatted = app(IranAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'West 196 street',
+        'line2' => 'No. 12 third floor',
+        'city' => 'Tehranpars',
+        'state' => 'Tehran Province',
+        'postcode' => '1619614153',
+        'country_code' => 'IR',
+    ]));
+
+    expect($formatted)->toBe("West 196 street\nNo. 12 third floor\nTehranpars\nTehran Province\n1619614153\nIran");
+});
+it('formats Iranian addresses without a postcode line when missing', function (): void {
+    $formatted = app(IranAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'West 196 street',
+        'city' => 'Tehranpars',
+        'state' => 'Tehran Province',
+        'country_code' => 'IR',
+    ]));
+
+    expect($formatted)->toBe("West 196 street\nTehranpars\nTehran Province\nIran");
 });

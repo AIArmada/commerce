@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Uganda\UgandaAddressFormatter;
 use AIArmada\Addressing\Geography\Uganda\UgandaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,15 @@ it('imports the Ugandan tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(4);
+});
+
+it('formats Ugandan addresses with the postcode left of the locality', function (): void {
+    $formatted = app(UgandaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '22 Siad Barre Avenue',
+        'city' => 'KAMPALA',
+        'postcode' => '10000',
+        'country_code' => 'UG',
+    ]));
+
+    expect($formatted)->toBe("22 Siad Barre Avenue\n10000 KAMPALA\nUganda");
 });

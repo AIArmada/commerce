@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\TrinidadAndTobago\TrinidadAndTobagoAddressFormatter;
 use AIArmada\Addressing\Geography\TrinidadAndTobago\TrinidadAndTobagoGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -36,4 +38,25 @@ it('imports the Trinidadian and Tobagonian tree with state links', function (): 
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(17);
+});
+
+it('formats Trinidadian addresses with the postcode right of the locality', function (): void {
+    $formatted = app(TrinidadAndTobagoAddressFormatter::class)->format(AddressData::from([
+        'line1' => '135-137 Southern Main Road',
+        'city' => 'CHAGUANAS',
+        'postcode' => '500234',
+        'country_code' => 'TT',
+    ]));
+
+    expect($formatted)->toBe("135-137 Southern Main Road\nCHAGUANAS 500234\nTrinidad and Tobago");
+});
+it('formats Port-of-Spain addresses with the box postcode', function (): void {
+    $formatted = app(TrinidadAndTobagoAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO Box 1872',
+        'city' => 'PORT-OF-SPAIN',
+        'postcode' => '150123',
+        'country_code' => 'TT',
+    ]));
+
+    expect($formatted)->toBe("PO Box 1872\nPORT-OF-SPAIN 150123\nTrinidad and Tobago");
 });

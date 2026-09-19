@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Argentina\ArgentinaAddressFormatter;
 use AIArmada\Addressing\Geography\Argentina\ArgentinaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,15 @@ it('imports the Argentine tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(24);
+});
+
+it('formats Argentine addresses with the CPA postcode left of the locality', function (): void {
+    $formatted = app(ArgentinaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'TUCUMAN 1560',
+        'city' => 'VILLA MARIA',
+        'postcode' => 'Y5900FNF',
+        'country_code' => 'AR',
+    ]));
+
+    expect($formatted)->toBe("TUCUMAN 1560\nY5900FNF VILLA MARIA\nArgentina");
 });

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Israel\IsraelAddressFormatter;
 use AIArmada\Addressing\Geography\Israel\IsraelGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the Israeli tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(6);
+});
+
+it('formats Israeli addresses with the 7-digit postcode left of the locality', function (): void {
+    $formatted = app(IsraelAddressFormatter::class)->format(AddressData::from([
+        'line1' => '16 Yafo Street',
+        'city' => 'JERUSALEM',
+        'postcode' => '9414219',
+        'country_code' => 'IL',
+    ]));
+
+    expect($formatted)->toBe("16 Yafo Street\n9414219 JERUSALEM\nIsrael");
+});
+it('formats Israeli addresses passing legacy 5-digit codes through', function (): void {
+    $formatted = app(IsraelAddressFormatter::class)->format(AddressData::from([
+        'line1' => '5 Rothschild Blvd',
+        'city' => 'TEL AVIV',
+        'postcode' => '61201',
+        'country_code' => 'IL',
+    ]));
+
+    expect($formatted)->toBe("5 Rothschild Blvd\n61201 TEL AVIV\nIsrael");
 });

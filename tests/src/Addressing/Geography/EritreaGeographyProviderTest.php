@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Eritrea\EritreaAddressFormatter;
 use AIArmada\Addressing\Geography\Eritrea\EritreaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,24 @@ it('imports the Eritrean tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(6);
+});
+
+it('formats Eritrean addresses without a postcode system', function (): void {
+    $formatted = app(EritreaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Awet Street 4',
+        'city' => 'ASMARA',
+        'country_code' => 'ER',
+    ]));
+
+    expect($formatted)->toBe("Awet Street 4\nASMARA\nEritrea");
+});
+it('prints any supplied Eritrean code on its own line', function (): void {
+    $formatted = app(EritreaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Awet Street 4',
+        'city' => 'ASMARA',
+        'postcode' => '99999',
+        'country_code' => 'ER',
+    ]));
+
+    expect($formatted)->toBe("Awet Street 4\nASMARA\n99999\nEritrea");
 });

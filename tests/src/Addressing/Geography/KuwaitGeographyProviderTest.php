@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Kuwait\KuwaitAddressFormatter;
 use AIArmada\Addressing\Geography\Kuwait\KuwaitGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,15 @@ it('imports the Kuwaiti tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(6);
+});
+
+it('formats Kuwaiti addresses with the postcode left of the locality', function (): void {
+    $formatted = app(KuwaitAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Al-Sabbahiya',
+        'city' => 'KUWAIT',
+        'postcode' => '54551',
+        'country_code' => 'KW',
+    ]));
+
+    expect($formatted)->toBe("Al-Sabbahiya\n54551 KUWAIT\nKuwait");
 });

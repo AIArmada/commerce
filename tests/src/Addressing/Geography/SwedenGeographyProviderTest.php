@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Sweden\SwedenAddressFormatter;
 use AIArmada\Addressing\Geography\Sweden\SwedenGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the Swedish tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(21);
+});
+
+it('formats Swedish addresses with the spaced postcode left of the locality', function (): void {
+    $formatted = app(SwedenAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'NYBY 10',
+        'city' => 'LILLBYN',
+        'postcode' => '123 45',
+        'country_code' => 'SE',
+    ]));
+
+    expect($formatted)->toBe("NYBY 10\n123 45 LILLBYN\nSweden");
+});
+it('formats Swedish box addresses with the box postcode', function (): void {
+    $formatted = app(SwedenAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'BOX 222',
+        'city' => 'STOCKHOLM',
+        'postcode' => '111 81',
+        'country_code' => 'SE',
+    ]));
+
+    expect($formatted)->toBe("BOX 222\n111 81 STOCKHOLM\nSweden");
 });

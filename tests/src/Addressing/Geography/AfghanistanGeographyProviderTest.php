@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Afghanistan\AfghanistanAddressFormatter;
 use AIArmada\Addressing\Geography\Afghanistan\AfghanistanGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,16 @@ it('imports the Afghan tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(34);
+});
+
+it('formats Afghan addresses with the postcode left and province below', function (): void {
+    $formatted = app(AfghanistanAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'House No 123, Street 5',
+        'city' => 'HESARAK',
+        'state' => 'NANGARHAR',
+        'postcode' => '265101',
+        'country_code' => 'AF',
+    ]));
+
+    expect($formatted)->toBe("House No 123, Street 5\n265101 HESARAK\nNANGARHAR\nAfghanistan");
 });

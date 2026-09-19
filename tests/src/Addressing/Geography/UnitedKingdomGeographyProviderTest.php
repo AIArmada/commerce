@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomAddressFormatter;
 use AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,16 @@ it('imports the British tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(4);
+});
+
+it('formats British addresses with the post town and uppercased postcode', function (): void {
+    $formatted = app(UnitedKingdomAddressFormatter::class)->format(AddressData::from([
+        'line1' => '49 Featherstone Street',
+        'city' => 'LONDON',
+        'state' => 'Greater London',
+        'postcode' => 'ec1y 8sy',
+        'country_code' => 'GB',
+    ]));
+
+    expect($formatted)->toBe("49 Featherstone Street\nLONDON\nEC1Y 8SY\nUnited Kingdom");
 });

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Senegal\SenegalAddressFormatter;
 use AIArmada\Addressing\Geography\Senegal\SenegalGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,26 @@ it('imports the Senegalese tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(14);
+});
+
+it('formats Senegalese addresses with the postcode left of the office', function (): void {
+    $formatted = app(SenegalAddressFormatter::class)->format(AddressData::from([
+        'line1' => '12 AVENUE CHEIKH ANTA DIOP',
+        'city' => 'DAKAR',
+        'postcode' => '12500',
+        'country_code' => 'SN',
+    ]));
+
+    expect($formatted)->toBe("12 AVENUE CHEIKH ANTA DIOP\n12500 DAKAR\nSenegal");
+});
+it('prints matching Senegalese city and region once', function (): void {
+    $formatted = app(SenegalAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'BP 1534',
+        'city' => 'Ziguinchor',
+        'state' => 'Ziguinchor',
+        'postcode' => '27000',
+        'country_code' => 'SN',
+    ]));
+
+    expect($formatted)->toBe("BP 1534\n27000 Ziguinchor\nSenegal");
 });

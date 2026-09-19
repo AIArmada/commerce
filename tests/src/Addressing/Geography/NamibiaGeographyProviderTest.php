@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Namibia\NamibiaAddressFormatter;
 use AIArmada\Addressing\Geography\Namibia\NamibiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the Namibian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(14);
+});
+
+it('formats Namibian addresses with the postcode below the locality', function (): void {
+    $formatted = app(NamibiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Private bag 13678',
+        'city' => 'WINDHOEK',
+        'postcode' => '10005',
+        'country_code' => 'NA',
+    ]));
+
+    expect($formatted)->toBe("Private bag 13678\nWINDHOEK\n10005\nNamibia");
+});
+it('formats Namibian post box addresses with the postcode below the office', function (): void {
+    $formatted = app(NamibiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO Box 999',
+        'city' => 'OKAHANDJA',
+        'postcode' => '12004',
+        'country_code' => 'NA',
+    ]));
+
+    expect($formatted)->toBe("PO Box 999\nOKAHANDJA\n12004\nNamibia");
 });

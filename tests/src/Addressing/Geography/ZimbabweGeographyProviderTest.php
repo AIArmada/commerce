@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Zimbabwe\ZimbabweAddressFormatter;
 use AIArmada\Addressing\Geography\Zimbabwe\ZimbabweGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the Zimbabwean tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(10);
+});
+
+it('formats Zimbabwean addresses without a postcode system', function (): void {
+    $formatted = app(ZimbabweAddressFormatter::class)->format(AddressData::from([
+        'line1' => '34–6th Crescent',
+        'line2' => 'Warren Park 1',
+        'city' => 'HARARE',
+        'country_code' => 'ZW',
+    ]));
+
+    expect($formatted)->toBe("34–6th Crescent\nWarren Park 1\nHARARE\nZimbabwe");
+});
+it('prints matching Zimbabwean city and province once', function (): void {
+    $formatted = app(ZimbabweAddressFormatter::class)->format(AddressData::from([
+        'line1' => '12 Josiah Tongogara Street',
+        'city' => 'Bulawayo',
+        'state' => 'Bulawayo',
+        'country_code' => 'ZW',
+    ]));
+
+    expect($formatted)->toBe("12 Josiah Tongogara Street\nBulawayo\nZimbabwe");
 });

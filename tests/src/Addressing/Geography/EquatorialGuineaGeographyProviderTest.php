@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\EquatorialGuinea\EquatorialGuineaAddressFormatter;
 use AIArmada\Addressing\Geography\EquatorialGuinea\EquatorialGuineaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,26 @@ it('imports the Equatoguinean tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(10);
+});
+
+it('formats Equatoguinean addresses without a postcode system', function (): void {
+    $formatted = app(EquatorialGuineaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Viviendas sociales vicatana',
+        'line2' => 'Portal 5, puerta 29',
+        'city' => 'MALABO',
+        'state' => 'Bioko Norte',
+        'country_code' => 'GQ',
+    ]));
+
+    expect($formatted)->toBe("Viviendas sociales vicatana\nPortal 5, puerta 29\nMALABO\nBioko Norte\nEquatorial Guinea");
+});
+it('prints any supplied Equatoguinean code on its own line', function (): void {
+    $formatted = app(EquatorialGuineaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Apartado postal 7',
+        'city' => 'MALABO',
+        'postcode' => '99999',
+        'country_code' => 'GQ',
+    ]));
+
+    expect($formatted)->toBe("Apartado postal 7\nMALABO\n99999\nEquatorial Guinea");
 });

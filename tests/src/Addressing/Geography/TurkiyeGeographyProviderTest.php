@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Turkiye\TurkiyeAddressFormatter;
 use AIArmada\Addressing\Geography\Turkiye\TurkiyeGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,16 @@ it('imports the Turkish tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(81);
+});
+
+it('formats Turkish addresses with the postcode left of locality and province', function (): void {
+    $formatted = app(TurkiyeAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Doğanbey Mah.',
+        'city' => 'ULUS',
+        'state' => 'ANKARA',
+        'postcode' => '06101',
+        'country_code' => 'TR',
+    ]));
+
+    expect($formatted)->toBe("Doğanbey Mah.\n06101 ULUS/ANKARA\nTürkiye");
 });

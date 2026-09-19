@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Morocco\MoroccoAddressFormatter;
 use AIArmada\Addressing\Geography\Morocco\MoroccoGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
@@ -47,4 +49,15 @@ it('imports the Moroccan tree with state links', function (): void {
         ->where('child_address_area_id', $child->getKey())
         ->where('hierarchy_type', 'administrative')
         ->exists())->toBeTrue();
+});
+
+it('formats Moroccan addresses with the postcode left of the locality', function (): void {
+    $formatted = app(MoroccoAddressFormatter::class)->format(AddressData::from([
+        'line1' => '23 BOULEVARD TAROUDANT',
+        'city' => 'ERRACHIDIA',
+        'postcode' => '52000',
+        'country_code' => 'MA',
+    ]));
+
+    expect($formatted)->toBe("23 BOULEVARD TAROUDANT\n52000 ERRACHIDIA\nMorocco");
 });

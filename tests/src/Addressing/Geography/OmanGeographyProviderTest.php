@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Oman\OmanAddressFormatter;
 use AIArmada\Addressing\Geography\Oman\OmanGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
@@ -46,4 +48,15 @@ it('imports the Omani tree with state links', function (): void {
         ->where('child_address_area_id', $child->getKey())
         ->where('hierarchy_type', 'administrative')
         ->exists())->toBeTrue();
+});
+
+it('formats Omani addresses with the postcode above the locality', function (): void {
+    $formatted = app(OmanAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P.O. Box 15',
+        'city' => 'AL-KHOER',
+        'postcode' => '133',
+        'country_code' => 'OM',
+    ]));
+
+    expect($formatted)->toBe("P.O. Box 15\n133\nAL-KHOER\nOman");
 });

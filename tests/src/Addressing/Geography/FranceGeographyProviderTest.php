@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\France\FranceAddressFormatter;
 use AIArmada\Addressing\Geography\France\FranceGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,15 @@ it('imports the French tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(18);
+});
+
+it('formats French addresses with the postcode left of the locality', function (): void {
+    $formatted = app(FranceAddressFormatter::class)->format(AddressData::from([
+        'line1' => '25 RUE DES FLEURS',
+        'city' => 'LIBOURNE',
+        'postcode' => '33500',
+        'country_code' => 'FR',
+    ]));
+
+    expect($formatted)->toBe("25 RUE DES FLEURS\n33500 LIBOURNE\nFrance");
 });

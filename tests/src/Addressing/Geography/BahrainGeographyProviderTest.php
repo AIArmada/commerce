@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Bahrain\BahrainAddressFormatter;
 use AIArmada\Addressing\Geography\Bahrain\BahrainGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,15 @@ it('imports the Bahraini tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(4);
+});
+
+it('formats Bahraini addresses with the postcode right of the locality', function (): void {
+    $formatted = app(BahrainAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'House no. 888',
+        'city' => 'AL-MANAMAH',
+        'postcode' => '317',
+        'country_code' => 'BH',
+    ]));
+
+    expect($formatted)->toBe("House no. 888\nAL-MANAMAH 317\nBahrain");
 });

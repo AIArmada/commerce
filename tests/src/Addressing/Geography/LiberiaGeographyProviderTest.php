@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Liberia\LiberiaAddressFormatter;
 use AIArmada\Addressing\Geography\Liberia\LiberiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the Liberian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(15);
+});
+
+it('formats Liberian addresses with the postcode left of the locality', function (): void {
+    $formatted = app(LiberiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Water Street',
+        'city' => 'Buchanan',
+        'postcode' => '4000',
+        'country_code' => 'LR',
+    ]));
+
+    expect($formatted)->toBe("Water Street\n4000 Buchanan\nLiberia");
+});
+it('formats Liberian addresses without a postcode when missing', function (): void {
+    $formatted = app(LiberiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Water Street',
+        'city' => 'Monrovia',
+        'state' => 'Montserrado',
+        'country_code' => 'LR',
+    ]));
+
+    expect($formatted)->toBe("Water Street\nMonrovia\nMontserrado\nLiberia");
 });

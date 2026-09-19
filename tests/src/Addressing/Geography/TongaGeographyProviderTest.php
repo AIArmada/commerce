@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Tonga\TongaAddressFormatter;
 use AIArmada\Addressing\Geography\Tonga\TongaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the Tongan tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(5);
+});
+
+it('formats Tongan addresses without a postcode system', function (): void {
+    $formatted = app(TongaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO Box 1',
+        'city' => 'Nuku’alofa',
+        'country_code' => 'TO',
+    ]));
+
+    expect($formatted)->toBe("PO Box 1\nNuku’alofa\nTonga");
+});
+
+it('prints any supplied Tongan code on its own line', function (): void {
+    $formatted = app(TongaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO Box 1',
+        'city' => 'Nuku’alofa',
+        'postcode' => '99999',
+        'country_code' => 'TO',
+    ]));
+
+    expect($formatted)->toBe("PO Box 1\nNuku’alofa\n99999\nTonga");
 });

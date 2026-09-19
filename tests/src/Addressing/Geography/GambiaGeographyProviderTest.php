@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Gambia\GambiaAddressFormatter;
 use AIArmada\Addressing\Geography\Gambia\GambiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,24 @@ it('imports the Gambian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(6);
+});
+
+it('formats Gambian addresses without a postcode system', function (): void {
+    $formatted = app(GambiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '21 Liberation Avenue',
+        'city' => 'BANJUL',
+        'country_code' => 'GM',
+    ]));
+
+    expect($formatted)->toBe("21 Liberation Avenue\nBANJUL\nThe Gambia");
+});
+it('formats Gambian addresses with the division below the locality', function (): void {
+    $formatted = app(GambiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Main Street',
+        'city' => 'Basse',
+        'state' => 'Upper River',
+        'country_code' => 'GM',
+    ]));
+
+    expect($formatted)->toBe("Main Street\nBasse\nUpper River\nThe Gambia");
 });

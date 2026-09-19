@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Bermuda\BermudaAddressFormatter;
 use AIArmada\Addressing\Geography\Bermuda\BermudaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,26 @@ it('imports the Bermudian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(9);
+});
+
+it('formats Bermudian street addresses with the postcode right of the parish', function (): void {
+    $formatted = app(BermudaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Upper Apt # 1',
+        'line2' => '9 Leafy Lane',
+        'state' => "SMITH'S",
+        'postcode' => 'FL 07',
+        'country_code' => 'BM',
+    ]));
+
+    expect($formatted)->toBe("Upper Apt # 1\n9 Leafy Lane\nSMITH'S FL 07\nBermuda");
+});
+it('formats Bermudian box addresses with the letter postcode', function (): void {
+    $formatted = app(BermudaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO Box HM 2469',
+        'city' => 'HAMILTON',
+        'postcode' => 'HM GX',
+        'country_code' => 'BM',
+    ]));
+
+    expect($formatted)->toBe("PO Box HM 2469\nHAMILTON HM GX\nBermuda");
 });

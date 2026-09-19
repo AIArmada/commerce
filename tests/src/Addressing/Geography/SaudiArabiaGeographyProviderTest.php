@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\SaudiArabia\SaudiArabiaAddressFormatter;
 use AIArmada\Addressing\Geography\SaudiArabia\SaudiArabiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,15 @@ it('imports the Saudi tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(13);
+});
+
+it('formats Saudi addresses with the postcode above the locality', function (): void {
+    $formatted = app(SaudiArabiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '2929 Rayhanah Bint Zaid',
+        'city' => 'RIYADH',
+        'postcode' => '13337',
+        'country_code' => 'SA',
+    ]));
+
+    expect($formatted)->toBe("2929 Rayhanah Bint Zaid\n13337\nRIYADH\nSaudi Arabia");
 });

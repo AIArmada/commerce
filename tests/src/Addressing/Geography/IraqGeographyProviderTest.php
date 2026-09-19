@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Iraq\IraqAddressFormatter;
 use AIArmada\Addressing\Geography\Iraq\IraqGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,16 @@ it('imports the Iraqi tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(19);
+});
+
+it('formats Iraqi addresses with city, governorate and postcode below', function (): void {
+    $formatted = app(IraqAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Hay AL Asmaee, Zukak 2',
+        'city' => 'AL ASMAEE',
+        'state' => 'AL BASRAH',
+        'postcode' => '61002',
+        'country_code' => 'IQ',
+    ]));
+
+    expect($formatted)->toBe("Hay AL Asmaee, Zukak 2\nAL ASMAEE, AL BASRAH\n61002\nIraq");
 });

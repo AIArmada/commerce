@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Tuvalu\TuvaluAddressFormatter;
 use AIArmada\Addressing\Geography\Tuvalu\TuvaluGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,25 @@ it('imports the Tuvaluan tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(8);
+});
+
+it('formats Tuvaluan addresses without a postcode system', function (): void {
+    $formatted = app(TuvaluAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO Box 1',
+        'city' => 'Funafuti',
+        'country_code' => 'TV',
+    ]));
+
+    expect($formatted)->toBe("PO Box 1\nFunafuti\nTuvalu");
+});
+
+it('prints any supplied Funafuti code on its own line', function (): void {
+    $formatted = app(TuvaluAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO Box 1',
+        'city' => 'Funafuti',
+        'postcode' => '99999',
+        'country_code' => 'TV',
+    ]));
+
+    expect($formatted)->toBe("PO Box 1\nFunafuti\n99999\nTuvalu");
 });

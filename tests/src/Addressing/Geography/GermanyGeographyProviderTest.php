@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Germany\GermanyAddressFormatter;
 use AIArmada\Addressing\Geography\Germany\GermanyGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
@@ -41,4 +43,15 @@ it('imports the German tree with state links', function (): void {
         ->where('address_area_id', $area->getKey())
         ->where('name', 'Bavaria')
         ->exists())->toBeTrue();
+});
+
+it('formats German addresses with the postcode left of the locality', function (): void {
+    $formatted = app(GermanyAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Wacholderweg 52a',
+        'city' => 'OLDENBURG',
+        'postcode' => '26133',
+        'country_code' => 'DE',
+    ]));
+
+    expect($formatted)->toBe("Wacholderweg 52a\n26133 OLDENBURG\nGermany");
 });

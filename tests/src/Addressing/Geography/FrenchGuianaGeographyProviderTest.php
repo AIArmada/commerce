@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\FrenchGuiana\FrenchGuianaAddressFormatter;
 use AIArmada\Addressing\Geography\FrenchGuiana\FrenchGuianaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the Guianese tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(1);
+});
+
+it('formats Guianese addresses with the postcode left of the locality', function (): void {
+    $formatted = app(FrenchGuianaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '3 AVENUE HENRI AGARANDE',
+        'city' => 'CAYENNE',
+        'postcode' => '97300',
+        'country_code' => 'GF',
+    ]));
+
+    expect($formatted)->toBe("3 AVENUE HENRI AGARANDE\n97300 CAYENNE\nFrench Guiana");
+});
+it('formats Guianese Kourou addresses with the town postcode', function (): void {
+    $formatted = app(FrenchGuianaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Avenue des Roches 1',
+        'city' => 'KOUROU',
+        'postcode' => '97310',
+        'country_code' => 'GF',
+    ]));
+
+    expect($formatted)->toBe("Avenue des Roches 1\n97310 KOUROU\nFrench Guiana");
 });

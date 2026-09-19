@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\PapuaNewGuinea\PapuaNewGuineaAddressFormatter;
 use AIArmada\Addressing\Geography\PapuaNewGuinea\PapuaNewGuineaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -35,4 +37,26 @@ it('imports the Papua New Guinean tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(22);
+});
+
+it('formats Papua New Guinean addresses with the code right of the locality', function (): void {
+    $formatted = app(PapuaNewGuineaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Section 20 Lot 40 Lagatoi Place',
+        'city' => 'Port Moresby',
+        'postcode' => '111',
+        'country_code' => 'PG',
+    ]));
+
+    expect($formatted)->toBe("Section 20 Lot 40 Lagatoi Place\nPort Moresby 111\nPapua New Guinea");
+});
+
+it('formats Lae addresses with their own code', function (): void {
+    $formatted = app(PapuaNewGuineaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO Box 555',
+        'city' => 'Lae',
+        'postcode' => '211',
+        'country_code' => 'PG',
+    ]));
+
+    expect($formatted)->toBe("PO Box 555\nLae 211\nPapua New Guinea");
 });

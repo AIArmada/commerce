@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Taiwan\TaiwanAddressFormatter;
 use AIArmada\Addressing\Geography\Taiwan\TaiwanGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -35,4 +37,15 @@ it('imports the Taiwanese tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(22);
+});
+
+it('formats Taiwanese addresses with the 3+3 postcode right of the locality', function (): void {
+    $formatted = app(TaiwanAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'No. 55, Sec. 2, Jinshan S. Rd.',
+        'city' => 'Taipei City',
+        'postcode' => '106409',
+        'country_code' => 'TW',
+    ]));
+
+    expect($formatted)->toBe("No. 55, Sec. 2, Jinshan S. Rd.\nTaipei City 106409\nTaiwan");
 });

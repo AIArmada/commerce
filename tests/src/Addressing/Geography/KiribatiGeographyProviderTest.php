@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Kiribati\KiribatiAddressFormatter;
 use AIArmada\Addressing\Geography\Kiribati\KiribatiGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,26 @@ it('imports the Kiribati tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(3);
+});
+
+it('formats Kiribati addresses with the code right of the island', function (): void {
+    $formatted = app(KiribatiAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO Box 487',
+        'line2' => 'Betio',
+        'city' => 'Sth Tarawa',
+        'postcode' => 'KI0108',
+        'country_code' => 'KI',
+    ]));
+
+    expect($formatted)->toBe("PO Box 487\nBetio\nSth Tarawa KI0108\nKiribati");
+});
+it('formats Line Islands addresses with their own code', function (): void {
+    $formatted = app(KiribatiAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'PO Box 3',
+        'city' => 'Kiritimati',
+        'postcode' => 'KI0303',
+        'country_code' => 'KI',
+    ]));
+
+    expect($formatted)->toBe("PO Box 3\nKiritimati KI0303\nKiribati");
 });

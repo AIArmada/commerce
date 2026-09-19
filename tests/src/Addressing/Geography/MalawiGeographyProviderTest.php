@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Malawi\MalawiAddressFormatter;
 use AIArmada\Addressing\Geography\Malawi\MalawiGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,26 @@ it('imports the Malawian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(31);
+});
+
+it('formats Malawian addresses with the postcode left of the locality', function (): void {
+    $formatted = app(MalawiAddressFormatter::class)->format(AddressData::from([
+        'line1' => '21 Dunduzu Avenue',
+        'city' => 'KASUNGU',
+        'postcode' => '102010',
+        'country_code' => 'MW',
+    ]));
+
+    expect($formatted)->toBe("21 Dunduzu Avenue\n102010 KASUNGU\nMalawi");
+});
+it('formats Malawian addresses with the region below the postcode line', function (): void {
+    $formatted = app(MalawiAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'Chipembere Highway',
+        'city' => 'Blantyre',
+        'state' => 'Southern',
+        'postcode' => '309070',
+        'country_code' => 'MW',
+    ]));
+
+    expect($formatted)->toBe("Chipembere Highway\n309070 Blantyre\nSouthern\nMalawi");
 });

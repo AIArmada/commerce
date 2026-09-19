@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Thailand\ThailandAddressFormatter;
 use AIArmada\Addressing\Geography\Thailand\ThailandGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,16 @@ it('imports the Thai tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(78);
+});
+
+it('formats Thai addresses with district, province and postcode below', function (): void {
+    $formatted = app(ThailandAddressFormatter::class)->format(AddressData::from([
+        'line1' => '199/63 Moo 1, Tumbol Bangtalad',
+        'city' => 'Amphoe Pak Kret',
+        'state' => 'Nonthaburi',
+        'postcode' => '11120',
+        'country_code' => 'TH',
+    ]));
+
+    expect($formatted)->toBe("199/63 Moo 1, Tumbol Bangtalad\nAmphoe Pak Kret, Nonthaburi\n11120\nThailand");
 });

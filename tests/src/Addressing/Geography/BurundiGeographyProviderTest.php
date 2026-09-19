@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Burundi\BurundiAddressFormatter;
 use AIArmada\Addressing\Geography\Burundi\BurundiGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,25 @@ it('imports the Burundian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(18);
+});
+
+it('formats Burundian addresses without a postcode system', function (): void {
+    $formatted = app(BurundiAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'BP 1915',
+        'city' => 'MUKAZA',
+        'state' => 'Bujumbura',
+        'country_code' => 'BI',
+    ]));
+
+    expect($formatted)->toBe("BP 1915\nMUKAZA\nBujumbura\nBurundi");
+});
+it('prints any supplied Burundian code on its own line', function (): void {
+    $formatted = app(BurundiAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'BP 1915',
+        'city' => 'MUKAZA',
+        'postcode' => '99999',
+        'country_code' => 'BI',
+    ]));
+
+    expect($formatted)->toBe("BP 1915\nMUKAZA\n99999\nBurundi");
 });

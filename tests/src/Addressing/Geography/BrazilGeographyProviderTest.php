@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Brazil\BrazilAddressFormatter;
 use AIArmada\Addressing\Geography\Brazil\BrazilGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,16 @@ it('imports the Brazilian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(27);
+});
+
+it('formats Brazilian addresses with the state abbreviation and postcode below', function (): void {
+    $formatted = app(BrazilAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'RUA XV DE NOVEMBRO, 1751',
+        'city' => 'GUARAPUAVA',
+        'state' => 'Paraná',
+        'postcode' => '85070-200',
+        'country_code' => 'BR',
+    ]));
+
+    expect($formatted)->toBe("RUA XV DE NOVEMBRO, 1751\nGUARAPUAVA - PR\n85070-200\nBrazil");
 });

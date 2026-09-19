@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Nigeria\NigeriaAddressFormatter;
 use AIArmada\Addressing\Geography\Nigeria\NigeriaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -33,4 +35,16 @@ it('imports the Nigerian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(37);
+});
+
+it('formats Nigerian addresses with the postcode right and state below', function (): void {
+    $formatted = app(NigeriaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '34 Alayande Cl',
+        'city' => 'Mokola',
+        'state' => 'OYO STATE',
+        'postcode' => '200212',
+        'country_code' => 'NG',
+    ]));
+
+    expect($formatted)->toBe("34 Alayande Cl\nMokola 200212\nOYO STATE\nNigeria");
 });

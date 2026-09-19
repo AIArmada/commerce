@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Mozambique\MozambiqueAddressFormatter;
 use AIArmada\Addressing\Geography\Mozambique\MozambiqueGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,16 @@ it('imports the Mozambican tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(11);
+});
+
+it('formats Mozambican addresses with the postcode left and province below', function (): void {
+    $formatted = app(MozambiqueAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'AV. Julius Nyerere 3412',
+        'city' => 'MAPUTO',
+        'state' => 'MAPUTO',
+        'postcode' => '1100',
+        'country_code' => 'MZ',
+    ]));
+
+    expect($formatted)->toBe("AV. Julius Nyerere 3412\n1100 MAPUTO\nMAPUTO\nMozambique");
 });

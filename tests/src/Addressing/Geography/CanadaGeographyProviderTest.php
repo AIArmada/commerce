@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Canada\CanadaAddressFormatter;
 use AIArmada\Addressing\Geography\Canada\CanadaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,16 @@ it('imports the Canadian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(13);
+});
+
+it('formats Canadian addresses with the province abbreviation and postcode', function (): void {
+    $formatted = app(CanadaAddressFormatter::class)->format(AddressData::from([
+        'line1' => '8450 Newman Blvd.',
+        'city' => 'MONTREAL',
+        'state' => 'Quebec',
+        'postcode' => 'h3z 2y7',
+        'country_code' => 'CA',
+    ]));
+
+    expect($formatted)->toBe("8450 Newman Blvd.\nMONTREAL QC H3Z 2Y7\nCanada");
 });

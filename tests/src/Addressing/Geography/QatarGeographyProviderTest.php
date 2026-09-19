@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Qatar\QatarAddressFormatter;
 use AIArmada\Addressing\Geography\Qatar\QatarGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
@@ -41,4 +43,14 @@ it('imports the Qatari tree with state links', function (): void {
         ->where('address_area_id', $area->getKey())
         ->where('name', 'Ad Dawhah')
         ->exists())->toBeTrue();
+});
+
+it('formats Qatari addresses without a postcode line', function (): void {
+    $formatted = app(QatarAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P.O. Box 3263',
+        'city' => 'DOHA',
+        'country_code' => 'QA',
+    ]));
+
+    expect($formatted)->toBe("P.O. Box 3263\nDOHA\nQatar");
 });

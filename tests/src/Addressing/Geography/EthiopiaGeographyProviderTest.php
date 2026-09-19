@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Ethiopia\EthiopiaAddressFormatter;
 use AIArmada\Addressing\Geography\Ethiopia\EthiopiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -35,4 +37,15 @@ it('imports the Ethiopian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(14);
+});
+
+it('formats Ethiopian addresses with the postcode left of the locality', function (): void {
+    $formatted = app(EthiopiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'P.O. Box 1519',
+        'city' => 'ADDIS ABABA',
+        'postcode' => '1000',
+        'country_code' => 'ET',
+    ]));
+
+    expect($formatted)->toBe("P.O. Box 1519\n1000 ADDIS ABABA\nEthiopia");
 });

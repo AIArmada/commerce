@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Geography\Colombia\ColombiaAddressFormatter;
 use AIArmada\Addressing\Geography\Colombia\ColombiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -34,4 +36,16 @@ it('imports the Colombian tree with state links', function (): void {
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
         )->count())->toBe(33);
+});
+
+it('formats Colombian addresses with the postcode right and department below', function (): void {
+    $formatted = app(ColombiaAddressFormatter::class)->format(AddressData::from([
+        'line1' => 'CARRERA 7 NO. 27-18',
+        'city' => 'PLANETA RICA',
+        'state' => 'CORDOBA',
+        'postcode' => '233057',
+        'country_code' => 'CO',
+    ]));
+
+    expect($formatted)->toBe("CARRERA 7 NO. 27-18\nPLANETA RICA 233057\nCORDOBA\nColombia");
 });
