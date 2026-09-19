@@ -44,6 +44,13 @@ class LuxembourgGeographyProvider implements CountryAddressAreaMetadataProvider,
                 ],
             );
         }
+
+        // Single-letter district codes G/L were replaced by canton codes
+        // GR/LU. Delete stragglers seeded before that fix.
+        $stateClass::query()
+            ->where('country_id', $country->id)
+            ->whereIn('code', ['G', 'L'])
+            ->delete();
     }
 
     /** @return list<AddressHierarchyDefinition> */
@@ -133,8 +140,8 @@ class LuxembourgGeographyProvider implements CountryAddressAreaMetadataProvider,
             'DI' => 'DI',
             'EC' => 'EC',
             'ES' => 'ES',
-            'G' => 'G',
-            'L' => 'L',
+            'GR' => 'GR',
+            'LU' => 'LU',
             'ME' => 'ME',
             'RD' => 'RD',
             'RM' => 'RM',
@@ -164,8 +171,8 @@ class LuxembourgGeographyProvider implements CountryAddressAreaMetadataProvider,
             ['name' => 'Diekirch', 'code' => 'DI'],
             ['name' => 'Echternach', 'code' => 'EC'],
             ['name' => 'Esch-sur-Alzette', 'code' => 'ES'],
-            ['name' => 'Grevenmacher', 'code' => 'G'],
-            ['name' => 'Luxembourg', 'code' => 'L'],
+            ['name' => 'Grevenmacher', 'code' => 'GR'],
+            ['name' => 'Luxembourg', 'code' => 'LU'],
             ['name' => 'Mersch', 'code' => 'ME'],
             ['name' => 'Redange', 'code' => 'RD'],
             ['name' => 'Remich', 'code' => 'RM'],

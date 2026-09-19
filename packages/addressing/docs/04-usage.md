@@ -234,7 +234,7 @@ per the UPU IB recommendation, deviating from domestic Russian layout.
 
 Nigeria (36 states + FCT), Ethiopia (14 regions/cities),
 DR Congo (26 provinces), Tanzania (31 regions), Kenya (47 counties),
-Sudan (18 states), Uganda (4 regions), and Algeria (58 wilayas) each
+Sudan (18 states), Uganda (4 regions), and Algeria (69 wilayas) each
 expose a single-level hierarchy via `execute('NG')`, `execute('ET')`,
 `execute('CD')`, `execute('TZ')`, `execute('KE')`, `execute('SD')`,
 `execute('UG')`, and `execute('DZ')`. Ethiopia's dissolved SNNPR
@@ -297,7 +297,7 @@ line.
 ### Seed Africa remainder geography
 
 Benin (12 departments), Botswana (10 districts + 2 cities + 4
-towns), Burkina Faso (13 regions + 45 provinces flat), Burundi (18
+towns), Burkina Faso (17 regions + 47 provinces flat), Burundi (5
 provinces), Cape Verde (22 municipalities + 2 island groups), Central
 African Republic (15 prefectures + Bangui + Nana-Grébizi), Chad (23
 provinces), Comoros (3 islands), Congo (12 departments), Ivory Coast
@@ -327,8 +327,8 @@ Belarus (6 oblasts + Minsk), Belgium (3 regions + 10 provinces
 flat), Bosnia and Herzegovina (2 entities + Brčko District),
 Bulgaria (28 districts), Croatia (20 counties), Czech Republic (13
 regions + 76 districts + Prague flat), Denmark (5 regions), Estonia
-(15 counties + 79 municipalities flat), Finland (18 regions), Greece
-(13 regions + 2 regional units), Hungary (20 counties + 22
+(15 counties + 78 municipalities flat), Finland (18 regions), Greece
+(13 regions + Mount Athos), Hungary (20 counties + 22
 county-rights cities + Budapest), Iceland (8 regions + 64
 municipalities flat), Ireland (4 provinces + 26 counties flat),
 Kosovo (7 districts), Latvia (36 municipalities + 7 state cities),

@@ -28,14 +28,17 @@ it('imports the Burkinabe tree with state links', function (): void {
     $country = AddressCountry::query()->where('iso2', 'BF')->firstOrFail();
 
     expect($result['seeded'])->toContain('BF')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(58)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(58)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'region')->count())->toBe(13)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'province')->count())->toBe(45)
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(64)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(64)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'region')->count())->toBe(17)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'province')->count())->toBe(47)
         ->and(AddressAreaStateLink::query()->whereHas(
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
-        )->count())->toBe(58);
+        )->count())->toBe(64)
+        ->and(State::query()->where('country_id', $country->id)->where('name', 'Bankui')->exists())->toBeTrue()
+        ->and(State::query()->where('country_id', $country->id)->where('name', 'Boucle du Mouhoun')->exists())->toBeFalse()
+        ->and(State::query()->where('country_id', $country->id)->where('code', '14')->value('name'))->toBe('Sirba');
 });
 
 it('formats Burkinabe addresses with the postcode left of the locality', function (): void {

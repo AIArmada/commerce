@@ -38,7 +38,9 @@ it('imports the Bangladeshi tree with state links', function (): void {
         ->and(AddressAreaStateLink::query()->whereHas(
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
-        )->count())->toBe(8);
+        )->count())->toBe(8)
+        ->and(State::query()->where('country_id', $country->id)->where('name', 'Jhalakathi')->exists())->toBeTrue()
+        ->and(State::query()->where('country_id', $country->id)->where('name', 'Jhalokati')->exists())->toBeFalse();
 
     $child = AddressArea::query()->where('source_id', 'bd:district:cox-s-bazar')->firstOrFail();
     $parent = AddressArea::query()->where('source_id', 'bd:division:chattogram')->firstOrFail();

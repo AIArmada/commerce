@@ -44,6 +44,13 @@ class CaribbeanNetherlandsGeographyProvider implements CountryAddressAreaMetadat
                 ],
             );
         }
+
+        // Malformed codes BQ1/BQ2/BQ3 were replaced by ISO codes BO/SA/SE.
+        // Delete stragglers seeded before that fix.
+        $stateClass::query()
+            ->where('country_id', $country->id)
+            ->whereIn('code', ['BQ1', 'BQ2', 'BQ3'])
+            ->delete();
     }
 
     /** @return list<AddressHierarchyDefinition> */
@@ -128,9 +135,9 @@ class CaribbeanNetherlandsGeographyProvider implements CountryAddressAreaMetadat
     {
         /** @var array<string, string> */
         $areaCodes = [
-            'BQ1' => 'BQ1',
-            'BQ2' => 'BQ2',
-            'BQ3' => 'BQ3',
+            'BO' => 'BO',
+            'SA' => 'SA',
+            'SE' => 'SE',
         ];
 
         return array_map(
@@ -150,9 +157,9 @@ class CaribbeanNetherlandsGeographyProvider implements CountryAddressAreaMetadat
     private function stateDefinitions(): array
     {
         return [
-            ['name' => 'Bonaire', 'code' => 'BQ1'],
-            ['name' => 'Saba', 'code' => 'BQ2'],
-            ['name' => 'Sint Eustatius', 'code' => 'BQ3'],
+            ['name' => 'Bonaire', 'code' => 'BO'],
+            ['name' => 'Saba', 'code' => 'SA'],
+            ['name' => 'Sint Eustatius', 'code' => 'SE'],
         ];
     }
 }

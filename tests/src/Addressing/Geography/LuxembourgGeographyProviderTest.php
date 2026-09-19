@@ -34,7 +34,9 @@ it('imports the Luxembourger tree with state links', function (): void {
         ->and(AddressAreaStateLink::query()->whereHas(
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
-        )->count())->toBe(12);
+        )->count())->toBe(12)
+        ->and(State::query()->where('country_id', $country->id)->where('code', 'GR')->exists())->toBeTrue()
+        ->and(State::query()->where('country_id', $country->id)->where('code', 'G')->exists())->toBeFalse();
 });
 
 it('formats Luxembourger addresses with the postcode left of the locality', function (): void {

@@ -44,6 +44,13 @@ class GreeceGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                 ],
             );
         }
+
+        // Achaea (13) and East Attica (A2) are pre-2011 prefecture codes,
+        // not current regions. Delete stragglers seeded before that fix.
+        $stateClass::query()
+            ->where('country_id', $country->id)
+            ->whereIn('code', ['13', 'A2'])
+            ->delete();
     }
 
     /** @return list<AddressHierarchyDefinition> */
@@ -129,15 +136,14 @@ class GreeceGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
     {
         /** @var array<int|string, string> */
         $areaCodes = [
-            '13' => '13',
             'I' => 'I',
             'H' => 'H',
             'B' => 'B',
             'M' => 'M',
-            'A2' => 'A2',
             'A' => 'A',
             'D' => 'D',
             'F' => 'F',
+            '69' => '69',
             'K' => 'K',
             'J' => 'J',
             'L' => 'L',
@@ -163,15 +169,14 @@ class GreeceGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
     private function stateDefinitions(): array
     {
         return [
-            ['name' => 'Achaea', 'code' => '13'],
             ['name' => 'Attica', 'code' => 'I'],
             ['name' => 'Central Greece', 'code' => 'H'],
             ['name' => 'Central Macedonia', 'code' => 'B'],
             ['name' => 'Crete', 'code' => 'M'],
-            ['name' => 'East Attica', 'code' => 'A2'],
             ['name' => 'East Macedonia and Thrace', 'code' => 'A'],
             ['name' => 'Epirus', 'code' => 'D'],
             ['name' => 'Ionian Islands', 'code' => 'F'],
+            ['name' => 'Mount Athos', 'code' => '69'],
             ['name' => 'North Aegean', 'code' => 'K'],
             ['name' => 'Peloponnese', 'code' => 'J'],
             ['name' => 'South Aegean', 'code' => 'L'],

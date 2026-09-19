@@ -28,13 +28,14 @@ it('imports the Croatian tree with state links', function (): void {
     $country = AddressCountry::query()->where('iso2', 'HR')->firstOrFail();
 
     expect($result['seeded'])->toContain('HR')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(20)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(20)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'county')->count())->toBe(20)
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(21)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(21)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'county')->count())->toBe(21)
         ->and(AddressAreaStateLink::query()->whereHas(
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
-        )->count())->toBe(20);
+        )->count())->toBe(21)
+        ->and(State::query()->where('country_id', $country->id)->where('code', '21')->exists())->toBeTrue();
 });
 
 it('formats Croatian inbound addresses with the HR postcode prefix', function (): void {

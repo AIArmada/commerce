@@ -130,6 +130,7 @@ class CroatiaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         $areaCodes = [
             '07' => '07',
             '12' => '12',
+            '21' => '21',
             '19' => '19',
             '18' => '18',
             '04' => '04',
@@ -169,6 +170,7 @@ class CroatiaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         return [
             ['name' => 'Bjelovar-Bilogora', 'code' => '07'],
             ['name' => 'Brod-Posavina', 'code' => '12'],
+            ['name' => 'City of Zagreb', 'code' => '21'],
             ['name' => 'Dubrovnik-Neretva', 'code' => '19'],
             ['name' => 'Istria', 'code' => '18'],
             ['name' => 'Karlovac', 'code' => '04'],

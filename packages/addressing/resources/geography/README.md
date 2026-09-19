@@ -38,7 +38,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `kenya-address-areas.csv` — used by `KenyaGeographyProvider`. 47 counties.
 - `sudan-address-areas.csv` — used by `SudanGeographyProvider`. 18 states.
 - `uganda-address-areas.csv` — used by `UgandaGeographyProvider`. 4 regions only; volatile districts intentionally not bundled.
-- `algeria-address-areas.csv` — used by `AlgeriaGeographyProvider`. 58 wilayas including the 2019 batch.
+- `algeria-address-areas.csv` — used by `AlgeriaGeographyProvider`. 69 wilayas: 2019 batch renumbered + 59–69 per décret 26-206 (June 2026).
 - `brazil-address-areas.csv` — used by `BrazilGeographyProvider`. 26 states + DF per ISO 3166-2:BR.
 - `mexico-address-areas.csv` — used by `MexicoGeographyProvider`. 32 federal entities; CDMX typed state.
 - `canada-address-areas.csv` — used by `CanadaGeographyProvider`. 10 provinces + 3 territories.
@@ -87,7 +87,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `yemen-address-areas.csv` — used by `YemenGeographyProvider`. 21 governorates + Amanat Al Asimah (Sanaa municipality).
 - `benin-address-areas.csv` — used by `BeninGeographyProvider`. 12 departments.
 - `botswana-address-areas.csv` — used by `BotswanaGeographyProvider`. 10 districts + Gaborone/Francistown + 4 towns.
-- `burkina-faso-address-areas.csv` — used by `BurkinaFasoGeographyProvider`. 13 regions + 45 provinces flat at L1.
+- `burkina-faso-address-areas.csv` — used by `BurkinaFasoGeographyProvider`. 17 regions + 47 provinces flat at L1 (July 2025 reform); region codes 14–17 + KAR/DYA provisional.
 - `burundi-address-areas.csv` — used by `BurundiGeographyProvider`. 5 provinces (July 2025 reform); codes 01-05 provisional pending ISO.
 - `cape-verde-address-areas.csv` — used by `CapeVerdeGeographyProvider`. 22 municipalities + Barlavento/Sotavento groups.
 - `central-african-republic-address-areas.csv` — used by `CentralAfricanRepublicGeographyProvider`. 15 prefectures + Bangui commune + Nana-Grébizi.
@@ -130,12 +130,12 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `belgium-address-areas.csv` — used by `BelgiumGeographyProvider`. 3 regions with 10 provinces at L2 (5 Flanders, 5 Wallonia; Brussels childless).
 - `bosnia-and-herzegovina-address-areas.csv` — used by `BosniaAndHerzegovinaGeographyProvider`. 2 entities + Brčko District.
 - `bulgaria-address-areas.csv` — used by `BulgariaGeographyProvider`. 28 districts.
-- `croatia-address-areas.csv` — used by `CroatiaGeographyProvider`. 20 counties incl. Zagreb.
+- `croatia-address-areas.csv` — used by `CroatiaGeographyProvider`. 20 counties incl. Zagreb + City of Zagreb (21).
 - `czech-republic-address-areas.csv` — used by `CzechRepublicGeographyProvider`. 13 regions + Praha with 76 districts at L2 (12/7/7/7/7/6/5/5/5/4/4/4/3; Praha childless).
 - `denmark-address-areas.csv` — used by `DenmarkGeographyProvider`. 5 regions.
 - `estonia-address-areas.csv` — used by `EstoniaGeographyProvider`. 15 counties with 78 municipalities at L2 (16/8/8/7/7/5/4/4/3/3/3/3/3/3/1); county/municipality twins share names.
 - `finland-address-areas.csv` — used by `FinlandGeographyProvider`. 18 regions.
-- `greece-address-areas.csv` — used by `GreeceGeographyProvider`. 13 regions + 2 regional units.
+- `greece-address-areas.csv` — used by `GreeceGeographyProvider`. 13 regions + Mount Athos (69).
 - `hungary-address-areas.csv` — used by `HungaryGeographyProvider`. 20 counties + 22 county-rights cities + Budapest.
 - `iceland-address-areas.csv` — used by `IcelandGeographyProvider`. 8 regions + 64 municipalities flat at L1.
 - `ireland-address-areas.csv` — used by `IrelandGeographyProvider`. 4 provinces with 26 counties at L2 (12/6/5/3).
@@ -219,7 +219,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `turks-and-caicos-address-areas.csv` — used by `TurksAndCaicosGeographyProvider`. 6 districts.
 - `french-southern-territories-address-areas.csv` — used by `FrenchSouthernTerritoriesGeographyProvider`. 5 districts; uninhabited.
 - `tonga-address-areas.csv` — used by `TongaGeographyProvider`. 5 divisions.
-- `trinidad-and-tobago-address-areas.csv` — used by `TrinidadAndTobagoGeographyProvider`. 12 regions + 3 boroughs + Port of Spain + Tobago.
+- `trinidad-and-tobago-address-areas.csv` — used by `TrinidadAndTobagoGeographyProvider`. 10 regions + 3 boroughs + Port of Spain + Tobago (Mayaro-Rio Claro renamed; ETO/WTO dropped).
 - `tuvalu-address-areas.csv` — used by `TuvaluGeographyProvider`. 7 island + 1 town council.
 - `us-minor-outlying-islands-address-areas.csv` — used by `USMinorOutlyingIslandsGeographyProvider`. 9 islands; uninhabited.
 - `uruguay-address-areas.csv` — used by `UruguayGeographyProvider`. 19 departments.

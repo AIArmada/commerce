@@ -284,6 +284,7 @@ and union territories as `State` rows (28 states, 8 union territories
 including Ladakh and the merged Dadra and Nagar Haveli and Daman and
 Diu) and a single-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('IN')` after countries are seeded.
+State codes follow the 23 November 2023 ISO amendment (`CG`, `OD`, `TS`, `UK`).
 
 Indian addresses are formatted per the UPU layout: street lines,
 locality, state, a 6-digit postcode on its own line, and country.
@@ -313,7 +314,7 @@ Mymensingh 4). It is selected with
 `SeedCountryGeographiesAction::execute('BD')` after countries are seeded.
 
 Names follow the post-2018 official English spellings (`Barishal`,
-`Chattogram`, `Bogura`, `Jashore`, `Cumilla`, `Jhalokati`,
+`Chattogram`, `Bogura`, `Jashore`, `Cumilla`, `Jhalakathi`,
 `Netrokona`); seeding also corrects the matching global state rows.
 Only divisions link to states; districts are assignable through the
 `district` role with their division selected first.
@@ -591,9 +592,10 @@ Ugandan addresses are formatted per the UPU layout: street lines,
 
 ## Algeria
 
-The bundled `AlgeriaGeographyProvider` supplies the 58 wilayas
-(including codes `49`–`58`, created in 2019) as `State` rows and a
-single-level administrative hierarchy. It is selected with
+The bundled `AlgeriaGeographyProvider` supplies the 69 wilayas
+(codes `49`–`58` from the 2019 expansion with corrected numbering,
+plus `59`–`69` created by décret 26-206 in June 2026) as `State` rows
+and a single-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('DZ')` after countries are seeded.
 
 Wilaya names use French official forms (`Alger`, not `Algiers`).
@@ -1236,14 +1238,15 @@ layout: P.O. box or private bag lines, the town, and country; any
 supplied code prints on its own line.
 ## Burkina Faso
 
-The bundled `BurkinaFasoGeographyProvider` supplies the 13 regions
-and 45 provinces flat at level 1 as `State` rows and a single-level
+The bundled `BurkinaFasoGeographyProvider` supplies the 17 regions
+and 47 provinces flat at level 1 as `State` rows and a single-level
 administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('BF')` after countries are seeded.
-Burkina Faso restructured to 17 regions and 47 provinces in July 2025;
-the bundled data still reflects the pre-2025 list because the 2 new
-province names and the new ISO codes are unavailable in accessible
-sources, so the region -> province split stays deferred.
+The July 2025 reform renamed all 13 regions, renamed 5 provinces
+(`Koosin`, `Gobnangou`, `Djelgodji`, `Sandbondtenga`, `Bassitenga`),
+and added 4 regions plus `Karo-Peli` and `Dyamongou` provinces.
+Renamed divisions keep their former codes; region codes `14`–`17`
+and province codes `KAR`/`DYA` are provisional pending ISO 3166-2:BF.
 
 Burkinabe addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, the region on its
@@ -1691,9 +1694,10 @@ Bulgarian addresses are formatted per the UPU layout: street lines,
 ## Croatia
 
 The bundled `CroatiaGeographyProvider` supplies the 20 counties
-as `State` rows and a single-level administrative hierarchy. It is
-selected with `SeedCountryGeographiesAction::execute('HR')` after
-countries are seeded.
+plus the City of Zagreb (code `21`, county-level city) as `State`
+rows and a single-level administrative hierarchy. It is selected
+with `SeedCountryGeographiesAction::execute('HR')` after countries
+are seeded.
 
 Croatian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, and country.
@@ -1758,8 +1762,8 @@ optional `FI-` prefix passes through when supplied.
 ## Greece
 
 The bundled `GreeceGeographyProvider` supplies the 13
-administrative regions plus 2 regional units as `State` rows and a
-single-level administrative hierarchy. It is selected with
+administrative regions plus Mount Athos (code `69`) as `State` rows
+and a single-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('GR')` after countries are seeded.
 
 Greek addresses are formatted per the UPU layout: street lines,
@@ -1845,7 +1849,8 @@ exactly as supplied.
 The bundled `LuxembourgGeographyProvider` supplies the 12 cantons
 as `State` rows and a single-level administrative hierarchy. It is
 selected with `SeedCountryGeographiesAction::execute('LU')` after
-countries are seeded.
+countries are seeded. Canton codes follow current ISO 3166-2:LU
+(`GR` for Grevenmacher, `LU` for Luxembourg).
 
 Luxembourg addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with an `L-NNNN` postcode, and country.

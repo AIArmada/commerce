@@ -44,6 +44,13 @@ class IndiaGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
                 ],
             );
         }
+
+        // ISO 3166-2:IN amendment of 23 November 2023 renamed subdivision
+        // codes (CT->CG, OR->OD, TG->TS). Delete stragglers.
+        $stateClass::query()
+            ->where('country_id', $country->id)
+            ->whereIn('code', ['CT', 'OR', 'TG'])
+            ->delete();
     }
 
     /** @return list<AddressHierarchyDefinition> */
@@ -135,7 +142,7 @@ class IndiaGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
             'AS' => 'AS',
             'BR' => 'BR',
             'CH' => 'CH',
-            'CT' => 'CT',
+            'CG' => 'CG',
             'DH' => 'DH',
             'DL' => 'DL',
             'GA' => 'GA',
@@ -154,12 +161,12 @@ class IndiaGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
             'MP' => 'MP',
             'MZ' => 'MZ',
             'NL' => 'NL',
-            'OR' => 'OR',
+            'OD' => 'OD',
             'PB' => 'PB',
             'PY' => 'PY',
             'RJ' => 'RJ',
             'SK' => 'SK',
-            'TG' => 'TG',
+            'TS' => 'TS',
             'TN' => 'TN',
             'TR' => 'TR',
             'UK' => 'UK',
@@ -190,7 +197,7 @@ class IndiaGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
             ['name' => 'Assam', 'code' => 'AS'],
             ['name' => 'Bihar', 'code' => 'BR'],
             ['name' => 'Chandigarh', 'code' => 'CH'],
-            ['name' => 'Chhattisgarh', 'code' => 'CT'],
+            ['name' => 'Chhattisgarh', 'code' => 'CG'],
             ['name' => 'Dadra and Nagar Haveli and Daman and Diu', 'code' => 'DH'],
             ['name' => 'Delhi', 'code' => 'DL'],
             ['name' => 'Goa', 'code' => 'GA'],
@@ -209,12 +216,12 @@ class IndiaGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
             ['name' => 'Madhya Pradesh', 'code' => 'MP'],
             ['name' => 'Mizoram', 'code' => 'MZ'],
             ['name' => 'Nagaland', 'code' => 'NL'],
-            ['name' => 'Odisha', 'code' => 'OR'],
+            ['name' => 'Odisha', 'code' => 'OD'],
             ['name' => 'Punjab', 'code' => 'PB'],
             ['name' => 'Puducherry', 'code' => 'PY'],
             ['name' => 'Rajasthan', 'code' => 'RJ'],
             ['name' => 'Sikkim', 'code' => 'SK'],
-            ['name' => 'Telangana', 'code' => 'TG'],
+            ['name' => 'Telangana', 'code' => 'TS'],
             ['name' => 'Tamil Nadu', 'code' => 'TN'],
             ['name' => 'Tripura', 'code' => 'TR'],
             ['name' => 'Uttarakhand', 'code' => 'UK'],

@@ -34,7 +34,9 @@ it('imports the Caribbean Netherlands tree with state links', function (): void 
         ->and(AddressAreaStateLink::query()->whereHas(
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
-        )->count())->toBe(3);
+        )->count())->toBe(3)
+        ->and(State::query()->where('country_id', $country->id)->where('code', 'BO')->exists())->toBeTrue()
+        ->and(State::query()->where('country_id', $country->id)->where('code', 'BQ1')->exists())->toBeFalse();
 });
 
 it('formats Caribbean Netherlands addresses without a postcode system', function (): void {

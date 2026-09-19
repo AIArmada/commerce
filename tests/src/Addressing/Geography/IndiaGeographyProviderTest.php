@@ -35,7 +35,9 @@ it('imports the Indian tree with state links', function (): void {
         ->and(AddressAreaStateLink::query()->whereHas(
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
-        )->count())->toBe(36);
+        )->count())->toBe(36)
+        ->and(State::query()->where('country_id', $country->id)->where('code', 'TS')->exists())->toBeTrue()
+        ->and(State::query()->where('country_id', $country->id)->where('code', 'TG')->exists())->toBeFalse();
 });
 
 it('formats Indian addresses with locality, state and postcode lines', function (): void {

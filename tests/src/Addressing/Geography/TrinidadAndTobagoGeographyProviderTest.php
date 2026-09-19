@@ -28,16 +28,18 @@ it('imports the Trinidadian and Tobagonian tree with state links', function (): 
     $country = AddressCountry::query()->where('iso2', 'TT')->firstOrFail();
 
     expect($result['seeded'])->toContain('TT')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(17)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(17)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'region')->count())->toBe(12)
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(15)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(15)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'region')->count())->toBe(10)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'borough')->count())->toBe(3)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'city')->count())->toBe(1)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'ward')->count())->toBe(1)
         ->and(AddressAreaStateLink::query()->whereHas(
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
-        )->count())->toBe(17);
+        )->count())->toBe(15)
+        ->and(State::query()->where('country_id', $country->id)->where('code', 'ETO')->exists())->toBeFalse()
+        ->and(State::query()->where('country_id', $country->id)->where('name', 'Mayaro-Rio Claro')->exists())->toBeTrue();
 });
 
 it('formats Trinidadian addresses with the postcode right of the locality', function (): void {

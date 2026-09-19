@@ -44,6 +44,13 @@ class TrinidadAndTobagoGeographyProvider implements CountryAddressAreaMetadataPr
                 ],
             );
         }
+
+        // Eastern/Western Tobago (ETO/WTO) are stale splits; Tobago is a
+        // single ward. Delete stragglers seeded before that fix.
+        $stateClass::query()
+            ->where('country_id', $country->id)
+            ->whereIn('code', ['ETO', 'WTO'])
+            ->delete();
     }
 
     /** @return list<AddressHierarchyDefinition> */
@@ -135,19 +142,17 @@ class TrinidadAndTobagoGeographyProvider implements CountryAddressAreaMetadataPr
             'CHA' => 'CHA',
             'CTT' => 'CTT',
             'DMN' => 'DMN',
-            'ETO' => 'ETO',
+            'MRC' => 'MRC',
             'PED' => 'PED',
             'PTF' => 'PTF',
             'POS' => 'POS',
             'PRT' => 'PRT',
-            'MRC' => 'MRC',
             'SFO' => 'SFO',
             'SJL' => 'SJL',
             'SGE' => 'SGE',
             'SIP' => 'SIP',
             'TOB' => 'TOB',
             'TUP' => 'TUP',
-            'WTO' => 'WTO',
         ];
 
         return array_map(
@@ -171,19 +176,17 @@ class TrinidadAndTobagoGeographyProvider implements CountryAddressAreaMetadataPr
             ['name' => 'Chaguanas', 'code' => 'CHA'],
             ['name' => 'Couva-Tabaquite-Talparo', 'code' => 'CTT'],
             ['name' => 'Diego Martin', 'code' => 'DMN'],
-            ['name' => 'Eastern Tobago', 'code' => 'ETO'],
+            ['name' => 'Mayaro-Rio Claro', 'code' => 'MRC'],
             ['name' => 'Penal-Debe', 'code' => 'PED'],
             ['name' => 'Point Fortin', 'code' => 'PTF'],
             ['name' => 'Port of Spain', 'code' => 'POS'],
             ['name' => 'Princes Town', 'code' => 'PRT'],
-            ['name' => 'Rio Claro-Mayaro', 'code' => 'MRC'],
             ['name' => 'San Fernando', 'code' => 'SFO'],
             ['name' => 'San Juan-Laventille', 'code' => 'SJL'],
             ['name' => 'Sangre Grande', 'code' => 'SGE'],
             ['name' => 'Siparia', 'code' => 'SIP'],
             ['name' => 'Tobago', 'code' => 'TOB'],
             ['name' => 'Tunapuna-Piarco', 'code' => 'TUP'],
-            ['name' => 'Western Tobago', 'code' => 'WTO'],
         ];
     }
 }
