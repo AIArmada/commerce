@@ -88,7 +88,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `benin-address-areas.csv` — used by `BeninGeographyProvider`. 12 departments.
 - `botswana-address-areas.csv` — used by `BotswanaGeographyProvider`. 10 districts + Gaborone/Francistown + 4 towns.
 - `burkina-faso-address-areas.csv` — used by `BurkinaFasoGeographyProvider`. 13 regions + 45 provinces flat at L1.
-- `burundi-address-areas.csv` — used by `BurundiGeographyProvider`. 18 provinces.
+- `burundi-address-areas.csv` — used by `BurundiGeographyProvider`. 5 provinces (July 2025 reform); codes 01-05 provisional pending ISO.
 - `cape-verde-address-areas.csv` — used by `CapeVerdeGeographyProvider`. 22 municipalities + Barlavento/Sotavento groups.
 - `central-african-republic-address-areas.csv` — used by `CentralAfricanRepublicGeographyProvider`. 15 prefectures + Bangui commune + Nana-Grébizi.
 - `chad-address-areas.csv` — used by `ChadGeographyProvider`. 23 provinces incl. N'Djamena.
@@ -133,7 +133,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `croatia-address-areas.csv` — used by `CroatiaGeographyProvider`. 20 counties incl. Zagreb.
 - `czech-republic-address-areas.csv` — used by `CzechRepublicGeographyProvider`. 13 regions + Praha with 76 districts at L2 (12/7/7/7/7/6/5/5/5/4/4/4/3; Praha childless).
 - `denmark-address-areas.csv` — used by `DenmarkGeographyProvider`. 5 regions.
-- `estonia-address-areas.csv` — used by `EstoniaGeographyProvider`. 15 counties with 79 municipalities at L2 (16/8/8/8/7/5/4/4/3/3/3/3/3/3/1; Toila merged into Jõhvi 2025); county/municipality twins share names.
+- `estonia-address-areas.csv` — used by `EstoniaGeographyProvider`. 15 counties with 78 municipalities at L2 (16/8/8/7/7/5/4/4/3/3/3/3/3/3/1); county/municipality twins share names.
 - `finland-address-areas.csv` — used by `FinlandGeographyProvider`. 18 regions.
 - `greece-address-areas.csv` — used by `GreeceGeographyProvider`. 13 regions + 2 regional units.
 - `hungary-address-areas.csv` — used by `HungaryGeographyProvider`. 20 counties + 22 county-rights cities + Budapest.

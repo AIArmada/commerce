@@ -69,8 +69,8 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Brazil | BR | 27 | 27 | 27 | 1 | administrative: state | — | below | L1 — 26 states + DF |
 | Brunei | BN | 4 | 4 | 43 | 2 | administrative: district > mukim | mukim | → | Complete; kampungs via components |
 | Bulgaria | BG | 28 | 28 | 28 | 1 | administrative: district | — | ← | L1 |
-| Burkina Faso | BF | 58 | 58 | 58 | 1 | administrative: region | — | ← | L1 — 13 regions + 45 provinces flat (pre-2025); July 2025 reform → 17 regions + 47 provinces, needs resourcing |
-| Burundi | BI | 18 | 18 | 18 | 1 | administrative: province | — | none | L1 |
+| Burkina Faso | BF | 58 | 58 | 58 | 1 | administrative: region | — | ← | L1 — 13 regions + 45 provinces flat (pre-2025); 17/47 reform blocked: 2 new province names + ISO codes unavailable |
+| Burundi | BI | 5 | 5 | 5 | 1 | administrative: province | — | none | L1 — 5 provinces (July 2025 reform); codes 01-05 provisional pending ISO |
 | Cambodia | KH | 25 | 25 | 25 | 1 | administrative: province | — | → | L1 — 24 provinces + Phnom Penh; districts/communes out of scope |
 | Cameroon | CM | 10 | 10 | 10 | 1 | administrative: region | — | none | L1 |
 | Canada | CA | 13 | 13 | 13 | 1 | administrative: province | — | → | L1 — 10 provinces + 3 territories |
@@ -99,7 +99,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | El Salvador | SV | 14 | 14 | 14 | 1 | administrative: department | — | ← | L1 |
 | Equatorial Guinea | GQ | 2 | 2 | 10 | 2 | administrative: region > province | province | none | Complete — 2 regions + 8 provinces |
 | Eritrea | ER | 6 | 6 | 6 | 1 | administrative: region | — | none | L1 |
-| Estonia | EE | 15 | 15 | 94 | 2 | administrative: county > municipality | municipality | ← | Complete — 15 counties + 79 municipalities (Toila merged into Jõhvi 2025, refresh pending) |
+| Estonia | EE | 15 | 15 | 93 | 2 | administrative: county > municipality | municipality | ← | Complete — 15 counties + 78 municipalities (Toila merged into Jõhvi 2025) |
 | Eswatini | SZ | 4 | 4 | 4 | 1 | administrative: region | — | below | L1 |
 | Ethiopia | ET | 14 | 14 | 14 | 1 | administrative: region | — | ← | L1; SN dissolved on seed |
 | Faroe Islands | FO | 6 | 6 | 6 | 1 | administrative: region | — | ← | L1 — 6 regions |

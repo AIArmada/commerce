@@ -1241,20 +1241,22 @@ and 45 provinces flat at level 1 as `State` rows and a single-level
 administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('BF')` after countries are seeded.
 Burkina Faso restructured to 17 regions and 47 provinces in July 2025;
-the bundled data still reflects the pre-2025 list pending resourcing,
-so the region -> province split stays deferred.
+the bundled data still reflects the pre-2025 list because the 2 new
+province names and the new ISO codes are unavailable in accessible
+sources, so the region -> province split stays deferred.
 
 Burkinabe addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, the region on its
 own line when both are set, and country.
 ## Burundi
 
-The bundled `BurundiGeographyProvider` supplies the 18 provinces
-as `State` rows and a single-level administrative hierarchy. It is
-selected with `SeedCountryGeographiesAction::execute('BI')` after
-countries are seeded. Burundi reformed to 5 provinces in September
-2025; the bundled data still reflects the 18-province list pending
-an ISO/states.json update.
+The bundled `BurundiGeographyProvider` supplies the 5 provinces
+(Buhumuza, Bujumbura, Burunga, Butanyerera, Gitega) as `State` rows
+and a single-level administrative hierarchy. It is selected with
+`SeedCountryGeographiesAction::execute('BI')` after countries are
+seeded. The July 2025 reform replaced the former 18 provinces; ISO
+3166-2:BI has not issued new codes, so the bundled codes 01-05 are
+provisional local numbers pending ISO.
 
 Burundi has no postcode system. Addresses are formatted per the UPU
 layout: P.O. box lines, the commune, the province, and country; any
@@ -1723,13 +1725,12 @@ optional `DK-` prefix passes through when supplied.
 ## Estonia
 
 The bundled `EstoniaGeographyProvider` supplies the 15 counties
-as `State` rows with the 79 municipalities as level-2 areas (16 Harju,
-8 each Ida-Viru/Tartu/Lääne-Viru, 7 Pärnu, 5 Võru, 4 each Rapla/Viljandi,
-3 each Lääne/Järva/Jõgeva/Põlva/Saare/Valga, 1 Hiiu) in a two-level
-administrative hierarchy. It is selected with
+as `State` rows with the 78 municipalities as level-2 areas (16 Harju,
+8 each Tartu/Lääne-Viru, 7 each Ida-Viru/Pärnu, 5 Võru, 4 each
+Rapla/Viljandi, 3 each Lääne/Järva/Jõgeva/Põlva/Saare/Valga, 1 Hiiu)
+in a two-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('EE')` after countries are seeded.
-Toila merged into Jõhvi in 2025; the bundled data still lists 79
-municipalities pending a states.json refresh.
+Toila merged into Jõhvi in 2025 and is no longer listed.
 County/municipality name twins share names by design; filter by type.
 
 Estonian addresses are formatted per the UPU layout: street lines,

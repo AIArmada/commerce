@@ -33,11 +33,11 @@ it('imports the county and municipality trees with state links', function (): vo
 
     expect($result['seeded'])->toContain('EE')
         ->and(State::query()->where('country_id', $country->id)->count())->toBe(15)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(94)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(93)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'county')->count())->toBe(15)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'rural_municipality')->count())->toBe(64)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'rural_municipality')->count())->toBe(63)
         ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'urban_municipality')->count())->toBe(15)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('level', 2)->count())->toBe(79)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('level', 2)->count())->toBe(78)
         ->and(AddressAreaStateLink::query()->whereHas(
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),

@@ -128,24 +128,11 @@ class BurundiGeographyProvider implements CountryAddressAreaMetadataProvider, Co
     {
         /** @var array<string, string> */
         $areaCodes = [
-            'BB' => 'BB',
-            'BM' => 'BM',
-            'BL' => 'BL',
-            'BR' => 'BR',
-            'CA' => 'CA',
-            'CI' => 'CI',
-            'GI' => 'GI',
-            'KR' => 'KR',
-            'KY' => 'KY',
-            'KI' => 'KI',
-            'MA' => 'MA',
-            'MU' => 'MU',
-            'MY' => 'MY',
-            'MW' => 'MW',
-            'NG' => 'NG',
-            'RM' => 'RM',
-            'RT' => 'RT',
-            'RY' => 'RY',
+            '01' => '01',
+            '02' => '02',
+            '03' => '03',
+            '04' => '04',
+            '05' => '05',
         ];
 
         return array_map(
@@ -165,24 +152,11 @@ class BurundiGeographyProvider implements CountryAddressAreaMetadataProvider, Co
     private function stateDefinitions(): array
     {
         return [
-            ['name' => 'Bubanza', 'code' => 'BB'],
-            ['name' => 'Bujumbura Mairie', 'code' => 'BM'],
-            ['name' => 'Bujumbura Rural', 'code' => 'BL'],
-            ['name' => 'Bururi', 'code' => 'BR'],
-            ['name' => 'Cankuzo', 'code' => 'CA'],
-            ['name' => 'Cibitoke', 'code' => 'CI'],
-            ['name' => 'Gitega', 'code' => 'GI'],
-            ['name' => 'Karuzi', 'code' => 'KR'],
-            ['name' => 'Kayanza', 'code' => 'KY'],
-            ['name' => 'Kirundo', 'code' => 'KI'],
-            ['name' => 'Makamba', 'code' => 'MA'],
-            ['name' => 'Muramvya', 'code' => 'MU'],
-            ['name' => 'Muyinga', 'code' => 'MY'],
-            ['name' => 'Mwaro', 'code' => 'MW'],
-            ['name' => 'Ngozi', 'code' => 'NG'],
-            ['name' => 'Rumonge', 'code' => 'RM'],
-            ['name' => 'Rutana', 'code' => 'RT'],
-            ['name' => 'Ruyigi', 'code' => 'RY'],
+            ['name' => 'Buhumuza', 'code' => '01'],
+            ['name' => 'Bujumbura', 'code' => '02'],
+            ['name' => 'Burunga', 'code' => '03'],
+            ['name' => 'Butanyerera', 'code' => '04'],
+            ['name' => 'Gitega', 'code' => '05'],
         ];
     }
 }

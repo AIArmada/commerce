@@ -28,13 +28,13 @@ it('imports the Burundian tree with state links', function (): void {
     $country = AddressCountry::query()->where('iso2', 'BI')->firstOrFail();
 
     expect($result['seeded'])->toContain('BI')
-        ->and(State::query()->where('country_id', $country->id)->count())->toBe(18)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(18)
-        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'province')->count())->toBe(18)
+        ->and(State::query()->where('country_id', $country->id)->count())->toBe(5)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('is_active', true)->count())->toBe(5)
+        ->and(AddressArea::query()->where('country_id', $country->id)->where('type', 'province')->count())->toBe(5)
         ->and(AddressAreaStateLink::query()->whereHas(
             'addressArea',
             fn ($query) => $query->where('country_id', $country->id),
-        )->count())->toBe(18);
+        )->count())->toBe(5);
 });
 
 it('formats Burundian addresses without a postcode system', function (): void {
