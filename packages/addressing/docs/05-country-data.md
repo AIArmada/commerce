@@ -59,6 +59,33 @@ precincts and settlements are address subdivisions.
 - administrative_subdivision: mukim and subdistricts
 - region: states and Federal Territories
 
+## Malaysia cross-boundary areas
+
+Some mukim names appear on both sides of a district or state boundary. Each
+case was verified against gazettes and titled-land evidence (Sept 2026), and
+the dataset models the two shapes differently: one mukim spanning two parents
+gets an extra administrative relationship, while two same-named mukims stay
+separate rows.
+
+| Mukim | Verdict | Modelled as |
+|---|---|---|
+| Setapak | One mukim spanning Gombak and Kuala Lumpur. DOSM: "Sebahagian Mukim Setapak (Peralihan daripada daerah Kuala Lumpur)". | Gombak row keeps its CSV parent and gains an extra administrative link to WP Kuala Lumpur. |
+| Ampang | Single-district mukim, wholly in Hulu Langat (MPAJ: "smallest county in the district of Hulu Langat"). The Ampang *town*/MPAJ area straddles districts, but that is Mukim Ulu Klang (Gombak) plus Mukim Ampang (Hulu Langat) — two distinct mukims. | No second parent. |
+| Batu (Gombak) | Distinct from Mukim Batu in KL: gazette titles pair each with exactly one Daerah ("Mukim Batu bagi Daerah Gombak" vs "MUKIM BATU, DAERAH KUALA LUMPUR"). | No second parent. The KL-side Mukim Batu row is not bundled yet. |
+| Cheras | Distinct mukims in Hulu Langat and KL ("Mukim Cheras, Daerah Kuala Lumpur" on KL land titles). KL's parliamentary constituency is P123 Cheras, a separate concept from either mukim. | No second parent. The KL-side Mukim Cheras row is not bundled yet. |
+
+Rules for cross-boundary rows:
+
+- The CSV parent stays the single primary parent (`parent_id`). The second
+  parent exists only as an administrative relationship, so hierarchy-filtered
+  searches find the area under either parent.
+- Every extra parent must resolve to a bundled area; the provider test fails
+  on dangling links because the seeder skips unresolvable links silently.
+
+Evidence: DOSM Gombak formation brief, Selangor State Gazette notices, ST
+licensee lists with full title addresses, Bursa land disclosures, and KWP's
+AGISwlk-sourced KL mukim boundary table.
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC

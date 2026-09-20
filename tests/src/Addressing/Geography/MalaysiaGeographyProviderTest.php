@@ -10,6 +10,7 @@ use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
@@ -325,4 +326,82 @@ it('deactivates prior areas when a provider changes its imported source key', fu
         ->and(AddressAreaRole::query()
             ->where('source', 'test.addressing.rekey')
             ->value('address_area_id'))->toBe(AddressArea::query()->where('source', 'test-feed-v2')->value('id'));
+});
+
+it('links cross-boundary Mukim Setapak to both Gombak and Kuala Lumpur', function (): void {
+    $country = $this->seedCountry('MY');
+
+    $relationships = app(MalaysiaGeographyProvider::class)->areaRelationships($country);
+    $parents = array_column(
+        $relationships['my:subdistrict:district:selangor:gombak:setapak'] ?? [],
+        'parent_source_id'
+    );
+
+    expect($parents)->toContain('my:district:selangor:gombak')
+        ->and($parents)->toContain('my:state:selangor')
+        ->and($parents)->toContain('my:state:wilayah-persekutuan-kuala-lumpur');
+});
+
+it('seeds both administrative parents for cross-boundary areas', function (): void {
+    $this->seedCountry('MY');
+
+    app(SeedCountryGeographiesAction::class)->execute('MY');
+
+    $child = AddressArea::query()
+        ->where('source_id', 'my:subdistrict:district:selangor:gombak:setapak')
+        ->firstOrFail();
+    $parentSourceIds = AddressAreaRelationship::query()
+        ->where('child_address_area_id', $child->getKey())
+        ->where('hierarchy_type', 'administrative')
+        ->with('parent')
+        ->get()
+        ->map(static fn (AddressAreaRelationship $link): string => $link->parent->source_id)
+        ->all();
+
+    expect($parentSourceIds)->toContain('my:district:selangor:gombak')
+        ->and($parentSourceIds)->toContain('my:state:wilayah-persekutuan-kuala-lumpur');
+});
+
+it('resolves every emitted relationship to a bundled area', function (): void {
+    $country = $this->seedCountry('MY');
+    $provider = app(MalaysiaGeographyProvider::class);
+
+    $known = $provider->addressAreaSource()->areas()
+        ->map(static fn (AddressAreaData $area): string => $area->sourceId)
+        ->flip()
+        ->all();
+
+    $dangling = [];
+
+    foreach ($provider->areaRelationships($country) as $childSourceId => $relationships) {
+        if (! isset($known[$childSourceId])) {
+            $dangling[] = $childSourceId;
+        }
+
+        foreach ($relationships as $relationship) {
+            if (! isset($known[$relationship['parent_source_id']])) {
+                $dangling[] = $childSourceId . ' -> ' . $relationship['parent_source_id'];
+            }
+        }
+    }
+
+    expect($dangling)->toBe([]);
+});
+
+it('keeps single-district mukims on one administrative parent', function (): void {
+    $country = $this->seedCountry('MY');
+
+    $relationships = app(MalaysiaGeographyProvider::class)->areaRelationships($country);
+
+    $ampangParents = array_column(
+        $relationships['my:subdistrict:district:selangor:hulu-langat:ampang'] ?? [],
+        'parent_source_id'
+    );
+    $batuParents = array_column(
+        $relationships['my:subdistrict:district:selangor:gombak:batu'] ?? [],
+        'parent_source_id'
+    );
+
+    expect($ampangParents)->not->toContain('my:district:selangor:gombak')
+        ->and($batuParents)->not->toContain('my:state:wilayah-persekutuan-kuala-lumpur');
 });

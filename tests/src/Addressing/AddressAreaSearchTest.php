@@ -176,3 +176,57 @@ it('does not cross hierarchy branches when filtering by parent', function (): vo
     expect($results->pluck('name')->all())->not->toContain('Johor Bahru')
         ->and($unfiltered->pluck('name')->all())->toContain('Johor Bahru');
 });
+
+it('finds a cross-boundary area under either administrative parent', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $firstParent = AddressArea::query()->where('source_id', 'fixture:johor')->firstOrFail();
+    $secondParent = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'MY',
+        'type' => 'state',
+        'level' => 1,
+        'name' => 'Second State',
+        'slug' => 'second-state',
+        'source' => 'test-fixture',
+        'source_id' => 'fixture:second-state',
+        'is_active' => true,
+    ]);
+    $child = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'MY',
+        'parent_id' => $firstParent->getKey(),
+        'type' => 'mukim',
+        'level' => 3,
+        'name' => 'Split Mukim',
+        'slug' => 'split-mukim',
+        'source' => 'test-fixture',
+        'source_id' => 'fixture:split-mukim',
+        'is_active' => true,
+    ]);
+
+    foreach ([$firstParent, $secondParent] as $parent) {
+        AddressAreaRelationship::query()->create([
+            'parent_address_area_id' => $parent->getKey(),
+            'child_address_area_id' => $child->getKey(),
+            'relationship_type' => 'contains',
+            'hierarchy_type' => 'administrative',
+            'source' => 'test-fixture',
+        ]);
+    }
+
+    $underFirst = app(SearchAddressAreasAction::class)->execute(
+        query: 'Split Mukim',
+        countryCode: 'MY',
+        parentId: $firstParent->getKey(),
+        hierarchyType: 'administrative',
+    );
+    $underSecond = app(SearchAddressAreasAction::class)->execute(
+        query: 'Split Mukim',
+        countryCode: 'MY',
+        parentId: $secondParent->getKey(),
+        hierarchyType: 'administrative',
+    );
+
+    expect($underFirst->pluck('name')->all())->toContain('Split Mukim')
+        ->and($underSecond->pluck('name')->all())->toContain('Split Mukim');
+});
