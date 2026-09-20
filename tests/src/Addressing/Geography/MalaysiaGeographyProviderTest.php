@@ -175,14 +175,14 @@ it('maps the bundled state, district, and locality rows', function (): void {
     $rows = malaysiaMainCsvRows();
     $byType = array_count_values(array_column($rows, 'type'));
 
-    expect($rows)->toHaveCount(1836)
+    expect($rows)->toHaveCount(1837)
         ->and($byType['state'] ?? 0)->toBe(13)
         ->and($byType['wilayah_persekutuan'] ?? 0)->toBe(3)
         ->and($byType['division'] ?? 0)->toBe(17)
         ->and($byType['district'] ?? 0)->toBe(160)
-        ->and($byType['minor_district'] ?? 0)->toBe(1)
-        ->and($byType['mukim'] ?? 0)->toBe(1248)
-        ->and($byType['bandar'] ?? 0)->toBe(17)
+        ->and($byType['minor_district'] ?? 0)->toBe(2)
+        ->and($byType['mukim'] ?? 0)->toBe(1246)
+        ->and($byType['bandar'] ?? 0)->toBe(19)
         ->and($byType['pekan'] ?? 0)->toBe(6)
         ->and($byType['subdistrict'] ?? 0)->toBe(312)
         ->and($byType['locality'] ?? 0)->toBe(39)
@@ -509,4 +509,23 @@ it('resolves every postal link to a bundled Malaysian area', function (): void {
     fclose($handle);
 
     expect($dangling)->toBe([]);
+});
+
+it('models Genting as a bandar under its own minor district', function (): void {
+    $rows = malaysiaMainCsvRows();
+    $byId = array_column($rows, null, 'source_id');
+
+    expect($byId['my:district:pahang:genting']['type'] ?? null)->toBe('minor_district')
+        ->and($byId['my:district:pahang:genting']['parent_source_id'] ?? null)->toBe('my:state:pahang')
+        ->and($byId['my:subdistrict:district:pahang:genting:genting']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:pahang:genting:genting']['parent_source_id'] ?? null)->toBe('my:district:pahang:genting')
+        ->and($byId['my:subdistrict:district:pahang:bentong:karak']['type'] ?? null)->toBe('bandar')
+        ->and(isset($byId['my:subdistrict:district:pahang:bentong:genting-highlands']))->toBeFalse();
+
+    $country = $this->seedCountry('MY');
+    $names = app(MalaysiaGeographyProvider::class)->areaNames($country);
+
+    expect($names['my:subdistrict:district:pahang:genting:genting'] ?? [])->toBe([
+        ['name' => 'Genting Highlands', 'name_type' => 'common', 'is_preferred' => true],
+    ]);
 });

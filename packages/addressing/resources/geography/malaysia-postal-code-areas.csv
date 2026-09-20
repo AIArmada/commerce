@@ -2081,7 +2081,7 @@ postcode,area_source_id,relationship_type,is_primary
 64000,my:district:selangor:sepang,served_by,true
 68000,my:subdistrict:district:selangor:hulu-langat:ampang,served_by,true
 68100,my:subdistrict:district:selangor:gombak:batu,served_by,true
-69000,my:subdistrict:district:pahang:bentong:genting-highlands,served_by,true
+69000,my:subdistrict:district:pahang:genting:genting,served_by,true
 70000,my:subdistrict:district:negeri-sembilan:seremban:bandar-seremban,served_by,true
 70100,my:subdistrict:district:negeri-sembilan:seremban:bandar-seremban,served_by,true
 70100,my:subdistrict:district:negeri-sembilan:seremban:ampangan,served_by,false

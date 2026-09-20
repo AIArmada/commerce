@@ -142,6 +142,27 @@ Garang, Kuala Kubu Bharu) carry the UPI variant as an alternative name.
 Postal links were repointed to the surviving rows; no postcode lost its
 primary link.
 
+## Genting Highlands
+
+Genting Highlands is not a mukim of Bentong. Bentong has exactly three
+mukims (Bentong, Sabai, Pelangai); the gazetted Genting unit is Bandar
+Genting under Daerah Kecil Genting, excised from Mukim Bentong in November
+2019 (Pahang Gazette Notifications 2497/2501, UPI 06/12/40). The dataset
+models the minor district and the bandar; "Genting Highlands" is stored as
+the preferred common name. Karak in the same pass was corrected from mukim
+to bandar (UPI Bandar Karak).
+
+The resort genuinely spans the Pahang–Selangor border: the Selangor
+footprint (Highlands/RW Hotel, Skyway assets, Gohtong Jaya) sits in Hulu
+Selangor district, Mukim Batang Kali, under MPHS planning authority — while
+mailing with the Pahang postcode 69000. There is no gazetted Selangor-side
+Genting entity, so no second row exists; never key state off the postcode.
+
+Evidence: JUPEM UPI book for Pahang, Pahang Gazette 2019 declarations,
+Genting Berhad annual-report land schedules (Selangor vs Bentong), the
+Genting Highlands–Hulu Selangor RKK plan, and titled-land records on both
+sides.
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC

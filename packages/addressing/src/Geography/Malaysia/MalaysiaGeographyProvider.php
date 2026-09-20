@@ -200,6 +200,9 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             'my:subdistrict:district:selangor:kuala-langat:tanjong-sepat' => [
                 ['name' => 'Tanjung Sepat', 'name_type' => 'alternative'],
             ],
+            'my:subdistrict:district:pahang:genting:genting' => [
+                ['name' => 'Genting Highlands', 'name_type' => 'common', 'is_preferred' => true],
+            ],
         ];
     }
 
