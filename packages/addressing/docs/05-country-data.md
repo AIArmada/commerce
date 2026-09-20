@@ -281,6 +281,30 @@ Mukim Hulu Nerus), and Bukit Payong (Marang's Mukim Bukit Payung, spelling
 corrected in the move); and the Chalok duplicate of Caluk. Postcodes remap to
 the gazetted mukim each town falls in.
 
+## Perak mukim audit
+
+Every Perak subdivision row was diffed against the JUPEM UPI boundary book
+for Perak (Sept 2026; 13 districts), cross-checked against PLANMalaysia
+kod-mukim, DOSM census divisions, state gazettes, and land-title records.
+Structural fixes: the combined Larut-Matang-dan-Selama district row was split
+into Larut Matang (15 rows) and Selama (3 rows); Sungai Sumun moved from
+Hilir Perak to Bagan Datuk; Trolak moved from Batang Padang to Muallim as
+Pekan Terolak. Ipoh town split into Bandar Ipoh (N) and Bandar Ipoh (S) with
+all 112 town postcodes linking the Kinta district (Muadzam precedent; the
+N/S line runs east-west across the town centre per plan PW 5296). Retyped 17
+rows to bandar and 12 to pekan (Langkap and Malim Nawar kept as pekan on
+gazette evidence). Renamed to gazetted forms: Kelian Intan, Simpang Empat,
+Terung (Terong/Trong are the same place), Hulu Ijok, Hulu Selama, Jaya Baru,
+Pasir Panjang Hulu, Sayung, Sungai Raya, Hulu Bernam Barat. Removed 23 rows:
+7 non-gazetted towns (Behrang Stesen, Seri Manjung, Kampung Kepayang, Jeram,
+Sauk, Enggor, Ulu Bernam), the TLDM Lumut base row (32100 to Lumut), 9
+wrong-district rows (Changkat Jering, Slim, Slim River, Belanja, Kampar, Teja,
+Tronoh, Rantau Panjang, Batu Kurau), 5 spelling duplicates (Bruas, Bagan
+Datoh, Ulu Kinta, Bandar Seri Iskandar, Trong of Terung), and Ipoh town
+(split into N/S bandars). Uncertain
+postcodes link the district: 36500 (Ladang Ulu Bernam estate) to Hilir Perak,
+31750 to Kinta, 34140 to Selama, 34850 to Larut Matang.
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC

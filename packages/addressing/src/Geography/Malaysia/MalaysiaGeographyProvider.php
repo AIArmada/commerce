@@ -316,6 +316,50 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             'my:subdistrict:district:terengganu:setiu:caluk' => [
                 ['name' => 'Chalok', 'name_type' => 'alternative'],
             ],
+            // Common names for Perak rows renamed to gazetted forms.
+            'my:subdistrict:district:perak:muallim:terolak' => [
+                ['name' => 'Trolak', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:kerian:simpang-empat' => [
+                ['name' => 'Simpang Ampat Semanggol', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:larut-matang:terung' => [
+                ['name' => 'Terong', 'name_type' => 'alternative'],
+                ['name' => 'Trong', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:selama:hulu-ijok' => [
+                ['name' => 'Ulu Ijok', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:selama:hulu-selama' => [
+                ['name' => 'Ulu Selama', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:perak-tengah:pasir-panjang-hulu' => [
+                ['name' => 'Pasir Panjang Ulu', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:kuala-kangsar:sayung' => [
+                ['name' => 'Saiong', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:kinta:sungai-raya' => [
+                ['name' => 'Sungai Raia', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:muallim:hulu-bernam-barat' => [
+                ['name' => 'Ulu Bernam Barat', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:kinta:hulu-kinta' => [
+                ['name' => 'Ulu Kinta', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:perak-tengah:kampung-gajah' => [
+                ['name' => 'Kampong Gajah', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:kuala-kangsar:kampung-buaya' => [
+                ['name' => 'Kampong Buaya', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:manjung:beruas' => [
+                ['name' => 'Bruas', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:perak:bagan-datuk:bagan-datuk' => [
+                ['name' => 'Bagan Datoh', 'name_type' => 'alternative'],
+            ],
         ];
     }
 
