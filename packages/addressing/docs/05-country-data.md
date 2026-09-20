@@ -250,14 +250,29 @@ province line is omitted when a postcode is present, per the UPU rule.
 ## Türkiye
 
 The bundled `TurkiyeGeographyProvider` supplies the 81 ISO 3166-2
-provinces as `State` rows and a single-level administrative hierarchy.
-It is selected with `SeedCountryGeographiesAction::execute('TR')`
-after countries are seeded.
+provinces as `State` rows and a two-level administrative hierarchy
+(`province` > `district`). It is selected with
+`SeedCountryGeographiesAction::execute('TR')` after countries are seeded.
+
+Level 2 carries all 973 ilçeler. The 51 non-metropolitan provinces
+each have a bare `Merkez` central district; the 30 metropolitan
+provinces have multiple urban districts instead (no `Merkez` row).
+The newest district is Derecik (Hakkâri), created in 2018 by Law 7148;
+no district has been created since. Districts carry no `code`: no
+official numeric ilçe code system was verified, so the column stays
+empty. `Kazan` is kept as a `historic` alias (renamed Kahramankazan by
+Law 6752 in 2016) and `Karadeniz Ereğli` as a `common` alias for
+Zonguldak's `Ereğli`, which twins officially with Konya's `Ereğli`.
+25 names twin across provinces (`Merkez` ×51, `Ereğli` ×2,
+`Yenişehir` ×3, 22 pairs) — filter by `type` and parent, never by
+name alone. YSK's qualified `{Province} Merkez` form is a YSK-table
+convention, not the district name. Villages and neighbourhoods
+(mahalle) are intentionally not bundled.
 
 Turkish addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}/{province}` with a 5-digit postcode, and
-country. Districts (ilçe, 900+) are intentionally not bundled.
-Sub-locality postcode suffixes (`06050-01` style) are not generated.
+country. Sub-locality postcode suffixes (`06050-01` style) are not
+generated.
 
 ## Pakistan
 
@@ -435,13 +450,23 @@ country. The two-letter province abbreviation comes from the optional
 ## Japan
 
 The bundled `JapanGeographyProvider` supplies the 47 prefectures as
-`State` rows and a single-level administrative hierarchy. It is
-selected with `SeedCountryGeographiesAction::execute('JP')` after
-countries are seeded.
+`State` rows and a two-level administrative hierarchy (`prefecture` >
+`municipality`). It is selected with
+`SeedCountryGeographiesAction::execute('JP')` after countries are seeded.
 
-Prefecture names use unmacroned romanization (`Hokkaido`, `Kyoto`,
-`Osaka`) per the UPU prefecture list. Cities, wards, and sub-locality
-divisions are intentionally not bundled.
+Level 2 carries all 1,747 municipalities from the MIC R6.1.1 code table:
+792 cities, 743 towns, 183 villages, the 23 Tokyo special wards (folded
+in as municipalities), and the 6 Northern-Territories paper villages
+(Shikotan, Tomari, Ruyobetsu, Rubetsu, Shana, Shibetoro — Japanese
+claimed/notional rows under Hokkaido). Names use bare unmacroned
+romanization (`Sapporo`, `Chiyoda`, `Naha`) with kanji in `native_name`;
+municipality kind (city/town/village/ward) is carried by the kanji
+suffix only. Thirteen same-prefecture name twins exist (Tomari ×2 in
+Hokkaido, Fuchu city/town in Hiroshima, Toshima ward/village in Tokyo,
+and ten more) plus ~100 cross-prefecture twins (Date, Fuchu) — filter
+by `code` and parent, never by name alone. Ordinance-designated-city
+wards (e.g. Osaka's 24 ku) are sub-municipal and intentionally not
+bundled.
 
 Japanese addresses are formatted per the UPU western layout: street
 lines, `{city}, {prefecture}`, the `NNN-NNNN` postcode on its own
@@ -516,13 +541,25 @@ two spaces before the locality, and country.
 ## Nigeria
 
 The bundled `NigeriaGeographyProvider` supplies the 36 states plus the
-Abuja Federal Capital Territory as `State` rows and a single-level
-administrative hierarchy. It is selected with
+Abuja Federal Capital Territory as `State` rows and a two-level
+administrative hierarchy (`state` > `lga`). It is selected with
 `SeedCountryGeographiesAction::execute('NG')` after countries are seeded.
+
+Level 2 carries the constitutional 774: 768 LGAs plus the 6 FCT Area
+Councils (typed `area_council`, sharing the `lga` role). Names follow
+the post-2023 gazetted forms from the Fifth Alteration (Afikpo, Edda,
+Ghari, Yewa North/South, Atisbo, Obio-Akpor) with pre-2023 names kept
+as `historic` aliases. `Aiyekire` keeps its constitutional spelling
+with `Gbonyin` (state usage, preferred) and `Ayekire` as aliases; the
+Barkin Ladi → Gwol rename failed in the Senate and is not applied.
+Six cross-state twins exist (Obi, Bassa, Ifelodun, Irepodun, Surulere,
+Nasarawa) — filter by `type` and parent, never by name alone.
+State-created LCDAs (e.g. Lagos's 37) and the October 2025 NASS
+state/LGA-creation talks are excluded: only gazetted LGAs ship.
 
 Nigerian addresses are formatted per the UPU layout: street lines,
 `{locality} {postcode}` with a 6-digit postcode, the state on its own
-line, and country. LGAs are intentionally not bundled.
+line, and country.
 
 ## Ethiopia
 
@@ -600,12 +637,22 @@ Ugandan addresses are formatted per the UPU layout: street lines,
 
 The bundled `AlgeriaGeographyProvider` supplies the 69 wilayas
 (codes `49`–`58` from the 2019 expansion with corrected numbering,
-plus `59`–`69` created by décret 26-206 in June 2026) as `State` rows
-and a single-level administrative hierarchy. It is selected with
-`SeedCountryGeographiesAction::execute('DZ')` after countries are seeded.
+plus `59`–`69` created by Law 26-06 in April 2026) as `State` rows
+and a two-level administrative hierarchy (`wilaya` > `daira`). It is
+selected with `SeedCountryGeographiesAction::execute('DZ')` after
+countries are seeded.
 
-Wilaya names use French official forms (`Alger`, not `Algiers`).
-Communes are intentionally not bundled.
+Level 2 carries the 548 dairas: 482 in wilayas `01`–`48`, 26 in the
+2019 batch, 40 in the 2026 batch. Daira boundaries follow décret
+exécutif 91-306 as amended by décret 26-253 (JO 2026 n°52), which
+moves all other dairas whole and creates exactly one new daira
+(El Aricha, from split-off Sebdou communes); El Borma sits in
+Ouargla per the 2021 formalization, superseding its 2019 Touggourt
+assignment. Names use French official forms (`Alger`, not `Algiers`;
+daira `Bou Saada` without the wilaya's â, daira `El Meniaa` against
+wilaya `El Menia`). The cross-wilaya `Mansoura` twin (Bordj Bou
+Arréridj + Ghardaïa) — filter by `type` and parent, never by name
+alone. Communes (1,541) are intentionally not bundled.
 
 Algerian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, and country.

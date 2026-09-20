@@ -62,6 +62,16 @@ class NigeriaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['state'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'lga',
+                        label: 'Local Government Area',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['lga', 'area_council'],
+                        areaLevels: [2],
+                        parentKey: 'state',
+                        assignmentRole: 'lga',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class NigeriaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'state' => ['state'],
+                'lga', 'area_council' => ['lga'],
                 default => [],
             };
 
@@ -90,7 +101,44 @@ class NigeriaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        return [
+            'ng:lga:ebonyi:afikpo' => [
+                ['name' => 'Afikpo North', 'name_type' => 'historic'],
+            ],
+            'ng:lga:ebonyi:edda' => [
+                ['name' => 'Afikpo South', 'name_type' => 'historic'],
+            ],
+            'ng:lga:ekiti:aiyekire' => [
+                ['name' => 'Gbonyin', 'name_type' => 'common', 'is_preferred' => true],
+                ['name' => 'Ayekire', 'name_type' => 'alternative'],
+            ],
+            'ng:lga:kano:ghari' => [
+                ['name' => 'Kunchi', 'name_type' => 'historic'],
+            ],
+            'ng:lga:ogun:yewa-north' => [
+                ['name' => 'Egbado North', 'name_type' => 'historic'],
+            ],
+            'ng:lga:ogun:yewa-south' => [
+                ['name' => 'Egbado South', 'name_type' => 'historic'],
+            ],
+            'ng:lga:oyo:atisbo' => [
+                ['name' => 'Atigbo', 'name_type' => 'historic'],
+            ],
+            'ng:lga:rivers:obio-akpor' => [
+                ['name' => 'Obia/Akpor', 'name_type' => 'historic'],
+                ['name' => 'Abio/Akpor', 'name_type' => 'alternative'],
+            ],
+            'ng:lga:benue:oturkpo' => [
+                ['name' => 'Otukpo', 'name_type' => 'common'],
+            ],
+            'ng:lga:ondo:ile-oluji-okeigbo' => [
+                ['name' => 'Ile-Oluji', 'name_type' => 'common'],
+            ],
+            'ng:area_council:abuja-federal-capital-territory:abuja-municipal' => [
+                ['name' => 'Abuja Municipal Area Council', 'name_type' => 'official'],
+                ['name' => 'AMAC', 'name_type' => 'abbreviation'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */

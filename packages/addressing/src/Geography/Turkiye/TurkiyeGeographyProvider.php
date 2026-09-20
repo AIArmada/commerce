@@ -62,6 +62,16 @@ class TurkiyeGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['province'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class TurkiyeGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
+                'district' => ['district'],
                 default => [],
             };
 
@@ -90,7 +101,14 @@ class TurkiyeGeographyProvider implements CountryAddressAreaMetadataProvider, Co
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        return [
+            'tr:district:ankara:kahramankazan' => [
+                ['name' => 'Kazan', 'name_type' => 'historic'],
+            ],
+            'tr:district:zonguldak:eregli' => [
+                ['name' => 'Karadeniz Ereğli', 'name_type' => 'common'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */

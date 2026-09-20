@@ -151,7 +151,7 @@ br:state:acre,BR,state,Acre,,AC,,1,,
 br:state:alagoas,BR,state,Alagoas,,AL,,1,,
 ```
 
-- `source_id` is `<lower-iso2>:<type>:<slug-or-official-code>`: slugs for most countries (`br:state:acre`, `bh:governorate:capital`), official statistical codes where they exist (`id:province:11`, `id:regency:1101`, `id:district:110101`). It must be stable across reseeds and unique per feed.
+- `source_id` is `<lower-iso2>:<type>:<slug-or-official-code>`: slugs for most countries (`br:state:acre`, `bh:governorate:capital`), official statistical codes where they exist (`id:province:11`, `id:regency:1101`, `id:district:110101`, `jp:municipality:01100`). It must be stable across reseeds and unique per feed.
 - `level` is 1-based; level-1 rows leave `parent_source_id` empty. Deeper rows point at their parent's `source_id`.
 - `code` carries the official subdivision code and is what `stateAreaMappings()` joins on at level 1.
 - `native_name`, `latitude`, and `longitude` are usually empty; fill them only with trusted data.
@@ -174,7 +174,7 @@ A single-level tier may legitimately carry two administrative tiers flat (Sri La
 
 ## State-only versus deep trees
 
-Ship state-only (one `state` level, one CSV level, identity mappings) unless consumer addressing genuinely needs sub-state granularity. Most bundled providers are state-only. Deep trees exist where addressing or hierarchy selection requires them: dual-hierarchy Malaysia and Singapore, depth-3 Indonesia, and depth-2 Bangladesh, Brunei, Spain, Morocco, Oman, and Pakistan. When in doubt, start state-only — depth can be added later without breaking the state level, while shipping wrong depth forces consumers to carry it.
+Ship state-only (one `state` level, one CSV level, identity mappings) unless consumer addressing genuinely needs sub-state granularity. Most bundled providers are state-only. Deep trees exist where addressing or hierarchy selection requires them: dual-hierarchy Malaysia and Singapore, depth-3 Indonesia, and depth-2 Algeria, Bangladesh, Brunei, Japan, Morocco, Nigeria, Oman, Pakistan, Spain, and Türkiye. When in doubt, start state-only — depth can be added later without breaking the state level, while shipping wrong depth forces consumers to carry it.
 
 ## The numeric-key gotcha
 
@@ -229,8 +229,11 @@ Every assignment role and area type in use across the bundled providers, extract
 | `administrative_district` | MY | district, minor_district | 2–3 |
 | `administrative_division` | MY | division | 2 |
 | `administrative_subdivision` | MY | city, municipality, mukim, subdistrict | 2–4 |
-| `district` | BD, ID, PK | district | BD 2, ID 3, PK 2 |
+| `daira` | DZ | daira | 2 |
+| `district` | BD, ID, PK, TR | district | BD 2, ID 3, PK 2, TR 2 |
+| `lga` | NG | lga, area_council | 2 |
 | `mukim` | BN | mukim | 2 |
+| `municipality` | JP | municipality | 2 |
 | `planning_area` | SG | planning_area | 2 |
 | `postal_district` | SG | postal_district | 1 |
 | `postal_locality` | MY | locality, precinct | 2 |
@@ -246,7 +249,7 @@ Level 1 is always state-kind (one level per country, `areaLevel: 1`), except Sin
 
 State-level (kind `state`, level 1): administrative_region, arctic_region, area, atoll, autonomous_city, autonomous_community, autonomous_district, autonomous_oblast, autonomous_region, autonomous_republic, autonomous_sector, autonomous_territorial_unit, canton, capital_city, capital_district, capital_territory, city, city_municipality, city_with_county_rights, commune, county, department, dependency, district, district_municipality, districts_under_republic_administration, division, economic_prefecture, emirate, entity, federal_city, federal_district, geographical_region, governorate, island, krai, local_council, metropolitan_administration, metropolitan_city, municipality, nation, oblast, okrug, parish, popularate, prefecture, province, quarter, region, regional_unit, republic, rural_municipality, sheadings, special_administrative_region, special_city, special_municipality, special_self_governing_city, special_self_governing_province, state, state_city, territorial_unit, territory, town, union_territory, urban_community, urban_municipality, voivodeship, wilaya, wilayah_persekutuan.
 
-Sub-state (kind `area`, level 2+, plus SG level 1): city, district, division, locality, minor_district, mukim, municipality, planning_area, postal_district, postal_sector, precinct, prefecture, province, regency, region, subdistrict, wilayat.
+Sub-state (kind `area`, level 2+, plus SG level 1): area_council, city, daira, district, division, lga, locality, minor_district, mukim, municipality, planning_area, postal_district, postal_sector, precinct, prefecture, province, regency, region, subdistrict, wilayat.
 
 ### Naming new roles and types
 

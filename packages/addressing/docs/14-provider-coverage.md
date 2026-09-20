@@ -10,8 +10,8 @@ counts, or changes scope. See [Country Data](./05-country-data.md)
 for per-country narrative and [Provider Authoring](./13-provider-authoring.md)
 for how to add a level.
 
-Current shape: 229 providers — 2 dual-hierarchy, 1 depth-3, 18 depth-2,
-208 depth-1.
+Current shape: 229 providers — 2 dual-hierarchy, 1 depth-3, 22 depth-2,
+204 depth-1.
 All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 above6 below28 after country1), 48 codeless.
 
 ## Legend
@@ -41,7 +41,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Afghanistan | AF | 34 | 34 | 34 | 1 | administrative: province | — | ← | L1; districts (~400) blocked, stale data |
 | Aland | AX | 16 | 16 | 16 | 1 | administrative: municipality | — | ← | L1 — 16 municipalities |
 | Albania | AL | 12 | 12 | 12 | 1 | administrative: county | — | above | L1 |
-| Algeria | DZ | 69 | 69 | 69 | 1 | administrative: wilaya | — | ← | L1 — 69 wilayas (2019 + 2026 batches); dairas (~550) candidate |
+| Algeria | DZ | 69 | 69 | 617 | 2 | administrative: wilaya > daira | daira | ← | Complete — 69 wilayas + 548 dairas per décrets 91-306/26-253; communes excluded |
 | American Samoa | AS | 5 | 5 | 5 | 1 | administrative: district | — | US → | L1 — 3 districts + 2 atolls |
 | Andorra | AD | 7 | 7 | 7 | 1 | administrative: parish | — | ← | L1 |
 | Angola | AO | 18 | 18 | 18 | 1 | administrative: province | — | none | L1; 2024 split unimplemented |
@@ -139,7 +139,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Italy | IT | 20 | 20 | 20 | 1 | administrative: region | — | ← | L1 |
 | Ivory Coast | CI | 14 | 14 | 14 | 1 | administrative: district | — | none | L1 — 12 districts + Abidjan/Yamoussoukro |
 | Jamaica | JM | 14 | 14 | 14 | 1 | administrative: parish | — | none | L1 |
-| Japan | JP | 47 | 47 | 47 | 1 | administrative: prefecture | — | below | L1; municipalities candidate |
+| Japan | JP | 47 | 47 | 1794 | 2 | administrative: prefecture > municipality | municipality | below | Complete — 47 prefectures + 1,747 municipalities (792 cities + 743 towns + 183 villages + 23 Tokyo special wards + 6 Northern-Territories paper villages); designated-city wards out of scope |
 | Jersey | JE | 12 | 12 | 12 | 1 | administrative: parish | — | below | L1 — 12 parishes |
 | Jordan | JO | 12 | 12 | 12 | 1 | administrative: governorate | — | → | L1; liwa (~50) candidate |
 | Kazakhstan | KZ | 20 | 20 | 20 | 1 | administrative: region | — | ← | L1 — 17 regions + 3 cities |
@@ -186,7 +186,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | New Zealand | NZ | 17 | 17 | 17 | 1 | administrative: region | — | ← | L1 — 16 regions + Chatham Islands |
 | Nicaragua | NI | 17 | 17 | 17 | 1 | administrative: department | — | above | L1 — 15 departments + 2 autonomous regions |
 | Niger | NE | 8 | 8 | 8 | 1 | administrative: region | — | ← | L1 — 7 regions + Niamey |
-| Nigeria | NG | 37 | 37 | 37 | 1 | administrative: state | — | → | L1 — 36 states + FCT; LGAs (774) candidate |
+| Nigeria | NG | 37 | 37 | 811 | 2 | administrative: state > lga | lga | → | Complete — 37 states + 768 LGAs + 6 FCT area councils; post-2023 names; LCDAs excluded |
 | Niue | NU | 14 | 14 | 14 | 1 | administrative: village | — | → | L1 — 14 villages |
 | North Korea | KP | 13 | 13 | 13 | 1 | administrative: province | — | none | L1 — 9 provinces + 4 cities; no postcode |
 | North Macedonia | MK | 80 | 80 | 80 | 1 | administrative: municipality | — | ← | L1 — 80 municipalities |
@@ -250,7 +250,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Turkmenistan | TM | 6 | 6 | 6 | 1 | administrative: region | — | below | L1 — 5 regions + Ashgabat |
 | Turks and Caicos | TC | 6 | 6 | 6 | 1 | administrative: district | — | below | L1 — 6 districts |
 | Tuvalu | TV | 8 | 8 | 8 | 1 | administrative: island_council | — | none | L1 — 7 island + 1 town council |
-| Türkiye | TR | 81 | 81 | 81 | 1 | administrative: province | — | ← | L1; ilçe (~970) candidate (TÜİK) |
+| Türkiye | TR | 81 | 81 | 1054 | 2 | administrative: province > district | district | ← | Complete — 81 provinces + 973 districts; 51 Merkez; Ereğli twins; no district codes |
 | Uganda | UG | 4 | 4 | 4 | 1 | administrative: region | — | ← | L1 — regions only; districts excluded (volatile) |
 | Ukraine | UA | 27 | 27 | 27 | 1 | administrative: oblast | — | below | L1 — 24 oblasts + Kyiv/Sevastopol/Crimea |
 | United Arab Emirates | AE | 7 | 7 | 7 | 1 | administrative: emirate | — | none | L1; no official tier-2 |

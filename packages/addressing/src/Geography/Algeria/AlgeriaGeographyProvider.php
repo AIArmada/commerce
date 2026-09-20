@@ -62,6 +62,16 @@ class AlgeriaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['wilaya'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'daira',
+                        label: 'Daira',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['daira'],
+                        areaLevels: [2],
+                        parentKey: 'wilaya',
+                        assignmentRole: 'daira',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class AlgeriaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'wilaya' => ['wilaya'],
+                'daira' => ['daira'],
                 default => [],
             };
 
@@ -90,7 +101,81 @@ class AlgeriaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        return [
+            'dz:daira:ain-temouchent:oulhaca-gheraba' => [
+                ['name' => 'Oulhaça El Gheraba', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:beni-abbes:ouled-khodeir' => [
+                ['name' => 'Ouled Khoudir', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:blida:larbaa' => [
+                ['name' => 'Larbaâ', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:blida:ouled-yaich' => [
+                ['name' => 'Ouled Yaïch', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:bou-saada:bou-saada' => [
+                ['name' => 'Bousaada', 'name_type' => 'alternative'],
+                ['name' => 'Bou Saâda', 'name_type' => 'common'],
+            ],
+            'dz:daira:bouira:sour-el-ghozlane' => [
+                ['name' => 'Sour El-Ghozlane', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:boumerdes:bordj-menaiel' => [
+                ['name' => 'Bordj Ménaïel', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:boumerdes:khemis-el-khechna' => [
+                ['name' => 'Khemis El Kechna', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:boumerdes:thenia' => [
+                ['name' => 'Thénia', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:chlef:abou-el-hassen' => [
+                ['name' => 'Abou El Hassan', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:el-menia:el-meniaa' => [
+                ['name' => 'El Menia', 'name_type' => 'common'],
+            ],
+            'dz:daira:el-m-ghair:el-m-ghair' => [
+                ['name' => 'El Megaier', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:el-tarf:ben-m-hidi' => [
+                ['name' => 'Ben Mehidi', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:el-tarf:drean' => [
+                ['name' => 'Dréan', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:ghardaia:dhayet-ben-dhaoua' => [
+                ['name' => 'Daïa Ben Dahoua', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:mila:chelghoum-laid' => [
+                ['name' => 'Chelghoum Laïd', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:naama:assela' => [
+                ['name' => 'Asla', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:naama:mekmen-ben-amar' => [
+                ['name' => 'Makman Ben Amer', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:oran:boutlelis' => [
+                ['name' => 'Boutlélis', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:oran:es-senia' => [
+                ['name' => 'Es Sénia', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:tebessa:cheria' => [
+                ['name' => 'Chéria', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:tebessa:el-ma-labiod' => [
+                ['name' => 'El Ma Labiodh', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:tipasa:kolea' => [
+                ['name' => 'Koléa', 'name_type' => 'alternative'],
+            ],
+            'dz:daira:touggourt:tamacine' => [
+                ['name' => 'Temacine', 'name_type' => 'alternative'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */

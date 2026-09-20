@@ -16,7 +16,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `saudi-arabia-address-areas.csv` — used by `SaudiArabiaGeographyProvider`. 13 regions per ISO 3166-2:SA.
 - `egypt-address-areas.csv` — used by `EgyptGeographyProvider`. 27 governorates per ISO 3166-2:EG.
 - `south-africa-address-areas.csv` — used by `SouthAfricaGeographyProvider`. 9 provinces per ISO 3166-2:ZA.
-- `turkiye-address-areas.csv` — used by `TurkiyeGeographyProvider`. 81 provinces per ISO 3166-2:TR.
+- `turkiye-address-areas.csv` — used by `TurkiyeGeographyProvider`. 81 provinces per ISO 3166-2:TR plus 973 districts (51 bare `Merkez`; `Ereğli` twins Konya/Zonguldak; newest Derecik 2018; no district codes).
 - `pakistan-address-areas.csv` — used by `PakistanGeographyProvider`. 4 provinces + 3 federal territories per ISO 3166-2:PK plus 174 districts (late-2025 reorganization state; contradictory 2026 Balochistan batch excluded).
 - `india-address-areas.csv` — used by `IndiaGeographyProvider`. 28 states + 8 union territories per ISO 3166-2:IN.
 - `united-kingdom-address-areas.csv` — used by `UnitedKingdomGeographyProvider`. 4 nations only; the 221 subdivisions stay global states.
@@ -27,19 +27,19 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `germany-address-areas.csv` — used by `GermanyGeographyProvider`. 16 Länder with German official names; English exonyms aliased.
 - `france-address-areas.csv` — used by `FranceGeographyProvider`. 18 regions only; departments intentionally not areas.
 - `italy-address-areas.csv` — used by `ItalyGeographyProvider`. 20 regions with Italian official names; English exonyms aliased; provinces intentionally not areas.
-- `japan-address-areas.csv` — used by `JapanGeographyProvider`. 47 prefectures with unmacroned romanization per the UPU list.
+- `japan-address-areas.csv` — used by `JapanGeographyProvider`. 47 prefectures plus 1,747 municipalities (792 cities + 743 towns + 183 villages + 23 Tokyo special wards + 6 Northern-Territories paper villages) from the MIC R6.1.1 table; bare unmacroned romanization with kanji in `native_name`; 13 same-prefecture twins (Tomari ×2, Fuchu ×2, Toshima ×2, …); designated-city wards excluded.
 - `united-states-address-areas.csv` — used by `UnitedStatesGeographyProvider`. 50 states + DC + 5 inhabited territories; military codes and UM excluded.
 - `spain-address-areas.csv` — used by `SpainGeographyProvider`. 19 communities/cities + 50 provinces with official local spellings.
 - `poland-address-areas.csv` — used by `PolandGeographyProvider`. 16 voivodeships with English exonyms.
 - `netherlands-address-areas.csv` — used by `NetherlandsGeographyProvider`. 12 provinces with Dutch official names.
-- `nigeria-address-areas.csv` — used by `NigeriaGeographyProvider`. 36 states + FCT.
+- `nigeria-address-areas.csv` — used by `NigeriaGeographyProvider`. 36 states + FCT, plus the constitutional 774 LGAs (768 `lga` + 6 FCT `area_council`); post-2023 gazetted names with pre-2023 aliases; six cross-state twins (Obi, Bassa, Ifelodun, Irepodun, Surulere, Nasarawa); LCDAs excluded.
 - `ethiopia-address-areas.csv` — used by `EthiopiaGeographyProvider`. 14 regions/cities post-SNNPR; CE/SE codes provisional.
 - `democratic-republic-of-congo-address-areas.csv` — used by `DemocraticRepublicOfCongoGeographyProvider`. 26 provinces.
 - `tanzania-address-areas.csv` — used by `TanzaniaGeographyProvider`. 31 regions including Songwe.
 - `kenya-address-areas.csv` — used by `KenyaGeographyProvider`. 47 counties.
 - `sudan-address-areas.csv` — used by `SudanGeographyProvider`. 18 states.
 - `uganda-address-areas.csv` — used by `UgandaGeographyProvider`. 4 regions only; volatile districts intentionally not bundled.
-- `algeria-address-areas.csv` — used by `AlgeriaGeographyProvider`. 69 wilayas: 2019 batch renumbered + 59–69 per décret 26-206 (June 2026).
+- `algeria-address-areas.csv` — used by `AlgeriaGeographyProvider`. 69 wilayas (2019 batch renumbered + 59–69 per Law 26-06) + 548 dairas per décrets 91-306/26-253 (JO 2026 n°52); one cross-wilaya twin (Mansoura); communes excluded.
 - `brazil-address-areas.csv` — used by `BrazilGeographyProvider`. 26 states + DF per ISO 3166-2:BR.
 - `mexico-address-areas.csv` — used by `MexicoGeographyProvider`. 32 federal entities; CDMX typed state.
 - `canada-address-areas.csv` — used by `CanadaGeographyProvider`. 10 provinces + 3 territories.

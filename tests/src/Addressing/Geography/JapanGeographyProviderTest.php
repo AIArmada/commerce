@@ -10,7 +10,7 @@ use AIArmada\Addressing\Models\State;
 function japanCsvRows(): array
 {
     $providerFile = (string) (new ReflectionClass(JapanGeographyProvider::class))->getFileName();
-    $lines = file(dirname($providerFile, 4).'/resources/geography/japan-address-areas.csv');
+    $lines = file(dirname($providerFile, 4) . '/resources/geography/japan-address-areas.csv');
     $header = str_getcsv((string) array_shift($lines));
 
     return array_map(static fn (string $line): array => array_combine($header, str_getcsv($line)), $lines);
