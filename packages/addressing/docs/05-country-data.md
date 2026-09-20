@@ -191,6 +191,35 @@ ungazetted).
 Postal links were repointed to the surviving mukim, pekan, or district rows;
 no postcode lost its primary link.
 
+## Johor mukim audit
+
+Every Johor subdivision row was diffed against the JUPEM UPI boundary book
+for Johor (Sept 2026). Retyped to bandar: Ayer Hitam, Bandar Penggaram,
+Rengit, Senggarang, Yong Peng, Johor Bahru, Bandar Kluang, Bandar Kota
+Tinggi, Bandar Mersing, Bandar Maharani, Batu Anam, Segamat, Bandar Kulai,
+Bandar Tangkak. Retyped to pekan: Bukit Pasir, Pekan Nenas.
+
+| Row | Fix | Evidence |
+|---|---|---|
+| Muar (Muar) | Renamed Bandar, kept mukim | UPI Mukim Bandar 06/02; town row is Bandar Maharani |
+| Bandar Pontian | Renamed Pontian Kechil, bandar | UPI Bandar Pontian Kechil 07/41; Pontian Kechil is the town |
+| Sungai Mati (Muar) | Moved to Tangkak, bandar | UPI Bandar Sungai Mati 22/43 |
+| Bandar Johor Bahru, Bandar Segamat, Renggam, Gerisek, Seri Medan | Removed | Duplicates of the Johor Bahru bandar, Segamat bandar, Rengam, Grisek, and Sri Medan rows |
+| Chaah (Kluang) | Removed | Wrong district; Chaah belongs to Segamat |
+| Batu Pahat, Parit Raja, Parit Sulong, Semerah | Removed | Non-gazetted towns (town core is Bandar Penggaram) |
+| Bandar Tiram, Gelang Patah, Iskandar Puteri, Masai, Pasir Gudang, Ulu Choh, Ulu Tiram | Removed | Non-gazetted JB towns/corridors inside a mukim |
+| Divisyen Bandaraya | Removed | Not a place at all; an MBJB assessment-division label |
+| Simpang Renggam, Bandar Penawar | Removed | Non-gazetted towns inside a mukim |
+| Ayer Tawar 2, Pulau Satu | Removed | Wrong-district camp/island locality, non-gazetted |
+| Endau (Mersing) | Removed | Non-gazetted town; the only gazetted Endau is Pahang's Mukim Endau |
+| Bukit Gambir, Pagoh, Kukup | Removed | Non-gazetted towns/villages (Bukit Gambir is in Tangkak) |
+| Bandar Tenggara, Gugusan Taib Andak | Removed | Non-gazetted FELDA schemes (Bandar Tenggara is in Kota Tinggi) |
+
+UPI spelling variants are stored as alternative names (Nyior, Ulu Sungei
+Sedili Besar, Sungei Pinggan, Renggam, Gerisek, Bandar Pontian). Postal
+links were repointed to the surviving mukim, bandar, pekan, or district
+rows; duplicate same-area links created by the merges were collapsed.
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC

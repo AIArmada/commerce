@@ -175,15 +175,15 @@ it('maps the bundled state, district, and locality rows', function (): void {
     $rows = malaysiaMainCsvRows();
     $byType = array_count_values(array_column($rows, 'type'));
 
-    expect($rows)->toHaveCount(1828)
+    expect($rows)->toHaveCount(1801)
         ->and($byType['state'] ?? 0)->toBe(13)
         ->and($byType['wilayah_persekutuan'] ?? 0)->toBe(3)
         ->and($byType['division'] ?? 0)->toBe(17)
         ->and($byType['district'] ?? 0)->toBe(160)
         ->and($byType['minor_district'] ?? 0)->toBe(5)
-        ->and($byType['mukim'] ?? 0)->toBe(1221)
-        ->and($byType['bandar'] ?? 0)->toBe(27)
-        ->and($byType['pekan'] ?? 0)->toBe(11)
+        ->and($byType['mukim'] ?? 0)->toBe(1176)
+        ->and($byType['bandar'] ?? 0)->toBe(43)
+        ->and($byType['pekan'] ?? 0)->toBe(13)
         ->and($byType['subdistrict'] ?? 0)->toBe(312)
         ->and($byType['locality'] ?? 0)->toBe(39)
         ->and($byType['precinct'] ?? 0)->toBe(20);
@@ -243,7 +243,7 @@ it('exposes aliases, roles, and postal versus administrative relationships', fun
         'parent_source_id' => 'my:state:wilayah-persekutuan-kuala-lumpur',
         'relationship_type' => 'contains',
         'hierarchy_type' => 'postal',
-    ]])->and($relationships['my:subdistrict:district:johor:johor-bahru:bandar-johor-bahru'] ?? [])->toBe([
+    ]])->and($relationships['my:subdistrict:district:johor:johor-bahru:johor-bahru'] ?? [])->toBe([
         [
             'parent_source_id' => 'my:district:johor:johor-bahru',
             'relationship_type' => 'contains',
@@ -572,6 +572,56 @@ it('audits Pahang subdivisions against the JUPEM UPI inventory', function (): vo
         'my:subdistrict:district:pahang:bera:kemayan',
         'my:subdistrict:district:pahang:bera:bandar-bera',
         'my:subdistrict:district:pahang:kuantan:gebeng',
+    ] as $removedSourceId) {
+        expect(isset($byId[$removedSourceId]))->toBeFalse();
+    }
+});
+
+it('audits Johor subdivisions against the JUPEM UPI inventory', function (): void {
+    $rows = malaysiaMainCsvRows();
+    $byId = array_column($rows, null, 'source_id');
+
+    // Retypes, renames, and the Sungai Mati move.
+    expect($byId['my:subdistrict:district:johor:johor-bahru:johor-bahru']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:johor:batu-pahat:yong-peng']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:johor:muar:bukit-pasir']['type'] ?? null)->toBe('pekan')
+        ->and($byId['my:subdistrict:district:johor:pontian:pekan-nenas']['type'] ?? null)->toBe('pekan')
+        ->and($byId['my:subdistrict:district:johor:muar:bandar']['name'] ?? null)->toBe('Bandar')
+        ->and($byId['my:subdistrict:district:johor:pontian:pontian-kechil']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:johor:tangkak:sungai-mati']['parent_source_id'] ?? null)->toBe('my:district:johor:tangkak');
+
+    // Removed duplicates, wrong-district rows, and non-gazetted localities.
+    foreach ([
+        'my:subdistrict:district:johor:batu-pahat:batu-pahat',
+        'my:subdistrict:district:johor:batu-pahat:parit-raja',
+        'my:subdistrict:district:johor:batu-pahat:parit-sulong',
+        'my:subdistrict:district:johor:batu-pahat:semerah',
+        'my:subdistrict:district:johor:batu-pahat:seri-medan',
+        'my:subdistrict:district:johor:johor-bahru:bandar-johor-bahru',
+        'my:subdistrict:district:johor:johor-bahru:bandar-tiram',
+        'my:subdistrict:district:johor:johor-bahru:divisyen-bandaraya',
+        'my:subdistrict:district:johor:johor-bahru:gelang-patah',
+        'my:subdistrict:district:johor:johor-bahru:iskandar-puteri',
+        'my:subdistrict:district:johor:johor-bahru:masai',
+        'my:subdistrict:district:johor:johor-bahru:pasir-gudang',
+        'my:subdistrict:district:johor:johor-bahru:ulu-choh',
+        'my:subdistrict:district:johor:johor-bahru:ulu-tiram',
+        'my:subdistrict:district:johor:kluang:chaah',
+        'my:subdistrict:district:johor:kluang:renggam',
+        'my:subdistrict:district:johor:kluang:simpang-rengam',
+        'my:subdistrict:district:johor:kota-tinggi:bandar-penawar',
+        'my:subdistrict:district:johor:mersing:ayer-tawar-2',
+        'my:subdistrict:district:johor:mersing:endau',
+        'my:subdistrict:district:johor:mersing:pulau-satu',
+        'my:subdistrict:district:johor:muar:bukit-gambir',
+        'my:subdistrict:district:johor:muar:pagoh',
+        'my:subdistrict:district:johor:muar:muar',
+        'my:subdistrict:district:johor:muar:sungai-mati',
+        'my:subdistrict:district:johor:pontian:kukup',
+        'my:subdistrict:district:johor:pontian:bandar-pontian',
+        'my:subdistrict:district:johor:kulai:bandar-tenggara',
+        'my:subdistrict:district:johor:kulai:gugusan-taib-andak',
+        'my:subdistrict:district:johor:tangkak:gerisek',
     ] as $removedSourceId) {
         expect(isset($byId[$removedSourceId]))->toBeFalse();
     }

@@ -228,6 +228,25 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             'my:subdistrict:district:pahang:cameron-highlands:hulu-telom' => [
                 ['name' => 'Ulu Telom', 'name_type' => 'alternative'],
             ],
+            // JUPEM UPI spellings for Johor rows keeping common forms.
+            'my:subdistrict:district:johor:kluang:niyor' => [
+                ['name' => 'Nyior', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:johor:kota-tinggi:ulu-sungai-sedili-besar' => [
+                ['name' => 'Ulu Sungei Sedili Besar', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:johor:pontian:sungai-pinggan' => [
+                ['name' => 'Sungei Pinggan', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:johor:kluang:rengam' => [
+                ['name' => 'Renggam', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:johor:tangkak:grisek' => [
+                ['name' => 'Gerisek', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:johor:pontian:pontian-kechil' => [
+                ['name' => 'Bandar Pontian', 'name_type' => 'alternative'],
+            ],
         ];
     }
 
