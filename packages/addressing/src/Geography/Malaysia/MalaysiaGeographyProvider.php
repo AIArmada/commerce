@@ -291,6 +291,31 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             'my:subdistrict:district:pulau-pinang:seberang-perai-tengah:perai' => [
                 ['name' => 'Prai', 'name_type' => 'alternative'],
             ],
+            // Common names for Terengganu rows renamed to gazetted forms.
+            'my:subdistrict:district:terengganu:kemaman:cukai' => [
+                ['name' => 'Chukai', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:terengganu:kemaman:hulu-cukai' => [
+                ['name' => 'Hulu Chukai', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:terengganu:kemaman:kemasik' => [
+                ['name' => 'Kemasek', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:terengganu:kemaman:kertih' => [
+                ['name' => 'Kerteh', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:terengganu:besut:jertih' => [
+                ['name' => 'Jerteh', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:terengganu:marang:mercang' => [
+                ['name' => 'Merchang', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:terengganu:besut:pengkalan-nangka' => [
+                ['name' => 'Pangkalan Nangka', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:terengganu:setiu:caluk' => [
+                ['name' => 'Chalok', 'name_type' => 'alternative'],
+            ],
         ];
     }
 

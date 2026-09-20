@@ -263,6 +263,24 @@ duplicates. Postcodes remap to the true numbered mukim (Kubang Semang is SPT
 Mukim 5, a district correction); Sungai Jawi straddles SPS Mukim 6+7 so 14200
 links the district.
 
+## Terengganu mukim audit
+
+Every Terengganu subdivision row was diffed against the JUPEM UPI boundary
+book for Terengganu (Sept 2026), cross-checked against PLANMalaysia kod-mukim,
+DOSM census divisions, state gazettes, and land-title records. Retyped to
+bandar: Kuala Terengganu, Dungun, Cukai (renamed from Chukai). Retyped to
+pekan: Marang, Jertih (renamed from Jerteh). Renamed to gazetted forms with
+common names kept as alternatives: Hulu Cukai, Kemasik, Kertih, Mercang,
+Pengkalan Nangka. Kept against a narrow UPI read on wider evidence: Kuala
+Abang (UPI truncates it to Abang; PLANMalaysia, DOSM, and gazettes agree on
+Kuala Abang) and Caluk (canonical over the Chalok duplicate, which was
+removed). Removed 12 rows: non-gazetted towns Paka, Bukit Besi, Bandar
+Al-Muktafi Billah Shah, Ceneh, Ajil, Permaisuri, Bandar Permaisuri, Penarik;
+wrong-district Ketengah Jaya (Dungun's Mukim Rasau), Sungai Tong (Setiu's
+Mukim Hulu Nerus), and Bukit Payong (Marang's Mukim Bukit Payung, spelling
+corrected in the move); and the Chalok duplicate of Caluk. Postcodes remap to
+the gazetted mukim each town falls in.
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC

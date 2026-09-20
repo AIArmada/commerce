@@ -175,15 +175,15 @@ it('maps the bundled state, district, and locality rows', function (): void {
     $rows = malaysiaMainCsvRows();
     $byType = array_count_values(array_column($rows, 'type'));
 
-    expect($rows)->toHaveCount(1782)
+    expect($rows)->toHaveCount(1770)
         ->and($byType['state'] ?? 0)->toBe(13)
         ->and($byType['wilayah_persekutuan'] ?? 0)->toBe(3)
         ->and($byType['division'] ?? 0)->toBe(17)
         ->and($byType['district'] ?? 0)->toBe(160)
         ->and($byType['minor_district'] ?? 0)->toBe(5)
-        ->and($byType['mukim'] ?? 0)->toBe(1138)
-        ->and($byType['bandar'] ?? 0)->toBe(60)
-        ->and($byType['pekan'] ?? 0)->toBe(15)
+        ->and($byType['mukim'] ?? 0)->toBe(1121)
+        ->and($byType['bandar'] ?? 0)->toBe(63)
+        ->and($byType['pekan'] ?? 0)->toBe(17)
         ->and($byType['subdistrict'] ?? 0)->toBe(312)
         ->and($byType['locality'] ?? 0)->toBe(39)
         ->and($byType['precinct'] ?? 0)->toBe(20);
@@ -679,6 +679,40 @@ it('audits Penang subdivisions against the JUPEM UPI inventory', function (): vo
         'my:subdistrict:district:pulau-pinang:timur-laut:penang-hill',
         'my:subdistrict:district:pulau-pinang:barat-daya:batu-maung',
         'my:subdistrict:district:pulau-pinang:barat-daya:teluk-kumbar',
+    ] as $removedSourceId) {
+        expect(isset($byId[$removedSourceId]))->toBeFalse();
+    }
+});
+
+it('audits Terengganu subdivisions against the JUPEM UPI inventory', function (): void {
+    $rows = malaysiaMainCsvRows();
+    $byId = array_column($rows, null, 'source_id');
+
+    expect($byId['my:subdistrict:district:terengganu:kuala-terengganu:kuala-terengganu']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:terengganu:dungun:dungun']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:terengganu:kemaman:cukai']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:terengganu:kemaman:cukai']['name'] ?? null)->toBe('Cukai')
+        ->and($byId['my:subdistrict:district:terengganu:marang:marang']['type'] ?? null)->toBe('pekan')
+        ->and($byId['my:subdistrict:district:terengganu:besut:jertih']['type'] ?? null)->toBe('pekan')
+        ->and($byId['my:subdistrict:district:terengganu:kemaman:kertih']['name'] ?? null)->toBe('Kertih')
+        ->and($byId['my:subdistrict:district:terengganu:dungun:kuala-abang']['type'] ?? null)->toBe('mukim')
+        ->and($byId['my:subdistrict:district:terengganu:setiu:caluk']['type'] ?? null)->toBe('mukim');
+
+    foreach ([
+        'my:subdistrict:district:terengganu:dungun:paka',
+        'my:subdistrict:district:terengganu:dungun:bukit-besi',
+        'my:subdistrict:district:terengganu:dungun:al-muktatfi-billah-shah',
+        'my:subdistrict:district:terengganu:kemaman:ceneh',
+        'my:subdistrict:district:terengganu:kemaman:ketengah-jaya',
+        'my:subdistrict:district:terengganu:hulu-terengganu:ajil',
+        'my:subdistrict:district:terengganu:hulu-terengganu:sungai-tong',
+        'my:subdistrict:district:terengganu:kuala-terengganu:bukit-payong',
+        'my:subdistrict:district:terengganu:setiu:bandar-permaisuri',
+        'my:subdistrict:district:terengganu:setiu:permaisuri',
+        'my:subdistrict:district:terengganu:setiu:penarik',
+        'my:subdistrict:district:terengganu:setiu:chalok',
+        'my:subdistrict:district:terengganu:kemaman:chukai',
+        'my:subdistrict:district:terengganu:besut:jerteh',
     ] as $removedSourceId) {
         expect(isset($byId[$removedSourceId]))->toBeFalse();
     }
