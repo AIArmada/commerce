@@ -11,13 +11,11 @@ use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
-use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\FilamentAddressing\Rules\AddressAreasBelongToCountry;
 use AIArmada\FilamentAddressing\Rules\StateBelongsToCountry;
-use Carbon\CarbonImmutable;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 
@@ -129,24 +127,7 @@ class AddressFormSchema
                     }
 
                     if ($parentId !== null) {
-                        $query->whereHas('ancestors', function ($ancestors) use ($parentId, $definition): void {
-                            $ancestors
-                                ->whereKey($parentId)
-                                ->where(
-                                    AddressingTableResolver::resolve('area_relationships') . '.hierarchy_type',
-                                    self::hierarchyType($definition),
-                                )
-                                ->where(
-                                    AddressingTableResolver::resolve('area_relationships') . '.relationship_type',
-                                    'contains',
-                                )
-                                ->where(function ($query): void {
-                                    $query->whereNull('valid_from')->orWhereDate('valid_from', '<=', CarbonImmutable::now());
-                                })
-                                ->where(function ($query): void {
-                                    $query->whereNull('valid_until')->orWhereDate('valid_until', '>=', CarbonImmutable::now());
-                                });
-                        });
+                        $query->whereAncestorLink($parentId, self::hierarchyType($definition));
                     }
 
                     $needle = LikeSearch::contains($search);

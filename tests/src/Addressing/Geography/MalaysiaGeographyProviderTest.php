@@ -15,7 +15,80 @@ use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
+use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Support\Str;
+
+final class ObsoleteLinkFakeGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
+{
+    public function providerKey(): string
+    {
+        return 'test.obsolete-links';
+    }
+
+    public function countryCode(): string
+    {
+        return 'MY';
+    }
+
+    public function seed(AddressCountry $country): void
+    {
+        ModelResolver::stateClass()::query()->updateOrCreate(
+            ['country_id' => $country->getKey(), 'code' => 'T1'],
+            ['name' => 'Test State', 'country_code' => 'MY'],
+        );
+    }
+
+    public function addressHierarchies(): array
+    {
+        return [];
+    }
+
+    public function addressAreaSource(): AddressAreaSource
+    {
+        return new ArrayAddressAreaSource('fake-areas', [
+            new AddressAreaData(
+                source: 'fake-areas',
+                sourceId: 'r1',
+                countryCode: 'MY',
+                type: 'state',
+                level: 1,
+                name: 'Test Region',
+                code: 'R1',
+            ),
+        ]);
+    }
+
+    public function stateAreaMappings(): array
+    {
+        return [
+            'T1' => ['area_code' => 'R1', 'source' => 'fake-areas', 'area_level' => 1],
+        ];
+    }
+
+    public function areaRoles(AddressCountry $country): array
+    {
+        return [];
+    }
+
+    public function areaNames(AddressCountry $country): array
+    {
+        return [];
+    }
+
+    public function areaRelationships(AddressCountry $country): array
+    {
+        return [];
+    }
+}
+
+function malaysiaMainCsvRows(): array
+{
+    $providerFile = (string) (new ReflectionClass(MalaysiaGeographyProvider::class))->getFileName();
+    $lines = file(dirname($providerFile, 4) . '/resources/geography/malaysia-address-areas.csv');
+    $header = str_getcsv((string) array_shift($lines));
+
+    return array_map(static fn (string $line): array => array_combine($header, str_getcsv($line)), $lines);
+}
 
 it('preserves globally seeded states and adds missing Malaysian states', function (): void {
     $country = $this->seedCountry('MY');
@@ -69,28 +142,112 @@ it('defines separate postal and administrative hierarchies with a shared first-l
 });
 
 it('removes obsolete provider-owned state links when reseeding', function (): void {
-    $country = $this->seedCountry('MY');
-    app(MalaysiaGeographyProvider::class)->seed($country);
-    $state = State::query()->where('country_id', $country->id)->where('code', '01')->firstOrFail();
+    $this->seedCountry('MY');
+    config()->set('addressing.geography.providers', [ObsoleteLinkFakeGeographyProvider::class]);
+
+    app(SeedCountryGeographiesAction::class)->execute('MY');
+
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $state = State::query()->where('country_id', $country->id)->where('code', 'T1')->firstOrFail();
     $oldArea = AddressArea::query()->create([
         'country_id' => $country->id,
         'country_code' => 'MY',
         'type' => 'state',
         'level' => 1,
-        'name' => 'Old Johor',
-        'slug' => 'old-johor',
-        'source' => 'malaysia-provider-v1',
+        'name' => 'Old Region',
+        'slug' => 'old-region',
+        'source' => 'stale-feed',
         'source_id' => Str::uuid()->toString(),
     ]);
     $oldLink = AddressAreaStateLink::query()->create([
         'address_area_id' => $oldArea->id,
         'state_id' => $state->id,
-        'metadata' => ['provider' => app(MalaysiaGeographyProvider::class)->providerKey()],
+        'metadata' => ['provider' => 'test.obsolete-links'],
     ]);
 
     app(SeedCountryGeographiesAction::class)->execute('MY');
 
-    expect(AddressAreaStateLink::query()->whereKey($oldLink->id)->exists())->toBeFalse();
+    expect(AddressAreaStateLink::query()->whereKey($oldLink->id)->exists())->toBeFalse()
+        ->and(AddressAreaStateLink::query()->where('metadata->provider', 'test.obsolete-links')->count())->toBe(1);
+});
+
+it('maps the bundled state, district, and locality rows', function (): void {
+    $rows = malaysiaMainCsvRows();
+    $byType = array_count_values(array_column($rows, 'type'));
+
+    expect($rows)->toHaveCount(1842)
+        ->and($byType['state'] ?? 0)->toBe(13)
+        ->and($byType['wilayah_persekutuan'] ?? 0)->toBe(3)
+        ->and($byType['division'] ?? 0)->toBe(17)
+        ->and($byType['district'] ?? 0)->toBe(160)
+        ->and($byType['minor_district'] ?? 0)->toBe(1)
+        ->and($byType['mukim'] ?? 0)->toBe(1277)
+        ->and($byType['subdistrict'] ?? 0)->toBe(312)
+        ->and($byType['locality'] ?? 0)->toBe(39)
+        ->and($byType['precinct'] ?? 0)->toBe(20);
+
+    $byId = array_column($rows, null, 'source_id');
+    $orphans = [];
+
+    foreach ($rows as $row) {
+        if ($row['parent_source_id'] !== '' && ! isset($byId[$row['parent_source_id']])) {
+            $orphans[] = $row['source_id'];
+        }
+    }
+
+    expect($orphans)->toBe([]);
+
+    expect($byId['my:state:johor']['name'])->toBe('Johor')
+        ->and($byId['my:state:wilayah-persekutuan-kuala-lumpur']['type'])->toBe('wilayah_persekutuan')
+        ->and($byId['my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:wangsa-maju']['name'])->toBe('Wangsa Maju')
+        ->and($byId['my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:wangsa-maju']['type'])->toBe('locality')
+        ->and($byId['my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:wangsa-maju']['parent_source_id'])->toBe('my:state:wilayah-persekutuan-kuala-lumpur');
+
+    $first = app(MalaysiaGeographyProvider::class)->addressAreaSource()->areas()->first();
+
+    expect($first->sourceId)->toBe('my:state:johor')
+        ->and($first->name)->toBe('Johor')
+        ->and($first->code)->toBe('johor')
+        ->and($first->level)->toBe(1)
+        ->and($first->parentSourceId)->toBeNull();
+});
+
+it('exposes aliases, roles, and postal versus administrative relationships', function (): void {
+    $country = $this->seedCountry('MY');
+    $provider = app(MalaysiaGeographyProvider::class);
+
+    $names = $provider->areaNames($country);
+
+    expect($names['my:state:wilayah-persekutuan-kuala-lumpur'] ?? [])->toBe([
+        ['name' => 'Kuala Lumpur', 'name_type' => 'common', 'is_preferred' => true],
+        ['name' => 'KL', 'name_type' => 'abbreviation'],
+    ]);
+
+    $roles = $provider->areaRoles($country);
+    $localityId = 'my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:wangsa-maju';
+
+    expect($roles[$localityId] ?? [])->toBe([
+        ['role' => 'postal_locality', 'country_code' => 'MY', 'is_primary' => true],
+    ]);
+
+    $relationships = $provider->areaRelationships($country);
+
+    expect($relationships[$localityId] ?? [])->toBe([[
+        'parent_source_id' => 'my:state:wilayah-persekutuan-kuala-lumpur',
+        'relationship_type' => 'contains',
+        'hierarchy_type' => 'postal',
+    ]])->and($relationships['my:subdistrict:district:johor:johor-bahru:bandar-johor-bahru'] ?? [])->toBe([
+        [
+            'parent_source_id' => 'my:district:johor:johor-bahru',
+            'relationship_type' => 'contains',
+            'hierarchy_type' => 'administrative',
+        ],
+        [
+            'parent_source_id' => 'my:state:johor',
+            'relationship_type' => 'contains',
+            'hierarchy_type' => 'administrative',
+        ],
+    ]);
 });
 
 it('deactivates prior areas when a provider changes its imported source key', function (): void {

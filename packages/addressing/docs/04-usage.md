@@ -126,7 +126,7 @@ use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 app(SeedCountryGeographiesAction::class)->execute('ID');
 ```
 
-Indonesia exposes one administrative hierarchy: `province → regency / city → district` (38 provinces, 514 regencies and cities, 7,285 districts). Provinces are the ISO 3166-2 states, so the first level resolves through the selected `State` and only regencies and districts are directly assignable. Villages and postcodes are intentionally not bundled; see `05-country-data.md`.
+Indonesia exposes one administrative hierarchy: `province → regency / city → district → village` (38 provinces, 514 regencies and cities, 7,285 districts, plus 83,762 opt-in villages). Provinces are the ISO 3166-2 states, so the first level resolves through the selected `State`; regencies, districts, and (when seeded) villages are directly assignable. Villages are opt-in via `addressing.geography.indonesia.villages`; postcodes are intentionally not bundled; see `05-country-data.md`.
 
 ### Seed Brunei geography
 

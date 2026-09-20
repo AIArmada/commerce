@@ -130,7 +130,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Hungary | HU | 43 | 43 | 43 | 1 | administrative: county | — | ← | L1 — 20 counties + 22 county-rights cities + Budapest |
 | Iceland | IS | 72 | 72 | 72 | 1 | administrative: region | — | ← | L1 — 8 regions + 64 municipalities flat |
 | India | IN | 36 | 36 | 36 | 1 | administrative: state | — | below | L1 — 28 states + 8 UTs; districts (~780) candidate |
-| Indonesia | ID | 38 | 38 | 7837 | 3 | administrative: province > regency > district | district, regency | → | Complete to kecamatan; desa (~83k) out of scope |
+| Indonesia | ID | 38 | 38 | 7837 | 4 | administrative: province > regency > district > village | district, regency | → | Complete to kecamatan; desa/kelurahan (83,762) opt-in via `geography.indonesia.villages` |
 | Iran | IR | 31 | 31 | 31 | 1 | administrative: province | — | below | L1 — 31 ostans; counties out of scope |
 | Iraq | IQ | 19 | 19 | 19 | 1 | administrative: governorate | — | below | L1 incl. Halabja; KR region removed; qada (~120) candidate |
 | Ireland | IE | 4 | 4 | 30 | 2 | administrative: province > county | county | below | Complete — 4 provinces + 26 counties |

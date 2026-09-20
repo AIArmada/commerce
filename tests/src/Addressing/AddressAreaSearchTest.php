@@ -3,16 +3,94 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SearchAddressAreasAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Models\AddressAreaName;
+use AIArmada\Addressing\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Models\AddressAreaRole;
+use AIArmada\Addressing\Models\AddressCountry;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    $country = AddressCountry::query()->create(['iso2' => 'MY', 'name' => 'Malaysia']);
+
+    $kl = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'MY',
+        'type' => 'wilayah_persekutuan',
+        'level' => 1,
+        'name' => 'Wilayah Persekutuan Kuala Lumpur',
+        'slug' => 'wilayah-persekutuan-kuala-lumpur',
+        'source' => 'test-fixture',
+        'source_id' => 'fixture:kl',
+        'is_active' => true,
+    ]);
+    AddressAreaName::query()->create([
+        'address_area_id' => $kl->getKey(),
+        'name' => 'KL',
+        'source' => 'test-fixture',
+        'name_type' => 'abbreviation',
+        'is_preferred' => false,
+    ]);
+
+    $wangsa = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'MY',
+        'parent_id' => $kl->getKey(),
+        'type' => 'locality',
+        'level' => 2,
+        'name' => 'Wangsa Maju',
+        'slug' => 'wangsa-maju',
+        'source' => 'test-fixture',
+        'source_id' => 'fixture:wangsa-maju',
+        'is_active' => true,
+    ]);
+    AddressAreaRole::query()->create([
+        'address_area_id' => $wangsa->getKey(),
+        'role' => 'postal_locality',
+        'source' => 'test-fixture',
+        'country_code' => 'MY',
+        'is_primary' => true,
+    ]);
+    AddressAreaRelationship::query()->create([
+        'parent_address_area_id' => $kl->getKey(),
+        'child_address_area_id' => $wangsa->getKey(),
+        'relationship_type' => 'contains',
+        'hierarchy_type' => 'postal',
+        'source' => 'test-fixture',
+    ]);
+
+    $johor = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'MY',
+        'type' => 'state',
+        'level' => 1,
+        'name' => 'Johor',
+        'slug' => 'johor',
+        'source' => 'test-fixture',
+        'source_id' => 'fixture:johor',
+        'is_active' => true,
+    ]);
+    $jb = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'MY',
+        'parent_id' => $johor->getKey(),
+        'type' => 'district',
+        'level' => 2,
+        'name' => 'Johor Bahru',
+        'slug' => 'johor-bahru',
+        'source' => 'test-fixture',
+        'source_id' => 'fixture:johor-bahru',
+        'is_active' => true,
+    ]);
+    AddressAreaRelationship::query()->create([
+        'parent_address_area_id' => $johor->getKey(),
+        'child_address_area_id' => $jb->getKey(),
+        'relationship_type' => 'contains',
+        'hierarchy_type' => 'administrative',
+        'source' => 'test-fixture',
+    ]);
 });
 
-it('searches Malaysia localities by name and role', function (): void {
+it('searches localities by name and role', function (): void {
     $results = app(SearchAddressAreasAction::class)->execute(
         query: 'Wangsa',
         countryCode: 'MY',
@@ -23,22 +101,24 @@ it('searches Malaysia localities by name and role', function (): void {
         ->and($results->first()->roles()->where('role', 'postal_locality')->exists())->toBeTrue();
 });
 
-it('searches federal territory aliases', function (): void {
+it('searches area aliases', function (): void {
     $results = app(SearchAddressAreasAction::class)->execute(query: 'KL', countryCode: 'MY');
 
     expect($results)->toHaveCount(1)
         ->and($results->first()->name)->toBe('Wilayah Persekutuan Kuala Lumpur');
 });
 
-it('creates postal hierarchy relationships during import', function (): void {
-    $locality = AddressArea::query()
-        ->where('country_code', 'MY')
-        ->where('name', 'Wangsa Maju')
-        ->firstOrFail();
+it('finds localities under a postal parent', function (): void {
+    $kl = AddressArea::query()->where('name', 'Wilayah Persekutuan Kuala Lumpur')->firstOrFail();
 
-    expect($locality->parent_id)->not->toBeNull()
-        ->and($locality->parent->name)->toBe('Wilayah Persekutuan Kuala Lumpur')
-        ->and($locality->parent->relatedAreas()->whereKey($locality->getKey())->wherePivot('hierarchy_type', 'postal')->exists())->toBeTrue();
+    $results = app(SearchAddressAreasAction::class)->execute(
+        query: 'Wangsa',
+        countryCode: 'MY',
+        parentId: $kl->getKey(),
+        hierarchyType: 'postal',
+    );
+
+    expect($results->pluck('name')->all())->toContain('Wangsa Maju');
 });
 
 it('keeps administrative relationships separate from postal relationships', function (): void {
@@ -57,6 +137,23 @@ it('keeps administrative relationships separate from postal relationships', func
         ->and($results->pluck('id')->all())->toContain($district->getKey());
 });
 
+it('excludes other-hierarchy branches but keeps root areas', function (): void {
+    $admin = app(SearchAddressAreasAction::class)->execute(
+        query: 'Wangsa',
+        countryCode: 'MY',
+        hierarchyType: 'administrative',
+    );
+
+    $roots = app(SearchAddressAreasAction::class)->execute(
+        query: 'Kuala Lumpur',
+        countryCode: 'MY',
+        hierarchyType: 'administrative',
+    );
+
+    expect($admin->pluck('name')->all())->not->toContain('Wangsa Maju')
+        ->and($roots->pluck('name')->all())->toContain('Wilayah Persekutuan Kuala Lumpur');
+});
+
 it('does not cross hierarchy branches when filtering by parent', function (): void {
     $state = AddressArea::query()
         ->where('country_code', 'MY')
@@ -71,5 +168,11 @@ it('does not cross hierarchy branches when filtering by parent', function (): vo
         hierarchyType: 'postal',
     );
 
-    expect($results->pluck('name')->all())->not->toContain('Johor Bahru');
+    $unfiltered = app(SearchAddressAreasAction::class)->execute(
+        query: 'Johor Bahru',
+        countryCode: 'MY',
+    );
+
+    expect($results->pluck('name')->all())->not->toContain('Johor Bahru')
+        ->and($unfiltered->pluck('name')->all())->toContain('Johor Bahru');
 });

@@ -102,6 +102,12 @@ differ from that source so areas match the seeded states: `DKI Jakarta`
 Yogyakarta` (source: `Daerah Istimewa Yogyakarta`, kept as an alias). The
 current legal name `Daerah Khusus Jakarta` is also aliased.
 
+Villages and urban villages (83,762 desa/kelurahan, level 4) ship as an
+opt-in dataset in `indonesia-villages.csv`, from the same upstream release.
+Set `addressing.geography.indonesia.villages` to `true`
+(`ADDRESSING_INDONESIA_VILLAGES`) to seed them; the default seed stops at
+districts.
+
 ISO 3166-2 defines seven Indonesian geographical units (island groups such
 as `ID-JW` Jawa) alongside the 38 provinces. Those units are not provinces
 and were removed from the bundled state data; `seed()` also deletes any

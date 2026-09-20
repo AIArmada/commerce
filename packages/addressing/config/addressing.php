@@ -724,6 +724,10 @@ return [
             VenezuelaGeographyProvider::class,
             WallisAndFutunaGeographyProvider::class,
         ],
+
+        'indonesia' => [
+            'villages' => env('ADDRESSING_INDONESIA_VILLAGES', false),
+        ],
     ],
 
     'formatters' => [

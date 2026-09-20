@@ -11,6 +11,7 @@ use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Support\CompositeAddressAreaSource;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 
@@ -90,6 +91,16 @@ class IndonesiaGeographyProvider implements CountryAddressAreaMetadataProvider, 
                         parentKey: 'regency',
                         assignmentRole: 'district',
                     ),
+                    new AddressLevelDefinition(
+                        key: 'village',
+                        label: 'Village / Urban Village',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['village', 'urban_village'],
+                        areaLevels: [4],
+                        parentKey: 'district',
+                        assignmentRole: 'village',
+                    ),
                 ],
             ),
         ];
@@ -161,10 +172,24 @@ class IndonesiaGeographyProvider implements CountryAddressAreaMetadataProvider, 
 
     public function addressAreaSource(): AddressAreaSource
     {
-        return new CsvAddressAreaSource(
+        $main = new CsvAddressAreaSource(
             __DIR__ . '/../../../resources/geography/indonesia-address-areas.csv',
             self::AREA_SOURCE,
         );
+
+        if (! config('addressing.geography.indonesia.villages', false)) {
+            return $main;
+        }
+
+        // Villages share the main source key because area parents resolve
+        // by (source, source_id) within a single import run.
+        return new CompositeAddressAreaSource([
+            $main,
+            new CsvAddressAreaSource(
+                __DIR__ . '/../../../resources/geography/indonesia-villages.csv',
+                self::AREA_SOURCE,
+            ),
+        ]);
     }
 
     /**

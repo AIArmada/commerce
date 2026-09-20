@@ -5,6 +5,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `malaysia-address-areas.csv`, `malaysia-postal-codes.csv`, `malaysia-postal-code-areas.csv` — used by `MalaysiaGeographyProvider`.
 - `singapore-address-areas.csv` — used by `SingaporeGeographyProvider`.
 - `indonesia-address-areas.csv` — used by `IndonesiaGeographyProvider`. Derived from [lokabisa-oss/region-id v1.0.1](https://github.com/lokabisa-oss/region-id/releases/tag/v1.0.1) (MIT, © 2025 lokabisa), keeping Kemendagri codes, official names, and parent links for provinces, regencies/cities, and districts. Province 31 is named `DKI Jakarta` and province 34 `DI Yogyakarta` to match the seeded states; see `docs/05-country-data.md`.
+- `indonesia-villages.csv` — opt-in L4 set for `IndonesiaGeographyProvider` (83,762 desa/kelurahan from the same region-id v1.0.1 release). Seeded only when `addressing.geography.indonesia.villages` is true.
 - `brunei-address-areas.csv` — used by `BruneiGeographyProvider`. Districts per ISO 3166-2:BN; 39 mukims per the government-cited mukim list (18/8/8/5 split). Mukim spelling `Pengkalan Batu` follows Brunei government sources.
 - `bahrain-address-areas.csv` — used by `BahrainGeographyProvider`. 4 governorates per ISO 3166-2:BH.
 - `qatar-address-areas.csv` — used by `QatarGeographyProvider`. 8 municipalities; official English spellings with ISO names aliased.
