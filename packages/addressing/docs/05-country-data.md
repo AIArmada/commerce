@@ -156,9 +156,18 @@ Bahraini addresses are formatted per the UPU layout: street lines,
 ## Qatar
 
 The bundled `QatarGeographyProvider` supplies the eight municipalities
-as `State` rows and a single-level administrative hierarchy. It is
+as `State` rows with 90 census zones as level-2 areas (57 Doha, 10 Al
+Rayyan, 7 Al Wakrah, 7 Al Sheehaniya, 3 Al Khor, 3 Al Shamal, 2 Al
+Daayen, 1 Umm Salal) in a two-level administrative hierarchy. It is
 selected with `SeedCountryGeographiesAction::execute('QA')` after
-countries are seeded.
+countries are seeded. Zone numbers run 1–98 with 8, 9, 10, 11, 59, 87,
+88, 89 unassigned; zones 50/57/58 sit in Doha, 69 in Al Daayen, and
+96/97 in Al Rayyan, so filter by parent rather than assuming
+contiguous ranges. Official PSA district names are kept as `official`
+aliases; repeated district names across zones (Al Thumama ×3, Nuaija
+×3, Al Bidda, Mushaireb, Old Al Ghanim, Fereej Bin Mahmoud, Onaiza,
+Doha International Airport ×2 each) share names by design; filter by
+code.
 
 Municipality names use official English spellings (`Al Sheehaniya`,
 `Al Shamal`, `Doha`); the ISO names `Ad Dawhah` and `Madinat ash
@@ -185,9 +194,21 @@ and country.
 ## Jordan
 
 The bundled `JordanGeographyProvider` supplies the twelve ISO 3166-2
-governorates as `State` rows and a single-level administrative
-hierarchy. It is selected with
+governorates as `State` rows and a two-level administrative hierarchy
+(`governorate` > `liwa`). It is selected with
 `SeedCountryGeographiesAction::execute('JO')` after countries are seeded.
+
+Level 2 carries the 51 districts (liwa) from DOS Statistical Yearbook
+2024 Table 2.4: Amman 9, Irbid 9, Karak 7, Balqa 5, Mafraq 4, Ma'an 4,
+Zarqa 3, Tafilah 3, Ajloun 2, Aqaba 2, Madaba 2, Jerash 1. Canonical
+names follow DOS romanization except where the shipped L1 spellings
+already differ (Ajloun, Tafilah, Jerash, Deir Alla, Naour, Mahis and
+Fuhais); DOS forms are kept as `official` aliases and
+English-Wikipedia/citypopulation/PCGN spellings (Al-Quwairah, Shoubak,
+Husseiniya, Kufrinjah, Wadi Al Seer, Aii, Faqou', Ruwayshid,
+Quwaysimah, Jizeh, Mowaqqar, Hashimiyya) as `alternative` aliases.
+DOS publishes no liwa codes, so L2 rows carry no `code`. Qada
+(sub-districts) are out of scope and do not ship.
 
 Jordanian addresses are formatted per the UPU layout: street lines,
 `{locality} {postcode}` with a 5-digit postcode, and country.
@@ -303,14 +324,30 @@ country.
 The bundled `IndiaGeographyProvider` supplies the 36 ISO 3166-2 states
 and union territories as `State` rows (28 states, 8 union territories
 including Ladakh and the merged Dadra and Nagar Haveli and Daman and
-Diu) and a single-level administrative hierarchy. It is selected with
-`SeedCountryGeographiesAction::execute('IN')` after countries are seeded.
-State codes follow the 23 November 2023 ISO amendment (`CG`, `OD`, `TS`, `UK`).
+Diu) and a two-level administrative hierarchy (`state` > `district`).
+It is selected with `SeedCountryGeographiesAction::execute('IN')` after
+countries are seeded. State codes follow the 23 November 2023 ISO
+amendment (`CG`, `OD`, `TS`, `UK`).
+
+Level 2 carries 786 districts keyed by official LGD code
+(`in:district:<lgd-code>`, LGD snapshot 31 May 2026): all 784 LGD rows
+plus Mahe (599) and Yanam (601), which LGD dropped in 2024–25 but which
+remain official Puducherry districts with Census 2011 codes 636/634.
+Names follow current official spellings, including the January 2026
+Delhi reorganisation (Shahdara dissolved; Old Delhi, Central North,
+Outer North added), Kushavati, Hansi, Markapuram, Polavaram, Vav-Tharad,
+Meluri, Sribhumi, Ahilyanagar, Chhatrapati Sambhajinagar, Dharashiv,
+Bengaluru South and Narmadapuram, with former and LGD-variant names kept
+as aliases. Three cross-state twins exist (Bilaspur, Hamirpur,
+Pratapgarh) — filter by `type` and parent, never by name alone.
+Excluded for lack of LGD codes: the five Ladakh districts notified 27
+April 2026, the announced-but-unnotified Kalyan Singh Nagar (UP), and
+West Bengal's unimplemented announced seven. Tehsils/blocks (L3) are out
+of scope.
 
 Indian addresses are formatted per the UPU layout: street lines,
 locality, state, a 6-digit postcode on its own line, and country.
-Districts (700+) and secondary postcodes (`834001-34` style) are
-intentionally not bundled.
+Secondary postcodes (`834001-34` style) are intentionally not bundled.
 
 ## United Kingdom
 
@@ -952,13 +989,29 @@ own line, and country.
 
 The bundled `UzbekistanGeographyProvider` supplies the 12 regions
 plus Karakalpakstan and Tashkent City as `State` rows and a
-single-level administrative hierarchy. It is selected with
-`SeedCountryGeographiesAction::execute('UZ')` after countries are seeded.
+two-level administrative hierarchy (`region` > `tuman`). It is
+selected with `SeedCountryGeographiesAction::execute('UZ')` after
+countries are seeded.
+
+Level 2 carries 175 tumanlar plus the 31 cities of regional
+subordination (typed `city`, sharing the `tuman` role — the
+Indonesia regency+city precedent). L1 names keep their established
+forms while L2 names use official Uzbek Latin endonyms (`Buxoro`,
+`Farg'ona`, `Kattaqo'rg'on`, `Toshkent`); O'/G' use the ASCII
+apostrophe. Seventeen tuman/city twins share a parent (Andijon,
+Buxoro, Farg'ona, Kogon, Namangan, Nukus, Qarshi, Shahrisabz,
+Samarqand, Kattaqo'rg'on, Guliston, Termiz, Bekobod, Ohangaron,
+Yangiyo'l, Urganch, Xiva) — filter by `type` and parent, never by
+name alone. `city` spans both levels (L1 Tashkent City vs L2
+regional cities), disambiguated by level. Verified `alternative`
+aliases: `Shayxontohur`, `Sergeli`, `Xazorasp`. Namangan city's
+Davlatobod and Yangi Namangan districts are excluded: their parent
+is Namangan city (L2), making them L3, which this provider does
+not ship.
 
 Region names use official Uzbek Latin forms (`Qashqadaryo`,
 `Samarqand`, `Sirdaryo`, `Surxondaryo`, `Navoiy`, `Xorazm`).
 `Tashkent Region` and `Tashkent City` are disambiguated at seed.
-Districts are intentionally not bundled.
 
 Uzbek addresses are formatted per the UPU layout: street lines,
 `{postcode}, {locality}` with a 6-digit postcode, the region on its

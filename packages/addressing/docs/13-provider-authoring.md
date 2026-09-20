@@ -174,7 +174,7 @@ A single-level tier may legitimately carry two administrative tiers flat (Sri La
 
 ## State-only versus deep trees
 
-Ship state-only (one `state` level, one CSV level, identity mappings) unless consumer addressing genuinely needs sub-state granularity. Most bundled providers are state-only. Deep trees exist where addressing or hierarchy selection requires them: dual-hierarchy Malaysia and Singapore, depth-3 Indonesia, and depth-2 Algeria, Bangladesh, Brunei, Japan, Morocco, Nigeria, Oman, Pakistan, Spain, and Türkiye. When in doubt, start state-only — depth can be added later without breaking the state level, while shipping wrong depth forces consumers to carry it.
+Ship state-only (one `state` level, one CSV level, identity mappings) unless consumer addressing genuinely needs sub-state granularity. Most bundled providers are state-only. Deep trees exist where addressing or hierarchy selection requires them: dual-hierarchy Malaysia and Singapore, depth-3 Indonesia, and depth-2 Algeria, Bangladesh, Brunei, India, Japan, Jordan, Morocco, Nigeria, Oman, Pakistan, Qatar, Spain, Türkiye, and Uzbekistan. When in doubt, start state-only — depth can be added later without breaking the state level, while shipping wrong depth forces consumers to carry it.
 
 ## The numeric-key gotcha
 
@@ -230,8 +230,9 @@ Every assignment role and area type in use across the bundled providers, extract
 | `administrative_division` | MY | division | 2 |
 | `administrative_subdivision` | MY | city, municipality, mukim, subdistrict | 2–4 |
 | `daira` | DZ | daira | 2 |
-| `district` | BD, ID, PK, TR | district | BD 2, ID 3, PK 2, TR 2 |
+| `district` | BD, ID, IN, PK, TR | district | BD 2, ID 3, IN 2, PK 2, TR 2 |
 | `lga` | NG | lga, area_council | 2 |
+| `liwa` | JO | liwa | 2 |
 | `mukim` | BN | mukim | 2 |
 | `municipality` | JP | municipality | 2 |
 | `planning_area` | SG | planning_area | 2 |
@@ -241,7 +242,9 @@ Every assignment role and area type in use across the bundled providers, extract
 | `province` | ES, MA | ES province; MA province, prefecture | 2 |
 | `regency` | ID | regency, city | 2 |
 | `region` | SG | region | 1 |
+| `tuman` | UZ | tuman, city | 2 |
 | `wilayat` | OM | wilayat | 2 |
+| `zone` | QA | zone | 2 |
 
 ### Area types by level
 
@@ -249,7 +252,7 @@ Level 1 is always state-kind (one level per country, `areaLevel: 1`), except Sin
 
 State-level (kind `state`, level 1): administrative_region, arctic_region, area, atoll, autonomous_city, autonomous_community, autonomous_district, autonomous_oblast, autonomous_region, autonomous_republic, autonomous_sector, autonomous_territorial_unit, canton, capital_city, capital_district, capital_territory, city, city_municipality, city_with_county_rights, commune, county, department, dependency, district, district_municipality, districts_under_republic_administration, division, economic_prefecture, emirate, entity, federal_city, federal_district, geographical_region, governorate, island, krai, local_council, metropolitan_administration, metropolitan_city, municipality, nation, oblast, okrug, parish, popularate, prefecture, province, quarter, region, regional_unit, republic, rural_municipality, sheadings, special_administrative_region, special_city, special_municipality, special_self_governing_city, special_self_governing_province, state, state_city, territorial_unit, territory, town, union_territory, urban_community, urban_municipality, voivodeship, wilaya, wilayah_persekutuan.
 
-Sub-state (kind `area`, level 2+, plus SG level 1): area_council, city, daira, district, division, lga, locality, minor_district, mukim, municipality, planning_area, postal_district, postal_sector, precinct, prefecture, province, regency, region, subdistrict, wilayat.
+Sub-state (kind `area`, level 2+, plus SG level 1): area_council, city, daira, district, division, lga, liwa, locality, minor_district, mukim, municipality, planning_area, postal_district, postal_sector, precinct, prefecture, province, regency, region, subdistrict, tuman, wilayat, zone.
 
 ### Naming new roles and types
 
