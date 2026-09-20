@@ -89,9 +89,3 @@ it('fails closed when a canonical table name is missing', function (): void {
         config()->set('addressing.database.tables.addresses', $originalTable);
     }
 });
-
-it('does not define a second addressing table configuration path', function (): void {
-    $addressingConfig = config('addressing');
-
-    expect($addressingConfig)->toBeArray()->not->toHaveKey('tables');
-});

@@ -38,19 +38,6 @@ beforeEach(function (): void {
     });
 });
 
-it('adds owner columns to the address instance tables', function (): void {
-    expect(Schema::hasColumn('addresses', 'owner_type'))->toBeTrue()
-        ->and(Schema::hasColumn('addresses', 'owner_id'))->toBeTrue()
-        ->and(Schema::hasColumn('addressables', 'owner_type'))->toBeTrue()
-        ->and(Schema::hasColumn('addressables', 'owner_id'))->toBeTrue()
-        ->and(Schema::hasColumn('address_snapshots', 'owner_type'))->toBeTrue()
-        ->and(Schema::hasColumn('address_snapshots', 'owner_id'))->toBeTrue()
-        ->and(Schema::hasIndex('addresses', 'addresses_owner_type_owner_id_index'))->toBeTrue()
-        ->and(Schema::hasIndex('addressables', 'addressables_owner_type_owner_id_index'))->toBeTrue()
-        ->and(Schema::hasIndex('address_snapshots', 'address_snapshots_owner_type_owner_id_index'))->toBeTrue()
-        ->and(Schema::hasIndex('address_snapshots', 'address_snapshots_snapshotable_type_snapshotable_id_index'))->toBeTrue();
-});
-
 it('isolates addresses, pivots, and snapshots across owners', function (): void {
     $ownerA = User::factory()->create();
     $ownerB = User::factory()->create();

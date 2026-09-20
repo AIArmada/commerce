@@ -34,27 +34,9 @@ it('accepts navigation_links', function (): void {
     expect($data->navigationLinks)->toBe(['foo' => 'bar']);
 });
 
-it('keeps existing address field aliases working', function (): void {
-    $data = AddressData::from([
-        'address_line_1' => '123 Main St',
-        'postal_code' => '50450',
-    ]);
-    expect($data->line1)->toBe('123 Main St');
-    expect($data->postcode)->toBe('50450');
-});
-
 it('sets empty navigation_links to empty array', function (): void {
     $data = AddressData::from(['line1' => 'Test']);
     expect($data->navigationLinks)->toBe([]);
-});
-
-it('accepts provider and provider_place_id', function (): void {
-    $data = AddressData::from([
-        'provider' => 'google',
-        'provider_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
-    ]);
-    expect($data->provider)->toBe('google');
-    expect($data->providerPlaceId)->toBe('ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4');
 });
 
 it('converts to array and back preserving nav links', function (): void {

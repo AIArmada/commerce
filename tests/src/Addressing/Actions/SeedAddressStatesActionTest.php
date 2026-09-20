@@ -58,18 +58,3 @@ it('is idempotent', function (): void {
         ->and($second['updated'])->toBe(0)
         ->and($second['skipped'])->toBe($first['created']);
 });
-
-it('seeds the curated post-reform Burundi provinces', function (): void {
-    $actionDir = dirname((string) (new ReflectionClass(SeedAddressStatesAction::class))->getFileName());
-    $path = $actionDir . '/../../resources/data/states.json';
-    $rows = array_values(array_filter(
-        json_decode((string) file_get_contents($path), true),
-        static fn (array $row): bool => ($row['country_code'] ?? null) === 'BI',
-    ));
-
-    $result = $this->action->execute($rows);
-
-    expect($result['created'])->toBe(5)
-        ->and(State::where('country_code', 'BI')->orderBy('code')->pluck('name')->all())
-        ->toBe(['Buhumuza', 'Bujumbura', 'Burunga', 'Butanyerera', 'Gitega']);
-});

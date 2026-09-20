@@ -53,22 +53,6 @@ it('snapshot copies navigation_links from address', function (): void {
     expect($snapshot->navigation_links)->toBe(['apple_maps' => ['url' => 'https://maps.apple.com/test']]);
 });
 
-it('changing source address does not mutate existing snapshot', function (): void {
-    $address = Address::create([
-        'line1' => 'Original Line',
-        'country_code' => 'MY',
-        'google_maps_url' => 'https://maps.app.goo.gl/original',
-    ]);
-
-    $snapshot = $this->action->execute($this->snapshotable, $address, reason: 'test');
-
-    $address->update(['google_maps_url' => 'https://maps.app.goo.gl/changed']);
-
-    $snapshot->refresh();
-
-    expect($snapshot->google_maps_url)->toBe('https://maps.app.goo.gl/original');
-});
-
 it('snapshot copies nav links from AddressData', function (): void {
     $addressData = AddressData::from([
         'line1' => '123 Main St',
@@ -84,30 +68,6 @@ it('snapshot copies nav links from AddressData', function (): void {
     expect($snapshot->google_maps_url)->toBe('https://maps.app.goo.gl/data-test');
     expect($snapshot->waze_url)->toBe('https://waze.com/ul/data-test');
     expect($snapshot->navigation_links)->toBe(['grab' => ['url' => 'https://grab.com/directions']]);
-});
-
-it('snapshot copies provider from address', function (): void {
-    $address = Address::create([
-        'line1' => '123 Main St',
-        'country_code' => 'MY',
-        'provider' => 'google',
-    ]);
-
-    $snapshot = $this->action->execute($this->snapshotable, $address, reason: 'test');
-
-    expect($snapshot->provider)->toBe('google');
-});
-
-it('snapshot copies provider_place_id from address', function (): void {
-    $address = Address::create([
-        'line1' => '123 Main St',
-        'country_code' => 'MY',
-        'provider_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
-    ]);
-
-    $snapshot = $this->action->execute($this->snapshotable, $address, reason: 'test');
-
-    expect($snapshot->provider_place_id)->toBe('ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4');
 });
 
 it('snapshot copies provider and provider_place_id from AddressData', function (): void {

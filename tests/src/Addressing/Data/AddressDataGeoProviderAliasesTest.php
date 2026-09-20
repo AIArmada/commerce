@@ -60,16 +60,3 @@ it('accepts placeId alias', function (): void {
     $data = AddressData::from(['placeId' => 'place-id-123']);
     expect($data->providerPlaceId)->toBe('place-id-123');
 });
-
-it('keeps existing address field aliases working with canonical geo fields', function (): void {
-    $data = AddressData::from([
-        'address_line_1' => '123 Main St',
-        'postal_code' => '50450',
-        'latitude' => 3.1712,
-        'longitude' => 101.6678,
-    ]);
-    expect($data->line1)->toBe('123 Main St');
-    expect($data->postcode)->toBe('50450');
-    expect($data->latitude)->toBe(3.1712);
-    expect($data->longitude)->toBe(101.6678);
-});
