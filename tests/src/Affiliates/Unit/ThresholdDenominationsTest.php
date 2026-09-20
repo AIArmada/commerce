@@ -15,6 +15,7 @@ use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\Settings\AffiliatePayoutSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -57,6 +58,14 @@ function denominationsConversion(Affiliate $affiliate, int $valueMinor, string $
 function denominationsRates(): void
 {
     (new ExchangeRateSettings(['base' => 'USD', 'rates' => ['MYR' => 4.7], 'history' => []]))->save();
+}
+
+/**
+ * @param  array<string, mixed>  $overrides
+ */
+function denominationsBonusSettings(array $overrides): void
+{
+    AffiliateBonusSettings::fake($overrides);
 }
 
 test('payout minimums resolve per currency with a default fallback', function (): void {
@@ -157,10 +166,12 @@ test('program eligibility honors a denominated revenue rule', function (): void 
 
 test('top performer threshold compares in its declared currency', function (): void {
     denominationsRates();
-    config(['affiliates.bonuses.top_performer.enabled' => true]);
-    config(['affiliates.bonuses.top_performer.positions' => [1 => 5000]]);
-    config(['affiliates.bonuses.top_performer.min_revenue' => 9000]);
-    config(['affiliates.bonuses.top_performer.min_revenue_currency' => 'USD']);
+    denominationsBonusSettings([
+        'topPerformerEnabled' => true,
+        'topPerformerPositions' => [1 => 5000],
+        'topPerformerMinRevenue' => 9000,
+        'topPerformerMinRevenueCurrency' => 'USD',
+    ]);
 
     $affiliate = denominationsAffiliate('DENOM005');
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-005');
@@ -177,11 +188,13 @@ test('top performer threshold compares in its declared currency', function (): v
 
 test('growth previous-revenue floor compares in its declared currency', function (): void {
     denominationsRates();
-    config(['affiliates.bonuses.growth.enabled' => true]);
-    config(['affiliates.bonuses.growth.bonus_amount' => 10000]);
-    config(['affiliates.bonuses.growth.min_growth_percent' => 25]);
-    config(['affiliates.bonuses.growth.min_previous_revenue' => 37000]);
-    config(['affiliates.bonuses.growth.min_previous_revenue_currency' => 'MYR']);
+    denominationsBonusSettings([
+        'growthEnabled' => true,
+        'growthBonusAmount' => 10000,
+        'growthMinGrowthPercent' => 25,
+        'growthMinPreviousRevenue' => 37000,
+        'growthMinPreviousRevenueCurrency' => 'MYR',
+    ]);
 
     $affiliate = denominationsAffiliate('DENOM006');
 

@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingPayout;
@@ -135,9 +136,11 @@ test('top affiliates break ranking ties by affiliate id', function (): void {
 
 test('performance leaderboard breaks revenue ties by affiliate id', function (): void {
     settlementRates();
-    config(['affiliates.bonuses.top_performer.enabled' => true]);
-    config(['affiliates.bonuses.top_performer.positions' => [1 => 5000, 2 => 2500]]);
-    config(['affiliates.bonuses.top_performer.min_revenue' => 0]);
+    AffiliateBonusSettings::fake([
+        'topPerformerEnabled' => true,
+        'topPerformerPositions' => [1 => 5000, 2 => 2500],
+        'topPerformerMinRevenue' => 0,
+    ]);
 
     $affiliates = [
         settlementAffiliate('SETTLE004A', 'bbbbbbbb-0000-0000-0000-000000000002'),

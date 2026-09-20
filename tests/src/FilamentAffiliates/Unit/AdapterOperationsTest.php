@@ -15,8 +15,10 @@ use AIArmada\Affiliates\Services\ProgramCatalogService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\FilamentAffiliates\Actions\RunScheduledPayoutSweep;
+use AIArmada\FilamentAffiliates\Pages\ManageAffiliateBonusSettings;
 use AIArmada\FilamentAffiliates\Pages\ManageAffiliatePayoutSettings;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Pages\PerformanceBonusesPage;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Pages\ViewAffiliateProgram;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Schemas\AffiliateProgramInfolist;
@@ -227,4 +229,32 @@ it('payout settings page exposes a save header action', function (): void {
     $names = array_map(fn ($action): string => $action->getName(), $actions);
 
     expect($names)->toContain('save');
+});
+
+it('bonus settings page exposes all four bonus sections', function (): void {
+    $page = new ManageAffiliateBonusSettings('bonus-settings-form-test');
+    $schema = $page->form(Schema::make(new AdapterOperationsHostComponent)->statePath('data'));
+
+    expect($schema->getComponent('top_performer_positions'))->not->toBeNull()
+        ->and($schema->getComponent('recruitment_bonus_per_recruit'))->not->toBeNull()
+        ->and($schema->getComponent('consistency_min_weeks'))->not->toBeNull()
+        ->and($schema->getComponent('growth_min_growth_percent'))->not->toBeNull();
+});
+
+it('bonus settings page exposes a save header action', function (): void {
+    $actions = adapterPageHeaderActions(ManageAffiliateBonusSettings::class);
+    $names = array_map(fn ($action): string => $action->getName(), $actions);
+
+    expect($names)->toContain('save');
+});
+
+it('bonuses page exposes month preview and award actions', function (): void {
+    $page = new PerformanceBonusesPage('bonuses-page-form-test');
+    $schema = $page->form(Schema::make(new AdapterOperationsHostComponent)->statePath('data'));
+
+    $actions = adapterPageHeaderActions(PerformanceBonusesPage::class);
+    $names = array_map(fn ($action): string => $action->getName(), $actions);
+
+    expect($schema->getComponent('month'))->not->toBeNull()
+        ->and($names)->toContain('preview', 'award');
 });

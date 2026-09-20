@@ -41,7 +41,10 @@ final class CommissionRulesRelationManager extends RelationManager
                 ->maxLength(255),
 
             Select::make('rule_type')
-                ->options(CommissionRuleType::class)
+                ->options(fn (): array => collect(CommissionRuleType::programRuleCases())
+                    ->mapWithKeys(fn (CommissionRuleType $case): array => [$case->value => $case->label()])
+                    ->toArray())
+                ->helperText('Performance bonuses (top performer, recruitment, consistency, growth) are configured globally in Bonus Settings.')
                 ->required()
                 ->live()
                 ->afterStateUpdated(function (CommissionRuleType $state, Set $set): void {

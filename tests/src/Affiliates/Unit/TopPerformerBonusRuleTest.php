@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -14,14 +15,30 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Artisan;
+
+beforeEach(function (): void {
+    // Settings cache outlives RefreshDatabase rollbacks within a process.
+    Artisan::call('settings:clear-cache');
+});
+
+/**
+ * @param  array<string, mixed>  $overrides
+ */
+function topPerformerRuleSettings(array $overrides): void
+{
+    AffiliateBonusSettings::fake($overrides);
+}
 
 it('keeps top performer bonuses inside the current owner scope', function (): void {
     config()->set('affiliates.owner.enabled', true);
-    config()->set('affiliates.bonuses.top_performer.enabled', true);
     config()->set('affiliates.owner.include_global', false);
-    config()->set('affiliates.bonuses.top_performer.min_revenue', 0);
-    config()->set('affiliates.bonuses.top_performer.min_revenue_currency', 'USD');
-    config()->set('affiliates.bonuses.top_performer.positions', [1 => 1000]);
+    topPerformerRuleSettings([
+        'topPerformerEnabled' => true,
+        'topPerformerMinRevenue' => 0,
+        'topPerformerMinRevenueCurrency' => 'USD',
+        'topPerformerPositions' => [1 => 1000],
+    ]);
 
     $ownerA = TopPerformerBonusRuleTestOwner::create(['name' => 'Owner A']);
     $ownerB = TopPerformerBonusRuleTestOwner::create(['name' => 'Owner B']);
@@ -75,10 +92,12 @@ it('keeps top performer bonuses inside the current owner scope', function (): vo
 it('honors the caller include global flag instead of overriding it from config', function (): void {
     config()->set('affiliates.owner.enabled', true);
     config()->set('affiliates.owner.include_global', false);
-    config()->set('affiliates.bonuses.top_performer.enabled', true);
-    config()->set('affiliates.bonuses.top_performer.min_revenue', 0);
-    config()->set('affiliates.bonuses.top_performer.min_revenue_currency', 'USD');
-    config()->set('affiliates.bonuses.top_performer.positions', [1 => 1000, 2 => 500]);
+    topPerformerRuleSettings([
+        'topPerformerEnabled' => true,
+        'topPerformerMinRevenue' => 0,
+        'topPerformerMinRevenueCurrency' => 'USD',
+        'topPerformerPositions' => [1 => 1000, 2 => 500],
+    ]);
 
     $owner = TopPerformerBonusRuleTestOwner::create(['name' => 'Scoped Owner']);
 
@@ -149,7 +168,7 @@ it('honors the caller include global flag instead of overriding it from config',
 
 it('fails closed without an owner context when owner mode is enabled', function (): void {
     config()->set('affiliates.owner.enabled', true);
-    config()->set('affiliates.bonuses.top_performer.enabled', true);
+    topPerformerRuleSettings(['topPerformerEnabled' => true]);
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
         public function resolve(): ?Model

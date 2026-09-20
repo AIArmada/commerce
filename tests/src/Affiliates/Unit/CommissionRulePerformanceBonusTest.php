@@ -6,23 +6,35 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Artisan;
 
 beforeEach(function (): void {
     config()->set('affiliates.owner.enabled', false);
+    // Settings cache outlives RefreshDatabase rollbacks within a process.
+    Artisan::call('settings:clear-cache');
     $this->engine = app(CommissionRuleEngine::class);
     $this->from = CarbonImmutable::now()->startOfMonth();
     $this->to = CarbonImmutable::now()->endOfMonth();
 });
 
+/**
+ * @param  array<string, mixed>  $overrides
+ */
+function performanceBonusSettings(array $overrides): void
+{
+    AffiliateBonusSettings::fake($overrides);
+}
+
 it('keeps top performer output identical after the commission-rule collapse', function (): void {
-    config()->set('affiliates.bonuses.top_performer', [
-        'enabled' => true,
-        'min_revenue' => 1000,
-        'min_revenue_currency' => 'USD',
-        'positions' => [1 => 7500],
+    performanceBonusSettings([
+        'topPerformerEnabled' => true,
+        'topPerformerMinRevenue' => 1000,
+        'topPerformerMinRevenueCurrency' => 'USD',
+        'topPerformerPositions' => [1 => 7500],
     ]);
 
     $affiliate = Affiliate::create([
@@ -64,11 +76,11 @@ it('keeps top performer output identical after the commission-rule collapse', fu
 });
 
 it('keeps recruitment output identical after the commission-rule collapse', function (): void {
-    config()->set('affiliates.bonuses.recruitment', [
-        'enabled' => true,
-        'min_recruits' => 1,
-        'bonus_per_recruit' => 2500,
-        'max_bonus' => 25000,
+    performanceBonusSettings([
+        'recruitmentEnabled' => true,
+        'recruitmentMinRecruits' => 1,
+        'recruitmentBonusPerRecruit' => 2500,
+        'recruitmentMaxBonus' => 25000,
     ]);
 
     $recruiter = Affiliate::create([
@@ -107,11 +119,11 @@ it('keeps recruitment output identical after the commission-rule collapse', func
 });
 
 it('keeps consistency output identical after the commission-rule collapse', function (): void {
-    config()->set('affiliates.bonuses.consistency', [
-        'enabled' => true,
-        'min_weeks' => 1,
-        'min_conversions_per_week' => 1,
-        'bonus_amount' => 5000,
+    performanceBonusSettings([
+        'consistencyEnabled' => true,
+        'consistencyMinWeeks' => 1,
+        'consistencyMinConversionsPerWeek' => 1,
+        'consistencyBonusAmount' => 5000,
     ]);
 
     $affiliate = Affiliate::create([
@@ -151,12 +163,12 @@ it('keeps consistency output identical after the commission-rule collapse', func
 });
 
 it('keeps growth output identical after the commission-rule collapse', function (): void {
-    config()->set('affiliates.bonuses.growth', [
-        'enabled' => true,
-        'min_growth_percent' => 50,
-        'min_previous_revenue' => 1000,
-        'min_previous_revenue_currency' => 'USD',
-        'bonus_amount' => 7500,
+    performanceBonusSettings([
+        'growthEnabled' => true,
+        'growthMinGrowthPercent' => 50,
+        'growthMinPreviousRevenue' => 1000,
+        'growthMinPreviousRevenueCurrency' => 'USD',
+        'growthBonusAmount' => 7500,
     ]);
 
     $affiliate = Affiliate::create([

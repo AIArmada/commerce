@@ -13,6 +13,7 @@ use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\Support\BonusConfig;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -323,7 +324,7 @@ final class CommissionRuleEngine
         bool $includeGlobal,
     ): array {
         $type = CommissionRuleType::TopPerformer;
-        $config = config('affiliates.bonuses.top_performer', []);
+        $config = BonusConfig::topPerformer();
 
         if (! (bool) ($config['enabled'] ?? true)) {
             return [];
@@ -373,7 +374,7 @@ final class CommissionRuleEngine
         bool $includeGlobal,
     ): array {
         $type = CommissionRuleType::Recruitment;
-        $config = config('affiliates.bonuses.recruitment', []);
+        $config = BonusConfig::recruitment();
 
         if (! (bool) ($config['enabled'] ?? true)) {
             return [];
@@ -439,7 +440,7 @@ final class CommissionRuleEngine
         bool $includeGlobal,
     ): array {
         $type = CommissionRuleType::Consistency;
-        $config = config('affiliates.bonuses.consistency', []);
+        $config = BonusConfig::consistency();
 
         if (! (bool) ($config['enabled'] ?? true)) {
             return [];
@@ -483,7 +484,7 @@ final class CommissionRuleEngine
                 'affiliate_id' => $affiliate->id,
                 'affiliate_name' => $affiliate->name,
                 'amount_minor' => (int) ($config['bonus_amount'] ?? 5000),
-                'reason' => "Consistency Bonus - Sales in {$weeksWithSales} consecutive weeks",
+                'reason' => "Consistency Bonus - Sales in {$weeksWithSales} qualifying weeks",
                 'metrics' => [
                     'weeks_with_sales' => $weeksWithSales,
                     'period' => $from->format('Y-m'),
@@ -503,13 +504,13 @@ final class CommissionRuleEngine
         bool $includeGlobal,
     ): array {
         $type = CommissionRuleType::Growth;
-        $config = config('affiliates.bonuses.growth', []);
+        $config = BonusConfig::growth();
 
         if (! (bool) ($config['enabled'] ?? true)) {
             return [];
         }
 
-        $minimumGrowthPercentage = (float) ($config['min_growth_percent'] ?? 50);
+        $minimumGrowthPercentage = (float) ($config['min_growth_percent'] ?? 25);
         $prevFrom = $from->subMonth()->startOfMonth();
         $prevTo = $from->subMonth()->endOfMonth();
         $bonuses = [];
@@ -550,7 +551,7 @@ final class CommissionRuleEngine
                 'bonus_type' => $type->value,
                 'affiliate_id' => $affiliate->id,
                 'affiliate_name' => $affiliate->name,
-                'amount_minor' => (int) ($config['bonus_amount'] ?? 7500),
+                'amount_minor' => (int) ($config['bonus_amount'] ?? 10000),
                 'reason' => 'Growth Bonus - ' . round($growthPercentage, 1) . '% growth vs previous month',
                 'metrics' => [
                     'current_revenue' => $currentRevenue,

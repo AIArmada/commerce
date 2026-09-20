@@ -87,6 +87,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             ->discoversMigrations()
             ->hasRoutes(['api', 'web'])
             ->hasCommands([
+                Console\Commands\AwardPerformanceBonusesCommand::class,
                 Console\Commands\ExportAffiliatePayoutCommand::class,
                 Console\Commands\AggregateDailyStatsCommand::class,
                 Console\Commands\ProcessRankUpgradesCommand::class,

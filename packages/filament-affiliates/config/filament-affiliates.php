@@ -104,8 +104,10 @@ return [
         'navigation_sort' => [
             'reports' => 10,
             'commission_settings' => 5,
+            'bonus_settings' => 6,
             'payout_batch' => 12,
             'payout_settings' => 13,
+            'performance_bonuses' => 14,
             'fraud_review' => 15,
         ],
     ],

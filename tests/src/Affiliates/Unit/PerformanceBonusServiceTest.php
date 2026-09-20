@@ -9,12 +9,17 @@ use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\PerformanceBonusService;
+use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\States\PendingConversion;
+use Illuminate\Support\Facades\Artisan;
 
 beforeEach(function (): void {
+    // Settings cache outlives RefreshDatabase rollbacks within a process.
+    Artisan::call('settings:clear-cache');
+
     $this->service = app(PerformanceBonusService::class);
 
     $this->affiliate = Affiliate::create([
@@ -454,11 +459,11 @@ describe('PerformanceBonusService', function (): void {
         });
 
         test('honors configured growth min_growth_percent threshold', function (): void {
-            config()->set('affiliates.bonuses.growth', [
-                'enabled' => true,
-                'bonus_amount' => 7500,
-                'min_growth_percent' => 200,
-                'min_previous_revenue' => 1000,
+            AffiliateBonusSettings::fake([
+                'growthEnabled' => true,
+                'growthBonusAmount' => 7500,
+                'growthMinGrowthPercent' => 200,
+                'growthMinPreviousRevenue' => 1000,
             ]);
 
             AffiliateConversion::create([

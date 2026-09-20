@@ -84,6 +84,35 @@ $schedule->command('affiliates:process-ranks')
     ->withoutOverlapping();
 ```
 
+### Award Performance Bonuses
+
+Calculates the monthly performance bonuses (top performer, recruitment, consistency, growth) and awards them as approved conversions. Awarding is idempotent per affiliate, bonus type, and month.
+
+```bash
+php artisan affiliates:award-bonuses
+```
+
+**Options:**
+
+```bash
+# Preview without writing
+php artisan affiliates:award-bonuses --dry-run
+
+# Calculate a specific month
+php artisan affiliates:award-bonuses --month=2026-09
+
+# Only one bonus type
+php artisan affiliates:award-bonuses --type=growth
+```
+
+**Recommended Schedule:**
+
+```php
+$schedule->command('affiliates:award-bonuses')
+    ->monthlyOn(1, '01:00')
+    ->withoutOverlapping();
+```
+
 ### Process Scheduled Payouts
 
 Processes payouts that are scheduled for the current date.

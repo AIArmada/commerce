@@ -78,4 +78,20 @@ enum CommissionRuleType: string
             self::Growth,
         ];
     }
+
+    /**
+     * Rule types assignable to per-program commission rules.
+     *
+     * Performance bonuses are computed globally from BonusConfig, so they
+     * are intentionally excluded here.
+     *
+     * @return list<self>
+     */
+    public static function programRuleCases(): array
+    {
+        return array_values(array_filter(
+            self::cases(),
+            fn (self $case): bool => ! $case->isPerformanceBonus(),
+        ));
+    }
 }

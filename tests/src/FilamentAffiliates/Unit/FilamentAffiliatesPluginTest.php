@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
+use AIArmada\FilamentAffiliates\Pages\ManageAffiliateBonusSettings;
 use AIArmada\FilamentAffiliates\Pages\ManageAffiliateCommissionSettings;
 use AIArmada\FilamentAffiliates\Pages\ManageAffiliatePayoutSettings;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Pages\PerformanceBonusesPage;
 use AIArmada\FilamentAffiliates\Pages\ReportsPage;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
@@ -78,6 +80,8 @@ it('registers affiliate resources, pages, and widgets', function (): void {
             FraudReviewPage::class,
             PayoutBatchPage::class,
             ManageAffiliatePayoutSettings::class,
+            PerformanceBonusesPage::class,
+            ManageAffiliateBonusSettings::class,
             ReportsPage::class,
         ])
         ->andReturnSelf();
@@ -184,6 +188,8 @@ it('skips link admin surface when links feature is disabled', function (): void 
             FraudReviewPage::class,
             PayoutBatchPage::class,
             ManageAffiliatePayoutSettings::class,
+            PerformanceBonusesPage::class,
+            ManageAffiliateBonusSettings::class,
             ReportsPage::class,
         ])
         ->andReturnSelf();
@@ -239,6 +245,7 @@ it('skips commission template admin surface when commission management is disabl
             FraudReviewPage::class,
             PayoutBatchPage::class,
             ManageAffiliatePayoutSettings::class,
+            PerformanceBonusesPage::class,
             ReportsPage::class,
         ])
         ->andReturnSelf();
@@ -294,6 +301,8 @@ it('skips support and compliance admin surfaces when support compliance is disab
             FraudReviewPage::class,
             PayoutBatchPage::class,
             ManageAffiliatePayoutSettings::class,
+            PerformanceBonusesPage::class,
+            ManageAffiliateBonusSettings::class,
             ReportsPage::class,
         ])
         ->andReturnSelf();

@@ -37,7 +37,17 @@ Registration is config-driven:
 - `FraudReviewPage` (`features.admin.fraud_monitoring`)
 - `PayoutBatchPage` (`features.admin.payouts`)
 - `ManageAffiliatePayoutSettings` (`features.admin.payouts`)
+- `PerformanceBonusesPage` (`features.admin.payouts`)
+- `ManageAffiliateBonusSettings` (`features.admin.commission_management`)
 - `ReportsPage` (`features.admin.reports`)
+
+### Performance bonuses
+
+The Performance Bonuses page previews the calculated bonuses for a month (counts and minor-unit totals by currency) and awards them as approved conversions. The table below lists awarded bonus conversions as an audit trail. The same flow runs headless via `affiliates:award-bonuses --dry-run` / `affiliates:award-bonuses --month=YYYY-MM [--type=...]`.
+
+### Bonus settings
+
+The Bonus Settings page edits all four performance-bonus programs (top performer, recruitment, consistency, growth) in the `affiliate-bonuses` settings group. Values resolve settings-first with `affiliates.bonuses` config fallback when settings are unmigrated. Performance-bonus rule types are excluded from per-program commission rules because bonuses run globally.
 
 ### Payout settings
 

@@ -13,6 +13,7 @@ use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\Support\RevenueVolume;
@@ -60,6 +61,14 @@ function withThresholdRates(): void
 {
     config(['affiliates.currency.default' => 'USD']);
     (new ExchangeRateSettings(['base' => 'USD', 'rates' => ['MYR' => 4.7], 'history' => []]))->save();
+}
+
+/**
+ * @param  array<string, mixed>  $overrides
+ */
+function thresholdBonusSettings(array $overrides): void
+{
+    AffiliateBonusSettings::fake($overrides);
 }
 
 describe('RevenueVolume', function (): void {
@@ -129,12 +138,12 @@ describe('multicurrency threshold comparisons', function (): void {
 
     test('growth bonuses compare converted revenue', function (): void {
         withThresholdRates();
-        config(['affiliates.bonuses.growth' => [
-            'enabled' => true,
-            'min_growth_percent' => 50,
-            'min_previous_revenue' => 10000,
-            'bonus_amount' => 7500,
-        ]]);
+        thresholdBonusSettings([
+            'growthEnabled' => true,
+            'growthMinGrowthPercent' => 50,
+            'growthMinPreviousRevenue' => 10000,
+            'growthBonusAmount' => 7500,
+        ]);
         $affiliate = makeThresholdAffiliate('GRO');
 
         $from = CarbonImmutable::now()->startOfMonth();
@@ -157,11 +166,11 @@ describe('multicurrency threshold comparisons', function (): void {
 
     test('leaderboard ranks on converted revenue', function (): void {
         withThresholdRates();
-        config(['affiliates.bonuses.top_performer' => [
-            'enabled' => true,
-            'min_revenue' => 0,
-            'positions' => [1 => 1000, 2 => 500],
-        ]]);
+        thresholdBonusSettings([
+            'topPerformerEnabled' => true,
+            'topPerformerMinRevenue' => 0,
+            'topPerformerPositions' => [1 => 1000, 2 => 500],
+        ]);
 
         $usdAffiliate = makeThresholdAffiliate('TOP-USD');
         $myrAffiliate = makeThresholdAffiliate('TOP-MYR', 'MYR');
