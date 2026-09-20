@@ -22,6 +22,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTouchpointResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateVolumeTierResource;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
 use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
@@ -86,6 +87,7 @@ final class FilamentAffiliatesPlugin implements Plugin
 
         if ($features['commission_management']) {
             $resources[] = AffiliateCommissionTemplateResource::class;
+            $resources[] = AffiliateVolumeTierResource::class;
         }
 
         if ($features['links']) {

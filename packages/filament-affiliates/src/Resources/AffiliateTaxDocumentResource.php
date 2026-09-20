@@ -145,6 +145,7 @@ final class AffiliateTaxDocumentResource extends Resource
                     TextEntry::make('tax_year')->numeric(),
                     TextEntry::make('status')->badge(),
                     TextEntry::make('total_amount_minor')->label('Total')->numeric(),
+                    TextEntry::make('currency')->badge(),
                     TextEntry::make('document_path')->placeholder('—'),
                     TextEntry::make('notes')->placeholder('—')->columnSpanFull(),
                 ])

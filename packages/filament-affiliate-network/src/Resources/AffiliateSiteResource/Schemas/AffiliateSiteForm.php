@@ -71,6 +71,25 @@ final class AffiliateSiteForm
                     ])
                     ->columns(3),
 
+                Section::make('Catalog Sync')
+                    ->description('Point at a merchant affiliates install to import its public programs as offers. Leave empty for locally-managed offers.')
+                    ->schema([
+                        TextInput::make('catalog_url')
+                            ->label('Catalog URL')
+                            ->url()
+                            ->maxLength(255)
+                            ->nullable()
+                            ->helperText('Base API URL of the merchant site, e.g. https://merchant.example.com/api/affiliates'),
+
+                        TextInput::make('catalog_token')
+                            ->label('Catalog API token')
+                            ->password()
+                            ->revealable()
+                            ->nullable()
+                            ->helperText('Stored encrypted. Leave empty to keep the current token.'),
+                    ])
+                    ->columns(2),
+
                 Section::make('Settings')
                     ->schema([
                         KeyValue::make('settings')
@@ -83,5 +102,26 @@ final class AffiliateSiteForm
                     ])
                     ->collapsed(),
             ]);
+    }
+
+    /**
+     * Fold a submitted catalog token into the encrypted column.
+     *
+     * A blank token leaves the stored value untouched so edits never wipe
+     * credentials by accident.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function mergeCatalogToken(array $data): array
+    {
+        $token = $data['catalog_token'] ?? null;
+        unset($data['catalog_token']);
+
+        if (is_string($token) && $token !== '') {
+            $data['catalog_token_encrypted'] = encrypt($token);
+        }
+
+        return $data;
     }
 }

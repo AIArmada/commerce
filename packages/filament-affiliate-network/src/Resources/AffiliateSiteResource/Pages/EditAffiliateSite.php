@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\FilamentAffiliateNetwork\Actions\SyncSiteCatalog;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Schemas\AffiliateSiteForm;
 use Carbon\CarbonImmutable;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -35,12 +37,18 @@ final class EditAffiliateSite extends EditRecord
             $data['verified_at'] = null;
         }
 
-        return $data;
+        return AffiliateSiteForm::mergeCatalogToken($data);
     }
 
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('sync_catalog')
+                ->label('Sync catalog')
+                ->icon('heroicon-o-arrow-path')
+                ->color('info')
+                ->requiresConfirmation()
+                ->action(fn (AffiliateSite $record): array => app(SyncSiteCatalog::class)->handle($record)),
             Actions\DeleteAction::make(),
         ];
     }

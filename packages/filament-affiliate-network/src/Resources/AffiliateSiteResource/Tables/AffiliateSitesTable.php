@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Tabl
 
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliateNetwork\Actions\SyncSiteCatalog;
 use Carbon\CarbonImmutable;
 use Filament\Actions;
 use Filament\Tables\Columns\TextColumn;
@@ -61,6 +62,12 @@ final class AffiliateSitesTable
             ])
             ->actions([
                 Actions\EditAction::make(),
+                Actions\Action::make('sync_catalog')
+                    ->label('Sync catalog')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->action(fn (AffiliateSite $record): array => app(SyncSiteCatalog::class)->handle($record)),
                 Actions\Action::make('verify')
                     ->icon('heroicon-o-check-badge')
                     ->color('success')

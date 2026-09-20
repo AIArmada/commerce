@@ -21,6 +21,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTouchpointResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateVolumeTierResource;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
 use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
@@ -55,6 +56,7 @@ it('registers affiliate resources, pages, and widgets', function (): void {
             AffiliatePayoutResource::class,
             AffiliateProgramResource::class,
             AffiliateCommissionTemplateResource::class,
+            AffiliateVolumeTierResource::class,
             AffiliateLinkResource::class,
             AffiliateTouchpointResource::class,
             AffiliateRankResource::class,
@@ -160,6 +162,7 @@ it('skips link admin surface when links feature is disabled', function (): void 
             AffiliatePayoutResource::class,
             AffiliateProgramResource::class,
             AffiliateCommissionTemplateResource::class,
+            AffiliateVolumeTierResource::class,
             AffiliateTouchpointResource::class,
             AffiliateRankResource::class,
             AffiliateRankHistoryResource::class,
@@ -268,6 +271,7 @@ it('skips support and compliance admin surfaces when support compliance is disab
             AffiliatePayoutResource::class,
             AffiliateProgramResource::class,
             AffiliateCommissionTemplateResource::class,
+            AffiliateVolumeTierResource::class,
             AffiliateLinkResource::class,
             AffiliateTouchpointResource::class,
             AffiliateRankResource::class,

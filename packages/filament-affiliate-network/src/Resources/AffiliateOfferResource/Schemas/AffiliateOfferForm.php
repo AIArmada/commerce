@@ -10,6 +10,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -114,6 +115,34 @@ final class AffiliateOfferForm
                             ])
                             ->default('synced')
                             ->helperText('Editing any rate field flips this to manual; sync then holds rates back until you switch it back.'),
+
+                        Repeater::make('volume_tiers')
+                            ->label('Volume tiers')
+                            ->schema([
+                                TextInput::make('min_volume_minor')
+                                    ->label('Min volume (minor)')
+                                    ->rule('integer')
+                                    ->minValue(0)
+                                    ->required(),
+                                TextInput::make('rate_bp')
+                                    ->label('Rate (bp)')
+                                    ->rule('integer')
+                                    ->minValue(0)
+                                    ->required(),
+                                Select::make('currency')
+                                    ->options([
+                                        'USD' => 'USD',
+                                        'MYR' => 'MYR',
+                                        'SGD' => 'SGD',
+                                        'IDR' => 'IDR',
+                                    ])
+                                    ->helperText('Defaults to the offer currency.'),
+                            ])
+                            ->columns(3)
+                            ->columnSpanFull()
+                            ->collapsible()
+                            ->defaultItems(0)
+                            ->helperText('Higher-volume affiliates earn these rates once they clear each floor.'),
                     ])
                     ->columns(4),
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages;
 
+use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -39,6 +40,13 @@ final class CreateAffiliateOffer extends CreateRecord
                 ->firstOrFail());
 
             $data['category_id'] = (string) $category->getKey();
+        }
+
+        if (array_key_exists('volume_tiers', $data)) {
+            $data['volume_tiers'] = AffiliateOffer::normalizeVolumeTiers(
+                is_array($data['volume_tiers']) ? $data['volume_tiers'] : null,
+                is_string($data['currency'] ?? null) ? $data['currency'] : null,
+            );
         }
 
         return $data;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LinksRelationManager;
 use Filament\Support\Icons\Heroicon;
 
 describe('AffiliateOfferResource', function (): void {
@@ -45,9 +46,9 @@ describe('AffiliateOfferResource', function (): void {
         expect(AffiliateOfferResource::getPluralModelLabel())->toBe('Offers');
     });
 
-    test('has empty relation managers', function (): void {
-        $relations = AffiliateOfferResource::getRelations();
-
-        expect($relations)->toBeArray()->toBeEmpty();
+    test('registers the links relation manager', function (): void {
+        expect(AffiliateOfferResource::getRelations())->toBe([
+            LinksRelationManager::class,
+        ]);
     });
 });

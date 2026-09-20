@@ -13,6 +13,7 @@ use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Actions\ProcessAffiliatePayout;
+use AIArmada\FilamentAffiliates\Services\PayoutExportService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -61,6 +62,28 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
 
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.payout-batch';
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('export_settlement')
+                ->label('Export settlement CSV')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->form([
+                    Forms\Components\DatePicker::make('from')
+                        ->label('From')
+                        ->nullable(),
+                    Forms\Components\DatePicker::make('to')
+                        ->label('To')
+                        ->nullable(),
+                ])
+                ->action(fn (array $data) => app(PayoutExportService::class)->downloadSettlementCsv(
+                    $data['from'] ?? null,
+                    $data['to'] ?? null,
+                )),
+        ];
+    }
 
     public function table(Table $table): Table
     {

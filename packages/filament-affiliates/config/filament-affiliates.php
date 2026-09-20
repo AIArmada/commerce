@@ -96,6 +96,7 @@ return [
             'affiliate_rank_histories' => 71,
             'affiliate_support_tickets' => 72,
             'affiliate_tax_documents' => 73,
+            'affiliate_volume_tiers' => 74,
         ],
     ],
 

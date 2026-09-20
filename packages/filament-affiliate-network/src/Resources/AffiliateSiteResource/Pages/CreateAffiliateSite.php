@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Page
 
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Schemas\AffiliateSiteForm;
 use Carbon\CarbonImmutable;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -29,6 +30,6 @@ final class CreateAffiliateSite extends CreateRecord
             $data['verified_at'] = CarbonImmutable::now();
         }
 
-        return $data;
+        return AffiliateSiteForm::mergeCatalogToken($data);
     }
 }
