@@ -106,6 +106,6 @@ final class NetworkStatsAggregator
 
     private static function defaultCurrency(): string
     {
-        return mb_strtoupper((string) config('affiliate-network.currency.default', 'USD'));
+        return mb_strtoupper((string) config('affiliate-network.currency.default', 'MYR'));
     }
 }

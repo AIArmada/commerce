@@ -109,7 +109,7 @@ final class AffiliatePayoutResource extends Resource
 
                     Forms\Components\TextInput::make('currency')
                         ->required()
-                        ->default('USD')
+                        ->default((string) config('affiliates.currency.default', 'MYR'))
                         ->maxLength(3)
                         ->rule('size:3'),
 

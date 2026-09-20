@@ -153,7 +153,7 @@ final class AffiliateStatsAggregator
 
     private function displayCurrency(): string
     {
-        return mb_strtoupper((string) config('filament-affiliates.widgets.currency', 'USD'));
+        return mb_strtoupper((string) config('filament-affiliates.widgets.currency', 'MYR'));
     }
 
     private function affiliateQuery(?Model $owner): Builder

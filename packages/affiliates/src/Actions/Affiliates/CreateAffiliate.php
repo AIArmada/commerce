@@ -57,7 +57,7 @@ final class CreateAffiliate
                         'status' => $status,
                         'commission_type' => $commissionType,
                         'commission_rate' => $commissionRate,
-                        'currency' => $data['currency'] ?? config('affiliates.currency.default', 'USD'),
+                        'currency' => $data['currency'] ?? config('affiliates.currency.default', 'MYR'),
                         'parent_affiliate_id' => $parentId,
                         'metadata' => $data['metadata'] ?? [],
                     ]);

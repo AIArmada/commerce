@@ -208,7 +208,7 @@ trait InteractsWithAffiliate
         $map = [];
 
         foreach ($rows as $code => $total) {
-            $key = mb_strtoupper((string) ($code ?: $affiliate->currency ?? config('affiliates.currency.default', 'USD')));
+            $key = mb_strtoupper((string) ($code ?: $affiliate->currency ?? config('affiliates.currency.default', 'MYR')));
             $map[$key] = ($map[$key] ?? 0) + (int) $total;
         }
 
@@ -295,7 +295,7 @@ trait InteractsWithAffiliate
     public function formatAmount(int $amount, ?string $currency = null): string
     {
         $affiliate = $this->getAffiliate();
-        $currency = $currency ?? $affiliate?->currency ?? config('affiliates.currency.default', 'USD');
+        $currency = $currency ?? $affiliate?->currency ?? config('affiliates.currency.default', 'MYR');
 
         // Determine decimal places based on currency (most use 2, some use 0)
         $zeroDecimalCurrencies = ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'PYG', 'UGX', 'RWF'];

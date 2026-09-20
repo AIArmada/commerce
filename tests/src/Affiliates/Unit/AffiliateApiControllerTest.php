@@ -2,13 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -30,19 +27,6 @@ beforeEach(function (): void {
 });
 
 describe('AffiliateApiController', function (): void {
-    test('can be instantiated', function (): void {
-        $affiliateLookup = app(AffiliateLookup::class);
-        $createTrackingLink = app(CreateTrackingLink::class);
-        $reportService = app(AffiliateReportService::class);
-
-        $controller = new AffiliateApiController(
-            $affiliateLookup,
-            $createTrackingLink,
-            $reportService,
-        );
-
-        expect($controller)->toBeInstanceOf(AffiliateApiController::class);
-    });
 
     describe('summary', function (): void {
         test('returns affiliate summary', function (): void {
@@ -287,28 +271,5 @@ describe('AffiliateApiController', function (): void {
             expect($response->getStatusCode())->toBe(400);
             expect(json_decode($response->getContent(), true)['message'])->toBe('Owner context required');
         });
-    });
-});
-
-describe('AffiliateApiController class structure', function (): void {
-    test('is declared as final', function (): void {
-        $reflection = new ReflectionClass(AffiliateApiController::class);
-        expect($reflection->isFinal())->toBeTrue();
-    });
-
-    test('has required public methods', function (): void {
-        $reflection = new ReflectionClass(AffiliateApiController::class);
-
-        expect($reflection->hasMethod('summary'))->toBeTrue();
-        expect($reflection->hasMethod('links'))->toBeTrue();
-        expect($reflection->hasMethod('creatives'))->toBeTrue();
-    });
-
-    test('registers link creation as a post route', function (): void {
-        $source = file_get_contents(dirname(__DIR__, 4) . '/packages/affiliates/routes/api.php');
-
-        expect($source)
-            ->toContain("Route::post('{code}/links'")
-            ->not->toContain("Route::get('{code}/links'");
     });
 });

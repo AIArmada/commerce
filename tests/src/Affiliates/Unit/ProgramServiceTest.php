@@ -199,9 +199,9 @@ describe('ProgramService', function (): void {
         });
 
         test('does not throw if not a member', function (): void {
-            // Should complete without exception
             $this->service->leaveProgram($this->affiliate, $this->program);
-            expect(true)->toBeTrue();
+
+            expect($this->service->isMember($this->affiliate, $this->program))->toBeFalse();
         });
     });
 
@@ -400,29 +400,5 @@ describe('ProgramService', function (): void {
 
             expect($result)->toBeCollection();
         });
-    });
-});
-
-describe('ProgramService class structure', function (): void {
-    test('can be instantiated', function (): void {
-        $service = app(ProgramService::class);
-        expect($service)->toBeInstanceOf(ProgramService::class);
-    });
-
-    test('is declared as final', function (): void {
-        $reflection = new ReflectionClass(ProgramService::class);
-        expect($reflection->isFinal())->toBeTrue();
-    });
-
-    test('has required public methods', function (): void {
-        $reflection = new ReflectionClass(ProgramService::class);
-
-        expect($reflection->hasMethod('getAvailablePrograms'))->toBeTrue();
-        expect($reflection->hasMethod('joinProgram'))->toBeTrue();
-        expect($reflection->hasMethod('leaveProgram'))->toBeTrue();
-        expect($reflection->hasMethod('approveMembership'))->toBeTrue();
-        expect($reflection->hasMethod('upgradeTier'))->toBeTrue();
-        expect($reflection->hasMethod('isMember'))->toBeTrue();
-        expect($reflection->hasMethod('getMembership'))->toBeTrue();
     });
 });

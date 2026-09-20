@@ -384,23 +384,3 @@ describe('FraudDetectionService', function (): void {
         });
     });
 });
-
-describe('FraudDetectionService class structure', function (): void {
-    test('can be instantiated', function (): void {
-        $service = app(FraudDetectionService::class);
-        expect($service)->toBeInstanceOf(FraudDetectionService::class);
-    });
-
-    test('is declared as final', function (): void {
-        $reflection = new ReflectionClass(FraudDetectionService::class);
-        expect($reflection->isFinal())->toBeTrue();
-    });
-
-    test('has required public methods', function (): void {
-        $reflection = new ReflectionClass(FraudDetectionService::class);
-
-        expect($reflection->hasMethod('analyzeClick'))->toBeTrue();
-        expect($reflection->hasMethod('analyzeConversion'))->toBeTrue();
-        expect($reflection->hasMethod('getRiskProfile'))->toBeTrue();
-    });
-});

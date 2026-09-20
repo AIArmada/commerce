@@ -5,32 +5,8 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Services\AttributionModel;
-use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Paused;
-use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
-
-// CommissionCalculator Tests
-test('CommissionCalculator can be instantiated', function (): void {
-    $calculator = app(CommissionCalculator::class);
-
-    expect($calculator)->toBeInstanceOf(CommissionCalculator::class);
-});
-
-// AttributionModel Tests
-test('AttributionModel can be instantiated', function (): void {
-    $model = app(AttributionModel::class);
-
-    expect($model)->toBeInstanceOf(AttributionModel::class);
-});
-
-// AffiliateLinkGenerator Tests
-test('AffiliateLinkGenerator can be instantiated', function (): void {
-    $generator = app(AffiliateLinkGenerator::class);
-
-    expect($generator)->toBeInstanceOf(AffiliateLinkGenerator::class);
-});
 
 // Affiliate status enum edge cases
 test('AffiliateStatus disabled status works correctly', function (): void {

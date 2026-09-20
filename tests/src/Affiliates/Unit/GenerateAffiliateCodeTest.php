@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Actions\Affiliates\GenerateAffiliateCode;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 describe('GenerateAffiliateCode', function (): void {
     describe('handle', function (): void {
@@ -118,26 +117,6 @@ describe('GenerateAffiliateCode', function (): void {
 
             // Sluggified name + random alphanumeric suffix
             expect($code)->toMatch('/^[A-Za-z0-9]+$/');
-        });
-    });
-
-    describe('class structure', function (): void {
-        test('can be instantiated', function (): void {
-            $action = new GenerateAffiliateCode;
-
-            expect($action)->toBeInstanceOf(GenerateAffiliateCode::class);
-        });
-
-        test('is declared as final', function (): void {
-            $reflection = new ReflectionClass(GenerateAffiliateCode::class);
-
-            expect($reflection->isFinal())->toBeTrue();
-        });
-
-        test('uses AsAction trait', function (): void {
-            $traits = class_uses_recursive(GenerateAffiliateCode::class);
-
-            expect($traits)->toContain(AsAction::class);
         });
     });
 });

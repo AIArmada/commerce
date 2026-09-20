@@ -14,7 +14,7 @@
                     <div class="text-2xl font-bold">—</div>
                     <div class="text-xs text-gray-400">Missing exchange rate; see breakdown</div>
                 @else
-                    <div class="text-2xl font-bold">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($reportData['summary']['revenue_minor'], $reportData['summary']['currency'] ?? config('affiliates.currency.default', 'USD')) }}</div>
+                    <div class="text-2xl font-bold">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($reportData['summary']['revenue_minor'], $reportData['summary']['currency'] ?? config('affiliates.currency.default', 'MYR')) }}</div>
                     @if(! empty($reportData['summary']['converted']))
                         <div class="text-xs text-gray-400">Converted to {{ $reportData['summary']['currency'] }}</div>
                     @endif
@@ -27,7 +27,7 @@
                     <div class="text-2xl font-bold">—</div>
                     <div class="text-xs text-gray-400">Missing exchange rate; see breakdown</div>
                 @else
-                    <div class="text-2xl font-bold">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($reportData['summary']['commission_minor'], $reportData['summary']['currency'] ?? config('affiliates.currency.default', 'USD')) }}</div>
+                    <div class="text-2xl font-bold">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($reportData['summary']['commission_minor'], $reportData['summary']['currency'] ?? config('affiliates.currency.default', 'MYR')) }}</div>
                     @if(! empty($reportData['summary']['converted']))
                         <div class="text-xs text-gray-400">Converted to {{ $reportData['summary']['currency'] }}</div>
                     @endif
@@ -89,10 +89,10 @@
                         @foreach($reportData['top_affiliates'] as $affiliate)
                             <tr class="border-b">
                                 <td class="py-2 px-4">{{ $affiliate['name'] ?? 'Unknown' }}</td>
-                                <td class="py-2 px-4">{{ $affiliate['currency'] ?? config('affiliates.currency.default', 'USD') }}</td>
+                                <td class="py-2 px-4">{{ $affiliate['currency'] ?? config('affiliates.currency.default', 'MYR') }}</td>
                                 <td class="text-right py-2 px-4">{{ number_format($affiliate['conversions'] ?? 0) }}</td>
-                                <td class="text-right py-2 px-4">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($affiliate['revenue_minor'] ?? 0, $affiliate['currency'] ?? config('affiliates.currency.default', 'USD')) }}</td>
-                                <td class="text-right py-2 px-4">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($affiliate['commission_minor'] ?? 0, $affiliate['currency'] ?? config('affiliates.currency.default', 'USD')) }}</td>
+                                <td class="text-right py-2 px-4">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($affiliate['revenue_minor'] ?? 0, $affiliate['currency'] ?? config('affiliates.currency.default', 'MYR')) }}</td>
+                                <td class="text-right py-2 px-4">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($affiliate['commission_minor'] ?? 0, $affiliate['currency'] ?? config('affiliates.currency.default', 'MYR')) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -120,10 +120,10 @@
                         @foreach($reportData['conversion_trend'] as $point)
                             <tr class="border-b">
                                 <td class="py-2 px-4">{{ $point['date'] ?? '—' }}</td>
-                                <td class="py-2 px-4">{{ $point['currency'] ?? config('affiliates.currency.default', 'USD') }}</td>
+                                <td class="py-2 px-4">{{ $point['currency'] ?? config('affiliates.currency.default', 'MYR') }}</td>
                                 <td class="text-right py-2 px-4">{{ number_format($point['conversions'] ?? 0) }}</td>
-                                <td class="text-right py-2 px-4">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($point['revenue_minor'] ?? 0, $point['currency'] ?? config('affiliates.currency.default', 'USD')) }}</td>
-                                <td class="text-right py-2 px-4">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($point['commission_minor'] ?? 0, $point['currency'] ?? config('affiliates.currency.default', 'USD')) }}</td>
+                                <td class="text-right py-2 px-4">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($point['revenue_minor'] ?? 0, $point['currency'] ?? config('affiliates.currency.default', 'MYR')) }}</td>
+                                <td class="text-right py-2 px-4">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($point['commission_minor'] ?? 0, $point['currency'] ?? config('affiliates.currency.default', 'MYR')) }}</td>
                             </tr>
                         @endforeach
                     </tbody>

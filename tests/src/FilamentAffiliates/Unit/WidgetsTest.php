@@ -24,12 +24,6 @@ beforeEach(function (): void {
 });
 
 // AffiliateStatsWidget Tests
-it('AffiliateStatsWidget can be instantiated', function (): void {
-    $widget = new AffiliateStatsWidget;
-
-    expect($widget)->toBeInstanceOf(AffiliateStatsWidget::class);
-});
-
 it('AffiliateStatsWidget returns correct column count', function (): void {
     $widget = new AffiliateStatsWidget;
     $reflection = new ReflectionClass($widget);
@@ -39,12 +33,6 @@ it('AffiliateStatsWidget returns correct column count', function (): void {
 });
 
 // PerformanceOverviewWidget Tests
-it('PerformanceOverviewWidget can be instantiated', function (): void {
-    $widget = new PerformanceOverviewWidget;
-
-    expect($widget)->toBeInstanceOf(PerformanceOverviewWidget::class);
-});
-
 it('PerformanceOverviewWidget has polling interval', function (): void {
     $widget = new PerformanceOverviewWidget;
     $reflection = new ReflectionClass($widget);
@@ -54,12 +42,6 @@ it('PerformanceOverviewWidget has polling interval', function (): void {
 });
 
 // RealTimeActivityWidget Tests
-it('RealTimeActivityWidget can be instantiated', function (): void {
-    $widget = new RealTimeActivityWidget;
-
-    expect($widget)->toBeInstanceOf(RealTimeActivityWidget::class);
-});
-
 it('RealTimeActivityWidget has fast polling interval', function (): void {
     $widget = new RealTimeActivityWidget;
     $reflection = new ReflectionClass($widget);
@@ -77,12 +59,6 @@ it('RealTimeActivityWidget has full column span', function (): void {
 });
 
 // FraudAlertWidget Tests
-it('FraudAlertWidget can be instantiated', function (): void {
-    $widget = new FraudAlertWidget;
-
-    expect($widget)->toBeInstanceOf(FraudAlertWidget::class);
-});
-
 it('FraudAlertWidget has polling interval of 30s', function (): void {
     $widget = new FraudAlertWidget;
     $reflection = new ReflectionClass($widget);
@@ -92,12 +68,6 @@ it('FraudAlertWidget has polling interval of 30s', function (): void {
 });
 
 // PayoutQueueWidget Tests
-it('PayoutQueueWidget can be instantiated', function (): void {
-    $widget = new PayoutQueueWidget;
-
-    expect($widget)->toBeInstanceOf(PayoutQueueWidget::class);
-});
-
 it('PayoutQueueWidget has polling interval of 60s', function (): void {
     $widget = new PayoutQueueWidget;
     $reflection = new ReflectionClass($widget);
@@ -135,12 +105,6 @@ it('PayoutQueueWidget table heading includes pending count', function (): void {
 });
 
 // UplineVisualizationWidget Tests
-it('UplineVisualizationWidget can be instantiated', function (): void {
-    $widget = new UplineVisualizationWidget;
-
-    expect($widget)->toBeInstanceOf(UplineVisualizationWidget::class);
-});
-
 it('UplineVisualizationWidget can mount with affiliate id', function (): void {
     $widget = new UplineVisualizationWidget;
     $widget->mount('test-affiliate-id');

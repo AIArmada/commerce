@@ -48,7 +48,7 @@ return [
     |
     */
     'currency' => [
-        'default' => env('AFFILIATE_NETWORK_DEFAULT_CURRENCY', 'USD'),
+        'default' => env('AFFILIATE_NETWORK_DEFAULT_CURRENCY', 'MYR'),
     ],
 
     /*

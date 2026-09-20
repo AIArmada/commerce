@@ -29,12 +29,6 @@ beforeEach(function (): void {
     ]));
 });
 
-it('AffiliatePanelProvider can be instantiated', function (): void {
-    $provider = new AffiliatePanelProvider(app());
-
-    expect($provider)->toBeInstanceOf(AffiliatePanelProvider::class);
-});
-
 it('AffiliatePanelProvider creates panel with correct id', function (): void {
     config(['filament-affiliates.portal.panel_id' => 'affiliate']);
     config(['filament-affiliates.portal.path' => 'affiliate']);

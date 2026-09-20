@@ -6,29 +6,12 @@ use AIArmada\Affiliates\Enums\TaxDocumentStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
-use AIArmada\Affiliates\Services\CohortAnalyzer;
-use AIArmada\Affiliates\Services\Tax\Tax1099Generator;
 use AIArmada\Affiliates\Services\Tax\TaxDocumentService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\CompletedPayout;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 
-// Tax1099Generator Tests
-test('Tax1099Generator can be instantiated', function (): void {
-    $generator = app(Tax1099Generator::class);
-
-    expect($generator)->toBeInstanceOf(Tax1099Generator::class);
-});
-
-// TaxDocumentService Tests
-test('TaxDocumentService can be instantiated', function (): void {
-    $service = app(TaxDocumentService::class);
-
-    expect($service)->toBeInstanceOf(TaxDocumentService::class);
-});
-
-test('TaxDocumentService calculateAnnualPayouts returns int', function (): void {
+test('TaxDocumentService calculateAnnualPayouts returns zero with no payouts', function (): void {
     $service = app(TaxDocumentService::class);
 
     $affiliate = Affiliate::create([
@@ -40,13 +23,10 @@ test('TaxDocumentService calculateAnnualPayouts returns int', function (): void 
         'currency' => 'USD',
     ]);
 
-    $total = $service->calculateAnnualPayouts($affiliate, 2024);
-
-    expect($total)->toBeInt();
-    expect($total)->toBeGreaterThanOrEqual(0);
+    expect($service->calculateAnnualPayouts($affiliate, 2024))->toBe(0);
 });
 
-test('TaxDocumentService getDocumentsForAffiliate returns collection', function (): void {
+test('TaxDocumentService getDocumentsForAffiliate returns newest first scoped to the affiliate', function (): void {
     $service = app(TaxDocumentService::class);
 
     $affiliate = Affiliate::create([
@@ -58,9 +38,31 @@ test('TaxDocumentService getDocumentsForAffiliate returns collection', function 
         'currency' => 'USD',
     ]);
 
+    $other = Affiliate::create([
+        'code' => 'TAXDOCS002',
+        'name' => 'Other Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    foreach ([$affiliate->id => [2023, 2024], $other->id => [2024]] as $affiliateId => $years) {
+        foreach ($years as $year) {
+            AffiliateTaxDocument::create([
+                'affiliate_id' => $affiliateId,
+                'document_type' => '1099-nec',
+                'tax_year' => $year,
+                'status' => TaxDocumentStatus::Generated,
+                'total_amount_minor' => 70000,
+                'currency' => 'USD',
+            ]);
+        }
+    }
+
     $documents = $service->getDocumentsForAffiliate($affiliate);
 
-    expect($documents)->toBeInstanceOf(Collection::class);
+    expect($documents->pluck('tax_year')->all())->toBe([2024, 2023]);
 });
 
 test('TaxDocumentService markDocumentAsSent updates status', function (): void {
@@ -146,11 +148,4 @@ test('TaxDocumentService 1099 totals count USD payouts only', function (): void 
 
     expect($document->total_amount_minor)->toBe(70000)
         ->and($document->currency)->toBe('USD');
-});
-
-// CohortAnalyzer Tests - Only instantiation test (other methods use MySQL-specific DATE_FORMAT)
-test('CohortAnalyzer can be instantiated', function (): void {
-    $analyzer = app(CohortAnalyzer::class);
-
-    expect($analyzer)->toBeInstanceOf(CohortAnalyzer::class);
 });

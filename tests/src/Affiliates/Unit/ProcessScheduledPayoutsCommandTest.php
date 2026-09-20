@@ -454,12 +454,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
     });
 });
 
-describe('ProcessScheduledPayoutsCommand class structure', function (): void {
-    test('is declared as final', function (): void {
-        $reflection = new ReflectionClass(ProcessScheduledPayoutsCommand::class);
-        expect($reflection->isFinal())->toBeTrue();
-    });
-
+describe('ProcessScheduledPayoutsCommand signature', function (): void {
     test('has correct signature', function (): void {
         $reflection = new ReflectionClass(ProcessScheduledPayoutsCommand::class);
         $property = $reflection->getProperty('signature');

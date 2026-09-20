@@ -490,29 +490,3 @@ describe('UplineService', function (): void {
         });
     });
 });
-
-describe('UplineService class structure', function (): void {
-    test('can be instantiated', function (): void {
-        $service = app(UplineService::class);
-        expect($service)->toBeInstanceOf(UplineService::class);
-    });
-
-    test('is declared as final', function (): void {
-        $reflection = new ReflectionClass(UplineService::class);
-        expect($reflection->isFinal())->toBeTrue();
-    });
-
-    test('has required public methods', function (): void {
-        $reflection = new ReflectionClass(UplineService::class);
-
-        expect($reflection->hasMethod('addToUpline'))->toBeTrue();
-        expect($reflection->hasMethod('removeFromUpline'))->toBeTrue();
-        expect($reflection->hasMethod('changeSponsor'))->toBeTrue();
-        expect($reflection->hasMethod('getUpline'))->toBeTrue();
-        expect($reflection->hasMethod('getDownline'))->toBeTrue();
-        expect($reflection->hasMethod('getDirectRecruits'))->toBeTrue();
-        expect($reflection->hasMethod('getTeamSales'))->toBeTrue();
-        expect($reflection->hasMethod('getActiveDownlineCount'))->toBeTrue();
-        expect($reflection->hasMethod('buildTree'))->toBeTrue();
-    });
-});

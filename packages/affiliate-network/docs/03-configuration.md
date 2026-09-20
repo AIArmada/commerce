@@ -30,7 +30,7 @@ return [
     ],
 
     'currency' => [
-        'default' => env('AFFILIATE_NETWORK_DEFAULT_CURRENCY', 'USD'),
+        'default' => env('AFFILIATE_NETWORK_DEFAULT_CURRENCY', 'MYR'),
     ],
 
     'offers' => [
@@ -104,7 +104,7 @@ return [
 
 | Key | Description | Default |
 |-----|-------------|---------|
-| `default` | Fallback ISO currency for reporting totals and currency-less records | `USD` |
+| `default` | Fallback ISO currency for reporting totals and currency-less records | `MYR` |
 
 ### Offers
 

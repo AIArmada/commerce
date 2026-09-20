@@ -31,7 +31,7 @@ final class AffiliateForm
 {
     public static function configure(Schema $schema): Schema
     {
-        $currency = (string) config('affiliates.currency.default', 'USD');
+        $currency = (string) config('affiliates.currency.default', 'MYR');
 
         return $schema->components([
             Section::make('Affiliate Details')

@@ -28,7 +28,6 @@ use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
-use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -376,37 +375,6 @@ it('portal dashboard state objects expose label and color helpers for badges', f
         ->and($conversion->status->color())->toBe('warning');
 });
 
-it('PortalConversions configures its table', function (): void {
-    $user = User::create([
-        'name' => 'Conversions User',
-        'email' => 'conversions-user-' . Str::uuid() . '@example.com',
-        'password' => 'secret',
-    ]);
-
-    $affiliate = Affiliate::create([
-        'code' => 'CONV-' . Str::uuid(),
-        'name' => 'Conversions Affiliate',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 500,
-        'currency' => 'USD',
-    ]);
-    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
-
-    $this->actingAs($user);
-
-    $table = Mockery::mock(Table::class);
-    $table->shouldReceive('query')->once()->andReturnSelf();
-    $table->shouldReceive('columns')->once()->andReturnSelf();
-    $table->shouldReceive('defaultSort')->once()->andReturnSelf();
-    $table->shouldReceive('paginated')->once()->andReturnSelf();
-
-    $page = new PortalConversions;
-    $page->table($table);
-
-    expect(true)->toBeTrue();
-});
-
 it('PortalConversions uses neutral reference and total columns', function (): void {
     $repositoryRoot = dirname(__DIR__, 4);
     $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Pages/Portal/PortalConversions.php');
@@ -416,38 +384,6 @@ it('PortalConversions uses neutral reference and total columns', function (): vo
         ->toContain("->label(__('Reference'))")
         ->toContain("TextColumn::make('value_minor')")
         ->toContain("->label(__('Total'))");
-});
-
-it('PortalPayouts configures its table', function (): void {
-    $user = User::create([
-        'name' => 'Payouts User',
-        'email' => 'payouts-user-' . Str::uuid() . '@example.com',
-        'password' => 'secret',
-    ]);
-
-    $affiliate = Affiliate::create([
-        'code' => 'PAY-' . Str::uuid(),
-        'name' => 'Payouts Affiliate',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 500,
-        'currency' => 'USD',
-        'owner_type' => $user->getMorphClass(),
-        'owner_id' => (string) $user->getKey(),
-    ]);
-
-    $this->actingAs($user);
-
-    $table = Mockery::mock(Table::class);
-    $table->shouldReceive('query')->once()->andReturnSelf();
-    $table->shouldReceive('columns')->once()->andReturnSelf();
-    $table->shouldReceive('defaultSort')->once()->andReturnSelf();
-    $table->shouldReceive('paginated')->once()->andReturnSelf();
-
-    $page = new PortalPayouts;
-    $page->table($table);
-
-    expect(true)->toBeTrue();
 });
 
 it('PortalLinks generates links when affiliate exists', function (): void {

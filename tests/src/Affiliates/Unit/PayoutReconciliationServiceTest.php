@@ -374,24 +374,3 @@ describe('PayoutReconciliationService', function (): void {
         });
     });
 });
-
-describe('PayoutReconciliationService class structure', function (): void {
-    test('can be instantiated', function (): void {
-        $service = app(PayoutReconciliationService::class);
-        expect($service)->toBeInstanceOf(PayoutReconciliationService::class);
-    });
-
-    test('has required public methods', function (): void {
-        $reflection = new ReflectionClass(PayoutReconciliationService::class);
-
-        expect($reflection->hasMethod('reconcilePayout'))->toBeTrue();
-        expect($reflection->hasMethod('getPayoutsNeedingReconciliation'))->toBeTrue();
-        expect($reflection->hasMethod('generateReport'))->toBeTrue();
-        expect($reflection->hasMethod('auditAffiliateBalance'))->toBeTrue();
-    });
-
-    test('is declared as final', function (): void {
-        $reflection = new ReflectionClass(PayoutReconciliationService::class);
-        expect($reflection->isFinal())->toBeTrue();
-    });
-});

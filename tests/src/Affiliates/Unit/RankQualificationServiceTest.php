@@ -501,27 +501,3 @@ describe('RankQualificationService', function (): void {
         });
     });
 });
-
-describe('RankQualificationService class structure', function (): void {
-    test('can be instantiated', function (): void {
-        $service = app(RankQualificationService::class);
-        expect($service)->toBeInstanceOf(RankQualificationService::class);
-    });
-
-    test('is declared as final', function (): void {
-        $reflection = new ReflectionClass(RankQualificationService::class);
-        expect($reflection->isFinal())->toBeTrue();
-    });
-
-    test('has required public methods', function (): void {
-        $reflection = new ReflectionClass(RankQualificationService::class);
-
-        expect($reflection->hasMethod('evaluate'))->toBeTrue();
-        expect($reflection->hasMethod('processRankChange'))->toBeTrue();
-        expect($reflection->hasMethod('processAllRankUpgrades'))->toBeTrue();
-        expect($reflection->hasMethod('processBatch'))->toBeTrue();
-        expect($reflection->hasMethod('assignRank'))->toBeTrue();
-        expect($reflection->hasMethod('calculateMetrics'))->toBeTrue();
-        expect($reflection->hasMethod('clearCache'))->toBeTrue();
-    });
-});

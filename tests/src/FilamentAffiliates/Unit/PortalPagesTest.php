@@ -11,12 +11,6 @@ use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
 
 // PortalDashboard Tests
-it('PortalDashboard can be instantiated', function (): void {
-    $page = new PortalDashboard;
-
-    expect($page)->toBeInstanceOf(PortalDashboard::class);
-});
-
 it('PortalDashboard has correct navigation label', function (): void {
     expect(PortalDashboard::getNavigationLabel())->toBe('Dashboard');
 });
@@ -43,12 +37,6 @@ it('PortalDashboard returns view data with hasAffiliate', function (): void {
 });
 
 // PortalLinks Tests
-it('PortalLinks can be instantiated', function (): void {
-    $page = new PortalLinks;
-
-    expect($page)->toBeInstanceOf(PortalLinks::class);
-});
-
 it('PortalLinks has correct navigation label', function (): void {
     expect(PortalLinks::getNavigationLabel())->toBe('Links');
 });
@@ -77,12 +65,6 @@ it('PortalLinks returns view data', function (): void {
 });
 
 // PortalConversions Tests
-it('PortalConversions can be instantiated', function (): void {
-    $page = new PortalConversions;
-
-    expect($page)->toBeInstanceOf(PortalConversions::class);
-});
-
 it('PortalConversions has correct navigation label', function (): void {
     expect(PortalConversions::getNavigationLabel())->toBe('Conversions');
 });
@@ -106,12 +88,6 @@ it('PortalConversions returns view data', function (): void {
 });
 
 // PortalPayouts Tests
-it('PortalPayouts can be instantiated', function (): void {
-    $page = new PortalPayouts;
-
-    expect($page)->toBeInstanceOf(PortalPayouts::class);
-});
-
 it('PortalPayouts has correct navigation label', function (): void {
     expect(PortalPayouts::getNavigationLabel())->toBe('Payouts');
 });
@@ -135,12 +111,6 @@ it('PortalPayouts returns view data', function (): void {
 });
 
 // PortalProfile Tests
-it('PortalProfile can be instantiated', function (): void {
-    $page = new PortalProfile;
-
-    expect($page)->toBeInstanceOf(PortalProfile::class);
-});
-
 it('PortalProfile has correct navigation label', function (): void {
     expect(PortalProfile::getNavigationLabel())->toBe('Profile');
 });
@@ -163,12 +133,6 @@ it('PortalProfile returns view data', function (): void {
 });
 
 // PortalPrograms Tests
-it('PortalPrograms can be instantiated', function (): void {
-    $page = new PortalPrograms;
-
-    expect($page)->toBeInstanceOf(PortalPrograms::class);
-});
-
 it('PortalPrograms has correct navigation label', function (): void {
     expect(PortalPrograms::getNavigationLabel())->toBe('Programs');
 });
@@ -191,12 +155,6 @@ it('PortalPrograms returns view data', function (): void {
 });
 
 // PortalSupport Tests
-it('PortalSupport can be instantiated', function (): void {
-    $page = new PortalSupport;
-
-    expect($page)->toBeInstanceOf(PortalSupport::class);
-});
-
 it('PortalSupport has correct navigation label', function (): void {
     expect(PortalSupport::getNavigationLabel())->toBe('Support');
 });

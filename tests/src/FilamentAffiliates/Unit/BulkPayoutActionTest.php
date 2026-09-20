@@ -68,12 +68,6 @@ it('has correct default name', function (): void {
     expect(BulkPayoutAction::getDefaultName())->toBe('bulk_process_payouts');
 });
 
-it('can be instantiated with make method', function (): void {
-    $action = BulkPayoutAction::make('bulk_process_payouts');
-
-    expect($action)->toBeInstanceOf(BulkPayoutAction::class);
-});
-
 it('processes a pending payout successfully', function (): void {
     $user = User::create([
         'name' => 'Payout User',

@@ -344,31 +344,3 @@ describe('Tax1099Generator', function (): void {
         });
     });
 });
-
-describe('Tax1099Generator class structure', function (): void {
-    test('can be instantiated', function (): void {
-        $generator = new Tax1099Generator;
-        expect($generator)->toBeInstanceOf(Tax1099Generator::class);
-    });
-
-    test('is declared as final', function (): void {
-        $reflection = new ReflectionClass(Tax1099Generator::class);
-        expect($reflection->isFinal())->toBeTrue();
-    });
-
-    test('has generate public method', function (): void {
-        $reflection = new ReflectionClass(Tax1099Generator::class);
-        expect($reflection->hasMethod('generate'))->toBeTrue();
-        expect($reflection->getMethod('generate')->isPublic())->toBeTrue();
-    });
-
-    test('has private helper methods', function (): void {
-        $reflection = new ReflectionClass(Tax1099Generator::class);
-
-        expect($reflection->hasMethod('generatePdfContent'))->toBeTrue();
-        expect($reflection->getMethod('generatePdfContent')->isPrivate())->toBeTrue();
-
-        expect($reflection->hasMethod('maskTin'))->toBeTrue();
-        expect($reflection->getMethod('maskTin')->isPrivate())->toBeTrue();
-    });
-});

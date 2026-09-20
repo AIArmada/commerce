@@ -14,12 +14,6 @@ beforeEach(function (): void {
 });
 
 // FraudReviewPage Tests
-it('FraudReviewPage can be instantiated', function (): void {
-    $page = new FraudReviewPage;
-
-    expect($page)->toBeInstanceOf(FraudReviewPage::class);
-});
-
 it('FraudReviewPage has correct navigation icon', function (): void {
     $reflection = new ReflectionClass(FraudReviewPage::class);
     $property = $reflection->getProperty('navigationIcon');
@@ -41,12 +35,6 @@ it('FraudReviewPage has correct navigation label', function (): void {
 });
 
 // PayoutBatchPage Tests
-it('PayoutBatchPage can be instantiated', function (): void {
-    $page = new PayoutBatchPage;
-
-    expect($page)->toBeInstanceOf(PayoutBatchPage::class);
-});
-
 it('PayoutBatchPage has correct navigation icon', function (): void {
     $reflection = new ReflectionClass(PayoutBatchPage::class);
     $property = $reflection->getProperty('navigationIcon');
@@ -68,12 +56,6 @@ it('PayoutBatchPage has correct navigation label', function (): void {
 });
 
 // ReportsPage Tests
-it('ReportsPage can be instantiated', function (): void {
-    $page = new ReportsPage;
-
-    expect($page)->toBeInstanceOf(ReportsPage::class);
-});
-
 it('ReportsPage has correct navigation icon', function (): void {
     $reflection = new ReflectionClass(ReportsPage::class);
     $property = $reflection->getProperty('navigationIcon');

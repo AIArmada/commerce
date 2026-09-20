@@ -97,7 +97,7 @@ final class AffiliateOfferForm
                             ->length(3)
                             ->alpha()
                             ->nullable()
-                            ->placeholder('USD'),
+                            ->placeholder('MYR'),
 
                         TextInput::make('cookie_days')
                             ->label('Cookie Duration (days)')

@@ -59,7 +59,7 @@ final class CreateAffiliatePayout extends CreateRecord
             'status' => PendingPayout::class,
             'total_minor' => (int) ($data['total_minor'] ?? 0),
             'conversion_count' => 0,
-            'currency' => mb_strtoupper((string) ($data['currency'] ?? 'USD')),
+            'currency' => mb_strtoupper((string) ($data['currency'] ?? 'MYR')),
             'payee_type' => $affiliate->getMorphClass(),
             'payee_id' => $affiliate->getKey(),
             'scheduled_at' => $data['scheduled_at'] ?? null,

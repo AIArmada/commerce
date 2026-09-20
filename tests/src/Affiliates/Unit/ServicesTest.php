@@ -68,12 +68,6 @@ test('RejectAffiliate disables an affiliate', function (): void {
 });
 
 // DailyAggregationService Tests
-test('DailyAggregationService can be instantiated', function (): void {
-    $service = app(DailyAggregationService::class);
-
-    expect($service)->toBeInstanceOf(DailyAggregationService::class);
-});
-
 test('DailyAggregationService aggregateForAffiliate creates or updates daily stats', function (): void {
     $service = app(DailyAggregationService::class);
 

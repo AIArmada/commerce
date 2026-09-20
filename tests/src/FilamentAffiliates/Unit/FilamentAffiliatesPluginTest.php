@@ -305,16 +305,3 @@ it('skips support and compliance admin surfaces when support compliance is disab
     // @phpstan-ignore argument.type
     (new FilamentAffiliatesPlugin)->register($panel);
 });
-
-it('boot method does not throw exceptions', function (): void {
-    /** @var Panel&MockInterface $panel */
-    $panel = Mockery::mock(Panel::class);
-
-    $plugin = new FilamentAffiliatesPlugin;
-
-    // Boot should execute without throwing any exceptions
-    // @phpstan-ignore argument.type
-    $plugin->boot($panel);
-
-    expect(true)->toBeTrue();
-});

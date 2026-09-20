@@ -9,11 +9,7 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
-use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
-use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
 use AIArmada\FilamentAffiliates\Widgets\PerformanceOverviewWidget;
-use AIArmada\FilamentAffiliates\Widgets\RealTimeActivityWidget;
-use Filament\Tables\Table;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -143,19 +139,6 @@ it('PerformanceOverviewWidget refuses to trend mixed-currency revenue without ra
     expect($stats[1]->getDescription())->toBe('Mixed currencies — set exchange rates');
 });
 
-it('RealTimeActivityWidget configures its table', function (): void {
-    $table = Mockery::mock(Table::class);
-    $table->shouldReceive('query')->once()->andReturnSelf();
-    $table->shouldReceive('columns')->once()->andReturnSelf();
-    $table->shouldReceive('paginated')->once()->andReturnSelf();
-    $table->shouldReceive('defaultSort')->once()->andReturnSelf();
-
-    $widget = new RealTimeActivityWidget;
-    $widget->table($table);
-
-    expect(true)->toBeTrue();
-});
-
 it('RealTimeActivityWidget shows neutral reference semantics', function (): void {
     $repositoryRoot = dirname(__DIR__, 4);
     $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Widgets/RealTimeActivityWidget.php');
@@ -165,36 +148,4 @@ it('RealTimeActivityWidget shows neutral reference semantics', function (): void
         ->toContain("->label('Reference')")
         ->toContain("TextColumn::make('value_minor')")
         ->toContain("->label('Value')");
-});
-
-it('FraudAlertWidget configures its table', function (): void {
-    $table = Mockery::mock(Table::class);
-    $table->shouldReceive('query')->once()->andReturnSelf();
-    $table->shouldReceive('columns')->once()->andReturnSelf();
-    $table->shouldReceive('actions')->once()->andReturnSelf();
-    $table->shouldReceive('paginated')->once()->andReturnSelf();
-    $table->shouldReceive('emptyStateHeading')->once()->andReturnSelf();
-    $table->shouldReceive('emptyStateDescription')->once()->andReturnSelf();
-    $table->shouldReceive('emptyStateIcon')->once()->andReturnSelf();
-
-    $widget = new FraudAlertWidget;
-    $widget->table($table);
-
-    expect(true)->toBeTrue();
-});
-
-it('PayoutQueueWidget configures its table', function (): void {
-    $table = Mockery::mock(Table::class);
-    $table->shouldReceive('query')->once()->andReturnSelf();
-    $table->shouldReceive('columns')->once()->andReturnSelf();
-    $table->shouldReceive('actions')->once()->andReturnSelf();
-    $table->shouldReceive('paginated')->once()->andReturnSelf();
-    $table->shouldReceive('emptyStateHeading')->once()->andReturnSelf();
-    $table->shouldReceive('emptyStateDescription')->once()->andReturnSelf();
-    $table->shouldReceive('emptyStateIcon')->once()->andReturnSelf();
-
-    $widget = new PayoutQueueWidget;
-    $widget->table($table);
-
-    expect(true)->toBeTrue();
 });

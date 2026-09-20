@@ -256,7 +256,7 @@ test('AffiliateRankChanged event allows null fromRank for initial rank', functio
     expect($event->reason)->toBe(RankQualificationReason::Initial);
 });
 
-test('AffiliateRankChanged event methods work correctly', function (): void {
+test('AffiliateRankChanged event detects demotion correctly', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'RANK003',
         'name' => 'Method Test Affiliate',
@@ -294,10 +294,10 @@ test('AffiliateRankChanged event methods work correctly', function (): void {
     expect($event->isDemotion())->toBeTrue();
 });
 
-test('AffiliateRankChanged event detects demotion correctly', function (): void {
+test('AffiliateRankChanged event detects promotion correctly', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'RANK004',
-        'name' => 'Demotion Test Affiliate',
+        'name' => 'Promotion Test Affiliate',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
@@ -322,7 +322,7 @@ test('AffiliateRankChanged event detects demotion correctly', function (): void 
         affiliate: $affiliate,
         fromRank: $fromRank,
         toRank: $toRank,
-        reason: RankQualificationReason::Demoted
+        reason: RankQualificationReason::Qualified
     );
 
     expect($event->isPromotion())->toBeTrue();

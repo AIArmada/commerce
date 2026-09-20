@@ -14,27 +14,12 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Pages\ReportsPage;
-use Filament\Tables\Table;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     AffiliateFraudSignal::query()->delete();
     AffiliatePayout::query()->delete();
     Affiliate::query()->delete();
-});
-
-it('FraudReviewPage configures its table', function (): void {
-    $table = Mockery::mock(Table::class);
-    $table->shouldReceive('query')->once()->andReturnSelf();
-    $table->shouldReceive('columns')->once()->andReturnSelf();
-    $table->shouldReceive('filters')->once()->andReturnSelf();
-    $table->shouldReceive('actions')->once()->andReturnSelf();
-    $table->shouldReceive('bulkActions')->once()->andReturnSelf();
-
-    $page = new FraudReviewPage;
-    $page->table($table);
-
-    expect(true)->toBeTrue();
 });
 
 it('FraudReviewPage view data reflects detected signals', function (): void {
@@ -80,20 +65,6 @@ it('FraudReviewPage view data reflects detected signals', function (): void {
 
     expect($data['pendingCount'])->toBe(2)
         ->and($data['criticalCount'])->toBe(1);
-});
-
-it('PayoutBatchPage configures its table', function (): void {
-    $table = Mockery::mock(Table::class);
-    $table->shouldReceive('query')->once()->andReturnSelf();
-    $table->shouldReceive('columns')->once()->andReturnSelf();
-    $table->shouldReceive('filters')->once()->andReturnSelf();
-    $table->shouldReceive('actions')->once()->andReturnSelf();
-    $table->shouldReceive('bulkActions')->once()->andReturnSelf();
-
-    $page = new PayoutBatchPage;
-    $page->table($table);
-
-    expect(true)->toBeTrue();
 });
 
 it('PayoutBatchPage view data aggregates pending payouts', function (): void {

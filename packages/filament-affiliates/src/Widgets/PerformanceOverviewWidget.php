@@ -218,7 +218,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
 
     private function displayCurrency(): string
     {
-        return mb_strtoupper((string) config('affiliates.currency.default', 'USD'));
+        return mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
     }
 
     private function getChangeDescription(int | float $current, int | float $previous): string

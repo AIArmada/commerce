@@ -6,9 +6,9 @@ use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 
 test('AffiliateRankHistory isPromotion returns true when toRank exists and fromRank is null', function (): void {
     $affiliate = Affiliate::create([
@@ -20,16 +20,23 @@ test('AffiliateRankHistory isPromotion returns true when toRank exists and fromR
         'currency' => 'USD',
     ]);
 
+    $rank = AffiliateRank::create([
+        'name' => 'Entry',
+        'slug' => 'entry',
+        'level' => 0,
+        'commission_rate_basis_points' => 0,
+    ]);
+
     $history = AffiliateRankHistory::create([
         'affiliate_id' => $affiliate->id,
         'from_rank_id' => null,
-        'to_rank_id' => null,
+        'to_rank_id' => $rank->id,
         'reason' => RankQualificationReason::Initial,
         'qualified_at' => now(),
     ]);
 
-    // Without a toRank, this is not a promotion
-    expect($history->isPromotion())->toBeFalse();
+    expect($history->isPromotion())->toBeTrue()
+        ->and($history->isDemotion())->toBeFalse();
 });
 
 test('AffiliateRankHistory isDemotion returns true when fromRank exists and toRank is null', function (): void {
@@ -42,16 +49,23 @@ test('AffiliateRankHistory isDemotion returns true when fromRank exists and toRa
         'currency' => 'USD',
     ]);
 
+    $rank = AffiliateRank::create([
+        'name' => 'Gold',
+        'slug' => 'gold',
+        'level' => 3,
+        'commission_rate_basis_points' => 200,
+    ]);
+
     $history = AffiliateRankHistory::create([
         'affiliate_id' => $affiliate->id,
-        'from_rank_id' => null,
+        'from_rank_id' => $rank->id,
         'to_rank_id' => null,
         'reason' => RankQualificationReason::Demoted,
         'qualified_at' => now(),
     ]);
 
-    // Without fromRank, this is not a demotion
-    expect($history->isDemotion())->toBeFalse();
+    expect($history->isDemotion())->toBeTrue()
+        ->and($history->isPromotion())->toBeFalse();
 });
 
 test('AffiliatePayoutEvent can be created', function (): void {
@@ -82,9 +96,4 @@ test('AffiliatePayoutEvent can be created', function (): void {
     expect($event)->toBeInstanceOf(AffiliatePayoutEvent::class);
     expect($event->to_status)->toBe('pending');
     expect($event->notes)->toBe('Test payout event');
-});
-
-test('TrackAffiliateCookie can be instantiated', function (): void {
-    $middleware = app(TrackAffiliateCookie::class);
-    expect($middleware)->toBeInstanceOf(TrackAffiliateCookie::class);
 });

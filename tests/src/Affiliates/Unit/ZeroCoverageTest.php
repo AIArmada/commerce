@@ -5,22 +5,17 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
 use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\Commissions\CommissionCalculationResult;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
-use Illuminate\Support\Collection;
 
 // MatureConversion Action Tests
-test('MatureConversion can be instantiated', function (): void {
-    $action = app(MatureConversion::class);
-
-    expect($action)->toBeInstanceOf(MatureConversion::class);
-});
-
 test('MatureConversion returns false for non-qualified conversion', function (): void {
     $action = app(MatureConversion::class);
 
@@ -78,19 +73,42 @@ test('MatureConversion returns false for conversion with future maturity date', 
 });
 
 // ProcessConversionMaturity Action Tests
-test('ProcessConversionMaturity can be instantiated', function (): void {
+test('ProcessConversionMaturity matures due conversions and skips the rest', function (): void {
     $action = app(ProcessConversionMaturity::class);
 
-    expect($action)->toBeInstanceOf(ProcessConversionMaturity::class);
-});
+    $affiliate = Affiliate::create([
+        'code' => 'MATURE003',
+        'name' => 'Maturity Batch Test',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
 
-test('ProcessConversionMaturity processes qualified conversions', function (): void {
-    $action = app(ProcessConversionMaturity::class);
+    $due = AffiliateConversion::create([
+        'affiliate_id' => $affiliate->id,
+        'affiliate_code' => $affiliate->code,
+        'order_reference' => 'ORD-MATURE-003',
+        'total_minor' => 50000,
+        'commission_minor' => 5000,
+        'commission_currency' => 'USD',
+        'status' => QualifiedConversion::class,
+        'occurred_at' => now()->subDays(60),
+    ]);
 
-    $result = $action->handle();
+    AffiliateConversion::create([
+        'affiliate_id' => $affiliate->id,
+        'affiliate_code' => $affiliate->code,
+        'order_reference' => 'ORD-MATURE-004',
+        'total_minor' => 50000,
+        'commission_minor' => 5000,
+        'commission_currency' => 'USD',
+        'status' => QualifiedConversion::class,
+        'occurred_at' => now(),
+    ]);
 
-    expect($result)->toBeInt();
-    expect($result)->toBeGreaterThanOrEqual(0);
+    expect($action->handle())->toBe(1)
+        ->and($due->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
 });
 
 // CommissionCalculationResult Tests
@@ -165,12 +183,6 @@ test('CommissionCalculationResult toArray returns correct structure', function (
 });
 
 // CommissionRuleEngine Tests
-test('CommissionRuleEngine can be instantiated', function (): void {
-    $engine = app(CommissionRuleEngine::class);
-
-    expect($engine)->toBeInstanceOf(CommissionRuleEngine::class);
-});
-
 test('CommissionRuleEngine calculate returns CommissionCalculationResult', function (): void {
     $engine = app(CommissionRuleEngine::class);
 
@@ -186,7 +198,7 @@ test('CommissionRuleEngine calculate returns CommissionCalculationResult', funct
     $result = $engine->calculate($affiliate, 10000);
 
     expect($result)->toBeInstanceOf(CommissionCalculationResult::class);
-    expect($result->baseCommissionMinor)->toBeGreaterThanOrEqual(0);
+    expect($result->baseCommissionMinor)->toBe(1000);
 });
 
 test('CommissionRuleEngine uses neutral revenue for volume tiers', function (): void {
@@ -228,7 +240,7 @@ test('CommissionRuleEngine uses neutral revenue for volume tiers', function (): 
         ->and($result->finalCommissionMinor)->toBe(1500);
 });
 
-test('CommissionRuleEngine getApplicableRules returns collection', function (): void {
+test('CommissionRuleEngine getApplicableRules filters and memoizes rules', function (): void {
     $engine = app(CommissionRuleEngine::class);
 
     $affiliate = Affiliate::create([
@@ -240,16 +252,43 @@ test('CommissionRuleEngine getApplicableRules returns collection', function (): 
         'currency' => 'USD',
     ]);
 
-    $rules = $engine->getApplicableRules($affiliate, []);
+    $active = AffiliateCommissionRule::create([
+        'name' => 'Active Rule',
+        'conditions' => [],
+        'rule_type' => 'product',
+        'commission_type' => 'percentage',
+        'commission_value' => 1000,
+        'is_active' => true,
+        'priority' => 1,
+    ]);
 
-    expect($rules)->toBeInstanceOf(Collection::class);
-});
+    AffiliateCommissionRule::create([
+        'name' => 'Inactive Rule',
+        'conditions' => [],
+        'rule_type' => 'product',
+        'commission_type' => 'percentage',
+        'commission_value' => 1000,
+        'is_active' => false,
+        'priority' => 1,
+    ]);
 
-test('CommissionRuleEngine clearCache works', function (): void {
-    $engine = app(CommissionRuleEngine::class);
+    $first = $engine->getApplicableRules($affiliate, []);
 
-    // Call clearCache and verify no errors
-    $engine->clearCache();
+    expect($first->pluck('id')->all())->toBe([$active->id]);
 
-    expect(true)->toBeTrue(); // Just verify no exception was thrown
+    // Repeat reads hit the memoized set.
+    expect($engine->getApplicableRules($affiliate, []))->toBe($first);
+
+    AffiliateCommissionRule::create([
+        'name' => 'Late Rule',
+        'conditions' => [],
+        'rule_type' => 'product',
+        'commission_type' => 'percentage',
+        'commission_value' => 1000,
+        'is_active' => true,
+        'priority' => 1,
+    ]);
+
+    // Rule writes bust the cache so workers never price off stale rules.
+    expect($engine->getApplicableRules($affiliate, []))->toHaveCount(2);
 });

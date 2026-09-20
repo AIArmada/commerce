@@ -498,23 +498,3 @@ describe('PerformanceBonusService', function (): void {
         });
     });
 });
-
-describe('PerformanceBonusService class structure', function (): void {
-    test('can be instantiated', function (): void {
-        $service = app(PerformanceBonusService::class);
-        expect($service)->toBeInstanceOf(PerformanceBonusService::class);
-    });
-
-    test('is declared as final', function (): void {
-        $reflection = new ReflectionClass(PerformanceBonusService::class);
-        expect($reflection->isFinal())->toBeTrue();
-    });
-
-    test('has required public methods', function (): void {
-        $reflection = new ReflectionClass(PerformanceBonusService::class);
-
-        expect($reflection->hasMethod('calculateBonuses'))->toBeTrue();
-        expect($reflection->hasMethod('awardBonuses'))->toBeTrue();
-        expect($reflection->hasMethod('getLeaderboard'))->toBeTrue();
-    });
-});

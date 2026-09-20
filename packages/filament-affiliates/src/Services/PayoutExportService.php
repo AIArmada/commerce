@@ -338,7 +338,7 @@ final class PayoutExportService
         // construction, so never re-sum (and never mislabel) conversions.
         $totalCommissionMinor = (int) $payout->total_minor;
         $conversionCount = (int) $payout->conversions()->count();
-        $currency = (string) ($payout->currency ?? 'USD');
+        $currency = (string) ($payout->currency ?? 'MYR');
         $formattedTotalCommission = MoneyFormatter::formatMinor($totalCommissionMinor, $currency);
 
         $reference = htmlspecialchars((string) $payout->reference, ENT_QUOTES, 'UTF-8');

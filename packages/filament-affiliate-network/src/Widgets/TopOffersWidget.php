@@ -82,7 +82,7 @@ final class TopOffersWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('links_sum_revenue')
                     ->label('Revenue')
-                    ->formatStateUsing(fn ($state, AffiliateOffer $record): string => MoneyFormatter::formatMinor((int) ($state ?? 0), $record->currency ?? 'USD')),
+                    ->formatStateUsing(fn ($state, AffiliateOffer $record): string => MoneyFormatter::formatMinor((int) ($state ?? 0), $record->currency ?? 'MYR')),
 
                 Tables\Columns\TextColumn::make('rate_base_bp')
                     ->label('Commission')

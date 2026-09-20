@@ -184,7 +184,7 @@ final class OfferLinkService
             'conversions' => $link->conversions,
             'revenue' => $link->revenue,
             'currency' => $link->currency,
-            'formatted_revenue' => MoneyFormatter::formatMinor($link->revenue, $link->currency ?? 'USD'),
+            'formatted_revenue' => MoneyFormatter::formatMinor($link->revenue, $link->currency ?? 'MYR'),
             'conversion_rate' => $conversionRate,
             'revenue_per_click' => $revenuePerClick,
         ];

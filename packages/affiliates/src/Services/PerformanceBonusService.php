@@ -66,7 +66,7 @@ final class PerformanceBonusService
                     $period,
                 ]);
 
-                $currency = mb_strtoupper((string) ($affiliate->currency ?? config('affiliates.currency.default', 'USD')));
+                $currency = mb_strtoupper((string) ($affiliate->currency ?? config('affiliates.currency.default', 'MYR')));
 
                 AffiliateBalance::firstOrCreate(
                     [

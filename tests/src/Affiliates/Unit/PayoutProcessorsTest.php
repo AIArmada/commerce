@@ -7,7 +7,6 @@ use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\Services\Payouts\ManualPayoutProcessor;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Services\Payouts\PayPalProcessor;
@@ -15,12 +14,6 @@ use AIArmada\Affiliates\Services\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\States\Active;
 
 // PayoutProcessorFactory Tests
-test('PayoutProcessorFactory can be instantiated', function (): void {
-    $factory = new PayoutProcessorFactory;
-
-    expect($factory)->toBeInstanceOf(PayoutProcessorFactory::class);
-});
-
 test('PayoutProcessorFactory make returns ManualPayoutProcessor for manual type', function (): void {
     $factory = new PayoutProcessorFactory;
 
@@ -86,12 +79,6 @@ test('PayoutProcessorFactory hasProcessor returns true for existing', function (
 });
 
 // ManualPayoutProcessor Tests
-test('ManualPayoutProcessor can be instantiated', function (): void {
-    $processor = new ManualPayoutProcessor;
-
-    expect($processor)->toBeInstanceOf(ManualPayoutProcessor::class);
-    expect($processor)->toBeInstanceOf(PayoutProcessorInterface::class);
-});
 
 test('ManualPayoutProcessor process returns pending result', function (): void {
     $processor = new ManualPayoutProcessor;
@@ -222,12 +209,6 @@ test('ManualPayoutProcessor getIdentifier returns manual', function (): void {
 });
 
 // PayPalProcessor Tests
-test('PayPalProcessor can be instantiated', function (): void {
-    $processor = new PayPalProcessor;
-
-    expect($processor)->toBeInstanceOf(PayPalProcessor::class);
-});
-
 test('PayPalProcessor getIdentifier returns paypal', function (): void {
     $processor = new PayPalProcessor;
 
@@ -269,12 +250,6 @@ test('PayPalProcessor validateDetails passes for valid email', function (): void
 });
 
 // StripeConnectProcessor Tests
-test('StripeConnectProcessor can be instantiated', function (): void {
-    $processor = new StripeConnectProcessor;
-
-    expect($processor)->toBeInstanceOf(StripeConnectProcessor::class);
-});
-
 test('StripeConnectProcessor getIdentifier returns stripe_connect', function (): void {
     $processor = new StripeConnectProcessor;
 
@@ -312,11 +287,4 @@ test('StripeConnectProcessor validateDetails passes for valid account ID', funct
     $errors = $processor->validateDetails(['stripe_account_id' => 'acct_123456789']);
 
     expect($errors)->toBeEmpty();
-});
-
-// PayoutReconciliationService Tests
-test('PayoutReconciliationService can be instantiated', function (): void {
-    $service = app(PayoutReconciliationService::class);
-
-    expect($service)->toBeInstanceOf(PayoutReconciliationService::class);
 });
