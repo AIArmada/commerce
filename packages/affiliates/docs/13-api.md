@@ -23,6 +23,26 @@ title: Public API
 - `GET /api/affiliates/programs`
 - `GET /api/affiliates/programs/{id}/catalog`
 
+## Summary Endpoint
+
+`GET /api/affiliates/{code}/summary` returns the affiliate profile, funnel, UTM split, and totals. Totals convert to `affiliates.currency.default` when conversions span currencies, and null when an exchange rate is missing — `by_currency` always holds the exact legs:
+
+```json
+{
+  "totals": {
+    "commission_minor": 20000,
+    "revenue_minor": 200000,
+    "conversions": 2,
+    "ltv_minor": 100000,
+    "currency": "USD",
+    "converted": true,
+    "by_currency": {
+      "USD": {"conversions": 1, "revenue_minor": 100000, "commission_minor": 10000}
+    }
+  }
+}
+```
+
 ## Link Endpoint
 
 `POST /api/affiliates/{code}/links` accepts subject-aware metadata:

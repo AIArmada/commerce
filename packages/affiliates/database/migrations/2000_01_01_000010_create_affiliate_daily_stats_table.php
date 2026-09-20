@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('affiliate_id');
             $table->date('date');
+            $table->string('currency', 3);
 
             $table->nullableUuidMorphs('owner');
 
@@ -35,7 +36,7 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->unique(['affiliate_id', 'date']);
+            $table->unique(['affiliate_id', 'date', 'currency']);
             $table->index(['date', 'revenue_cents']);
         });
     }

@@ -114,6 +114,7 @@ describe('FraudDetectionService', function (): void {
     describe('analyzeConversion', function (): void {
         test('returns allowed true when no fraud signals', function (): void {
             $conversion = AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'CLEAN-001',
@@ -137,6 +138,7 @@ describe('FraudDetectionService', function (): void {
             $this->affiliate->forceFill(['owner_id' => 'user-123', 'owner_type' => (new User)->getMorphClass()])->save();
 
             $conversion = AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'SELF-001',
@@ -163,6 +165,7 @@ describe('FraudDetectionService', function (): void {
             // Create existing conversions for today
             for ($i = 0; $i < 3; $i++) {
                 AffiliateConversion::create([
+                    'commission_currency' => 'USD',
                     'affiliate_id' => $this->affiliate->id,
                     'affiliate_code' => $this->affiliate->code,
                     'order_reference' => "EXISTING-{$i}",
@@ -175,6 +178,7 @@ describe('FraudDetectionService', function (): void {
             }
 
             $conversion = AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'NEW-001',
@@ -205,6 +209,7 @@ describe('FraudDetectionService', function (): void {
             ]);
 
             $conversion = AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'affiliate_attribution_id' => $attribution->id,
@@ -229,6 +234,7 @@ describe('FraudDetectionService', function (): void {
             config(['affiliates.fraud.velocity.max_conversions_per_day' => 0]); // Force flag
 
             $conversion = AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'EVENT-001',

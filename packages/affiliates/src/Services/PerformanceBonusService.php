@@ -66,10 +66,12 @@ final class PerformanceBonusService
                     $period,
                 ]);
 
+                $currency = mb_strtoupper((string) ($affiliate->currency ?? config('affiliates.currency.default', 'USD')));
+
                 AffiliateBalance::firstOrCreate(
                     [
                         'affiliate_id' => $affiliate->id,
-                        'currency' => $affiliate->currency ?? config('affiliates.currency.default', 'USD'),
+                        'currency' => $currency,
                     ],
                     [
                         'holding_minor' => 0,
@@ -88,6 +90,7 @@ final class PerformanceBonusService
                         'performance_bonus_key' => $performanceBonusKey,
                         'subtotal_minor' => 0,
                         'commission_minor' => CommissionCaps::clamp((int) $bonus['amount_minor']),
+                        'commission_currency' => $currency,
                         'status' => ApprovedConversion::class,
                         'occurred_at' => CarbonImmutable::now(),
                         'metadata' => [

@@ -12,11 +12,11 @@
             <div class="fia-portal-hero">
                 <div class="fia-portal-hero-copy">
                     <p class="fia-portal-hero-eyebrow">{{ __('Total Earnings') }}</p>
-                    <p class="fia-portal-hero-amount">{{ $this->formatAmount($totalEarnings) }}</p>
+                    <p class="fia-portal-hero-amount">{{ $this->formatBreakdown($totalEarnings) }}</p>
 
-                    @if ($availableEarnings > 0)
+                    @if (array_sum($availableEarnings) > 0)
                         <p class="fia-portal-hero-subtext">
-                            {{ $this->formatAmount($availableEarnings) }} {{ __('available for payout') }}
+                            {{ $this->formatBreakdown($availableEarnings) }} {{ __('available for payout') }}
                         </p>
                     @endif
                 </div>
@@ -41,7 +41,7 @@
 
                         <div class="fia-portal-stat-copy">
                             <p class="fia-portal-stat-label">{{ __('Earnings') }}</p>
-                            <p class="fia-portal-stat-value">{{ $this->formatAmount($totalEarnings) }}</p>
+                            <p class="fia-portal-stat-value">{{ $this->formatBreakdown($totalEarnings) }}</p>
                         </div>
                     </div>
                 </x-filament::section>
@@ -54,7 +54,7 @@
 
                         <div class="fia-portal-stat-copy">
                             <p class="fia-portal-stat-label">{{ __('Available') }}</p>
-                            <p class="fia-portal-stat-value">{{ $this->formatAmount($availableEarnings) }}</p>
+                            <p class="fia-portal-stat-value">{{ $this->formatBreakdown($availableEarnings) }}</p>
                         </div>
                     </div>
                 </x-filament::section>
@@ -67,7 +67,7 @@
 
                         <div class="fia-portal-stat-copy">
                             <p class="fia-portal-stat-label">{{ __('Pending') }}</p>
-                            <p class="fia-portal-stat-value">{{ $this->formatAmount($pendingEarnings) }}</p>
+                            <p class="fia-portal-stat-value">{{ $this->formatBreakdown($pendingEarnings) }}</p>
                         </div>
                     </div>
                 </x-filament::section>
@@ -189,7 +189,7 @@
                                             </td>
                                             <td class="fia-portal-amount-cell">
                                                 <span class="fia-portal-amount">
-                                                    +{{ $this->formatAmount($conversion->commission_minor) }}
+                                                    +{{ $this->formatAmount($conversion->commission_minor, $conversion->commission_currency) }}
                                                 </span>
                                             </td>
                                             <td class="fia-portal-status">

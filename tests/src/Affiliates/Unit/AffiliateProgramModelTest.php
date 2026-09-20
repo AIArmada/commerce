@@ -371,6 +371,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         AffiliateConversion::create([
+            'commission_currency' => 'USD',
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => $affiliate->code,
             'order_reference' => 'JOIN-REV-001',

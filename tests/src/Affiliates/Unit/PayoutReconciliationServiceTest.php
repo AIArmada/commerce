@@ -15,7 +15,7 @@ use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 
 beforeEach(function (): void {
-    $this->service = new PayoutReconciliationService;
+    $this->service = app(PayoutReconciliationService::class);
 
     $this->affiliate = Affiliate::create([
         'code' => 'RECON-' . uniqid(),
@@ -264,6 +264,56 @@ describe('PayoutReconciliationService', function (): void {
             expect($result['summary']['total_amount_minor'])->toBe(0);
             expect($result['discrepancies'])->toBeEmpty();
         });
+
+        test('refuses to blend mixed-currency totals without rates', function (): void {
+            foreach ([
+                ['currency' => 'USD', 'total' => 10000, 'status' => CompletedPayout::class],
+                ['currency' => 'MYR', 'total' => 47000, 'status' => CompletedPayout::class],
+            ] as $index => $leg) {
+                AffiliatePayout::create([
+                    'reference' => 'PAY-MC-' . $index . '-' . uniqid(),
+                    'payee_type' => Affiliate::class,
+                    'payee_id' => $this->affiliate->id,
+                    'total_minor' => $leg['total'],
+                    'currency' => $leg['currency'],
+                    'status' => $leg['status'],
+                ]);
+            }
+
+            config(['affiliates.currency.default' => 'USD']);
+
+            $result = $this->service->generateReport();
+
+            expect($result['summary']['total_amount_minor'])->toBeNull()
+                ->and($result['summary']['converted'])->toBeFalse()
+                ->and($result['by_currency'])->toHaveKeys(['USD', 'MYR']);
+        });
+
+        test('converts mixed-currency totals when rates exist', function (): void {
+            foreach ([
+                ['currency' => 'USD', 'total' => 10000, 'status' => CompletedPayout::class],
+                ['currency' => 'MYR', 'total' => 47000, 'status' => CompletedPayout::class],
+            ] as $index => $leg) {
+                AffiliatePayout::create([
+                    'reference' => 'PAY-MC-' . $index . '-' . uniqid(),
+                    'payee_type' => Affiliate::class,
+                    'payee_id' => $this->affiliate->id,
+                    'total_minor' => $leg['total'],
+                    'currency' => $leg['currency'],
+                    'status' => $leg['status'],
+                ]);
+            }
+
+            config(['affiliates.currency.default' => 'USD']);
+            config(['commerce-support.currency.exchange_rates' => ['base' => 'USD', 'rates' => ['MYR' => 4.7]]]);
+
+            $result = $this->service->generateReport();
+
+            expect($result['summary']['total_amount_minor'])->toBe(20000)
+                ->and($result['summary']['completed_amount_minor'])->toBe(20000)
+                ->and($result['summary']['currency'])->toBe('USD')
+                ->and($result['summary']['converted'])->toBeTrue();
+        });
     });
 
     describe('auditAffiliateBalance', function (): void {
@@ -276,7 +326,7 @@ describe('PayoutReconciliationService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $result = $this->service->auditAffiliateBalance($this->affiliate);
+            $result = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
 
             expect($result)->toHaveKeys([
                 'affiliate_id',
@@ -305,11 +355,11 @@ describe('PayoutReconciliationService', function (): void {
             ApplyConversionAccounting::run($conversion);
 
             // Balance doesn't match (should be 10000)
-            $this->affiliate->balance()->firstOrFail()->update([
+            $this->affiliate->balanceFor('USD')->update([
                 'available_minor' => 5000, // Wrong!
             ]);
 
-            $result = $this->service->auditAffiliateBalance($this->affiliate);
+            $result = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
 
             expect($result['expected_available_minor'])->toBe(10000);
             expect($result['actual_available_minor'])->toBe(5000);
@@ -318,7 +368,7 @@ describe('PayoutReconciliationService', function (): void {
         });
 
         test('handles affiliate without balance', function (): void {
-            $result = $this->service->auditAffiliateBalance($this->affiliate);
+            $result = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
 
             expect($result['actual_available_minor'])->toBe(0);
         });
@@ -327,7 +377,7 @@ describe('PayoutReconciliationService', function (): void {
 
 describe('PayoutReconciliationService class structure', function (): void {
     test('can be instantiated', function (): void {
-        $service = new PayoutReconciliationService;
+        $service = app(PayoutReconciliationService::class);
         expect($service)->toBeInstanceOf(PayoutReconciliationService::class);
     });
 

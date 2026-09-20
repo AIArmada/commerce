@@ -117,22 +117,22 @@ it('portal pages do not leak cross-tenant data when owner mode enabled', functio
     expect($dashboardData['hasAffiliate'])->toBeFalse()
         ->and($dashboardData['totalClicks'])->toBe(0)
         ->and($dashboardData['totalConversions'])->toBe(0)
-        ->and($dashboardData['totalEarnings'])->toBe(0)
-        ->and($dashboardData['pendingEarnings'])->toBe(0);
+        ->and($dashboardData['totalEarnings'])->toBe([])
+        ->and($dashboardData['pendingEarnings'])->toBe([]);
 
     $conversions = new PortalConversions;
     $conversionsData = $conversions->getViewData();
 
     expect($conversionsData['hasAffiliate'])->toBeFalse()
         ->and($conversionsData['totalConversions'])->toBe(0)
-        ->and($conversionsData['totalEarnings'])->toBe(0)
-        ->and($conversionsData['pendingEarnings'])->toBe(0);
+        ->and($conversionsData['totalEarnings'])->toBe([])
+        ->and($conversionsData['pendingEarnings'])->toBe([]);
 
     $payouts = new PortalPayouts;
     $payoutsData = $payouts->getViewData();
 
     expect($payoutsData['hasAffiliate'])->toBeFalse()
-        ->and($payoutsData['totalPaid'])->toBe(0);
+        ->and($payoutsData['totalPaid'])->toBe([]);
 });
 
 it('portal pages only return current owner affiliate stats when multiple owners exist', function (): void {
@@ -250,13 +250,13 @@ it('portal pages only return current owner affiliate stats when multiple owners 
     expect($dashboardData['hasAffiliate'])->toBeTrue()
         ->and($dashboardData['totalClicks'])->toBe(1)
         ->and($dashboardData['totalConversions'])->toBe(1)
-        ->and($dashboardData['totalEarnings'])->toBe(1000);
+        ->and($dashboardData['totalEarnings'])->toBe(['USD' => 1000]);
 
     $payouts = new PortalPayouts;
     $payoutsData = $payouts->getViewData();
 
     expect($payoutsData['hasAffiliate'])->toBeTrue()
-        ->and($payoutsData['totalPaid'])->toBe(1500);
+        ->and($payoutsData['totalPaid'])->toBe(['USD' => 1500]);
 });
 
 it('portal pages return scoped view data when affiliate exists', function (): void {
@@ -323,22 +323,22 @@ it('portal pages return scoped view data when affiliate exists', function (): vo
     expect($dashboardData['hasAffiliate'])->toBeTrue()
         ->and($dashboardData['totalClicks'])->toBe(1)
         ->and($dashboardData['totalConversions'])->toBe(2)
-        ->and($dashboardData['totalEarnings'])->toBe(1000)
-        ->and($dashboardData['pendingEarnings'])->toBe(500);
+        ->and($dashboardData['totalEarnings'])->toBe(['USD' => 1000])
+        ->and($dashboardData['pendingEarnings'])->toBe(['USD' => 500]);
 
     $conversions = new PortalConversions;
     $conversionsData = $conversions->getViewData();
 
     expect($conversionsData['hasAffiliate'])->toBeTrue()
         ->and($conversionsData['totalConversions'])->toBe(2)
-        ->and($conversionsData['totalEarnings'])->toBe(1000)
-        ->and($conversionsData['pendingEarnings'])->toBe(500);
+        ->and($conversionsData['totalEarnings'])->toBe(['USD' => 1000])
+        ->and($conversionsData['pendingEarnings'])->toBe(['USD' => 500]);
 
     $payouts = new PortalPayouts;
     $payoutsData = $payouts->getViewData();
 
     expect($payoutsData['hasAffiliate'])->toBeTrue()
-        ->and($payoutsData['totalPaid'])->toBe(1500);
+        ->and($payoutsData['totalPaid'])->toBe(['USD' => 1500]);
 });
 
 it('portal dashboard state objects expose label and color helpers for badges', function (): void {

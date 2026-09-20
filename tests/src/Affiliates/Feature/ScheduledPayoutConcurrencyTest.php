@@ -51,8 +51,8 @@ test('repeated workers reserve one payout operation and never overdraw balance',
     [$affiliate, $balance, $conversion] = createPayoutCandidate();
     $action = app(ClaimScheduledPayout::class);
 
-    $first = $action->handle((string) $affiliate->id, 5_000);
-    $second = $action->handle((string) $affiliate->id, 5_000);
+    $first = $action->handle((string) $affiliate->id, 5_000, 'USD');
+    $second = $action->handle((string) $affiliate->id, 5_000, 'USD');
 
     expect($first)->toBeInstanceOf(AffiliatePayoutOperation::class)
         ->and($second)->toBeNull()
@@ -70,7 +70,7 @@ test('current holds and pending payouts are rechecked before reserving', functio
         'reason' => 'Review',
     ]);
 
-    expect(app(ClaimScheduledPayout::class)->handle((string) $affiliate->id, 5_000))->toBeNull()
+    expect(app(ClaimScheduledPayout::class)->handle((string) $affiliate->id, 5_000, 'USD'))->toBeNull()
         ->and($balance->refresh()->available_minor)->toBe(10_000);
 
     $affiliate->payoutHolds()->update(['released_at' => now()]);
@@ -83,14 +83,14 @@ test('current holds and pending payouts are rechecked before reserving', functio
         'status' => PendingPayout::class,
     ]);
 
-    expect(app(ClaimScheduledPayout::class)->handle((string) $affiliate->id, 5_000))->toBeNull()
+    expect(app(ClaimScheduledPayout::class)->handle((string) $affiliate->id, 5_000, 'USD'))->toBeNull()
         ->and($balance->refresh()->available_minor)->toBe(10_000);
 });
 
 test('reservation is limited to approved unlinked commission value', function (): void {
     [$affiliate, $balance] = createPayoutCandidate(20_000, 7_500);
 
-    $operation = app(ClaimScheduledPayout::class)->handle((string) $affiliate->id, 5_000);
+    $operation = app(ClaimScheduledPayout::class)->handle((string) $affiliate->id, 5_000, 'USD');
 
     expect($operation?->amount_minor)->toBe(7_500)
         ->and($balance->refresh()->available_minor)->toBe(12_500);
@@ -110,7 +110,7 @@ test('reservation links only conversions fully covered by the available balance'
         'occurred_at' => now()->subDays(30),
     ]);
 
-    $operation = app(ClaimScheduledPayout::class)->handle((string) $affiliate->id, 5_000);
+    $operation = app(ClaimScheduledPayout::class)->handle((string) $affiliate->id, 5_000, 'USD');
 
     expect($operation?->amount_minor)->toBe(7_500)
         ->and($operation?->payout?->conversion_count)->toBe(1)
@@ -122,5 +122,5 @@ test('reservation links only conversions fully covered by the available balance'
 test('dry run does not claim a payout when the oldest conversion cannot be fully funded', function (): void {
     [$affiliate] = createPayoutCandidate(5_000, 6_000);
 
-    expect(app(ClaimScheduledPayout::class)->isEligibleSnapshot((string) $affiliate->id, 5_000))->toBeFalse();
+    expect(app(ClaimScheduledPayout::class)->isEligibleSnapshot((string) $affiliate->id, 5_000, 'USD'))->toBeFalse();
 });

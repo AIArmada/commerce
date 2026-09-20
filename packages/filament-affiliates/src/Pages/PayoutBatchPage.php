@@ -230,7 +230,6 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
 
         return [
             'pendingCount' => (int) $pendingByCurrency->sum(fn (AffiliatePayout $row): int => (int) $row->getAttribute('count')),
-            'pendingTotal' => (int) $pendingByCurrency->sum(fn (AffiliatePayout $row): int => (int) $row->getAttribute('total')),
             'pendingByCurrency' => $pendingByCurrency,
         ];
     }

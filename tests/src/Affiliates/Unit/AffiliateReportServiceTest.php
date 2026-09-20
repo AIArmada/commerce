@@ -220,3 +220,101 @@ test('affiliate report service returns top subjects with visits and conversions'
         'commission_minor' => 0,
     ]);
 });
+
+test('affiliate report service refuses to blend mixed-currency totals without rates', function (): void {
+    $occurredAt = now()->subDay()->startOfHour();
+
+    foreach ([
+        ['currency' => 'USD', 'value' => 10000, 'commission' => 1000, 'ref' => 'MC-USD-1'],
+        ['currency' => 'MYR', 'value' => 47000, 'commission' => 4700, 'ref' => 'MC-MYR-1'],
+    ] as $leg) {
+        AffiliateConversion::create([
+            'affiliate_id' => $this->affiliate->getKey(),
+            'affiliate_code' => $this->affiliate->code,
+            'subject_key' => 'order:' . $leg['ref'],
+            'subject_instance' => 'share',
+            'external_reference' => $leg['ref'],
+            'conversion_type' => 'purchase',
+            'subtotal_minor' => $leg['value'],
+            'value_minor' => $leg['value'],
+            'commission_minor' => $leg['commission'],
+            'commission_currency' => $leg['currency'],
+            'status' => ApprovedConversion::class,
+            'occurred_at' => $occurredAt,
+        ]);
+    }
+
+    config(['affiliates.currency.default' => 'USD']);
+
+    $service = app(AffiliateReportService::class);
+    $summary = $service->getSummary($occurredAt->copy()->subHour(), $occurredAt->copy()->addHour());
+
+    expect($summary['conversions'])->toBe(2)
+        ->and($summary['revenue_minor'])->toBeNull()
+        ->and($summary['commission_minor'])->toBeNull()
+        ->and($summary['converted'])->toBeFalse()
+        ->and($summary['by_currency']['USD'])->toMatchArray(['conversions' => 1, 'revenue_minor' => 10000, 'commission_minor' => 1000])
+        ->and($summary['by_currency']['MYR'])->toMatchArray(['conversions' => 1, 'revenue_minor' => 47000, 'commission_minor' => 4700]);
+});
+
+test('affiliate report service converts mixed-currency totals when rates exist', function (): void {
+    $occurredAt = now()->subDay()->startOfHour();
+
+    foreach ([
+        ['currency' => 'USD', 'value' => 10000, 'commission' => 1000, 'ref' => 'MC-USD-2'],
+        ['currency' => 'MYR', 'value' => 47000, 'commission' => 9400, 'ref' => 'MC-MYR-2'],
+    ] as $leg) {
+        AffiliateConversion::create([
+            'affiliate_id' => $this->affiliate->getKey(),
+            'affiliate_code' => $this->affiliate->code,
+            'subject_key' => 'order:' . $leg['ref'],
+            'subject_instance' => 'share',
+            'external_reference' => $leg['ref'],
+            'conversion_type' => 'purchase',
+            'subtotal_minor' => $leg['value'],
+            'value_minor' => $leg['value'],
+            'commission_minor' => $leg['commission'],
+            'commission_currency' => $leg['currency'],
+            'status' => ApprovedConversion::class,
+            'occurred_at' => $occurredAt,
+        ]);
+    }
+
+    config(['affiliates.currency.default' => 'USD']);
+    config(['commerce-support.currency.exchange_rates' => ['base' => 'USD', 'rates' => ['MYR' => 4.7]]]);
+
+    $service = app(AffiliateReportService::class);
+    $startDate = $occurredAt->copy()->subHour();
+    $endDate = $occurredAt->copy()->addHour();
+
+    $summary = $service->getSummary($startDate, $endDate);
+
+    expect($summary['revenue_minor'])->toBe(20000)
+        ->and($summary['commission_minor'])->toBe(3000)
+        ->and($summary['currency'])->toBe('USD')
+        ->and($summary['converted'])->toBeTrue();
+
+    $topAffiliates = $service->getTopAffiliates($startDate, $endDate);
+    $byCurrency = collect($topAffiliates)->mapWithKeys(fn (array $row): array => [$row['currency'] => $row]);
+
+    expect($byCurrency->keys()->sort()->values()->all())->toBe(['MYR', 'USD'])
+        ->and($byCurrency['USD']['commission_minor'])->toBe(1000)
+        ->and($byCurrency['MYR']['commission_minor'])->toBe(9400)
+        // MYR 9400 converts to USD 2000, outranking the raw USD 1000 leg.
+        ->and($topAffiliates[0]['currency'])->toBe('MYR');
+
+    $trend = $service->getConversionTrend($startDate, $endDate);
+
+    expect(collect($trend)->pluck('currency')->sort()->values()->all())->toBe(['MYR', 'USD']);
+
+    $affiliateSummary = $service->affiliateSummary($this->affiliate->getKey());
+
+    expect($affiliateSummary['totals'])->toMatchArray([
+        'revenue_minor' => 20000,
+        'commission_minor' => 3000,
+        'conversions' => 2,
+        'ltv_minor' => 10000,
+        'currency' => 'USD',
+        'converted' => true,
+    ])->and($affiliateSummary['totals']['by_currency'])->toHaveKeys(['USD', 'MYR']);
+});

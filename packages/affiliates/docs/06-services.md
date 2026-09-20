@@ -143,9 +143,11 @@ $uplines = $service->getUpline($affiliate);
 // Get downline affiliates
 $downlines = $service->getDownline($affiliate);
 
-// Team sales for a period
+// Team sales for a period, measured in the affiliate currency
 $teamSales = $service->getTeamSales($affiliate, $from, $to);
 ```
+
+Revenue thresholds (team sales, rank metrics, volume tiers, program eligibility) measure volume in the affiliate's currency via `RevenueVolume`: legs convert when exchange rates exist, otherwise only the affiliate-currency leg counts. The top-performer leaderboard ranks raw sums when every affiliate earns one currency, and converts to `affiliates.currency.default` when currencies mix — entries without a rate sink below ranked ones and never earn the bonus.
 
 ## RankQualificationService
 
@@ -160,17 +162,18 @@ $service = app(RankQualificationService::class);
 ### Methods
 
 ```php
-// Check rank qualification
-$qualified = $service->checkQualification($affiliate, $rank);
+// Highest rank the affiliate currently qualifies for (or null)
+$rank = $service->evaluate($affiliate);
 
-// Process rank upgrades
-$upgraded = $service->processRankUpgrades();
+// Qualification metrics, measured in the affiliate currency
+$metrics = $service->calculateMetrics($affiliate);
+// ['personal_sales', 'team_sales', 'active_downlines', 'lifetime_value']
 
-// Get next rank for affiliate
-$nextRank = $service->getNextRank($affiliate);
+// Re-evaluate every affiliate (returns upgrade count)
+$upgraded = $service->processAllRankUpgrades();
 
-// Get qualification progress
-$progress = $service->getQualificationProgress($affiliate, $rank);
+// Manually pin or clear an affiliate's rank
+$service->assignRank($affiliate, $rank);
 ```
 
 ## ProgramService
@@ -201,40 +204,64 @@ $service->upgradeTier($membership, $newTier);
 
 ## DailyAggregationService
 
-Aggregates daily statistics for reporting.
+Aggregates daily statistics for reporting. Stats are stored one row per affiliate, date, and currency; money never blends across currencies.
 
 ```php
 use AIArmada\Affiliates\Services\DailyAggregationService;
+use Carbon\CarbonImmutable;
 
 $service = app(DailyAggregationService::class);
 
-// Aggregate stats for date
-$service->aggregateForDate(today());
+// Aggregate every affiliate for one date (returns affiliate count).
+$service->aggregate(CarbonImmutable::today());
 
-// Aggregate for date range
-$service->aggregateForRange($startDate, $endDate);
+// Aggregate one affiliate for one date (returns one stat per currency).
+$stats = $service->aggregateForAffiliate($affiliate, CarbonImmutable::today());
 
-// Get aggregated stats
-$stats = $service->getStats($affiliate, $startDate, $endDate);
+// Backfill a date range (returns total affiliate-days processed).
+$service->backfill($startDate, $endDate);
+
+// Summarize an affiliate over a period.
+$stats = $service->getAggregatedStats($affiliate, $startDate, $endDate);
+```
+
+Click-level counts live on the affiliate-currency row only, so period sums never double-count; conversion counts and money are per currency leg. `getAggregatedStats()` converts mixed money to the affiliate currency and nulls totals when an exchange rate is missing — `by_currency` always holds the exact legs:
+
+```php
+$stats['revenue_cents']; // int|null
+$stats['currency'];      // denomination of the totals
+$stats['converted'];     // true when FX math was applied
+$stats['by_currency'];   // ['USD' => ['conversions' => ..., ...], ...]
 ```
 
 ## AffiliateReportService
 
-Generates reports and analytics.
+Generates reports and analytics. Money legs group by conversion currency; totals convert to `affiliates.currency.default` only when legs span currencies, and null when an exchange rate is missing — `by_currency` always holds the exact legs.
 
 ```php
 use AIArmada\Affiliates\Services\AffiliateReportService;
+use Carbon\CarbonImmutable;
 
 $service = app(AffiliateReportService::class);
+$from = CarbonImmutable::now()->subMonth();
+$to = CarbonImmutable::now();
 
-// Generate performance report
-$report = $service->generatePerformanceReport($affiliate, $period);
+$summary = $service->getSummary($from, $to);
+// ['attributions', 'conversions', 'revenue_minor', 'commission_minor',
+//  'currency', 'converted', 'by_currency']
 
-// Get leaderboard
-$leaderboard = $service->getLeaderboard($period, $limit);
+$top = $service->getTopAffiliates($from, $to, 10);
+// One row per affiliate + currency, ranked on converted commission.
 
-// Get conversion funnel
-$funnel = $service->getConversionFunnel($affiliate, $period);
+$trend = $service->getConversionTrend($from, $to);
+// One row per date + currency.
+
+$sources = $service->getTrafficSources($from, $to);
+// ['sources' => [...], 'campaigns' => [...]] (counts only)
+
+$subjects = $service->getTopSubjects($from, $to, 10);
+$one = $service->affiliateSummary($affiliateId);
+// Totals carry 'currency', 'converted', and 'by_currency' like getSummary().
 ```
 
 ## CohortAnalyzer

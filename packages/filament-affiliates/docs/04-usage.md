@@ -38,6 +38,10 @@ Registration is config-driven:
 - `PayoutBatchPage` (`features.admin.payouts`)
 - `ReportsPage` (`features.admin.reports`)
 
+### Reports page currencies
+
+The reports page never blends money across currencies. Summary totals convert to `affiliates.currency.default` only when conversions span currencies; when an exchange rate is missing the total shows `—` with a "Missing exchange rate" hint and the Totals-by-Currency table carries the exact legs. Top-affiliates and trend tables print one row per currency with an explicit Currency column.
+
 ## Widgets
 
 ### Always registered

@@ -13,7 +13,7 @@
                 <x-filament::section class="fia-portal-summary-card">
                     <div class="fia-portal-summary">
                         <x-heroicon-o-banknotes class="fia-portal-summary-icon fia-portal-summary-icon--success" />
-                        <p class="fia-portal-summary-value">{{ $this->formatAmount($totalPaid) }}</p>
+                        <p class="fia-portal-summary-value">{{ $this->formatBreakdown($totalPaid) }}</p>
                         <p class="fia-portal-summary-label">{{ __('Total Paid Out') }}</p>
                     </div>
                 </x-filament::section>
@@ -21,7 +21,7 @@
                 <x-filament::section class="fia-portal-summary-card">
                     <div class="fia-portal-summary">
                         <x-heroicon-o-clock class="fia-portal-summary-icon fia-portal-summary-icon--warning" />
-                        <p class="fia-portal-summary-value">{{ $this->formatAmount($availableEarnings) }}</p>
+                        <p class="fia-portal-summary-value">{{ $this->formatBreakdown($availableEarnings) }}</p>
                         <p class="fia-portal-summary-label">{{ __('Available for Payout') }}</p>
                     </div>
                 </x-filament::section>

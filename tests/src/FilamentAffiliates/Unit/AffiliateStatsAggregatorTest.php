@@ -75,3 +75,58 @@ test('stats widget aggregator summarizes affiliate program health', function ():
         ->and($stats['conversion_rate'])->toBeGreaterThan(66)
         ->and($stats['conversion_rate'])->toBeLessThan(67);
 });
+
+test('stats widget aggregator refuses to blend mixed-currency commissions without rates', function (): void {
+    $active = createAffiliate(['status' => Active::class]);
+
+    AffiliateConversion::create([
+        'affiliate_id' => $active->getKey(),
+        'affiliate_code' => $active->code,
+        'commission_minor' => 1000,
+        'commission_currency' => 'USD',
+        'status' => PendingConversion::class,
+    ]);
+
+    AffiliateConversion::create([
+        'affiliate_id' => $active->getKey(),
+        'affiliate_code' => $active->code,
+        'commission_minor' => 4700,
+        'commission_currency' => 'MYR',
+        'status' => PendingConversion::class,
+    ]);
+
+    $stats = app(AffiliateStatsAggregator::class)->overview();
+
+    expect($stats['pending_commission_minor'])->toBeNull()
+        ->and($stats['commission_converted'])->toBeFalse()
+        ->and($stats['commission_by_currency'])->toHaveKeys(['USD', 'MYR']);
+});
+
+test('stats widget aggregator converts mixed-currency commissions when rates exist', function (): void {
+    config(['filament-affiliates.widgets.currency' => 'USD']);
+    config(['commerce-support.currency.exchange_rates' => ['base' => 'USD', 'rates' => ['MYR' => 4.7]]]);
+
+    $active = createAffiliate(['status' => Active::class]);
+
+    AffiliateConversion::create([
+        'affiliate_id' => $active->getKey(),
+        'affiliate_code' => $active->code,
+        'commission_minor' => 1000,
+        'commission_currency' => 'USD',
+        'status' => PendingConversion::class,
+    ]);
+
+    AffiliateConversion::create([
+        'affiliate_id' => $active->getKey(),
+        'affiliate_code' => $active->code,
+        'commission_minor' => 4700,
+        'commission_currency' => 'MYR',
+        'status' => PendingConversion::class,
+    ]);
+
+    $stats = app(AffiliateStatsAggregator::class)->overview();
+
+    expect($stats['pending_commission_minor'])->toBe(2000)
+        ->and($stats['commission_currency'])->toBe('USD')
+        ->and($stats['commission_converted'])->toBeTrue();
+});

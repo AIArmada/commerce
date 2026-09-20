@@ -19,15 +19,19 @@ final class ClaimScheduledPayout
 {
     use AsAction;
 
-    public function isEligibleSnapshot(string $affiliateId, int $minimumAmountMinor): bool
+    public function isEligibleSnapshot(string $affiliateId, int $minimumAmountMinor, string $currency): bool
     {
+        $currency = mb_strtoupper($currency);
         $affiliate = Affiliate::query()->forOwner()->find($affiliateId);
 
         if (! $affiliate instanceof Affiliate) {
             return false;
         }
 
-        $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->id)->first();
+        $balance = AffiliateBalance::query()
+            ->where('affiliate_id', $affiliate->id)
+            ->where('currency', $currency)
+            ->first();
 
         if (! $balance instanceof AffiliateBalance) {
             return false;
@@ -49,19 +53,22 @@ final class ClaimScheduledPayout
         }
 
         if ($affiliate->payouts()
+            ->where('currency', $currency)
             ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
             ->exists()) {
             return false;
         }
 
-        $allocation = $this->fundedConversionAllocation($affiliate, $balance->available_minor);
+        $allocation = $this->fundedConversionAllocation($affiliate, $balance->available_minor, $currency);
 
         return $allocation['amount_minor'] >= $threshold;
     }
 
-    public function handle(string $affiliateId, int $minimumAmountMinor): ?AffiliatePayoutOperation
+    public function handle(string $affiliateId, int $minimumAmountMinor, string $currency): ?AffiliatePayoutOperation
     {
-        return DB::transaction(function () use ($affiliateId, $minimumAmountMinor): ?AffiliatePayoutOperation {
+        $currency = mb_strtoupper($currency);
+
+        return DB::transaction(function () use ($affiliateId, $minimumAmountMinor, $currency): ?AffiliatePayoutOperation {
             $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->find($affiliateId);
 
             if (! $affiliate instanceof Affiliate) {
@@ -70,6 +77,7 @@ final class ClaimScheduledPayout
 
             $balance = AffiliateBalance::query()
                 ->where('affiliate_id', $affiliate->id)
+                ->where('currency', $currency)
                 ->lockForUpdate()
                 ->first();
 
@@ -96,6 +104,7 @@ final class ClaimScheduledPayout
             }
 
             $pending = $affiliate->payouts()
+                ->where('currency', $currency)
                 ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
                 ->lockForUpdate()
                 ->first();
@@ -107,6 +116,7 @@ final class ClaimScheduledPayout
             $allocation = $this->fundedConversionAllocation(
                 affiliate: $affiliate,
                 availableMinor: $balance->available_minor,
+                currency: $currency,
                 lockForUpdate: true,
             );
             $conversionIds = $allocation['conversion_ids'];
@@ -119,7 +129,7 @@ final class ClaimScheduledPayout
             $sequence = $balance->payout_sequence + 1;
             $operation = new AffiliatePayoutOperation([
                 'affiliate_id' => $affiliate->id,
-                'operation_key' => sprintf('scheduled:%s:%d', $affiliate->id, $sequence),
+                'operation_key' => sprintf('scheduled:%s:%s:%d', $affiliate->id, $currency, $sequence),
                 'status' => 'claimed',
                 'amount_minor' => $amountMinor,
                 'currency' => mb_strtoupper($balance->currency),
@@ -182,6 +192,7 @@ final class ClaimScheduledPayout
     private function fundedConversionAllocation(
         Affiliate $affiliate,
         int $availableMinor,
+        string $currency,
         bool $lockForUpdate = false,
     ): array {
         if ($availableMinor <= 0) {
@@ -193,7 +204,7 @@ final class ClaimScheduledPayout
             ->whereNull('affiliate_payout_id')
             ->orderBy('occurred_at')
             ->orderBy('id')
-            ->select(['id', 'commission_minor']);
+            ->select(['id', 'commission_minor', 'commission_currency']);
 
         if ($lockForUpdate) {
             $query->lockForUpdate();
@@ -203,6 +214,10 @@ final class ClaimScheduledPayout
         $amountMinor = 0;
 
         foreach ($query->get() as $conversion) {
+            if (mb_strtoupper((string) $conversion->commission_currency) !== $currency) {
+                continue;
+            }
+
             $commissionMinor = max(0, (int) $conversion->commission_minor);
 
             if ($commissionMinor === 0) {

@@ -50,7 +50,7 @@ final class TaxDocumentService
                 'tax_year' => $year,
                 'status' => 'pending_info',
                 'total_amount_minor' => $totalPayouts,
-                'currency' => $affiliate->currency ?? 'USD',
+                'currency' => 'USD',
                 'notes' => 'Missing required tax information (TIN or legal name).',
             ]);
         }
@@ -68,12 +68,19 @@ final class TaxDocumentService
             'tax_year' => $year,
             'status' => 'generated',
             'total_amount_minor' => $totalPayouts,
-            'currency' => $affiliate->currency ?? 'USD',
+            'currency' => 'USD',
             'document_path' => $documentPath,
             'generated_at' => CarbonImmutable::now(),
         ]);
     }
 
+    /**
+     * Affiliates whose completed USD payouts meet the 1099 threshold.
+     *
+     * The 1099-NEC is a US-dollar filing: only USD payouts count toward the
+     * threshold and the reported total. Affiliates paid in other currencies
+     * need manual review by the tax team instead of a blended number.
+     */
     public function getAffiliatesRequiring1099(int $year): Collection
     {
         $threshold = config('affiliates.tax.1099_threshold', 60000);
@@ -83,6 +90,7 @@ final class TaxDocumentService
         $affiliateIds = AffiliatePayout::query()
             ->where('payee_type', (new Affiliate)->getMorphClass())
             ->where('status', CompletedPayout::value())
+            ->where('currency', 'USD')
             ->whereBetween('paid_at', [$startDate, $endDate])
             ->groupBy('payee_id')
             ->havingRaw('SUM(total_minor) >= ?', [$threshold])
@@ -93,6 +101,10 @@ final class TaxDocumentService
             ->get();
     }
 
+    /**
+     * Completed USD payouts for the year. Non-USD payouts are excluded; see
+     * getAffiliatesRequiring1099() for why the 1099 path is USD-only.
+     */
     public function calculateAnnualPayouts(Affiliate $affiliate, int $year): int
     {
         $startDate = Carbon::create($year, 1, 1)->startOfDay();
@@ -100,6 +112,7 @@ final class TaxDocumentService
 
         return (int) $affiliate->payouts()
             ->where('status', CompletedPayout::value())
+            ->where('currency', 'USD')
             ->whereBetween('paid_at', [$startDate, $endDate])
             ->sum('total_minor');
     }

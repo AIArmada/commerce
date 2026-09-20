@@ -29,7 +29,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['affiliate_id', 'status']);
-            $table->unique(['affiliate_id', 'payout_sequence'], 'affiliate_payout_operation_sequence_unique');
+            $table->unique(['affiliate_id', 'currency', 'payout_sequence'], 'affiliate_payout_operation_ccy_seq_unique');
         });
     }
 };

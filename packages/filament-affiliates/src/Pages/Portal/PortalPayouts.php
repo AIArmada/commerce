@@ -60,7 +60,7 @@ class PortalPayouts extends PortalPage implements HasTable
 
                 TextColumn::make('total_minor')
                     ->label(__('Amount'))
-                    ->formatStateUsing(fn ($state) => $this->formatAmount((int) $state))
+                    ->formatStateUsing(fn ($state, AffiliatePayout $record): string => $this->formatAmount((int) $state, $record->currency))
                     ->sortable(),
 
                 TextColumn::make('status')
@@ -85,13 +85,25 @@ class PortalPayouts extends PortalPage implements HasTable
     public function getViewData(): array
     {
         $affiliate = $this->getAffiliate();
-        $totalPaid = $affiliate
-            ? (int) AffiliatePayout::query()
+        /** @var array<string, int> $totalPaid */
+        $totalPaid = [];
+
+        if ($affiliate) {
+            $rows = AffiliatePayout::query()
                 ->where('payee_type', $affiliate->getMorphClass())
                 ->where('payee_id', $affiliate->getKey())
                 ->where('status', CompletedPayout::value())
-                ->sum('total_minor')
-            : 0;
+                ->selectRaw('currency as ccy, SUM(total_minor) as total')
+                ->groupBy('currency')
+                ->pluck('total', 'ccy');
+
+            foreach ($rows as $code => $total) {
+                $key = mb_strtoupper((string) $code);
+                $totalPaid[$key] = ($totalPaid[$key] ?? 0) + (int) $total;
+            }
+
+            ksort($totalPaid);
+        }
 
         return [
             'hasAffiliate' => $this->hasAffiliate(),

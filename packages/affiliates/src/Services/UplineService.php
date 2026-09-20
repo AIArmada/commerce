@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\Support\RevenueVolume;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -135,7 +136,15 @@ final class UplineService
             $query->where('occurred_at', '<=', $to);
         }
 
-        return (int) $query->sum(DB::raw('COALESCE(value_minor, 0)'));
+        $rows = $query
+            ->toBase()
+            ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
+            ->groupBy('commission_currency')
+            ->get();
+
+        $reference = RevenueVolume::referenceFor($affiliate);
+
+        return RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $reference);
     }
 
     /**

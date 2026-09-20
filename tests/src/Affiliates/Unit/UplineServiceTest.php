@@ -290,6 +290,7 @@ describe('UplineService', function (): void {
 
             // Create conversion for the child
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $affiliate->id,
                 'affiliate_code' => $affiliate->code,
                 'order_reference' => 'TEAM-SALE-001',
@@ -340,6 +341,7 @@ describe('UplineService', function (): void {
 
             // In range
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $affiliate->id,
                 'affiliate_code' => $affiliate->code,
                 'order_reference' => 'IN-RANGE',
@@ -353,6 +355,7 @@ describe('UplineService', function (): void {
 
             // Out of range
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $affiliate->id,
                 'affiliate_code' => $affiliate->code,
                 'order_reference' => 'OUT-RANGE',

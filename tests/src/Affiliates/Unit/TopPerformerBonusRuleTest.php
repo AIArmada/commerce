@@ -46,6 +46,7 @@ it('keeps top performer bonuses inside the current owner scope', function (): vo
     foreach ([[$ownerA, $affiliateA, 'A'], [$ownerB, $affiliateB, 'B']] as [$owner, $affiliate, $suffix]) {
         OwnerContext::withOwner($owner, function () use ($affiliate, $suffix): void {
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $affiliate->id,
                 'affiliate_code' => $affiliate->code,
                 'order_reference' => 'TOP-' . $suffix,
@@ -97,6 +98,7 @@ it('honors the caller include global flag instead of overriding it from config',
     ]));
 
     OwnerContext::withOwner($owner, fn () => AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $scopedAffiliate->id,
         'affiliate_code' => $scopedAffiliate->code,
         'order_reference' => 'TOP-SCOPED-ORDER',
@@ -108,6 +110,7 @@ it('honors the caller include global flag instead of overriding it from config',
         'occurred_at' => now(),
     ]));
     OwnerContext::withOwner(null, fn () => AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $globalAffiliate->id,
         'affiliate_code' => $globalAffiliate->code,
         'order_reference' => 'TOP-GLOBAL-ORDER',

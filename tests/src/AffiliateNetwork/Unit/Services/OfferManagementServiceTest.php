@@ -9,7 +9,13 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
+use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Services\ProgramService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Str;
 
 describe('OfferManagementService', function (): void {
     beforeEach(function (): void {
@@ -333,6 +339,87 @@ describe('OfferManagementService', function (): void {
 
             expect($this->service->getApprovedOffers($affiliate, 2))->toHaveCount(2)
                 ->and($this->service->getApprovedOffers($affiliate))->toHaveCount(3);
+        });
+
+        test('includes published local offers with approved core memberships', function (): void {
+            $affiliate = createTestAffiliate();
+            $program = AffiliateProgram::create([
+                'name' => 'Linked Program',
+                'slug' => 'linked-program-' . uniqid(),
+                'status' => ProgramStatus::Active,
+                'visibility' => ProgramVisibility::Public,
+                'requires_approval' => false,
+                'commission_type' => CommissionType::Percentage,
+            ]);
+
+            app(ProgramService::class)->joinProgram($affiliate, $program);
+
+            $linked = AffiliateOffer::factory()->published()->forSite($this->site)->create([
+                'external_program_id' => $program->getKey(),
+            ]);
+
+            $offers = $this->service->getApprovedOffers($affiliate);
+
+            expect($offers->pluck('id')->all())->toContain((string) $linked->getKey());
+        });
+
+        test('excludes local offers when the core membership is pending', function (): void {
+            $affiliate = createTestAffiliate();
+            $program = AffiliateProgram::create([
+                'name' => 'Approval Program',
+                'slug' => 'approval-program-' . uniqid(),
+                'status' => ProgramStatus::Active,
+                'visibility' => ProgramVisibility::Public,
+                'requires_approval' => true,
+                'commission_type' => CommissionType::Percentage,
+            ]);
+
+            app(ProgramService::class)->joinProgram($affiliate, $program);
+
+            AffiliateOffer::factory()->published()->forSite($this->site)->create([
+                'external_program_id' => $program->getKey(),
+            ]);
+
+            expect($this->service->getApprovedOffers($affiliate))->toHaveCount(0);
+        });
+
+        test('falls back to network applications when the linked program is gone', function (): void {
+            $affiliate = createTestAffiliate();
+
+            $orphaned = AffiliateOffer::factory()->published()->forSite($this->site)->create([
+                'external_program_id' => (string) Str::uuid(),
+            ]);
+
+            AffiliateOfferApplication::factory()
+                ->forOffer($orphaned)
+                ->forAffiliate($affiliate)
+                ->approved()
+                ->create();
+
+            $offers = $this->service->getApprovedOffers($affiliate);
+
+            expect($offers->pluck('id')->all())->toContain((string) $orphaned->getKey());
+        });
+
+        test('excludes remote mirrors without approved applications', function (): void {
+            $affiliate = createTestAffiliate();
+            $program = AffiliateProgram::create([
+                'name' => 'Remote Program',
+                'slug' => 'remote-program-' . uniqid(),
+                'status' => ProgramStatus::Active,
+                'visibility' => ProgramVisibility::Public,
+                'requires_approval' => false,
+                'commission_type' => CommissionType::Percentage,
+            ]);
+
+            app(ProgramService::class)->joinProgram($affiliate, $program);
+
+            AffiliateOffer::factory()->published()->forSite($this->site)->create([
+                'external_program_id' => $program->getKey(),
+                'metadata' => ['catalog_source' => 'remote'],
+            ]);
+
+            expect($this->service->getApprovedOffers($affiliate))->toHaveCount(0);
         });
     });
 

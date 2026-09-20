@@ -87,10 +87,15 @@ test('DailyAggregationService aggregateForAffiliate creates or updates daily sta
     ]);
 
     // Test aggregation without touchpoints (simpler test)
-    $stat = $service->aggregateForAffiliate($affiliate, now());
+    $stats = $service->aggregateForAffiliate($affiliate, now());
+
+    expect($stats)->toHaveCount(1);
+
+    $stat = $stats->first();
 
     expect($stat)->toBeInstanceOf(AffiliateDailyStat::class);
     expect($stat->clicks)->toBe(0);
+    expect($stat->currency)->toBe('USD');
 });
 
 test('DailyAggregationService aggregateForAffiliate prefers neutral conversion values', function (): void {
@@ -120,11 +125,64 @@ test('DailyAggregationService aggregateForAffiliate prefers neutral conversion v
         'occurred_at' => now(),
     ]);
 
-    $stat = $service->aggregateForAffiliate($affiliate, now());
+    $stats = $service->aggregateForAffiliate($affiliate, now());
+
+    expect($stats)->toHaveCount(1);
+
+    $stat = $stats->first();
 
     expect($stat->conversions)->toBe(1)
         ->and($stat->revenue_cents)->toBe(4200)
-        ->and($stat->commission_cents)->toBe(420);
+        ->and($stat->commission_cents)->toBe(420)
+        ->and($stat->currency)->toBe('USD');
+});
+
+test('DailyAggregationService aggregateForAffiliate writes one row per currency', function (): void {
+    $service = app(DailyAggregationService::class);
+
+    $affiliate = Affiliate::create([
+        'code' => 'AGG007',
+        'name' => 'Multi Currency Aggregation Test',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    foreach ([
+        ['currency' => 'USD', 'value' => 10000, 'commission' => 1000, 'ref' => 'AGG-MC-USD'],
+        ['currency' => 'MYR', 'value' => 47000, 'commission' => 4700, 'ref' => 'AGG-MC-MYR'],
+    ] as $leg) {
+        AffiliateConversion::create([
+            'affiliate_id' => $affiliate->id,
+            'affiliate_code' => $affiliate->code,
+            'subject_key' => 'order:' . $leg['ref'],
+            'subject_instance' => 'share',
+            'external_reference' => $leg['ref'],
+            'conversion_type' => 'purchase',
+            'subtotal_minor' => $leg['value'],
+            'value_minor' => $leg['value'],
+            'commission_minor' => $leg['commission'],
+            'commission_currency' => $leg['currency'],
+            'status' => ApprovedConversion::class,
+            'occurred_at' => now(),
+        ]);
+    }
+
+    $stats = $service->aggregateForAffiliate($affiliate, now());
+    $byCurrency = $stats->mapWithKeys(fn (AffiliateDailyStat $stat): array => [$stat->currency => $stat]);
+
+    expect($stats)->toHaveCount(2)
+        ->and($byCurrency['USD']->revenue_cents)->toBe(10000)
+        ->and($byCurrency['MYR']->revenue_cents)->toBe(47000)
+        ->and($byCurrency['MYR']->commission_cents)->toBe(4700);
+
+    $period = $service->getAggregatedStats($affiliate, now()->subDay(), now()->addDay());
+
+    expect($period['conversions'])->toBe(2)
+        ->and($period['revenue_cents'])->toBeNull()
+        ->and($period['converted'])->toBeFalse()
+        ->and($period['by_currency'])->toHaveKeys(['USD', 'MYR']);
 });
 
 test('DailyAggregationService aggregate processes all affiliates', function (): void {
@@ -168,6 +226,7 @@ test('DailyAggregationService getAggregatedStats returns aggregated data', funct
     AffiliateDailyStat::create([
         'affiliate_id' => $affiliate->id,
         'date' => now()->subDays(2)->toDateString(),
+        'currency' => 'USD',
         'clicks' => 100,
         'unique_clicks' => 80,
         'attributions' => 50,
@@ -183,6 +242,7 @@ test('DailyAggregationService getAggregatedStats returns aggregated data', funct
     AffiliateDailyStat::create([
         'affiliate_id' => $affiliate->id,
         'date' => now()->subDay()->toDateString(),
+        'currency' => 'USD',
         'clicks' => 150,
         'unique_clicks' => 120,
         'attributions' => 75,

@@ -43,6 +43,7 @@ class AffiliateOfferLinkFactory extends Factory
             'clicks' => 0,
             'conversions' => 0,
             'revenue' => 0,
+            'currency' => 'USD',
             'is_active' => true,
             'expires_at' => null,
             'metadata' => null,
@@ -87,6 +88,7 @@ class AffiliateOfferLinkFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'offer_id' => $offer->id,
             'site_id' => $offer->site_id,
+            'currency' => $offer->currency,
         ]);
     }
 

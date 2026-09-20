@@ -160,8 +160,8 @@ $affiliate->payoutHolds()
     'minimum_amount' => 5000, // $50.00
 ],
 
-// Affiliate must have at least this amount available
-$affiliate->balance->available_minor >= 5000;
+// Affiliate must have at least this amount available in the payout currency
+$affiliate->balanceFor('USD')?->available_minor >= 5000;
 ```
 
 ### Payout Processing Fails

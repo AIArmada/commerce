@@ -207,9 +207,8 @@ final class AffiliateMarketplacePage extends Page
         }
 
         // Offer outside the rendered page: resolve through the same batched
-        // builder instead of OfferManagementService::applicationStatusForOffer(),
-        // whose application-table path returns the enum (not ?string) and
-        // TypeErrors. See the cross-package follow-up on affiliate-network.
+        // builder for consistency with the page map instead of mixing in
+        // OfferManagementService::applicationStatusForOffer() per card.
         $affiliate = $this->getAffiliate();
 
         if ($affiliate === null) {

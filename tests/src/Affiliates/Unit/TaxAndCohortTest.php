@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\TaxDocumentStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Services\CohortAnalyzer;
 use AIArmada\Affiliates\Services\Tax\Tax1099Generator;
 use AIArmada\Affiliates\Services\Tax\TaxDocumentService;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\CompletedPayout;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 // Tax1099Generator Tests
@@ -105,6 +108,44 @@ test('TaxDocumentService generate1099ForAffiliate returns null for below thresho
     $document = $service->generate1099ForAffiliate($affiliate, 2024);
 
     expect($document)->toBeNull();
+});
+
+test('TaxDocumentService 1099 totals count USD payouts only', function (): void {
+    $service = app(TaxDocumentService::class);
+
+    config(['affiliates.tax.1099_threshold' => 60000]);
+
+    $affiliate = Affiliate::create([
+        'code' => 'TAXMC001',
+        'name' => 'Multicurrency Tax Test',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    foreach ([
+        ['currency' => 'USD', 'total' => 70000, 'ref' => 'TAXMC-USD'],
+        ['currency' => 'MYR', 'total' => 470000, 'ref' => 'TAXMC-MYR'],
+    ] as $leg) {
+        AffiliatePayout::create([
+            'reference' => $leg['ref'],
+            'payee_type' => $affiliate->getMorphClass(),
+            'payee_id' => $affiliate->id,
+            'total_minor' => $leg['total'],
+            'currency' => $leg['currency'],
+            'status' => CompletedPayout::class,
+            'paid_at' => Carbon::create(2024, 6, 15),
+        ]);
+    }
+
+    expect($service->calculateAnnualPayouts($affiliate, 2024))->toBe(70000)
+        ->and($service->getAffiliatesRequiring1099(2024)->pluck('id'))->toContain($affiliate->id);
+
+    $document = $service->generate1099ForAffiliate($affiliate, 2024);
+
+    expect($document->total_amount_minor)->toBe(70000)
+        ->and($document->currency)->toBe('USD');
 });
 
 // CohortAnalyzer Tests - Only instantiation test (other methods use MySQL-specific DATE_FORMAT)

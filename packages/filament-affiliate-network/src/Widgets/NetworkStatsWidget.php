@@ -21,7 +21,7 @@ final class NetworkStatsWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        /** @var array{activeSites: int, activeOffers: int, pendingApplications: int, totalClicks: int, totalConversions: int, totalRevenue: int, conversionRate: float, revenueFormatted: string} $aggregated */
+        /** @var array{activeSites: int, activeOffers: int, pendingApplications: int, totalClicks: int, totalConversions: int, totalRevenue: int|null, conversionRate: float, revenueFormatted: string, revenueCurrency: string, revenueConverted: bool, revenueByCurrency: array<string, int>} $aggregated */
         $aggregated = OwnerCache::remember(
             null,
             'affiliate-network.network-stats',
@@ -55,9 +55,29 @@ final class NetworkStatsWidget extends StatsOverviewWidget
                 ->color($aggregated['conversionRate'] > 5 ? 'success' : 'warning'),
 
             Stat::make('Total Revenue', $aggregated['revenueFormatted'])
-                ->description('Tracked revenue')
+                ->description($this->revenueDescription($aggregated))
                 ->icon('heroicon-o-banknotes')
                 ->color('success'),
         ];
+    }
+
+    /**
+     * @param  array{totalRevenue: int|null, revenueCurrency: string, revenueConverted: bool, revenueByCurrency: array<string, int>}  $aggregated
+     */
+    private function revenueDescription(array $aggregated): string
+    {
+        if ($aggregated['totalRevenue'] === null) {
+            return 'Mixed currencies — set exchange rates';
+        }
+
+        if ($aggregated['revenueConverted']) {
+            return 'Converted to ' . $aggregated['revenueCurrency'];
+        }
+
+        if (count($aggregated['revenueByCurrency']) > 1) {
+            return 'Tracked revenue by currency';
+        }
+
+        return 'Tracked revenue';
     }
 }

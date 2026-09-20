@@ -28,7 +28,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
@@ -69,7 +68,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, AffiliateConversion> $conversions
  * @property-read Collection<int, AffiliateFraudSignal> $fraudSignals
  * @property-read Collection<int, AffiliateDailyStat> $dailyStats
- * @property-read AffiliateBalance|null $balance
+ * @property-read Collection<int, AffiliateBalance> $balances
  * @property-read Collection<int, AffiliatePayoutMethod> $payoutMethods
  * @property-read Collection<int, AffiliatePayoutHold> $payoutHolds
  * @property-read Collection<int, AffiliatePayout> $payouts
@@ -253,11 +252,16 @@ class Affiliate extends Model implements Auditable
     }
 
     /**
-     * @return HasOne<AffiliateBalance, $this>
+     * @return HasMany<AffiliateBalance, $this>
      */
-    public function balance(): HasOne
+    public function balances(): HasMany
     {
-        return $this->hasOne(AffiliateBalance::class);
+        return $this->hasMany(AffiliateBalance::class);
+    }
+
+    public function balanceFor(string $currency): ?AffiliateBalance
+    {
+        return $this->balances()->where('currency', mb_strtoupper($currency))->first();
     }
 
     /**
@@ -302,7 +306,7 @@ class Affiliate extends Model implements Auditable
             ->exists();
     }
 
-    public function canRequestPayout(): bool
+    public function canRequestPayout(?string $currency = null): bool
     {
         if (! $this->isActive()) {
             return false;
@@ -312,12 +316,11 @@ class Affiliate extends Model implements Auditable
             return false;
         }
 
-        $balance = $this->balance;
-        if (! $balance) {
-            return false;
+        if ($currency !== null) {
+            return $this->balanceFor($currency)?->canRequestPayout() ?? false;
         }
 
-        return $balance->canRequestPayout();
+        return $this->balances()->get()->contains(fn (AffiliateBalance $balance): bool => $balance->canRequestPayout());
     }
 
     public function isActive(): bool
@@ -405,7 +408,7 @@ class Affiliate extends Model implements Auditable
                     $payout->delete();
                 }
             });
-            $affiliate->balance()->delete();
+            $affiliate->balances()->delete();
             $affiliate->children()->update(['parent_affiliate_id' => null]);
         });
     }

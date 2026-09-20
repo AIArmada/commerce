@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -21,7 +22,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -292,7 +292,14 @@ class AffiliateProgram extends Model implements Auditable
         }
 
         if (isset($rules['min_revenue'])) {
-            $revenue = (int) $affiliate->conversions()->sum(DB::raw('COALESCE(value_minor, 0)'));
+            $rows = $affiliate->conversions()
+                ->toBase()
+                ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
+                ->groupBy('commission_currency')
+                ->get();
+
+            $reference = RevenueVolume::referenceFor($affiliate);
+            $revenue = RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $reference);
 
             if ($revenue < $rules['min_revenue']) {
                 return false;

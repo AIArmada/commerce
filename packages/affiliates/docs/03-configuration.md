@@ -363,7 +363,7 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 ],
 ```
 
-`1099_threshold` is stored in minor units. For example, `60000` represents `600.00` in the configured payout currency.
+`1099_threshold` is stored in minor units of US dollars. For example, `60000` represents `$600.00`. The 1099 path is USD-only: only completed USD payouts count toward the threshold and the reported total, and documents are always issued in USD. Affiliates paid in other currencies need manual review.
 
 ## Bonuses
 

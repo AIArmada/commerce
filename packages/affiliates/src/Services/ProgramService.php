@@ -15,6 +15,7 @@ use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
@@ -65,14 +66,33 @@ final class ProgramService
             ? MembershipStatus::Pending
             : MembershipStatus::Approved;
 
-        $membership = AffiliateProgramMembership::create([
-            'affiliate_id' => $affiliate->id,
-            'program_id' => $program->id,
-            'tier_id' => $defaultTier?->id,
-            'status' => $status,
-            'applied_at' => CarbonImmutable::now(),
-            'approved_at' => $status === MembershipStatus::Approved ? CarbonImmutable::now() : null,
-        ]);
+        try {
+            $membership = AffiliateProgramMembership::create([
+                'affiliate_id' => $affiliate->id,
+                'program_id' => $program->id,
+                'tier_id' => $defaultTier?->id,
+                'status' => $status,
+                'applied_at' => CarbonImmutable::now(),
+                'approved_at' => $status === MembershipStatus::Approved ? CarbonImmutable::now() : null,
+            ]);
+        } catch (QueryException $exception) {
+            // Concurrent double-join: the unique(affiliate_id, program_id)
+            // row already exists, so return it instead of 500ing.
+            if (! self::isUniqueConstraintViolation($exception)) {
+                throw $exception;
+            }
+
+            $raced = AffiliateProgramMembership::query()
+                ->where('affiliate_id', $affiliate->id)
+                ->where('program_id', $program->id)
+                ->first();
+
+            if ($raced === null) {
+                throw $exception;
+            }
+
+            return $raced;
+        }
 
         if ($status === MembershipStatus::Approved) {
             $this->events->dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
@@ -218,6 +238,11 @@ final class ProgramService
         return $tiers
             ->filter(fn (AffiliateProgramTier $tier) => $tier->meetsUpgradeRequirements($affiliate, $program))
             ->first();
+    }
+
+    private static function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
     }
 
     private function resolveAccessibleProgram(AffiliateProgram $program): AffiliateProgram

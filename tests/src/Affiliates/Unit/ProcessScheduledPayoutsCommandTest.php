@@ -51,6 +51,39 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
         expect($result)->toBeIn([0, 1]); // 0=success, 1=failure
     });
 
+    test('claims one payout per eligible currency balance', function (): void {
+        foreach (['USD', 'MYR'] as $currency) {
+            AffiliateBalance::create([
+                'affiliate_id' => $this->affiliate->id,
+                'available_minor' => 10000,
+                'pending_minor' => 0,
+                'minimum_payout_minor' => 5000,
+                'currency' => $currency,
+            ]);
+
+            AffiliateConversion::create([
+                'affiliate_id' => $this->affiliate->id,
+                'affiliate_code' => $this->affiliate->code,
+                'order_reference' => 'ORDER-' . $currency . '-' . uniqid(),
+                'subtotal_minor' => 5000,
+                'total_minor' => 5000,
+                'commission_minor' => 5000,
+                'commission_currency' => $currency,
+                'status' => ApprovedConversion::class,
+                'occurred_at' => now()->subDay(),
+                'affiliate_payout_id' => null,
+            ]);
+        }
+
+        $result = Artisan::call('affiliates:process-payouts');
+
+        $payouts = AffiliatePayout::query()->get();
+
+        expect($result)->toBe(0)
+            ->and($payouts)->toHaveCount(2)
+            ->and($payouts->pluck('currency')->sort()->values()->all())->toBe(['MYR', 'USD']);
+    });
+
     test('processes affiliates with sufficient balance', function (): void {
         AffiliateBalance::create([
             'affiliate_id' => $this->affiliate->id,
@@ -64,7 +97,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
         $result = Artisan::call('affiliates:process-payouts', ['--dry-run' => true]);
 
         $output = Artisan::output();
-        expect($output)->toContain('Would atomically claim payout');
+        expect($output)->toContain('Would atomically claim USD payout');
     });
 
     test('skips affiliates below minimum amount', function (): void {
@@ -97,7 +130,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
         ]);
 
         $output = Artisan::output();
-        expect($output)->toContain('Would atomically claim payout');
+        expect($output)->toContain('Would atomically claim USD payout');
     });
 
     test('filters by specific affiliate', function (): void {
@@ -246,7 +279,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
         $result = Artisan::call('affiliates:process-payouts', ['--dry-run' => true]);
 
         $output = Artisan::output();
-        expect($output)->toContain('Would atomically claim payout');
+        expect($output)->toContain('Would atomically claim USD payout');
     });
 
     test('does not skip affiliates with completed payouts', function (): void {
@@ -272,7 +305,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
         $result = Artisan::call('affiliates:process-payouts', ['--dry-run' => true]);
 
         $output = Artisan::output();
-        expect($output)->toContain('Would atomically claim payout');
+        expect($output)->toContain('Would atomically claim USD payout');
     });
 
     test('displays correct processed count', function (): void {

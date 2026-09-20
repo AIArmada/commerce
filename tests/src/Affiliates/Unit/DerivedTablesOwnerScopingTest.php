@@ -101,6 +101,7 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
     $record = new AffiliateDailyStat([
         'affiliate_id' => $affiliateA->getKey(),
         'date' => Carbon::parse('2025-01-01')->toDateString(),
+        'currency' => 'USD',
         'clicks' => 1,
         'unique_clicks' => 1,
         'attributions' => 0,
@@ -123,6 +124,7 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
     $record = new AffiliateDailyStat([
         'affiliate_id' => $affiliateB->getKey(),
         'date' => Carbon::parse('2025-01-01')->toDateString(),
+        'currency' => 'USD',
         'clicks' => 1,
         'unique_clicks' => 1,
         'attributions' => 0,

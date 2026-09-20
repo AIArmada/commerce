@@ -46,6 +46,8 @@ If `filament-affiliates.portal.registration_enabled` is `true`, the panel uses `
 
 Custom link targets on `PortalLinks` are validated server-side: only `http(s)` URLs on the application host (including subdomains) are accepted, and the affiliate code is URL-encoded into the generated link.
 
+Portal money is per currency. The dashboard shows available earnings as a per-currency breakdown sourced from the affiliate's balances, conversions list each row in its own `commission_currency`, and paid totals group by payout currency — one payout exists per currency, never a blended total.
+
 ## Panel behavior
 
 `AffiliatePanelProvider` configures:

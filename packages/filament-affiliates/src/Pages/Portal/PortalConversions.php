@@ -111,12 +111,12 @@ class PortalConversions extends PortalPage implements HasTable
 
                 TextColumn::make('value_minor')
                     ->label(__('Total'))
-                    ->formatStateUsing(fn ($state) => $this->formatAmount((int) $state))
+                    ->formatStateUsing(fn ($state, AffiliateConversion $record): string => $this->formatAmount((int) $state, $record->commission_currency))
                     ->sortable(),
 
                 TextColumn::make('commission_minor')
                     ->label(__('Commission'))
-                    ->formatStateUsing(fn ($state) => $this->formatAmount((int) $state))
+                    ->formatStateUsing(fn ($state, AffiliateConversion $record): string => $this->formatAmount((int) $state, $record->commission_currency))
                     ->sortable(),
 
                 TextColumn::make('status')

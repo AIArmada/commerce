@@ -35,7 +35,7 @@ return new class extends Migration
             $table->unsignedBigInteger('subtotal_minor')->default(0);
             $table->unsignedBigInteger('commission_minor')->default(0);
             $table->unsignedBigInteger('value_minor')->default(0);
-            $table->string('commission_currency', 3)->default(config('affiliates.currency.default', 'USD'))->index();
+            $table->string('commission_currency', 3)->index();
             $table->uuid('affiliate_link_id')->nullable()->index();
             $table->uuid('sharer_user_id')->nullable()->index();
             $table->uuid('actor_user_id')->nullable()->index();

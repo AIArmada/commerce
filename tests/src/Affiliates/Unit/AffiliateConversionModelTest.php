@@ -73,7 +73,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        $balance = $this->affiliate->fresh()->balance;
+        $balance = $this->affiliate->fresh()->balanceFor('USD');
 
         expect($balance)->not->toBeNull()
             ->and($balance?->holding_minor)->toBe(1000)
@@ -96,7 +96,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ])->fresh();
 
-        $balance = $this->affiliate->fresh()->balance;
+        $balance = $this->affiliate->fresh()->balanceFor('USD');
 
         expect($conversion?->status->equals(ApprovedConversion::class))->toBeTrue()
             ->and($conversion?->approved_at)->not->toBeNull()
@@ -126,7 +126,7 @@ describe('AffiliateConversion Model', function (): void {
         ApplyConversionAccounting::run($conversion, $previousStatus);
 
         $conversion = $conversion->fresh();
-        $balance = $this->affiliate->fresh()->balance;
+        $balance = $this->affiliate->fresh()->balanceFor('USD');
 
         expect($conversion?->approved_at)->not->toBeNull()
             ->and($balance)->not->toBeNull()
@@ -137,7 +137,7 @@ describe('AffiliateConversion Model', function (): void {
         $conversion?->update(['status' => PaidConversion::class]);
         ApplyConversionAccounting::run($conversion, $previousStatus);
 
-        $balance = $this->affiliate->fresh()->balance;
+        $balance = $this->affiliate->fresh()->balanceFor('USD');
 
         expect($balance?->available_minor)->toBe(0)
             ->and($balance?->lifetime_earnings_minor)->toBe(1000);

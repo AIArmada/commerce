@@ -31,9 +31,9 @@ final class CreatePayout
     /**
      * Create a payout from the given conversion IDs.
      *
-     * Only approved, unlinked conversions may be paid. The payout reserves the
-     * affiliate's available balance immediately, mirroring ClaimScheduledPayout,
-     * so completing, failing, or cancelling the payout stays consistent.
+     * Only approved, unlinked conversions may be paid, and they must all share
+     * one currency: each payout reserves exactly one per-currency balance, so
+     * mixed-currency sets are rejected instead of summed silently.
      *
      * @param  array<int, string>  $conversionIds
      * @param  array<string, mixed>  $attributes
@@ -81,15 +81,29 @@ final class CreatePayout
 
             $this->assertOwnerAttributesMatch($attributes, $ownerType, $ownerId);
 
+            $currencies = $conversions
+                ->map(fn (AffiliateConversion $conversion): string => mb_strtoupper((string) $conversion->commission_currency))
+                ->unique()
+                ->values();
+
+            if ($currencies->count() !== 1) {
+                throw new InvalidArgumentException('A payout operation may contain conversions in only one currency.');
+            }
+
+            $currency = (string) $currencies->first();
+
+            if (array_key_exists('currency', $attributes) && $attributes['currency'] !== null
+                && mb_strtoupper((string) $attributes['currency']) !== $currency) {
+                throw new InvalidArgumentException('Payout currency must match the conversions being paid.');
+            }
+
             $total = (int) $conversions->sum('commission_minor');
 
             if ($total <= 0) {
                 throw new InvalidArgumentException('Payout total must be greater than zero.');
             }
 
-            $balance = $this->reserveBalance($affiliate, $total);
-
-            $currency = mb_strtoupper((string) ($attributes['currency'] ?? $conversions->first()?->commission_currency ?? config('affiliates.payouts.currency', 'USD')));
+            $balance = $this->reserveBalance($affiliate, $total, $currency);
             $reference = $attributes['reference'] ?? $this->generateReference();
 
             // Handle status - accept either enum or string. Terminal states are
@@ -108,7 +122,7 @@ final class CreatePayout
                 'affiliate_id' => (string) $affiliateIds->first(),
                 'operation_key' => $sequence === null
                     ? 'manual:' . (string) Str::uuid()
-                    : sprintf('manual:%s:%d', $affiliateIds->first(), $sequence),
+                    : sprintf('manual:%s:%s:%d', $affiliateIds->first(), $currency, $sequence),
                 'status' => 'claimed',
                 'amount_minor' => $total,
                 'currency' => $currency,
@@ -178,7 +192,7 @@ final class CreatePayout
         }
     }
 
-    private function reserveBalance(Affiliate $affiliate, int $total): ?AffiliateBalance
+    private function reserveBalance(Affiliate $affiliate, int $total, string $currency): ?AffiliateBalance
     {
         if (! ApplyConversionAccounting::balancesSyncEnabled()) {
             return null;
@@ -186,6 +200,7 @@ final class CreatePayout
 
         $balance = AffiliateBalance::query()
             ->where('affiliate_id', $affiliate->getKey())
+            ->where('currency', $currency)
             ->lockForUpdate()
             ->first();
 

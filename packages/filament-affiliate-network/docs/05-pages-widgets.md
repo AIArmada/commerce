@@ -130,6 +130,13 @@ Overview statistics for the entire network.
 This is a network-wide admin report. It uses the explicit global context and a
 30-second owner-keyed cache.
 
+Total Revenue groups link revenue by link currency. Single-currency networks
+show the raw sum; mixed networks convert to
+`affiliate-network.currency.default`, or show `—` with a "set exchange rates"
+hint when a rate is missing. Configure static rates under
+`commerce-support.currency.exchange_rates`, or bind a custom
+`ExchangeRateProvider`.
+
 **Usage:**
 
 Register on your dashboard:

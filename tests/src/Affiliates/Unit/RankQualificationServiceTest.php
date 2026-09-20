@@ -100,6 +100,7 @@ describe('RankQualificationService', function (): void {
 
             // Create conversions to meet threshold
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'SALES-001',
@@ -360,6 +361,7 @@ describe('RankQualificationService', function (): void {
 
         test('calculates personal sales from conversions', function (): void {
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'METRIC-001',
@@ -372,6 +374,7 @@ describe('RankQualificationService', function (): void {
             ]);
 
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'METRIC-002',
@@ -392,6 +395,7 @@ describe('RankQualificationService', function (): void {
         test('respects date range for personal sales', function (): void {
             // Recent sale
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'RECENT',
@@ -405,6 +409,7 @@ describe('RankQualificationService', function (): void {
 
             // Old sale (outside 30 day default)
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'OLD',
@@ -428,6 +433,7 @@ describe('RankQualificationService', function (): void {
 
             // Add a conversion
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'CACHED',
@@ -446,6 +452,7 @@ describe('RankQualificationService', function (): void {
 
         test('uses custom date range', function (): void {
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'CUSTOM',

@@ -52,37 +52,36 @@ use AIArmada\Affiliates\Models\AffiliateProgramTier;
 
 // Bronze tier (default)
 AffiliateProgramTier::create([
-    'affiliate_program_id' => $program->id,
+    'program_id' => $program->id,
     'name' => 'Bronze',
-    'slug' => 'bronze',
+    'level' => 1,
     'commission_rate_basis_points' => 1000, // 10%
-    'min_revenue_minor' => 0,
+    'min_revenue' => 0,
     'min_conversions' => 0,
-    'sort_order' => 1,
 ]);
 
 // Silver tier
 AffiliateProgramTier::create([
-    'affiliate_program_id' => $program->id,
+    'program_id' => $program->id,
     'name' => 'Silver',
-    'slug' => 'silver',
+    'level' => 2,
     'commission_rate_basis_points' => 1250, // 12.5%
-    'min_revenue_minor' => 100000, // $1,000
+    'min_revenue' => 100000, // $1,000
     'min_conversions' => 10,
-    'sort_order' => 2,
 ]);
 
 // Gold tier
 AffiliateProgramTier::create([
-    'affiliate_program_id' => $program->id,
+    'program_id' => $program->id,
     'name' => 'Gold',
-    'slug' => 'gold',
+    'level' => 3,
     'commission_rate_basis_points' => 1500, // 15%
-    'min_revenue_minor' => 500000, // $5,000
+    'min_revenue' => 500000, // $5,000
     'min_conversions' => 50,
-    'sort_order' => 3,
 ]);
 ```
+
+`min_revenue` compares against the affiliate's program revenue measured in the affiliate's currency: legs convert when exchange rates exist, otherwise only the affiliate-currency leg counts. The same rule applies to `eligibility_rules.min_revenue` on the program itself.
 
 ## Enrolling Affiliates
 

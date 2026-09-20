@@ -57,4 +57,38 @@ describe('RecordNetworkConversionForOrder', function (): void {
 
         expect($this->link->fresh()->conversions)->toBe(0);
     });
+
+    test('aggregates revenue when the order currency matches the link currency', function (): void {
+        networkAttributionRequest('affiliate_network_link', $this->link);
+
+        $order = Order::factory()->paid()->create([
+            'currency' => $this->link->currency,
+            'grand_total' => 12345,
+        ]);
+
+        app(RecordNetworkConversionForOrder::class)->handle(new CommissionAttributionRequired($order));
+
+        $fresh = $this->link->fresh();
+
+        expect($fresh->conversions)->toBe(1)
+            ->and($fresh->revenue)->toBe(12345);
+    });
+
+    test('skips revenue but keeps the conversion when currencies differ', function (): void {
+        networkAttributionRequest('affiliate_network_link', $this->link);
+
+        $order = Order::factory()->paid()->create([
+            'currency' => 'MYR',
+            'grand_total' => 12345,
+        ]);
+
+        $this->link->update(['currency' => 'USD']);
+
+        app(RecordNetworkConversionForOrder::class)->handle(new CommissionAttributionRequired($order));
+
+        $fresh = $this->link->fresh();
+
+        expect($fresh->conversions)->toBe(1)
+            ->and($fresh->revenue)->toBe(0);
+    });
 });

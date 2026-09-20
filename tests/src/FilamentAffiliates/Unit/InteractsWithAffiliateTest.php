@@ -3,9 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
@@ -57,16 +60,86 @@ it('getPayouts returns empty collection when no affiliate', function (): void {
         ->toBeEmpty();
 });
 
-it('getTotalEarnings returns zero when no affiliate', function (): void {
+it('getTotalEarnings returns empty breakdown when no affiliate', function (): void {
     $testClass = new TestInteractsWithAffiliateClass;
 
-    expect($testClass->getTotalEarnings())->toBe(0);
+    expect($testClass->getTotalEarnings())->toBe([]);
 });
 
-it('getPendingEarnings returns zero when no affiliate', function (): void {
+it('getPendingEarnings returns empty breakdown when no affiliate', function (): void {
     $testClass = new TestInteractsWithAffiliateClass;
 
-    expect($testClass->getPendingEarnings())->toBe(0);
+    expect($testClass->getPendingEarnings())->toBe([]);
+});
+
+it('getAvailableEarnings returns empty breakdown when no affiliate', function (): void {
+    $testClass = new TestInteractsWithAffiliateClass;
+
+    expect($testClass->getAvailableEarnings())->toBe([]);
+});
+
+it('returns earnings broken down by currency', function (): void {
+    $user = User::create([
+        'name' => 'Breakdown User',
+        'email' => 'breakdown-' . Str::uuid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $affiliate = Affiliate::create([
+        'code' => 'BRK-' . Str::uuid(),
+        'name' => 'Breakdown Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => (string) $user->getKey()])->save();
+
+    foreach ([
+        ['currency' => 'USD', 'commission' => 1000, 'status' => ApprovedConversion::class],
+        ['currency' => 'MYR', 'commission' => 2000, 'status' => ApprovedConversion::class],
+        ['currency' => 'USD', 'commission' => 500, 'status' => PendingConversion::class],
+    ] as $index => $row) {
+        AffiliateConversion::create([
+            'affiliate_id' => $affiliate->getKey(),
+            'affiliate_code' => $affiliate->code,
+            'external_reference' => 'BRK-' . $index . '-' . Str::uuid(),
+            'value_minor' => $row['commission'] * 10,
+            'commission_minor' => $row['commission'],
+            'commission_currency' => $row['currency'],
+            'status' => $row['status'],
+            'occurred_at' => now(),
+        ]);
+    }
+
+    foreach (['USD' => 1000, 'MYR' => 2000] as $currency => $available) {
+        AffiliateBalance::create([
+            'affiliate_id' => $affiliate->getKey(),
+            'currency' => $currency,
+            'holding_minor' => 0,
+            'available_minor' => $available,
+            'lifetime_earnings_minor' => $available,
+            'minimum_payout_minor' => 500,
+        ]);
+    }
+
+    $this->actingAs($user);
+
+    $testClass = new TestInteractsWithAffiliateClass;
+
+    expect($testClass->getTotalEarnings())->toBe(['MYR' => 2000, 'USD' => 1000])
+        ->and($testClass->getPendingEarnings())->toBe(['USD' => 500])
+        ->and($testClass->getAvailableEarnings())->toBe(['MYR' => 2000, 'USD' => 1000]);
+});
+
+it('formats a per-currency breakdown', function (): void {
+    config(['affiliates.currency.default' => 'USD']);
+
+    $testClass = new TestInteractsWithAffiliateClass;
+
+    expect($testClass->formatBreakdown(['USD' => 10000, 'MYR' => 5000]))->toBe('MYR 50.00 · USD 100.00')
+        ->and($testClass->formatBreakdown([]))->toBe('USD 0.00')
+        ->and($testClass->formatBreakdown(['USD' => 0, 'MYR' => 5000]))->toBe('MYR 50.00');
 });
 
 it('getTotalClicks returns zero when no affiliate', function (): void {

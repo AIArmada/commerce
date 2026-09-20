@@ -80,4 +80,13 @@ describe('CreateOffer', function (): void {
             'landing_url' => 'not-a-url',
         ]))->toThrow(ValidationException::class);
     });
+
+    test('normalizes currency to upper case', function (): void {
+        $offer = $this->action->execute($this->site, [
+            'name' => 'Cased Offer',
+            'currency' => 'myr',
+        ]);
+
+        expect($offer->currency)->toBe('MYR');
+    });
 });

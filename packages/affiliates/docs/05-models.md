@@ -41,7 +41,7 @@ $affiliate->conversions;      // HasMany<AffiliateConversion>
 $affiliate->attributions;     // HasMany<AffiliateAttribution>
 $affiliate->payouts;          // HasMany<AffiliatePayout>
 $affiliate->links;            // HasMany<AffiliateLink>
-$affiliate->balance;          // HasOne<AffiliateBalance>
+$affiliate->balances;         // HasMany<AffiliateBalance>, one per currency
 $affiliate->parent;           // BelongsTo<Affiliate>
 $affiliate->children;         // HasMany<Affiliate>
 $affiliate->programs;         // BelongsToMany<AffiliateProgram>
@@ -54,9 +54,11 @@ $affiliate->volumeTiers;      // HasMany<AffiliateVolumeTier>
 **Key Methods:**
 
 ```php
-$affiliate->isActive();             // Check if status is Active
-$affiliate->hasActivePayoutHold();  // Check for unreleased payout holds
-$affiliate->canRequestPayout();     // True when available balance meets the minimum payout
+$affiliate->isActive();                // Check if status is Active
+$affiliate->hasActivePayoutHold();     // Check for unreleased payout holds
+$affiliate->canRequestPayout();        // True when any balance meets its minimum payout
+$affiliate->canRequestPayout('USD');   // True when the USD balance meets its minimum
+$affiliate->balanceFor('USD');         // The USD AffiliateBalance, or null
 ```
 
 ### AffiliateAttribution
@@ -127,7 +129,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 | `subtotal_minor` | int | Order subtotal in minor units |
 | `value_minor` | int | Neutral conversion value in minor units |
 | `commission_minor` | int | Commission amount in minor units |
-| `commission_currency` | string | Commission currency |
+| `commission_currency` | string | Required. Denominates both `value_minor` and `commission_minor`; no database default — writers must set it explicitly |
 | `status` | ConversionStatus | Pending, Qualified, Approved, Rejected, Paid |
 | `occurred_at` | timestamp | When conversion occurred |
 | `approved_at` | timestamp | When approved or matured into the payout-eligible state |
@@ -314,10 +316,15 @@ use AIArmada\Affiliates\Models\AffiliateDailyStat;
 |-----------|------|-------------|
 | `affiliate_id` | uuid | The affiliate |
 | `date` | date | Statistics date |
-| `clicks` | int | Click count |
-| `conversions` | int | Conversion count |
-| `revenue_minor` | int | Revenue generated |
-| `commission_minor` | int | Commission earned |
+| `currency` | string | Row currency; unique with affiliate + date |
+| `clicks` | int | Click count (affiliate-currency row only) |
+| `unique_clicks` | int | Unique clicks (affiliate-currency row only) |
+| `attributions` | int | Attributions (affiliate-currency row only) |
+| `conversions` | int | Conversion count in this currency |
+| `revenue_cents` | int | Revenue in this currency, minor units |
+| `commission_cents` | int | Commission in this currency, minor units |
+| `conversion_rate` | float | Day conversion rate (affiliate-currency row only) |
+| `epc_cents` | float | This currency's commission per click |
 
 ## Upline Models
 

@@ -10,6 +10,7 @@ use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 
 describe('OfferLinkService', function (): void {
@@ -132,6 +133,14 @@ describe('OfferLinkService', function (): void {
                 'target_url' => 'javascript:alert(1)',
             ]);
         })->throws(RuntimeException::class, 'http(s)');
+
+        test('stamps the offer currency on the link', function (): void {
+            $this->offer->update(['currency' => 'EUR']);
+
+            $link = $this->service->createLink($this->offer, $this->affiliate);
+
+            expect($link->currency)->toBe('EUR');
+        });
     });
 
     describe('buildDirectLink', function (): void {
@@ -357,6 +366,36 @@ describe('OfferLinkService', function (): void {
             $fresh = $link->fresh();
             expect($fresh->conversions)->toBe(1);
             expect($fresh->revenue)->toBe(0);
+        });
+
+        test('aggregates revenue when currencies match', function (): void {
+            $link = AffiliateOfferLink::factory()
+                ->forOffer($this->offer)
+                ->forAffiliate($this->affiliate)
+                ->create();
+
+            $this->service->recordConversion($link, 5000, $link->currency);
+
+            $fresh = $link->fresh();
+            expect($fresh->conversions)->toBe(1);
+            expect($fresh->revenue)->toBe(5000);
+        });
+
+        test('counts the conversion but skips revenue on currency mismatch', function (): void {
+            Log::spy();
+
+            $link = AffiliateOfferLink::factory()
+                ->forOffer($this->offer)
+                ->forAffiliate($this->affiliate)
+                ->create(['currency' => 'USD']);
+
+            $this->service->recordConversion($link, 5000, 'MYR');
+
+            $fresh = $link->fresh();
+            expect($fresh->conversions)->toBe(1);
+            expect($fresh->revenue)->toBe(0);
+
+            Log::shouldHaveReceived('warning')->once();
         });
     });
 

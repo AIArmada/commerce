@@ -128,8 +128,9 @@ it('PayoutBatchPage view data aggregates pending payouts', function (): void {
     $data = $page->getViewData();
 
     expect($data['pendingCount'])->toBe(2)
-        ->and($data['pendingTotal'])->toBe(12000)
-        ->and($data['pendingByCurrency'])->toHaveCount(1);
+        ->and($data)->not->toHaveKey('pendingTotal')
+        ->and($data['pendingByCurrency'])->toHaveCount(1)
+        ->and((int) $data['pendingByCurrency']->first()->getAttribute('total'))->toBe(12000);
 });
 
 it('ReportsPage generates report data via the report service', function (): void {

@@ -252,6 +252,7 @@ describe('PerformanceBonusService', function (): void {
 
         test('includes affiliates with approved conversions', function (): void {
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'ORD-001',
@@ -270,6 +271,7 @@ describe('PerformanceBonusService', function (): void {
 
         test('excludes pending conversions', function (): void {
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'ORD-002',
@@ -298,6 +300,7 @@ describe('PerformanceBonusService', function (): void {
 
             // First affiliate - lower revenue
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'ORD-003',
@@ -311,6 +314,7 @@ describe('PerformanceBonusService', function (): void {
 
             // Second affiliate - higher revenue
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $affiliate2->id,
                 'affiliate_code' => $affiliate2->code,
                 'order_reference' => 'ORD-004',
@@ -342,6 +346,7 @@ describe('PerformanceBonusService', function (): void {
                 ]);
 
                 AffiliateConversion::create([
+                    'commission_currency' => 'USD',
                     'affiliate_id' => $affiliate->id,
                     'affiliate_code' => $affiliate->code,
                     'order_reference' => "ORD-LIM-{$i}",
@@ -360,6 +365,7 @@ describe('PerformanceBonusService', function (): void {
 
         test('includes correct metrics in response', function (): void {
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'ORD-005',
@@ -393,6 +399,7 @@ describe('PerformanceBonusService', function (): void {
         test('filters by date range', function (): void {
             // Conversion in range
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'ORD-IN-RANGE',
@@ -406,6 +413,7 @@ describe('PerformanceBonusService', function (): void {
 
             // Conversion out of range
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'ORD-OUT-RANGE',
@@ -428,6 +436,7 @@ describe('PerformanceBonusService', function (): void {
 
         test('calculates revenue from value_minor', function (): void {
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'external_reference' => 'ORD-REVENUE-TEST',
@@ -453,6 +462,7 @@ describe('PerformanceBonusService', function (): void {
             ]);
 
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'ORD-GROWTH-PREV',
@@ -465,6 +475,7 @@ describe('PerformanceBonusService', function (): void {
             ]);
 
             AffiliateConversion::create([
+                'commission_currency' => 'USD',
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'ORD-GROWTH-CURR',

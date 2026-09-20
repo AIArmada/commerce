@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonInterface $date
  * @property string|null $owner_type
  * @property string|null $owner_id
+ * @property string $currency
  * @property int $clicks
  * @property int $unique_clicks
  * @property int $attributions
@@ -43,6 +44,7 @@ class AffiliateDailyStat extends Model
     protected $fillable = [
         'affiliate_id',
         'date',
+        'currency',
         'clicks',
         'unique_clicks',
         'attributions',

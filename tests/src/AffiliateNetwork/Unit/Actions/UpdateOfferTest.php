@@ -99,4 +99,12 @@ describe('UpdateOffer', function (): void {
             'site_id' => $foreignSite->id,
         ]));
     })->throws(AuthorizationException::class);
+
+    test('normalizes currency to upper case', function (): void {
+        $updated = $this->action->execute($this->offer, [
+            'currency' => 'eur',
+        ]);
+
+        expect($updated->currency)->toBe('EUR');
+    });
 });

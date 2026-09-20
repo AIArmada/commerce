@@ -13,6 +13,8 @@ use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\Support\RevenueVolume;
+use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
@@ -20,6 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use stdClass;
 
 final class CommissionRuleEngine
 {
@@ -240,9 +243,17 @@ final class CommissionRuleEngine
             });
         }
 
-        $periodVolume = (int) $volumeQuery
+        $volumeRows = $volumeQuery
             ->where('occurred_at', '>=', CarbonImmutable::now()->startOfMonth())
-            ->sum(DB::raw('COALESCE(value_minor, 0)'));
+            ->toBase()
+            ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
+            ->groupBy('commission_currency')
+            ->get();
+
+        $periodVolume = RevenueVolume::measurableIn(
+            RevenueVolume::foldRows($volumeRows, RevenueVolume::referenceFor($affiliate)),
+            RevenueVolume::referenceFor($affiliate),
+        );
 
         // Find applicable volume tier
         $tier = $this->volumeTiersForProgram($programId)
@@ -485,17 +496,17 @@ final class CommissionRuleEngine
             ->get();
 
         foreach ($affiliates as $affiliate) {
-            $currentRevenue = $affiliate->conversions()
-                ->forOwner(OwnerContext::CURRENT, $includeGlobal)
-                ->whereBetween('occurred_at', [$from, $to])
-                ->where('status', ApprovedConversion::value())
-                ->sum(DB::raw('COALESCE(value_minor, 0)'));
+            $reference = RevenueVolume::referenceFor($affiliate);
 
-            $previousRevenue = $affiliate->conversions()
-                ->forOwner(OwnerContext::CURRENT, $includeGlobal)
-                ->whereBetween('occurred_at', [$prevFrom, $prevTo])
-                ->where('status', ApprovedConversion::value())
-                ->sum(DB::raw('COALESCE(value_minor, 0)'));
+            $currentRevenue = RevenueVolume::measurableIn(
+                RevenueVolume::foldRows($this->revenueByCurrency($affiliate, $from, $to, $includeGlobal), $reference),
+                $reference,
+            );
+
+            $previousRevenue = RevenueVolume::measurableIn(
+                RevenueVolume::foldRows($this->revenueByCurrency($affiliate, $prevFrom, $prevTo, $includeGlobal), $reference),
+                $reference,
+            );
 
             if ($previousRevenue < ($config['min_previous_revenue'] ?? 50000)) {
                 continue;
@@ -526,7 +537,25 @@ final class CommissionRuleEngine
     }
 
     /**
-     * @return list<array{rank: int, affiliate_id: string, affiliate_name: string, total_revenue: int, total_conversions: int}>
+     * @return Collection<int, stdClass>
+     */
+    private function revenueByCurrency(Affiliate $affiliate, CarbonImmutable $from, CarbonImmutable $to, bool $includeGlobal): Collection
+    {
+        return $affiliate->conversions()
+            ->forOwner(OwnerContext::CURRENT, $includeGlobal)
+            ->whereBetween('occurred_at', [$from, $to])
+            ->where('status', ApprovedConversion::value())
+            ->toBase()
+            ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
+            ->groupBy('commission_currency')
+            ->get();
+    }
+
+    /**
+     * Homogeneous networks rank raw sums; mixed networks convert to the
+     * package default, and entries without a rate sink below ranked ones.
+     *
+     * @return list<array{rank: int, affiliate_id: string, affiliate_name: string, total_revenue: int|null, total_conversions: int, revenue_currency: string, revenue_converted: bool, revenue_by_currency: array<string, int>}>
      */
     private function performanceLeaderboard(
         CarbonImmutable $from,
@@ -543,15 +572,14 @@ final class CommissionRuleEngine
             ->select([
                 "{$affiliatesTable}.id as affiliate_id",
                 "{$affiliatesTable}.name as affiliate_name",
+                "{$conversionsTable}.commission_currency as currency",
                 DB::raw("SUM({$revenueExpression}) as total_revenue"),
                 DB::raw("COUNT({$conversionsTable}.id) as total_conversions"),
             ])
             ->whereBetween("{$conversionsTable}.occurred_at", [$from, $to])
             ->where("{$conversionsTable}.status", ApprovedConversion::value())
             ->where("{$affiliatesTable}.status", AffiliateStatus::normalize(Active::class))
-            ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name")
-            ->orderByDesc('total_revenue')
-            ->limit($limit);
+            ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$conversionsTable}.commission_currency");
 
         if ((bool) config('affiliates.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -576,13 +604,84 @@ final class CommissionRuleEngine
             );
         }
 
-        return $query->get()
-            ->map(fn (object $row, int $index): array => [
-                'rank' => $index + 1,
-                'affiliate_id' => (string) $row->affiliate_id,
+        $default = RevenueVolume::default();
+        $entries = [];
+
+        foreach ($query->get() as $row) {
+            $id = (string) $row->affiliate_id;
+
+            $entries[$id] ??= [
+                'affiliate_id' => $id,
                 'affiliate_name' => (string) $row->affiliate_name,
-                'total_revenue' => (int) $row->total_revenue,
-                'total_conversions' => (int) $row->total_conversions,
+                'total_conversions' => 0,
+                'by_currency' => [],
+            ];
+
+            $entries[$id]['total_conversions'] += (int) $row->total_conversions;
+
+            $currency = is_string($row->currency) && mb_trim($row->currency) !== ''
+                ? mb_strtoupper(mb_trim($row->currency))
+                : $default;
+
+            $entries[$id]['by_currency'][$currency] = ($entries[$id]['by_currency'][$currency] ?? 0) + (int) $row->total_revenue;
+        }
+
+        $networkCurrencies = [];
+
+        foreach ($entries as $entry) {
+            foreach (array_keys($entry['by_currency']) as $currency) {
+                $networkCurrencies[$currency] = true;
+            }
+        }
+
+        // Homogeneous networks rank raw sums untouched; mixed networks convert
+        // to the default, and entries without a rate sink below ranked ones.
+        $homogeneous = count($networkCurrencies) === 1;
+
+        foreach ($entries as $id => $entry) {
+            if ($homogeneous) {
+                $only = (string) array_key_first($entry['by_currency']);
+
+                $entries[$id]['total_revenue'] = $entry['by_currency'][$only] ?? 0;
+                $entries[$id]['revenue_currency'] = $only;
+                $entries[$id]['revenue_converted'] = false;
+
+                continue;
+            }
+
+            $converted = app(CurrencyConverter::class)->totalMinor($entry['by_currency'], $default);
+
+            $entries[$id]['total_revenue'] = $converted;
+            $entries[$id]['revenue_currency'] = $default;
+            $entries[$id]['revenue_converted'] = $converted !== null;
+        }
+
+        usort($entries, function (array $left, array $right): int {
+            if ($left['total_revenue'] === null && $right['total_revenue'] === null) {
+                return 0;
+            }
+
+            if ($left['total_revenue'] === null) {
+                return 1;
+            }
+
+            if ($right['total_revenue'] === null) {
+                return -1;
+            }
+
+            return $right['total_revenue'] <=> $left['total_revenue'];
+        });
+
+        return collect(array_slice($entries, 0, $limit))
+            ->map(fn (array $entry, int $index): array => [
+                'rank' => $index + 1,
+                'affiliate_id' => $entry['affiliate_id'],
+                'affiliate_name' => $entry['affiliate_name'],
+                'total_revenue' => $entry['total_revenue'],
+                'total_conversions' => $entry['total_conversions'],
+                'revenue_currency' => $entry['revenue_currency'],
+                'revenue_converted' => $entry['revenue_converted'],
+                'revenue_by_currency' => $entry['by_currency'],
             ])
             ->all();
     }

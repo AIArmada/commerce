@@ -29,6 +29,29 @@ $payout = CreatePayout::run($conversionIds, [
     'method' => PayoutMethodType::PayPal,
     'notes' => 'Monthly payout for January',
 ]);
+```
+
+### One Currency Per Payout
+
+Every payout reserves exactly one per-currency balance, so all conversions in a payout must share one `commission_currency`. Mixed-currency sets throw an `InvalidArgumentException` instead of summing silently — schedule one payout per currency. A `currency` attribute that disagrees with the conversions also throws.
+
+```php
+use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
+
+// Throws: conversions span USD and MYR.
+$payout = CreatePayout::run($mixedConversionIds, [
+    'payee_type' => $affiliate->getMorphClass(),
+    'payee_id' => $affiliate->getKey(),
+]);
+
+// Correct: group conversion IDs by commission_currency first, then run
+// one payout per group.
+foreach ($conversionIdsByCurrency as $currency => $ids) {
+    CreatePayout::run($ids, [
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
+    ]);
+}
 
 // Update payout status
 UpdatePayoutStatus::run($payout, 'completed', 'Processed successfully');
@@ -53,6 +76,8 @@ $payout = AffiliatePayout::create([
 // Link conversions to payout
 $conversions->each(fn ($c) => $c->update(['affiliate_payout_id' => $payout->id]));
 ```
+
+> **Warning:** manual linking bypasses the one-currency-per-payout guard in `CreatePayout`. Only attach conversions whose `commission_currency` matches the payout `currency`, and prefer the action so balance reservation stays consistent.
 
 ## Payout Statuses
 
@@ -177,12 +202,16 @@ Configure in `config/affiliates.php`:
 
 ## Balance Management
 
-Track affiliate balances in real-time:
+Balances are per currency: each affiliate holds one `AffiliateBalance` row per currency earned. Conversion accounting routes every approved commission into the balance matching its `commission_currency`, creating the row on first use.
 
 ```php
 use AIArmada\Affiliates\Models\AffiliateBalance;
 
-$balance = $affiliate->balance;
+// All balances for the affiliate, keyed by row.
+$balances = $affiliate->balances;
+
+// The USD balance, or null when the affiliate never earned USD.
+$balance = $affiliate->balanceFor('USD');
 
 // Available for withdrawal
 $available = $balance->available_minor; // In cents
@@ -294,6 +323,17 @@ $changed = $service->reconcilePayout($payout, 'paid', [
 Provider statuses map case-insensitively: `completed`/`paid`/`success`/`succeeded` → completed, `failed`/`declined`/`rejected`/`error` → failed, `pending`/`created` → pending, `processing`/`in_progress` → processing, `cancelled`/`canceled` → cancelled. Unknown strings return `false` without touching the payout.
 
 Reconciliation is guarded by the payout state machine: the payout row is locked, and only declared transitions run — stale or out-of-order provider events (including ones targeting terminal payouts) are ignored rather than forced, so a `Completed` payout can never be resurrected to `Failed`. On completion the linked conversions sync to `Paid`; on failure or cancellation reserved funds are released in the same transaction and conversions detach back to `Approved`. The boolean return tells you whether anything changed.
+
+`generateReport()` folds amounts without blending currencies. Single-currency sets pass raw sums through; mixed sets convert to `affiliates.currency.default`, and legs without an exchange rate null the whole total — read `by_currency` for the exact per-currency amounts:
+
+```php
+$report = $service->generateReport('2026-01-01', '2026-03-31');
+
+$report['summary']['total_amount_minor']; // int|null, converted when mixed
+$report['summary']['currency'];           // denomination of the totals
+$report['summary']['converted'];          // true when FX math was applied
+$report['by_currency']['USD']['total_minor'];
+```
 
 ## Artisan Commands
 

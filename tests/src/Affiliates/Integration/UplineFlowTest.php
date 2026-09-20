@@ -193,6 +193,7 @@ test('team sales are correctly calculated across network', function (): void {
 
     // Create conversions for team members
     AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $member1->id,
         'affiliate_code' => $member1->code,
         'external_reference' => 'ORDER-001',
@@ -204,6 +205,7 @@ test('team sales are correctly calculated across network', function (): void {
     ]);
 
     AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $member2->id,
         'affiliate_code' => $member2->code,
         'external_reference' => 'ORDER-002',
@@ -283,6 +285,7 @@ test('rank qualification evaluates correctly', function (): void {
 
         // Add team volume via conversions
         AffiliateConversion::create([
+            'commission_currency' => 'USD',
             'affiliate_id' => $recruit->id,
             'affiliate_code' => $recruit->code,
             'external_reference' => "ORDER-{$i}",
@@ -296,6 +299,7 @@ test('rank qualification evaluates correctly', function (): void {
 
     // Add personal sales
     AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'external_reference' => 'PERSONAL-001',
@@ -344,6 +348,7 @@ test('rank upgrades are processed correctly', function (): void {
         $uplineService->addToUpline($recruit, $affiliate);
 
         AffiliateConversion::create([
+            'commission_currency' => 'USD',
             'affiliate_id' => $recruit->id,
             'affiliate_code' => $recruit->code,
             'external_reference' => "UPGRADE-ORDER-{$i}",
@@ -357,6 +362,7 @@ test('rank upgrades are processed correctly', function (): void {
 
     // Personal sales to meet requirement
     AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'external_reference' => 'UPGRADE-PERSONAL',

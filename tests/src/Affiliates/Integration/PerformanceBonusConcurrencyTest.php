@@ -121,6 +121,7 @@ test('owner scoped bonus awards isolate between tenants', function (): void {
     // Award bonus under owner1
     OwnerContext::withOwner($owner1, function () use ($affiliate1): void {
         $conversion = AffiliateConversion::create([
+            'commission_currency' => 'USD',
             'affiliate_id' => $affiliate1->id,
             'affiliate_code' => $affiliate1->code,
             'external_reference' => 'ORD-OWNER1',
@@ -137,6 +138,7 @@ test('owner scoped bonus awards isolate between tenants', function (): void {
     // Award bonus under owner2
     OwnerContext::withOwner($owner2, function () use ($affiliate2): void {
         $conversion = AffiliateConversion::create([
+            'commission_currency' => 'USD',
             'affiliate_id' => $affiliate2->id,
             'affiliate_code' => $affiliate2->code,
             'external_reference' => 'ORD-OWNER2',
@@ -184,6 +186,7 @@ test('leaderboard respects owner scope', function (): void {
         expect(AffiliateConversion::forOwner()->count())->toBe(0);
 
         AffiliateConversion::create([
+            'commission_currency' => 'USD',
             'affiliate_id' => $affiliateA->id,
             'affiliate_code' => $affiliateA->code,
             'external_reference' => 'ORD-A',
@@ -207,6 +210,7 @@ test('leaderboard respects owner scope', function (): void {
         ]);
 
         AffiliateConversion::create([
+            'commission_currency' => 'USD',
             'affiliate_id' => $affiliateB->id,
             'affiliate_code' => $affiliateB->code,
             'external_reference' => 'ORD-B',

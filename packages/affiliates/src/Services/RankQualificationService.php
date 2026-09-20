@@ -9,9 +9,9 @@ use AIArmada\Affiliates\Events\AffiliateRankChanged;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
+use AIArmada\Affiliates\Support\RevenueVolume;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Support\Facades\DB;
 
 final class RankQualificationService
 {
@@ -163,7 +163,15 @@ final class RankQualificationService
             $scope($query);
         }
 
-        return (int) $query->sum(DB::raw('COALESCE(value_minor, 0)'));
+        $rows = $query
+            ->toBase()
+            ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
+            ->groupBy('commission_currency')
+            ->get();
+
+        $reference = RevenueVolume::referenceFor($affiliate);
+
+        return RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $reference);
     }
 
     private function shouldChangeRank(Affiliate $affiliate, ?AffiliateRank $newRank): bool

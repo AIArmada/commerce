@@ -334,10 +334,12 @@ final class PayoutExportService
         $headers = array_shift($data);
         $rows = $data;
 
-        $totalCommissionMinor = (int) $payout->conversions()->sum('commission_minor');
+        // Authoritative payout totals: payouts hold one currency by
+        // construction, so never re-sum (and never mislabel) conversions.
+        $totalCommissionMinor = (int) $payout->total_minor;
         $conversionCount = (int) $payout->conversions()->count();
-        $currency = $payout->conversions()->value('commission_currency') ?? 'USD';
-        $formattedTotalCommission = MoneyFormatter::formatMinor($totalCommissionMinor, (string) $currency);
+        $currency = (string) ($payout->currency ?? 'USD');
+        $formattedTotalCommission = MoneyFormatter::formatMinor($totalCommissionMinor, $currency);
 
         $reference = htmlspecialchars((string) $payout->reference, ENT_QUOTES, 'UTF-8');
         $status = htmlspecialchars($this->getStatusValue($payout), ENT_QUOTES, 'UTF-8');

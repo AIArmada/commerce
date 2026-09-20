@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('affiliate_id')->unique();
+            $table->foreignUuid('affiliate_id');
             $table->string('currency', 3);
             $table->bigInteger('holding_minor')->default(0);
             $table->bigInteger('available_minor')->default(0);
@@ -22,6 +22,8 @@ return new class extends Migration
             $table->bigInteger('minimum_payout_minor');
             $table->unsignedBigInteger('payout_sequence')->default(0);
             $table->timestampsTz();
+
+            $table->unique(['affiliate_id', 'currency']);
         });
     }
 };

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
+use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,7 +15,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -86,8 +86,14 @@ class AffiliateProgramTier extends Model implements Auditable
             return false;
         }
 
-        $revenue = (int) $this->programConversions($affiliate, $program)
-            ->sum(DB::raw('COALESCE(value_minor, 0)'));
+        $rows = $this->programConversions($affiliate, $program)
+            ->toBase()
+            ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
+            ->groupBy('commission_currency')
+            ->get();
+
+        $reference = RevenueVolume::referenceFor($affiliate);
+        $revenue = RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $reference);
 
         if ($revenue < $this->min_revenue) {
             return false;

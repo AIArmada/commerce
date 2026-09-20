@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Console\Commands;
 
 use AIArmada\Affiliates\Actions\Payouts\ClaimScheduledPayout;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
@@ -52,24 +53,27 @@ final class ProcessScheduledPayoutsCommand extends Command
     /** @return array{processed:int,skipped:int,errors:int} */
     private function processScoped(?string $affiliateId, int $minimum, bool $dryRun): array
     {
-        $query = Affiliate::query()
-            ->where('status', AffiliateStatus::normalize(Active::class))
-            ->whereHas('balance', static function ($query) use ($minimum): void {
-                $query->where('available_minor', '>=', $minimum);
+        $query = AffiliateBalance::query()
+            ->where('available_minor', '>=', $minimum)
+            ->whereHas('affiliate', static function ($query): void {
+                $query->where('status', AffiliateStatus::normalize(Active::class));
             });
 
         if ($affiliateId !== null && $affiliateId !== '') {
-            $query->whereKey($affiliateId);
+            $query->where('affiliate_id', $affiliateId);
         }
 
         $summary = ['processed' => 0, 'skipped' => 0, 'errors' => 0];
 
-        $query->select('id')->orderBy('id')->chunkById(100, function ($affiliates) use ($minimum, $dryRun, &$summary): void {
-            foreach ($affiliates as $affiliate) {
+        $query->select('id', 'affiliate_id', 'currency')->orderBy('id')->chunkById(100, function ($balances) use ($minimum, $dryRun, &$summary): void {
+            foreach ($balances as $balance) {
+                $affiliateId = (string) $balance->affiliate_id;
+                $currency = (string) $balance->currency;
+
                 if ($dryRun) {
-                    if ($this->claimScheduledPayout->isEligibleSnapshot((string) $affiliate->id, $minimum)) {
+                    if ($this->claimScheduledPayout->isEligibleSnapshot($affiliateId, $minimum, $currency)) {
                         $summary['processed']++;
-                        $this->line("Would atomically claim payout for affiliate {$affiliate->id}");
+                        $this->line("Would atomically claim {$currency} payout for affiliate {$affiliateId}");
                     } else {
                         $summary['skipped']++;
                     }
@@ -78,11 +82,11 @@ final class ProcessScheduledPayoutsCommand extends Command
                 }
 
                 try {
-                    $operation = $this->claimScheduledPayout->handle((string) $affiliate->id, $minimum);
+                    $operation = $this->claimScheduledPayout->handle($affiliateId, $minimum, $currency);
                     $operation === null ? ++$summary['skipped'] : ++$summary['processed'];
                 } catch (Throwable) {
                     $summary['errors']++;
-                    $this->error("Payout claim failed for affiliate {$affiliate->id}.");
+                    $this->error("Payout claim failed for affiliate {$affiliateId} ({$currency}).");
                 }
             }
         }, 'id');

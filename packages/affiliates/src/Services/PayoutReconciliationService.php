@@ -16,12 +16,15 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class PayoutReconciliationService
 {
+    public function __construct(private readonly CurrencyConverter $converter) {}
+
     /** @param array<string, mixed> $externalData */
     public function reconcilePayout(AffiliatePayout $payout, string $externalStatus, array $externalData = []): bool
     {
@@ -137,6 +140,7 @@ final class PayoutReconciliationService
 
             $balance = AffiliateBalance::query()
                 ->where('affiliate_id', $operation->affiliate_id)
+                ->where('currency', mb_strtoupper((string) $operation->currency))
                 ->lockForUpdate()
                 ->first();
 
@@ -184,36 +188,130 @@ final class PayoutReconciliationService
 
         $payouts = $query->get();
         $byStatus = $payouts->groupBy(fn (AffiliatePayout $item): string => $item->status->getValue())->map->count();
-        $totalAmount = (int) $payouts->sum('total_minor');
-        $completedAmount = (int) $payouts->filter(fn (AffiliatePayout $item): bool => $item->status->equals(CompletedPayout::class))->sum('total_minor');
-        $failedAmount = (int) $payouts->filter(fn (AffiliatePayout $item): bool => $item->status->equals(FailedPayout::class))->sum('total_minor');
+        $completed = $payouts->filter(fn (AffiliatePayout $item): bool => $item->status->equals(CompletedPayout::class));
+        $failed = $payouts->filter(fn (AffiliatePayout $item): bool => $item->status->equals(FailedPayout::class));
+        $byCurrency = $payouts
+            ->groupBy(fn (AffiliatePayout $item): string => mb_strtoupper((string) $item->currency))
+            ->map(fn (Collection $group): array => [
+                'count' => $group->count(),
+                'total_minor' => (int) $group->sum('total_minor'),
+            ])
+            ->all();
+
+        $summary = $this->summarizeAmounts($payouts, $completed, $failed);
 
         return [
             'period' => ['start' => $startDate, 'end' => $endDate],
             'summary' => [
                 'total_payouts' => $payouts->count(),
-                'total_amount_minor' => $totalAmount,
-                'completed_amount_minor' => $completedAmount,
-                'failed_amount_minor' => $failedAmount,
-                'pending_amount_minor' => $totalAmount - $completedAmount - $failedAmount,
+                'total_amount_minor' => $summary['total'],
+                'completed_amount_minor' => $summary['completed'],
+                'failed_amount_minor' => $summary['failed'],
+                'pending_amount_minor' => $summary['pending'],
+                'currency' => $summary['currency'],
+                'converted' => $summary['converted'],
             ],
             'by_status' => $byStatus->all(),
+            'by_currency' => $byCurrency,
             'discrepancies' => $this->findDiscrepancies($payouts),
+            'currency_mismatches' => $this->findCurrencyMismatches($payouts),
         ];
     }
 
-    /** @return array<string, int|string|bool> */
-    public function auditAffiliateBalance(Affiliate $affiliate): array
+    /**
+     * Fold payout amounts without blending currencies: single-currency sets
+     * pass raw sums through, mixed sets convert to the package default, and
+     * legs without a rate null the whole total instead of guessing.
+     *
+     * @param  Collection<int, AffiliatePayout>  $payouts
+     * @param  Collection<int, AffiliatePayout>  $completed
+     * @param  Collection<int, AffiliatePayout>  $failed
+     * @return array{total: int|null, completed: int|null, failed: int|null, pending: int|null, currency: string, converted: bool}
+     */
+    private function summarizeAmounts(Collection $payouts, Collection $completed, Collection $failed): array
     {
-        $approvedCommissions = (int) $affiliate->conversions()->where('status', ApprovedConversion::value())->sum('commission_minor');
-        $paidOut = (int) $affiliate->payouts()->where('status', CompletedPayout::value())->sum('total_minor');
-        $pendingPayouts = (int) $affiliate->payouts()->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])->sum('total_minor');
+        $default = mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
+        $currencies = $payouts
+            ->map(fn (AffiliatePayout $payout): string => mb_strtoupper((string) $payout->currency))
+            ->unique()
+            ->values();
+
+        if ($currencies->count() <= 1) {
+            $total = (int) $payouts->sum('total_minor');
+            $completedAmount = (int) $completed->sum('total_minor');
+            $failedAmount = (int) $failed->sum('total_minor');
+
+            return [
+                'total' => $total,
+                'completed' => $completedAmount,
+                'failed' => $failedAmount,
+                'pending' => $total - $completedAmount - $failedAmount,
+                'currency' => $currencies->first() ?? $default,
+                'converted' => false,
+            ];
+        }
+
+        $total = $this->converter->totalMinor($this->amountsByCurrency($payouts), $default);
+        $completedAmount = $this->converter->totalMinor($this->amountsByCurrency($completed), $default);
+        $failedAmount = $this->converter->totalMinor($this->amountsByCurrency($failed), $default);
+
+        return [
+            'total' => $total,
+            'completed' => $completedAmount,
+            'failed' => $failedAmount,
+            'pending' => $total !== null && $completedAmount !== null && $failedAmount !== null
+                ? $total - $completedAmount - $failedAmount
+                : null,
+            'currency' => $default,
+            'converted' => $total !== null && $completedAmount !== null && $failedAmount !== null,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, AffiliatePayout>  $payouts
+     * @return array<string, int>
+     */
+    private function amountsByCurrency(Collection $payouts): array
+    {
+        $byCurrency = [];
+
+        foreach ($payouts as $payout) {
+            $currency = mb_strtoupper((string) $payout->currency);
+
+            $byCurrency[$currency] = ($byCurrency[$currency] ?? 0) + (int) $payout->total_minor;
+        }
+
+        return $byCurrency;
+    }
+
+    /** @return array<string, array<string, int|string|bool>> */
+    public function auditAllAffiliateBalances(Affiliate $affiliate): array
+    {
+        $currencies = $affiliate->balances()->pluck('currency')->unique()->values()->all();
+
+        $audits = [];
+
+        foreach ($currencies as $currency) {
+            $audits[(string) $currency] = $this->auditAffiliateBalance($affiliate, (string) $currency);
+        }
+
+        return $audits;
+    }
+
+    /** @return array<string, int|string|bool> */
+    public function auditAffiliateBalance(Affiliate $affiliate, string $currency): array
+    {
+        $currency = mb_strtoupper($currency);
+        $approvedCommissions = (int) $affiliate->conversions()->where('status', ApprovedConversion::value())->where('commission_currency', $currency)->sum('commission_minor');
+        $paidOut = (int) $affiliate->payouts()->where('status', CompletedPayout::value())->where('currency', $currency)->sum('total_minor');
+        $pendingPayouts = (int) $affiliate->payouts()->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])->where('currency', $currency)->sum('total_minor');
         $expectedAvailable = $approvedCommissions - $paidOut - $pendingPayouts;
-        $actualAvailable = $affiliate->balance?->available_minor ?? 0;
+        $actualAvailable = $affiliate->balanceFor($currency)?->available_minor ?? 0;
         $discrepancy = $expectedAvailable - $actualAvailable;
 
         return [
             'affiliate_id' => (string) $affiliate->id,
+            'currency' => $currency,
             'expected_available_minor' => $expectedAvailable,
             'actual_available_minor' => $actualAvailable,
             'discrepancy_minor' => $discrepancy,
@@ -234,6 +332,31 @@ final class PayoutReconciliationService
             'cancelled', 'canceled' => CancelledPayout::class,
             default => null,
         };
+    }
+
+    /** @return list<array<string, string>> */
+    private function findCurrencyMismatches(Collection $payouts): array
+    {
+        $mismatches = [];
+
+        foreach ($payouts as $payout) {
+            $expected = mb_strtoupper((string) $payout->currency);
+            $actual = $payout->conversions()
+                ->pluck('commission_currency')
+                ->map(fn (mixed $code): string => mb_strtoupper((string) $code))
+                ->unique()
+                ->values();
+
+            if ($actual->count() !== 1 || $actual->first() !== $expected) {
+                $mismatches[] = [
+                    'payout_id' => (string) $payout->id,
+                    'payout_currency' => $expected,
+                    'conversion_currencies' => $actual->implode(','),
+                ];
+            }
+        }
+
+        return $mismatches;
     }
 
     /** @return list<array<string, int|string>> */

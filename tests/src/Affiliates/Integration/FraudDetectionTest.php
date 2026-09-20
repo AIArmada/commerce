@@ -151,6 +151,7 @@ test('conversion velocity fraud is detected when daily limit exceeded', function
     // Create conversions to hit the daily limit
     for ($i = 1; $i <= 5; $i++) {
         AffiliateConversion::create([
+            'commission_currency' => 'USD',
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
             'external_reference' => "ORDER-{$i}",
@@ -164,6 +165,7 @@ test('conversion velocity fraud is detected when daily limit exceeded', function
 
     // Create the conversion that exceeds the limit
     $conversion = AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $this->affiliate->id,
         'affiliate_code' => $this->affiliate->code,
         'external_reference' => 'ORDER-OVER-LIMIT',
@@ -196,6 +198,7 @@ test('self referral fraud is detected', function (): void {
     ])->save();
 
     $conversion = AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $this->affiliate->id,
         'affiliate_code' => $this->affiliate->code,
         'external_reference' => 'SELF-ORDER',
@@ -238,6 +241,7 @@ test('fast conversion fraud is detected for suspiciously quick conversions', fun
 
     // Create conversion just seconds after the click
     $conversion = AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $this->affiliate->id,
         'affiliate_code' => $this->affiliate->code,
         'attribution_id' => $attribution->id,
@@ -342,6 +346,7 @@ test('clean conversion passes all fraud checks', function (): void {
     ]);
 
     $conversion = AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $this->affiliate->id,
         'affiliate_code' => $this->affiliate->code,
         'attribution_id' => $attribution->id,

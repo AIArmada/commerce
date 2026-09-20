@@ -15,6 +15,8 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     $this->service = app(ProgramService::class);
@@ -98,6 +100,43 @@ describe('ProgramService', function (): void {
             $second = $this->service->joinProgram($this->affiliate, $this->program);
 
             expect($first->id)->toBe($second->id);
+        });
+
+        test('returns the existing membership when a concurrent join wins the race', function (): void {
+            // Simulate a concurrent request winning the race: when the
+            // service attempts its insert, the unique row already exists.
+            AffiliateProgramMembership::creating(function (AffiliateProgramMembership $membership): void {
+                static $inserted = false;
+
+                if ($inserted) {
+                    return;
+                }
+
+                $inserted = true;
+
+                $status = $membership->status;
+
+                DB::table($membership->getTable())->insert([
+                    'id' => (string) Str::uuid(),
+                    'affiliate_id' => $membership->affiliate_id,
+                    'program_id' => $membership->program_id,
+                    'tier_id' => $membership->tier_id,
+                    'status' => $status instanceof BackedEnum ? $status->value : (string) $status,
+                    'applied_at' => $membership->applied_at,
+                    'approved_at' => $membership->approved_at,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            });
+
+            $membership = $this->service->joinProgram($this->affiliate, $this->program);
+
+            expect($membership->affiliate_id)->toBe($this->affiliate->id)
+                ->and($membership->program_id)->toBe($this->program->id)
+                ->and(AffiliateProgramMembership::query()
+                    ->where('affiliate_id', $this->affiliate->id)
+                    ->where('program_id', $this->program->id)
+                    ->count())->toBe(1);
         });
 
         test('sets applied_at timestamp', function (): void {

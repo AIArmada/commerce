@@ -34,6 +34,7 @@ it('keeps top performer output identical after the commission-rule collapse', fu
     ]);
 
     AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'external_reference' => 'TYPE-TOP-ORDER',
@@ -122,6 +123,7 @@ it('keeps consistency output identical after the commission-rule collapse', func
     ]);
 
     AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'external_reference' => 'TYPE-CONSISTENCY-ORDER',
@@ -165,6 +167,7 @@ it('keeps growth output identical after the commission-rule collapse', function 
     ]);
 
     AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'external_reference' => 'TYPE-GROWTH-PREVIOUS',
@@ -175,6 +178,7 @@ it('keeps growth output identical after the commission-rule collapse', function 
     ]);
 
     AffiliateConversion::create([
+        'commission_currency' => 'USD',
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
         'external_reference' => 'TYPE-GROWTH-CURRENT',

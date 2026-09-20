@@ -23,6 +23,7 @@ describe('AffiliateDailyStat Model', function (): void {
         $stat = AffiliateDailyStat::create([
             'affiliate_id' => $affiliate->id,
             'date' => '2024-01-15',
+            'currency' => 'USD',
             'clicks' => 100,
             'unique_clicks' => 80,
             'attributions' => 10,
@@ -55,6 +56,7 @@ describe('AffiliateDailyStat Model', function (): void {
         $stat = AffiliateDailyStat::create([
             'affiliate_id' => $affiliate->id,
             'date' => '2024-01-16',
+            'currency' => 'USD',
             'clicks' => 50,
             'unique_clicks' => 40,
             'conversions' => 2,
@@ -79,6 +81,7 @@ describe('AffiliateDailyStat Model', function (): void {
         $stat = AffiliateDailyStat::create([
             'affiliate_id' => $affiliate->id,
             'date' => '2024-01-17',
+            'currency' => 'USD',
             'clicks' => 75,
             'unique_clicks' => 60,
             'conversions' => 3,
@@ -102,6 +105,7 @@ describe('AffiliateDailyStat Model', function (): void {
         $stat = AffiliateDailyStat::create([
             'affiliate_id' => $affiliate->id,
             'date' => '2024-01-18',
+            'currency' => 'USD',
             'clicks' => 200,
             'unique_clicks' => 150,
             'conversions' => 10,
@@ -125,6 +129,7 @@ describe('AffiliateDailyStat Model', function (): void {
         $stat = AffiliateDailyStat::create([
             'affiliate_id' => $affiliate->id,
             'date' => '2024-06-15',
+            'currency' => 'USD',
             'clicks' => 50,
             'conversions' => 2,
             'revenue_cents' => 10000,
@@ -148,6 +153,7 @@ describe('AffiliateDailyStat Model', function (): void {
         $stat = AffiliateDailyStat::create([
             'affiliate_id' => $affiliate->id,
             'date' => '2024-01-20',
+            'currency' => 'USD',
             'clicks' => '100',
             'unique_clicks' => '80',
             'attributions' => '10',
@@ -179,6 +185,7 @@ describe('AffiliateDailyStat Model', function (): void {
         $stat = AffiliateDailyStat::create([
             'affiliate_id' => $affiliate->id,
             'date' => '2024-01-21',
+            'currency' => 'USD',
             'clicks' => 100,
             'conversions' => 5,
             'revenue_cents' => 50000,
@@ -204,6 +211,7 @@ describe('AffiliateDailyStat Model', function (): void {
         $stat = AffiliateDailyStat::create([
             'affiliate_id' => $affiliate->id,
             'date' => '2024-01-22',
+            'currency' => 'USD',
             'clicks' => 100,
             'conversions' => 5,
             'revenue_cents' => 50000,

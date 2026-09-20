@@ -14,8 +14,9 @@ final class AffiliateStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
+        /** @var array{active_affiliates: int, total_affiliates: int, pending_affiliates: int, pending_commission_minor: int|null, paid_commission_minor: int|null, commission_currency: string, commission_converted: bool, conversion_rate: float|null} $overview */
         $overview = app(AffiliateStatsAggregator::class)->overview();
-        $currency = mb_strtoupper((string) config('filament-affiliates.widgets.currency', 'USD'));
+        $currency = $overview['commission_currency'];
 
         return [
             Stat::make('Affiliates', "{$overview['active_affiliates']} / {$overview['total_affiliates']}")
@@ -29,12 +30,12 @@ final class AffiliateStatsWidget extends BaseWidget
                 ->color('warning'),
 
             Stat::make('Pending Commission', $this->formatMoney($overview['pending_commission_minor'], $currency))
-                ->description('Needs review')
+                ->description($this->commissionDescription($overview, 'Needs review'))
                 ->descriptionIcon(Heroicon::OutlinedCurrencyDollar)
                 ->color('danger'),
 
             Stat::make('Paid Commission', $this->formatMoney($overview['paid_commission_minor'], $currency))
-                ->description('Lifetime payouts')
+                ->description($this->commissionDescription($overview, 'Lifetime payouts'))
                 ->descriptionIcon(Heroicon::OutlinedBanknotes)
                 ->color('success'),
 
@@ -50,8 +51,28 @@ final class AffiliateStatsWidget extends BaseWidget
         return 5;
     }
 
-    private function formatMoney(int $amount, string $currency): string
+    private function formatMoney(?int $amount, string $currency): string
     {
+        if ($amount === null) {
+            return '—';
+        }
+
         return MoneyFormatter::formatMinor($amount, $currency);
+    }
+
+    /**
+     * @param  array{pending_commission_minor: int|null, paid_commission_minor: int|null, commission_currency: string, commission_converted: bool}  $overview
+     */
+    private function commissionDescription(array $overview, string $default): string
+    {
+        if ($overview['pending_commission_minor'] === null || $overview['paid_commission_minor'] === null) {
+            return 'Mixed currencies — set exchange rates';
+        }
+
+        if ($overview['commission_converted']) {
+            return $default . ' (converted to ' . $overview['commission_currency'] . ')';
+        }
+
+        return $default;
     }
 }

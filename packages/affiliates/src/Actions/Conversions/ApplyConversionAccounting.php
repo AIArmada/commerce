@@ -13,6 +13,7 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -49,8 +50,10 @@ final class ApplyConversionAccounting
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $balance = $lockedAffiliate->balance()->lockForUpdate()->first()
-                ?? self::createBalance($lockedAffiliate, $conversion);
+            $currency = mb_strtoupper((string) ($conversion->commission_currency ?: $lockedAffiliate->currency ?: config('affiliates.currency.default', 'MYR')));
+
+            $balance = $lockedAffiliate->balances()->where('currency', $currency)->lockForUpdate()->first()
+                ?? self::createBalance($lockedAffiliate, $currency);
 
             if ($previousStatus === null) {
                 $this->applyCreationAccounting($conversion, $balance);
@@ -117,15 +120,25 @@ final class ApplyConversionAccounting
         return ConversionStatus::fromString($conversion->status, $conversion);
     }
 
-    private static function createBalance(Affiliate $affiliate, AffiliateConversion $conversion): AffiliateBalance
+    private static function createBalance(Affiliate $affiliate, string $currency): AffiliateBalance
     {
-        return AffiliateBalance::create([
-            'affiliate_id' => $affiliate->id,
-            'available_minor' => 0,
-            'holding_minor' => 0,
-            'lifetime_earnings_minor' => 0,
-            'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
-            'currency' => $conversion->commission_currency ?: $affiliate->currency ?: 'MYR',
-        ]);
+        try {
+            return AffiliateBalance::create([
+                'affiliate_id' => $affiliate->id,
+                'available_minor' => 0,
+                'holding_minor' => 0,
+                'lifetime_earnings_minor' => 0,
+                'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
+                'currency' => $currency,
+            ]);
+        } catch (QueryException $exception) {
+            // Concurrent first conversion in this currency: the unique
+            // (affiliate_id, currency) row already exists, so reuse it.
+            if (! in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true)) {
+                throw $exception;
+            }
+
+            return $affiliate->balances()->where('currency', $currency)->firstOrFail();
+        }
     }
 }

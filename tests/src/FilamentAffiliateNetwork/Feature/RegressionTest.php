@@ -921,6 +921,62 @@ describe('network stats aggregation', function (): void {
             ->and($stats['totalConversions'])->toBe(2)
             ->and($stats['totalRevenue'])->toBe(5000);
     });
+
+    test('mixed-currency revenue refuses to blend without rates', function (): void {
+        $site = AffiliateSite::factory()->verified()->create(['domain' => 'mc-' . uniqid() . '.example']);
+        $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
+            'slug' => 'mc-offer-' . uniqid(),
+        ]);
+
+        AffiliateOfferLink::factory()->create([
+            'offer_id' => $offer->id,
+            'site_id' => $site->id,
+            'revenue' => 10000,
+            'currency' => 'USD',
+        ]);
+        AffiliateOfferLink::factory()->create([
+            'offer_id' => $offer->id,
+            'site_id' => $site->id,
+            'revenue' => 47000,
+            'currency' => 'MYR',
+        ]);
+
+        $stats = NetworkStatsAggregator::aggregate();
+
+        expect($stats['totalRevenue'])->toBeNull()
+            ->and($stats['revenueFormatted'])->toBe('—')
+            ->and($stats['revenueConverted'])->toBeFalse()
+            ->and($stats['revenueByCurrency'])->toMatchArray(['USD' => 10000, 'MYR' => 47000]);
+    });
+
+    test('mixed-currency revenue converts when rates exist', function (): void {
+        $site = AffiliateSite::factory()->verified()->create(['domain' => 'mc-' . uniqid() . '.example']);
+        $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
+            'slug' => 'mc-offer-' . uniqid(),
+        ]);
+
+        AffiliateOfferLink::factory()->create([
+            'offer_id' => $offer->id,
+            'site_id' => $site->id,
+            'revenue' => 10000,
+            'currency' => 'USD',
+        ]);
+        AffiliateOfferLink::factory()->create([
+            'offer_id' => $offer->id,
+            'site_id' => $site->id,
+            'revenue' => 47000,
+            'currency' => 'MYR',
+        ]);
+
+        config(['affiliate-network.currency.default' => 'USD']);
+        config(['commerce-support.currency.exchange_rates' => ['base' => 'USD', 'rates' => ['MYR' => 4.7]]]);
+
+        $stats = NetworkStatsAggregator::aggregate();
+
+        expect($stats['totalRevenue'])->toBe(20000)
+            ->and($stats['revenueCurrency'])->toBe('USD')
+            ->and($stats['revenueConverted'])->toBeTrue();
+    });
 });
 
 describe('top offers widget sorting', function (): void {
