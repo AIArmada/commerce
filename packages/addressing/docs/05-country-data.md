@@ -163,6 +163,34 @@ Genting Berhad annual-report land schedules (Selangor vs Bentong), the
 Genting Highlands–Hulu Selangor RKK plan, and titled-land records on both
 sides.
 
+## Pahang mukim audit
+
+Every Pahang subdivision row was diffed against the JUPEM UPI boundary book
+for Pahang (Sept 2026). Pahang has 11 districts plus 4 minor districts
+(Genting, Gebeng, Jelai, Muadzam Shah — the last three created 2019–2021).
+Retyped to bandar: Jerantut, Kuantan, Temerloh, Maran, Raub. Retyped to
+pekan: Brinchang, Lanchang, Bukit Fraser, Kuala Rompin (UPI-listed, still
+ungazetted).
+
+| Row | Fix | Evidence |
+|---|---|---|
+| Gebeng (Kuantan) | Moved under new Daerah Kecil Gebeng, bandar | UPI Bandar Gebeng 13/40 |
+| Batu Yon, Hulu Jelai (Lipis) | Moved under new Daerah Kecil Jelai, mukim | UPI Jelai 14/01–02; Hulu Jelai respelled Ulu Jelai |
+| Telang | Kept under Lipis and added under Jelai | Two distinct mukims: Lipis 10 (Phg.733/2021) and Jelai 03 (Phg.520/2021) |
+| Keratong (Rompin) | Moved under new Daerah Kecil Muadzam Shah, mukim | UPI Muadzam 15/01 |
+| Bebar | Kept under Pekan and added under Muadzam Shah | Two distinct mukims: Pekan 01 (Phg.845/1992) and Muadzam 02 (Phg.732/2021) |
+| Muadzam Shah (Rompin) | Removed; town is two bandars now modelled | UPI Muadzam Shah I/II (15/40–41) added under the minor district |
+| Kuala Krau (Jerantut) | Moved to Temerloh as Kuala Kerau, pekan | UPI Pekan Kuala Kerau 08/72; common spelling kept preferred |
+| Teras (Raub) | Renamed Tras, mukim | UPI Mukim Tras 07/07; "Teras" is an upstream typo with zero gazette hits |
+| Bandar Kuantan, Bandar Bera | Removed | Duplicates of the Kuantan bandar and Bera mukim rows |
+| Dong, Sega (Lipis) | Removed | Wrong-district duplicates of Raub's mukims |
+| Balok, Bukit Goh, Bukit Kuin, Sungai Lembing | Removed | Non-gazetted Kuantan towns/schemes inside a mukim |
+| Damak, Sungai Koyan, Chini, Kemayan | Removed | Non-gazetted kampung/FELDA localities |
+| Bandar Pusat Jengka, Bandar Tun Abdul Razak, Lurah Bilut | Removed | Non-gazetted towns (Jengka rows duplicated one renamed town) |
+
+Postal links were repointed to the surviving mukim, pekan, or district rows;
+no postcode lost its primary link.
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC

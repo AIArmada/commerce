@@ -203,6 +203,31 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             'my:subdistrict:district:pahang:genting:genting' => [
                 ['name' => 'Genting Highlands', 'name_type' => 'common', 'is_preferred' => true],
             ],
+            'my:subdistrict:district:pahang:temerloh:kuala-kerau' => [
+                ['name' => 'Kuala Krau', 'name_type' => 'common', 'is_preferred' => true],
+            ],
+            // JUPEM UPI spellings; rows keep the common Hulu forms.
+            'my:subdistrict:district:pahang:jelai:ulu-jelai' => [
+                ['name' => 'Hulu Jelai', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:pahang:kuantan:hulu-kuantan' => [
+                ['name' => 'Ulu Kuantan', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:pahang:kuantan:hulu-lepar' => [
+                ['name' => 'Ulu Lepar', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:pahang:jerantut:hulu-cheka' => [
+                ['name' => 'Ulu Cheka', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:pahang:jerantut:hulu-tembeling' => [
+                ['name' => 'Ulu Tembeling', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:pahang:raub:hulu-dong' => [
+                ['name' => 'Ulu Dong', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:pahang:cameron-highlands:hulu-telom' => [
+                ['name' => 'Ulu Telom', 'name_type' => 'alternative'],
+            ],
         ];
     }
 

@@ -175,15 +175,15 @@ it('maps the bundled state, district, and locality rows', function (): void {
     $rows = malaysiaMainCsvRows();
     $byType = array_count_values(array_column($rows, 'type'));
 
-    expect($rows)->toHaveCount(1837)
+    expect($rows)->toHaveCount(1828)
         ->and($byType['state'] ?? 0)->toBe(13)
         ->and($byType['wilayah_persekutuan'] ?? 0)->toBe(3)
         ->and($byType['division'] ?? 0)->toBe(17)
         ->and($byType['district'] ?? 0)->toBe(160)
-        ->and($byType['minor_district'] ?? 0)->toBe(2)
-        ->and($byType['mukim'] ?? 0)->toBe(1246)
-        ->and($byType['bandar'] ?? 0)->toBe(19)
-        ->and($byType['pekan'] ?? 0)->toBe(6)
+        ->and($byType['minor_district'] ?? 0)->toBe(5)
+        ->and($byType['mukim'] ?? 0)->toBe(1221)
+        ->and($byType['bandar'] ?? 0)->toBe(27)
+        ->and($byType['pekan'] ?? 0)->toBe(11)
         ->and($byType['subdistrict'] ?? 0)->toBe(312)
         ->and($byType['locality'] ?? 0)->toBe(39)
         ->and($byType['precinct'] ?? 0)->toBe(20);
@@ -528,4 +528,51 @@ it('models Genting as a bandar under its own minor district', function (): void 
     expect($names['my:subdistrict:district:pahang:genting:genting'] ?? [])->toBe([
         ['name' => 'Genting Highlands', 'name_type' => 'common', 'is_preferred' => true],
     ]);
+});
+
+it('audits Pahang subdivisions against the JUPEM UPI inventory', function (): void {
+    $rows = malaysiaMainCsvRows();
+    $byId = array_column($rows, null, 'source_id');
+
+    // New minor districts with their gazetted contents.
+    expect($byId['my:district:pahang:gebeng']['type'] ?? null)->toBe('minor_district')
+        ->and($byId['my:subdistrict:district:pahang:gebeng:gebeng']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:pahang:jelai:ulu-jelai']['type'] ?? null)->toBe('mukim')
+        ->and($byId['my:subdistrict:district:pahang:jelai:telang']['parent_source_id'] ?? null)->toBe('my:district:pahang:jelai')
+        ->and($byId['my:subdistrict:district:pahang:muadzam-shah:bebar']['type'] ?? null)->toBe('mukim')
+        ->and($byId['my:subdistrict:district:pahang:muadzam-shah:muadzam-shah-ii']['type'] ?? null)->toBe('bandar');
+
+    // Retypes, moves, and the Tras spelling fix.
+    expect($byId['my:subdistrict:district:pahang:raub:raub']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:pahang:rompin:kuala-rompin']['type'] ?? null)->toBe('pekan')
+        ->and($byId['my:subdistrict:district:pahang:temerloh:kuala-kerau']['parent_source_id'] ?? null)->toBe('my:district:pahang:temerloh')
+        ->and($byId['my:subdistrict:district:pahang:raub:tras']['name'] ?? null)->toBe('Tras');
+
+    // Removed duplicates, wrong-district rows, and non-gazetted localities.
+    foreach ([
+        'my:subdistrict:district:pahang:kuantan:bandar-kuantan',
+        'my:subdistrict:district:pahang:kuantan:balok',
+        'my:subdistrict:district:pahang:kuantan:bukit-goh',
+        'my:subdistrict:district:pahang:kuantan:bukit-kuin',
+        'my:subdistrict:district:pahang:kuantan:sungai-lembing',
+        'my:subdistrict:district:pahang:jerantut:damak',
+        'my:subdistrict:district:pahang:jerantut:bandar-pusat-jengka',
+        'my:subdistrict:district:pahang:jerantut:kuala-krau',
+        'my:subdistrict:district:pahang:lipis:dong',
+        'my:subdistrict:district:pahang:lipis:sega',
+        'my:subdistrict:district:pahang:lipis:sungai-koyan',
+        'my:subdistrict:district:pahang:lipis:batu-yon',
+        'my:subdistrict:district:pahang:lipis:hulu-jelai',
+        'my:subdistrict:district:pahang:pekan:chini',
+        'my:subdistrict:district:pahang:raub:teras',
+        'my:subdistrict:district:pahang:rompin:muadzam-shah',
+        'my:subdistrict:district:pahang:rompin:keratong',
+        'my:subdistrict:district:pahang:maran:bandar-tun-abdul-razak',
+        'my:subdistrict:district:pahang:maran:lurah-bilut',
+        'my:subdistrict:district:pahang:bera:kemayan',
+        'my:subdistrict:district:pahang:bera:bandar-bera',
+        'my:subdistrict:district:pahang:kuantan:gebeng',
+    ] as $removedSourceId) {
+        expect(isset($byId[$removedSourceId]))->toBeFalse();
+    }
 });
