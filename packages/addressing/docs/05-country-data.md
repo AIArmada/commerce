@@ -220,6 +220,13 @@ Sedili Besar, Sungei Pinggan, Renggam, Gerisek, Bandar Pontian). Postal
 links were repointed to the surviving mukim, bandar, pekan, or district
 rows; duplicate same-area links created by the merges were collapsed.
 
+## Perlis
+
+Perlis has no districts (`TIADA DAERAH`) and exactly 22 mukims, all already
+bundled with exact names. Verified clean against the JUPEM UPI book; no
+changes. Bandar Arau, Bandar Kangar, Pekan Kuala Perlis, and Pekan Kaki
+Bukit exist but have no rows (missing entities are not added).
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC
