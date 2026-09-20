@@ -154,6 +154,18 @@ final class AffiliateProgramResource extends Resource
                         ->numeric()
                         ->required()
                         ->default(30),
+
+                    Forms\Components\Select::make('currency')
+                        ->label('Program Currency')
+                        ->options([
+                            'USD' => 'USD',
+                            'MYR' => 'MYR',
+                            'SGD' => 'SGD',
+                            'IDR' => 'IDR',
+                        ])
+                        ->nullable()
+                        ->placeholder('Default (' . (string) config('affiliates.currency.default', 'MYR') . ')')
+                        ->helperText('Denominates fixed commissions and the network catalog snapshot. Blank uses the default.'),
                 ])
                 ->columns(3),
 
@@ -215,6 +227,11 @@ final class AffiliateProgramResource extends Resource
                 Tables\Columns\TextColumn::make('default_commission_rate_basis_points')
                     ->label('Commission')
                     ->formatStateUsing(fn ($state) => ($state / 100) . '%'),
+
+                Tables\Columns\TextColumn::make('currency')
+                    ->label('Currency')
+                    ->badge()
+                    ->placeholder('Default (' . (string) config('affiliates.currency.default', 'MYR') . ')'),
 
                 Tables\Columns\TextColumn::make('affiliates_count')
                     ->counts('affiliates')

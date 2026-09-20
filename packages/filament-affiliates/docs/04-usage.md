@@ -36,7 +36,12 @@ Registration is config-driven:
 
 - `FraudReviewPage` (`features.admin.fraud_monitoring`)
 - `PayoutBatchPage` (`features.admin.payouts`)
+- `ManageAffiliatePayoutSettings` (`features.admin.payouts`)
 - `ReportsPage` (`features.admin.reports`)
+
+### Payout settings
+
+The Payout Settings page edits the global payout minimum and the per-currency minimum map (minor units) in the `affiliate-payouts` settings group. Values resolve settings-first with `affiliates.payouts` config fallback when settings are unmigrated.
 
 ### Reports page currencies
 

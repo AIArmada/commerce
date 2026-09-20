@@ -28,6 +28,9 @@ it('restores genuine navigation defaults when settings are saved mid-worker', fu
     $settings = mock(CommerceNavigationSettings::class, function ($mock): void {
         $mock->groups = ['Operations' => ['label' => 'Operations', 'sort' => 20]];
         $mock->overrides = ['catalog.products' => ['hidden' => true]];
+        // The Spatie settings subscriber resolves the repository statically
+        // when SettingsSaved fires; the default repository is null.
+        $mock->shouldReceive('repository')->andReturn(null);
     });
     app()->instance(CommerceNavigationSettings::class, $settings);
 

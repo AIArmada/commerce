@@ -214,6 +214,8 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 
 `payouts.currency` falls back to `AFFILIATES_DEFAULT_CURRENCY`, so the default runtime currency is `MYR` unless you override it.
 
+`minimum_amount` and `minimum_amounts_by_currency` resolve from the `affiliate-payouts` settings group first and fall back to this config when settings are unmigrated. Manage them at runtime through the filament-affiliates Payout Settings page instead of editing config.
+
 ## Tracking Settings
 
 ```php

@@ -13,8 +13,13 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
+use Illuminate\Support\Facades\Artisan;
 
 beforeEach(function (): void {
+    // Settings cache outlives RefreshDatabase rollbacks within a process.
+    Artisan::call('settings:clear-cache');
+
     $this->service = app(PayoutReconciliationService::class);
 
     $this->affiliate = Affiliate::create([
@@ -305,7 +310,7 @@ describe('PayoutReconciliationService', function (): void {
             }
 
             config(['affiliates.currency.default' => 'USD']);
-            config(['commerce-support.currency.exchange_rates' => ['base' => 'USD', 'rates' => ['MYR' => 4.7]]]);
+            (new ExchangeRateSettings(['base' => 'USD', 'rates' => ['MYR' => 4.7], 'history' => []]))->save();
 
             $result = $this->service->generateReport();
 

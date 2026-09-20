@@ -12,7 +12,14 @@ use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Artisan;
+
+beforeEach(function (): void {
+    // Settings cache outlives RefreshDatabase rollbacks within a process.
+    Artisan::call('settings:clear-cache');
+});
 
 function settlementAffiliate(string $code, ?string $id = null): Affiliate
 {
@@ -29,11 +36,11 @@ function settlementAffiliate(string $code, ?string $id = null): Affiliate
 
 function settlementRates(): void
 {
-    config(['commerce-support.currency.exchange_rates' => [
+    (new ExchangeRateSettings([
         'base' => 'USD',
         'rates' => ['MYR' => 4.7],
         'history' => ['2026-01-01' => ['MYR' => 4.0]],
-    ]]);
+    ]))->save();
 }
 
 test('reconciliation report discloses conversion provenance and uses period-end rates', function (): void {
@@ -62,7 +69,7 @@ test('reconciliation report discloses conversion provenance and uses period-end 
         ->and($report['summary']['conversion'])->toBe([
             'currency' => 'MYR',
             'as_of' => '2026-12-31',
-            'source' => 'ConfigExchangeRateProvider',
+            'source' => 'SettingsExchangeRateProvider',
         ]);
 });
 
@@ -92,7 +99,7 @@ test('report summaries disclose conversion provenance', function (): void {
         ->and($summary['conversion'])->toBe([
             'currency' => 'MYR',
             'as_of' => '2026-06-30',
-            'source' => 'ConfigExchangeRateProvider',
+            'source' => 'SettingsExchangeRateProvider',
         ]);
 });
 

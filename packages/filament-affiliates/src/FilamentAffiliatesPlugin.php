@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates;
 
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
 use AIArmada\FilamentAffiliates\Pages\ManageAffiliateCommissionSettings;
+use AIArmada\FilamentAffiliates\Pages\ManageAffiliatePayoutSettings;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Pages\ReportsPage;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
@@ -139,6 +140,7 @@ final class FilamentAffiliatesPlugin implements Plugin
 
         if ($features['payouts']) {
             $pages[] = PayoutBatchPage::class;
+            $pages[] = ManageAffiliatePayoutSettings::class;
         }
 
         if ($features['reports']) {

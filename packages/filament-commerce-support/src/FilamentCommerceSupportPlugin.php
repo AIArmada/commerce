@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCommerceSupport;
 use AIArmada\CommerceSupport\Contracts\CommerceNavigationContributorInterface;
 use AIArmada\CommerceSupport\Support\Filament\CommerceNavigation;
 use AIArmada\FilamentCommerceSupport\Pages\ManageCommerceNavigation;
+use AIArmada\FilamentCommerceSupport\Pages\ManageExchangeRates;
 use AIArmada\FilamentCommerceSupport\Resources\CurrencyResource;
 use AIArmada\FilamentCommerceSupport\Resources\LanguageResource;
 use AIArmada\FilamentCommerceSupport\Resources\TimezoneResource;
@@ -43,9 +44,19 @@ class FilamentCommerceSupportPlugin implements Plugin
             }
         }
 
+        $pages = [];
+
         if ((bool) config('filament-commerce-support.navigation.enabled', true)) {
-            $panel->pages([ManageCommerceNavigation::class]);
+            $pages[] = ManageCommerceNavigation::class;
             $panel->resources($this->referenceResources());
+        }
+
+        if ((bool) config('filament-commerce-support.exchange_rates.enabled', true)) {
+            $pages[] = ManageExchangeRates::class;
+        }
+
+        if ($pages !== []) {
+            $panel->pages($pages);
         }
     }
 

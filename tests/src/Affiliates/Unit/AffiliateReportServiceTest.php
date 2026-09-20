@@ -11,8 +11,13 @@ use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
+use Illuminate\Support\Facades\Artisan;
 
 beforeEach(function (): void {
+    // Settings cache outlives RefreshDatabase rollbacks within a process.
+    Artisan::call('settings:clear-cache');
+
     $this->affiliate = Affiliate::create([
         'code' => 'REPORT-1',
         'name' => 'Reporter',
@@ -281,7 +286,7 @@ test('affiliate report service converts mixed-currency totals when rates exist',
     }
 
     config(['affiliates.currency.default' => 'USD']);
-    config(['commerce-support.currency.exchange_rates' => ['base' => 'USD', 'rates' => ['MYR' => 4.7]]]);
+    (new ExchangeRateSettings(['base' => 'USD', 'rates' => ['MYR' => 4.7], 'history' => []]))->save();
 
     $service = app(AffiliateReportService::class);
     $startDate = $occurredAt->copy()->subHour();

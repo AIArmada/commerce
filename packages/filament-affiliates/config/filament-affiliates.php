@@ -105,6 +105,7 @@ return [
             'reports' => 10,
             'commission_settings' => 5,
             'payout_batch' => 12,
+            'payout_settings' => 13,
             'fraud_review' => 15,
         ],
     ],

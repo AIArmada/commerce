@@ -6,19 +6,19 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 beforeEach(function (): void {
     AffiliatePayout::query()->delete();
     Affiliate::query()->delete();
 
-    config(['commerce-support.currency.exchange_rates' => [
-        'base' => 'USD',
-        'rates' => ['MYR' => 4.0],
-        'history' => [],
-    ]]);
+    // Settings cache outlives RefreshDatabase rollbacks within a process.
+    Artisan::call('settings:clear-cache');
+    (new ExchangeRateSettings(['base' => 'USD', 'rates' => ['MYR' => 4.0], 'history' => []]))->save();
 });
 
 function settlementExportAffiliate(): Affiliate

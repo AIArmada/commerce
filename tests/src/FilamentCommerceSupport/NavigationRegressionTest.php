@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\FilamentCommerceSupport\FilamentCommerceSupportPlugin;
 use AIArmada\FilamentCommerceSupport\Pages\ManageCommerceNavigation;
+use AIArmada\FilamentCommerceSupport\Pages\ManageExchangeRates;
 use AIArmada\FilamentCommerceSupport\Resources\CurrencyResource;
 use AIArmada\FilamentCommerceSupport\Resources\LanguageResource;
 use AIArmada\FilamentCommerceSupport\Resources\TimezoneResource;
@@ -376,7 +377,7 @@ it('registers reference-data resources when navigation is enabled', function ():
 
     $panel = Mockery::mock(Panel::class);
     $panel->shouldReceive('navigation')->once()->with(Mockery::type(Closure::class))->andReturnSelf();
-    $panel->shouldReceive('pages')->once()->with([ManageCommerceNavigation::class])->andReturnSelf();
+    $panel->shouldReceive('pages')->once()->with([ManageCommerceNavigation::class, ManageExchangeRates::class])->andReturnSelf();
     $panel->shouldReceive('resources')->once()->with([
         CurrencyResource::class,
         LanguageResource::class,
@@ -390,11 +391,40 @@ it('registers reference-data resources when navigation is enabled', function ():
 
 it('registers no pages or resources when navigation is disabled', function (): void {
     config()->set('filament-commerce-support.navigation.enabled', false);
+    config()->set('filament-commerce-support.exchange_rates.enabled', false);
     navmgrMockSettings([], [], false);
 
     $panel = Mockery::mock(Panel::class);
     $panel->shouldReceive('navigation')->once()->with(Mockery::type(Closure::class))->andReturnSelf();
     $panel->shouldNotReceive('pages', 'resources');
+
+    (new FilamentCommerceSupportPlugin(app()))->register($panel);
+
+    expect($panel)->toBeInstanceOf(Panel::class);
+});
+
+it('registers only the navigation page when exchange rates are disabled', function (): void {
+    config()->set('filament-commerce-support.exchange_rates.enabled', false);
+    navmgrMockSettings([], [], false);
+
+    $panel = Mockery::mock(Panel::class);
+    $panel->shouldReceive('navigation')->once()->with(Mockery::type(Closure::class))->andReturnSelf();
+    $panel->shouldReceive('pages')->once()->with([ManageCommerceNavigation::class])->andReturnSelf();
+    $panel->shouldReceive('resources')->once()->andReturnSelf();
+
+    (new FilamentCommerceSupportPlugin(app()))->register($panel);
+
+    expect($panel)->toBeInstanceOf(Panel::class);
+});
+
+it('registers only the rates page when navigation is disabled', function (): void {
+    config()->set('filament-commerce-support.navigation.enabled', false);
+    navmgrMockSettings([], [], false);
+
+    $panel = Mockery::mock(Panel::class);
+    $panel->shouldReceive('navigation')->once()->with(Mockery::type(Closure::class))->andReturnSelf();
+    $panel->shouldReceive('pages')->once()->with([ManageExchangeRates::class])->andReturnSelf();
+    $panel->shouldNotReceive('resources');
 
     (new FilamentCommerceSupportPlugin(app()))->register($panel);
 

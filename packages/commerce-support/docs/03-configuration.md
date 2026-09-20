@@ -142,6 +142,8 @@ Pass `$asOf` to `rate()`, `convertMinor()`, or `totalMinor()` to convert with th
 
 To feed rates from a database table or a live provider, bind your own `AIArmada\CommerceSupport\Contracts\ExchangeRateProvider` singleton — `CurrencyConverter` resolves it from the container. Custom providers must honor `$asOf` the same way.
 
+The default provider reads the `commerce-exchange-rates` settings group first and falls back to this config when settings are unmigrated, so config-driven deployments keep working unchanged. Manage settings at runtime through the filament-commerce-support Exchange Rates page: edit the base and current rates, and snapshot them to append a dated history entry for historical reporting.
+
 ### Targeting Settings
 
 #### `trust_proxy_headers`

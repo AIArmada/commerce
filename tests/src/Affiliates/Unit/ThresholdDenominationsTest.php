@@ -15,10 +15,18 @@ use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Settings\AffiliatePayoutSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\Support\PayoutMinimums;
+use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Artisan;
+
+beforeEach(function (): void {
+    // Settings cache outlives RefreshDatabase rollbacks within a process.
+    Artisan::call('settings:clear-cache');
+});
 
 function denominationsAffiliate(string $code = 'DENOM001'): Affiliate
 {
@@ -48,16 +56,11 @@ function denominationsConversion(Affiliate $affiliate, int $valueMinor, string $
 
 function denominationsRates(): void
 {
-    config(['commerce-support.currency.exchange_rates' => [
-        'base' => 'USD',
-        'rates' => ['MYR' => 4.7],
-        'history' => [],
-    ]]);
+    (new ExchangeRateSettings(['base' => 'USD', 'rates' => ['MYR' => 4.7], 'history' => []]))->save();
 }
 
 test('payout minimums resolve per currency with a default fallback', function (): void {
-    config(['affiliates.payouts.minimum_amount' => 5000]);
-    config(['affiliates.payouts.minimum_amounts_by_currency' => ['USD' => 1000]]);
+    (new AffiliatePayoutSettings(['minimumAmount' => 5000, 'minimumAmountsByCurrency' => ['USD' => 1000]]))->save();
 
     expect(PayoutMinimums::forCurrency('USD'))->toBe(1000)
         ->and(PayoutMinimums::forCurrency('usd'))->toBe(1000)
@@ -65,8 +68,7 @@ test('payout minimums resolve per currency with a default fallback', function ()
 });
 
 test('new balances inherit the minimum of their own currency', function (): void {
-    config(['affiliates.payouts.minimum_amount' => 5000]);
-    config(['affiliates.payouts.minimum_amounts_by_currency' => ['USD' => 1000]]);
+    (new AffiliatePayoutSettings(['minimumAmount' => 5000, 'minimumAmountsByCurrency' => ['USD' => 1000]]))->save();
 
     $affiliate = denominationsAffiliate();
     $conversion = denominationsConversion($affiliate, 40000, 'ORD-DENOM-001', ['commission_currency' => 'USD']);

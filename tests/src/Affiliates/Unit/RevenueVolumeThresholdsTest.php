@@ -16,7 +16,14 @@ use AIArmada\Affiliates\Services\RankQualificationService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\Support\RevenueVolume;
+use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Artisan;
+
+beforeEach(function (): void {
+    // Settings cache outlives RefreshDatabase rollbacks within a process.
+    Artisan::call('settings:clear-cache');
+});
 
 function makeThresholdAffiliate(string $code, string $currency = 'USD'): Affiliate
 {
@@ -52,7 +59,7 @@ function recordThresholdConversion(Affiliate $affiliate, int $valueMinor, string
 function withThresholdRates(): void
 {
     config(['affiliates.currency.default' => 'USD']);
-    config(['commerce-support.currency.exchange_rates' => ['base' => 'USD', 'rates' => ['MYR' => 4.7]]]);
+    (new ExchangeRateSettings(['base' => 'USD', 'rates' => ['MYR' => 4.7], 'history' => []]))->save();
 }
 
 describe('RevenueVolume', function (): void {
@@ -64,7 +71,7 @@ describe('RevenueVolume', function (): void {
 
     test('falls back to the reference leg without rates', function (): void {
         config(['affiliates.currency.default' => 'USD']);
-        config(['commerce-support.currency.exchange_rates' => ['base' => 'USD', 'rates' => []]]);
+        (new ExchangeRateSettings(['base' => 'USD', 'rates' => [], 'history' => []]))->save();
 
         expect(RevenueVolume::measurableIn(['USD' => 10000, 'MYR' => 47000], 'USD'))->toBe(10000)
             ->and(RevenueVolume::measurableIn(['MYR' => 47000], 'USD'))->toBe(0)

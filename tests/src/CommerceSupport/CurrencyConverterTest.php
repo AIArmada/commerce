@@ -2,19 +2,28 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
+use Illuminate\Support\Facades\Artisan;
 
-function currencyConverter(array $rates = [], string $base = 'USD'): CurrencyConverter
+function currencyConverter(array $rates = [], string $base = 'USD', array $history = []): CurrencyConverter
 {
-    config(['commerce-support.currency.exchange_rates' => [
+    $settings = new ExchangeRateSettings([
         'base' => $base,
         'rates' => $rates,
-    ]]);
+        'history' => $history,
+    ]);
+    $settings->save();
 
     return app(CurrencyConverter::class);
 }
 
 describe('CurrencyConverter', function (): void {
+    beforeEach(function (): void {
+        // Settings cache outlives RefreshDatabase rollbacks within a process.
+        Artisan::call('settings:clear-cache');
+    });
+
     it('converts minor units between currencies', function (): void {
         $converter = currencyConverter(['MYR' => 4.7]);
 
@@ -53,13 +62,7 @@ describe('CurrencyConverter', function (): void {
     });
 
     it('converts with the rate effective at asOf', function (): void {
-        config(['commerce-support.currency.exchange_rates' => [
-            'base' => 'USD',
-            'rates' => ['MYR' => 4.7],
-            'history' => ['2026-01-01' => ['MYR' => 4.0]],
-        ]]);
-
-        $converter = app(CurrencyConverter::class);
+        $converter = currencyConverter(['MYR' => 4.7], 'USD', ['2026-01-01' => ['MYR' => 4.0]]);
         $asOf = new DateTimeImmutable('2026-03-01');
 
         expect($converter->convertMinor(400, 'MYR', 'USD', $asOf))->toBe(100)

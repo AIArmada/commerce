@@ -38,6 +38,7 @@ it('has correct plugin id', function (): void {
 
 it('registers the canonical commerce navigation engine', function (): void {
     config()->set('filament-commerce-support.navigation.enabled', false);
+    config()->set('filament-commerce-support.exchange_rates.enabled', false);
 
     $panel = Mockery::mock(Panel::class);
     $panel->shouldReceive('navigation')

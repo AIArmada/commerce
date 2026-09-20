@@ -95,6 +95,7 @@ use Spatie\LaravelData\Support\Creation\ValidationStrategy;
 use Spatie\LaravelData\Transformers\ArrayableTransformer;
 use Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer;
 use Spatie\LaravelData\Transformers\EnumTransformer;
+use Spatie\LaravelSettings\LaravelSettingsServiceProvider;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\PermissionServiceProvider;
 use Spatie\Sluggable\SluggableServiceProvider;
@@ -150,6 +151,7 @@ abstract class TestCase extends Orchestra
     {
         return [
             LaravelDataServiceProvider::class,
+            LaravelSettingsServiceProvider::class,
             SupportServiceProvider::class,
             EventServiceProvider::class,
             SessionServiceProvider::class,

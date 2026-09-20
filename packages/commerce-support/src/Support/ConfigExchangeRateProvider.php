@@ -24,72 +24,12 @@ final class ConfigExchangeRateProvider implements ExchangeRateProvider
 
     public function rate(string $from, string $to, ?DateTimeInterface $asOf = null): ?float
     {
-        $from = mb_strtoupper($from);
-        $to = mb_strtoupper($to);
-
-        if ($from === $to) {
-            return 1.0;
-        }
-
-        $rates = $this->ratesEffectiveAt($asOf);
-
-        $fromRate = $this->unitsPerBase($rates, $from);
-        $toRate = $this->unitsPerBase($rates, $to);
-
-        if ($fromRate === null || $toRate === null) {
-            return null;
-        }
-
-        return $toRate / $fromRate;
-    }
-
-    /**
-     * Current rates overlaid with every history snapshot on or before $asOf.
-     *
-     * @return array<string, mixed>
-     */
-    private function ratesEffectiveAt(?DateTimeInterface $asOf): array
-    {
         /** @var array<string, mixed> $rates */
         $rates = config('commerce-support.currency.exchange_rates.rates', []);
 
-        if ($asOf === null) {
-            return $rates;
-        }
-
         /** @var array<string, mixed> $history */
         $history = config('commerce-support.currency.exchange_rates.history', []);
-        $asOfDate = $asOf->format('Y-m-d');
-        $snapshots = [];
 
-        foreach ($history as $date => $snapshot) {
-            if (is_array($snapshot) && (string) $date <= $asOfDate) {
-                $snapshots[(string) $date] = $snapshot;
-            }
-        }
-
-        ksort($snapshots);
-
-        foreach ($snapshots as $snapshot) {
-            foreach ($snapshot as $code => $value) {
-                $rates[(string) $code] = $value;
-            }
-        }
-
-        return $rates;
-    }
-
-    /**
-     * @param  array<string, mixed>  $rates
-     */
-    private function unitsPerBase(array $rates, string $code): ?float
-    {
-        foreach ($rates as $key => $value) {
-            if (mb_strtoupper((string) $key) === $code && is_numeric($value) && (float) $value > 0) {
-                return (float) $value;
-            }
-        }
-
-        return $code === $this->baseCurrency() ? 1.0 : null;
+        return ExchangeRateResolver::rate($this->baseCurrency(), $rates, $history, $from, $to, $asOf);
     }
 }

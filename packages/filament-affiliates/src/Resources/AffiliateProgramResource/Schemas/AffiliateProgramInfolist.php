@@ -52,6 +52,11 @@ final class AffiliateProgramInfolist
                             ->label('Cookie Lifetime')
                             ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : $state . ' days'),
 
+                        TextEntry::make('currency')
+                            ->label('Currency')
+                            ->badge()
+                            ->placeholder('Default (' . (string) config('affiliates.currency.default', 'MYR') . ')'),
+
                         TextEntry::make('visibility')
                             ->label('Visibility')
                             ->badge()

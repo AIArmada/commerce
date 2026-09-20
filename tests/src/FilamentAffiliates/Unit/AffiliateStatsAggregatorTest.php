@@ -10,12 +10,16 @@ use AIArmada\Affiliates\States\Draft;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\Pending;
 use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     Affiliate::query()->delete();
     AffiliateConversion::query()->delete();
+    // Settings cache outlives RefreshDatabase rollbacks within a process.
+    Artisan::call('settings:clear-cache');
 });
 
 function createAffiliate(array $overrides = []): Affiliate
@@ -104,7 +108,7 @@ test('stats widget aggregator refuses to blend mixed-currency commissions withou
 
 test('stats widget aggregator converts mixed-currency commissions when rates exist', function (): void {
     config(['filament-affiliates.widgets.currency' => 'USD']);
-    config(['commerce-support.currency.exchange_rates' => ['base' => 'USD', 'rates' => ['MYR' => 4.7]]]);
+    (new ExchangeRateSettings(['base' => 'USD', 'rates' => ['MYR' => 4.7], 'history' => []]))->save();
 
     $active = createAffiliate(['status' => Active::class]);
 

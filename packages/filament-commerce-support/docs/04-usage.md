@@ -9,6 +9,20 @@ Navigate to **Settings → Navigation** in your Filament panel.
 The authenticated panel user must be authorized for the configured
 `filament-commerce-support.navigation.permission` Gate ability.
 
+## Managing Exchange Rates
+
+Navigate to **Settings → Exchange Rates** in your Filament panel
+(gated by `filament-commerce-support.exchange_rates.enabled` and the
+`exchange_rates.permission` Gate ability).
+
+Edit the base currency and the current rates table (units per one base
+unit, reporting only — never money movement). Use **Snapshot current
+rates** to store today's table as a dated history entry so historical
+reports never shift when rates move. Values persist in the
+`commerce-exchange-rates` settings group; the provider falls back to
+`commerce-support.currency.exchange_rates` config when settings are
+unmigrated.
+
 ### Groups
 
 Define navigation groups with:

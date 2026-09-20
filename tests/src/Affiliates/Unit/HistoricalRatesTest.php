@@ -7,7 +7,14 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\DailyAggregationService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Artisan;
+
+beforeEach(function (): void {
+    // Settings cache outlives RefreshDatabase rollbacks within a process.
+    Artisan::call('settings:clear-cache');
+});
 
 function historicalRatesAffiliate(): Affiliate
 {
@@ -23,11 +30,11 @@ function historicalRatesAffiliate(): Affiliate
 
 function historicalRatesConfig(): void
 {
-    config(['commerce-support.currency.exchange_rates' => [
+    (new ExchangeRateSettings([
         'base' => 'USD',
         'rates' => ['MYR' => 5.0, 'EUR' => 1.0],
         'history' => ['2026-01-01' => ['MYR' => 4.0, 'EUR' => 0.8]],
-    ]]);
+    ]))->save();
 }
 
 test('recorded conversions stamp the rate effective at occurred_at', function (): void {

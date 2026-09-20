@@ -20,6 +20,7 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliateNetwork\Pages\AffiliateMarketplacePage;
 use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage;
@@ -47,6 +48,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -969,7 +971,9 @@ describe('network stats aggregation', function (): void {
         ]);
 
         config(['affiliate-network.currency.default' => 'USD']);
-        config(['commerce-support.currency.exchange_rates' => ['base' => 'USD', 'rates' => ['MYR' => 4.7]]]);
+        // Settings cache outlives RefreshDatabase rollbacks within a process.
+        Artisan::call('settings:clear-cache');
+        (new ExchangeRateSettings(['base' => 'USD', 'rates' => ['MYR' => 4.7], 'history' => []]))->save();
 
         $stats = NetworkStatsAggregator::aggregate();
 
