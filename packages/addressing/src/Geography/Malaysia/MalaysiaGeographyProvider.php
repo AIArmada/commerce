@@ -247,6 +247,34 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             'my:subdistrict:district:johor:pontian:pontian-kechil' => [
                 ['name' => 'Bandar Pontian', 'name_type' => 'alternative'],
             ],
+            // JUPEM UPI spellings for Melaka rows keeping common forms.
+            'my:subdistrict:district:melaka:melaka-tengah:sungai-udang' => [
+                ['name' => 'Sungei Udang', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:melaka:jasin:sungai-rambai' => [
+                ['name' => 'Sungei Rambai', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:melaka:alor-gajah:kuala-sungai-baru' => [
+                ['name' => 'Kuala Sungei Baru', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:melaka:alor-gajah:sungai-buloh' => [
+                ['name' => 'Sungei Buloh', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:melaka:alor-gajah:sungai-petai' => [
+                ['name' => 'Sungei Petai', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:melaka:alor-gajah:sungai-siput' => [
+                ['name' => 'Sungei Siput', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:melaka:alor-gajah:sungai-baru-tengah' => [
+                ['name' => 'Sungei Baru', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:melaka:alor-gajah:sungai-baru-ilir' => [
+                ['name' => 'Sungei Baru Ilir', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:melaka:alor-gajah:sungai-baru-ulu' => [
+                ['name' => 'Sungei Baru Ulu', 'name_type' => 'alternative'],
+            ],
         ];
     }
 

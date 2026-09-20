@@ -175,15 +175,15 @@ it('maps the bundled state, district, and locality rows', function (): void {
     $rows = malaysiaMainCsvRows();
     $byType = array_count_values(array_column($rows, 'type'));
 
-    expect($rows)->toHaveCount(1801)
+    expect($rows)->toHaveCount(1796)
         ->and($byType['state'] ?? 0)->toBe(13)
         ->and($byType['wilayah_persekutuan'] ?? 0)->toBe(3)
         ->and($byType['division'] ?? 0)->toBe(17)
         ->and($byType['district'] ?? 0)->toBe(160)
         ->and($byType['minor_district'] ?? 0)->toBe(5)
-        ->and($byType['mukim'] ?? 0)->toBe(1176)
-        ->and($byType['bandar'] ?? 0)->toBe(43)
-        ->and($byType['pekan'] ?? 0)->toBe(13)
+        ->and($byType['mukim'] ?? 0)->toBe(1166)
+        ->and($byType['bandar'] ?? 0)->toBe(46)
+        ->and($byType['pekan'] ?? 0)->toBe(15)
         ->and($byType['subdistrict'] ?? 0)->toBe(312)
         ->and($byType['locality'] ?? 0)->toBe(39)
         ->and($byType['precinct'] ?? 0)->toBe(20);
@@ -622,6 +622,29 @@ it('audits Johor subdivisions against the JUPEM UPI inventory', function (): voi
         'my:subdistrict:district:johor:kulai:bandar-tenggara',
         'my:subdistrict:district:johor:kulai:gugusan-taib-andak',
         'my:subdistrict:district:johor:tangkak:gerisek',
+    ] as $removedSourceId) {
+        expect(isset($byId[$removedSourceId]))->toBeFalse();
+    }
+});
+
+it('audits Melaka subdivisions against the JUPEM UPI inventory', function (): void {
+    $rows = malaysiaMainCsvRows();
+    $byId = array_column($rows, null, 'source_id');
+
+    expect($byId['my:subdistrict:district:melaka:melaka-tengah:melaka']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:melaka:jasin:bandar-jasin']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:melaka:jasin:asahan']['type'] ?? null)->toBe('pekan')
+        ->and($byId['my:subdistrict:district:melaka:jasin:bemban']['type'] ?? null)->toBe('pekan')
+        ->and($byId['my:subdistrict:district:melaka:alor-gajah:kuala-sungai-baru']['type'] ?? null)->toBe('mukim')
+        ->and($byId['my:subdistrict:district:melaka:alor-gajah:ayer-paabas']['type'] ?? null)->toBe('mukim')
+        ->and($byId['my:subdistrict:district:melaka:alor-gajah:sungai-baru-tengah']['type'] ?? null)->toBe('mukim');
+
+    foreach ([
+        'my:subdistrict:district:melaka:melaka-tengah:bandaraya-melaka',
+        'my:subdistrict:district:melaka:melaka-tengah:ayer-keroh',
+        'my:subdistrict:district:melaka:jasin:ayer-keroh',
+        'my:subdistrict:district:melaka:alor-gajah:alor-gajah',
+        'my:subdistrict:district:melaka:alor-gajah:asahan',
     ] as $removedSourceId) {
         expect(isset($byId[$removedSourceId]))->toBeFalse();
     }

@@ -2294,7 +2294,7 @@ postcode,area_source_id,relationship_type,is_primary
 75350,my:subdistrict:district:melaka:melaka-tengah:batu-berendam,served_by,false
 75400,my:subdistrict:district:melaka:melaka-tengah:melaka,served_by,true
 75430,my:subdistrict:district:melaka:melaka-tengah:melaka,served_by,true
-75450,my:subdistrict:district:melaka:melaka-tengah:ayer-keroh,served_by,true
+75450,my:district:melaka:melaka-tengah,served_by,true
 75450,my:subdistrict:district:melaka:melaka-tengah:bukit-katil,served_by,false
 75460,my:subdistrict:district:melaka:melaka-tengah:melaka,served_by,true
 75460,my:subdistrict:district:melaka:melaka-tengah:alai,served_by,false
@@ -2415,14 +2415,12 @@ postcode,area_source_id,relationship_type,is_primary
 77500,my:subdistrict:district:melaka:jasin:selandar,served_by,true
 77500,my:subdistrict:district:melaka:jasin:bukit-senggeh,served_by,false
 78000,my:subdistrict:district:melaka:alor-gajah:bandar-alor-gajah,served_by,true
-78000,my:subdistrict:district:melaka:alor-gajah:alor-gajah,served_by,false
 78000,my:subdistrict:district:melaka:alor-gajah:ayer-paabas,served_by,false
 78000,my:subdistrict:district:melaka:alor-gajah:gadek,served_by,false
 78000,my:subdistrict:district:melaka:alor-gajah:lendu,served_by,false
 78000,my:subdistrict:district:melaka:alor-gajah:melekek,served_by,false
 78000,my:subdistrict:district:melaka:alor-gajah:sungai-petai,served_by,false
 78009,my:subdistrict:district:melaka:alor-gajah:bandar-alor-gajah,served_by,true
-78009,my:subdistrict:district:melaka:alor-gajah:alor-gajah,served_by,false
 78100,my:district:melaka:alor-gajah,served_by,true
 78200,my:subdistrict:district:melaka:alor-gajah:kuala-sungai-baru,served_by,true
 78200,my:subdistrict:district:melaka:alor-gajah:kuala-linggi,served_by,false

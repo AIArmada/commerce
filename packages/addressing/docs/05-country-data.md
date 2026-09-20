@@ -227,6 +227,22 @@ bundled with exact names. Verified clean against the JUPEM UPI book; no
 changes. Bandar Arau, Bandar Kangar, Pekan Kuala Perlis, and Pekan Kaki
 Bukit exist but have no rows (missing entities are not added).
 
+## Melaka mukim audit
+
+Every Melaka subdivision row was diffed against the JUPEM UPI boundary book
+for Melaka (Sept 2026). Retyped to bandar: Melaka, Bandar Jasin, Bandar Alor
+Gajah. Retyped to pekan: Asahan, Bemban. Same-name mukim/town duals keep
+the mukim row and the town entity stays unlisted (missing entities are not
+added): Merlimau, Kuala Sungai Baru, Sungai Rambai, Ayer Molek, Batu
+Berendam, and the other Melaka Tengah duals. Removed: the
+Bandaraya Melaka city-status label, both Ayer Keroh town rows (non-gazetted;
+postcode 75450 spans Bukit Katil and Bukit Baru, so it links the district),
+the Alor Gajah town duplicate, and the wrong-district Alor Gajah Asahan row
+(Asahan town is Jasin's Pekan Asahan — the error came from its Alor Gajah
+parliamentary seat). Kept on gazette evidence despite UPI naming quirks:
+Ayer Pa'abas (UPI 03/01) and Sungai Baru Tengah (2004/2006 gazettes; UPI
+shortens it to plain Sungei Baru).
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC
