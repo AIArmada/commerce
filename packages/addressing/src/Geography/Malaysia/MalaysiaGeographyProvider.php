@@ -376,6 +376,19 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             'my:subdistrict:district:kedah:yan:guar-cempedak' => [
                 ['name' => 'Guar Chempedak', 'name_type' => 'alternative'],
             ],
+            // Common names for Kelantan rows renamed to gazetted forms.
+            'my:subdistrict:district:kelantan:kota-bharu:baru-kubang-kerian' => [
+                ['name' => 'Kubang Kerian', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:kelantan:lojing:kuala-betis' => [
+                ['name' => 'Betis', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:kelantan:pasir-puteh:kampung-wakaf' => [
+                ['name' => 'Kampong Wakaf', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:kelantan:tumpat:kampung-laut' => [
+                ['name' => 'Kampong Laut', 'name_type' => 'alternative'],
+            ],
         ];
     }
 

@@ -319,6 +319,21 @@ Kota Setar and Langkawi district-name rows (Langkawi town postcodes move to
 Kuah), the UUM institution row, Yan Kechil locality (06910 secondary moves
 to Sungai Daun), and Bukit Paya (a PLANMalaysia typo for Mukim Bukit Raya).
 
+## Kelantan mukim audit
+
+Every Kelantan subdivision row was diffed against the JUPEM UPI boundary book
+for Kelantan (Sept 2026), cross-checked against PLANMalaysia kod-mukim, DOSM
+census divisions, state gazettes, and land-title records. Retyped to bandar:
+Kota Bharu, Baru Kubang Kerian (renamed from Kubang Kerian), Pasir Mas, Tanah
+Merah. Retyped Mulong to pekan. Moved Melor from Bachok to Kota Bharu.
+Removed 14 rows: the Bandar Kota Bharu duplicate (93 town postcodes move to
+Kota Bharu), non-gazetted Daerah/penghulu names (Chiku, Dabong x2, Galas, Olak
+Jeram, Ayer Lanas, Bandar Baru Tunjong, Ketereh, Panji), the Kem Desa Pahlawan
+camp row (16500 to the district; 16450 spans mukims so it links the district
+too), the false Bandar Jeli row (Jeli has no gazetted bandar; 17600/17700 go
+to Mukim Jeli), the Bachok Cherang Ruku duplicate, and the Betis duplicate of
+Kuala Betis. 18200 Dabong links Mukim Kuala Stong on land-title evidence.
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC
