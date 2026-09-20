@@ -36,7 +36,10 @@ return new class extends Migration
             $table->unsignedBigInteger('commission_minor')->default(0);
             $table->unsignedBigInteger('value_minor')->default(0);
             $table->string('commission_currency', 3)->index();
+            $table->decimal('commission_rate_to_base', 20, 8)->nullable();
+            $table->string('commission_rate_base', 3)->nullable();
             $table->uuid('affiliate_link_id')->nullable()->index();
+            $table->uuid('network_link_id')->nullable()->index();
             $table->uuid('sharer_user_id')->nullable()->index();
             $table->uuid('actor_user_id')->nullable()->index();
             $table->string('origin', 32)->nullable()->index();

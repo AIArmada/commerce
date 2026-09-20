@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('min_personal_sales')->default(0);
             $table->integer('min_team_sales')->default(0);
             $table->integer('min_active_downlines')->default(0);
+            $table->string('currency', 3)->default(config('affiliates.currency.default', 'MYR'));
             $table->integer('commission_rate_basis_points');
 
             $table->nullableUuidMorphs('owner');

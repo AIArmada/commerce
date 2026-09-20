@@ -299,7 +299,10 @@ class AffiliateProgram extends Model implements Auditable
                 ->get();
 
             $reference = RevenueVolume::referenceFor($affiliate);
-            $revenue = RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $reference);
+            $currency = is_string($rules['min_revenue_currency'] ?? null) && mb_trim($rules['min_revenue_currency']) !== ''
+                ? mb_strtoupper(mb_trim($rules['min_revenue_currency']))
+                : mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
+            $revenue = RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $currency);
 
             if ($revenue < $rules['min_revenue']) {
                 return false;

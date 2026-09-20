@@ -64,7 +64,7 @@ function createBulkActionPayout(array $attributes): AffiliatePayout
     return $payout;
 }
 
-it('has correct default name', function (): void {
+it('bulk payout action has correct default name', function (): void {
     expect(BulkPayoutAction::getDefaultName())->toBe('bulk_process_payouts');
 });
 

@@ -135,6 +135,17 @@ final class AffiliateRankResource extends Resource
                         ->numeric()
                         ->required()
                         ->default(0),
+
+                    Forms\Components\Select::make('currency')
+                        ->label('Sales Currency')
+                        ->options([
+                            'USD' => 'USD',
+                            'MYR' => 'MYR',
+                            'SGD' => 'SGD',
+                            'IDR' => 'IDR',
+                        ])
+                        ->default((string) config('affiliates.currency.default', 'MYR'))
+                        ->required(),
                 ])
                 ->columns(3),
 

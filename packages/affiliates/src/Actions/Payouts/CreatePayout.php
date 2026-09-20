@@ -161,6 +161,7 @@ final class CreatePayout
                 ->whereIn('id', $conversions->pluck('id')->all())
                 ->where('status', ApprovedConversion::value())
                 ->whereNull('affiliate_payout_id')
+                ->where('commission_currency', $currency)
                 ->update(['affiliate_payout_id' => $payout->getKey()]);
 
             if ($claimed !== $conversions->count()) {

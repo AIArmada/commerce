@@ -24,6 +24,7 @@ beforeEach(function (): void {
         'min_personal_sales' => 0,
         'min_team_sales' => 0,
         'min_active_downlines' => 0,
+        'currency' => 'USD',
         'commission_rate_basis_points' => 500,
     ]);
 
@@ -34,6 +35,7 @@ beforeEach(function (): void {
         'min_personal_sales' => 10000,
         'min_team_sales' => 20000,
         'min_active_downlines' => 2,
+        'currency' => 'USD',
         'commission_rate_basis_points' => 750,
     ]);
 
@@ -44,6 +46,7 @@ beforeEach(function (): void {
         'min_personal_sales' => 25000,
         'min_team_sales' => 100000,
         'min_active_downlines' => 5,
+        'currency' => 'USD',
         'commission_rate_basis_points' => 1000,
     ]);
 });

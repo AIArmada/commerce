@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\ConfigExchangeRateProvider;
 
-function exchangeRateProvider(array $rates = [], string $base = 'USD'): ConfigExchangeRateProvider
+function exchangeRateProvider(array $rates = [], string $base = 'USD', array $history = []): ConfigExchangeRateProvider
 {
     config(['commerce-support.currency.exchange_rates' => [
         'base' => $base,
         'rates' => $rates,
+        'history' => $history,
     ]]);
 
     return app(ConfigExchangeRateProvider::class);
@@ -59,5 +60,38 @@ describe('ConfigExchangeRateProvider', function (): void {
     it('reads the base currency from config', function (): void {
         expect(exchangeRateProvider(base: 'MYR')->baseCurrency())->toBe('MYR')
             ->and(exchangeRateProvider()->baseCurrency())->toBe('USD');
+    });
+
+    it('uses dated history when asOf is given', function (): void {
+        $provider = exchangeRateProvider(
+            ['MYR' => 4.7],
+            'USD',
+            ['2026-01-01' => ['MYR' => 4.2], '2026-06-01' => ['MYR' => 4.5]],
+        );
+
+        expect($provider->rate('USD', 'MYR', new DateTimeImmutable('2026-03-15')))->toBe(4.2)
+            ->and($provider->rate('USD', 'MYR', new DateTimeImmutable('2026-07-01')))->toBe(4.5);
+    });
+
+    it('falls back to current rates when asOf predates all history', function (): void {
+        $provider = exchangeRateProvider(
+            ['MYR' => 4.7],
+            'USD',
+            ['2026-06-01' => ['MYR' => 4.5]],
+        );
+
+        expect($provider->rate('USD', 'MYR', new DateTimeImmutable('2025-01-01')))->toBe(4.7)
+            ->and($provider->rate('USD', 'MYR'))->toBe(4.7);
+    });
+
+    it('overlays partial snapshots onto current rates', function (): void {
+        $provider = exchangeRateProvider(
+            ['MYR' => 4.7, 'EUR' => 0.92],
+            'USD',
+            ['2026-01-01' => ['MYR' => 4.2]],
+        );
+
+        expect($provider->rate('USD', 'MYR', new DateTimeImmutable('2026-03-01')))->toBe(4.2)
+            ->and($provider->rate('USD', 'EUR', new DateTimeImmutable('2026-03-01')))->toBe(0.92);
     });
 });

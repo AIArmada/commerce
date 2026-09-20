@@ -19,6 +19,7 @@ return new class extends Migration
             $table->bigInteger('min_volume_minor');
             $table->bigInteger('max_volume_minor')->nullable();
             $table->integer('commission_rate_basis_points');
+            $table->string('currency', 3)->default(config('affiliates.currency.default', 'MYR'));
             $table->string('period')->default('monthly');
             $table->timestampsTz();
 

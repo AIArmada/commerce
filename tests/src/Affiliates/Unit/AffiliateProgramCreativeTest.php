@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Models\AffiliateTrainingModule;
-use AIArmada\Affiliates\Models\AffiliateTrainingProgress;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -155,53 +152,4 @@ test('AffiliateProgramCreative getDimensions returns null when dimensions missin
     ]);
 
     expect($creative->getDimensions())->toBeNull();
-});
-
-// AffiliateCommissionTemplate Tests
-test('AffiliateCommissionTemplate createStandardPercentage creates correct template', function (): void {
-    $template = AffiliateCommissionTemplate::createStandardPercentage('10% Commission', 1000, false);
-
-    expect($template->name)->toBe('10% Commission');
-    expect($template->rules['commission_rules'])->toHaveCount(1);
-    expect($template->rules['commission_rules'][0]['rate'])->toBe(1000);
-});
-
-// AffiliateTrainingProgress Tests
-test('AffiliateTrainingProgress can be created', function (): void {
-    $affiliate = Affiliate::create([
-        'code' => 'TRAIN001',
-        'name' => 'Training Test',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 1000,
-        'currency' => 'USD',
-    ]);
-
-    $module = AffiliateTrainingModule::create([
-        'title' => 'Module 1',
-        'slug' => 'module-1',
-        'content' => 'Content here',
-        'order' => 1,
-    ]);
-
-    $progress = AffiliateTrainingProgress::create([
-        'affiliate_id' => $affiliate->id,
-        'module_id' => $module->id,
-        'completed_at' => now(),
-    ]);
-
-    expect($progress)->toBeInstanceOf(AffiliateTrainingProgress::class);
-    expect($progress->completed_at)->not->toBeNull();
-});
-
-test('AffiliateTrainingProgress has affiliate relationship', function (): void {
-    $progress = new AffiliateTrainingProgress;
-
-    expect($progress->affiliate())->toBeInstanceOf(BelongsTo::class);
-});
-
-test('AffiliateTrainingProgress has module relationship', function (): void {
-    $progress = new AffiliateTrainingProgress;
-
-    expect($progress->module())->toBeInstanceOf(BelongsTo::class);
 });

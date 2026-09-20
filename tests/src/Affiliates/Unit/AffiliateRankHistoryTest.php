@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\States\Active;
@@ -66,34 +64,4 @@ test('AffiliateRankHistory isDemotion returns true when fromRank exists and toRa
 
     expect($history->isDemotion())->toBeTrue()
         ->and($history->isPromotion())->toBeFalse();
-});
-
-test('AffiliatePayoutEvent can be created', function (): void {
-    $affiliate = Affiliate::create([
-        'code' => 'PAYEVENT001',
-        'name' => 'Payout Event Test',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 1000,
-        'currency' => 'USD',
-    ]);
-
-    $payout = AffiliatePayout::create([
-        'affiliate_id' => $affiliate->id,
-        'reference' => 'PAY-EVENT-001',
-        'total_minor' => 10000,
-        'currency' => 'USD',
-        'status' => 'pending',
-    ]);
-
-    $event = AffiliatePayoutEvent::create([
-        'affiliate_payout_id' => $payout->id,
-        'to_status' => 'pending',
-        'notes' => 'Test payout event',
-        'metadata' => ['key' => 'value'],
-    ]);
-
-    expect($event)->toBeInstanceOf(AffiliatePayoutEvent::class);
-    expect($event->to_status)->toBe('pending');
-    expect($event->notes)->toBe('Test payout event');
 });

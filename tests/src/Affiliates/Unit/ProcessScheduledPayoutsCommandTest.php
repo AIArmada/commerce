@@ -111,7 +111,8 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
         $result = Artisan::call('affiliates:process-payouts', ['--dry-run' => true]);
 
         $output = Artisan::output();
-        expect($output)->toContain('Skipped: 0');
+        expect($output)->toContain('Processed: 0')
+            ->and($output)->toContain('Skipped: 1');
     });
 
     test('respects custom minimum amount option', function (): void {

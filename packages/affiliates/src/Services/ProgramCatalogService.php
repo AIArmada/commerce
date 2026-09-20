@@ -168,6 +168,7 @@ final class ProgramCatalogService
             ->get()
             ->map(fn (AffiliateVolumeTier $t): array => [
                 'min_volume_minor' => $t->min_volume_minor,
+                'currency' => $t->currencyCode(),
                 'rate_bp' => $t->commission_rate_basis_points,
             ])->all();
     }

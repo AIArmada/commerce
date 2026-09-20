@@ -168,6 +168,7 @@ final class ClaimScheduledPayout
             $affiliate->conversions()
                 ->whereIn('id', $conversionIds)
                 ->whereNull('affiliate_payout_id')
+                ->where('commission_currency', $currency)
                 ->update(['affiliate_payout_id' => $payout->id]);
 
             $payout->events()->create([

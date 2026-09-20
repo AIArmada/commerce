@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
 
@@ -127,6 +128,34 @@ class AffiliatePayout extends Model implements Auditable
         return $this->belongsTo(AffiliatePayoutOperation::class, 'affiliate_payout_operation_id');
     }
 
+    /**
+     * Fail loud when linked conversions span currencies.
+     *
+     * Each payout reserves exactly one per-currency balance, so mixed legs
+     * are corrupt data: actions check before attaching, this guard catches
+     * every other write path (console, Filament, raw queries replayed
+     * through the model).
+     */
+    public function assertHomogeneousConversions(): void
+    {
+        $expected = mb_strtoupper((string) $this->currency);
+
+        $foreign = $this->conversions()
+            ->distinct()
+            ->pluck('commission_currency')
+            ->map(fn (mixed $code): string => mb_strtoupper((string) $code))
+            ->reject(fn (string $code): bool => $code === '' || $code === $expected);
+
+        if ($foreign->isNotEmpty()) {
+            throw new InvalidArgumentException(sprintf(
+                'Payout [%s] is %s but links %s conversions: a payout must use the same currency as its conversions.',
+                (string) $this->getKey(),
+                $expected,
+                $foreign->implode(','),
+            ));
+        }
+    }
+
     protected static function booted(): void
     {
         static::creating(function (self $payout): void {
@@ -153,6 +182,14 @@ class AffiliatePayout extends Model implements Auditable
         static::deleting(function (self $payout): void {
             $payout->events()->delete();
             $payout->conversions()->update(['affiliate_payout_id' => null]);
+        });
+
+        static::saving(function (self $payout): void {
+            if (! $payout->exists || ! $payout->isDirty('currency')) {
+                return;
+            }
+
+            $payout->assertHomogeneousConversions();
         });
     }
 

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('commission_rate_basis_points');
             $table->integer('min_conversions')->default(0);
             $table->integer('min_revenue')->default(0);
+            $table->string('min_revenue_currency', 3)->default(config('affiliates.currency.default', 'MYR'));
 
             $jsonType = commerce_json_column_type('affiliates', 'jsonb');
             $table->addColumn($jsonType, 'benefits')->nullable();

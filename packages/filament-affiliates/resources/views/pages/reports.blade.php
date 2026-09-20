@@ -16,7 +16,7 @@
                 @else
                     <div class="text-2xl font-bold">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($reportData['summary']['revenue_minor'], $reportData['summary']['currency'] ?? config('affiliates.currency.default', 'MYR')) }}</div>
                     @if(! empty($reportData['summary']['converted']))
-                        <div class="text-xs text-gray-400">Converted to {{ $reportData['summary']['currency'] }}</div>
+                        <div class="text-xs text-gray-400">Converted to {{ $reportData['summary']['currency'] }}@if(! empty($reportData['summary']['conversion']['as_of'])) · rates as of {{ $reportData['summary']['conversion']['as_of'] }}@endif</div>
                     @endif
                 @endif
             </x-filament::card>
@@ -29,7 +29,7 @@
                 @else
                     <div class="text-2xl font-bold">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($reportData['summary']['commission_minor'], $reportData['summary']['currency'] ?? config('affiliates.currency.default', 'MYR')) }}</div>
                     @if(! empty($reportData['summary']['converted']))
-                        <div class="text-xs text-gray-400">Converted to {{ $reportData['summary']['currency'] }}</div>
+                        <div class="text-xs text-gray-400">Converted to {{ $reportData['summary']['currency'] }}@if(! empty($reportData['summary']['conversion']['as_of'])) · rates as of {{ $reportData['summary']['conversion']['as_of'] }}@endif</div>
                     @endif
                 @endif
             </x-filament::card>

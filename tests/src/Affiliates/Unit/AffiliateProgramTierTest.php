@@ -36,6 +36,7 @@ describe('AffiliateProgramTier Model', function (): void {
             'commission_rate_basis_points' => 1000,
             'min_conversions' => 50,
             'min_revenue' => 500000,
+            'min_revenue_currency' => 'USD',
         ]);
 
         $affiliate = Affiliate::create([
@@ -67,6 +68,7 @@ describe('AffiliateProgramTier Model', function (): void {
             'commission_rate_basis_points' => 750,
             'min_conversions' => 10,
             'min_revenue' => 0,
+            'min_revenue_currency' => 'USD',
         ]);
 
         $affiliate = Affiliate::create([
@@ -90,6 +92,7 @@ describe('AffiliateProgramTier Model', function (): void {
             'commission_rate_basis_points' => 1000,
             'min_conversions' => 0,
             'min_revenue' => 100000,
+            'min_revenue_currency' => 'USD',
         ]);
 
         $affiliate = Affiliate::create([
@@ -134,6 +137,7 @@ describe('AffiliateProgramTier Model', function (): void {
             'commission_rate_basis_points' => 1200,
             'min_conversions' => 1,
             'min_revenue' => 100000,
+            'min_revenue_currency' => 'USD',
         ]);
 
         $affiliate = Affiliate::create([
@@ -175,6 +179,7 @@ describe('AffiliateProgramTier Model', function (): void {
             'commission_rate_basis_points' => 500,
             'min_conversions' => 0,
             'min_revenue' => 0,
+            'min_revenue_currency' => 'USD',
         ]);
 
         $affiliate = Affiliate::create([
@@ -204,6 +209,7 @@ describe('AffiliateProgramTier Model', function (): void {
             'commission_rate_basis_points' => 2000,
             'min_conversions' => 500,
             'min_revenue' => 5000000,
+            'min_revenue_currency' => 'USD',
             'benefits' => $benefits,
         ]);
 

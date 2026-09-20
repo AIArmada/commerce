@@ -25,6 +25,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $min_personal_sales
  * @property int $min_team_sales
  * @property int $min_active_downlines
+ * @property string $currency
  * @property int $commission_rate_basis_points
  * @property array<string, int>|null $override_rates
  * @property array<string, mixed>|null $benefits
@@ -55,6 +56,7 @@ class AffiliateRank extends Model implements Auditable
         'min_personal_sales',
         'min_team_sales',
         'min_active_downlines',
+        'currency',
         'commission_rate_basis_points',
         'override_rates',
         'benefits',
@@ -102,6 +104,18 @@ class AffiliateRank extends Model implements Auditable
         }
 
         return $this->override_rates[$depth] ?? 0;
+    }
+
+    /**
+     * Currency the sales floors are denominated in.
+     */
+    public function currencyCode(): string
+    {
+        if (is_string($this->currency) && mb_trim($this->currency) !== '') {
+            return mb_strtoupper(mb_trim($this->currency));
+        }
+
+        return mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
     }
 
     /**

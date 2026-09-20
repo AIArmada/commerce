@@ -229,8 +229,8 @@ final class DailyAggregationService
             $commissionByCurrency[$currency] = $money['commission_cents'];
         }
 
-        $revenue = $this->converter->totalMinor($revenueByCurrency, $reference);
-        $commission = $this->converter->totalMinor($commissionByCurrency, $reference);
+        $revenue = $this->converter->totalMinor($revenueByCurrency, $reference, $to);
+        $commission = $this->converter->totalMinor($commissionByCurrency, $reference, $to);
 
         return [
             'clicks' => $clicks,

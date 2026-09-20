@@ -124,7 +124,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
 
         $thisMonth = $this->foldMonth($thisMonthRows);
         $lastMonth = $this->foldMonth($lastMonthRows);
-        $money = $this->summarizeMonths($thisMonth, $lastMonth);
+        $money = $this->summarizeMonths($thisMonth, $lastMonth, $now, $lastMonthEnd);
 
         return [
             'this_month_conversions' => $thisMonth['conversions'],
@@ -167,7 +167,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
      * @param  array{conversions: int, by_currency: array<string, array{revenue: int, commission: int}>}  $lastMonth
      * @return array{this_revenue: int|null, this_commission: int|null, last_revenue: int|null, currency: string, converted: bool}
      */
-    private function summarizeMonths(array $thisMonth, array $lastMonth): array
+    private function summarizeMonths(array $thisMonth, array $lastMonth, CarbonImmutable $thisEnd, CarbonImmutable $lastEnd): array
     {
         $currencies = array_unique([
             ...array_keys($thisMonth['by_currency']),
@@ -202,9 +202,9 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
             $lastRevenue[$currency] = $money['revenue'];
         }
 
-        $thisRevenueTotal = $converter->totalMinor($thisRevenue, $display);
-        $thisCommissionTotal = $converter->totalMinor($thisCommission, $display);
-        $lastRevenueTotal = $converter->totalMinor($lastRevenue, $display);
+        $thisRevenueTotal = $converter->totalMinor($thisRevenue, $display, $thisEnd);
+        $thisCommissionTotal = $converter->totalMinor($thisCommission, $display, $thisEnd);
+        $lastRevenueTotal = $converter->totalMinor($lastRevenue, $display, $lastEnd);
 
         return [
             'this_revenue' => $thisRevenueTotal,

@@ -250,16 +250,37 @@ final class CommissionRuleEngine
             ->groupBy('commission_currency')
             ->get();
 
-        $periodVolume = RevenueVolume::measurableIn(
-            RevenueVolume::foldRows($volumeRows, RevenueVolume::referenceFor($affiliate)),
-            RevenueVolume::referenceFor($affiliate),
-        );
+        $reference = RevenueVolume::referenceFor($affiliate);
+        $folded = RevenueVolume::foldRows($volumeRows, $reference);
+        $volumeIn = [];
 
-        // Find applicable volume tier
+        $volumeFor = function (string $currency) use ($folded, &$volumeIn): int {
+            return $volumeIn[$currency] ??= RevenueVolume::measurableIn($folded, $currency);
+        };
+
+        // Tiers qualify in their own currency; mixed-currency tiers order by
+        // converted floor with unconvertible tiers sinking last.
         $tier = $this->volumeTiersForProgram($programId)
-            ->filter(fn (AffiliateVolumeTier $candidate): bool => $candidate->min_volume_minor <= $periodVolume
-                && ($candidate->max_volume_minor === null || $candidate->max_volume_minor >= $periodVolume))
-            ->sortByDesc('min_volume_minor')
+            ->filter(fn (AffiliateVolumeTier $candidate): bool => $candidate->containsVolume($volumeFor($candidate->currencyCode())))
+            ->sort(function (AffiliateVolumeTier $left, AffiliateVolumeTier $right) use ($reference): int {
+                $converter = app(CurrencyConverter::class);
+                $leftMin = $converter->convertMinor($left->min_volume_minor, $left->currencyCode(), $reference);
+                $rightMin = $converter->convertMinor($right->min_volume_minor, $right->currencyCode(), $reference);
+
+                if ($leftMin === null && $rightMin === null) {
+                    return 0;
+                }
+
+                if ($leftMin === null) {
+                    return 1;
+                }
+
+                if ($rightMin === null) {
+                    return -1;
+                }
+
+                return $rightMin <=> $leftMin;
+            })
             ->first();
 
         if (! $tier) {
@@ -309,9 +330,12 @@ final class CommissionRuleEngine
         }
 
         $bonuses = [];
+        $thresholdCurrency = mb_strtoupper((string) ($config['min_revenue_currency'] ?? config('affiliates.currency.default', 'MYR')));
 
         foreach ($this->performanceLeaderboard($from, $to, 3, $includeGlobal) as $entry) {
-            if ($entry['total_revenue'] < ($config['min_revenue'] ?? 100000)) {
+            $revenue = app(CurrencyConverter::class)->totalMinor($entry['revenue_by_currency'], $thresholdCurrency, $to);
+
+            if ($revenue === null || $revenue < ($config['min_revenue'] ?? 100000)) {
                 continue;
             }
 
@@ -495,17 +519,21 @@ final class CommissionRuleEngine
             ->where('status', AffiliateStatus::normalize(Active::class))
             ->get();
 
+        $floorCurrency = mb_strtoupper((string) ($config['min_previous_revenue_currency'] ?? config('affiliates.currency.default', 'MYR')));
+
         foreach ($affiliates as $affiliate) {
             $reference = RevenueVolume::referenceFor($affiliate);
 
             $currentRevenue = RevenueVolume::measurableIn(
                 RevenueVolume::foldRows($this->revenueByCurrency($affiliate, $from, $to, $includeGlobal), $reference),
-                $reference,
+                $floorCurrency,
+                $to,
             );
 
             $previousRevenue = RevenueVolume::measurableIn(
                 RevenueVolume::foldRows($this->revenueByCurrency($affiliate, $prevFrom, $prevTo, $includeGlobal), $reference),
-                $reference,
+                $floorCurrency,
+                $prevTo,
             );
 
             if ($previousRevenue < ($config['min_previous_revenue'] ?? 50000)) {
@@ -649,7 +677,7 @@ final class CommissionRuleEngine
                 continue;
             }
 
-            $converted = app(CurrencyConverter::class)->totalMinor($entry['by_currency'], $default);
+            $converted = app(CurrencyConverter::class)->totalMinor($entry['by_currency'], $default, $to);
 
             $entries[$id]['total_revenue'] = $converted;
             $entries[$id]['revenue_currency'] = $default;
@@ -658,7 +686,7 @@ final class CommissionRuleEngine
 
         usort($entries, function (array $left, array $right): int {
             if ($left['total_revenue'] === null && $right['total_revenue'] === null) {
-                return 0;
+                return $left['affiliate_id'] <=> $right['affiliate_id'];
             }
 
             if ($left['total_revenue'] === null) {
@@ -669,7 +697,7 @@ final class CommissionRuleEngine
                 return -1;
             }
 
-            return $right['total_revenue'] <=> $left['total_revenue'];
+            return [$right['total_revenue'], $left['affiliate_id']] <=> [$left['total_revenue'], $right['affiliate_id']];
         });
 
         return collect(array_slice($entries, 0, $limit))

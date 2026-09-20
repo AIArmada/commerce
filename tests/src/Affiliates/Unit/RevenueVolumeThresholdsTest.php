@@ -83,6 +83,7 @@ describe('multicurrency threshold comparisons', function (): void {
             'min_volume_minor' => 150000,
             'max_volume_minor' => null,
             'commission_rate_basis_points' => 2000,
+            'currency' => 'USD',
         ]);
 
         $now = CarbonImmutable::now();
@@ -106,6 +107,7 @@ describe('multicurrency threshold comparisons', function (): void {
             'min_volume_minor' => 150000,
             'max_volume_minor' => null,
             'commission_rate_basis_points' => 2000,
+            'currency' => 'USD',
         ]);
 
         $now = CarbonImmutable::now();
@@ -208,6 +210,7 @@ describe('multicurrency threshold comparisons', function (): void {
             'commission_rate_basis_points' => 2000,
             'min_conversions' => 2,
             'min_revenue' => 150000,
+            'min_revenue_currency' => 'USD',
         ]);
 
         $affiliate = makeThresholdAffiliate('TUP');

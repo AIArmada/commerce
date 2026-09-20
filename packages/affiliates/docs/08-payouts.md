@@ -324,7 +324,7 @@ Provider statuses map case-insensitively: `completed`/`paid`/`success`/`succeede
 
 Reconciliation is guarded by the payout state machine: the payout row is locked, and only declared transitions run — stale or out-of-order provider events (including ones targeting terminal payouts) are ignored rather than forced, so a `Completed` payout can never be resurrected to `Failed`. On completion the linked conversions sync to `Paid`; on failure or cancellation reserved funds are released in the same transaction and conversions detach back to `Approved`. The boolean return tells you whether anything changed.
 
-`generateReport()` folds amounts without blending currencies. Single-currency sets pass raw sums through; mixed sets convert to `affiliates.currency.default`, and legs without an exchange rate null the whole total — read `by_currency` for the exact per-currency amounts:
+`generateReport()` folds amounts without blending currencies. Single-currency sets pass raw sums through; mixed sets convert to `affiliates.currency.default` with the rates effective at the period end, and legs without an exchange rate null the whole total — read `by_currency` for the exact per-currency amounts:
 
 ```php
 $report = $service->generateReport('2026-01-01', '2026-03-31');
@@ -332,8 +332,11 @@ $report = $service->generateReport('2026-01-01', '2026-03-31');
 $report['summary']['total_amount_minor']; // int|null, converted when mixed
 $report['summary']['currency'];           // denomination of the totals
 $report['summary']['converted'];          // true when FX math was applied
+$report['summary']['conversion'];         // ['currency', 'as_of', 'source'] provenance, or null
 $report['by_currency']['USD']['total_minor'];
 ```
+
+Use `summarizePayouts($payouts, $start, $end)` for the same settlement summary over an explicit payout set (for example an owner-scoped batch). Every payout holds exactly one currency: linking a mismatched conversion throws, and `reconcilePayout()` refuses to complete a mixed payout — `currency_mismatches` in the report points at corrupt rows.
 
 ## Artisan Commands
 
@@ -342,6 +345,8 @@ $report['by_currency']['USD']['total_minor'];
 ```bash
 php artisan affiliates:process-payouts
 ```
+
+Without `--min-amount` every balance is judged against its own `minimum_payout_minor` (which inherits the per-currency floor from `payouts.minimum_amounts_by_currency`, falling back to `payouts.minimum_amount`). Pass `--min-amount=N` to impose an additional floor of N minor units in each balance's own currency.
 
 ### Process Commission Maturity
 

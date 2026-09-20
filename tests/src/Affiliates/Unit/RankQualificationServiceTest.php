@@ -47,6 +47,7 @@ describe('RankQualificationService', function (): void {
                 'commission_rate_basis_points' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 10,
+                'currency' => 'USD',
             ]);
 
             $result = $this->service->evaluate($this->affiliate);
@@ -65,6 +66,7 @@ describe('RankQualificationService', function (): void {
                 'commission_rate_basis_points' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
+                'currency' => 'USD',
             ]);
 
             // Create Silver rank (harder to qualify)
@@ -77,6 +79,7 @@ describe('RankQualificationService', function (): void {
                 'commission_rate_basis_points' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 5,
+                'currency' => 'USD',
             ]);
 
             $result = $this->service->evaluate($this->affiliate);
@@ -96,6 +99,7 @@ describe('RankQualificationService', function (): void {
                 'commission_rate_basis_points' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
+                'currency' => 'USD',
             ]);
 
             // Create conversions to meet threshold
@@ -129,6 +133,7 @@ describe('RankQualificationService', function (): void {
                 'min_team_sales' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
+                'currency' => 'USD',
             ]);
 
             $this->service->processRankChange($this->affiliate);
@@ -151,6 +156,7 @@ describe('RankQualificationService', function (): void {
                 'min_team_sales' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
+                'currency' => 'USD',
             ]);
 
             $this->affiliate->update(['rank_id' => $rank->id]);
@@ -173,6 +179,7 @@ describe('RankQualificationService', function (): void {
                 'min_team_sales' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
+                'currency' => 'USD',
             ]);
 
             $this->service->processRankChange($this->affiliate);
@@ -195,6 +202,7 @@ describe('RankQualificationService', function (): void {
                 'min_team_sales' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
+                'currency' => 'USD',
             ]);
 
             $count = $this->service->processAllRankUpgrades();
@@ -211,6 +219,7 @@ describe('RankQualificationService', function (): void {
                 'min_team_sales' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
+                'currency' => 'USD',
             ]);
 
             // Create additional affiliates
@@ -256,6 +265,7 @@ describe('RankQualificationService', function (): void {
                 'min_team_sales' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
+                'currency' => 'USD',
             ]);
 
             $affiliate2 = Affiliate::create([
@@ -296,6 +306,7 @@ describe('RankQualificationService', function (): void {
                 'min_team_sales' => 1000000,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 100,
+                'currency' => 'USD',
             ]);
 
             $this->service->assignRank($this->affiliate, $rank);
@@ -318,6 +329,7 @@ describe('RankQualificationService', function (): void {
                 'min_team_sales' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
+                'currency' => 'USD',
             ]);
 
             $this->service->assignRank($this->affiliate, $rank);
@@ -336,6 +348,7 @@ describe('RankQualificationService', function (): void {
                 'min_team_sales' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
+                'currency' => 'USD',
             ]);
 
             $this->affiliate->update(['rank_id' => $rank->id]);

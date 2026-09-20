@@ -195,6 +195,7 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
     'currency' => env('AFFILIATES_PAYOUT_CURRENCY', env('AFFILIATES_DEFAULT_CURRENCY', 'MYR')),
     'reference_prefix' => env('AFFILIATES_PAYOUT_REF_PREFIX', 'PO-'),
     'minimum_amount' => env('AFFILIATES_PAYOUT_MINIMUM_AMOUNT', 5000),
+    'minimum_amounts_by_currency' => ['USD' => 1000], // per-currency minor-unit floors; falls back to minimum_amount
     'maturity_days' => env('AFFILIATES_PAYOUT_MATURITY_DAYS', 30),
     'multi_level' => [
         'enabled' => env('AFFILIATES_MULTI_LEVEL_ENABLED', true),
@@ -355,6 +356,7 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 'tax' => [
     'storage_disk' => env('AFFILIATES_TAX_STORAGE_DISK', 'local'),
     '1099_threshold' => env('AFFILIATES_TAX_1099_THRESHOLD', 60000),
+    '1099_threshold_currency' => env('AFFILIATES_TAX_1099_THRESHOLD_CURRENCY', 'USD'),
     'payer_info' => [
         'name' => env('AFFILIATES_TAX_PAYER_NAME', env('APP_NAME', 'Laravel')),
         'address' => env('AFFILIATES_TAX_PAYER_ADDRESS', ''),
@@ -363,7 +365,7 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 ],
 ```
 
-`1099_threshold` is stored in minor units of US dollars. For example, `60000` represents `$600.00`. The 1099 path is USD-only: only completed USD payouts count toward the threshold and the reported total, and documents are always issued in USD. Affiliates paid in other currencies need manual review.
+`1099_threshold` is stored in minor units of `1099_threshold_currency` (default `USD`). For example, `60000` represents `$600.00`. Only completed payouts in the threshold currency count toward the threshold and the reported total — converted totals are never blended into a filing. Payouts in other currencies are disclosed on the document notes and listed by `TaxDocumentService::excludedPayoutsForYear()` for manual tax-team review.
 
 ## Bonuses
 
@@ -377,3 +379,5 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 ```
 
 The bonus section controls built-in reward programs for top performers, recruiter bonuses, consistency streaks, and growth incentives. Each subsection stores thresholds and payout amounts in minor units.
+
+Bonus *payout* amounts (`positions`, `bonus_per_recruit`, `max_bonus`, `bonus_amount`) are credited in each affiliate's own balance currency and are never converted. Bonus *thresholds* carry an explicit currency instead: `top_performer.min_revenue_currency` and `growth.min_previous_revenue_currency` (both default to the package default currency), and revenue is measured in that currency before comparing. The same rule holds everywhere else: volume tiers, program tiers, and ranks store their own `currency`, program eligibility rules accept `min_revenue_currency`, and payout minimums resolve per currency via `minimum_amounts_by_currency`.

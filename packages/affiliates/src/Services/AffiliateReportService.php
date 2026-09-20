@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonInterface;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use stdClass;
@@ -45,7 +46,7 @@ final class AffiliateReportService
             $endDate,
         )->count();
 
-        $totals = $this->summarizeMoney($rows);
+        $totals = $this->summarizeMoney($rows, $endDate);
 
         return [
             'attributions' => $attributions,
@@ -88,12 +89,13 @@ final class AffiliateReportService
                 'revenue_minor' => (int) $row->revenue_minor,
                 'commission_minor' => (int) $row->commission_minor,
             ])
-            ->sort(function (array $left, array $right) use ($default): int {
-                $leftRank = $this->converter->convertMinor($left['commission_minor'], $left['currency'], $default);
-                $rightRank = $this->converter->convertMinor($right['commission_minor'], $right['currency'], $default);
+            ->sort(function (array $left, array $right) use ($default, $endDate): int {
+                $leftRank = $this->converter->convertMinor($left['commission_minor'], $left['currency'], $default, $endDate);
+                $rightRank = $this->converter->convertMinor($right['commission_minor'], $right['currency'], $default, $endDate);
 
                 if ($leftRank === null && $rightRank === null) {
-                    return $right['commission_minor'] <=> $left['commission_minor'];
+                    return [$right['commission_minor'], $left['affiliate_id']]
+                        <=> [$left['commission_minor'], $right['affiliate_id']];
                 }
 
                 if ($leftRank === null) {
@@ -104,7 +106,7 @@ final class AffiliateReportService
                     return -1;
                 }
 
-                return $rightRank <=> $leftRank;
+                return [$rightRank, $left['affiliate_id']] <=> [$leftRank, $right['affiliate_id']];
             })
             ->take($limit)
             ->values()
@@ -270,7 +272,7 @@ final class AffiliateReportService
         }
 
         foreach ($moneyBySubject as $key => $moneyRows) {
-            $totals = $this->summarizeMoney(collect($moneyRows));
+            $totals = $this->summarizeMoney(collect($moneyRows), $endDate);
 
             $subjects[$key]['conversions'] = $totals['conversions'];
             $subjects[$key]['revenue_minor'] = $totals['revenue_minor'];
@@ -289,8 +291,11 @@ final class AffiliateReportService
         $rows = array_values($subjects);
 
         usort($rows, function (array $left, array $right): int {
-            return [$right['conversions'], $right['revenue_minor'] ?? -1, $right['visits'], $right['attributions']]
-                <=> [$left['conversions'], $left['revenue_minor'] ?? -1, $left['visits'], $left['attributions']];
+            $leftKey = $left['subject_type'] . '|' . ($left['subject_key'] ?? '');
+            $rightKey = $right['subject_type'] . '|' . ($right['subject_key'] ?? '');
+
+            return [$right['conversions'], $right['revenue_minor'] ?? -1, $right['visits'], $right['attributions'], $leftKey]
+                <=> [$left['conversions'], $left['revenue_minor'] ?? -1, $left['visits'], $left['attributions'], $rightKey];
         });
 
         return array_slice($rows, 0, $limit);
@@ -407,7 +412,7 @@ final class AffiliateReportService
      * @param  Collection<int, stdClass>  $rows
      * @return array{conversions: int, revenue_minor: int|null, commission_minor: int|null, currency: string, converted: bool, by_currency: array<string, array{conversions: int, revenue_minor: int, commission_minor: int}>}
      */
-    private function summarizeMoney(Collection $rows): array
+    private function summarizeMoney(Collection $rows, ?DateTimeInterface $asOf = null): array
     {
         $byCurrency = [];
         $conversions = 0;
@@ -432,6 +437,7 @@ final class AffiliateReportService
                 'commission_minor' => $single['commission_minor'],
                 'currency' => $only,
                 'converted' => false,
+                'conversion' => null,
                 'by_currency' => $byCurrency,
             ];
         }
@@ -445,15 +451,17 @@ final class AffiliateReportService
             $commissionByCurrency[$currency] = $money['commission_minor'];
         }
 
-        $revenue = $this->converter->totalMinor($revenueByCurrency, $default);
-        $commission = $this->converter->totalMinor($commissionByCurrency, $default);
+        $revenue = $this->converter->totalMinor($revenueByCurrency, $default, $asOf);
+        $commission = $this->converter->totalMinor($commissionByCurrency, $default, $asOf);
+        $converted = $revenue !== null && $commission !== null && $byCurrency !== [];
 
         return [
             'conversions' => $conversions,
             'revenue_minor' => $revenue,
             'commission_minor' => $commission,
             'currency' => $default,
-            'converted' => $revenue !== null && $commission !== null && $byCurrency !== [],
+            'converted' => $converted,
+            'conversion' => $converted ? $this->converter->conversionDisclosure($default, $asOf) : null,
             'by_currency' => $byCurrency,
         ];
     }

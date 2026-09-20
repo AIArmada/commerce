@@ -21,6 +21,7 @@ it('keeps top performer output identical after the commission-rule collapse', fu
     config()->set('affiliates.bonuses.top_performer', [
         'enabled' => true,
         'min_revenue' => 1000,
+        'min_revenue_currency' => 'USD',
         'positions' => [1 => 7500],
     ]);
 
@@ -154,6 +155,7 @@ it('keeps growth output identical after the commission-rule collapse', function 
         'enabled' => true,
         'min_growth_percent' => 50,
         'min_previous_revenue' => 1000,
+        'min_previous_revenue_currency' => 'USD',
         'bonus_amount' => 7500,
     ]);
 

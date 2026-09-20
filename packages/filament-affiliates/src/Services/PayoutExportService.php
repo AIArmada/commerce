@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Services;
 
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -46,6 +48,50 @@ final class PayoutExportService
                 echo $csv->toString();
             },
             $filename,
+            ['Content-Type' => 'text/csv']
+        );
+    }
+
+    /**
+     * Download a multi-currency settlement summary as CSV.
+     *
+     * One row per payout, then per-currency legs and a single labeled
+     * converted total with rate provenance for finance reconciliation.
+     */
+    public function downloadSettlementCsv(?string $startDate = null, ?string $endDate = null): StreamedResponse
+    {
+        $query = AffiliatePayout::query()->orderBy('currency')->orderBy('reference');
+
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+            $query->withoutGlobalScope(OwnerScope::class);
+            OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
+        }
+
+        if ($startDate !== null) {
+            $query->where('created_at', '>=', $startDate);
+        }
+
+        if ($endDate !== null) {
+            $query->where('created_at', '<=', $endDate);
+        }
+
+        $payouts = $query->get();
+        $report = app(PayoutReconciliationService::class)->summarizePayouts($payouts, $startDate, $endDate);
+        $rows = $this->buildSettlementData($payouts, $report);
+
+        return response()->streamDownload(
+            function () use ($rows): void {
+                $csv = Writer::createFromFileObject(new SplTempFileObject);
+
+                foreach ($rows as $row) {
+                    $csv->insertOne($row);
+                }
+
+                echo $csv->toString();
+            },
+            'settlement-summary.csv',
             ['Content-Type' => 'text/csv']
         );
     }
@@ -192,6 +238,71 @@ final class PayoutExportService
         }
 
         return mb_substr($base, 0, 120) . '.' . $extension;
+    }
+
+    /**
+     * @param  iterable<int, AffiliatePayout>  $payouts
+     * @param  array<string, mixed>  $report
+     * @return array<int, array<string>>
+     */
+    private function buildSettlementData(iterable $payouts, array $report): array
+    {
+        $rows = [[
+            'Reference',
+            'Payee',
+            'Amount',
+            'Currency',
+            'Status',
+            'Conversions',
+            'Created',
+        ]];
+
+        foreach ($payouts as $payout) {
+            $payee = $payout->payee;
+            $payeeCode = $payee instanceof Affiliate ? $payee->code : (string) $payout->payee_id;
+
+            $rows[] = [
+                $this->sanitizeCell((string) $payout->reference),
+                $this->sanitizeCell((string) $payeeCode),
+                $this->sanitizeCell(MoneyFormatter::decimalFromMinor((int) $payout->total_minor, (string) $payout->currency)),
+                $this->sanitizeCell((string) $payout->currency),
+                $this->sanitizeCell($this->stringifyStatus($payout->status)),
+                $this->sanitizeCell((string) $payout->conversion_count),
+                $this->sanitizeCell($payout->created_at?->format('Y-m-d H:i:s') ?? ''),
+            ];
+        }
+
+        $rows[] = [];
+        $rows[] = ['Leg Currency', 'Payouts', 'Leg Total', '', '', '', ''];
+
+        foreach ($report['by_currency'] ?? [] as $currency => $leg) {
+            $rows[] = [
+                $this->sanitizeCell((string) $currency),
+                $this->sanitizeCell((string) ($leg['count'] ?? 0)),
+                $this->sanitizeCell(MoneyFormatter::decimalFromMinor((int) ($leg['total_minor'] ?? 0), (string) $currency)),
+                '', '', '', '',
+            ];
+        }
+
+        $summary = $report['summary'] ?? [];
+        $conversion = $summary['conversion'] ?? null;
+
+        if (($summary['converted'] ?? false) && is_array($conversion)) {
+            $rows[] = [];
+            $rows[] = [
+                $this->sanitizeCell('CONVERTED TOTAL'),
+                $this->sanitizeCell((string) ($summary['currency'] ?? '')),
+                $this->sanitizeCell(MoneyFormatter::decimalFromMinor((int) ($summary['total_amount_minor'] ?? 0), (string) ($summary['currency'] ?? 'MYR'))),
+                $this->sanitizeCell(sprintf(
+                    'rates as of %s (%s)',
+                    (string) ($conversion['as_of'] ?? ''),
+                    (string) ($conversion['source'] ?? ''),
+                )),
+                '', '', '',
+            ];
+        }
+
+        return $rows;
     }
 
     /**

@@ -20,6 +20,7 @@ it('keeps top performer bonuses inside the current owner scope', function (): vo
     config()->set('affiliates.bonuses.top_performer.enabled', true);
     config()->set('affiliates.owner.include_global', false);
     config()->set('affiliates.bonuses.top_performer.min_revenue', 0);
+    config()->set('affiliates.bonuses.top_performer.min_revenue_currency', 'USD');
     config()->set('affiliates.bonuses.top_performer.positions', [1 => 1000]);
 
     $ownerA = TopPerformerBonusRuleTestOwner::create(['name' => 'Owner A']);
@@ -76,6 +77,7 @@ it('honors the caller include global flag instead of overriding it from config',
     config()->set('affiliates.owner.include_global', false);
     config()->set('affiliates.bonuses.top_performer.enabled', true);
     config()->set('affiliates.bonuses.top_performer.min_revenue', 0);
+    config()->set('affiliates.bonuses.top_performer.min_revenue_currency', 'USD');
     config()->set('affiliates.bonuses.top_performer.positions', [1 => 1000, 2 => 500]);
 
     $owner = TopPerformerBonusRuleTestOwner::create(['name' => 'Scoped Owner']);

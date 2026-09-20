@@ -10,6 +10,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -46,6 +47,17 @@ final class TiersRelationManager extends RelationManager
                 ->required()
                 ->default(0),
 
+            Select::make('min_revenue_currency')
+                ->label('Min Revenue Currency')
+                ->options([
+                    'USD' => 'USD',
+                    'MYR' => 'MYR',
+                    'SGD' => 'SGD',
+                    'IDR' => 'IDR',
+                ])
+                ->default((string) config('affiliates.currency.default', 'MYR'))
+                ->required(),
+
             KeyValue::make('benefits')
                 ->keyLabel('Benefit')
                 ->valueLabel('Description')
@@ -75,7 +87,7 @@ final class TiersRelationManager extends RelationManager
 
                 TextColumn::make('min_revenue')
                     ->label('Min Revenue')
-                    ->money((string) config('affiliates.currency.default', 'MYR'))
+                    ->money(fn ($record): string => $record->revenueCurrency())
                     ->sortable(),
             ])
             ->headerActions([

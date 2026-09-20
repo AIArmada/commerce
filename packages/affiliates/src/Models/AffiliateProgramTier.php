@@ -25,6 +25,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $commission_rate_basis_points
  * @property int $min_conversions
  * @property int $min_revenue
+ * @property string $min_revenue_currency
  * @property array<string, mixed>|null $benefits
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -45,6 +46,7 @@ class AffiliateProgramTier extends Model implements Auditable
         'commission_rate_basis_points',
         'min_conversions',
         'min_revenue',
+        'min_revenue_currency',
         'benefits',
     ];
 
@@ -93,7 +95,8 @@ class AffiliateProgramTier extends Model implements Auditable
             ->get();
 
         $reference = RevenueVolume::referenceFor($affiliate);
-        $revenue = RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $reference);
+        $currency = $this->revenueCurrency();
+        $revenue = RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $currency);
 
         if ($revenue < $this->min_revenue) {
             return false;
@@ -110,6 +113,18 @@ class AffiliateProgramTier extends Model implements Auditable
     /**
      * @return HasMany<AffiliateConversion, Affiliate>
      */
+    /**
+     * Currency the min_revenue floor is denominated in.
+     */
+    public function revenueCurrency(): string
+    {
+        if (is_string($this->min_revenue_currency) && mb_trim($this->min_revenue_currency) !== '') {
+            return mb_strtoupper(mb_trim($this->min_revenue_currency));
+        }
+
+        return mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
+    }
+
     private function programConversions(Affiliate $affiliate, AffiliateProgram $program): HasMany
     {
         return $affiliate->conversions()

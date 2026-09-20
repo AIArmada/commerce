@@ -191,6 +191,19 @@ $conversion = RecordAffiliateConversion::run(
 );
 ```
 
+## Conversion Rates and Reporting Currency
+
+Every conversion stamps the exchange rate effective at `occurred_at` (`commission_rate_to_base` + `commission_rate_base`), so historical reports never shift when current rates move. Use `$conversion->baseCommissionMinor()` for the stamped base-currency value, or convert explicitly with an as-of date:
+
+```php
+use AIArmada\CommerceSupport\Support\CurrencyConverter;
+
+$converter = app(CurrencyConverter::class);
+$converter->convertMinor(40000, 'MYR', 'USD', $periodEnd);
+```
+
+Mixed-currency summaries return per-currency legs plus one converted total carrying a `conversion` provenance block (`currency`, `as_of`, `source`). Payout batches stay single-currency by construction: attaching a mismatched conversion throws, and reconciliation refuses to complete a mixed payout.
+
 ## Creating Subject-Aware Tracking Links
 
 ```php

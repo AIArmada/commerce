@@ -51,4 +51,18 @@ describe('CurrencyConverter', function (): void {
 
         expect($converter->totalMinor(['USD' => 100, 'JPY' => 5000]))->toBeNull();
     });
+
+    it('converts with the rate effective at asOf', function (): void {
+        config(['commerce-support.currency.exchange_rates' => [
+            'base' => 'USD',
+            'rates' => ['MYR' => 4.7],
+            'history' => ['2026-01-01' => ['MYR' => 4.0]],
+        ]]);
+
+        $converter = app(CurrencyConverter::class);
+        $asOf = new DateTimeImmutable('2026-03-01');
+
+        expect($converter->convertMinor(400, 'MYR', 'USD', $asOf))->toBe(100)
+            ->and($converter->totalMinor(['MYR' => 400], 'USD', $asOf))->toBe(100);
+    });
 });

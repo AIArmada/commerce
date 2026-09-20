@@ -110,7 +110,7 @@ final class UplineService
     /**
      * Get team sales for a given period.
      */
-    public function getTeamSales(Affiliate $affiliate, ?CarbonImmutable $from = null, ?CarbonImmutable $to = null): int
+    public function getTeamSales(Affiliate $affiliate, ?CarbonImmutable $from = null, ?CarbonImmutable $to = null, ?string $currency = null): int
     {
         if (! $this->isEnabled()) {
             return 0;
@@ -144,7 +144,7 @@ final class UplineService
 
         $reference = RevenueVolume::referenceFor($affiliate);
 
-        return RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $reference);
+        return RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $currency ?? $reference, $to);
     }
 
     /**

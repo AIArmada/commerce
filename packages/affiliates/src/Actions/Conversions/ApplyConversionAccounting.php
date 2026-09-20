@@ -13,6 +13,7 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\Affiliates\Support\PayoutMinimums;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -128,7 +129,7 @@ final class ApplyConversionAccounting
                 'available_minor' => 0,
                 'holding_minor' => 0,
                 'lifetime_earnings_minor' => 0,
-                'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
+                'minimum_payout_minor' => PayoutMinimums::forCurrency($currency),
                 'currency' => $currency,
             ]);
         } catch (QueryException $exception) {

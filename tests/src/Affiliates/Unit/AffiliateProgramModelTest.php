@@ -358,7 +358,7 @@ describe('AffiliateProgram Model', function (): void {
             'default_commission_rate_basis_points' => 1000,
             'commission_type' => CommissionType::Percentage,
             'cookie_lifetime_days' => 30,
-            'eligibility_rules' => ['min_revenue' => 7000],
+            'eligibility_rules' => ['min_revenue' => 7000, 'min_revenue_currency' => 'USD'],
         ]);
 
         $affiliate = Affiliate::create([

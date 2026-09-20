@@ -17,6 +17,8 @@ final class Tax1099Generator
         $year = $data['year'];
         $totalAmount = $data['total_amount'];
         $taxInfo = $data['tax_info'];
+        $currency = mb_strtoupper((string) ($data['currency'] ?? 'USD'));
+        $excludedNotes = is_string($data['excluded_notes'] ?? null) ? $data['excluded_notes'] : null;
 
         $filename = sprintf(
             '1099-NEC-%s-%s-%s.pdf',
@@ -27,7 +29,7 @@ final class Tax1099Generator
 
         $path = "tax-documents/{$year}/{$filename}";
 
-        $content = $this->generatePdfContent($affiliate, $year, $totalAmount, $taxInfo);
+        $content = $this->generatePdfContent($affiliate, $year, $totalAmount, $currency, $taxInfo, $excludedNotes);
 
         Storage::disk(config('affiliates.tax.storage_disk', 'local'))
             ->put($path, $content);
@@ -39,7 +41,9 @@ final class Tax1099Generator
         Affiliate $affiliate,
         int $year,
         int $totalAmountMinor,
-        array $taxInfo
+        string $currency,
+        array $taxInfo,
+        ?string $excludedNotes = null,
     ): string {
         $payerInfo = config('affiliates.tax.payer_info', [
             'name' => config('app.name'),
@@ -60,7 +64,11 @@ final class Tax1099Generator
         $content .= 'Address: ' . ($taxInfo['address'] ?? '') . "\n";
         $content .= 'TIN: ' . $this->maskTin($taxInfo['tin']) . "\n\n";
 
-        $content .= 'Box 1 - Nonemployee Compensation: ' . MoneyFormatter::formatMinor($totalAmountMinor, 'USD') . "\n";
+        $content .= 'Box 1 - Nonemployee Compensation: ' . MoneyFormatter::formatMinor($totalAmountMinor, $currency) . "\n";
+
+        if ($excludedNotes !== null && $excludedNotes !== '') {
+            $content .= "\n" . $excludedNotes . "\n";
+        }
 
         return $content;
     }

@@ -18,6 +18,7 @@ use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -56,6 +57,11 @@ final class PayoutReconciliationService
                 ? mb_substr($externalData['status'], 0, 64)
                 : mb_strtolower($externalStatus);
             $newStatus = PayoutStatus::fromString($statusClass, $locked);
+
+            if ($newStatus->equals(CompletedPayout::class)) {
+                $locked->assertHomogeneousConversions();
+            }
+
             $metadata = array_merge($locked->metadata ?? [], array_filter([
                 'reconciled_at' => CarbonImmutable::now()->toIso8601String(),
                 'provider_status' => $providerStatus,
@@ -186,7 +192,17 @@ final class PayoutReconciliationService
             $query->where('created_at', '<=', $endDate);
         }
 
-        $payouts = $query->get();
+        return $this->summarizePayouts($query->get(), $startDate, $endDate);
+    }
+
+    /**
+     * Settlement summary over an explicit payout set: per-currency legs
+     * plus one labeled converted total with rate provenance.
+     *
+     * @param  Collection<int, AffiliatePayout>  $payouts
+     */
+    public function summarizePayouts(Collection $payouts, ?string $startDate = null, ?string $endDate = null): array
+    {
         $byStatus = $payouts->groupBy(fn (AffiliatePayout $item): string => $item->status->getValue())->map->count();
         $completed = $payouts->filter(fn (AffiliatePayout $item): bool => $item->status->equals(CompletedPayout::class));
         $failed = $payouts->filter(fn (AffiliatePayout $item): bool => $item->status->equals(FailedPayout::class));
@@ -198,7 +214,8 @@ final class PayoutReconciliationService
             ])
             ->all();
 
-        $summary = $this->summarizeAmounts($payouts, $completed, $failed);
+        $asOf = $endDate !== null ? CarbonImmutable::parse($endDate) : CarbonImmutable::now();
+        $summary = $this->summarizeAmounts($payouts, $completed, $failed, $asOf);
 
         return [
             'period' => ['start' => $startDate, 'end' => $endDate],
@@ -210,6 +227,7 @@ final class PayoutReconciliationService
                 'pending_amount_minor' => $summary['pending'],
                 'currency' => $summary['currency'],
                 'converted' => $summary['converted'],
+                'conversion' => $summary['conversion'],
             ],
             'by_status' => $byStatus->all(),
             'by_currency' => $byCurrency,
@@ -228,7 +246,10 @@ final class PayoutReconciliationService
      * @param  Collection<int, AffiliatePayout>  $failed
      * @return array{total: int|null, completed: int|null, failed: int|null, pending: int|null, currency: string, converted: bool}
      */
-    private function summarizeAmounts(Collection $payouts, Collection $completed, Collection $failed): array
+    /**
+     * @return array{total: int|null, completed: int|null, failed: int|null, pending: int|null, currency: string, converted: bool, conversion: array{currency: string, as_of: string, source: string}|null}
+     */
+    private function summarizeAmounts(Collection $payouts, Collection $completed, Collection $failed, ?DateTimeInterface $asOf = null): array
     {
         $default = mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
         $currencies = $payouts
@@ -248,12 +269,14 @@ final class PayoutReconciliationService
                 'pending' => $total - $completedAmount - $failedAmount,
                 'currency' => $currencies->first() ?? $default,
                 'converted' => false,
+                'conversion' => null,
             ];
         }
 
-        $total = $this->converter->totalMinor($this->amountsByCurrency($payouts), $default);
-        $completedAmount = $this->converter->totalMinor($this->amountsByCurrency($completed), $default);
-        $failedAmount = $this->converter->totalMinor($this->amountsByCurrency($failed), $default);
+        $total = $this->converter->totalMinor($this->amountsByCurrency($payouts), $default, $asOf);
+        $completedAmount = $this->converter->totalMinor($this->amountsByCurrency($completed), $default, $asOf);
+        $failedAmount = $this->converter->totalMinor($this->amountsByCurrency($failed), $default, $asOf);
+        $converted = $total !== null && $completedAmount !== null && $failedAmount !== null;
 
         return [
             'total' => $total,
@@ -263,7 +286,8 @@ final class PayoutReconciliationService
                 ? $total - $completedAmount - $failedAmount
                 : null,
             'currency' => $default,
-            'converted' => $total !== null && $completedAmount !== null && $failedAmount !== null,
+            'converted' => $converted,
+            'conversion' => $converted ? $this->converter->conversionDisclosure($default, $asOf) : null,
         ];
     }
 

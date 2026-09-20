@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport\Support;
 
 use AIArmada\CommerceSupport\Contracts\ExchangeRateProvider;
+use DateTimeInterface;
 
 /**
  * Static exchange rates from `commerce-support.currency.exchange_rates`.
@@ -21,7 +22,7 @@ final class ConfigExchangeRateProvider implements ExchangeRateProvider
         return mb_strtoupper((string) config('commerce-support.currency.exchange_rates.base', 'USD'));
     }
 
-    public function rate(string $from, string $to): ?float
+    public function rate(string $from, string $to, ?DateTimeInterface $asOf = null): ?float
     {
         $from = mb_strtoupper($from);
         $to = mb_strtoupper($to);
@@ -30,8 +31,7 @@ final class ConfigExchangeRateProvider implements ExchangeRateProvider
             return 1.0;
         }
 
-        /** @var array<string, mixed> $rates */
-        $rates = config('commerce-support.currency.exchange_rates.rates', []);
+        $rates = $this->ratesEffectiveAt($asOf);
 
         $fromRate = $this->unitsPerBase($rates, $from);
         $toRate = $this->unitsPerBase($rates, $to);
@@ -41,6 +41,42 @@ final class ConfigExchangeRateProvider implements ExchangeRateProvider
         }
 
         return $toRate / $fromRate;
+    }
+
+    /**
+     * Current rates overlaid with every history snapshot on or before $asOf.
+     *
+     * @return array<string, mixed>
+     */
+    private function ratesEffectiveAt(?DateTimeInterface $asOf): array
+    {
+        /** @var array<string, mixed> $rates */
+        $rates = config('commerce-support.currency.exchange_rates.rates', []);
+
+        if ($asOf === null) {
+            return $rates;
+        }
+
+        /** @var array<string, mixed> $history */
+        $history = config('commerce-support.currency.exchange_rates.history', []);
+        $asOfDate = $asOf->format('Y-m-d');
+        $snapshots = [];
+
+        foreach ($history as $date => $snapshot) {
+            if (is_array($snapshot) && (string) $date <= $asOfDate) {
+                $snapshots[(string) $date] = $snapshot;
+            }
+        }
+
+        ksort($snapshots);
+
+        foreach ($snapshots as $snapshot) {
+            foreach ($snapshot as $code => $value) {
+                $rates[(string) $code] = $value;
+            }
+        }
+
+        return $rates;
     }
 
     /**

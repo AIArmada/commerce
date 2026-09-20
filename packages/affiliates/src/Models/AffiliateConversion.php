@@ -9,6 +9,7 @@ use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\CommerceSupport\Contracts\ExchangeRateProvider;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use InvalidArgumentException;
 use Spatie\ModelStates\HasStates;
 
 /**
@@ -44,7 +46,10 @@ use Spatie\ModelStates\HasStates;
  * @property int $value_minor
  * @property int $commission_minor
  * @property string $commission_currency
+ * @property float|null $commission_rate_to_base
+ * @property string|null $commission_rate_base
  * @property ConversionStatus $status
+ * @property string|null $network_link_id
  * @property string|null $affiliate_link_id
  * @property string|null $sharer_user_id
  * @property string|null $actor_user_id
@@ -97,7 +102,10 @@ class AffiliateConversion extends Model
         'value_minor',
         'commission_minor',
         'commission_currency',
+        'commission_rate_to_base',
+        'commission_rate_base',
         'affiliate_link_id',
+        'network_link_id',
         'sharer_user_id',
         'actor_user_id',
         'origin',
@@ -162,6 +170,8 @@ class AffiliateConversion extends Model
     protected static function booted(): void
     {
         static::creating(function (self $conversion): void {
+            self::stampConversionRate($conversion);
+
             if (! config('affiliates.owner.enabled', false)) {
                 return;
             }
@@ -179,6 +189,31 @@ class AffiliateConversion extends Model
             if ($owner) {
                 $conversion->owner_type = $owner->getMorphClass();
                 $conversion->owner_id = $owner->getKey();
+            }
+        });
+
+        static::saving(function (self $conversion): void {
+            if (! $conversion->isDirty('affiliate_payout_id') || $conversion->affiliate_payout_id === null) {
+                return;
+            }
+
+            $payout = AffiliatePayout::query()->find($conversion->affiliate_payout_id);
+
+            if (! $payout instanceof AffiliatePayout) {
+                return;
+            }
+
+            $conversionCurrency = mb_strtoupper((string) $conversion->commission_currency);
+            $payoutCurrency = mb_strtoupper((string) $payout->currency);
+
+            if ($conversionCurrency !== '' && $conversionCurrency !== $payoutCurrency) {
+                throw new InvalidArgumentException(sprintf(
+                    'Cannot link conversion [%s] (%s) to payout [%s] (%s): conversions must use the same currency as their payout.',
+                    (string) $conversion->getKey(),
+                    $conversionCurrency,
+                    (string) $payout->getKey(),
+                    $payoutCurrency,
+                ));
             }
         });
 
@@ -254,8 +289,35 @@ class AffiliateConversion extends Model
             'rejected_at' => 'immutable_datetime',
             'paid_at' => 'immutable_datetime',
             'value_minor' => 'integer',
+            'commission_rate_to_base' => 'float',
             'status' => ConversionStatus::class,
         ];
+    }
+
+    /**
+     * Commission in the stamped base currency, or null when unconvertible.
+     *
+     * The stored rate wins so history never shifts; otherwise the rate
+     * effective at occurred_at is used. Reporting only: never money movement.
+     */
+    public function baseCommissionMinor(): ?int
+    {
+        $minor = (int) ($this->commission_minor ?? 0);
+        $currency = mb_strtoupper((string) ($this->commission_currency ?? ''));
+
+        if ($this->commission_rate_to_base !== null && is_string($this->commission_rate_base)) {
+            return (int) round($minor * (float) $this->commission_rate_to_base);
+        }
+
+        $base = app(ExchangeRateProvider::class)->baseCurrency();
+
+        if ($currency === $base) {
+            return $minor;
+        }
+
+        $rate = app(ExchangeRateProvider::class)->rate($currency, $base, $this->occurredAt());
+
+        return $rate === null ? null : (int) round($minor * $rate);
     }
 
     public function isRejected(): bool
@@ -271,5 +333,52 @@ class AffiliateConversion extends Model
     private static function resolveStatus(self $conversion): ConversionStatus
     {
         return ConversionStatus::fromString($conversion->status, $conversion);
+    }
+
+    private static function stampConversionRate(self $conversion): void
+    {
+        if ($conversion->commission_rate_to_base !== null) {
+            return;
+        }
+
+        $currency = mb_strtoupper((string) ($conversion->commission_currency ?? ''));
+
+        if ($currency === '') {
+            return;
+        }
+
+        $provider = app(ExchangeRateProvider::class);
+        $base = $provider->baseCurrency();
+
+        if ($currency === $base) {
+            $conversion->commission_rate_to_base = 1.0;
+            $conversion->commission_rate_base = $base;
+
+            return;
+        }
+
+        $rate = $provider->rate($currency, $base, $conversion->occurredAt());
+
+        if ($rate === null) {
+            return;
+        }
+
+        $conversion->commission_rate_to_base = $rate;
+        $conversion->commission_rate_base = $base;
+    }
+
+    private function occurredAt(): ?CarbonInterface
+    {
+        $occurred = $this->getAttribute('occurred_at');
+
+        if ($occurred instanceof CarbonInterface) {
+            return $occurred;
+        }
+
+        if (is_string($occurred) && $occurred !== '') {
+            return CarbonImmutable::parse($occurred);
+        }
+
+        return null;
     }
 }

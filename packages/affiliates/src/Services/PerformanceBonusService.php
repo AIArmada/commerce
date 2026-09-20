@@ -14,6 +14,7 @@ use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\Support\PayoutMinimums;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
@@ -77,7 +78,7 @@ final class PerformanceBonusService
                         'holding_minor' => 0,
                         'available_minor' => 0,
                         'lifetime_earnings_minor' => 0,
-                        'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
+                        'minimum_payout_minor' => PayoutMinimums::forCurrency($currency),
                     ]
                 );
 

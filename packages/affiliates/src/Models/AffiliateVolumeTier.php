@@ -23,6 +23,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $min_volume_minor
  * @property int|null $max_volume_minor
  * @property int $commission_rate_basis_points
+ * @property string $currency
  * @property string $period
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -41,6 +42,7 @@ class AffiliateVolumeTier extends Model implements Auditable
         'min_volume_minor',
         'max_volume_minor',
         'commission_rate_basis_points',
+        'currency',
         'period',
     ];
 
@@ -61,6 +63,18 @@ class AffiliateVolumeTier extends Model implements Auditable
     public function program(): BelongsTo
     {
         return $this->belongsTo(AffiliateProgram::class, 'program_id');
+    }
+
+    /**
+     * Tier currency; volume thresholds are denominated in this code.
+     */
+    public function currencyCode(): string
+    {
+        if (is_string($this->currency) && mb_trim($this->currency) !== '') {
+            return mb_strtoupper(mb_trim($this->currency));
+        }
+
+        return mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
     }
 
     public function containsVolume(int $volumeMinor): bool

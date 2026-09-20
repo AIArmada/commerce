@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Support;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
+use DateTimeInterface;
 use Illuminate\Support\Collection;
 use stdClass;
 
@@ -53,13 +54,13 @@ final class RevenueVolume
      *
      * @param  array<string, int>  $byCurrency
      */
-    public static function measurableIn(array $byCurrency, string $reference): int
+    public static function measurableIn(array $byCurrency, string $reference, ?DateTimeInterface $asOf = null): int
     {
         if ($byCurrency === []) {
             return 0;
         }
 
-        $converted = app(CurrencyConverter::class)->totalMinor($byCurrency, $reference);
+        $converted = app(CurrencyConverter::class)->totalMinor($byCurrency, $reference, $asOf);
 
         if ($converted !== null) {
             return $converted;

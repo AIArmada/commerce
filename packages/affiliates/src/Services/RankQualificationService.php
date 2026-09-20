@@ -32,18 +32,21 @@ final class RankQualificationService
      */
     public function evaluate(Affiliate $affiliate): ?AffiliateRank
     {
-        $metrics = $this->calculateMetrics($affiliate);
-
-        // Order by level DESC to find highest qualifying rank first
+        // Order by level DESC to find highest qualifying rank first. Metrics
+        // are measured per rank currency so floors never compare across codes.
         return AffiliateRank::query()
             ->orderBy('level', 'desc')
             ->get()
-            ->first(fn (AffiliateRank $rank) => $rank->meetsQualification(
-                $affiliate,
-                $metrics['personal_sales'],
-                $metrics['team_sales'],
-                $metrics['active_downlines']
-            ));
+            ->first(function (AffiliateRank $rank) use ($affiliate): bool {
+                $metrics = $this->calculateMetrics($affiliate, null, $rank->currencyCode());
+
+                return $rank->meetsQualification(
+                    $affiliate,
+                    $metrics['personal_sales'],
+                    $metrics['team_sales'],
+                    $metrics['active_downlines']
+                );
+            });
     }
 
     /**
@@ -108,10 +111,11 @@ final class RankQualificationService
      *
      * @return array{personal_sales: int, team_sales: int, active_downlines: int, lifetime_value: int}
      */
-    public function calculateMetrics(Affiliate $affiliate, ?CarbonImmutable $from = null): array
+    public function calculateMetrics(Affiliate $affiliate, ?CarbonImmutable $from = null, ?string $currency = null): array
     {
         $from ??= CarbonImmutable::now()->subDays(30);
-        $cacheKey = $this->buildMetricsCacheKey($affiliate, $from);
+        $currency ??= RevenueVolume::referenceFor($affiliate);
+        $cacheKey = $this->buildMetricsCacheKey($affiliate, $from, $currency);
 
         if (isset($this->metricsCache[$cacheKey])) {
             return $this->metricsCache[$cacheKey];
@@ -119,14 +123,15 @@ final class RankQualificationService
 
         $personalSales = $this->sumRevenue(
             $affiliate,
-            fn ($query) => $query->where('occurred_at', '>=', $from)
+            fn ($query) => $query->where('occurred_at', '>=', $from),
+            $currency,
         );
 
-        $teamSales = $this->uplineService->getTeamSales($affiliate, $from);
+        $teamSales = $this->uplineService->getTeamSales($affiliate, $from, null, $currency);
 
         $activeDownlines = $this->uplineService->getActiveDownlineCount($affiliate);
 
-        $lifetimeValue = $this->sumRevenue($affiliate);
+        $lifetimeValue = $this->sumRevenue($affiliate, null, $currency);
 
         return $this->metricsCache[$cacheKey] = [
             'personal_sales' => (int) $personalSales,
@@ -147,15 +152,15 @@ final class RankQualificationService
     /**
      * Build cache key for metrics lookup.
      */
-    private function buildMetricsCacheKey(Affiliate $affiliate, CarbonImmutable $from): string
+    private function buildMetricsCacheKey(Affiliate $affiliate, CarbonImmutable $from, string $currency): string
     {
-        return $affiliate->id . ':' . $from->toDateString();
+        return $affiliate->id . ':' . $from->toDateString() . ':' . $currency;
     }
 
     /**
      * @param  null|callable(mixed): mixed  $scope
      */
-    private function sumRevenue(Affiliate $affiliate, ?callable $scope = null): int
+    private function sumRevenue(Affiliate $affiliate, ?callable $scope = null, ?string $currency = null): int
     {
         $query = $affiliate->conversions();
 
@@ -171,7 +176,7 @@ final class RankQualificationService
 
         $reference = RevenueVolume::referenceFor($affiliate);
 
-        return RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $reference);
+        return RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $currency ?? $reference);
     }
 
     private function shouldChangeRank(Affiliate $affiliate, ?AffiliateRank $newRank): bool

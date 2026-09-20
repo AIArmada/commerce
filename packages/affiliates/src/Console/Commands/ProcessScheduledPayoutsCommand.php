@@ -18,7 +18,7 @@ final class ProcessScheduledPayoutsCommand extends Command
     protected $signature = 'affiliates:process-payouts
         {--dry-run : Show what would be processed without reserving balances}
         {--affiliate= : Process payouts for a specific affiliate ID}
-        {--min-amount= : Minimum amount threshold in minor units}';
+        {--min-amount= : Minimum amount floor in minor units, applied in each balance currency}';
 
     protected $description = 'Atomically claim scheduled affiliate payout operations';
 
@@ -31,7 +31,8 @@ final class ProcessScheduledPayoutsCommand extends Command
     {
         $dryRun = (bool) $this->option('dry-run');
         $affiliateId = is_string($this->option('affiliate')) ? $this->option('affiliate') : null;
-        $minimum = (int) ($this->option('min-amount') ?? config('affiliates.payouts.minimum_amount', 5000));
+        $override = $this->option('min-amount');
+        $minimum = $override !== null && $override !== '' ? (int) $override : 0;
 
         $runner = new OwnerBatchRunner(
             Affiliate::class,
@@ -54,7 +55,7 @@ final class ProcessScheduledPayoutsCommand extends Command
     private function processScoped(?string $affiliateId, int $minimum, bool $dryRun): array
     {
         $query = AffiliateBalance::query()
-            ->where('available_minor', '>=', $minimum)
+            ->where('available_minor', $minimum > 0 ? '>=' : '>', $minimum > 0 ? $minimum : 0)
             ->whereHas('affiliate', static function ($query): void {
                 $query->where('status', AffiliateStatus::normalize(Active::class));
             });

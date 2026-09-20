@@ -80,12 +80,28 @@ describe('OfferManagementService', function (): void {
             expect($offer->description)->toBe('A detailed description');
             expect($offer->terms)->toBe('Terms and conditions');
             expect($offer->rate_base_bp)->toBe(1500);
-            expect($offer->volume_tiers)->toBe([['min_volume_minor' => 100000, 'rate_bp' => 1800]]);
+            expect($offer->volume_tiers)->toBe([['min_volume_minor' => 100000, 'rate_bp' => 1800, 'currency' => 'USD']]);
             expect($offer->active_promotions)->toBe([['id' => 'promo-1', 'name' => 'Spring', 'ends_at' => null]]);
             expect($offer->currency)->toBe('USD');
             expect($offer->cookie_days)->toBe(60);
             expect($offer->is_featured)->toBeTrue();
             expect($offer->landing_url)->toBe('https://example.com/landing');
+        });
+
+        test('stamps volume tiers with the offer currency by default', function (): void {
+            $offer = $this->service->createOffer($this->site, [
+                'name' => 'Tiered Offer',
+                'currency' => 'myr',
+                'volume_tiers' => [
+                    ['min_volume_minor' => 100000, 'rate_bp' => 1800],
+                    ['min_volume_minor' => 50000, 'rate_bp' => 1500, 'currency' => 'usd'],
+                ],
+            ]);
+
+            expect($offer->volume_tiers)->toBe([
+                ['min_volume_minor' => 100000, 'rate_bp' => 1800, 'currency' => 'MYR'],
+                ['min_volume_minor' => 50000, 'rate_bp' => 1500, 'currency' => 'USD'],
+            ]);
         });
     });
 

@@ -198,6 +198,7 @@ return [
         'currency' => env('AFFILIATES_PAYOUT_CURRENCY', env('AFFILIATES_DEFAULT_CURRENCY', 'MYR')),
         'reference_prefix' => env('AFFILIATES_PAYOUT_REF_PREFIX', 'PO-'),
         'minimum_amount' => env('AFFILIATES_PAYOUT_MINIMUM_AMOUNT', 5000),
+        'minimum_amounts_by_currency' => [],
         'maturity_days' => env('AFFILIATES_PAYOUT_MATURITY_DAYS', 30),
         'multi_level' => [
             'enabled' => env('AFFILIATES_MULTI_LEVEL_ENABLED', true),
@@ -305,6 +306,7 @@ return [
         'storage_disk' => env('AFFILIATES_TAX_STORAGE_DISK', 'local'),
         // Stored/compared in minor units (e.g. 60000 = $600.00)
         '1099_threshold' => env('AFFILIATES_TAX_1099_THRESHOLD', 60000),
+        '1099_threshold_currency' => env('AFFILIATES_TAX_1099_THRESHOLD_CURRENCY', 'USD'),
         'payer_info' => [
             'name' => env('AFFILIATES_TAX_PAYER_NAME', env('APP_NAME', 'Laravel')),
             'address' => env('AFFILIATES_TAX_PAYER_ADDRESS', ''),
@@ -321,29 +323,32 @@ return [
     'bonuses' => [
         'top_performer' => [
             'enabled' => env('AFFILIATES_BONUS_TOP_PERFORMER_ENABLED', true),
-            'positions' => [
+            'positions' => [ // minor units, paid in each affiliate's own currency
                 1 => env('AFFILIATES_BONUS_TOP_PERFORMER_1_MINOR', 50000),
                 2 => env('AFFILIATES_BONUS_TOP_PERFORMER_2_MINOR', 25000),
                 3 => env('AFFILIATES_BONUS_TOP_PERFORMER_3_MINOR', 10000),
             ],
             'min_revenue' => env('AFFILIATES_BONUS_TOP_PERFORMER_MIN_REVENUE_MINOR', 100000),
+            'min_revenue_currency' => env('AFFILIATES_BONUS_TOP_PERFORMER_MIN_REVENUE_CURRENCY', env('AFFILIATES_DEFAULT_CURRENCY', 'MYR')),
         ],
         'recruitment' => [
             'enabled' => env('AFFILIATES_BONUS_RECRUITMENT_ENABLED', true),
-            'bonus_per_recruit' => env('AFFILIATES_BONUS_RECRUITMENT_PER_RECRUIT_MINOR', 2500),
+            'bonus_per_recruit' => env('AFFILIATES_BONUS_RECRUITMENT_PER_RECRUIT_MINOR', 2500), // minor units, paid in each affiliate's own currency
             'min_recruits' => env('AFFILIATES_BONUS_RECRUITMENT_MIN_RECRUITS', 3),
-            'max_bonus' => env('AFFILIATES_BONUS_RECRUITMENT_MAX_MINOR', 25000),
+            'max_bonus' => env('AFFILIATES_BONUS_RECRUITMENT_MAX_MINOR', 25000), // minor units, paid in each affiliate's own currency
         ],
         'consistency' => [
             'enabled' => env('AFFILIATES_BONUS_CONSISTENCY_ENABLED', true),
-            'bonus_amount' => env('AFFILIATES_BONUS_CONSISTENCY_AMOUNT_MINOR', 5000),
+            'bonus_amount' => env('AFFILIATES_BONUS_CONSISTENCY_AMOUNT_MINOR', 5000), // minor units, paid in each affiliate's own currency
             'min_weeks' => env('AFFILIATES_BONUS_CONSISTENCY_MIN_WEEKS', 4),
             'min_conversions_per_week' => env('AFFILIATES_BONUS_CONSISTENCY_MIN_CONVERSIONS_PER_WEEK', 1),
         ],
         'growth' => [
             'enabled' => env('AFFILIATES_BONUS_GROWTH_ENABLED', true),
-            'bonus_amount' => env('AFFILIATES_BONUS_GROWTH_AMOUNT_MINOR', 10000),
+            'bonus_amount' => env('AFFILIATES_BONUS_GROWTH_AMOUNT_MINOR', 10000), // minor units, paid in each affiliate's own currency
             'min_growth_percent' => env('AFFILIATES_BONUS_GROWTH_MIN_PERCENT', 25),
+            'min_previous_revenue' => env('AFFILIATES_BONUS_GROWTH_MIN_PREVIOUS_REVENUE_MINOR', 50000),
+            'min_previous_revenue_currency' => env('AFFILIATES_BONUS_GROWTH_MIN_PREVIOUS_REVENUE_CURRENCY', env('AFFILIATES_DEFAULT_CURRENCY', 'MYR')),
         ],
     ],
 
