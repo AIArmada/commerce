@@ -346,6 +346,32 @@ Palong (FELDA cluster centre; postcodes move to Mukim Rompin). Kept on
 gazette evidence against PLANMalaysia typos: Titian Bintangor (not Bintagor),
 Keru (not Kebu), Tebong of Tampin (not Tenong; distinct from Melaka's Tebong).
 
+## Sabah audit
+
+Sabah has no gazetted mukim tier, so every subdivision row was verified
+against Sabah state gazettes, the SPR polling-district gazette, DOSM census
+divisions, district-office mukim lists, and council records. Added the Paitan
+and Sook districts (gazetted 2024). Moved Jambongan from Beluran to Paitan,
+Nangoh from Beluran to Telupid, and Dalit from Keningau to Sook. Removed 8
+rows: stale pre-split district duplicates (Paitan, Tongod, Nabawan, Sook,
+Tambunan), the Libaran parliament/island ambiguity, the Wallace Bay water
+feature, and the Cenderawasih FELDA postal town (91150 moves to Lahad Datu
+district). Renamed to official forms: Gum-Gum, Bum-Bum, Sepulot.
+
+## Sarawak audit
+
+Sarawak has no mukim tier; the daerah kecil is the formal subdistrict tier,
+so every row was verified against the Administrative Areas Order 2022
+gazette, the 2018 admin table plus 2021/22 upgrade notices, the SPR
+polling-district gazette, and DOSM townships. Moved 9 rows: Tapah to Siburan,
+Moyan and Tambirat to Asajaya, Triso to Pusa, Roban to Kabong, Nanga Medamit
+to Limbang, Belawai to Tanjung Manis, Paloh to Daro, and Niah to Subis.
+Removed 13 rows: stale post-split duplicates (Balingian, Bekenu, Long Lama,
+Lingga, Kabong, Sebauh, Tatau, Entabai), the Kuala Balingian duplicate, the
+Pusat Mel Miri mail centre (98070 moves to Miri), the Baram region name
+(Marudi postcodes move to Marudi), the Poyut/Nibong conflated name, and the
+Sebelak river name. Renamed Budu to the official Nanga Budu form.
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC
