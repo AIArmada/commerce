@@ -275,6 +275,22 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             'my:subdistrict:district:melaka:alor-gajah:sungai-baru-ulu' => [
                 ['name' => 'Sungei Baru Ulu', 'name_type' => 'alternative'],
             ],
+            // JUPEM UPI spellings for Penang rows keeping common forms.
+            'my:subdistrict:district:pulau-pinang:timur-laut:air-itam' => [
+                ['name' => 'Ayer Itam', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:pulau-pinang:timur-laut:batu-ferringhi' => [
+                ['name' => 'Batu Feringgi', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:pulau-pinang:timur-laut:gelugor' => [
+                ['name' => 'Glugor', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:pulau-pinang:timur-laut:bukit-bendera' => [
+                ['name' => 'Penang Hill', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:pulau-pinang:seberang-perai-tengah:perai' => [
+                ['name' => 'Prai', 'name_type' => 'alternative'],
+            ],
         ];
     }
 

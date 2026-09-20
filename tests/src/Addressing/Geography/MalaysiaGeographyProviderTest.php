@@ -175,14 +175,14 @@ it('maps the bundled state, district, and locality rows', function (): void {
     $rows = malaysiaMainCsvRows();
     $byType = array_count_values(array_column($rows, 'type'));
 
-    expect($rows)->toHaveCount(1796)
+    expect($rows)->toHaveCount(1782)
         ->and($byType['state'] ?? 0)->toBe(13)
         ->and($byType['wilayah_persekutuan'] ?? 0)->toBe(3)
         ->and($byType['division'] ?? 0)->toBe(17)
         ->and($byType['district'] ?? 0)->toBe(160)
         ->and($byType['minor_district'] ?? 0)->toBe(5)
-        ->and($byType['mukim'] ?? 0)->toBe(1166)
-        ->and($byType['bandar'] ?? 0)->toBe(46)
+        ->and($byType['mukim'] ?? 0)->toBe(1138)
+        ->and($byType['bandar'] ?? 0)->toBe(60)
         ->and($byType['pekan'] ?? 0)->toBe(15)
         ->and($byType['subdistrict'] ?? 0)->toBe(312)
         ->and($byType['locality'] ?? 0)->toBe(39)
@@ -645,6 +645,40 @@ it('audits Melaka subdivisions against the JUPEM UPI inventory', function (): vo
         'my:subdistrict:district:melaka:jasin:ayer-keroh',
         'my:subdistrict:district:melaka:alor-gajah:alor-gajah',
         'my:subdistrict:district:melaka:alor-gajah:asahan',
+    ] as $removedSourceId) {
+        expect(isset($byId[$removedSourceId]))->toBeFalse();
+    }
+});
+
+it('audits Penang subdivisions against the JUPEM UPI inventory', function (): void {
+    $rows = malaysiaMainCsvRows();
+    $byId = array_column($rows, null, 'source_id');
+
+    expect($byId['my:subdistrict:district:pulau-pinang:seberang-perai-tengah:bukit-mertajam']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:pulau-pinang:seberang-perai-tengah:perai']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:pulau-pinang:seberang-perai-utara:butterworth']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:pulau-pinang:timur-laut:bandar-george-town']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:pulau-pinang:timur-laut:bukit-bendera']['type'] ?? null)->toBe('bandar')
+        ->and($byId['my:subdistrict:district:pulau-pinang:timur-laut:bukit-bendera']['name'] ?? null)->toBe('Bukit Bendera')
+        ->and($byId['my:subdistrict:district:pulau-pinang:barat-daya:mukim-a']['type'] ?? null)->toBe('mukim')
+        ->and($byId['my:subdistrict:district:pulau-pinang:timur-laut:mukim-13']['type'] ?? null)->toBe('mukim');
+
+    foreach ([
+        'my:subdistrict:district:pulau-pinang:seberang-perai-tengah:bandar-bukit-mertajam',
+        'my:subdistrict:district:pulau-pinang:seberang-perai-tengah:permatang-pauh',
+        'my:subdistrict:district:pulau-pinang:seberang-perai-tengah:seberang-jaya',
+        'my:subdistrict:district:pulau-pinang:seberang-perai-utara:bandar-butterworth',
+        'my:subdistrict:district:pulau-pinang:seberang-perai-utara:kubang-semang',
+        'my:subdistrict:district:pulau-pinang:seberang-perai-utara:mukim-15',
+        'my:subdistrict:district:pulau-pinang:seberang-perai-utara:penaga',
+        'my:subdistrict:district:pulau-pinang:seberang-perai-utara:tasek-gelugor',
+        'my:subdistrict:district:pulau-pinang:seberang-perai-selatan:simpang-ampat',
+        'my:subdistrict:district:pulau-pinang:seberang-perai-selatan:sungai-jawi',
+        'my:subdistrict:district:pulau-pinang:timur-laut:pulau-pinang',
+        'my:subdistrict:district:pulau-pinang:timur-laut:usm-pulau-pinang',
+        'my:subdistrict:district:pulau-pinang:timur-laut:penang-hill',
+        'my:subdistrict:district:pulau-pinang:barat-daya:batu-maung',
+        'my:subdistrict:district:pulau-pinang:barat-daya:teluk-kumbar',
     ] as $removedSourceId) {
         expect(isset($byId[$removedSourceId]))->toBeFalse();
     }

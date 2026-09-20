@@ -243,6 +243,26 @@ parliamentary seat). Kept on gazette evidence despite UPI naming quirks:
 Ayer Pa'abas (UPI 03/01) and Sungai Baru Tengah (2004/2006 gazettes; UPI
 shortens it to plain Sungei Baru).
 
+## Penang mukim audit
+
+Every Penang subdivision row was diffed against the JUPEM UPI boundary book
+for Pulau Pinang (Sept 2026), cross-checked against PLANMalaysia kod-mukim,
+DOSM census divisions, state gazettes, and land-title records. Retyped to
+bandar (14): Bukit Mertajam, Perai, Butterworth, Kepala Batas, Nibong Tebal,
+Air Itam, Bandar George Town, Batu Ferringhi, Gelugor, Jelutong, Tanjong
+Bungah, Bukit Bendera (renamed from Penang Hill; gazetted Bandar Bukit
+Bendera), Balik Pulau, Bayan Lepas. The island shares one mukim sequence:
+Barat Daya is Mukim 1-12 plus Mukim A-J, Timur Laut is Mukim 13-18; Seberang
+Perai Utara genuinely skips Mukim 15, so that row was removed. Removed 14
+rows: non-gazetted town/area names (Permatang Pauh, Seberang Jaya, Kubang
+Semang, Penaga, Tasek Gelugor, Simpang Ampat, Sungai Jawi, Batu Maung, Teluk
+Kumbar), the state-name Pulau Pinang row (its George Town city postcodes move
+to Bandar George Town), the USM institution row (11800 moves to Gelugor), the
+SPU Mukim 15 gap row, and the Bandar Bukit Mertajam / Bandar Butterworth
+duplicates. Postcodes remap to the true numbered mukim (Kubang Semang is SPT
+Mukim 5, a district correction); Sungai Jawi straddles SPS Mukim 6+7 so 14200
+links the district.
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC
