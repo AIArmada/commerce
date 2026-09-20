@@ -159,6 +159,13 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             'my:state:wilayah-persekutuan-labuan' => [
                 ['name' => 'Labuan', 'name_type' => 'common', 'is_preferred' => true],
             ],
+            // JUPEM UPI spelling; the rows use the gazette/KWP "Hulu Klang" form.
+            'my:subdistrict:district:selangor:gombak:hulu-klang' => [
+                ['name' => 'Hulu Kelang', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:mukim-hulu-klang' => [
+                ['name' => 'Hulu Kelang', 'name_type' => 'alternative'],
+            ],
         ];
     }
 
@@ -202,35 +209,7 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             }
         }
 
-        foreach ($this->additionalAdministrativeParents() as $childSourceId => $parentSourceIds) {
-            foreach ($parentSourceIds as $parentSourceId) {
-                $relationships[$childSourceId][] = [
-                    'parent_source_id' => $parentSourceId,
-                    'relationship_type' => 'contains',
-                    'hierarchy_type' => 'administrative',
-                ];
-            }
-        }
-
         return $relationships;
-    }
-
-    /**
-     * Mukims that verifiably span two administrative parents.
-     *
-     * The CSV parent stays the single primary parent; entries here add the
-     * second parent as an extra administrative relationship.
-     *
-     * @return array<string, list<string>>
-     */
-    private function additionalAdministrativeParents(): array
-    {
-        return [
-            // DOSM: "Sebahagian Mukim Setapak (Peralihan daripada daerah Kuala Lumpur)".
-            'my:subdistrict:district:selangor:gombak:setapak' => [
-                'my:state:wilayah-persekutuan-kuala-lumpur',
-            ],
-        ];
     }
 
     /**

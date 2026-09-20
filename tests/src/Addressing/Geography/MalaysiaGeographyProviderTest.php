@@ -10,7 +10,6 @@ use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
@@ -176,13 +175,13 @@ it('maps the bundled state, district, and locality rows', function (): void {
     $rows = malaysiaMainCsvRows();
     $byType = array_count_values(array_column($rows, 'type'));
 
-    expect($rows)->toHaveCount(1842)
+    expect($rows)->toHaveCount(1848)
         ->and($byType['state'] ?? 0)->toBe(13)
         ->and($byType['wilayah_persekutuan'] ?? 0)->toBe(3)
         ->and($byType['division'] ?? 0)->toBe(17)
         ->and($byType['district'] ?? 0)->toBe(160)
         ->and($byType['minor_district'] ?? 0)->toBe(1)
-        ->and($byType['mukim'] ?? 0)->toBe(1277)
+        ->and($byType['mukim'] ?? 0)->toBe(1283)
         ->and($byType['subdistrict'] ?? 0)->toBe(312)
         ->and($byType['locality'] ?? 0)->toBe(39)
         ->and($byType['precinct'] ?? 0)->toBe(20);
@@ -222,6 +221,8 @@ it('exposes aliases, roles, and postal versus administrative relationships', fun
     expect($names['my:state:wilayah-persekutuan-kuala-lumpur'] ?? [])->toBe([
         ['name' => 'Kuala Lumpur', 'name_type' => 'common', 'is_preferred' => true],
         ['name' => 'KL', 'name_type' => 'abbreviation'],
+    ])->and($names['my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:mukim-hulu-klang'] ?? [])->toBe([
+        ['name' => 'Hulu Kelang', 'name_type' => 'alternative'],
     ]);
 
     $roles = $provider->areaRoles($country);
@@ -328,38 +329,48 @@ it('deactivates prior areas when a provider changes its imported source key', fu
             ->value('address_area_id'))->toBe(AddressArea::query()->where('source', 'test-feed-v2')->value('id'));
 });
 
-it('links cross-boundary Mukim Setapak to both Gombak and Kuala Lumpur', function (): void {
+it('treats the Gombak and Kuala Lumpur Setapak mukims as separate single-parent rows', function (): void {
     $country = $this->seedCountry('MY');
+    $provider = app(MalaysiaGeographyProvider::class);
 
-    $relationships = app(MalaysiaGeographyProvider::class)->areaRelationships($country);
-    $parents = array_column(
+    $sourceIds = $provider->addressAreaSource()->areas()
+        ->map(static fn (AddressAreaData $area): string => $area->sourceId)
+        ->all();
+
+    expect($sourceIds)->toContain('my:subdistrict:district:selangor:gombak:setapak')
+        ->and($sourceIds)->toContain('my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:mukim-setapak')
+        ->and($sourceIds)->not->toContain('my:subdistrict:district:selangor:gombak:ulu-kelang');
+
+    $relationships = $provider->areaRelationships($country);
+
+    expect(array_column(
         $relationships['my:subdistrict:district:selangor:gombak:setapak'] ?? [],
         'parent_source_id'
-    );
-
-    expect($parents)->toContain('my:district:selangor:gombak')
-        ->and($parents)->toContain('my:state:selangor')
-        ->and($parents)->toContain('my:state:wilayah-persekutuan-kuala-lumpur');
+    ))->toBe(['my:district:selangor:gombak', 'my:state:selangor'])
+        ->and($relationships['my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:mukim-setapak'] ?? [])->toBe([[
+            'parent_source_id' => 'my:state:wilayah-persekutuan-kuala-lumpur',
+            'relationship_type' => 'contains',
+            'hierarchy_type' => 'administrative',
+        ]]);
 });
 
-it('seeds both administrative parents for cross-boundary areas', function (): void {
+it('seeds the seven gazetted Kuala Lumpur mukims under the Federal Territory', function (): void {
     $this->seedCountry('MY');
 
     app(SeedCountryGeographiesAction::class)->execute('MY');
 
-    $child = AddressArea::query()
-        ->where('source_id', 'my:subdistrict:district:selangor:gombak:setapak')
+    $kl = AddressArea::query()
+        ->where('source_id', 'my:state:wilayah-persekutuan-kuala-lumpur')
         ->firstOrFail();
-    $parentSourceIds = AddressAreaRelationship::query()
-        ->where('child_address_area_id', $child->getKey())
-        ->where('hierarchy_type', 'administrative')
-        ->with('parent')
-        ->get()
-        ->map(static fn (AddressAreaRelationship $link): string => $link->parent->source_id)
+
+    $mukims = AddressArea::query()
+        ->where('parent_id', $kl->getKey())
+        ->where('type', 'mukim')
+        ->orderBy('name')
+        ->pluck('name')
         ->all();
 
-    expect($parentSourceIds)->toContain('my:district:selangor:gombak')
-        ->and($parentSourceIds)->toContain('my:state:wilayah-persekutuan-kuala-lumpur');
+    expect($mukims)->toBe(['Ampang', 'Batu', 'Cheras', 'Hulu Klang', 'Kuala Lumpur', 'Petaling', 'Setapak']);
 });
 
 it('resolves every emitted relationship to a bundled area', function (): void {
@@ -401,7 +412,12 @@ it('keeps single-district mukims on one administrative parent', function (): voi
         $relationships['my:subdistrict:district:selangor:gombak:batu'] ?? [],
         'parent_source_id'
     );
+    $setapakParents = array_column(
+        $relationships['my:subdistrict:district:selangor:gombak:setapak'] ?? [],
+        'parent_source_id'
+    );
 
     expect($ampangParents)->not->toContain('my:district:selangor:gombak')
-        ->and($batuParents)->not->toContain('my:state:wilayah-persekutuan-kuala-lumpur');
+        ->and($batuParents)->not->toContain('my:state:wilayah-persekutuan-kuala-lumpur')
+        ->and($setapakParents)->not->toContain('my:state:wilayah-persekutuan-kuala-lumpur');
 });

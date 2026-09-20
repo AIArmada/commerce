@@ -59,32 +59,52 @@ precincts and settlements are address subdivisions.
 - administrative_subdivision: mukim and subdistricts
 - region: states and Federal Territories
 
-## Malaysia cross-boundary areas
+## Malaysia cross-boundary mukims
 
-Some mukim names appear on both sides of a district or state boundary. Each
-case was verified against gazettes and titled-land evidence (Sept 2026), and
-the dataset models the two shapes differently: one mukim spanning two parents
-gets an extra administrative relationship, while two same-named mukims stay
-separate rows.
+Several mukim names appear on both sides of a district or state boundary.
+Every case was verified against gazettes, the JUPEM UPI boundary book, and
+titled-land evidence (Sept 2026). The verdict in all four cases: distinct
+same-named mukims, each with exactly one parent — never one mukim spanning
+two parents. DOSM's "Sebahagian Mukim X (Peralihan ...)" phrasing describes
+the 1974 Gombak-formation transfers, not current dual parentage.
 
-| Mukim | Verdict | Modelled as |
+| Mukim | Verdict |
+|---|---|
+| Setapak | Two mukims: Gombak-side (Selangor gazette) and KL-side (Federal Gazette 2024, UPI 140007). A 1974-split remnant, administered separately ever since. |
+| Ampang | Two mukims: Hulu Langat-side (MPAJ: "smallest county in the district of Hulu Langat") and KL-side (UPI 140001). The straddling *town*/MPAJ area is not a third mukim. |
+| Batu | Two mukims: Gombak-side ("Mukim Batu bagi Daerah Gombak") and KL-side ("MUKIM BATU, DAERAH KUALA LUMPUR", UPI 140002). A third Mukim Batu sits in Kuala Langat. |
+| Cheras | Two mukims: Hulu Langat-side and KL-side ("Mukim Cheras, Daerah Kuala Lumpur", UPI 140003). KL's P123 Cheras parliamentary constituency is a separate concept. |
+
+## Kuala Lumpur mukims
+
+WPKL has exactly seven gazetted mukims and no district (`TIADA DAERAH`), so
+each hangs directly under the Federal Territory at level 2. Mukim rows use a
+`mukim-` source-id prefix because the parliamentary localities already occupy
+the bare names.
+
+| Mukim | UPI / PLANMalaysia | DOSM census |
 |---|---|---|
-| Setapak | One mukim spanning Gombak and Kuala Lumpur. DOSM: "Sebahagian Mukim Setapak (Peralihan daripada daerah Kuala Lumpur)". | Gombak row keeps its CSV parent and gains an extra administrative link to WP Kuala Lumpur. |
-| Ampang | Single-district mukim, wholly in Hulu Langat (MPAJ: "smallest county in the district of Hulu Langat"). The Ampang *town*/MPAJ area straddles districts, but that is Mukim Ulu Klang (Gombak) plus Mukim Ampang (Hulu Langat) — two distinct mukims. | No second parent. |
-| Batu (Gombak) | Distinct from Mukim Batu in KL: gazette titles pair each with exactly one Daerah ("Mukim Batu bagi Daerah Gombak" vs "MUKIM BATU, DAERAH KUALA LUMPUR"). | No second parent. The KL-side Mukim Batu row is not bundled yet. |
-| Cheras | Distinct mukims in Hulu Langat and KL ("Mukim Cheras, Daerah Kuala Lumpur" on KL land titles). KL's parliamentary constituency is P123 Cheras, a separate concept from either mukim. | No second parent. The KL-side Mukim Cheras row is not bundled yet. |
+| Ampang | 140001 | 140101 |
+| Batu | 140002 | 140102 |
+| Cheras | 140003 | 140103 |
+| Hulu Klang | 140004 | 140104 |
+| Kuala Lumpur | 140005 | 140105 |
+| Petaling | 140006 | 140106 |
+| Setapak | 140007 | 140107 |
 
-Rules for cross-boundary rows:
+Notes:
 
-- The CSV parent stays the single primary parent (`parent_id`). The second
-  parent exists only as an administrative relationship, so hierarchy-filtered
-  searches find the area under either parent.
-- Every extra parent must resolve to a bundled area; the provider test fails
-  on dangling links because the seeder skips unresolvable links silently.
+- Bandar Kuala Lumpur is a gazetted bandar (UPI 140044), not a mukim, so it
+  has no mukim row despite "Mukim Bandar Kuala Lumpur" title phrasing.
+- The rows use the gazette/KWP "Hulu Klang" spelling; the JUPEM UPI
+  "Hulu Kelang" form is stored as an alternative name.
+- The duplicate Gombak "Ulu Kelang" mukim row was removed: Gombak has one
+  Hulu Klang mukim, and "Ulu Kelang" is a gazetted town name there.
 
-Evidence: DOSM Gombak formation brief, Selangor State Gazette notices, ST
-licensee lists with full title addresses, Bursa land disclosures, and KWP's
-AGISwlk-sourced KL mukim boundary table.
+Evidence: JUPEM/MyGDI UPI book for WPKL (2nd ed. 2023), PLANMalaysia mukim
+code list (state 14), DOSM census geography, Selangor State Gazette notices,
+Federal Gazette P.U.(B) notices, ST licensee lists, and Bursa land
+disclosures.
 
 ## Singapore
 
