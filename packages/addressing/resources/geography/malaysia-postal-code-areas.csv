@@ -1326,7 +1326,6 @@ postcode,area_source_id,relationship_type,is_primary
 40140,my:subdistrict:district:selangor:petaling:shah-alam,served_by,true
 40150,my:subdistrict:district:selangor:petaling:shah-alam,served_by,true
 40160,my:subdistrict:district:selangor:petaling:shah-alam,served_by,true
-40160,my:subdistrict:district:selangor:petaling:denai-alam,served_by,false
 40169,my:subdistrict:district:selangor:petaling:shah-alam,served_by,true
 40170,my:subdistrict:district:selangor:petaling:shah-alam,served_by,true
 40179,my:subdistrict:district:selangor:petaling:shah-alam,served_by,true
@@ -1430,7 +1429,6 @@ postcode,area_source_id,relationship_type,is_primary
 41150,my:subdistrict:district:selangor:klang:klang,served_by,true
 41160,my:subdistrict:district:selangor:klang:klang,served_by,true
 41200,my:subdistrict:district:selangor:klang:klang,served_by,true
-41200,my:subdistrict:district:selangor:klang:johan-setia,served_by,false
 41205,my:subdistrict:district:selangor:klang:klang,served_by,true
 41250,my:subdistrict:district:selangor:klang:klang,served_by,true
 41299,my:subdistrict:district:selangor:klang:klang,served_by,true
@@ -1461,10 +1459,10 @@ postcode,area_source_id,relationship_type,is_primary
 41916,my:subdistrict:district:selangor:klang:klang,served_by,true
 41918,my:subdistrict:district:selangor:klang:klang,served_by,true
 41990,my:subdistrict:district:selangor:klang:klang,served_by,true
-42000,my:subdistrict:district:selangor:klang:port-klang,served_by,true
-42007,my:subdistrict:district:selangor:klang:port-klang,served_by,true
-42008,my:subdistrict:district:selangor:klang:port-klang,served_by,true
-42009,my:subdistrict:district:selangor:klang:port-klang,served_by,true
+42000,my:subdistrict:district:selangor:klang:port-swettenham,served_by,true
+42007,my:subdistrict:district:selangor:klang:port-swettenham,served_by,true
+42008,my:subdistrict:district:selangor:klang:port-swettenham,served_by,true
+42009,my:subdistrict:district:selangor:klang:port-swettenham,served_by,true
 42100,my:subdistrict:district:selangor:klang:klang,served_by,true
 42150,my:subdistrict:district:selangor:klang:klang,served_by,true
 42200,my:subdistrict:district:selangor:klang:kapar,served_by,true
@@ -1481,7 +1479,7 @@ postcode,area_source_id,relationship_type,is_primary
 42700,my:subdistrict:district:selangor:kuala-langat:banting,served_by,true
 42700,my:subdistrict:district:selangor:kuala-langat:kelanang,served_by,false
 42700,my:subdistrict:district:selangor:kuala-langat:morib,served_by,false
-42800,my:subdistrict:district:selangor:kuala-langat:tanjung-sepat,served_by,true
+42800,my:subdistrict:district:selangor:kuala-langat:tanjong-sepat,served_by,true
 42900,my:district:selangor:klang,served_by,true
 42907,my:district:selangor:klang,served_by,true
 42920,my:district:selangor:klang,served_by,true
@@ -1524,9 +1522,9 @@ postcode,area_source_id,relationship_type,is_primary
 45000,my:subdistrict:district:selangor:kuala-selangor:kuala-selangor,served_by,true
 45010,my:subdistrict:district:selangor:kuala-selangor:kuala-selangor,served_by,true
 45100,my:district:selangor:sabak-bernam,served_by,true
-45200,my:subdistrict:district:selangor:sabak-bernam:sabak-bernam,served_by,true
-45207,my:subdistrict:district:selangor:sabak-bernam:sabak-bernam,served_by,true
-45209,my:subdistrict:district:selangor:sabak-bernam:sabak-bernam,served_by,true
+45200,my:subdistrict:district:selangor:sabak-bernam:sabak,served_by,true
+45207,my:subdistrict:district:selangor:sabak-bernam:sabak,served_by,true
+45209,my:subdistrict:district:selangor:sabak-bernam:sabak,served_by,true
 45300,my:subdistrict:district:selangor:sabak-bernam:sungai-besar,served_by,true
 45300,my:subdistrict:district:selangor:sabak-bernam:sungai-panjang,served_by,false
 45400,my:subdistrict:district:selangor:sabak-bernam:sekinchan,served_by,true
@@ -1540,7 +1538,7 @@ postcode,area_source_id,relationship_type,is_primary
 45609,my:subdistrict:district:selangor:kuala-selangor:ijok,served_by,false
 45620,my:subdistrict:district:selangor:kuala-selangor:bestari-jaya,served_by,true
 45630,my:subdistrict:district:selangor:kuala-selangor:bestari-jaya,served_by,true
-45700,my:subdistrict:district:selangor:hulu-selangor:bukit-rotan,served_by,true
+45700,my:subdistrict:district:selangor:kuala-selangor:bukit-rotan,served_by,true
 45800,my:subdistrict:district:selangor:kuala-selangor:jeram,served_by,true
 46000,my:subdistrict:district:selangor:petaling:petaling-jaya,served_by,true
 46040,my:subdistrict:district:selangor:petaling:petaling-jaya,served_by,true
@@ -2082,7 +2080,7 @@ postcode,area_source_id,relationship_type,is_primary
 63300,my:subdistrict:district:selangor:sepang:cyberjaya,served_by,true
 64000,my:district:selangor:sepang,served_by,true
 68000,my:subdistrict:district:selangor:hulu-langat:ampang,served_by,true
-68100,my:subdistrict:district:selangor:gombak:batu-caves,served_by,true
+68100,my:subdistrict:district:selangor:gombak:batu,served_by,true
 69000,my:subdistrict:district:pahang:bentong:genting-highlands,served_by,true
 70000,my:subdistrict:district:negeri-sembilan:seremban:bandar-seremban,served_by,true
 70100,my:subdistrict:district:negeri-sembilan:seremban:bandar-seremban,served_by,true

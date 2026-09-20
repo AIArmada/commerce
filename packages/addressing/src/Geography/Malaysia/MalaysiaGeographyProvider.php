@@ -111,7 +111,7 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         label: 'Mukim / Subdistrict / Bandar / Pekan',
                         kind: 'area',
                         hierarchyType: 'administrative',
-                        areaTypes: ['city', 'municipality', 'mukim', 'subdistrict'],
+                        areaTypes: ['city', 'municipality', 'mukim', 'subdistrict', 'bandar', 'pekan'],
                         areaLevels: [2, 3, 4],
                         parentKey: 'region',
                         assignmentRole: 'administrative_subdivision',
@@ -131,7 +131,7 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                 'state', 'wilayah_persekutuan' => ['region'],
                 'division' => ['administrative_division'],
                 'district', 'minor_district' => ['administrative_district'],
-                'city', 'municipality', 'mukim', 'subdistrict' => ['administrative_subdivision'],
+                'city', 'municipality', 'mukim', 'subdistrict', 'bandar', 'pekan' => ['administrative_subdivision'],
                 'precinct', 'locality' => ['postal_locality'],
                 default => [],
             };
@@ -162,9 +162,43 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             // JUPEM UPI spelling; the rows use the gazette/KWP "Hulu Klang" form.
             'my:subdistrict:district:selangor:gombak:hulu-klang' => [
                 ['name' => 'Hulu Kelang', 'name_type' => 'alternative'],
+                ['name' => 'Ulu Kelang', 'name_type' => 'alternative'],
             ],
             'my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:mukim-hulu-klang' => [
                 ['name' => 'Hulu Kelang', 'name_type' => 'alternative'],
+                ['name' => 'Ulu Kelang', 'name_type' => 'alternative'],
+            ],
+            // Gazetted names; rows keep the long-established common spellings.
+            'my:subdistrict:district:selangor:hulu-langat:hulu-langat' => [
+                ['name' => 'Ulu Langat', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:selangor:hulu-langat:hulu-semenyih' => [
+                ['name' => 'Ulu Semenyih', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:selangor:hulu-selangor:hulu-bernam' => [
+                ['name' => 'Ulu Bernam', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:selangor:hulu-selangor:hulu-yam' => [
+                ['name' => 'Ulu Yam', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:selangor:hulu-selangor:kuala-kubu-bharu' => [
+                ['name' => 'Kuala Kubu Baharu', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:selangor:kuala-langat:telok-panglima-garang' => [
+                ['name' => 'Teluk Panglima Garang', 'name_type' => 'alternative'],
+            ],
+            // Common names for rows renamed to their gazetted UPI form.
+            'my:subdistrict:district:selangor:klang:port-swettenham' => [
+                ['name' => 'Port Klang', 'name_type' => 'common', 'is_preferred' => true],
+            ],
+            'my:subdistrict:district:selangor:gombak:gombak-setia' => [
+                ['name' => 'Gombak', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:selangor:sepang:baru-salak-tinggi' => [
+                ['name' => 'Salak Tinggi', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:selangor:kuala-langat:tanjong-sepat' => [
+                ['name' => 'Tanjung Sepat', 'name_type' => 'alternative'],
             ],
         ];
     }

@@ -175,13 +175,15 @@ it('maps the bundled state, district, and locality rows', function (): void {
     $rows = malaysiaMainCsvRows();
     $byType = array_count_values(array_column($rows, 'type'));
 
-    expect($rows)->toHaveCount(1848)
+    expect($rows)->toHaveCount(1836)
         ->and($byType['state'] ?? 0)->toBe(13)
         ->and($byType['wilayah_persekutuan'] ?? 0)->toBe(3)
         ->and($byType['division'] ?? 0)->toBe(17)
         ->and($byType['district'] ?? 0)->toBe(160)
         ->and($byType['minor_district'] ?? 0)->toBe(1)
-        ->and($byType['mukim'] ?? 0)->toBe(1283)
+        ->and($byType['mukim'] ?? 0)->toBe(1248)
+        ->and($byType['bandar'] ?? 0)->toBe(17)
+        ->and($byType['pekan'] ?? 0)->toBe(6)
         ->and($byType['subdistrict'] ?? 0)->toBe(312)
         ->and($byType['locality'] ?? 0)->toBe(39)
         ->and($byType['precinct'] ?? 0)->toBe(20);
@@ -223,6 +225,9 @@ it('exposes aliases, roles, and postal versus administrative relationships', fun
         ['name' => 'KL', 'name_type' => 'abbreviation'],
     ])->and($names['my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:mukim-hulu-klang'] ?? [])->toBe([
         ['name' => 'Hulu Kelang', 'name_type' => 'alternative'],
+        ['name' => 'Ulu Kelang', 'name_type' => 'alternative'],
+    ])->and($names['my:subdistrict:district:selangor:klang:port-swettenham'] ?? [])->toBe([
+        ['name' => 'Port Klang', 'name_type' => 'common', 'is_preferred' => true],
     ]);
 
     $roles = $provider->areaRoles($country);
@@ -420,4 +425,88 @@ it('keeps single-district mukims on one administrative parent', function (): voi
     expect($ampangParents)->not->toContain('my:district:selangor:gombak')
         ->and($batuParents)->not->toContain('my:state:wilayah-persekutuan-kuala-lumpur')
         ->and($setapakParents)->not->toContain('my:state:wilayah-persekutuan-kuala-lumpur');
+});
+
+it('types gazetted Selangor bandar and pekan rows distinctly from mukim', function (): void {
+    $rows = malaysiaMainCsvRows();
+    $byId = array_column($rows, null, 'source_id');
+
+    expect($byId['my:subdistrict:district:selangor:gombak:kuang']['type'])->toBe('bandar')
+        ->and($byId['my:subdistrict:district:selangor:petaling:shah-alam']['type'])->toBe('bandar')
+        ->and($byId['my:subdistrict:district:selangor:klang:port-swettenham']['name'])->toBe('Port Swettenham')
+        ->and($byId['my:subdistrict:district:selangor:klang:meru']['type'])->toBe('pekan')
+        ->and($byId['my:subdistrict:district:selangor:petaling:puchong']['type'])->toBe('pekan')
+        ->and($byId['my:subdistrict:district:selangor:gombak:batu']['type'])->toBe('mukim');
+
+    $country = $this->seedCountry('MY');
+    $roles = app(MalaysiaGeographyProvider::class)->areaRoles($country);
+
+    expect($roles['my:subdistrict:district:selangor:petaling:shah-alam'] ?? [])->toBe([
+        ['role' => 'administrative_subdivision', 'country_code' => 'MY', 'is_primary' => true],
+    ])->and($roles['my:subdistrict:district:selangor:klang:meru'] ?? [])->toBe([
+        ['role' => 'administrative_subdivision', 'country_code' => 'MY', 'is_primary' => true],
+    ]);
+});
+
+it('places moved Selangor rows under their gazetted district', function (): void {
+    $rows = malaysiaMainCsvRows();
+    $byId = array_column($rows, null, 'source_id');
+
+    expect($byId['my:subdistrict:district:selangor:kuala-langat:jenjarom']['parent_source_id'] ?? null)
+        ->toBe('my:district:selangor:kuala-langat')
+        ->and($byId['my:subdistrict:district:selangor:gombak:batu-arang']['parent_source_id'] ?? null)
+        ->toBe('my:district:selangor:gombak')
+        ->and($byId['my:subdistrict:district:selangor:kuala-selangor:bukit-rotan']['parent_source_id'] ?? null)
+        ->toBe('my:district:selangor:kuala-selangor');
+});
+
+it('drops non-gazetted and wrong-district Selangor rows', function (): void {
+    $rows = malaysiaMainCsvRows();
+    $byId = array_column($rows, null, 'source_id');
+
+    foreach ([
+        'my:subdistrict:district:selangor:petaling:denai-alam',
+        'my:subdistrict:district:selangor:petaling:usj-uep-subang-jaya',
+        'my:subdistrict:district:selangor:klang:jenjarum',
+        'my:subdistrict:district:selangor:klang:jenjarum-barat',
+        'my:subdistrict:district:selangor:klang:jenjarum-utama',
+        'my:subdistrict:district:selangor:klang:johan-setia',
+        'my:subdistrict:district:selangor:klang:setia-alam',
+        'my:subdistrict:district:selangor:klang:teluk-panglima-garang',
+        'my:subdistrict:district:selangor:gombak:batu-caves',
+        'my:subdistrict:district:selangor:gombak:gombak',
+        'my:subdistrict:district:selangor:gombak:taman-melawati',
+        'my:subdistrict:district:selangor:kuala-langat:tanjung-sepat',
+        'my:subdistrict:district:selangor:sepang:batu-arang',
+        'my:subdistrict:district:selangor:sepang:salak-tinggi',
+        'my:subdistrict:district:selangor:kuala-selangor:paya-jaras',
+        'my:subdistrict:district:selangor:hulu-selangor:bukit-rotan',
+        'my:subdistrict:district:selangor:hulu-selangor:hulu-selangor',
+        'my:subdistrict:district:selangor:sabak-bernam:sabak-bernam',
+        'my:subdistrict:district:selangor:klang:port-klang',
+    ] as $removedSourceId) {
+        expect(isset($byId[$removedSourceId]))->toBeFalse();
+    }
+});
+
+it('resolves every postal link to a bundled Malaysian area', function (): void {
+    $providerFile = (string) (new ReflectionClass(MalaysiaGeographyProvider::class))->getFileName();
+    $base = dirname($providerFile, 4) . '/resources/geography';
+    $areas = array_column(malaysiaMainCsvRows(), null, 'source_id');
+
+    $dangling = [];
+    $handle = fopen($base . '/malaysia-postal-code-areas.csv', 'r');
+    $header = fgetcsv($handle);
+
+    while (($row = fgetcsv($handle)) !== false) {
+        $line = array_combine($header, $row);
+
+        if (! isset($areas[$line['area_source_id']])) {
+            $dangling[] = $line['postcode'] . ' -> ' . $line['area_source_id'];
+        }
+    }
+
+    fclose($handle);
+
+    expect($dangling)->toBe([]);
 });

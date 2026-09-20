@@ -106,6 +106,42 @@ code list (state 14), DOSM census geography, Selangor State Gazette notices,
 Federal Gazette P.U.(B) notices, ST licensee lists, and Bursa land
 disclosures.
 
+## Selangor mukim audit
+
+Every Selangor subdivision row was diffed against the JUPEM UPI boundary book
+for Selangor (Sept 2026). All gazetted Selangor mukims were already bundled;
+the fixes below correct mistyped towns, wrong districts, renames, and
+non-gazetted rows. Bandar and pekan are distinct row types sharing the
+`administrative_subdivision` role; renamed rows keep their common names as
+alternative or preferred names so searches keep resolving.
+
+Retyped to bandar (gazetted): Banting, Bandar Baru Bangi, Kuang, Kundang,
+Selayang, Petaling Jaya, Saujana, Subang Jaya, Cyberjaya, Shah Alam, Kuala
+Kubu Bharu. Retyped to pekan (gazetted): Meru, Sekinchan, Sungai Besar,
+Puchong, Sungai Pelek.
+
+| Row | Fix | Evidence |
+|---|---|---|
+| Port Klang | Renamed Port Swettenham, bandar | UPI Bandar Port Swettenham 01/41; "Port Klang" kept as preferred common name |
+| Gombak | Renamed Gombak Setia, bandar | UPI Bandar Gombak Setia 09/43; bare "Gombak" not gazetted |
+| Salak Tinggi | Renamed Baru Salak Tinggi, bandar | UPI Bandar Baru Salak Tinggi 10/42; bare name not gazetted |
+| Tanjung Sepat | Renamed Tanjong Sepat, bandar | UPI Bandar Tanjong Sepat 02/43 |
+| Jenjarum (Klang) | Moved to Kuala Langat as Jenjarom, bandar | UPI Bandar Jenjarom 02/41; town is in Kuala Langat |
+| Batu Arang (Sepang) | Moved to Gombak, bandar | UPI Bandar Batu Arang 09/40; town is in Gombak |
+| Bukit Rotan (Hulu Selangor) | Moved to Kuala Selangor, pekan | UPI Pekan Bukit Rotan 04/72; town is in Kuala Selangor |
+| Jenjarum Barat / Utama | Removed | No such place or entity in UPI, gazettes, or SPR records |
+| Johan Setia, Paya Jaras | Removed | Kampung/locality inside a mukim, not a UPI entity |
+| Setia Alam, Denai Alam, USJ / UEP Subang Jaya, Taman Melawati | Removed | Developer townships inside a mukim, not UPI entities |
+| Batu Caves | Removed | Town inside Mukim Batu, not gazetted at any level |
+| Sabak Bernam, Hulu Selangor | Removed | District-name rows; the districts and their mukims already exist |
+| Teluk Panglima Garang (Klang) | Removed | Wrong-district duplicate of Kuala Langat's Mukim Telok Panglima Garang |
+
+Spelling follows the gazetted UPI form for renamed rows (Jenjarom, Tanjong,
+Swettenham); rows that keep common spellings (Hulu Langat, Telok Panglima
+Garang, Kuala Kubu Bharu) carry the UPI variant as an alternative name.
+Postal links were repointed to the surviving rows; no postcode lost its
+primary link.
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC
