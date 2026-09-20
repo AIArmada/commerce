@@ -305,6 +305,20 @@ Datoh, Ulu Kinta, Bandar Seri Iskandar, Trong of Terung), and Ipoh town
 postcodes link the district: 36500 (Ladang Ulu Bernam estate) to Hilir Perak,
 31750 to Kinta, 34140 to Selama, 34850 to Larut Matang.
 
+## Kedah mukim audit
+
+Every Kedah subdivision row was diffed against the JUPEM UPI boundary book
+for Kedah (Sept 2026), cross-checked against PLANMalaysia kod-mukim, DOSM
+census divisions, state gazettes, and land-title records. Retyped 17 rows to
+bandar and 5 to pekan. Renamed to gazetted forms: Gunung, Changlun, Hosba,
+Kurung Hitam, Guar Cempedak. Moved 3 rows to the correct district: Kepala
+Batas and Kodiang from Kota Setar to Kubang Pasu (both bandar), Jeniang from
+Sik to Kuala Muda as Pekan Jeniang (gazetted 2009 from Mukim Gurun; 08700
+follows the move while 08320 links Sik's Mukim Jeneri). Removed 5 rows: the
+Kota Setar and Langkawi district-name rows (Langkawi town postcodes move to
+Kuah), the UUM institution row, Yan Kechil locality (06910 secondary moves
+to Sungai Daun), and Bukit Paya (a PLANMalaysia typo for Mukim Bukit Raya).
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC

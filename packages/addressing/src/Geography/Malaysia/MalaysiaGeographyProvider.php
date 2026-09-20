@@ -360,6 +360,22 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             'my:subdistrict:district:perak:bagan-datuk:bagan-datuk' => [
                 ['name' => 'Bagan Datoh', 'name_type' => 'alternative'],
             ],
+            // Common names for Kedah rows renamed to gazetted forms.
+            'my:subdistrict:district:kedah:kota-setar:gunung' => [
+                ['name' => 'Gunong', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:kedah:kubang-pasu:changlun' => [
+                ['name' => 'Changloon', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:kedah:kubang-pasu:hosba' => [
+                ['name' => 'Husba', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:kedah:padang-terap:kurung-hitam' => [
+                ['name' => 'Kurong Hitam', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:kedah:yan:guar-cempedak' => [
+                ['name' => 'Guar Chempedak', 'name_type' => 'alternative'],
+            ],
         ];
     }
 
