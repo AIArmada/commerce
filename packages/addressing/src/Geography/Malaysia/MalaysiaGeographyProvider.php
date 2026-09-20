@@ -389,6 +389,16 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             'my:subdistrict:district:kelantan:tumpat:kampung-laut' => [
                 ['name' => 'Kampong Laut', 'name_type' => 'alternative'],
             ],
+            // Common names for Negeri Sembilan rows renamed to gazetted forms.
+            'my:subdistrict:district:negeri-sembilan:seremban:baru-enstek' => [
+                ['name' => 'Bandar Enstek', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:negeri-sembilan:jempol:serting-hulu' => [
+                ['name' => 'Serting Ulu', 'name_type' => 'alternative'],
+            ],
+            'my:subdistrict:district:negeri-sembilan:rembau:sepri' => [
+                ['name' => 'Spri', 'name_type' => 'alternative'],
+            ],
         ];
     }
 

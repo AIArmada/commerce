@@ -334,6 +334,18 @@ too), the false Bandar Jeli row (Jeli has no gazetted bandar; 17600/17700 go
 to Mukim Jeli), the Bachok Cherang Ruku duplicate, and the Betis duplicate of
 Kuala Betis. 18200 Dabong links Mukim Kuala Stong on land-title evidence.
 
+## Negeri Sembilan mukim audit
+
+No JUPEM UPI book is published for Negeri Sembilan, so every subdivision row
+was diffed against the PLANMalaysia kod-mukim inventory (2021) with each
+verdict corroborated by state gazettes, DOSM-coded lists, or land titles.
+Retyped 5 rows to bandar and 10 to pekan. Moved Tanjong Ipoh from Jelebu to
+Kuala Pilah as a pekan. Renamed to gazetted forms: Baru Enstek, Serting Hulu,
+Sepri. Removed Seremban 2 (housing scheme in Mukim Rasah) and Pusat Bandar
+Palong (FELDA cluster centre; postcodes move to Mukim Rompin). Kept on
+gazette evidence against PLANMalaysia typos: Titian Bintangor (not Bintagor),
+Keru (not Kebu), Tebong of Tampin (not Tenong; distinct from Melaka's Tebong).
+
 ## Singapore
 
 The bundled `SingaporeGeographyProvider` supplies the five ISO 3166-2 CDC
