@@ -211,7 +211,7 @@ it('exposes district-parented postal localities under the region', function (): 
     $locality = collect(collect($provider->addressHierarchies())->firstWhere('key', 'postal')->levels)
         ->firstWhere('key', 'locality');
 
-    expect($locality->areaLevels)->toContain(2, 3);
+    expect($locality->areaLevels)->toContain(2, 3, 4);
 
     $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
     $paritSulong = $areas->get('my:subdistrict:district:johor:batu-pahat:parit-sulong');
@@ -231,5 +231,22 @@ it('exposes district-parented postal localities under the region', function (): 
     expect($links)->toContain(
         ['parent_source_id' => 'my:district:johor:batu-pahat', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
         ['parent_source_id' => 'my:state:johor', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
+    );
+});
+
+it('exposes level-4 Borneo postal localities under the region', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+    $cenderawasih = $areas->get('my:subdistrict:district:sabah:lahad-datu:cenderawasih');
+
+    expect($cenderawasih->type)->toBe('locality')
+        ->and($cenderawasih->level)->toBe(4)
+        ->and($cenderawasih->parentSourceId)->toBe('my:district:sabah:lahad-datu');
+
+    $links = $provider->areaRelationships(new AddressCountry)['my:subdistrict:district:sabah:lahad-datu:cenderawasih'];
+
+    expect($links)->toContain(
+        ['parent_source_id' => 'my:district:sabah:lahad-datu', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
+        ['parent_source_id' => 'my:state:sabah', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
     );
 });

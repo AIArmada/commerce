@@ -68,7 +68,7 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         kind: 'area',
                         hierarchyType: 'postal',
                         areaTypes: ['locality', 'precinct'],
-                        areaLevels: [2, 3],
+                        areaLevels: [2, 3, 4],
                         parentKey: 'region',
                         assignmentRole: 'postal_locality',
                     ),

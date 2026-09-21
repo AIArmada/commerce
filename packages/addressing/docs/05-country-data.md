@@ -142,6 +142,14 @@ Garang, Kuala Kubu Bharu) carry the UPI variant as an alternative name.
 Postal links were repointed to the surviving rows; no postcode lost its
 primary link.
 
+Two-hierarchy relocation: 3 removed towns returned as postal `locality`
+rows — Batu Caves, Teluk Panglima Garang (corrected to Kuala Langat, town
+distinct from Mukim Telok Panglima Garang), and Sabak Bernam (town distinct
+from Mukim Sabak; 45100 Sungai Ayer Tawar stays district-linked). Stay
+deleted: the Denai Alam, USJ, Setia Alam, and Taman Melawati townships (all
+share Shah Alam, Subang Jaya, or Kuala Lumpur codes) and the Johan Setia and
+Paya Jaras kampungs (no own postcode).
+
 ## Genting Highlands
 
 Genting Highlands is not a mukim of Bentong. Bentong has exactly three
@@ -190,6 +198,15 @@ ungazetted).
 
 Postal links were repointed to the surviving mukim, pekan, or district rows;
 no postcode lost its primary link.
+
+Two-hierarchy relocation: 12 removed towns returned as postal `locality`
+rows — Balok (26080/26190 only; 26100/26150 are Kuantan city codes), Bukit
+Goh, Sungai Lembing, Bandar Tun Abdul Razak (corrected to the Muadzam Shah
+minor district), Lurah Bilut (corrected to Bentong), Chini, Bandar Bera,
+Kemayan, Bandar Pusat Jengka (corrected to Maran; 27080 stays Jerantut),
+Damak, Kuala Krau (corrected to Temerloh), and Sungai Koyan. Stay deleted:
+Bukit Kuin (sub-locality), Muadzam Shah (duplicate of the I/II bandars), and
+Hulu Jelai (admin entity, no postcode).
 
 ## Johor mukim audit
 
@@ -257,6 +274,10 @@ parliamentary seat). Kept on gazette evidence despite UPI naming quirks:
 Ayer Pa'abas (UPI 03/01) and Sungai Baru Tengah (2004/2006 gazettes; UPI
 shortens it to plain Sungei Baru).
 
+Two-hierarchy relocation: Ayer Keroh town (75450) returned as a postal
+`locality` row under Melaka Tengah; the Jasin Ayer Keroh row stays deleted
+as a misfile.
+
 ## Penang mukim audit
 
 Every Penang subdivision row was diffed against the JUPEM UPI boundary book
@@ -277,6 +298,13 @@ duplicates. Postcodes remap to the true numbered mukim (Kubang Semang is SPT
 Mukim 5, a district correction); Sungai Jawi straddles SPS Mukim 6+7 so 14200
 links the district.
 
+Two-hierarchy relocation: 8 removed towns returned as postal `locality`
+rows — Permatang Pauh, Kubang Semang (corrected to SPT), Penaga, Tasek
+Gelugor, Batu Maung, Teluk Kumbar (11920 only; 11950 is Bayan Lepas),
+Simpang Ampat, and Sungai Jawi. Stay deleted: Penang Hill (11300 is George
+Town), USM (11800 is Gelugor, plus a facility), Seberang Jaya (13700 is
+Perai), and SPU Mukim 15 (no gazette evidence; genuinely skipped).
+
 ## Terengganu mukim audit
 
 Every Terengganu subdivision row was diffed against the JUPEM UPI boundary
@@ -294,6 +322,14 @@ wrong-district Ketengah Jaya (Dungun's Mukim Rasau), Sungai Tong (Setiu's
 Mukim Hulu Nerus), and Bukit Payong (Marang's Mukim Bukit Payung, spelling
 corrected in the move); and the Chalok duplicate of Caluk. Postcodes remap to
 the gazetted mukim each town falls in.
+
+Two-hierarchy relocation: 11 removed towns returned as postal `locality`
+rows — Bukit Payong (corrected to Marang), Ceneh (24060 only; 24050 is Air
+Putih), Kerteh, Ketengah Jaya (corrected to Dungun), Al-Muktafi Billah
+Shah, Bukit Besi, Paka, Ajil, Sungai Tong (corrected to Setiu), Permaisuri
+(the Bandar Permaisuri pair merged into one row), and Chalok (postal
+spelling, distinct from Mukim Caluk). Stay deleted: Chukai (duplicate of
+Bandar Cukai) and Penarik (no own postcode).
 
 ## Perak mukim audit
 
@@ -318,6 +354,17 @@ Datoh, Ulu Kinta, Bandar Seri Iskandar, Trong of Terung), and Ipoh town
 (split into N/S bandars). Uncertain
 postcodes link the district: 36500 (Ladang Ulu Bernam estate) to Hilir Perak,
 31750 to Kinta, 34140 to Selama, 34850 to Larut Matang.
+
+Two-hierarchy relocation: 11 removed towns returned as postal `locality`
+rows — Kampung Kepayang, Trong, Seri Manjung, Behrang Stesen (corrected to
+Muallim), Changkat Jering (corrected to Larut-Matang), Enggor, Jeram
+(corrected to Kinta), Sauk, Tronoh (corrected to Kampar; 31750 moves off
+Kinta district), Rantau Panjang (corrected to Selama), and Ulu Kinta
+(postal spelling, distinct from Mukim Hulu Kinta). Stay deleted: Sungai
+Raia (shares 31300), Terong (variant), the TLDM Lumut base (facility),
+Simpang Ampat Semanggol and Trolak (duplicates of Pekan Simpang Empat and
+Pekan Terolak), Saiong (mukim variant), Intan (Kelian Intan short form),
+and Ulu Bernam (split/shared codes).
 
 ## Kedah mukim audit
 
@@ -348,6 +395,13 @@ too), the false Bandar Jeli row (Jeli has no gazetted bandar; 17600/17700 go
 to Mukim Jeli), the Bachok Cherang Ruku duplicate, and the Betis duplicate of
 Kuala Betis. 18200 Dabong links Mukim Kuala Stong on land-title evidence.
 
+Two-hierarchy relocation: 3 removed towns returned as postal `locality`
+rows — Ketereh (16450), Dabong (18200, Kuala Krai; the Gua Musang row stays
+deleted as a misfile), and Ayer Lanas (17700). Stay deleted: Bandar Baru
+Tunjong (township sharing Kota Bharu codes), the Kem Desa Pahlawan camp
+(facility), Panji, Olak Jeram, Chiku, and Galas (no own postcode), and
+Bandar Jeli (the town's name is exactly Mukim Jeli's, so it is covered).
+
 ## Negeri Sembilan mukim audit
 
 No JUPEM UPI book is published for Negeri Sembilan, so every subdivision row
@@ -360,6 +414,10 @@ Palong (FELDA cluster centre; postcodes move to Mukim Rompin). Kept on
 gazette evidence against PLANMalaysia typos: Titian Bintangor (not Bintagor),
 Keru (not Kebu), Tebong of Tampin (not Tenong; distinct from Melaka's Tebong).
 
+Two-hierarchy relocation: Pusat Bandar Palong (73430-73470, own post
+office) returned as a postal `locality` row; Seremban 2 stays deleted (70300
+is Seremban).
+
 ## Sabah audit
 
 Sabah has no gazetted mukim tier, so every subdivision row was verified
@@ -371,6 +429,10 @@ rows: stale pre-split district duplicates (Paitan, Tongod, Nabawan, Sook,
 Tambunan), the Libaran parliament/island ambiguity, the Wallace Bay water
 feature, and the Cenderawasih FELDA postal town (91150 moves to Lahad Datu
 district). Renamed to official forms: Gum-Gum, Bum-Bum, Sepulot.
+
+Two-hierarchy relocation: Cenderawasih (91150, own post office) returned as
+a level-4 postal `locality` row; the remaining removals stay deleted as
+duplicates or non-places.
 
 ## Sarawak audit
 
